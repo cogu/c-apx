@@ -1,0 +1,360 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="cutest">
+      <UniqueIdentifier>{734755aa-5e54-40f8-b58d-1a8948f3dec4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx">
+      <UniqueIdentifier>{84a96742-66c8-4659-9565-c0fbf89604a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util">
+      <UniqueIdentifier>{89b54add-7321-4892-bae1-2fb7c6eacc03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt">
+      <UniqueIdentifier>{64f44345-04c6-470a-aa66-4d6c5ab7c887}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt\inc">
+      <UniqueIdentifier>{a1f428ca-3eb6-4038-94f7-d64ab3b8e7da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt\src">
+      <UniqueIdentifier>{ba02fa7f-939f-41c2-823c-7e019d9ac660}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util\inc">
+      <UniqueIdentifier>{fe4da3b0-f406-47cc-94f3-09443fdfed66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util\src">
+      <UniqueIdentifier>{a50b923e-251c-41f4-b031-5ec86eb64c8f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\common">
+      <UniqueIdentifier>{3c872081-4bae-4bb5-892c-7cd85442df0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\common\inc">
+      <UniqueIdentifier>{8d902b1e-1d61-46e9-8759-6b46145cf912}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\common\src">
+      <UniqueIdentifier>{b12b891f-035c-4a90-9734-87636621cdbf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\common\test">
+      <UniqueIdentifier>{faaf2495-a905-4b21-ae2a-d4027b397191}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="remotefile">
+      <UniqueIdentifier>{5798c015-d304-4f15-977b-207a7b5db96a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="remotefile\inc">
+      <UniqueIdentifier>{d668d13a-b564-4408-981b-0cfc770a0ad5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="remotefile\src">
+      <UniqueIdentifier>{4ff744c5-c5aa-4f1e-8737-f0cfddddc2f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="msocket">
+      <UniqueIdentifier>{a9b9239a-b19a-414c-972f-6368cd33d9a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="msocket\inc">
+      <UniqueIdentifier>{9fbfebf6-617f-4c90-8a46-40943b221471}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\apx\common\test\test_main.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\cutest\CuTest.c">
+      <Filter>cutest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\CMemLeak.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\headerutil.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\pack.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\pstr.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\ringbuf.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\scan.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\soa.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\soa_chunk.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\src\soa_fsa.c">
+      <Filter>util\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_ary.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_bytearray.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_hash.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_list.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_stack.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_allocator.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_dataElement.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_dataSignature.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_datatype.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_portref.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_port.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_file.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\remotefile\src\rmf.c">
+      <Filter>remotefile\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_dataTrigger.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_node.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_nodeData.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_fileMap.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_fileManager.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_nodeInfo.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_portDataMap.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_nodeManager.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_parser.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_stream.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_router.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_routerPortMapEntry.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\filestream.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_str.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_allocator.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_dataSignature.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_file.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_fileMap.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_node.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_nodeData.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_nodeInfo.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_parser.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_port.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_portDataMap.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_portMapEntry.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_router.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_dataTrigger.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\cutest\CuTest.h">
+      <Filter>cutest</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\CMemLeak.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\headerutil.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\pack.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\pstr.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\ringbuf.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\ringbuf_cfg.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\scan.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\soa.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\soa_chunk.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\util\inc\soa_fsa.h">
+      <Filter>util\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_bytearray.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_hash.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_list.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_stack.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_allocator.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_cfg.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataElement.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataSignature.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataTrigger.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_datatype.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_file.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileManager.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileManager_cfg.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileMap.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_msg.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_node.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_nodeData.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_nodeData_cfg.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_nodeInfo.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_nodeManager.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_parser.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_port.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_portDataBuffer.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_portDataMap.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_portref.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_router.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_routerPortMapEntry.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_stream.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_transmitHandler.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_types.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\filestream.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\msocket\inc\osmacro.h">
+      <Filter>msocket\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\msocket\inc\osutil.h">
+      <Filter>msocket\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\remotefile\inc\rmf.h">
+      <Filter>remotefile\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\remotefile\inc\rmf_cfg.h">
+      <Filter>remotefile\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_logging.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_str.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
