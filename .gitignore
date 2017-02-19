@@ -4,3 +4,6 @@
 **/build/
 #user files
 **/*vcxproj.user
+**.vs/
+*.VC.db
+CMemLeak.txt
