@@ -1,0 +1,6 @@
+#build files
+**/Debug/
+**/Release
+**/build/
+#user files
+**/*vcxproj.user

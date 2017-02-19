@@ -1,0 +1,121 @@
+/**
+ * file: apx_nodeData.h
+ * description: apx_nodeData is the client version of an apx node. The server side uses the more complex class called apx_nodeInfo.
+ */
+#ifndef APX_NODE_DATA_H
+#define APX_NODE_DATA_H
+//////////////////////////////////////////////////////////////////////////////
+// INCLUDES
+//////////////////////////////////////////////////////////////////////////////
+#include "apx_types.h"
+#include <stdint.h>
+#if defined(_MSC_PLATFORM_TOOLSET) && (_MSC_PLATFORM_TOOLSET<=100)
+#include "msc_bool.h"
+#else
+#include <stdbool.h>
+#endif
+#include "apx_nodeData_cfg.h" //see this file for explanation of APX_POLLED_DATA_MODE
+#ifndef APX_POLLED_DATA_MODE
+#  ifndef _WIN32
+     //Linux-based system
+#    include <pthread.h>
+#  else
+     //Windows-based system
+#    include <Windows.h>
+#  endif
+#  include "osmacro.h"
+#endif
+
+
+//////////////////////////////////////////////////////////////////////////////
+// CONSTANTS AND DATA TYPES
+//////////////////////////////////////////////////////////////////////////////
+//forward declarations
+#ifndef APX_POLLED_DATA_MODE
+struct apx_fileManager_tag;
+struct apx_file_tag;
+struct apx_nodeInfo_tag;
+#endif
+
+//forward declaration
+struct apx_nodeData_tag;
+
+/**
+ * function table of event handlers that apx_nodeData_t can call when events are triggererd
+ */
+typedef struct apx_nodeDataHandlerTable_tag
+{
+   void *arg; //user argument
+   void (*inPortDataWritten)(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len); //called when inDataFile was updated from file manager
+   //TODO: add more event handler here, e.g. when ports are connected/disconnect in the server
+}apx_nodeDataHandlerTable_t;
+
+typedef struct apx_nodeData_tag
+{
+   bool isRemote; //true if this is a remote nodeData structure. Default: false
+   bool isWeakref; //when true all pointers in this object is owned by some other part of the program. if false then all pointers are created/freed by this class.
+   const char *name;
+   uint8_t *inPortDataBuf;
+   uint8_t *outPortDataBuf;
+   uint32_t inPortDataLen;
+   uint32_t outPortDataLen;
+   uint8_t *definitionDataBuf;
+   uint32_t definitionDataLen;
+   uint8_t *inPortDirtyFlags;
+   uint8_t *outPortDirtyFlags;
+   bool dataWriteModeEnabled;
+   apx_nodeDataHandlerTable_t handlerTable;
+#ifdef APX_POLLED_DATA_MODE
+   //used for implementations that has no underlying operating system or runs an RTOS
+#  error("not yet implemented!")
+#else
+   //used for Windows/Linux implementations
+   SPINLOCK_T inPortDataLock;
+   SPINLOCK_T outPortDataLock;
+   SPINLOCK_T definitionDataLock;
+   SPINLOCK_T internalLock;
+   struct apx_fileManager_tag *fileManager;
+   struct apx_file_tag *outPortDataFile;
+   struct apx_file_tag *inPortDataFile;
+   struct apx_nodeInfo_tag *nodeInfo;
+#endif
+} apx_nodeData_t;
+
+
+//////////////////////////////////////////////////////////////////////////////
+// GLOBAL VARIABLES
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+// GLOBAL FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
+void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *definitionBuf, uint32_t definitionDataLen,  uint8_t *inPortDataBuf, uint8_t *inPortDirtyFlags, uint32_t inPortDataLen, uint8_t *outPortDataBuf, uint8_t *outPortDirtyFlags, uint32_t outPortDataLen);
+void apx_nodeData_destroy(apx_nodeData_t *self);
+apx_nodeData_t *apx_nodeData_newRemote(const char *name, bool isWeakRef);
+void apx_nodeData_delete(apx_nodeData_t *self);
+void apx_nodeData_vdelete(void *arg);
+
+void apx_nodeData_setHandlerTable(apx_nodeData_t *self, apx_nodeDataHandlerTable_t *handlerTable);
+int8_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+int8_t apx_nodeData_readOutPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+int8_t apx_nodeData_readInPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+void apx_nodeData_enableDataWriteMode(apx_nodeData_t *self);
+void apx_nodeData_disableDataWriteMode(apx_nodeData_t *self);
+bool apx_nodeData_getDataWriteMode(apx_nodeData_t *self);
+void apx_nodeData_lockOutPortData(apx_nodeData_t *self);
+void apx_nodeData_unlockOutPortData(apx_nodeData_t *self);
+void apx_nodeData_lockInPortData(apx_nodeData_t *self);
+void apx_nodeData_unlockInPortData(apx_nodeData_t *self);
+void apx_nodeData_outPortDataWriteCmd(apx_nodeData_t *self, apx_dataWriteCmd_t *cmd);
+int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+int8_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+int8_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len);
+#ifndef APX_POLLED_DATA_MODE
+void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_tag *fileManager);
+void apx_nodeData_setInPortDataFile(apx_nodeData_t *self, struct apx_file_tag *file);
+void apx_nodeData_setOutPortDataFile(apx_nodeData_t *self, struct apx_file_tag *file);
+void apx_nodeData_setNodeInfo(apx_nodeData_t *self, struct apx_nodeInfo_tag *nodeInfo);
+#endif
+#endif //APX_NODE_DATA_H
