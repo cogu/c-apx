@@ -1,7 +1,7 @@
 APX for C
 =========
 
-This is the C implementation of `APX <http://apx.readthedocs.io/en/latest/`_.
+This is the C implementation of `APX <http://apx.readthedocs.io/en/latest/>`_.
 
 Current implementation status
 -----------------------------
