@@ -1,0 +1,6 @@
+[submodule "adt"]
+	path = adt
+	url = https://github.com/cogu/adt
+[submodule "msocket"]
+	path = msocket
+	url = https://github.com/cogu/msocket
