@@ -48,7 +48,7 @@ Dependencies
 ------------
 
 All dependencies needed to build APX for C are available in this git repository and its submodules. 
-It is known to work for both Windows and Linux (it's all in a single code base).
+It is known to work for both Windows and Linux (it's all a single code base).
 
 * For Linux: Build with gcc, both makefile(s) and eclipse projects are available in this git repository.
 * For Windows: Build for cygwin using gcc or build for Windows using Visual Studio (2010 and 2015 has been verified to work so far).
