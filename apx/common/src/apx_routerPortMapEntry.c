@@ -1,13 +1,3 @@
-/*******************************************************************************
-* COPYRIGHT (c) Volvo Corporation 2016
-*
-* The copyright of the computer program(s) herein is the property of Volvo
-* Corporation, Sweden. The programs may be used and copied only with the
-* written permission from Volvo Corporation, or in accordance with the terms
-* and conditions stipulated in the agreement contract under which the
-* program(s) have been supplied.
-*
-******************************************************************************/
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
