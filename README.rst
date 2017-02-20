@@ -75,4 +75,4 @@ APX-ES (APX for embedded systems)
 
 A version of APX where all use of dynamic memory and underlying OS calls has been removed is currently being worked on.
 The intent with this version is to enable APX clients to run on embedded devices such as IoT devices or automotive ECUs.
-More information about this version will be provided once implementation finishes.
+More information about this version will be provided once implementation progresses.
