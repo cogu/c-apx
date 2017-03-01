@@ -797,7 +797,7 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
          assert(address >= self->curFileStartAddress);
          if (address+dataLen > self->curFileEndAddress)
          {
-            fprintf(stderr,"[APX_FILE_MANAGER(%s)] write outside file bounds attempted at address %0x08X\n",apx_fileManager_modeString(self),address);
+            fprintf(stderr,"[APX_FILE_MANAGER(%s)] write outside file bounds attempted at address 0x%08X\n",apx_fileManager_modeString(self),address);
          }
          else
          {

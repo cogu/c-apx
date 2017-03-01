@@ -374,13 +374,13 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
          apx_nodeManager_removeNodeInfo(self, nodeInfo);
          apx_nodeInfo_delete(nodeInfo);
       }
-      end = adt_ary_length(&deletedNodeData);
+      
       {
          //remove any remaining nodeInfos attached to this fileManager
          adt_list_elem_t *iter;
          adt_list_iter_init(&fileManager->remoteFileMap.fileList);
          do
-         {
+         {			
             iter = adt_list_iter_next(&fileManager->remoteFileMap.fileList);
             if (iter != 0)
             {
@@ -388,6 +388,7 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
                if ( (file != 0) && (file->nodeData != 0))
                {
                   bool found=false;
+				      end = adt_ary_length(&deletedNodeData);
                   for (i=0; i<end; i++)
                   {
                      //prevent deleting nodeData twice
@@ -408,6 +409,9 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
                         printf("[APX_NODE_MANAGER] deleting nodeData for %s\n",file->nodeData->name);
                         apx_nodeManager_removeRemoteNodeData(self, file->nodeData);
                         apx_nodeData_delete(file->nodeData);
+						      adt_ary_push(&deletedNodeData, file->nodeData);						
+//                        apx_nodeManager_removeNodeInfo(self, nodeInfo);
+//                        apx_nodeInfo_delete(nodeInfo);
                      }
                      MUTEX_UNLOCK(self->lock);
                   }
@@ -456,11 +460,13 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
 
             nodeData = apx_nodeManager_getNodeData(self, apxNode->name);
             assert(nodeData != 0);
+            apx_nodeData_setFileManager(nodeData,fileManager);
             apx_nodeData_setNodeInfo(nodeData, nodeInfo);
             nodeInfo->isWeakRef_node = false; //nodeInfo is now the owner of the node pointer (will trigger deletion when apx_nodeInfo_delete is called)
             adt_hash_set(&self->nodeInfoMap, apxNode->name, 0, nodeInfo);
             inPortDataLen = apx_nodeInfo_getInPortDataLen(nodeInfo);
             outPortDataLen = apx_nodeInfo_getOutPortDataLen(nodeInfo);
+            
             //if node has output data, search a file called "<node_name>.out"
             if (outPortDataLen > 0)
             {
@@ -489,7 +495,8 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                         nodeData->outPortDirtyFlags = (uint8_t*) malloc(outPortDataLen);
                         assert(nodeData->outPortDirtyFlags);
                         nodeData->outPortDataLen = outPortDataLen;
-                        printf("sending request to open %s\n", fileName);apx_nodeData_setNodeInfo(nodeData, nodeInfo);
+                        printf("sending request to open %s\n", fileName);
+                        apx_nodeData_setNodeInfo(nodeData, nodeInfo);
                         apx_fileManager_sendFileOpen(fileManager, outDataFile->fileInfo.address);
                      }
                   }
