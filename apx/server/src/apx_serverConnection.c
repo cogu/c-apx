@@ -195,7 +195,7 @@ int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uin
          //check parse result
          if (result == 0)
          {
-            printf("\tinternalParseLen(%s): %d\n",parseFunc, internalParseLen);
+            //printf("\tinternalParseLen(%s): %d\n",parseFunc, internalParseLen);
             assert(internalParseLen<=dataLen);
             pNext+=internalParseLen;
             totalParseLen+=internalParseLen;
@@ -211,7 +211,7 @@ int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uin
          }
       }
       //no more complete messages can be parsed. There may be a partial message left in buffer, but we ignore it until more data has been recevied.
-      printf("\ttotalParseLen=%d\n", totalParseLen);
+      //printf("\ttotalParseLen=%d\n", totalParseLen);
       *parseLen = totalParseLen;
       return 0;
    }
@@ -290,7 +290,7 @@ static uint8_t apx_serverConnection_parseMessage(apx_serverConnection_t *self, c
       if (pNext+msgLen<=pEnd)
       {
          totalParsed+=headerLen+msgLen;
-         printf("\tmessage %d+%d bytes\n",headerLen,msgLen);
+         //printf("\tmessage %d+%d bytes\n",headerLen,msgLen);
          apx_fileManager_parseMessage(&self->fileManager, pNext, msgLen);
          pNext+=msgLen;
       }
@@ -376,7 +376,7 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
          clock_gettime(CLOCK_MONOTONIC, &timestamp);
          printf("%0.6f: ", ((double)timestamp.tv_sec)+((double)timestamp.tv_nsec+500000000)/1000000000.0);
 #endif
-         printf("sending %d bytes\n",msgLen+headerLen);
+         //printf("sending %d bytes\n",msgLen+headerLen);
          msocket_send(self->msocket, pBegin, msgLen+headerLen);
          return 0;
       }

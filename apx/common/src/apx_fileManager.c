@@ -640,7 +640,7 @@ static void apx_fileManager_fileWriteCmdHandler(apx_fileManager_t *self, apx_fil
          else
          {
             int8_t result;
-            printf("[APX_FILE_MANAGER(%s)] updating %s[%d], len=%d\n",apx_fileManager_modeString(self),file->fileInfo.name, offset, len);
+            //printf("[APX_FILE_MANAGER(%s)] updating %s[%d], len=%d\n",apx_fileManager_modeString(self),file->fileInfo.name, offset, len);
             result = apx_nodeData_writeInPortData(file->nodeData, data, offset, len);
             if (result != 0)
             {

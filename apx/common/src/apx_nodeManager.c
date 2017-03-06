@@ -215,26 +215,32 @@ void apx_nodeManager_remoteFileWritten(apx_nodeManager_t *self, struct apx_fileM
       }
       else
       {
+         uint32_t endOffset = offset + length;
          if ( (offset == 0) && (length == remoteFile->fileInfo.length) )
          {
-            printf("[APX_NODE_MANAGER(%s)] file received name=%s, len=%u\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, length);
+            //printf("[APX_NODE_MANAGER(%s)] file received name=%s, len=%u\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, length);
          }
          else
          {
-            printf("[APX_NODE_MANAGER(%s)] file updated name=%s, offset=%d, len=%u\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, offset, length);
-            if (remoteFile->fileType == APX_OUTDATA_FILE)
+            //printf("[APX_NODE_MANAGER(%s)] file updated name=%s, offset=%d, len=%u\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, offset, length);
+         }
+         if (remoteFile->fileType == APX_OUTDATA_FILE)
+         {
+            apx_nodeInfo_t *nodeInfo = remoteFile->nodeData->nodeInfo;
+            assert(nodeInfo != 0);
+            while (offset < endOffset)
             {
                apx_dataTriggerFunction_t *triggerFunction;
-               apx_nodeInfo_t *nodeInfo = remoteFile->nodeData->nodeInfo;
-               assert(nodeInfo != 0);
                triggerFunction = apx_nodeInfo_getTriggerFunction(nodeInfo, offset);
-               if (triggerFunction == 0)
+               if (triggerFunction != 0)
                {
-                  fprintf(stderr, "APX_NODE_MANAGER(%s)] no trigger function found for file %s at offset %d\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, offset);
+                  apx_nodeManager_executePortTriggerFunction(self, triggerFunction, nodeInfo, remoteFile);
+                  offset = triggerFunction->srcOffset + triggerFunction->dataLength;
                }
                else
                {
-                  apx_nodeManager_executePortTriggerFunction(self, triggerFunction, nodeInfo, remoteFile);
+                  //fprintf(stderr, "APX_NODE_MANAGER(%s)] no trigger function found for file %s at offset %d\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, offset);               
+                  offset++;
                }
             }
          }
