@@ -149,13 +149,13 @@ void apx_serverConnection_start(apx_serverConnection_t *self)
          char headers[MAX_HEADER_LEN]; //just enough to store a couple of characters
          char greeting[RMF_GREETING_MAX_LEN];
          strcpy(greeting, RMF_GREETING_START);
-         sprintf(headers, "Data-Size:%d\n", (int) sizeof(uint32_t)); //uses 32-bits for large format
+         sprintf(headers, "%s32\n", RMF_NUMHEADER_FORMAT); //use 32-bits for large format
          strcat(greeting, headers);
          //headers end with an additional newline
          strcat(greeting, "\n");
          msocket_send(self->msocket, (void*) greeting, (uint32_t) strlen(greeting));
       }
-      apx_fileManager_triggerConnectEvent(&self->fileManager);
+      apx_es_fileManager_onConnected(&self->fileManager);
    }
 }
 
