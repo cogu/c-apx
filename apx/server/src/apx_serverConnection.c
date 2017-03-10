@@ -1,12 +1,14 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#ifndef APX_DEBUG_ENABLE
+#define APX_DEBUG_ENABLE 0
+#endif
 #include <errno.h>
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-//#include <time.h> //DEBUG
 #include "apx_serverConnection.h"
 #include "apx_server.h"
 #include "headerutil.h"
@@ -371,12 +373,18 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
          //place header just before user data begin
          pBegin = sendBuffer+(self->maxMsgHeaderSize+offset-headerLen); //the part in the parenthesis is where the user data begins
          memcpy(pBegin, header, headerLen);
-#ifndef _MSC_VER
-         struct timespec timestamp;
-         clock_gettime(CLOCK_MONOTONIC, &timestamp);
-         printf("%0.6f: ", ((double)timestamp.tv_sec)+((double)timestamp.tv_nsec+500000000)/1000000000.0);
+#if APX_DEBUG_ENABLE		 
+		 printf("sending %d+%d to %p:", headerLen, msgLen, self->msocket);
+		 for (int i = 0; i < 10; i++)
+		 {
+			 if (i >= msgLen + headerLen)
+			 {
+				 break;
+			 }
+			 printf(" %02X", (int)pBegin[i]);
+		 }
+		 printf("\n");
 #endif
-         //printf("sending %d bytes\n",msgLen+headerLen);
          msocket_send(self->msocket, pBegin, msgLen+headerLen);
          return 0;
       }
