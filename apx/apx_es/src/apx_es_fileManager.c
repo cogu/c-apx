@@ -28,6 +28,7 @@ static void apx_es_fileManager_parseDataMsg(apx_es_fileManager_t *self, uint32_t
 static void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *self, const rmf_fileInfo_t *fileInfo);
 static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const rmf_cmdOpenFile_t *cmdOpenFile);
 static int32_t apx_es_processPendingWrite(apx_es_fileManager_t *self);
+static int32_t apx_es_processPendingCmd(apx_es_fileManager_t *self);
 #ifndef UNIT_TEST
 DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *self, int32_t removeIndex);
 #endif
@@ -40,17 +41,25 @@ DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *sel
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueLen, uint8_t *messageDataBuf, uint16_t messageDataLen)
+int8_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueLen, uint8_t *receiveBuf, uint16_t receiveBufLen)
 {
-   if ( (self != 0) && (messageQueueBuf != 0) && (messageDataBuf != 0))
+   if ( (self != 0) && (messageQueueBuf != 0) && (receiveBuf != 0))
    {
       rbfs_create(&self->messageQueue, messageQueueBuf, messageQueueLen, (uint8_t) sizeof(apx_msg_t));
-      rbfd_create(&self->messageData, messageDataBuf, messageDataLen);
+//      rbfd_create(&self->messageData, messageDataBuf, messageDataLen);
+      self->receiveBuf=receiveBuf;
+      self->receiveBufLen=(uint32_t) receiveBufLen;
+      self->receiveBufOffset=0;
+      self->receiveStartAddress = RMF_INVALID_ADDRESS;
       apx_es_fileMap_create(&self->localFileMap);
       apx_es_fileMap_create(&self->remoteFileMap);
       apx_es_fileManager_setTransmitHandler(self, 0);
       self->pendingWrite = false;
+      self->pendingCmd = false;
+      self->dropMessage = false;
+      self->curFile=0;
       memset(&self->fileWriteInfo, 0, sizeof(apx_es_file_write_t));
+      memset(&self->cmdInfo, 0, sizeof(apx_es_command_t));
       self->numRequestedFiles = 0;
       return 0;
    }
@@ -179,7 +188,15 @@ void apx_es_fileManager_run(apx_es_fileManager_t *self)
          fprintf(stderr, "apx_es_processPendingWrite returned %d",result);
       }
    }
-   if (self->pendingWrite == false)
+   if (self->pendingCmd == true)
+   {
+      result = apx_es_processPendingCmd(self);
+      if (result < 0)
+      {
+         fprintf(stderr, "apx_es_processPendingCmd returned %d",result);
+      }
+   }
+   if ( (self->pendingWrite == false) && (self->pendingCmd == false) )
    {
       while(true)
       {
@@ -258,12 +275,63 @@ static int32_t apx_es_fileManager_onInternalMessage(apx_es_fileManager_t *self, 
                   retval = -1;
                }
             }
+            else if (msgLen <= RMF_MAX_CMD_BUF_SIZE)
+            {
+               self->pendingCmd = true;
+               self->cmdInfo.length = msgLen;
+               (void) rmf_serialize_cmdFileInfo(&self->cmdInfo.buf[headerLen],dataLen,&file->fileInfo);
+               (void) rmf_packHeaderBeforeData(&self->cmdInfo.buf[headerLen],headerLen,RMF_CMD_START_ADDR,false);
+            }
+            else
+            {
+               //MISRA
+            }
          }
          break;
-      case RMF_MSG_FILEOPEN:
+      case RMF_MSG_FILE_OPEN: //sends file open command
+      {
+         uint32_t headerLen = RMF_HIGH_ADDRESS_SIZE;
+         uint32_t dataLen;
+         uint32_t msgLen;
+         rmf_cmdOpenFile_t cmdOpenFile;
+         cmdOpenFile.address = msg->msgData1;
+         dataLen=(uint32_t) RMF_FILE_OPEN_CMD_LEN;
+         msgLen=headerLen+dataLen;
+         if (msgLen<=sendAvail)
+         {
+            uint8_t* msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgLen);
+            if (msgBuf != 0)
+            {
+               int32_t result;
+               result=rmf_serialize_cmdOpenFile(&msgBuf[headerLen], dataLen, &cmdOpenFile);
+               assert(result == (int32_t) dataLen);
+               result=rmf_packHeaderBeforeData(&msgBuf[headerLen],headerLen,RMF_CMD_START_ADDR,false);
+               assert(result == (int32_t) headerLen);
+               self->transmitHandler.send(self->transmitHandler.arg,0,msgLen);
+               retval = msgLen;
+            }
+            else
+            {
+               retval = -1;
+            }
+         }
+         else if (msgLen <= RMF_MAX_CMD_BUF_SIZE)
+         {
+            self->pendingCmd = true;
+            self->cmdInfo.length = msgLen;
+            (void) rmf_serialize_cmdOpenFile(&self->cmdInfo.buf[headerLen], dataLen, &cmdOpenFile);
+            (void) rmf_packHeaderBeforeData(&self->cmdInfo.buf[headerLen],headerLen,RMF_CMD_START_ADDR,false);
+         }
+         else
+         {
+            //MISRA
+         }
+      }
+      break;
+      case RMF_MSG_FILE_SEND: //sends file to remote side
          {
             apx_file_t *file = (apx_file_t*) msg->msgData3;
-            apx_file_open(file);
+
             if (sendAvail >= (int32_t) RMF_MIN_MSG_LEN)
             {
                uint32_t dataLen;
@@ -312,7 +380,7 @@ static int32_t apx_es_fileManager_onInternalMessage(apx_es_fileManager_t *self, 
             }
             else
             {
-               //send entire file later
+               //send file later
                self->pendingWrite = true;
                self->fileWriteInfo.localFile=file;
                self->fileWriteInfo.readOffset=0;
@@ -393,89 +461,80 @@ static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uin
  */
 static void apx_es_fileManager_parseDataMsg(apx_es_fileManager_t *self, uint32_t address, const uint8_t *dataBuf, int32_t dataLen, bool more_bit)
 {
-   if (self != 0)
+   if ( (self != 0) && (dataBuf != 0) && (dataLen>=0) )
    {
-/*      if ( (self->curFile != 0) && ((address < self->curFileStartAddress) || (address >= self->curFileEndAddress)) )
+      uint32_t offset;
+      if ( (self->receiveStartAddress == RMF_INVALID_ADDRESS) )
       {
-         //invalidate cached file if address is outside range
-         self->curFile = 0;
-      }
-
-      if ( self->curFile == 0)
-      {
-         self->curFile = apx_fileMap_findByAddress(&self->remoteFileMap,address);
-         if (self->curFile == 0)
+         //new reception
+         apx_file_t *remoteFile = apx_es_fileMap_findByAddress(&self->remoteFileMap, address);
+         if ( (remoteFile != 0) && (remoteFile->isOpen == true) )
          {
-            fprintf(stderr, "[APX_FILE_MANAGER(%s)] invalid write attempted at address %08X, len=%d\n",apx_fileManager_modeString(self),address,dataLen);
-         }
-         else
-         {
-            self->curFileStartAddress = self->curFile->fileInfo.address;
-            self->curFileEndAddress = self->curFileStartAddress+self->curFile->fileInfo.length;
-         }
-      }
-
-      //this section is valid for both cases where the file was cached and where it was non-cached
-      if (self->curFile != 0)
-      {
-         apx_file_t *remoteFile = self->curFile;
-         assert(address >= self->curFileStartAddress);
-         if (address+dataLen > self->curFileEndAddress)
-         {
-            fprintf(stderr,"[APX_FILE_MANAGER(%s)] write outside file bounds attempted at address 0x%08X\n",apx_fileManager_modeString(self),address);
-         }
-         else
-         {
-            //All checks out OK, continue with data copy
-            int8_t result;
-            uint32_t offset = address - remoteFile->fileInfo.address;
-            if (remoteFile->nodeData != 0)
+            offset=address-remoteFile->fileInfo.address;
+            if (more_bit == false)
             {
-               switch(remoteFile->fileType)
-               {
-                  case APX_DEFINITION_FILE:
-                     result = apx_nodeData_writeDefinitionData(remoteFile->nodeData, dataBuf, offset, dataLen);
-                     if (result != 0)
-                     {
-                        fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeDefinitionData failed with %d\n", result);
-                     }
-                     break;
-                  case APX_INDATA_FILE:
-                     result = apx_nodeData_writeInPortData(remoteFile->nodeData, dataBuf, offset, dataLen);
-                     if (result != 0)
-                     {
-                        fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeInPortData failed with %d\n", result);
-                     }
-                     else
-                     {
-                        apx_nodeData_triggerInPortDataWritten(remoteFile->nodeData, offset, dataLen);
-                     }
-                     break;
-                  case APX_OUTDATA_FILE:
-                     result = apx_nodeData_writeOutPortData(remoteFile->nodeData, dataBuf, offset, dataLen);
-                     if (result != 0)
-                     {
-                        fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeOutPortData failed with %d\n", result);
-                     }
-                     break;
-                  default:
-                     result=-1;
-                     break;
-               }
-               if (result == 0)
-               {
-                  if ((more_bit == false) && (self->nodeManager != 0) )
-                  {
-                     apx_nodeManager_remoteFileWritten(self->nodeManager, self, remoteFile, offset, dataLen);
-                  }
-               }
+               apx_file_write(remoteFile, dataBuf, offset, dataLen);
+            }
+            else if(((uint32_t)dataLen) <= self->receiveBufLen)
+            {
+               //start multi-message recepetion
+               self->curFile = remoteFile;
+               self->receiveStartAddress = address;
+               self->receiveBufOffset=0;
+               memcpy(&self->receiveBuf[self->receiveBufOffset], dataBuf, dataLen);
+               self->receiveBufOffset+=dataLen;
             }
             else
             {
-               fprintf(stderr, "[APX_FILE_MANAGER] write to file %s detected but no nodeData has been assigned to it\n",self->curFile->fileInfo.name);
+               //drop message
+#if APX_DEBUG_ENABLE
+               fprintf(stderr, "[APX_ES_FILEMANAGER] message too long (%d bytes), message dropped\n",dataLen);
+#endif
             }
          }
-      }*/
+      }
+      else
+      {
+         //continuation reception
+         offset = address-self->curFile->fileInfo.address;
+         if (offset != self->receiveBufOffset)
+         {
+            self->dropMessage = true; //drop message since offsets don't match
+#if APX_DEBUG_ENABLE
+            fprintf(stderr, "[APX_ES_FILEMANAGER] invalid offset (%d), message dropped\n",offset);
+#endif
+         }
+         else if(self->receiveBufOffset+dataLen<=self->receiveBufLen)
+         {
+            //copy data
+            memcpy(&self->receiveBuf[self->receiveBufOffset], dataBuf, dataLen);
+            self->receiveBufOffset+=dataLen;
+         }
+         else
+         {
+            self->dropMessage = true; //message too long
+#if APX_DEBUG_ENABLE
+            fprintf(stderr, "[APX_ES_FILEMANAGER] message too long (%d bytes), message dropped\n",dataLen);
+#endif
+         }
+
+         if (more_bit==false)
+         {
+            if (self->dropMessage == false)
+            {
+               //send message to upper layer
+               uint32_t startOffset=self->receiveStartAddress-self->curFile->fileInfo.address;
+               apx_file_write(self->curFile, &self->receiveBuf[0], startOffset, self->receiveBufOffset);
+            }
+            //reset variables for next reception
+            self->dropMessage=false;
+            self->curFile=0;
+            self->receiveStartAddress=RMF_INVALID_ADDRESS;
+            self->receiveBufOffset=0;
+         }
+
+      }
+      //printf("apx_es_fileManager_parseDataMsg %08X, %d, %d\n",address, (int) dataLen, (int) more_bit);
    }
 }
 
@@ -496,32 +555,40 @@ static void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *self,
          {
             if (strcmp(file->fileInfo.name, fileInfo->name)==0)
             {
-               printf("Opening requested file: %s\n", fileInfo->name);
-               removeIndex=i;
-               break;
+               if (file->fileInfo.length == fileInfo->length)
+               {
+                  removeIndex=i;
+                  break;
+               }
+               else
+               {
+#if APX_DEBUG_ENABLE
+                  fprintf(stderr, "[APX_ES_FILEMANAGER] unexpected file size off file %s. Expected %d, got %d\n",file->fileInfo.name,
+                        file->fileInfo.length, fileInfo->length);
+#endif
+               }
             }
          }
       }
       if (removeIndex>=0)
       {
+         apx_msg_t msg = {RMF_MSG_FILE_OPEN, 0, 0, 0};
+         printf("Opening requested file: %s\n", fileInfo->name);
          //remove file from requestedFileList
-         apx_es_fileManager_removeRequestedAt(self, removeIndex);
+         int8_t rc = apx_es_fileManager_removeRequestedAt(self, removeIndex);
+         assert(rc == 0);
+         assert(file != 0);
+         //copy fileInfo data into and file->fileInfo
+         file->fileInfo.address = fileInfo->address;
+         file->fileInfo.fileType = fileInfo->fileType;
+         file->fileInfo.digestType = fileInfo->digestType;
+         memcpy(&file->fileInfo.digestData, fileInfo->digestData, RMF_DIGEST_SIZE);
+         //add file to remoteFileMap
+         apx_es_fileMap_insert(&self->remoteFileMap, file);
+         apx_file_open(file);
+         msg.msgData1 = file->fileInfo.address;
+         rbfs_insert(&self->messageQueue, (const uint8_t*) &msg);
       }
-/*      apx_file_t *remoteFile = apx_file_newRemoteFile(cmdFileInfo);
-      if (remoteFile != 0)
-      {
-         SPINLOCK_ENTER(self->lock);
-         apx_fileMap_insertFile(&self->remoteFileMap, remoteFile);
-         SPINLOCK_LEAVE(self->lock);
-         if (self->nodeManager != 0)
-         {
-            apx_nodeManager_remoteFileAdded(self->nodeManager, self, remoteFile);
-         }
-      }
-      else
-      {
-         fprintf(stderr, "[APX_FILE_MANAGER] apx_file_newRemoteFile returned NULL\n");
-      }*/
    }
 }
 
@@ -534,7 +601,8 @@ static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const
       {
          int32_t bytesToSend = localFile->fileInfo.length;
          printf("Opened %s, bytes to send: %d\n", localFile->fileInfo.name, bytesToSend);
-         apx_msg_t msg = {RMF_MSG_FILEOPEN,0,0,0};
+         apx_file_open(localFile);
+         apx_msg_t msg = {RMF_MSG_FILE_SEND,0,0,0};
          msg.msgData3 = localFile;
          rbfs_insert(&self->messageQueue,(uint8_t*) &msg);
       }
@@ -628,4 +696,11 @@ DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *sel
       return 0;
    }
    return -1;
+}
+
+static int32_t apx_es_processPendingCmd(apx_es_fileManager_t *self)
+{
+   (void) self;
+   printf("apx_es_processPendingCmd\n");
+   return -1; //not implemented
 }

@@ -36,16 +36,22 @@ typedef struct apx_es_file_write_tag
    uint32_t remain;
 } apx_es_file_write_t;
 
+typedef struct apx_es_command_tag
+{
+   uint8_t buf[RMF_MAX_CMD_BUF_SIZE];
+   uint32_t length;
+}apx_es_command_t;
+
 typedef struct apx_es_fileManager_tag
 {
     //data object, all read/write accesses to these must be protected by the lock variable above
    rbfs_t messageQueue; //internal message queue (contains apx_msg_t object)
    uint8_t *messageQueueBuf; //strong reference to byte buffer
    uint16_t messageQueueLen; //number of items in messageQueue (length of each message is sizeof(apx_msg_t))
-   rbfd_t messageData; //message data ring buffer. This is used as internal memory allocator in APX_EMBEDDED instead of using the heap.
-   uint8_t *messageDataBuf; //strong reference to byte buffer
-   uint16_t messageDataLen; //number of bytes in messageData
-
+   uint8_t *receiveBuf; //receive buffer for large writes
+   uint32_t receiveBufLen; //length of receive buffer
+   uint32_t receiveBufOffset; //current write position (and length) of receive buffer
+   uint32_t receiveStartAddress;
 
    apx_es_fileMap_t localFileMap;
    apx_es_fileMap_t remoteFileMap;
@@ -54,11 +60,13 @@ typedef struct apx_es_fileManager_tag
 
    apx_transmitHandler_t transmitHandler;
 
-   uint32_t curFileStartAddress; //cached start address of last accessed file
-   uint32_t curFileEndAddress; //cached end address of of last accessed file
    apx_file_t *curFile; //weak pointer to last accessed file
 
    bool pendingWrite;
+   bool pendingCmd;
+   bool dropMessage;
+
+   apx_es_command_t cmdInfo;
    apx_es_file_write_t fileWriteInfo;
 
    struct apx_es_nodeManager_tag *nodeManager; //weak pointer to attached nodeManager
@@ -73,7 +81,8 @@ typedef struct apx_es_fileManager_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueLen, uint8_t *messageDataBuf, uint16_t messageDataLen);
+//int8_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueLen, uint8_t *messageDataBuf, uint16_t messageDataLen);
+int8_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueLen, uint8_t *receiveBuf, uint16_t receiveBufLen);
 
 void apx_es_fileManager_attachLocalFile(apx_es_fileManager_t *self, apx_file_t *localFile);
 void apx_es_fileManager_requestRemoteFile(apx_es_fileManager_t *self, apx_file_t *requestedFile);
