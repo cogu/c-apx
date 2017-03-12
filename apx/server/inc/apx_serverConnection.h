@@ -31,7 +31,7 @@ typedef struct apx_serverConnection_tag
    struct apx_server_tag *server;
    bool isGreetingParsed;
    adt_bytearray_t sendBuffer;
-   uint8_t maxMsgHeaderSize;
+   uint8_t numHeaderMaxLen;
 }apx_serverConnection_t;
 
 //////////////////////////////////////////////////////////////////////////////

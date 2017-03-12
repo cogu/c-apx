@@ -58,8 +58,8 @@ static void test_rmf_cmdFileInfo_serialize(CuTest* tc)
    uint8_t buf[RMF_MAX_CMD_BUF_SIZE];
    uint8_t *p;
    int32_t bufLen = (int32_t) sizeof(buf);
-   rmf_cmdFileInfo_t cmdFileInfo;
-   rmf_cmdFileInfo_t cmdFileInfo2;
+   rmf_fileInfo_t cmdFileInfo;
+   rmf_fileInfo_t cmdFileInfo2;
    int32_t result;
    cmdFileInfo.address = 50;
    cmdFileInfo.length = 10;

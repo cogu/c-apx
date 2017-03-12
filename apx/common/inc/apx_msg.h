@@ -12,20 +12,29 @@
 typedef struct apx_msg_tag
 {
    uint32_t msgType;
-   void *sender;
-   uint32_t msgData1;
-   uint32_t msgData2; //two generic uint32_t values can be sent in one message
-   void *msgData3; //a void* pointer can also be sent in a message
+   uint32_t msgData1; //generic uint32 value
+   uint32_t msgData2; //generic uint32 value
+   void *msgData3;    //generic void* pointer value
+#ifndef APX_EMBEDDED
+   void *msgData4;    //generic void* pointer value
+#endif
 } apx_msg_t;
 
 
-#define APX_MSG_SIZE ((uint32_t) sizeof(apx_msg_t))
+#define RMF_MSG_SIZE ((uint32_t) sizeof(apx_msg_t))
                                         //data used in apx_msg_t
-#define APX_MSG_EXIT                  0
-#define APX_MSG_CONNECT               1
-#define APX_MSG_DISCONNECT            2
-#define APX_MSG_FILE_WRITE_NOTIFY     3 //sender=apx_file_t*, msgData1=offset, msgData2=length
-#define APX_MSG_FILE_WRITE_CMD        4 //sender=apx_file_t*, msgData1=offset, msgData2=length, msgData3=data:uint8*
+#define RMF_MSG_EXIT                  0
+#define RMF_MSG_CONNECT               1
+#define RMF_MSG_DISCONNECT            2
+#define RMF_MSG_FILEINFO              3 //msgData1=size, msgData3=apx_file_t *file
+#define RMF_MSG_FILEOPEN              4 //msgData3=apx_file_t *file
+#define RMF_MSG_FILECLOSE             5 //msgData1=apx_file_t *file
+#define RMF_MSG_WRITE_NOTIFY          6 //msgData1=offset, msgData2=length, msgData3=apx_file_t *file
+#define RMF_MSG_FILE_WRITE            7 //msgData1=writeAddress, msgData2=length, msgData3=apx_file_t *file, msgData4=data
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES

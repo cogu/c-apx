@@ -41,6 +41,7 @@
  * returns number of bytes encoded in buf
  * on error it returns 0 when bufLen is too small or -1 if one or more arguments are invalid
  */
+#if 0 //DEPCRECATED
 int32_t rmf_packMsg(uint8_t *buf, int32_t bufLen, uint32_t address, uint8_t *data, int32_t dataLen, int32_t *consumed)
 {
    if ( (buf != 0) && (bufLen > 0) &&  (data != 0) && (dataLen > 0) && (consumed != 0) )
@@ -51,12 +52,12 @@ int32_t rmf_packMsg(uint8_t *buf, int32_t bufLen, uint32_t address, uint8_t *dat
       if (address <= RMF_DATA_LOW_MAX_ADDR)
       {
          high_bit = false;
-         addressLen=RMF_SHORT_ADDRESS_SIZE;
+         addressLen=RMF_LOW_ADDRESS_SIZE;
       }
       else
       {
          high_bit = true;
-         addressLen=RMF_LONG_ADDRESS_SIZE;
+         addressLen=RMF_HIGH_ADDRESS_SIZE;
       }
       if (addressLen+1 > bufLen)
       {
@@ -86,7 +87,7 @@ int32_t rmf_packMsg(uint8_t *buf, int32_t bufLen, uint32_t address, uint8_t *dat
    }
    return -1;
 }
-
+#endif
 /**
  * encodes the address header into the bytes just before dataBuf.
  * It's imperative that the user have allocated at least 4 bytes of free memory _before_ the dataBuf pointer.
@@ -128,6 +129,7 @@ int32_t rmf_packHeaderBeforeData(uint8_t *dataBuf, int32_t bufLen, uint32_t addr
  * returns number of bytes read from buf
  * on error it returns 0 when data was parsed or -1 if one or more arguments are invalid
  */
+
 int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg)
 {
    if ( (buf != 0) && (bufLen>0) && (msg != 0) )
@@ -150,18 +152,19 @@ int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg)
    return -1;
 }
 
+
 /**
  * On failure: returns 0 if buffer is too small, -1 on any other error
  * On success: returns number of bytes written in buffer
  */
-int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_cmdFileInfo_t *cmdFileInfo)
+int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_fileInfo_t *fileInfo)
 {
-   if ( (buf != 0) && (cmdFileInfo !=0) && (bufLen>0) )
+   if ( (buf != 0) && (fileInfo !=0) && (bufLen>0) )
    {
       uint8_t *p;
       uint32_t totalLen;
       uint32_t baseSize = (uint32_t) CMD_FILE_INFO_BASE_SIZE;
-      uint32_t nameLen = (uint32_t) strlen(cmdFileInfo->name);
+      uint32_t nameLen = (uint32_t) strlen(fileInfo->name);
 
       totalLen = baseSize+nameLen+1; //add 1 for null terminator
       if ( (uint32_t) bufLen < totalLen )
@@ -170,12 +173,12 @@ int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_cmdFileInfo_
       }
       p=buf;
       packLE(p, RMF_CMD_FILE_INFO, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      packLE(p, cmdFileInfo->address, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      packLE(p, cmdFileInfo->length, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      packLE(p, cmdFileInfo->fileType, (uint8_t) sizeof(uint16_t)); p+=sizeof(uint16_t);
-      packLE(p, cmdFileInfo->digestType, (uint8_t) sizeof(uint16_t)); p+=sizeof(uint16_t);
-      memcpy(p, &cmdFileInfo->digestData[0],RMF_DIGEST_SIZE); p+=RMF_DIGEST_SIZE;
-      strcpy( (char*)p, cmdFileInfo->name);
+      packLE(p, fileInfo->address, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
+      packLE(p, fileInfo->length, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
+      packLE(p, fileInfo->fileType, (uint8_t) sizeof(uint16_t)); p+=sizeof(uint16_t);
+      packLE(p, fileInfo->digestType, (uint8_t) sizeof(uint16_t)); p+=sizeof(uint16_t);
+      memcpy(p, &fileInfo->digestData[0],RMF_DIGEST_SIZE); p+=RMF_DIGEST_SIZE;
+      strcpy( (char*)p, fileInfo->name);
       return totalLen; //add 1 for null terminator
    }
    return -1;
@@ -185,9 +188,9 @@ int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_cmdFileInfo_
  * On failure: returns 0 if buffer is too small, -1 on any other error
  * On success: returns number of bytes parsed from buffer
  */
-int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_cmdFileInfo_t *cmdFileInfo)
+int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_fileInfo_t *fileInfo)
 {
-   if ( (buf != 0) && (cmdFileInfo !=0) )
+   if ( (buf != 0) && (fileInfo !=0) )
    {
       const uint8_t *pNext;
       const uint8_t *pEnd;
@@ -198,7 +201,7 @@ int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_cmdF
       uint32_t baseSize = (uint32_t) CMD_FILE_INFO_BASE_SIZE;
       uint32_t cmdType;
       pEnd = buf+bufLen;
-      pStrNext = &cmdFileInfo->name[0];
+      pStrNext = &fileInfo->name[0];
       pStrEnd = pStrNext+RMF_MAX_FILE_NAME; //it is intentional that we do not include the null terminator in this length
 
       if ((uint32_t) bufLen < baseSize )
@@ -211,11 +214,11 @@ int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_cmdF
       {
          return -1; //invalid header start
       }
-      cmdFileInfo->address = unpackLE(pNext, (uint8_t) sizeof(uint32_t)); pNext+=sizeof(uint32_t);
-      cmdFileInfo->length = unpackLE(pNext,  (uint8_t) sizeof(uint32_t)); pNext+=sizeof(uint32_t);
-      cmdFileInfo->fileType = (uint16_t) unpackLE(pNext,  (uint8_t) sizeof(uint16_t)); pNext+=sizeof(uint16_t);
-      cmdFileInfo->digestType = unpackLE(pNext, (uint8_t) sizeof(uint16_t)); pNext+=sizeof(uint16_t);
-      memcpy(&cmdFileInfo->digestData[0], pNext ,RMF_DIGEST_SIZE); pNext+=RMF_DIGEST_SIZE;
+      fileInfo->address = unpackLE(pNext, (uint8_t) sizeof(uint32_t)); pNext+=sizeof(uint32_t);
+      fileInfo->length = unpackLE(pNext,  (uint8_t) sizeof(uint32_t)); pNext+=sizeof(uint32_t);
+      fileInfo->fileType = (uint16_t) unpackLE(pNext,  (uint8_t) sizeof(uint16_t)); pNext+=sizeof(uint16_t);
+      fileInfo->digestType = unpackLE(pNext, (uint8_t) sizeof(uint16_t)); pNext+=sizeof(uint16_t);
+      memcpy(&fileInfo->digestData[0], pNext ,RMF_DIGEST_SIZE); pNext+=RMF_DIGEST_SIZE;
 
       pMark = pNext; //save pointer to where the string started
       while( (pNext < pEnd) && (pStrNext < pStrEnd) )
@@ -228,7 +231,7 @@ int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_cmdF
          }
       }
       //since we did not include the length of the null terminator above when we calculated pStrEnd, pStrNext should still be within the bounds of cmdFileInfo->name array
-      assert( (pStrNext>=&cmdFileInfo->name[0]) && (pStrNext<=&cmdFileInfo->name[RMF_MAX_FILE_NAME+1]) );
+      assert( (pStrNext>=&fileInfo->name[0]) && (pStrNext<=&fileInfo->name[RMF_MAX_FILE_NAME+1]) );
       *pStrNext=0; //this should be a safe operation
       totalLen = baseSize+ ((uint32_t)(pNext-pMark)); //add 1 for null terminator
       return totalLen; //add 1 for null terminator
@@ -359,9 +362,9 @@ int32_t rmf_deserialize_cmdType(const uint8_t *buf, int32_t bufLen, uint32_t *cm
 }
 
 
-int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, void *userData, uint16_t fileType)
+int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType)
 {
-   if ( (self != 0) && (name != 0) && (startAddress < RMF_DATA_HIGH_MAX_ADDR) && (fileType < RMF_FILE_TYPE_STREAM) )
+   if ( (self != 0) && (name != 0) && ( (startAddress < RMF_DATA_HIGH_MAX_ADDR) || (startAddress == RMF_INVALID_ADDRESS) ) && (fileType < RMF_FILE_TYPE_STREAM) )
    {
       size_t len = strlen(name);
       if (len<=RMF_MAX_FILE_NAME)
@@ -372,7 +375,6 @@ int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t star
       self->address=startAddress;
       self->length=length;
       self->fileType = fileType;
-      self->userData = userData;
       return 0;
    }
    errno = EINVAL;
@@ -383,12 +385,12 @@ void rmf_fileInfo_destroy(rmf_fileInfo_t *self)
    //nothing to do
 }
 
-rmf_fileInfo_t *rmf_fileInfo_new(const char *name, uint32_t startAddress, uint32_t length, void *userData, uint16_t fileType)
+rmf_fileInfo_t *rmf_fileInfo_new(const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType)
 {
    rmf_fileInfo_t *self = (rmf_fileInfo_t*) malloc(sizeof(rmf_fileInfo_t));
    if(self != 0)
    {
-      int8_t result = rmf_fileInfo_create(self, name, startAddress, length, userData, fileType);
+      int8_t result = rmf_fileInfo_create(self, name, startAddress, length, fileType);
       if (result<0)
       {
          free(self);
@@ -430,6 +432,27 @@ int8_t rmf_fileInfo_setDigestData(rmf_fileInfo_t *info, uint16_t digestType, con
    return -1;
 }
 
+/**
+ * On failure: returns 0 if buffer is too small, -1 on any other error
+ * On success: returns number of bytes written to buffer
+ */
+int32_t rmf_serialize_acknowledge(uint8_t *buf, int32_t bufLen)
+{
+   if ( buf != 0 )
+     {
+        uint8_t *p;
+        uint32_t totalLen = sizeof(uint32_t);
+
+        if ((uint32_t) bufLen < totalLen )
+        {
+           return 0; //buffer too small
+        }
+        p=buf;
+        packLE(p, RMF_CMD_ACK, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
+        return totalLen; //add 1 for null terminator
+     }
+     return -1;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS

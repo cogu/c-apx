@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static uint8_t apx_serverConnection_parseGreeting(apx_serverConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
+static void apx_serverConnection_parseGreeting(apx_serverConnection_t *self, const uint8_t *msgBuf, int32_t msgLen);
 static uint8_t apx_serverConnection_parseMessage(apx_serverConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 static uint8_t *apx_serverConnection_getSendBuffer(void *arg, int32_t msgLen);
 static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgLen);
@@ -54,7 +54,7 @@ int8_t apx_serverConnection_create(apx_serverConnection_t *self, msocket_t *msoc
       self->msocket=msocket;
       self->server=server;
       self->isGreetingParsed = false;
-      self->maxMsgHeaderSize = (int8_t) sizeof(uint32_t); //currently only 4-byte header is supported. There might be a future version where we support both 16-bit and 32-bit message headers
+      self->numHeaderMaxLen = (int8_t) sizeof(uint32_t); //currently only 4-byte header is supported. There might be a future version where we support both 16-bit and 32-bit message headers
       adt_bytearray_create(&self->sendBuffer, SEND_BUFFER_GROW_SIZE);
       return apx_fileManager_create(&self->fileManager, APX_FILEMANAGER_SERVER_MODE);
    }
@@ -130,7 +130,7 @@ void apx_serverConnection_detachNodeManager(apx_serverConnection_t *self, apx_no
 }
 
 /**
- * activates the server connection and sends out the greeting
+ * activates a new server connection
  */
 void apx_serverConnection_start(apx_serverConnection_t *self)
 {
@@ -145,19 +145,7 @@ void apx_serverConnection_start(apx_serverConnection_t *self)
       apx_fileManager_setTransmitHandler(&self->fileManager, &serverTransmitHandler);
       //register connection with the server nodeManager
       apx_nodeManager_attachFileManager(&self->server->nodeManager, &self->fileManager);
-      apx_fileManager_start(&self->fileManager);
-      //send greeting
-      {
-         char headers[MAX_HEADER_LEN]; //just enough to store a couple of characters
-         char greeting[RMF_GREETING_MAX_LEN];
-         strcpy(greeting, RMF_GREETING_START);
-         sprintf(headers, "%s32\n", RMF_NUMHEADER_FORMAT); //use 32-bits for large format
-         strcat(greeting, headers);
-         //headers end with an additional newline
-         strcat(greeting, "\n");
-         msocket_send(self->msocket, (void*) greeting, (uint32_t) strlen(greeting));
-      }
-      apx_es_fileManager_onConnected(&self->fileManager);
+      apx_fileManager_start(&self->fileManager);      
    }
 }
 
@@ -171,29 +159,11 @@ int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uin
       uint32_t totalParseLen = 0;
       uint32_t remain = dataLen;
       const uint8_t *pNext = dataBuf;
-#ifndef _MSC_VER
-      struct timespec timestamp;
-      clock_gettime(CLOCK_MONOTONIC, &timestamp);
-      printf("%0.6f: ", ((double)timestamp.tv_sec)+((double)timestamp.tv_nsec+500000000)/1000000000.0);
-      printf("apx_serverConnection_dataReceived: %d\n",dataLen);
-#endif
       while(totalParseLen<dataLen)
       {
          uint32_t internalParseLen = 0;
-         uint8_t result;
-         const char *parseFunc;
-
-         //parse data
-         if (self->isGreetingParsed == false)
-         {
-            parseFunc="greeting";
-            result = apx_serverConnection_parseGreeting(self, pNext, remain, &internalParseLen);
-         }
-         else
-         {
-            parseFunc="message";
-            result = apx_serverConnection_parseMessage(self, pNext, remain, &internalParseLen);
-         }
+         uint8_t result;         
+         result = apx_serverConnection_parseMessage(self, pNext, remain, &internalParseLen);
          //check parse result
          if (result == 0)
          {
@@ -226,14 +196,14 @@ int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uin
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 /**
- * parses the greeting header. this very similar to an HTTP header with an initial protocol line followed by one or more MIME-headers.
+ * parses the greeting header. The header is similar to an HTTP header with an initial protocol line followed by one or more MIME-headers.
  * Instead of line ending \r\n we just just \n. The greeting ends when we encountered two consecutive \n\n.
  */
-static uint8_t apx_serverConnection_parseGreeting(apx_serverConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
+static void apx_serverConnection_parseGreeting(apx_serverConnection_t *self, const uint8_t *msgBuf, int32_t msgLen)
 {
-   const uint8_t *pBegin = dataBuf;
-   const uint8_t *pNext = dataBuf;
-   const uint8_t *pEnd = dataBuf + dataLen;
+   const uint8_t *pBegin = msgBuf;
+   const uint8_t *pNext = msgBuf;
+   const uint8_t *pEnd = msgBuf + msgLen;
    while(pNext < pEnd)
    {
       const uint8_t *pResult;
@@ -250,6 +220,7 @@ static uint8_t apx_serverConnection_parseGreeting(apx_serverConnection_t *self, 
             //this ends the header
             self->isGreetingParsed = true;
             printf("\tparse greeting complete\n");
+            apx_es_fileManager_onConnected(&self->fileManager);
             break;
          }
          else
@@ -268,13 +239,11 @@ static uint8_t apx_serverConnection_parseGreeting(apx_serverConnection_t *self, 
       {
          break;
       }
-   }
-   *parseLen = (uint32_t) (pNext-pBegin);
-   return 0;
+   }      
 }
 
 /**
- * a message consists of a message length (first 1 or 4 bytes) packed as binary integer (big endian). Then follows the message data followed by a new message length header etc.
+ * a message consists of a message length (1 or 4 bytes) packed as binary integer (big endian). Then follows the message data followed by a new message length header etc.
  */
 static uint8_t apx_serverConnection_parseMessage(apx_serverConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
 {
@@ -292,8 +261,18 @@ static uint8_t apx_serverConnection_parseMessage(apx_serverConnection_t *self, c
       if (pNext+msgLen<=pEnd)
       {
          totalParsed+=headerLen+msgLen;
-         //printf("\tmessage %d+%d bytes\n",headerLen,msgLen);
-         apx_fileManager_parseMessage(&self->fileManager, pNext, msgLen);
+#if APX_DEBUG_ENABLE
+         printf("[APX_SERVER] received message %d+%d bytes\n",headerLen,msgLen);
+#endif
+         
+         if (self->isGreetingParsed == false)
+         {
+            apx_serverConnection_parseGreeting(self, pNext, msgLen);
+         }
+         else
+         {
+            apx_fileManager_parseMessage(&self->fileManager, pNext, msgLen);
+         }
          pNext+=msgLen;
       }
       else
@@ -321,7 +300,7 @@ static uint8_t *apx_serverConnection_getSendBuffer(void *arg, int32_t msgLen)
       int32_t requestedLen;
       //create a buffer where we have room to encode the message header (the length of the message) in addition to the user requested length
       int32_t currentLen = adt_bytearray_length(&self->sendBuffer);
-      requestedLen= msgLen + self->maxMsgHeaderSize;
+      requestedLen= msgLen + self->numHeaderMaxLen;
       if (currentLen<requestedLen)
       {
          result = adt_bytearray_resize(&self->sendBuffer, (uint32_t) requestedLen);
@@ -330,7 +309,7 @@ static uint8_t *apx_serverConnection_getSendBuffer(void *arg, int32_t msgLen)
       {
          uint8_t *data = adt_bytearray_data(&self->sendBuffer);
          assert(data != 0);
-         return &data[self->maxMsgHeaderSize];
+         return &data[self->numHeaderMaxLen];
       }
    }
    return 0;
@@ -347,13 +326,13 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
       int32_t sendBufferLen;
       uint8_t *sendBuffer = adt_bytearray_data(&self->sendBuffer);
       sendBufferLen = adt_bytearray_length(&self->sendBuffer);
-      if ((sendBuffer != 0) && (msgLen+self->maxMsgHeaderSize<=sendBufferLen) )
+      if ((sendBuffer != 0) && (msgLen+self->numHeaderMaxLen<=sendBufferLen) )
       {
          uint8_t header[sizeof(uint32_t)];
          uint8_t headerLen;
          uint8_t *headerEnd;
          uint8_t *pBegin;
-         if (self->maxMsgHeaderSize == (uint8_t) sizeof(uint32_t))
+         if (self->numHeaderMaxLen == (uint8_t) sizeof(uint32_t))
          {
             headerEnd = headerutil_numEncode32(header, (uint32_t) sizeof(header), msgLen);
             if (headerEnd>header)
@@ -371,7 +350,7 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
             return -1; //not yet implemented
          }
          //place header just before user data begin
-         pBegin = sendBuffer+(self->maxMsgHeaderSize+offset-headerLen); //the part in the parenthesis is where the user data begins
+         pBegin = sendBuffer+(self->numHeaderMaxLen+offset-headerLen); //the part in the parenthesis is where the user data begins
          memcpy(pBegin, header, headerLen);
 #if APX_DEBUG_ENABLE		 
 		 printf("sending %d+%d to %p:", headerLen, msgLen, self->msocket);

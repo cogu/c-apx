@@ -27,7 +27,7 @@
 #define RINGBUF_CFG_H__
 
 #define RBFS_ENABLE 1
-#define RBFD_ENABLE 0
+#define RBFD_ENABLE 1
 #define RBFU16_ENABLE 0
 
 #endif //RINGBUF_CFG_H__

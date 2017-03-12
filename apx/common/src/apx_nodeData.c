@@ -7,9 +7,12 @@
 #include <malloc.h>
 #include <assert.h>
 #include "apx_nodeData.h"
-#include "apx_fileManager.h"
 #include "apx_file.h"
+#include "rmf.h"
+#ifndef APX_EMBEDDED
+#include "apx_fileManager.h"
 #include "apx_nodeInfo.h"
+#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -55,7 +58,7 @@ void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *defini
       self->outPortDirtyFlags = outPortDirtyFlags;
       self->dataWriteModeEnabled = false;
       apx_nodeData_setHandlerTable(self, NULL);
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_INIT(self->inPortDataLock);
       SPINLOCK_INIT(self->outPortDataLock);
       SPINLOCK_INIT(self->definitionDataLock);
@@ -65,7 +68,7 @@ void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *defini
       self->inPortDataFile = (apx_file_t*) 0;
       self->nodeInfo = (apx_nodeInfo_t*) 0;
 #else
-# error("not yet implemented!")
+
 #endif
    }
 }
@@ -74,13 +77,13 @@ void apx_nodeData_destroy(apx_nodeData_t *self)
 {
    if (self != 0)
    {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_DESTROY(self->inPortDataLock);
       SPINLOCK_DESTROY(self->outPortDataLock);
       SPINLOCK_DESTROY(self->definitionDataLock);
       SPINLOCK_DESTROY(self->internalLock);
 #else
-# error("not yet implemented!")
+
 #endif
       if (self->isWeakref == false)
       {
@@ -187,7 +190,7 @@ void apx_nodeData_vdelete(void *arg)
 int8_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
 {
    int8_t retval = 0;
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_ENTER(self->definitionDataLock);
 #endif
    if ( (offset+len) > self->definitionDataLen) //attempted read outside bounds
@@ -198,7 +201,7 @@ int8_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint
    {
       memcpy(dest, &self->definitionDataBuf[offset], len);
    }
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_LEAVE(self->definitionDataLock);
 #endif
    return retval;
@@ -206,12 +209,12 @@ int8_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint
 
 int8_t apx_nodeData_readOutPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
 {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_ENTER(self->outPortDataLock);
 #endif
    memcpy(dest, &self->outPortDataBuf[offset], len);
    self->outPortDirtyFlags[offset]=0;
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_LEAVE(self->outPortDataLock);
 #endif
    return 0;
@@ -221,12 +224,12 @@ int8_t apx_nodeData_readInPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t
 {
    if( (self != 0) && (self->inPortDataBuf != 0) && (self->inPortDirtyFlags != 0) )
    {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_ENTER(self->inPortDataLock);
 #endif
       memcpy(dest, &self->inPortDataBuf[offset], len);
       self->inPortDirtyFlags[offset]=0;
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_LEAVE(self->inPortDataLock);
 #endif
       return 0;
@@ -240,13 +243,13 @@ void apx_nodeData_enableDataWriteMode(apx_nodeData_t *self)
 {
    if (self != 0)
    {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_ENTER(self->internalLock);
 #endif
 
       self->dataWriteModeEnabled = true;
 
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_LEAVE(self->internalLock);
 #endif
    }
@@ -256,13 +259,13 @@ void apx_nodeData_disableDataWriteMode(apx_nodeData_t *self)
 {
    if (self != 0)
    {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_ENTER(self->internalLock);
 #endif
 
       self->dataWriteModeEnabled = false;
 
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_LEAVE(self->internalLock);
 #endif
    }
@@ -271,13 +274,13 @@ void apx_nodeData_disableDataWriteMode(apx_nodeData_t *self)
 bool apx_nodeData_getDataWriteMode(apx_nodeData_t *self)
 {
    bool retval;
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_ENTER(self->internalLock);
 #endif
 
       retval = self->dataWriteModeEnabled;
 
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_LEAVE(self->internalLock);
 #endif
    return retval;
@@ -286,28 +289,28 @@ bool apx_nodeData_getDataWriteMode(apx_nodeData_t *self)
 
 void apx_nodeData_lockOutPortData(apx_nodeData_t *self)
 {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_ENTER(self->outPortDataLock);
 #endif
 }
 
 void apx_nodeData_unlockOutPortData(apx_nodeData_t *self)
 {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_LEAVE(self->outPortDataLock);
 #endif
 }
 
 void apx_nodeData_lockInPortData(apx_nodeData_t *self)
 {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_ENTER(self->inPortDataLock);
 #endif
 }
 
 void apx_nodeData_unlockInPortData(apx_nodeData_t *self)
 {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
       SPINLOCK_LEAVE(self->inPortDataLock);
 #endif
 }
@@ -316,7 +319,7 @@ void apx_nodeData_outPortDataWriteCmd(apx_nodeData_t *self, apx_dataWriteCmd_t *
 {
    if (self != 0)
    {
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    //forward write command to file manager
       if ( (self->fileManager != 0) && (self->outPortDataFile != 0) )
       {
@@ -329,7 +332,7 @@ void apx_nodeData_outPortDataWriteCmd(apx_nodeData_t *self, apx_dataWriteCmd_t *
 int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
 {
    int8_t retval = 0;
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_ENTER(self->inPortDataLock);
 #endif
    if ( (offset+len) > self->inPortDataLen) //attempted write outside bounds
@@ -340,7 +343,7 @@ int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, ui
    {
       memcpy(&self->inPortDataBuf[offset], src, len);
    }
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_LEAVE(self->inPortDataLock);
 #endif
    return retval;
@@ -350,7 +353,7 @@ int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, ui
 int8_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
 {
    int8_t retval = 0;
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_ENTER(self->outPortDataLock);
 #endif
    if ( (offset+len) > self->outPortDataLen)
@@ -361,7 +364,7 @@ int8_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, u
    {
       memcpy(&self->outPortDataBuf[offset], src, len);
    }
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_LEAVE(self->outPortDataLock);
 #endif
    return retval;
@@ -370,7 +373,7 @@ int8_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, u
 int8_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
 {
    int8_t retval = 0;
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_ENTER(self->definitionDataLock);
 #endif
    if ( (offset+len) > self->definitionDataLen)
@@ -381,13 +384,13 @@ int8_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src
    {
       memcpy(&self->definitionDataBuf[offset], src, len);
    }
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
    SPINLOCK_LEAVE(self->definitionDataLock);
 #endif
    return retval;
 }
 
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
 void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_tag *fileManager)
 {
    if (self != 0)

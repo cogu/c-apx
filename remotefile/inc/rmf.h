@@ -26,9 +26,10 @@
 #define RMF_CMD_HIGH_BIT ((uint32_t) 0x80000000)
 #define RMF_CMD_MORE_BIT ((uint32_t) 0x40000000)
 
-#define RMF_SHORT_ADDRESS_SIZE 2u
-#define RMF_LONG_ADDRESS_SIZE 4u
-#define RMF_MAX_HEADER_SIZE RMF_LONG_ADDRESS_SIZE
+#define RMF_LOW_ADDRESS_SIZE 2u
+#define RMF_HIGH_ADDRESS_SIZE 4u
+#define RMF_MAX_HEADER_SIZE RMF_HIGH_ADDRESS_SIZE
+#define RMF_CMD_TYPE_LEN           4u
 
 //server command messages
 #define RMF_CMD_ACK                (uint32_t) 0   //reserved for future use
@@ -58,11 +59,13 @@
 
 #define RMF_MAX_CMD_BUF_SIZE 1024u
 
+#define RMF_MIN_MSG_LEN (RMF_HIGH_ADDRESS_SIZE+1u)
+
 #define RMF_GREETING_MAX_LEN 127
 #define RMF_GREETING_START "RMFP/1.0\n"
 #define RMF_NUMHEADER_FORMAT "NumHeader-Format:"
 
-
+#define RMF_INVALID_ADDRESS (uint32_t) (0xFFFFFFFF)
 /**
  * abstract rmf message class
  */
@@ -73,17 +76,6 @@ typedef struct rmf_msg_tag
    const uint8_t *data;
    bool more_bit;
 }rmf_msg_t;
-
-//meta-data about a memory mapped file (server -> client)
-typedef struct rmf_cmdFileInfo_tag
-{
-   uint32_t address;
-   uint32_t length;
-   uint16_t fileType;
-   uint16_t digestType;
-   uint8_t digestData[RMF_DIGEST_SIZE];
-   char name[RMF_MAX_FILE_NAME+1];
-} rmf_cmdFileInfo_t;
 
 typedef struct rmf_cmdOpenFile_tag
 {
@@ -103,10 +95,9 @@ typedef struct rmf_fileInfo_tag
    uint16_t digestType;
    uint8_t digestData[RMF_DIGEST_SIZE];
    char name[RMF_MAX_FILE_NAME+1];
-   void *userData;
 }rmf_fileInfo_t;
 
-#define CMD_FILE_INFO_BASE_SIZE (4+4+4+2+2+RMF_DIGEST_SIZE) //additional 4 bytes to store value of _FILE_INFO
+#define CMD_FILE_INFO_BASE_SIZE (4+4+4+2+2+RMF_DIGEST_SIZE) //44 bytes plus additional 4 bytes to store value of RMF_FILE_INFO
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -116,22 +107,24 @@ typedef struct rmf_fileInfo_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-int32_t rmf_packMsg(uint8_t *buf, int32_t bufLen, uint32_t address, uint8_t *data, int32_t dataLen, int32_t *consumed);
+//int32_t rmf_packMsg(uint8_t *buf, int32_t bufLen, uint32_t address, uint8_t *data, int32_t dataLen, int32_t *consumed);
 int32_t rmf_packHeaderBeforeData(uint8_t *dataBuf, int32_t bufLen, uint32_t address, bool more_bit);
 int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg);
-int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_cmdFileInfo_t *cmdFileInfo);
-int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_cmdFileInfo_t *cmdFileInfo);
+int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_fileInfo_t *fileInfo);
+int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_fileInfo_t *fileInfo);
 int32_t rmf_serialize_cmdOpenFile(uint8_t *buf, int32_t bufLen, rmf_cmdOpenFile_t *cmdOpenFile);
 int32_t rmf_deserialize_cmdOpenFile(const uint8_t *buf, int32_t bufLen, rmf_cmdOpenFile_t *cmdOpenFile);
 int32_t rmf_serialize_cmdCloseFile(uint8_t *buf, int32_t bufLen, rmf_cmdCloseFile_t *cmdCloseFile);
 int32_t rmf_deserialize_cmdCloseFile(const uint8_t *buf, int32_t bufLen, rmf_cmdCloseFile_t *cmdCloseFile);
 int32_t rmf_deserialize_cmdType(const uint8_t *buf, int32_t bufLen, uint32_t *cmdType);
-
-int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, void *userData, uint16_t fileType);
+int32_t rmf_serialize_acknowledge(uint8_t *buf, int32_t bufLen);
+int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType);
 void rmf_fileInfo_destroy(rmf_fileInfo_t *info);
-rmf_fileInfo_t *rmf_fileInfo_new(const char *name, uint32_t startAddress, uint32_t length, void *userData, uint16_t fileType);
+#ifndef APX_EMBEDDED
+rmf_fileInfo_t *rmf_fileInfo_new(const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType);
 void rmf_fileInfo_delete(rmf_fileInfo_t *info);
 void rmf_fileInfo_vdelete(void *arg);
+#endif
 int8_t rmf_fileInfo_setDigestData(rmf_fileInfo_t *info, uint16_t digestType, const uint8_t *digestData, uint32_t digestDataLen);
 
 #endif //RMF_H

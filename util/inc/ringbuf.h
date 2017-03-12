@@ -82,7 +82,7 @@ typedef struct rbfu16_t   //ring buffer (fixed block size) -
 
 /***************** Public Function Declarations *******************/
 #if(RBFS_ENABLE)
-uint8_t rbfs_create(rbfs_t* rbf, uint8_t* u8Buffer, uint16_t u16NumElem, uint8_t u8ElemSize);
+uint8_t rbfs_create(rbfs_t* rbf, uint8_t* u8Buffer, uint16_t u32NumElem, uint8_t u8ElemSize);
 uint8_t rbfs_insert(rbfs_t* rbf, const uint8_t* u8Data);
 uint8_t rbfs_remove(rbfs_t* rbf, uint8_t* u8Data);
 uint8_t rbfs_peek(rbfs_t* rbf, uint8_t* u8Data);
@@ -92,13 +92,13 @@ void rbfs_clear(rbfs_t* rbf);
 #endif
 
 #if(RBFD_ENABLE)
-uint8_t rbfd_create(rbfd_t* rbd, uint8_t* u8Buffer, uint16_t u16BufferSize);
-uint8_t rbfd_insert(rbfd_t* rbd, uint8_t* u8Data, uint8_t u8Len);
-uint8_t rbfd_remove(rbfd_t* rbd, uint8_t* u8Data, uint8_t u8Len);
-uint16_t rbfd_size(rbfd_t* rbd);
-uint8_t rbfd_peekU8(rbfd_t* rbd, uint8_t* u8Value);
-uint8_t rbfd_peekU16(rbfd_t* rbd, uint16_t* u16Value);
-uint8_t rbfd_peekU32(rbfd_t* rbd, uint32* u32Value);
+uint8_t rbfd_create(rbfd_t* rbfd, uint8_t* u8Buffer, uint16_t u16BufferSize);
+uint8_t rbfd_insert(rbfd_t* rbfd, uint8_t* u8Data, uint8_t u8Len);
+uint8_t rbfd_remove(rbfd_t* rbfd, uint8_t* u8Data, uint8_t u8Len);
+uint16_t rbfd_size(rbfd_t* rbfd);
+uint8_t rbfd_peekU8(rbfd_t* rbfd, uint8_t* u8Value);
+uint8_t rbfd_peekU16(rbfd_t* rbfd, uint16_t* u16Value);
+uint8_t rbfd_peekU32(rbfd_t* rbfd, uint32_t* u32Value);
 #endif
 
 #if(RBFU16_ENABLE)

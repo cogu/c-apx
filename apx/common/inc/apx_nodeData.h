@@ -14,8 +14,8 @@
 #else
 #include <stdbool.h>
 #endif
-#include "apx_nodeData_cfg.h" //see this file for explanation of APX_POLLED_DATA_MODE
-#ifndef APX_POLLED_DATA_MODE
+#include "apx_nodeData_cfg.h"
+#ifndef APX_EMBEDDED
 #  ifndef _WIN32
      //Linux-based system
 #    include <pthread.h>
@@ -31,7 +31,7 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
 struct apx_fileManager_tag;
 struct apx_file_tag;
 struct apx_nodeInfo_tag;
@@ -65,9 +65,10 @@ typedef struct apx_nodeData_tag
    uint8_t *outPortDirtyFlags;
    bool dataWriteModeEnabled;
    apx_nodeDataHandlerTable_t handlerTable;
-#ifdef APX_POLLED_DATA_MODE
+#ifdef APX_EMBEDDED
    //used for implementations that has no underlying operating system or runs an RTOS
-#  error("not yet implemented!")
+
+
 #else
    //used for Windows/Linux implementations
    SPINLOCK_T inPortDataLock;
@@ -112,7 +113,7 @@ int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, ui
 int8_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 int8_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len);
-#ifndef APX_POLLED_DATA_MODE
+#ifndef APX_EMBEDDED
 void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_tag *fileManager);
 void apx_nodeData_setInPortDataFile(apx_nodeData_t *self, struct apx_file_tag *file);
 void apx_nodeData_setOutPortDataFile(apx_nodeData_t *self, struct apx_file_tag *file);

@@ -6,4 +6,5 @@
 **/*vcxproj.user
 **.vs/
 *.VC.db
+*.VC.opendb
 CMemLeak.txt

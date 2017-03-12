@@ -54,7 +54,7 @@ CuSuite* testSuite_apx_file(void)
 static void test_apx_file_remote(CuTest* tc)
 {
    apx_file_t *file1;
-   rmf_cmdFileInfo_t info1;
+   rmf_fileInfo_t info1;
    info1.address = 0x10000;
    strcpy(info1.name,"hello.txt");
    info1.digestType = RMF_DIGEST_TYPE_NONE;
@@ -67,7 +67,6 @@ static void test_apx_file_remote(CuTest* tc)
    CuAssertIntEquals(tc, 0x10000, (int) file1->fileInfo.address);
    CuAssertIntEquals(tc, 2542, (int) file1->fileInfo.length);
    CuAssertIntEquals(tc, RMF_DIGEST_TYPE_NONE, (int) file1->fileInfo.digestType);
-   CuAssertPtrEquals(tc, (void*) file1, (void*) file1->fileInfo.userData);
    CuAssertPtrEquals(tc, 0, file1->nodeData);
    CuAssertIntEquals(tc, APX_USER_DATA_FILE, file1->fileType);
    apx_file_delete(file1);
@@ -76,7 +75,7 @@ static void test_apx_file_remote(CuTest* tc)
 static void test_apx_file_basename(CuTest* tc)
 {
    apx_file_t *file1;
-   rmf_cmdFileInfo_t info1;
+   rmf_fileInfo_t info1;
    char *str;
    info1.address = 0x10000;
    strcpy(info1.name,"hello.txt");
