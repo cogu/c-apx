@@ -151,7 +151,7 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
             free(basename);
          }
       }
-      else if ( (remoteFile->fileType == APX_INDATA_FILE) || (remoteFile->fileType == APX_OUTDATA_FILE) )
+      else if ( (remoteFile->fileType == APX_INDATA_FILE) )
       {
          char *basename = apx_file_basename(remoteFile);
          if (basename != 0)
@@ -187,7 +187,7 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
       }
       else
       {
-         printf("apx_nodeManager_remoteFileAdded(%s): %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
+         //printf("apx_nodeManager_remoteFileAdded(%s): %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
       }
    }
 }

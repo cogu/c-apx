@@ -116,35 +116,40 @@ int8_t apx_es_fileMap_remove(apx_es_fileMap_t *self, apx_file_t *pFile)
    return -1;
 }
 
+void apx_es_fileMap_clear(apx_es_fileMap_t *self)
+{
+   if (self != 0)
+   {
+      apx_es_fileMap_create(self);
+   }
+}
+
 apx_file_t *apx_es_fileMap_findByAddress(apx_es_fileMap_t *self, uint32_t address)
 {
    if (self != 0)
    {
       uint32_t startAddress;
       uint32_t endAddress;
+      int32_t i;
       if ( (self->lastIndex>=0) && (self->lastIndex<self->curLen) )
       {
          apx_file_t *file = self->fileList[self->lastIndex];
          startAddress = file->fileInfo.address;
          endAddress = startAddress+file->fileInfo.length;
-         if ( (address >= startAddress) && (endAddress < endAddress) )
+         if ( (address >= startAddress) && (address < endAddress) )
          {
             return self->fileList[self->lastIndex];
          }
       }
-      else
+      for (i=0; i<self->curLen; i++)
       {
-         int32_t i;
-         for (i=0; i<self->curLen; i++)
+         apx_file_t *file = self->fileList[i];
+         startAddress = file->fileInfo.address;
+         endAddress = startAddress+file->fileInfo.length;
+         if ( (address >= startAddress) && (address < endAddress) )
          {
-            apx_file_t *file = self->fileList[i];
-            startAddress = file->fileInfo.address;
-            endAddress = startAddress+file->fileInfo.length;
-            if ( (address >= startAddress) && (address < endAddress) )
-            {
-               self->lastIndex = i;
-               return file;
-            }
+            self->lastIndex = i;
+            return file;
          }
       }
    }
@@ -189,7 +194,7 @@ static int8_t apx_es_fileMap_autoInsertInternal(apx_es_fileMap_t *self, apx_file
       {
          apx_file_t *pCurrent=0;
          uint32_t placement_address = start_address;
-         placementIndex = self->curLen;
+         placementIndex = 0;
          for(i=0;i<self->curLen;i++)
          {
             pCurrent = self->fileList[i];

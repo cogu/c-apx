@@ -409,7 +409,7 @@ void apx_es_fileManager_onDisconnected(apx_fileManager_t *self)
    }
 }
 
-void apx_fileManager_triggerFileUpdatedEvent(apx_fileManager_t *self, apx_file_t *file, apx_offset_t offset, apx_size_t length)
+void apx_fileManager_triggerFileUpdatedEvent(apx_fileManager_t *self, apx_file_t *file, uint32_t offset, uint32_t length)
 {
    if (self !=0 )
    {
@@ -910,7 +910,7 @@ static void apx_fileManager_processOpenFile(apx_fileManager_t *self, const rmf_c
          {
             apx_nodeData_setOutPortDataFile(localFile->nodeData, localFile);
             apx_nodeData_setFileManager(localFile->nodeData, self);
-            apx_nodeData_enableDataWriteMode(localFile->nodeData); //allow delta copy from now on
+			apx_file_open(localFile);            
          }
          else if ( (localFile->fileType == APX_INDATA_FILE) && (localFile->nodeData != 0) )
          {

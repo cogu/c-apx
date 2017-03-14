@@ -32,6 +32,7 @@ void apx_es_fileMap_create(apx_es_fileMap_t *self);
 int8_t apx_es_fileMap_autoInsert(apx_es_fileMap_t *self, apx_file_t *pFile);
 int8_t apx_es_fileMap_insert(apx_es_fileMap_t *self, apx_file_t *pFile);
 int8_t apx_es_fileMap_remove(apx_es_fileMap_t *self, apx_file_t *pFile);
+void apx_es_fileMap_clear(apx_es_fileMap_t *self);
 apx_file_t *apx_es_fileMap_findByAddress(apx_es_fileMap_t *self, uint32_t address);
 apx_file_t *apx_es_fileMap_findByName(apx_es_fileMap_t *self, const char *name);
 int32_t apx_es_fileMap_length(apx_es_fileMap_t *self);

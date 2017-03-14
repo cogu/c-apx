@@ -9,7 +9,9 @@
 #include "apx_nodeData.h"
 #include "apx_file.h"
 #include "rmf.h"
-#ifndef APX_EMBEDDED
+#ifdef APX_EMBEDDED
+#include "apx_es_fileManager.h"
+#else
 #include "apx_fileManager.h"
 #include "apx_nodeInfo.h"
 #endif
@@ -56,19 +58,18 @@ void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *defini
       self->outPortDataBuf = outPortDataBuf;
       self->outPortDataLen = outPortDataLen;
       self->outPortDirtyFlags = outPortDirtyFlags;
-      self->dataWriteModeEnabled = false;
       apx_nodeData_setHandlerTable(self, NULL);
-#ifndef APX_EMBEDDED
+      self->outPortDataFile = (apx_file_t*) 0;
+      self->inPortDataFile = (apx_file_t*) 0;
+#ifdef APX_EMBEDDED
+      self->fileManager = (apx_es_fileManager_t*) 0;
+#else
       SPINLOCK_INIT(self->inPortDataLock);
       SPINLOCK_INIT(self->outPortDataLock);
       SPINLOCK_INIT(self->definitionDataLock);
       SPINLOCK_INIT(self->internalLock);
       self->fileManager = (apx_fileManager_t*) 0;
-      self->outPortDataFile = (apx_file_t*) 0;
-      self->inPortDataFile = (apx_file_t*) 0;
       self->nodeInfo = (apx_nodeInfo_t*) 0;
-#else
-
 #endif
    }
 }
@@ -82,9 +83,7 @@ void apx_nodeData_destroy(apx_nodeData_t *self)
       SPINLOCK_DESTROY(self->outPortDataLock);
       SPINLOCK_DESTROY(self->definitionDataLock);
       SPINLOCK_DESTROY(self->internalLock);
-#else
 
-#endif
       if (self->isWeakref == false)
       {
          //pointers are strongly referenced when isWeakRef is false. delete all pointers that are not NULL
@@ -113,9 +112,10 @@ void apx_nodeData_destroy(apx_nodeData_t *self)
             free(self->outPortDirtyFlags);
          }
       }
+#endif
    }
 }
-
+#ifndef APX_EMBEDDED
 /**
  * creates a new apx_nodeData_t with all pointers (except name) set to NULL
  */
@@ -156,6 +156,29 @@ apx_nodeData_t *apx_nodeData_newRemote(const char *name, bool isWeakRef)
       }
    }
    return self;
+}
+#endif
+
+
+bool apx_nodeData_isOutPortDataOpen(apx_nodeData_t *self)
+{
+   bool retval = false;
+   if (self != 0)
+   {
+#ifndef APX_EMBEDDED
+      SPINLOCK_ENTER(self->internalLock);
+#endif
+
+      if ( (self->fileManager != 0) && (self->outPortDataFile != 0) && (self->outPortDataFile->isOpen == true) )
+      {
+         retval = true;
+      }
+
+#ifndef APX_EMBEDDED
+      SPINLOCK_LEAVE(self->internalLock);
+#endif
+   }
+   return retval;
 }
 
 void apx_nodeData_setHandlerTable(apx_nodeData_t *self, apx_nodeDataHandlerTable_t *handlerTable)
@@ -239,52 +262,7 @@ int8_t apx_nodeData_readInPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t
 }
 
 
-void apx_nodeData_enableDataWriteMode(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->internalLock);
-#endif
 
-      self->dataWriteModeEnabled = true;
-
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->internalLock);
-#endif
-   }
-}
-
-void apx_nodeData_disableDataWriteMode(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->internalLock);
-#endif
-
-      self->dataWriteModeEnabled = false;
-
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->internalLock);
-#endif
-   }
-}
-
-bool apx_nodeData_getDataWriteMode(apx_nodeData_t *self)
-{
-   bool retval;
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->internalLock);
-#endif
-
-      retval = self->dataWriteModeEnabled;
-
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->internalLock);
-#endif
-   return retval;
-}
 
 
 void apx_nodeData_lockOutPortData(apx_nodeData_t *self)
@@ -315,17 +293,18 @@ void apx_nodeData_unlockInPortData(apx_nodeData_t *self)
 #endif
 }
 
-void apx_nodeData_outPortDataWriteCmd(apx_nodeData_t *self, apx_dataWriteCmd_t *cmd)
+void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, apx_offset_t offset, apx_size_t length)
 {
    if (self != 0)
    {
-#ifndef APX_EMBEDDED
-   //forward write command to file manager
-      if ( (self->fileManager != 0) && (self->outPortDataFile != 0) )
+      if ( (self->fileManager != 0) && (self->outPortDataFile != 0) && (self->outPortDataFile->isOpen == true) )
       {
-         apx_fileManager_triggerFileUpdatedEvent(self->fileManager, self->outPortDataFile, cmd->offset, cmd->len);
-      }
+#ifdef APX_EMBEDDED
+         apx_es_fileManager_onFileUpdate(self->fileManager, self->outPortDataFile, offset, length);
+#else
+         apx_fileManager_triggerFileUpdatedEvent(self->fileManager, self->outPortDataFile, offset, length);
 #endif
+      }
    }
 }
 
@@ -390,15 +369,6 @@ int8_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src
    return retval;
 }
 
-#ifndef APX_EMBEDDED
-void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_tag *fileManager)
-{
-   if (self != 0)
-   {
-      self->fileManager = fileManager;
-   }
-}
-
 void apx_nodeData_setInPortDataFile(apx_nodeData_t *self, struct apx_file_tag *file)
 {
    if (self != 0)
@@ -415,6 +385,8 @@ void apx_nodeData_setOutPortDataFile(apx_nodeData_t *self, struct apx_file_tag *
    }
 }
 
+
+#ifndef APX_EMBEDDED
 void apx_nodeData_setNodeInfo(apx_nodeData_t *self, struct apx_nodeInfo_tag *nodeInfo)
 {
    if (self != 0)
@@ -424,8 +396,22 @@ void apx_nodeData_setNodeInfo(apx_nodeData_t *self, struct apx_nodeInfo_tag *nod
 }
 #endif
 
+#ifdef APX_EMBEDDED
+void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_es_fileManager_tag *fileManager)
+#else
+void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_tag *fileManager)
+#endif
+{
+   if (self != 0)
+   {
+      self->fileManager = fileManager;
+   }
+}
+
+
 void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len)
 {
+   printf("apx_nodeData_triggerInPortDataWritten %d,%d\n",offset,len);
    if ( (self != 0) && (self->handlerTable.inPortDataWritten != 0) )
    {
       self->handlerTable.inPortDataWritten(self->handlerTable.arg, self, offset, len);

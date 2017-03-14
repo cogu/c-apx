@@ -27,10 +27,11 @@ typedef struct apx_msg_tag
 #define RMF_MSG_CONNECT               1
 #define RMF_MSG_DISCONNECT            2
 #define RMF_MSG_FILEINFO              3 //msgData1=size, msgData3=apx_file_t *file
-#define RMF_MSG_FILEOPEN              4 //msgData3=apx_file_t *file
-#define RMF_MSG_FILECLOSE             5 //msgData1=apx_file_t *file
+#define RMF_MSG_FILE_OPEN             4 //msgData1=file startAddress
+#define RMF_MSG_FILE_CLOSE            5 //msgData1=file startAddress
 #define RMF_MSG_WRITE_NOTIFY          6 //msgData1=offset, msgData2=length, msgData3=apx_file_t *file
 #define RMF_MSG_FILE_WRITE            7 //msgData1=writeAddress, msgData2=length, msgData3=apx_file_t *file, msgData4=data
+#define RMF_MSG_FILE_SEND             8 //msgData3=apx_file_t *file
 
 
 

@@ -98,6 +98,7 @@ typedef struct rmf_fileInfo_tag
 }rmf_fileInfo_t;
 
 #define CMD_FILE_INFO_BASE_SIZE (4+4+4+2+2+RMF_DIGEST_SIZE) //44 bytes plus additional 4 bytes to store value of RMF_FILE_INFO
+#define RMF_FILE_OPEN_CMD_LEN 8
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES

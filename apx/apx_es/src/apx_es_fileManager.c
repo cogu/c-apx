@@ -137,6 +137,14 @@ void apx_es_fileManager_onConnected(apx_es_fileManager_t *self)
    }
 }
 
+void apx_es_fileManager_onDisconnected(apx_es_fileManager_t *self)
+{
+   if (self != 0)
+   {
+      apx_es_fileMap_clear(&self->remoteFileMap);
+   }
+}
+
 /**
  * triggered by lower layer when a message has been received
  */
@@ -172,6 +180,11 @@ void apx_es_fileManager_onMsgReceived(apx_es_fileManager_t *self, const uint8_t 
    {
       //MISRA
    }
+}
+
+void apx_es_fileManager_onFileUpdate(apx_es_fileManager_t *self, apx_file_t *file, uint32_t offset, uint32_t length)
+{
+   printf("apx_es_fileManager_onFileUpdate %d %d\n",offset,length);
 }
 
 /**
@@ -596,6 +609,10 @@ static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const
 {
    if ( (self != 0) && (cmdOpenFile != 0) )
    {
+      if (cmdOpenFile->address==0)
+      {
+         printf("here\n");
+      }
       apx_file_t *localFile = apx_es_fileMap_findByAddress(&self->localFileMap, cmdOpenFile->address);
       if (localFile != 0)
       {

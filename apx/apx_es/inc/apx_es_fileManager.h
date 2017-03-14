@@ -92,7 +92,7 @@ void apx_es_fileManager_setTransmitHandler(apx_es_fileManager_t *self, apx_trans
 //these messages can be sent to the fileManager to be processed by its internal worker thread
 void apx_es_fileManager_onConnected(apx_es_fileManager_t *self);
 void apx_es_fileManager_onDisconnected(apx_es_fileManager_t *self);
-void apx_es_fileManager_onFileUpdate(apx_es_fileManager_t *self, apx_file_t *file, apx_offset_t offset, apx_size_t length);
+void apx_es_fileManager_onFileUpdate(apx_es_fileManager_t *self, apx_file_t *file, uint32_t offset, uint32_t length);
 void apx_es_fileManager_onMsgReceived(apx_es_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
 
 void apx_es_fileManager_run(apx_es_fileManager_t *self);

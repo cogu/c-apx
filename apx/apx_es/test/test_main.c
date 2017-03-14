@@ -6,6 +6,7 @@
 
 
 CuSuite* testsuite_apx_es_filemanager(void);
+CuSuite* testsuite_apx_es_filemap(void);
 
 
 void streambuf_lock(void){}
@@ -17,6 +18,7 @@ void RunAllTests(void)
    CuSuite* suite = CuSuiteNew();
 
    CuSuiteAddSuite(suite, testsuite_apx_es_filemanager());
+   CuSuiteAddSuite(suite, testsuite_apx_es_filemap());
 
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);
