@@ -4,7 +4,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_types.h"
-#if defined(_MSC_PLATFORM_TOOLSET) && (_MSC_PLATFORM_TOOLSET<=100)
+#if defined(_MSC_PLATFORM_TOOLSET) && (_MSC_PLATFORM_TOOLSET<=110)
 #include "msc_bool.h"
 #else
 #include <stdbool.h>

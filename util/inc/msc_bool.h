@@ -1,4 +1,4 @@
-#if defined(_MSC_PLATFORM_TOOLSET) && (_MSC_PLATFORM_TOOLSET<=100)
+#if defined(_MSC_PLATFORM_TOOLSET) && (_MSC_PLATFORM_TOOLSET<=110)
 #ifndef _MSC_BOOL_DEFINED
 #define _MSC_BOOL_DEFINED
 #define false 0
