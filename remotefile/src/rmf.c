@@ -88,6 +88,33 @@ int32_t rmf_packMsg(uint8_t *buf, int32_t bufLen, uint32_t address, uint8_t *dat
    return -1;
 }
 #endif
+
+/**
+ * encodes the address header into dataBuf
+ * returns number of bytes written into the header, 0 when buffer is too small and -1 if any of the arguments are incorrect
+ */
+int32_t rmf_packHeader(uint8_t *dataBuf, int32_t bufLen, uint32_t address, bool more_bit)
+{
+   if ( (dataBuf != 0) && (address <= RMF_CMD_END_ADDR) )
+   {
+      int32_t headerLen = (address < RMF_DATA_HIGH_MIN_ADDR)? RMF_LOW_ADDRESS_SIZE : RMF_HIGH_ADDRESS_SIZE;
+      if (headerLen > bufLen)
+      {
+         return 0;
+      }
+      packBE(dataBuf, address, (uint8_t) headerLen);
+      if (headerLen == RMF_HIGH_ADDRESS_SIZE)
+      {
+         dataBuf[0]|= (uint8_t) HIGH_BIT_MASK;
+      }
+      if (more_bit == true)
+      {
+         dataBuf[0]|= (uint8_t) MORE_BIT_MASK;
+      }
+      return headerLen;
+   }
+   return -1;
+}
 /**
  * encodes the address header into the bytes just before dataBuf.
  * It's imperative that the user have allocated at least 4 bytes of free memory _before_ the dataBuf pointer.

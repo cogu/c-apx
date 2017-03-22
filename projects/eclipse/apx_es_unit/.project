@@ -62,17 +62,17 @@
 		<link>
 			<name>apx/apx_es/inc</name>
 			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/apx/apx_es/inc</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/apx-es/inc</locationURI>
 		</link>
 		<link>
 			<name>apx/apx_es/src</name>
 			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/apx/apx_es/src</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/apx-es/src</locationURI>
 		</link>
 		<link>
 			<name>apx/apx_es/test</name>
 			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/apx/apx_es/test</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/apx-es/test</locationURI>
 		</link>
 		<link>
 			<name>apx/apx_es/inc/apx_file.h</name>

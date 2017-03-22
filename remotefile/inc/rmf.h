@@ -18,7 +18,8 @@
 
 
 #define RMF_DATA_LOW_MIN_ADDR ((uint32_t)0x0)               //0
-#define RMF_DATA_LOW_MAX_ADDR ((uint32_t)0x3FFF)            //16KB
+#define RMF_DATA_LOW_MAX_ADDR ((uint32_t)0x3FFF)            //16KB-1
+#define RMF_DATA_HIGH_MIN_ADDR ((uint32_t)0x4000)            //16KB
 #define RMF_DATA_HIGH_MAX_ADDR ((uint32_t)0x3FFFFBFF)       //1GB
 
 #define RMF_CMD_START_ADDR ((uint32_t) 0x3FFFFC00)
@@ -109,6 +110,7 @@ typedef struct rmf_fileInfo_tag
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 //int32_t rmf_packMsg(uint8_t *buf, int32_t bufLen, uint32_t address, uint8_t *data, int32_t dataLen, int32_t *consumed);
+int32_t rmf_packHeader(uint8_t *dataBuf, int32_t bufLen, uint32_t address, bool more_bit);
 int32_t rmf_packHeaderBeforeData(uint8_t *dataBuf, int32_t bufLen, uint32_t address, bool more_bit);
 int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg);
 int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_fileInfo_t *fileInfo);

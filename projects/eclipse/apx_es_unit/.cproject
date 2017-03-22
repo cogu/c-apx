@@ -32,7 +32,7 @@
 								<option id="gnu.c.compiler.cygwin.exe.debug.option.debugging.level.1200453343" name="Debug Level" superClass="gnu.c.compiler.cygwin.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1380524542" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../../../cutest"/>
-									<listOptionValue builtIn="false" value="../../../../apx/apx_es/inc"/>
+									<listOptionValue builtIn="false" value="../../../../apx/apx-es/inc"/>
 									<listOptionValue builtIn="false" value="../../../../apx/common/inc"/>
 									<listOptionValue builtIn="false" value="../../../../util/inc"/>
 									<listOptionValue builtIn="false" value="../../../../remotefile/inc"/>
