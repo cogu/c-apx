@@ -1,11 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 14 for Windows Desktop
+# Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apx_server", "apx_server\apx_server.vcxproj", "{4A5E3075-F203-4D24-A580-636DB0F523C0}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apx_unit", "apx_unit\apx_unit.vcxproj", "{2275CCE5-BA66-48A4-83CA-255648EDE5D9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apx_pipe", "apx_pipe\apx_pipe.vcxproj", "{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apx_pipe_test_client", "apx_pipe_test_client\apx_pipe_test_client.vcxproj", "{46C058E0-AF16-4338-BC48-AEAC87E43D1F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +35,22 @@ Global
 		{2275CCE5-BA66-48A4-83CA-255648EDE5D9}.Release|x64.Build.0 = Release|x64
 		{2275CCE5-BA66-48A4-83CA-255648EDE5D9}.Release|x86.ActiveCfg = Release|Win32
 		{2275CCE5-BA66-48A4-83CA-255648EDE5D9}.Release|x86.Build.0 = Release|Win32
+		{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}.Debug|x64.ActiveCfg = Debug|x64
+		{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}.Debug|x64.Build.0 = Debug|x64
+		{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}.Debug|x86.ActiveCfg = Debug|Win32
+		{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}.Debug|x86.Build.0 = Debug|Win32
+		{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}.Release|x64.ActiveCfg = Release|x64
+		{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}.Release|x64.Build.0 = Release|x64
+		{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}.Release|x86.ActiveCfg = Release|Win32
+		{1C952FE3-9B0E-4E34-B5F0-8965FD3708AB}.Release|x86.Build.0 = Release|Win32
+		{46C058E0-AF16-4338-BC48-AEAC87E43D1F}.Debug|x64.ActiveCfg = Debug|x64
+		{46C058E0-AF16-4338-BC48-AEAC87E43D1F}.Debug|x64.Build.0 = Debug|x64
+		{46C058E0-AF16-4338-BC48-AEAC87E43D1F}.Debug|x86.ActiveCfg = Debug|Win32
+		{46C058E0-AF16-4338-BC48-AEAC87E43D1F}.Debug|x86.Build.0 = Debug|Win32
+		{46C058E0-AF16-4338-BC48-AEAC87E43D1F}.Release|x64.ActiveCfg = Release|x64
+		{46C058E0-AF16-4338-BC48-AEAC87E43D1F}.Release|x64.Build.0 = Release|x64
+		{46C058E0-AF16-4338-BC48-AEAC87E43D1F}.Release|x86.ActiveCfg = Release|Win32
+		{46C058E0-AF16-4338-BC48-AEAC87E43D1F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

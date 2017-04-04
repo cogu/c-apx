@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="server">
+      <UniqueIdentifier>{31d51eef-cde0-453d-838f-f3d48bbf4983}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="npipe">
+      <UniqueIdentifier>{42578af6-30af-4ab5-9e31-9e04fc4f4fd4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="npipe\inc">
+      <UniqueIdentifier>{d7fe7391-3404-4255-9d13-45f585b8ad99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="npipe\src">
+      <UniqueIdentifier>{3adfa21c-d9e2-425f-9bd8-f52722cfcd7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="msocket">
+      <UniqueIdentifier>{911ea091-5927-4ddd-bd19-12bbc74c9f23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="msocket\inc">
+      <UniqueIdentifier>{0a6c2f02-fa91-47c9-8d39-7ca97089894b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="msocket\src">
+      <UniqueIdentifier>{b255fd5d-609a-4837-b761-9f914d25e47d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt">
+      <UniqueIdentifier>{be5d6937-49e5-419d-9dd5-3bccfd6a4885}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt\inc">
+      <UniqueIdentifier>{15ca4da8-5f13-49c8-9bce-bd41d2ad63a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt\src">
+      <UniqueIdentifier>{3a88f6be-dea0-4649-b053-43db5912403b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\npipe\inc\npipe.h">
+      <Filter>npipe\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\npipe\inc\npipe_base.h">
+      <Filter>npipe\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\npipe\inc\npipe_server.h">
+      <Filter>npipe\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\msocket\inc\msocket.h">
+      <Filter>msocket\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\msocket\inc\msocket_server.h">
+      <Filter>msocket\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\msocket\inc\osmacro.h">
+      <Filter>msocket\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\msocket\inc\osutil.h">
+      <Filter>msocket\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_bytearray.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_list.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\npipe\src\npipe.c">
+      <Filter>npipe\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\npipe\src\npipe_server.c">
+      <Filter>npipe\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\msocket\src\osutil.c">
+      <Filter>msocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_ary.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_bytearray.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_list.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="server.c">
+      <Filter>server</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

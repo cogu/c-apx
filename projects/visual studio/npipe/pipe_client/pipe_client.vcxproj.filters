@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="npipe">
+      <UniqueIdentifier>{f283727b-12ef-49c3-a475-da73854cdac7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="npipe\inc">
+      <UniqueIdentifier>{05eb8436-433d-46a4-9865-487b413bd0d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="npipe\src">
+      <UniqueIdentifier>{45a71bd1-1f3f-4b13-84aa-c1ce2f7f8d64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="client">
+      <UniqueIdentifier>{b43d19c9-4671-4ee7-b125-51f6a98689b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt">
+      <UniqueIdentifier>{447d444d-edab-493d-aac4-6f6c2ba540fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt\inc">
+      <UniqueIdentifier>{9013f32a-c80c-4a96-8481-5e4ac3a095ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="adt\src">
+      <UniqueIdentifier>{502c30e8-7c67-4d7b-8bb7-f39e86e33e3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="msocket">
+      <UniqueIdentifier>{921922c0-4d4f-451f-b89a-18678490da21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="msocket\inc">
+      <UniqueIdentifier>{f9bef194-e3b0-4b87-86b3-29766477c201}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\npipe\inc\npipe.h">
+      <Filter>npipe\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\npipe\inc\npipe_base.h">
+      <Filter>npipe\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_bytearray.h">
+      <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\msocket\inc\osmacro.h">
+      <Filter>msocket\inc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\npipe\src\npipe.c">
+      <Filter>npipe\src</Filter>
+    </ClCompile>
+    <ClCompile Include="client.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_ary.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\adt\src\adt_bytearray.c">
+      <Filter>adt\src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
