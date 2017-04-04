@@ -1,10 +1,14 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <errno.h>
-#include <malloc.h>
 #include <string.h>
+#include <errno.h>
+#ifndef APX_EMBEDDED
+#include <malloc.h>
 #include <assert.h>
+#else
+#define assert(x)
+#endif
 #include "rmf.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
@@ -410,8 +414,10 @@ int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t star
 void rmf_fileInfo_destroy(rmf_fileInfo_t *self)
 {
    //nothing to do
+   (void) self;
 }
 
+#ifndef APX_EMBEDDED
 rmf_fileInfo_t *rmf_fileInfo_new(const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType)
 {
    rmf_fileInfo_t *self = (rmf_fileInfo_t*) malloc(sizeof(rmf_fileInfo_t));
@@ -430,6 +436,7 @@ rmf_fileInfo_t *rmf_fileInfo_new(const char *name, uint32_t startAddress, uint32
    }
    return self;
 }
+
 void rmf_fileInfo_delete(rmf_fileInfo_t *self)
 {
    if (self != 0)
@@ -442,7 +449,7 @@ void rmf_fileInfo_vdelete(void *arg)
 {
    rmf_fileInfo_delete((rmf_fileInfo_t*) arg);
 }
-
+#endif
 
 /**
  * returns 0 on success, -1 on failure

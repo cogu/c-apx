@@ -174,7 +174,9 @@ void apx_es_fileManager_onMsgReceived(apx_es_fileManager_t *self, const uint8_t 
    }
    else if (result < 0)
    {
+#if APX_DEBUG_ENABLE
       fprintf(stderr, "rmf_unpackMsg failed with %d\n", result);
+#endif
    }
    else
    {
@@ -205,7 +207,9 @@ void apx_es_fileManager_run(apx_es_fileManager_t *self)
       result = apx_es_processPendingWrite(self);
       if (result < 0)
       {
+#if APX_DEBUG_ENABLE
          fprintf(stderr, "apx_es_processPendingWrite returned %d",result);
+#endif
       }
    }
    if (self->pendingCmd == true)
@@ -213,7 +217,9 @@ void apx_es_fileManager_run(apx_es_fileManager_t *self)
       result = apx_es_processPendingCmd(self);
       if (result < 0)
       {
+#if APX_DEBUG_ENABLE
          fprintf(stderr, "apx_es_processPendingCmd returned %d",result);
+#endif
       }
    }
    if ( (self->pendingWrite == false) && (self->pendingCmd == false) )
@@ -223,7 +229,9 @@ void apx_es_fileManager_run(apx_es_fileManager_t *self)
          result = apx_es_fileManager_runEventLoop(self);
          if (result < 0)
          {
+#if APX_DEBUG_ENABLE
             fprintf(stderr, "apx_es_fileManager_runEventLoop returned %d",result);
+#endif
          }
          else if (result == 0)
          {
@@ -481,11 +489,15 @@ static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uin
                   }
                   else if (result < 0)
                   {
+#if APX_DEBUG_ENABLE
                      fprintf(stderr, "rmf_deserialize_cmdFileInfo failed with %d\n", result);
+#endif
                   }
                   else
                   {
+#if APX_DEBUG_ENABLE
                      fprintf(stderr, "rmf_deserialize_cmdFileInfo returned 0\n");
+#endif
                   }
                }
                break;
@@ -499,16 +511,24 @@ static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uin
                   }
                   else if (result < 0)
                   {
+#if APX_DEBUG_ENABLE
                      fprintf(stderr, "rmf_deserialize_cmdOpenFile failed with %d\n", result);
+#endif
                   }
                   else
                   {
+#if APX_DEBUG_ENABLE
                      fprintf(stderr, "rmf_deserialize_cmdOpenFile returned 0\n");
+#endif
                   }
                }
                break;
             default:
+#if APX_DEBUG_ENABLE
                fprintf(stderr, "not implemented cmdType: %d\n", cmdType);
+#endif
+               break;
+
          }
       }
    }
@@ -631,7 +651,9 @@ static void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *self,
       if (removeIndex>=0)
       {
          apx_msg_t msg = {RMF_MSG_FILE_OPEN, 0, 0, 0};
+#if APX_DEBUG_ENABLE
          printf("Opening requested file: %s\n", fileInfo->name);
+#endif
          //remove file from requestedFileList
          int8_t rc = apx_es_fileManager_removeRequestedAt(self, removeIndex);
          assert(rc == 0);
@@ -657,10 +679,12 @@ static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const
       apx_file_t *localFile = apx_es_fileMap_findByAddress(&self->localFileMap, cmdOpenFile->address);
       if (localFile != 0)
       {
+         apx_msg_t msg = {RMF_MSG_FILE_SEND,0,0,0};
+#if APX_DEBUG_ENABLE
          int32_t bytesToSend = localFile->fileInfo.length;
          printf("Opened %s, bytes to send: %d\n", localFile->fileInfo.name, bytesToSend);
-         apx_file_open(localFile);
-         apx_msg_t msg = {RMF_MSG_FILE_SEND,0,0,0};
+#endif
+         apx_file_open(localFile);         
          msg.msgData3 = localFile;
          rbfs_insert(&self->messageQueue,(uint8_t*) &msg);
       }
@@ -762,6 +786,8 @@ DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *sel
 static int32_t apx_es_processPendingCmd(apx_es_fileManager_t *self)
 {
    (void) self;
+#if APX_DEBUG_ENABLE
    printf("apx_es_processPendingCmd\n");
+#endif
    return -1; //not implemented
 }

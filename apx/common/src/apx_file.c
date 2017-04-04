@@ -3,7 +3,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_file.h"
 #include <errno.h>
+#ifndef APX_EMBEDDED
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
@@ -101,6 +103,7 @@ void apx_file_destroy(apx_file_t *self)
    }
 }
 
+#ifndef APX_EMBEDDED
 apx_file_t *apx_file_newLocalFile(uint8_t fileType, apx_nodeData_t *nodeData)
 {
    apx_file_t *self = (apx_file_t*) malloc(sizeof(apx_file_t));
@@ -134,7 +137,7 @@ apx_file_t *apx_file_newLocalInPortDataFile(apx_nodeData_t *nodeData)
 {
    return apx_file_newLocalFile(APX_INDATA_FILE, nodeData);
 }
-#ifndef APX_EMBEDDED
+
 apx_file_t *apx_file_newRemoteFile(const rmf_fileInfo_t *fileInfo)
 {
    apx_file_t *self = (apx_file_t*) malloc(sizeof(apx_file_t));
@@ -167,7 +170,6 @@ void apx_file_vdelete(void *arg)
 {
    apx_file_delete((apx_file_t*) arg);
 }
-#endif
 /**
  * creates a new string containing the file name with the file extension removed.
  * the returned object (char*) needs to be freed by the user once returned
@@ -201,6 +203,7 @@ char *apx_file_basename(const apx_file_t *self)
    errno = EINVAL;
    return 0;
 }
+#endif
 
 void apx_file_open(apx_file_t *self)
 {

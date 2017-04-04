@@ -4,14 +4,14 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
-#include <malloc.h>
-#include <assert.h>
 #include "apx_nodeData.h"
 #include "apx_file.h"
 #include "rmf.h"
 #ifdef APX_EMBEDDED
 #include "apx_es_fileManager.h"
 #else
+#include <malloc.h>
+#include <assert.h>
 #include "apx_fileManager.h"
 #include "apx_nodeInfo.h"
 #endif
@@ -196,6 +196,7 @@ void apx_nodeData_setHandlerTable(apx_nodeData_t *self, apx_nodeDataHandlerTable
    }
 }
 
+#ifndef APX_EMBEDDED
 void apx_nodeData_delete(apx_nodeData_t *self)
 {
    if (self != 0)
@@ -209,6 +210,7 @@ void apx_nodeData_vdelete(void *arg)
 {
    apx_nodeData_delete((apx_nodeData_t*) arg);
 }
+#endif
 
 int8_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
 {
