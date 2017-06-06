@@ -60,6 +60,11 @@
 			<locationURI>PARENT-3-PROJECT_LOC/remotefile/src</locationURI>
 		</link>
 		<link>
+			<name>remotefile/test</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/remotefile/test</locationURI>
+		</link>
+		<link>
 			<name>util/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/util/inc</locationURI>
