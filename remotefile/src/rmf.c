@@ -406,6 +406,8 @@ int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t star
       self->address=startAddress;
       self->length=length;
       self->fileType = fileType;
+      self->digestType = RMF_DIGEST_TYPE_NONE;
+      memset(&self->digestData, 0, RMF_DIGEST_SIZE);
       return 0;
    }
    errno = EINVAL;

@@ -24,6 +24,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #define MAX_HEADER_LEN 128
 #define SEND_BUFFER_GROW_SIZE 4096 //4KB
+#define MAX_DEBUG_BYTES 100
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -354,7 +355,7 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
          memcpy(pBegin, header, headerLen);
 #if APX_DEBUG_ENABLE		 
 		 printf("sending %d+%d to %p:", headerLen, msgLen, self->msocket);
-		 for (int i = 0; i < 10; i++)
+		 for (int i = 0; i < MAX_DEBUG_BYTES; i++)
 		 {
 			 if (i >= msgLen + headerLen)
 			 {

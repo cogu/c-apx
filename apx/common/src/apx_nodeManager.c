@@ -465,7 +465,11 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
 
 
             nodeData = apx_nodeManager_getNodeData(self, apxNode->name);
-            assert(nodeData != 0);
+            if (nodeData == 0)
+            {
+               fprintf(stderr, "failed to create nodeData object\n");
+               return;
+            }
             apx_nodeData_setFileManager(nodeData,fileManager);
             apx_nodeData_setNodeInfo(nodeData, nodeInfo);
             nodeInfo->isWeakRef_node = false; //nodeInfo is now the owner of the node pointer (will trigger deletion when apx_nodeInfo_delete is called)
