@@ -385,7 +385,7 @@ const char *apx_fileManager_modeString(apx_fileManager_t *self)
 }
 
 
-void apx_es_fileManager_onConnected(apx_fileManager_t *self)
+void apx_fileManager_onConnected(apx_fileManager_t *self)
 {
    if (self != 0)
    {
@@ -397,7 +397,7 @@ void apx_es_fileManager_onConnected(apx_fileManager_t *self)
    }
 }
 
-void apx_es_fileManager_onDisconnected(apx_fileManager_t *self)
+void apx_fileManager_onDisconnected(apx_fileManager_t *self)
 {
    if (self != 0)
    {

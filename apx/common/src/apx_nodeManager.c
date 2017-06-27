@@ -141,7 +141,7 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
                else
                {
                   //client mode
-                  printf("apx_nodeManager_remoteFileAdded(%s): %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
+                  //printf("apx_nodeManager_remoteFileAdded(%s): %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
                }
             }
             else
@@ -175,9 +175,9 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
                   }
                   else
                   {
-                     printf("[NODE_MANAGER(%s)] opening %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
+                     //printf("[NODE_MANAGER(%s)] opening %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
                      remoteFile->nodeData=nodeData;
-                     printf("[NODE_MANAGER(%s)] opening file %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
+                     //printf("[NODE_MANAGER(%s)] opening file %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
                      apx_fileManager_sendFileOpen(fileManager, remoteFile->fileInfo.address);
                   }
                }
@@ -197,7 +197,7 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
  */
 void apx_nodeManager_remotefileRemoved(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager, apx_file_t *remotefile)
 {
-   printf("apx_nodeManager_remotefileRemoved\n");
+   //printf("apx_nodeManager_remotefileRemoved\n");
 }
 
 /**
@@ -634,7 +634,7 @@ static void apx_nodeManager_attachLocalNodeToFileManager(apx_nodeManager_t *self
       definitionFile = apx_file_newLocalDefinitionFile(nodeData);
       assert(definitionFile != 0);
       apx_fileManager_attachLocalDefinitionFile(fileManager, definitionFile);
-      printf("[APX_NODE_MANAGER(%s)] created local file %s@%08X\n", apx_fileManager_modeString(fileManager), definitionFile->fileInfo.name, definitionFile->fileInfo.address);
+      //printf("[APX_NODE_MANAGER(%s)] created local file %s@%08X\n", apx_fileManager_modeString(fileManager), definitionFile->fileInfo.name, definitionFile->fileInfo.address);
 
    }
    if (nodeData->outPortDataLen)
@@ -643,7 +643,7 @@ static void apx_nodeManager_attachLocalNodeToFileManager(apx_nodeManager_t *self
       outPortDataFile = apx_file_newLocalOutPortDataFile(nodeData);
       assert(outPortDataFile != 0);
       apx_fileManager_attachLocalPortDataFile(fileManager, outPortDataFile);
-      printf("[APX_NODE_MANAGER(%s)] created local file %s@%08X\n", apx_fileManager_modeString(fileManager), outPortDataFile->fileInfo.name, outPortDataFile->fileInfo.address);
+      //printf("[APX_NODE_MANAGER(%s)] created local file %s@%08X\n", apx_fileManager_modeString(fileManager), outPortDataFile->fileInfo.name, outPortDataFile->fileInfo.address);
    }
 }
 

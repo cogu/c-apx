@@ -193,6 +193,7 @@
     <ClCompile Include="..\..\..\..\apx\common\test\test_main.c" />
     <ClCompile Include="..\..\..\..\cutest\CuTest.c" />
     <ClCompile Include="..\..\..\..\remotefile\src\rmf.c" />
+    <ClCompile Include="..\..\..\..\remotefile\test\testsuite_remotefile.c" />
     <ClCompile Include="..\..\..\..\util\src\CMemLeak.c" />
     <ClCompile Include="..\..\..\..\util\src\headerutil.c" />
     <ClCompile Include="..\..\..\..\util\src\pack.c" />

@@ -101,8 +101,8 @@ void apx_fileManager_attachLocalPortDataFile(apx_fileManager_t *self, apx_file_t
 const char *apx_fileManager_modeString(apx_fileManager_t *self);
 
 //these messages can be sent to the fileManager to be processed by its internal worker thread
-void apx_es_fileManager_onConnected(apx_fileManager_t *self);
-void apx_es_fileManager_onDisconnected(apx_fileManager_t *self);
+void apx_fileManager_onConnected(apx_fileManager_t *self);
+void apx_fileManager_onDisconnected(apx_fileManager_t *self);
 void apx_fileManager_triggerFileUpdatedEvent(apx_fileManager_t *self, apx_file_t *file, uint32_t offset, uint32_t length);
 void apx_fileManager_triggerFileWriteCmdEvent(apx_fileManager_t *self, apx_file_t *file, const uint8_t *data, apx_offset_t offset, apx_size_t length);
 

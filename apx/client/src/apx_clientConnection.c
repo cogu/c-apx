@@ -10,7 +10,6 @@
 #include "apx_client.h"
 #include "scan.h"
 #include "headerutil.h"
-#include <time.h> //DEBUG
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -26,7 +25,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static int8_t apx_clientConnection_parseGreeting(apx_clientConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 static int8_t apx_clientConnection_parseMessage(apx_clientConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 static uint8_t *apx_clientConnection_getSendBuffer(void *arg, int32_t msgLen);
 static int32_t apx_clientConnection_send(void *arg, int32_t offset, int32_t msgLen);
@@ -49,7 +47,7 @@ int8_t apx_clientConnection_create(apx_clientConnection_t *self, msocket_t *msoc
    if( (self != 0) && (msocket != 0) &&  (client != 0))
    {
       self->msocket = msocket;
-      self->isGreetingParsed = false;
+      self->isAcknowledgeSeen = false;
       self->client = client;
       self->maxMsgHeaderSize = (uint8_t) sizeof(uint32_t);
       apx_fileManager_create(&self->fileManager, APX_FILEMANAGER_CLIENT_MODE);
@@ -128,13 +126,24 @@ void apx_clientConnection_start(apx_clientConnection_t *self)
       apx_fileManager_start(&self->fileManager);
       //send greeting
       {
+         uint8_t *sendBuffer;
+         uint32_t greetingLen;
          char greeting[RMF_GREETING_MAX_LEN];
          strcpy(greeting, RMF_GREETING_START);
          //headers end with an additional newline
          strcat(greeting, "\n");
-         msocket_send(self->msocket, (void*) greeting, (uint32_t) strlen(greeting));
+         greetingLen = (uint32_t) strlen(greeting);
+         sendBuffer = apx_clientConnection_getSendBuffer((void*) self, greetingLen);
+         if (sendBuffer != 0)
+         {
+            memcpy(sendBuffer, greeting, greetingLen);
+            apx_clientConnection_send((void*) self, 0, greetingLen);
+         }
+         else
+         {
+            fprintf(stderr, "Failed to acquire sendBuffer while trying to send greeting\n");
+         }         
       }
-      apx_fileManager_triggerConnectEvent(&self->fileManager);
    }
 }
 
@@ -146,35 +155,18 @@ int8_t apx_clientConnection_dataReceived(apx_clientConnection_t *self, const uin
 {
    if ( (self != 0) && (dataBuf != 0) )
    {
-      struct timespec timestamp;
       uint32_t totalParseLen = 0;
       uint32_t remain = dataLen;
       int8_t result = 0;
       const uint8_t *pNext = dataBuf;
-      clock_gettime(CLOCK_MONOTONIC, &timestamp);
-      printf("%0.6f: ", ((double)timestamp.tv_sec)+((double)timestamp.tv_nsec+500000000)/1000000000.0); //FIXME: remove debug print
-      printf("apx_clientConnection_dataReceived: %d\n",dataLen); //FIXME: remove debug print
       while(totalParseLen<dataLen)
       {
          uint32_t internalParseLen = 0;
-         const char *parseFunc;
          result=0;
 
-         //parse data
-         if (self->isGreetingParsed == false)
-         {
-            parseFunc="greeting";
-            result = apx_clientConnection_parseGreeting(self, pNext, remain, &internalParseLen);
-         }
-         else
-         {
-            parseFunc="message";
-            result = apx_clientConnection_parseMessage(self, pNext, remain, &internalParseLen);
-         }
-         //check parse result
+         result = apx_clientConnection_parseMessage(self, pNext, remain, &internalParseLen);
          if ( (result == 0) && (internalParseLen!=0) )
          {
-            printf("\tinternalParseLen(%s): %d\n",parseFunc, internalParseLen); ///FIXME: remove debug print
             assert(internalParseLen<=dataLen);
             pNext+=internalParseLen;
             totalParseLen+=internalParseLen;
@@ -185,8 +177,7 @@ int8_t apx_clientConnection_dataReceived(apx_clientConnection_t *self, const uin
             break;
          }
       }
-      //no more complete messages can be parsed. There may be a partial message left in buffer, but we ignore it until more data has been recevied.
-      printf("\ttotalParseLen=%d\n", totalParseLen); ///FIXME: remove debug print
+      //no more complete messages can be parsed. There may be a partial message left in buffer, but we ignore it until more data has been recevied.      
       *parseLen = totalParseLen;
       return result;
    }
@@ -197,54 +188,6 @@ int8_t apx_clientConnection_dataReceived(apx_clientConnection_t *self, const uin
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-/**
- * parses the greeting header. this is very similar to an HTTP header with an initial protocol line followed by one or more MIME-headers.
- * Instead of line ending \r\n we just just \n. The greeting ends when we encountered two consecutive \n\n.
- * Returns 0 on parse success, -1 on parse failure
- */
-static int8_t apx_clientConnection_parseGreeting(apx_clientConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
-{
-   const uint8_t *pBegin = dataBuf;
-   const uint8_t *pNext = dataBuf;
-   const uint8_t *pEnd = dataBuf + dataLen;
-   while(pNext < pEnd)
-   {
-      const uint8_t *pResult;
-      pResult = scan_line(pNext, pEnd);
-      if ( (pResult > pNext) || ((pResult==pNext) && *pNext==(uint8_t) '\n') )
-      {
-         //found a line ending with '\n'
-         const uint8_t *pMark = pNext;
-         int32_t lengthOfLine = (int32_t) (pResult-pNext);
-         //move pNext to beginning of next line (one byte after the '\n')
-         pNext = pResult+1;
-         if (lengthOfLine == 0)
-         {
-            //this ends the header
-            self->isGreetingParsed = true;
-            printf("\tparse greeting complete\n"); //FIXME: this is just a debug printout, can be removed
-            break;
-         }
-         else
-         {
-            //TODO: parse greeting line
-            if (lengthOfLine<=MAX_HEADER_LEN)
-            {
-               char tmp[MAX_HEADER_LEN+1];
-               memcpy(tmp,pMark,lengthOfLine);
-               tmp[lengthOfLine]=0;
-               printf("\tgreeting-line: '%s'\n",tmp); //FIXME: this is just a debug printout, can be removed
-            }
-         }
-      }
-      else
-      {
-         break;
-      }
-   }
-   *parseLen = (uint32_t) (pNext-pBegin);
-   return 0;
-}
 
 /**
  * a message consists of a message length (first 1 or 4 bytes) packed as binary integer (big endian).
@@ -269,9 +212,29 @@ static int8_t apx_clientConnection_parseMessage(apx_clientConnection_t *self, co
          if (parseLen != 0)
          {
             *parseLen=headerLen+msgLen;
+         }         
+         if (self->isAcknowledgeSeen == false)
+         {
+            if (msgLen == 8)
+            {
+               if ( (pNext[0] == 0xbf) &&
+                    (pNext[1] == 0xff) &&
+                    (pNext[2] == 0xfc) &&
+                    (pNext[3] == 0x00) &&
+                    (pNext[4] == 0x00) &&
+                    (pNext[5] == 0x00) &&
+                    (pNext[6] == 0x00) &&
+                    (pNext[7] == 0x00) )
+               {
+                  self->isAcknowledgeSeen = true;
+                  apx_fileManager_onConnected(&self->fileManager);
+               }
+            }
          }
-         printf("\tmessage %d+%d bytes\n",headerLen,msgLen); ///FIXME: remove debug print
-         apx_fileManager_parseMessage(&self->fileManager, pNext, msgLen);
+         else
+         {
+            apx_fileManager_parseMessage(&self->fileManager, pNext, msgLen);
+         }
          pNext+=msgLen;
       }
       else
@@ -350,8 +313,7 @@ static int32_t apx_clientConnection_send(void *arg, int32_t offset, int32_t msgL
          }
          //place header just before user data begin
          pBegin = sendBuffer+(self->maxMsgHeaderSize+offset-headerLen); //the part in the parenthesis is where the user data begins
-         memcpy(pBegin, header, headerLen);
-         printf("sending %d bytes\n",msgLen+headerLen);
+         memcpy(pBegin, header, headerLen);         
          msocket_send(self->msocket, pBegin, msgLen+headerLen);
          return 0;
       }

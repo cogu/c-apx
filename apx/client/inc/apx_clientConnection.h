@@ -22,7 +22,7 @@ typedef struct apx_clientConnection_tag
 {
    apx_fileManager_t fileManager;
    msocket_t *msocket;
-   bool isGreetingParsed;
+   bool isAcknowledgeSeen;
    adt_bytearray_t sendBuffer;
    uint8_t maxMsgHeaderSize;
    struct apx_client_tag *client;

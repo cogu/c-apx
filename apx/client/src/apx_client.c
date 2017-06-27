@@ -146,8 +146,7 @@ static void tcp_client_disconnected(void *arg)
 
 void tcp_client_connected(void *arg,const char *addr,uint16_t port)
 {
-   apx_clientConnection_t *clientConnection = (apx_clientConnection_t*) arg;
-   printf("[apx_client] connected on port %d\n",(int)port);
+   apx_clientConnection_t *clientConnection = (apx_clientConnection_t*) arg;   
    apx_clientConnection_start(clientConnection);
 }
 

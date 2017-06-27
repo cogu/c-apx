@@ -412,8 +412,7 @@ void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_ta
 
 
 void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len)
-{
-   printf("apx_nodeData_triggerInPortDataWritten %d,%d\n",offset,len);
+{   
    if ( (self != 0) && (self->handlerTable.inPortDataWritten != 0) )
    {
       self->handlerTable.inPortDataWritten(self->handlerTable.arg, self, offset, len);

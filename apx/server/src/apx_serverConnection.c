@@ -221,7 +221,7 @@ static void apx_serverConnection_parseGreeting(apx_serverConnection_t *self, con
             //this ends the header
             self->isGreetingParsed = true;
             printf("\tparse greeting complete\n");
-            apx_es_fileManager_onConnected(&self->fileManager);
+            apx_fileManager_onConnected(&self->fileManager);
             break;
          }
          else

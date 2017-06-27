@@ -52,6 +52,9 @@
     <Filter Include="msocket\inc">
       <UniqueIdentifier>{9fbfebf6-617f-4c90-8a46-40943b221471}</UniqueIdentifier>
     </Filter>
+    <Filter Include="remotefile\test">
+      <UniqueIdentifier>{b061f0ce-aaee-4f88-b4fb-ff116d09ac6e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\apx\common\test\test_main.c">
@@ -206,6 +209,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_dataTrigger.c">
       <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\remotefile\test\testsuite_remotefile.c">
+      <Filter>remotefile\test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
