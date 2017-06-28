@@ -102,8 +102,8 @@ uint8_t rbfd_peekU32(rbfd_t* rbfd, uint32_t* u32Value);
 #endif
 
 #if(RBFU16_ENABLE)
-uint8_t rbfu16_create(rbfu16_t* rbf, uint16_t* u16Buffer, uint16_t u16BufferLen);
-uint8_t rbfu16_insert(rbfu16_t* rbf, uint16_t* u16Data);
+uint8_t rbfu16_create(rbfu16_t* rbf, uint16_t* u16Buffer, uint16_t u16NumElem);
+uint8_t rbfu16_insert(rbfu16_t* rbf, uint16_t u16Data);
 uint8_t rbfu16_remove(rbfu16_t* rbf, uint16_t* u16Data);
 uint8_t rbfu16_peek(rbfu16_t* rbf, uint16_t* u16Data);
 uint16_t rbfu16_length(rbfu16_t* rbf);

@@ -26,8 +26,8 @@
 #ifndef RINGBUF_CFG_H__
 #define RINGBUF_CFG_H__
 
-#define RBFS_ENABLE 1
-#define RBFD_ENABLE 0
-#define RBFU16_ENABLE 1
+#define RBFS_ENABLE 1    //ringbuffer static (fixed sized blocks)
+#define RBFD_ENABLE 0    //ringbuffer dynamic (dynamically sized blocks)
+#define RBFU16_ENABLE 1  //special ringbuffer for uint16 values
 
 #endif //RINGBUF_CFG_H__

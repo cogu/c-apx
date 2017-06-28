@@ -11,6 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h" />
+    <ClInclude Include="..\..\..\..\adt\inc\adt_bytearray.h" />
+    <ClInclude Include="..\..\..\..\adt\inc\adt_hash.h" />
+    <ClInclude Include="..\..\..\..\adt\inc\adt_heap.h" />
+    <ClInclude Include="..\..\..\..\adt\inc\adt_list.h" />
+    <ClInclude Include="..\..\..\..\adt\inc\adt_stack.h" />
+    <ClInclude Include="..\..\..\..\adt\inc\adt_str.h" />
+    <ClInclude Include="..\..\..\..\adt\inc\adt_u16Map.h" />
     <ClInclude Include="..\..\..\..\apx\client\inc\apx_client.h" />
     <ClInclude Include="..\..\..\..\apx\client\inc\apx_clientConnection.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_allocator.h" />
@@ -59,6 +67,14 @@
     <ClInclude Include="..\..\..\..\util\inc\soa_fsa.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\adt\src\adt_ary.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_bytearray.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_hash.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_heap.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_list.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_stack.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_str.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_u16Map.c" />
     <ClCompile Include="..\..\..\..\apx\client\src\apx_client.c" />
     <ClCompile Include="..\..\..\..\apx\client\src\apx_clientConnection.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_allocator.c" />

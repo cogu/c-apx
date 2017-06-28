@@ -267,10 +267,10 @@ uint8_t rbfd_peekU32(rbfd_t* rbfd, uint32_t* u32Value)
 #endif
 
 #if(RBFU16_ENABLE)
-uint8_t rbfu16_create(rbfu16_t* rbf, uint16_t* u16Buffer, uint16_t u16BufferLen){
-   if( (rbf != 0) && (u16Buffer != 0) && (u16BufferLen > 0)){
+uint8_t rbfu16_create(rbfu16_t* rbf, uint16_t* u16Buffer, uint16_t u16NumElem){
+	if ((rbf != 0) && (u16Buffer != 0) && (u16NumElem > 0)){
       rbf->u16Buffer = u16Buffer;
-      rbf->u16MaxNumElem = u16BufferLen;
+	  rbf->u16MaxNumElem = u16NumElem;
       rbf->u16NumElem = 0;
       rbf->u16ReadPtr = u16Buffer;
       rbf->u16WritePtr = u16Buffer;
@@ -279,15 +279,15 @@ uint8_t rbfu16_create(rbfu16_t* rbf, uint16_t* u16Buffer, uint16_t u16BufferLen)
    return E_BUF_NOT_OK;
 }
 
-uint8_t rbfu16_insert(rbfu16_t* rbf, uint16_t* u16Data){
-   if( (rbf != 0) && (u16Data != 0) ){
-      uint16_t *pEndPtr = rbf->u16Buffer + (rbf->u16MaxNumElem * sizeof(uint16_t));
+uint8_t rbfu16_insert(rbfu16_t* rbf, uint16_t u16Data){
+   if( rbf != 0 ){
+      uint16_t *pEndPtr = rbf->u16Buffer + rbf->u16MaxNumElem;
       if(rbf->u16NumElem >= rbf->u16MaxNumElem){
          //full
          return E_BUF_OVERFLOW;
       }
       rbf->u16NumElem++;
-      *rbf->u16WritePtr++ = *u16Data;
+      *rbf->u16WritePtr++ = u16Data;
       if (rbf->u16WritePtr >= pEndPtr)
       {
           //rewind
@@ -300,7 +300,7 @@ uint8_t rbfu16_insert(rbfu16_t* rbf, uint16_t* u16Data){
 
 uint8_t rbfu16_remove(rbfu16_t* rbf, uint16_t* u16Data){
    if( (rbf != 0) && (u16Data != 0) ){
-      uint16_t *pEndPtr = rbf->u16Buffer + (rbf->u16MaxNumElem * sizeof(uint16_t));
+      uint16_t *pEndPtr = rbf->u16Buffer + rbf->u16MaxNumElem;
       if(rbf->u16NumElem == 0){
          //full
          return E_BUF_UNDERFLOW;

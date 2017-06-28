@@ -1,0 +1,54 @@
+#ifndef OS_TYPES_H
+#define OS_TYPES_H
+
+//////////////////////////////////////////////////////////////////////////////
+// INCLUDES
+//////////////////////////////////////////////////////////////////////////////
+#include "os_event.h"
+#include "os_task.h"
+#ifdef _MSC_VER
+#include <Windows.h>
+#else
+#include <pthread.h>
+#endif
+#include "osmacro.h"
+
+//////////////////////////////////////////////////////////////////////////////
+// CONSTANTS AND DATA TYPES
+//////////////////////////////////////////////////////////////////////////////
+typedef struct os_task_cfg_tag
+{
+   os_task_t *taskPtr;
+   THREAD_PROTO_PTR(threadFuncPtr, arg);
+   uint16_t u16MaxNumEvents;
+}os_task_cfg_t;
+
+typedef struct os_schm_cfg_tag
+{
+   os_task_cfg_t *osTaskList;
+   uint32_t numOsTasks;
+   os_timer_ev_cfg_t *timerEventList;
+   uint32_t numTimerEvents;
+   uint32_t(*timerFunc)(void);
+   void(*timerEventHookFunc)(const os_timer_ev_cfg_t *cfg);
+
+} os_schm_cfg_t;
+
+//////////////////////////////////////////////////////////////////////////////
+// GLOBAL VARIABLES
+//////////////////////////////////////////////////////////////////////////////
+extern os_schm_cfg_t g_schm_cfg;
+
+//////////////////////////////////////////////////////////////////////////////
+// GLOBAL FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
+void os_schm_init(os_schm_cfg_t *cfg);
+void os_schm_shutdown(void);
+void os_schm_start(void);
+void os_schm_stop(void);
+#ifdef UNIT_TEST
+void os_schm_run(void);
+#endif
+
+
+#endif //OS_TIMER_H

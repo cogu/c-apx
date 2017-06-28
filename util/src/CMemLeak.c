@@ -19,6 +19,7 @@
 #undef free
 #undef strdup
 #undef calloc
+#undef _strdup
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

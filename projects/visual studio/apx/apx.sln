@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apx_pipe_test_client", "apx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apx_client", "apx_client\apx_client.vcxproj", "{72BB1B85-BB76-4DA2-96F0-D2314E2F3D88}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apx_os", "apx_os\apx_os.vcxproj", "{D30031C2-BB6A-4E65-9F17-AB659DA471BC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -59,6 +61,14 @@ Global
 		{72BB1B85-BB76-4DA2-96F0-D2314E2F3D88}.Release|x64.ActiveCfg = Release|Win32
 		{72BB1B85-BB76-4DA2-96F0-D2314E2F3D88}.Release|x86.ActiveCfg = Release|Win32
 		{72BB1B85-BB76-4DA2-96F0-D2314E2F3D88}.Release|x86.Build.0 = Release|Win32
+		{D30031C2-BB6A-4E65-9F17-AB659DA471BC}.Debug|x64.ActiveCfg = Debug|x64
+		{D30031C2-BB6A-4E65-9F17-AB659DA471BC}.Debug|x64.Build.0 = Debug|x64
+		{D30031C2-BB6A-4E65-9F17-AB659DA471BC}.Debug|x86.ActiveCfg = Debug|Win32
+		{D30031C2-BB6A-4E65-9F17-AB659DA471BC}.Debug|x86.Build.0 = Debug|Win32
+		{D30031C2-BB6A-4E65-9F17-AB659DA471BC}.Release|x64.ActiveCfg = Release|x64
+		{D30031C2-BB6A-4E65-9F17-AB659DA471BC}.Release|x64.Build.0 = Release|x64
+		{D30031C2-BB6A-4E65-9F17-AB659DA471BC}.Release|x86.ActiveCfg = Release|Win32
+		{D30031C2-BB6A-4E65-9F17-AB659DA471BC}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
