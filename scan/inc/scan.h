@@ -8,7 +8,10 @@ const uint8_t *scan_matchPair(const uint8_t *pBegin, const uint8_t *pEnd, uint8_
 const uint8_t *scan_matchStr(const uint8_t *pBegin, const uint8_t *pEnd,const uint8_t *pStrBegin, const uint8_t *pStrEnd);
 const uint8_t *scan_searchUntil(const uint8_t *pBegin, const uint8_t *pEnd, uint8_t val);
 const uint8_t *scan_digit(const uint8_t *pBegin, const uint8_t *pEnd);
-const uint8_t *scan_toInt(const uint8_t *pBegin, const uint8_t *pEnd,int *data);
+const uint8_t *scan_toLong(const uint8_t *pBegin, const uint8_t *pEnd,long *data);
+const uint8_t *scan_toUnsignedLong(const uint8_t *pBegin, const uint8_t *pEnd,unsigned long *data);
 const uint8_t *scan_line(const uint8_t *pBegin, const uint8_t *pEnd);
+const uint8_t *scan_whilePredicate(const uint8_t *pBegin, const uint8_t *pEnd, int (*pred)(int c));
+int pred_isHorizontalSpace(int c);
 
 #endif //SCAN_H

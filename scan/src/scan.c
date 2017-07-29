@@ -126,7 +126,33 @@ const uint8_t *scan_digit(const uint8_t *pBegin, const uint8_t *pEnd)
    return pNext;
 }
 
-const uint8_t *scan_toInt(const uint8_t *pBegin, const uint8_t *pEnd,int *data)
+const uint8_t *scan_toLong(const uint8_t *pBegin, const uint8_t *pEnd,long *data)
+{
+   const uint8_t *pResult=scan_digit(pBegin,pEnd);
+   if (pResult > pBegin)
+   {
+      int radix=1;
+      int i;
+      int len=(pResult-pBegin);
+      if (len == 0)
+      {
+         return pBegin;
+      }
+      for (i=1;i<len;i++)
+      {
+         radix*=10;
+      }
+      *data=0;
+      for(i=0;i<len;i++)
+      {
+         *data+=(pBegin[i]-0x30)*radix;
+         radix/=10;
+      }
+   }
+   return pResult;
+}
+
+const uint8_t *scan_toUnsignedLong(const uint8_t *pBegin, const uint8_t *pEnd, unsigned long *data)
 {
    const uint8_t *pResult=scan_digit(pBegin,pEnd);
    if (pResult > pBegin)
@@ -154,11 +180,37 @@ const uint8_t *scan_toInt(const uint8_t *pBegin, const uint8_t *pEnd,int *data)
 
 /**
  * searches for next line ending '\n'. returns where it encountered the line ending
- * Note that '\r\n' line endings are not supported, only '\n'
  */
 const uint8_t *scan_line(const uint8_t *pBegin, const uint8_t *pEnd)
 {
    return scan_searchVal(pBegin, pEnd, (uint8_t) '\n');
 }
+
+const uint8_t *scan_whilePredicate(const uint8_t *pBegin, const uint8_t *pEnd, int (*pred_func)(int c) )
+{
+   const uint8_t *pNext = pBegin;
+   while (pNext < pEnd)
+   {
+      int c = (int) *pNext;
+      if (!pred_func(c)){
+         break;
+      }
+      pNext++;
+   }
+   return pNext;
+}
+
+/**
+ * returns true if v is either '\t' or ' '
+ */
+int pred_isHorizontalSpace(int c)
+{
+   if ( (c == (int) '\t') || (c == (int) ' ') )
+   {
+      return (int) 1;
+   }
+   return (int) 0;
+}
+
 
 /***************** Private Function Definitions *******************/
