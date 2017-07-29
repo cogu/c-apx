@@ -215,13 +215,13 @@ static int apx_node_getDatatypeId(apx_port_t *port)
       pMark=scan_matchPair(pNext,pEnd,'[',']','\\');
       if (pMark>pBegin)
       {
-         int value;
+         long value;
          const uint8_t *pResult;
          pNext+=1; //move past the '['
-         pResult = scan_toInt(pNext,pMark,&value);
+         pResult = scan_toLong(pNext,pMark,&value);
          if (pResult > pNext)
          {
-            return value;
+            return (int) value;
          }
       }
    }

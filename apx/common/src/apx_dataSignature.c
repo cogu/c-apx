@@ -373,8 +373,8 @@ static const uint8_t *parseArrayLength(const uint8_t *pBegin, const uint8_t *pEn
          pResult=scan_matchPair(pNext,pEnd,'[',']','\\');
          if (pResult>pNext)
          {
-            int value;
-            if (scan_toInt(pNext+1,pResult,&value) == 0)
+            long value;
+            if (scan_toLong(pNext+1,pResult,&value) == 0)
             {
                return NULL;
             }
@@ -415,14 +415,14 @@ static const uint8_t *parseLimit(const uint8_t *pBegin, const uint8_t *pEnd, apx
             pMid = scan_searchVal(pParenBegin,pParenEnd,',');
             if (pMid > pParenBegin)
             {
-               int min;
-               int max;
+               long min;
+               long max;
                uint8_t isParseOK = 0;
                const uint8_t *pResult;
-               pResult = scan_toInt(pParenBegin,pMid,&min);
+               pResult = scan_toLong(pParenBegin,pMid,&min);
                if (pResult > pParenBegin)
                {
-                  pResult = scan_toInt(pMid+1,pParenEnd,&max);
+                  pResult = scan_toLong(pMid+1,pParenEnd,&max);
                   if (pResult > pMid+1)
                   {
                      isParseOK = 1;

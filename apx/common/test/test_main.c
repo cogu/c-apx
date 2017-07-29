@@ -18,6 +18,7 @@ CuSuite* testSuite_apx_allocator(void);
 CuSuite* testSuite_apx_file(void);
 CuSuite* testSuite_apx_fileMap(void);
 CuSuite* testSuite_apx_nodeData(void);
+CuSuite* testsuite_apx_attributesParser(void);
 CuSuite* testSuite_remotefile(void);
 
 
@@ -29,7 +30,7 @@ void RunAllTests(void)
    CuString *output = CuStringNew();
    CuSuite* suite = CuSuiteNew();
 
-   CuSuiteAddSuite(suite, testsuite_apx_dataSignature());
+/*   CuSuiteAddSuite(suite, testsuite_apx_dataSignature());
    CuSuiteAddSuite(suite, testsuite_apx_port());
    CuSuiteAddSuite(suite, testSuite_apx_node());
    CuSuiteAddSuite(suite, testSuite_apx_parser());
@@ -42,7 +43,8 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_fileMap());
    CuSuiteAddSuite(suite, testSuite_apx_nodeData());
    CuSuiteAddSuite(suite, testSuite_apx_allocator());
-   CuSuiteAddSuite(suite, testSuite_remotefile());
+   CuSuiteAddSuite(suite, testSuite_remotefile());*/
+   CuSuiteAddSuite(suite, testsuite_apx_attributesParser());
 
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);

@@ -38,9 +38,13 @@
 									<listOptionValue builtIn="false" value="../../../../remotefile/inc"/>
 									<listOptionValue builtIn="false" value="../../../../msocket/inc"/>
 									<listOptionValue builtIn="false" value="../../../../cutest"/>
+									<listOptionValue builtIn="false" value="../../../../apx/server/inc"/>
+									<listOptionValue builtIn="false" value="../../../../dtl_type/inc"/>
+									<listOptionValue builtIn="false" value="../../../../scan/inc"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.258541000" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="MEM_LEAK_CHECK"/>
+									<listOptionValue builtIn="false" value="UNIT_TEST"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.2124483833" superClass="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin"/>
 							</tool>
@@ -53,6 +57,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.exe.debug.70902684" name="Cygwin C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.exe.debug"/>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -97,6 +104,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.exe.release.20496788" name="Cygwin C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.exe.release"/>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
