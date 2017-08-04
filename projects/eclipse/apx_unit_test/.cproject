@@ -40,7 +40,7 @@
 									<listOptionValue builtIn="false" value="../../../../cutest"/>
 									<listOptionValue builtIn="false" value="../../../../apx/server/inc"/>
 									<listOptionValue builtIn="false" value="../../../../dtl_type/inc"/>
-									<listOptionValue builtIn="false" value="../../../../scan/inc"/>
+									<listOptionValue builtIn="false" value="../../../../bstr/inc"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.258541000" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="MEM_LEAK_CHECK"/>

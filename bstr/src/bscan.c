@@ -1,4 +1,4 @@
-#include "scan.h"
+#include "bscan.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -14,7 +14,7 @@
  * On success it returns the pointer to \par val.
  * On failure it returns \par pBegin if not found or NULL if invalid arguments was given
  */
-const uint8_t *scan_searchVal(const uint8_t *pBegin, const uint8_t *pEnd, uint8_t val){
+const uint8_t *bscan_searchVal(const uint8_t *pBegin, const uint8_t *pEnd, uint8_t val){
    const uint8_t *pNext = pBegin;
    if (pNext > pEnd)
    {
@@ -36,34 +36,56 @@ const uint8_t *scan_searchVal(const uint8_t *pBegin, const uint8_t *pEnd, uint8_
  * On failure it returns \par pBegin if the scan reached \par pEnd before \par right was found.
  * If it cannot even match \par left on the first character of \par pBegin it returns NULL.
  */
-const uint8_t *scan_matchPair(const uint8_t *pBegin, const uint8_t *pEnd, uint8_t left, uint8_t right, uint8_t escapeChar){
+const uint8_t *bscan_matchPair(const uint8_t *pBegin, const uint8_t *pEnd, uint8_t left, uint8_t right, uint8_t escapeChar){
    const uint8_t *pNext = pBegin;
+   uint32_t innerLevelCount=0;
    if (pNext < pEnd){
       if (*pNext == left){
          pNext++;
          if (escapeChar != 0){
             uint8_t isEscape = 0;
             while (pNext < pEnd){
-               uint8_t c = *pNext++;
+               uint8_t c = *pNext;
                if (isEscape != 0){
                   //ignore this char
+                  pNext++;
                   isEscape = 0;
                   continue;
                }
-               else{
+               else {
                   if ( c == escapeChar ){
                      isEscape = 1;
                   }
-                  else  if (*pNext == right){
-                     return pNext;
+                  else if (c == right){
+                     if (innerLevelCount == 0) {
+                        return pNext;
+                     }
+                     else {
+                        innerLevelCount--;
+                     }
+                  }
+                  else if ( c == left )
+                  {
+                     innerLevelCount++;
                   }
                }
+               pNext++;
             }
          }
          else{
-            while (pNext < pEnd){
-               if (*pNext == right){
-                  return pNext;
+            while (pNext < pEnd) {
+               uint8_t c = *pNext;
+               if (c == right){
+                  if (innerLevelCount == 0) {
+                     return pNext;
+                  }
+                  else {
+                     innerLevelCount--;
+                  }
+               }
+               else if (c == left)
+               {
+                  innerLevelCount++;
                }
                pNext++;
             }
@@ -85,7 +107,7 @@ const uint8_t *scan_matchPair(const uint8_t *pBegin, const uint8_t *pEnd, uint8_
  * \param pStrEnd end of string to matched
  * \return On succes, pointer in buffer where the match stopped. On match failure it returns 0. If pEnd was reached before pStr was fully matched it returns pBegin.
  */
-const uint8_t *scan_matchStr(const uint8_t *pBegin, const uint8_t *pEnd,const uint8_t *pStrBegin, const uint8_t *pStrEnd)
+const uint8_t *bscan_matchStr(const uint8_t *pBegin, const uint8_t *pEnd,const uint8_t *pStrBegin, const uint8_t *pStrEnd)
 {
    const uint8_t *pNext = pBegin;
    const uint8_t *pStrNext = pStrBegin;
@@ -113,7 +135,7 @@ const uint8_t *scan_matchStr(const uint8_t *pBegin, const uint8_t *pEnd,const ui
    return pBegin; //reached pEnd before pStr was fully matched
 }
 
-const uint8_t *scan_digit(const uint8_t *pBegin, const uint8_t *pEnd)
+const uint8_t *tscan_digit(const uint8_t *pBegin, const uint8_t *pEnd)
 {
    const uint8_t *pNext = pBegin;
    while (pNext < pEnd)
@@ -127,9 +149,9 @@ const uint8_t *scan_digit(const uint8_t *pBegin, const uint8_t *pEnd)
    return pNext;
 }
 
-const uint8_t *scan_toLong(const uint8_t *pBegin, const uint8_t *pEnd,long *data)
+const uint8_t *bscan_toLong(const uint8_t *pBegin, const uint8_t *pEnd,long *data)
 {
-   const uint8_t *pResult=scan_digit(pBegin,pEnd);
+   const uint8_t *pResult=tscan_digit(pBegin,pEnd);
    if (pResult > pBegin)
    {
       int radix=1;
@@ -153,9 +175,9 @@ const uint8_t *scan_toLong(const uint8_t *pBegin, const uint8_t *pEnd,long *data
    return pResult;
 }
 
-const uint8_t *scan_toUnsignedLong(const uint8_t *pBegin, const uint8_t *pEnd, unsigned long *data)
+const uint8_t *bscan_toUnsignedLong(const uint8_t *pBegin, const uint8_t *pEnd, unsigned long *data)
 {
-   const uint8_t *pResult=scan_digit(pBegin,pEnd);
+   const uint8_t *pResult=tscan_digit(pBegin,pEnd);
    if (pResult > pBegin)
    {
       int radix=1;
@@ -182,12 +204,12 @@ const uint8_t *scan_toUnsignedLong(const uint8_t *pBegin, const uint8_t *pEnd, u
 /**
  * searches for next line ending '\n'. returns where it encountered the line ending
  */
-const uint8_t *scan_line(const uint8_t *pBegin, const uint8_t *pEnd)
+const uint8_t *bscan_line(const uint8_t *pBegin, const uint8_t *pEnd)
 {
-   return scan_searchVal(pBegin, pEnd, (uint8_t) '\n');
+   return bscan_searchVal(pBegin, pEnd, (uint8_t) '\n');
 }
 
-const uint8_t *scan_whilePredicate(const uint8_t *pBegin, const uint8_t *pEnd, int (*pred_func)(int c) )
+const uint8_t *bscan_whilePredicate(const uint8_t *pBegin, const uint8_t *pEnd, int (*pred_func)(int c) )
 {
    const uint8_t *pNext = pBegin;
    while (pNext < pEnd)
@@ -204,7 +226,7 @@ const uint8_t *scan_whilePredicate(const uint8_t *pBegin, const uint8_t *pEnd, i
 /**
  * returns true if v is either '\t' or ' '
  */
-int pred_isHorizontalSpace(int c)
+int bscan_pred_isHorizontalSpace(int c)
 {
    if ( (c == (int) '\t') || (c == (int) ' ') )
    {

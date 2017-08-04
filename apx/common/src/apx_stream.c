@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "pack.h"
-#include "scan.h"
+#include "bscan.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -110,7 +110,7 @@ void apx_istream_write(apx_istream_t *self, const uint8_t *pChunk, uint32_t chun
             const uint8_t *pLineEnd = 0;
             const uint8_t *pLineBegin = pNext;
 
-            pLineEnd = scan_searchVal(pNext,pEnd,(uint8_t) '\n');
+            pLineEnd = bscan_searchVal(pNext,pEnd,(uint8_t) '\n');
 
             if(pLineEnd == pLineBegin){
                pNext = pLineEnd+1;
@@ -285,7 +285,7 @@ const uint8_t* apx_istream_parseNodeName(apx_istream_t *self, const uint8_t *pBe
    if (self != 0){
       const uint8_t *pNext;
       char name[APX_MAX_NAME_LEN+1];
-      pNext = scan_matchPair(pBegin,pEnd,(uint8_t) '\"', (uint8_t) '\"','\\');
+      pNext = bscan_matchPair(pBegin,pEnd,(uint8_t) '\"', (uint8_t) '\"','\\');
       if( (pNext > pBegin) && (pNext<=pEnd) ){
          //pBegin[0] == '"'
          //pNext[0] == '"'
@@ -408,7 +408,7 @@ static const uint8_t *apx_stream_parseApxHeaderLine(const uint8_t *pBegin, const
    const uint8_t *pResult = 0;
    const char *str = "APX/";
    int len = (int) strlen(str);
-   pResult = scan_matchStr(pNext,pEnd,(const uint8_t*) str,((const uint8_t*) str)+len);
+   pResult = bscan_matchStr(pNext,pEnd,(const uint8_t*) str,((const uint8_t*) str)+len);
    if ( (pResult > pNext) && (pNext+len == pResult))
    {
       long number;
@@ -455,13 +455,13 @@ static const uint8_t * apx_splitDeclarationLine(const uint8_t *pBegin,const uint
          uint8_t c = (uint8_t) *pNext;
          if (c == '"')
          {
-            pResult = scan_matchPair(pNext,pEnd,'"','"','\\');
+            pResult = bscan_matchPair(pNext,pEnd,'"','"','\\');
             if (pResult > pNext)
             {
                nameLen = (uint32_t) (pResult-pNext-1); //compensate for the first '"' character
                pNameBegin=(pNext+1);
                pNext = pResult+1;
-               pResult = scan_searchVal(pNext,pEnd,':');
+               pResult = bscan_searchVal(pNext,pEnd,':');
                if (pResult > pNext)
                {
 

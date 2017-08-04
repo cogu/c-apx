@@ -7,7 +7,7 @@
 #include <assert.h>
 #include "apx_attributeParser.h"
 #include "apx_error.h"
-#include "scan.h"
+#include "bscan.h"
 #include <ctype.h>
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -60,7 +60,7 @@ const uint8_t* apx_attributeParser_parse(apx_attributeParser_t *self, const uint
    while(pNext < pEnd)
    {
 
-      pResult = scan_whilePredicate(pNext, pEnd, pred_isHorizontalSpace);
+      pResult = bscan_whilePredicate(pNext, pEnd, bscan_pred_isHorizontalSpace);
       if (pResult == pEnd)
       {
          break;
@@ -137,6 +137,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
       char c = (char) *pNext;
       if (isdigit(c) != 0)
       {
+         //integer
          unsigned long value;
          dtl_sv_t *sv = dtl_sv_new();
          if (sv == 0)
@@ -145,7 +146,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
             self->pErrorNext = pNext;
             return 0;
          }
-         pResult = scan_toUnsignedLong(pNext, pEnd, &value);
+         pResult = bscan_toUnsignedLong(pNext, pEnd, &value);
          if ( (pResult == 0) || (pResult == pNext))
          {
             dtl_sv_delete(sv);
@@ -157,6 +158,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
       }
       else if(c=='-')
       {
+         //negative integer
          dtl_sv_t *sv = dtl_sv_new();
          if (sv == 0)
          {
@@ -171,7 +173,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
             if (isdigit(c) != 0)
             {
                long value;
-               pResult = scan_toLong(pNext, pEnd, &value);
+               pResult = bscan_toLong(pNext, pEnd, &value);
                if ( (pResult == 0) || (pResult == pNext))
                {
                   dtl_sv_delete(sv);
@@ -185,6 +187,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
       }
       else if(c=='{')
       {
+         //array literal
          const uint8_t *pMark1;
          const uint8_t *pMark2;
          dtl_av_t *av = dtl_av_new();
@@ -194,7 +197,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
             self->pErrorNext = pNext;
             return 0;
          }
-         pResult = scan_matchPair(pNext, pEnd, '{', '}', 0);
+         pResult = bscan_matchPair(pNext, pEnd, '{', '}', 0);
          if ( (pResult == 0) || (pResult == pNext) )
          {
             //failed to parse
@@ -212,7 +215,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
          {
             dtl_dv_t *dv = 0;
             //search for optional white-space followed by a value followed by optional whitespace followed by optional comma
-            pResult = scan_whilePredicate(pNext, pEnd, pred_isHorizontalSpace);
+            pResult = bscan_whilePredicate(pNext, pEnd, bscan_pred_isHorizontalSpace);
             if (pResult == pEnd)
             {
                break;
@@ -232,7 +235,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
                dtl_av_push(av, dv);
             }
             pNext = pResult;
-            pResult = scan_whilePredicate(pNext, pEnd, pred_isHorizontalSpace);
+            pResult = bscan_whilePredicate(pNext, pEnd, bscan_pred_isHorizontalSpace);
             if (pResult == pEnd)
             {
                break;
@@ -253,6 +256,30 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
          pEnd = pMark1;
          pResult = pMark2;
          initValueInternal = (dtl_dv_t*) av;
+      }
+      else if(c == '"')
+      {
+         //string literal
+         dtl_sv_t *sv = dtl_sv_new();
+         if (sv == 0)
+         {
+            self->lastError = APX_MEM_ERROR;
+            self->pErrorNext = pNext;
+            return 0;
+         }
+         pResult = bscan_matchPair(pNext, pEnd, '"', '"', '\\');
+         if ( (pResult == 0) || (pResult == pNext) )
+         {
+            //failed to parse
+            dtl_sv_delete(sv);
+            self->lastError = APX_PARSE_ERROR;
+            self->pErrorNext = pNext;
+            return 0;
+         }
+         assert(*pResult == '"');
+         dtl_sv_set_cstr_range(sv, (const char*)pNext+1, (const char*) pResult);
+         pResult++; //move cursor past the '"' character
+         initValueInternal = (dtl_dv_t*) sv;
       }
       else
       {

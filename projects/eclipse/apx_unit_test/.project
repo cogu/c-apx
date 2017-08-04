@@ -35,6 +35,16 @@
 			<locationURI>PARENT-3-PROJECT_LOC/adt/src</locationURI>
 		</link>
 		<link>
+			<name>bstr/inc</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/bstr/inc</locationURI>
+		</link>
+		<link>
+			<name>bstr/src</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/bstr/src</locationURI>
+		</link>
+		<link>
 			<name>cutest/cutest</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/cutest</locationURI>
@@ -42,12 +52,12 @@
 		<link>
 			<name>dtl_type/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_type/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/inc</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_type/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/src</locationURI>
 		</link>
 		<link>
 			<name>msocket/inc</name>
@@ -73,16 +83,6 @@
 			<name>remotefile/test</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/remotefile/test</locationURI>
-		</link>
-		<link>
-			<name>scan/inc</name>
-			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/scan/inc</location>
-		</link>
-		<link>
-			<name>scan/src</name>
-			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/scan/src</location>
 		</link>
 		<link>
 			<name>util/inc</name>
@@ -112,17 +112,17 @@
 		<link>
 			<name>apx/server/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/server/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server/inc</locationURI>
 		</link>
 		<link>
 			<name>apx/server/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/server/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server/src</locationURI>
 		</link>
 		<link>
 			<name>apx/server/test</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/server/test</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server/test</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

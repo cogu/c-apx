@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
-#include "scan.h"
+#include "bscan.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -212,13 +212,13 @@ static int apx_node_getDatatypeId(apx_port_t *port)
    {
       pEnd = pBegin+strlen(port->dataSignature);
       pNext=pBegin+1;
-      pMark=scan_matchPair(pNext,pEnd,'[',']','\\');
+      pMark=bscan_matchPair(pNext,pEnd,'[',']','\\');
       if (pMark>pBegin)
       {
          long value;
          const uint8_t *pResult;
          pNext+=1; //move past the '['
-         pResult = scan_toLong(pNext,pMark,&value);
+         pResult = bscan_toLong(pNext,pMark,&value);
          if (pResult > pNext)
          {
             return (int) value;

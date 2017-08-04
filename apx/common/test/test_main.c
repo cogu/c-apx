@@ -29,16 +29,16 @@ void RunAllTests(void)
 {
    CuString *output = CuStringNew();
    CuSuite* suite = CuSuiteNew();
-
-/*   CuSuiteAddSuite(suite, testsuite_apx_dataSignature());
+/*
+   CuSuiteAddSuite(suite, testsuite_apx_dataSignature());
    CuSuiteAddSuite(suite, testsuite_apx_port());
    CuSuiteAddSuite(suite, testSuite_apx_node());
    CuSuiteAddSuite(suite, testSuite_apx_parser());
    CuSuiteAddSuite(suite, testSuite_apx_portDataMap());
    CuSuiteAddSuite(suite, testSuite_apx_nodeInfo());
    CuSuiteAddSuite(suite, testSuite_apx_routerPortMapEntry());
-   CuSuiteAddSuite(suite, testSuite_apx_router());
-   CuSuiteAddSuite(suite, testSuite_apx_dataTrigger());      
+   //CuSuiteAddSuite(suite, testSuite_apx_router());
+   //CuSuiteAddSuite(suite, testSuite_apx_dataTrigger());
    CuSuiteAddSuite(suite, testSuite_apx_file());
    CuSuiteAddSuite(suite, testSuite_apx_fileMap());
    CuSuiteAddSuite(suite, testSuite_apx_nodeData());
