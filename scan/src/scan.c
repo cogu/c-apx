@@ -62,9 +62,10 @@ const uint8_t *scan_matchPair(const uint8_t *pBegin, const uint8_t *pEnd, uint8_
          }
          else{
             while (pNext < pEnd){
-               if (*pNext++ == right){
+               if (*pNext == right){
                   return pNext;
                }
+               pNext++;
             }
          }
       }

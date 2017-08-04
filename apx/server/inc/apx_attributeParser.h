@@ -19,8 +19,10 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_attributeParser_tag
 {
-   adt_stack_t stack;
-   int32_t errorCode; //last reported error code
+   adt_stack_t stack; //stack of dtl_av_t objects
+   int32_t lastError;
+   const uint8_t *pErrorNext;
+   int32_t lastErrorPos;
 }apx_attributeParser_t;
 
 #ifdef UNIT_TEST
