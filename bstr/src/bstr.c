@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdio.h>
-#include "pstr.h"
+#include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -23,7 +23,7 @@
  * Obviously pEnd must be greater than pBegin.
  * returns uint8_t* but can easily be cast to char* by user
  */
-uint8_t *pstr_make(const uint8_t *pBegin, const uint8_t *pEnd){
+uint8_t *bstr_make(const uint8_t *pBegin, const uint8_t *pEnd){
    if( (pBegin != 0) && (pEnd != 0) && (pBegin<pEnd)){
       uint32_t len = (uint32_t) (pEnd-pBegin);
       uint8_t *str = (uint8_t*) malloc(len+1);
@@ -38,19 +38,19 @@ uint8_t *pstr_make(const uint8_t *pBegin, const uint8_t *pEnd){
 
 
 /**
- * like pstr_make but in addition it adds optional arguments startOffset and endOffset.
- * startOffset is the number of extra bytes to add before string copy (before pBegin).
+ * like bstr_make but in addition it adds optional arguments startOffset and endOffset.
+ * beginOffset is the number of extra bytes to add before string copy (before pBegin).
  * endOffset is the number of extra bytes to add after string copy (after pEnd)
  */
-uint8_t *pstr_make_x(const uint8_t *pBegin, const uint8_t *pEnd, uint16_t startOffset, uint16_t endOffset){
+uint8_t *bstr_make_x(const uint8_t *pBegin, const uint8_t *pEnd, uint16_t beginOffset, uint16_t endOffset){
    if( (pBegin != 0) && (pEnd != 0) && (pBegin)){
       uint8_t *str;
       uint32_t allocLen;
       uint32_t strLen = (uint32_t) (pEnd-pBegin);
-      allocLen = strLen+startOffset+endOffset+1;
+      allocLen = strLen+beginOffset+endOffset+1;
       str = (uint8_t*) malloc(allocLen);
       if(str != 0){
-         memcpy(str+startOffset,pBegin,strLen);
+         memcpy(str+beginOffset,pBegin,strLen);
          str[allocLen-1]=(uint8_t)0;
       }
       return str;

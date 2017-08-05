@@ -8,7 +8,7 @@
 #include "apx_cfg.h"
 #include "apx_dataSignature.h"
 #include "bscan.h"
-#include "pstr.h"
+#include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -296,7 +296,7 @@ static const uint8_t *parseName(const uint8_t *pBegin, const uint8_t *pEnd, apx_
             assert(*pResult=='"');
             if (nameLen<APX_MAX_NAME_LEN)
             {
-               pDataElement->name = (char*) pstr_make(pNext+1,pResult); //copy string start from the first byte after left '"' until (but not including) the right '"'
+               pDataElement->name = (char*) bstr_make(pNext+1,pResult); //copy string start from the first byte after left '"' until (but not including) the right '"'
             }
             pNext=pResult+1;
          }

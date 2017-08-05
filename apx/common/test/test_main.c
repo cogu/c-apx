@@ -29,7 +29,7 @@ void RunAllTests(void)
 {
    CuString *output = CuStringNew();
    CuSuite* suite = CuSuiteNew();
-/*
+
    CuSuiteAddSuite(suite, testsuite_apx_dataSignature());
    CuSuiteAddSuite(suite, testsuite_apx_port());
    CuSuiteAddSuite(suite, testSuite_apx_node());
@@ -43,7 +43,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_fileMap());
    CuSuiteAddSuite(suite, testSuite_apx_nodeData());
    CuSuiteAddSuite(suite, testSuite_apx_allocator());
-   CuSuiteAddSuite(suite, testSuite_remotefile());*/
+   CuSuiteAddSuite(suite, testSuite_remotefile());
    CuSuiteAddSuite(suite, testsuite_apx_attributesParser());
 
    CuSuiteRun(suite);

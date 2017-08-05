@@ -9,7 +9,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include "pstr.h"
+#include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -191,14 +191,14 @@ char *apx_file_basename(const apx_file_t *self)
          {
             if (*p == '.')
             {
-               return (char*) pstr_make((const uint8_t*) pBegin, (const uint8_t*) p);
+               return (char*) bstr_make((const uint8_t*) pBegin, (const uint8_t*) p);
             }
             --p;
          }
          //no '.' character was found, continue out of the if-statement to return entire string
       }
       //return entire string
-      return (char*) pstr_make((const uint8_t*) pBegin, (const uint8_t*) pEnd);
+      return (char*) bstr_make((const uint8_t*) pBegin, (const uint8_t*) pEnd);
    }
    errno = EINVAL;
    return 0;
