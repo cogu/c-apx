@@ -340,7 +340,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
                return 0;
             }
             assert(*pResult == '"');
-            dtl_sv_set_cstr_range(sv, (const char*)pNext+1, (const char*) pResult);
+            dtl_sv_set_bstr(sv, (const char*)pNext+1, (const char*) pResult);
             pResult++; //move cursor past the '"' character
             initValueInternal = (dtl_dv_t*) sv;
          }
