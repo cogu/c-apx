@@ -37,8 +37,8 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_portDataMap());
    CuSuiteAddSuite(suite, testSuite_apx_nodeInfo());
    CuSuiteAddSuite(suite, testSuite_apx_routerPortMapEntry());
-   //CuSuiteAddSuite(suite, testSuite_apx_router());
-   //CuSuiteAddSuite(suite, testSuite_apx_dataTrigger());
+   CuSuiteAddSuite(suite, testSuite_apx_router());
+   CuSuiteAddSuite(suite, testSuite_apx_dataTrigger());
    CuSuiteAddSuite(suite, testSuite_apx_file());
    CuSuiteAddSuite(suite, testSuite_apx_fileMap());
    CuSuiteAddSuite(suite, testSuite_apx_nodeData());

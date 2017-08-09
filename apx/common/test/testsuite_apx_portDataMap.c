@@ -75,7 +75,7 @@ static void test_apx_portDataMap_create(CuTest* tc)
    CuAssertIntEquals(tc,2,entry->length);
 
    entry = (apx_portDataMapEntry_t*) *(adt_ary_get(&dataMap.elements,1));
-   CuAssertStrEquals(tc,"PS_CabTiltLockWarning",entry->port->name);
+   CuAssertStrEquals(tc,"CabTiltLockWarning",entry->port->name);
    CuAssertIntEquals(tc,2,entry->offset);
    CuAssertIntEquals(tc,1,entry->length);
 

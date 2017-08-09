@@ -4,11 +4,11 @@
 #include "filestream.h"
 #include "apx_parser.h"
 #include "apx_stream.h"
+#include "apx_logging.h"
 #include "apx_node.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
-
 
 void apx_parser_create(apx_parser_t *self)
 {
@@ -16,6 +16,7 @@ void apx_parser_create(apx_parser_t *self)
    {
       adt_ary_create(&self->nodeList,apx_node_vdelete);
       self->currentNode=0;
+
    }
 }
 
@@ -28,6 +29,7 @@ void apx_parser_destroy(apx_parser_t *self)
          apx_node_delete(self->currentNode);
       }
       adt_ary_destroy(&self->nodeList);
+
    }
 }
 
@@ -116,7 +118,7 @@ void apx_parser_close(apx_parser_t *self)
 {
    if ( (self!=0) && (self->currentNode!=0) )
    {
-      apx_node_resolvePortSignatures(self->currentNode);
+      apx_node_finalize(self->currentNode);
       adt_ary_push(&self->nodeList,self->currentNode);
       self->currentNode=0;
    }
@@ -128,7 +130,7 @@ void apx_parser_node(apx_parser_t *self, const char *name) //N"<name>"
    {
       if (self->currentNode!=0)
       {
-         apx_node_resolvePortSignatures(self->currentNode);
+         apx_node_finalize(self->currentNode);
          adt_ary_push(&self->nodeList,self->currentNode);
          self->currentNode=0;
       }
@@ -148,20 +150,23 @@ void apx_parser_require(apx_parser_t *self, const char *name, const char *dsg, c
 {
    if ( (self != 0) && (self->currentNode != 0) )
    {
-      apx_node_createRequirePort(self->currentNode,name,dsg,attr);
+      (void) apx_node_createRequirePort(self->currentNode,name,dsg,attr);
    }
 }
 
 void apx_parser_provide(apx_parser_t *self, const char *name, const char *dsg, const char *attr)
 {
-   apx_node_createProvidePort(self->currentNode,name,dsg,attr);
+   if ( (self != 0) && (self->currentNode != 0) )
+   {
+      (void) apx_node_createProvidePort(self->currentNode,name,dsg,attr);
+   }
 }
 
 void apx_parser_node_end(apx_parser_t *self)
 {
    if ( (self != 0) && (self->currentNode!=0) )
    {
-      apx_node_resolvePortSignatures(self->currentNode);
+      apx_node_finalize(self->currentNode);
       adt_ary_push(&self->nodeList,self->currentNode);
       self->currentNode=0;
    }
@@ -202,4 +207,5 @@ void apx_parser_vnode_end(void *arg)
 {
    apx_parser_node_end((apx_parser_t*) arg);
 }
+
 

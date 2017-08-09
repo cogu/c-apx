@@ -8,6 +8,8 @@
 #include "apx_attributeParser.h"
 #include "bscan.h"
 #include <ctype.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -44,7 +46,31 @@ void apx_attributeParser_create(apx_attributeParser_t *self)
 
 void apx_attributeParser_destroy(apx_attributeParser_t *self)
 {
+   //nothing to do
+}
 
+/**
+ * Convenience function for calling apx_attributeParser_parse.
+ * returns true on success, false on failure
+ */
+bool apx_attributeParser_parseObject(apx_attributeParser_t *self, apx_portAttributes_t *attributeObject)
+{
+   if ( (self != 0 ) && (attributeObject != 0) && (attributeObject->rawValue != 0) )
+   {
+      const uint8_t *pBegin;
+      const uint8_t *pEnd;
+      const uint8_t *pResult;
+      pBegin = (const uint8_t*) attributeObject->rawValue;
+      pEnd = pBegin + strlen(attributeObject->rawValue);
+      pResult = apx_attributeParser_parse(self, pBegin, pEnd, attributeObject);
+      if ( pResult == pEnd)
+      {
+         //success only if entire string was parse.
+         //if error occurs (i.e. this function returns false, get the error using the apx_attributeParser_getLastError function)
+         return true;
+      }
+   }
+   return false;
 }
 
 const uint8_t* apx_attributeParser_parse(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, apx_portAttributes_t *attr)

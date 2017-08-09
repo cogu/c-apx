@@ -11,9 +11,9 @@
 #define APX_BASE_TYPE_SINT8     4 //'c'
 #define APX_BASE_TYPE_SINT16    5 //'s'
 #define APX_BASE_TYPE_SINT32    6 //'l'
-#define APX_BASE_TYPE_SINT64    6 //'u'
-#define APX_BASE_TYPE_STRING    7 //'a'
-#define APX_BASE_TYPE_RECORD    8 //"{}"
+#define APX_BASE_TYPE_SINT64    7 //'u'
+#define APX_BASE_TYPE_STRING    8 //'a'
+#define APX_BASE_TYPE_RECORD    9 //"{}"
 
 
 typedef struct apx_dataElement_tag

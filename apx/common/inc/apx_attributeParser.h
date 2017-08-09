@@ -40,6 +40,7 @@ typedef struct apx_attributeParser_tag
 //////////////////////////////////////////////////////////////////////////////
 void apx_attributeParser_create(apx_attributeParser_t *self);
 void apx_attributeParser_destroy(apx_attributeParser_t *self);
+bool apx_attributeParser_parseObject(apx_attributeParser_t *self, apx_portAttributes_t *attributeObject);
 const uint8_t* apx_attributeParser_parse(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, apx_portAttributes_t *attr);
 int32_t apx_attributeParser_getLastError(apx_attributeParser_t *self, const uint8_t **ppNext);
 
