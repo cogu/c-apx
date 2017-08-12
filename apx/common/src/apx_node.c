@@ -4,7 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
-#include "bscan.h"
+#include "bstr.h"
 #include "apx_node.h"
 #include "apx_nodeInfo.h"
 #include "apx_logging.h"
@@ -272,100 +272,18 @@ adt_bytearray_t *apx_node_createPortInitData(apx_node_t *self, apx_port_t *port)
 
       if ( (attr->initValue != 0) && ( dataElement->baseType != APX_BASE_TYPE_NONE) && (dataElement->packLen > 0) )
       {
+         uint8_t *pBegin;
          uint8_t *pEnd;
-         uint8_t *pNext;
-         dtl_dv_type_id dv_type;
-         dtl_sv_t *sv = 0;
-         dtl_av_t *av = 0;
+         uint8_t *pResult;
          initData = adt_bytearray_new(0);
          adt_bytearray_resize(initData, dataElement->packLen);
-         pNext = adt_bytearray_data(initData);
-         pEnd = pNext + dataElement->packLen;
-         dv_type = dtl_dv_type(attr->initValue);
-         if (dv_type == DTL_DV_SCALAR)
+         pBegin = adt_bytearray_data(initData);
+         pEnd = pBegin + dataElement->packLen;
+         pResult = apx_dataElement_pack_dv(dataElement, pBegin, pEnd, attr->initValue);
+         if ( (pResult == 0) || (pResult == pBegin) )
          {
-            sv = (dtl_sv_t*) attr->initValue;
-         }
-         else if (dv_type == DTL_DV_ARRAY)
-         {
-            av = (dtl_av_t*) attr->initValue;
-         }
-         else
-         {
-            assert(0);
-         }
-         switch(dataElement->baseType)
-         {
-         case APX_BASE_TYPE_NONE:
-            break;
-         case APX_BASE_TYPE_UINT8:
-            if (sv != 0)
-            {
-               packU8(pNext, (uint8_t) dtl_sv_get_u32(sv));
-            }
-            else
-            {
-               packU8(pNext, 0);
-            }
-            break;
-         case APX_BASE_TYPE_UINT16:
-            if (sv != 0)
-            {
-               packU16LE(pNext, (uint16_t) dtl_sv_get_u32(sv));
-            }
-            else
-            {
-               packU16LE(pNext, 0);
-            }
-            break;
-         case APX_BASE_TYPE_UINT32:
-            if (sv != 0)
-            {
-               packU32LE(pNext, dtl_sv_get_u32(sv));
-            }
-            else
-            {
-               packU32LE(pNext, 0);
-            }
-            break;
-         case APX_BASE_TYPE_UINT64:
-            break;
-         case APX_BASE_TYPE_SINT8:
-            if (sv != 0)
-            {
-               packU8(pNext, (uint8_t) dtl_sv_get_i32(sv));
-            }
-            else
-            {
-               packU8(pNext, 0);
-            }
-            break;
-         case APX_BASE_TYPE_SINT16:
-            if (sv != 0)
-            {
-               packU16LE(pNext, (uint16_t) dtl_sv_get_i32(sv));
-            }
-            else
-            {
-               packU16LE(pNext, 0);
-            }
-            break;
-         case APX_BASE_TYPE_SINT32:
-            if (sv != 0)
-            {
-               packU32LE(pNext, (uint32_t) dtl_sv_get_i32(sv));
-            }
-            else
-            {
-               packU32LE(pNext, 0);
-            }
-            break;
-         case APX_BASE_TYPE_SINT64:
-            break;
-         case APX_BASE_TYPE_STRING:
-            break;
-         case APX_BASE_TYPE_RECORD:
-            break;
+            adt_bytearray_delete(initData);
+            return 0;
          }
          return initData;
       }
@@ -386,13 +304,13 @@ static int apx_node_getDatatypeId(apx_port_t *port)
    {
       pEnd = pBegin+strlen(port->dataSignature);
       pNext=pBegin+1;
-      pMark=bscan_matchPair(pNext,pEnd,'[',']','\\');
+      pMark=bstr_matchPair(pNext,pEnd,'[',']','\\');
       if (pMark>pBegin)
       {
          long value;
          const uint8_t *pResult;
          pNext+=1; //move past the '['
-         pResult = bscan_toLong(pNext,pMark,&value);
+         pResult = bstr_toLong(pNext,pMark,&value);
          if (pResult > pNext)
          {
             return (int) value;
@@ -470,3 +388,4 @@ static void apx_parser_attributeParseError(apx_port_t *port, int32_t lastError)
    }
    APX_LOG_ERROR("%s", errorStr);
 }
+

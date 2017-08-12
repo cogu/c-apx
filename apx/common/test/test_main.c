@@ -19,7 +19,9 @@ CuSuite* testSuite_apx_file(void);
 CuSuite* testSuite_apx_fileMap(void);
 CuSuite* testSuite_apx_nodeData(void);
 CuSuite* testsuite_apx_attributesParser(void);
+CuSuite* testSuite_apx_dataElement(void);
 CuSuite* testSuite_remotefile(void);
+
 
 
 void streambuf_lock(void){}
@@ -45,7 +47,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_allocator());
    CuSuiteAddSuite(suite, testSuite_remotefile());
    CuSuiteAddSuite(suite, testsuite_apx_attributesParser());
-
+   CuSuiteAddSuite(suite, testSuite_apx_dataElement());
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);
    CuSuiteDetails(suite, output);

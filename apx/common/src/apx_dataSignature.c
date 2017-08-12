@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include "apx_cfg.h"
 #include "apx_dataSignature.h"
-#include "bscan.h"
+#include "bstr.h"
 #include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -197,7 +197,7 @@ static int8_t parseDataSignature(apx_dataSignature_t *self, const uint8_t *dsg)
    if (c =='{')
    {
       const uint8_t *pRecordBegin = pNext;
-      const uint8_t *pRecordEnd=bscan_matchPair(pRecordBegin,pEnd,'{','}','\\');
+      const uint8_t *pRecordEnd=bstr_matchPair(pRecordBegin,pEnd,'{','}','\\');
       if (pRecordEnd > pRecordBegin)
       {
          apx_dataElement_create(self->dataElement,APX_BASE_TYPE_RECORD,0);
@@ -289,7 +289,7 @@ static const uint8_t *parseName(const uint8_t *pBegin, const uint8_t *pEnd, apx_
       if(c == '\"')
       {
          const uint8_t *pResult;
-         pResult=bscan_matchPair(pNext,pEnd,'"','"','\\');
+         pResult=bstr_matchPair(pNext,pEnd,'"','"','\\');
          if (pResult>pNext)
          {
             uint32_t nameLen=(uint32_t) (pResult-pNext-1);
@@ -347,7 +347,7 @@ static const uint8_t *parseType(const uint8_t *pBegin, const uint8_t *pEnd, apx_
       pDataElement->baseType=APX_BASE_TYPE_SINT32;
       break;
    case '{':
-      apx_dataElement_initRecord(pDataElement);
+      apx_dataElement_initRecordType(pDataElement);
       //TODO: implement child record parsing here
       return NULL;
    default:
@@ -370,11 +370,11 @@ static const uint8_t *parseArrayLength(const uint8_t *pBegin, const uint8_t *pEn
       if(c == '[')
       {
          const uint8_t *pResult;
-         pResult=bscan_matchPair(pNext,pEnd,'[',']','\\');
+         pResult=bstr_matchPair(pNext,pEnd,'[',']','\\');
          if (pResult>pNext)
          {
             long value;
-            if (bscan_toLong(pNext+1,pResult,&value) == 0)
+            if (bstr_toLong(pNext+1,pResult,&value) == 0)
             {
                return NULL;
             }
@@ -407,22 +407,22 @@ static const uint8_t *parseLimit(const uint8_t *pBegin, const uint8_t *pEnd, apx
       {
          const uint8_t *pParenBegin = pNext; //'('
          const uint8_t *pParenEnd; //')'
-         pParenEnd=bscan_matchPair(pParenBegin,pEnd,'(',')','\\');
+         pParenEnd=bstr_matchPair(pParenBegin,pEnd,'(',')','\\');
          if (pParenEnd>pParenBegin)
          {
             const uint8_t *pMid;
             pParenBegin++; //move past the first '('
-            pMid = bscan_searchVal(pParenBegin,pParenEnd,',');
+            pMid = bstr_searchVal(pParenBegin,pParenEnd,',');
             if (pMid > pParenBegin)
             {
                long min;
                long max;
                uint8_t isParseOK = 0;
                const uint8_t *pResult;
-               pResult = bscan_toLong(pParenBegin,pMid,&min);
+               pResult = bstr_toLong(pParenBegin,pMid,&min);
                if (pResult > pParenBegin)
                {
-                  pResult = bscan_toLong(pMid+1,pParenEnd,&max);
+                  pResult = bstr_toLong(pMid+1,pParenEnd,&max);
                   if (pResult > pMid+1)
                   {
                      isParseOK = 1;

@@ -511,7 +511,7 @@ static void test_apx_attributeParser_parseQueueLength(CuTest* tc)
    pResult = apx_attributeParser_parseQueueLength(&parser, pBegin, pEnd, &attr);
    CuAssertConstPtrEquals(tc, 0, pResult);
    lastError = apx_attributeParser_getLastError(&parser, &pErrorNext);
-   CuAssertIntEquals(tc, APX_INVALID_VALUE_ERROR, lastError);
+   CuAssertIntEquals(tc, APX_VALUE_ERROR, lastError);
    CuAssertPtrEquals(tc, (void*) (pBegin+1), (void*) pErrorNext);
    apx_portAttributes_destroy(&attr);
 

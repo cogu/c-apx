@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <assert.h>
 #include "apx_attributeParser.h"
-#include "bscan.h"
+#include "bstr.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -85,7 +85,7 @@ const uint8_t* apx_attributeParser_parse(apx_attributeParser_t *self, const uint
    while(pNext < pEnd)
    {
 
-      pResult = bscan_whilePredicate(pNext, pEnd, bscan_pred_isHorizontalSpace);
+      pResult = bstr_whilePredicate(pNext, pEnd, bstr_pred_isHorizontalSpace);
       if (pResult == pEnd)
       {
          break;
@@ -100,7 +100,7 @@ const uint8_t* apx_attributeParser_parse(apx_attributeParser_t *self, const uint
       pNext = pResult;
       if (pNext < pEnd)
       {
-         pResult = bscan_whilePredicate(pNext, pEnd, bscan_pred_isHorizontalSpace);
+         pResult = bstr_whilePredicate(pNext, pEnd, bstr_pred_isHorizontalSpace);
          if (pResult == pEnd)
          {
             break;
@@ -217,7 +217,19 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
          char c = (char) *pNext;
          if (isdigit(c) != 0)
          {
-            //integer
+            uint8_t base = 10;
+            //integer, check to see if the string starts with "0x" in which case we shall interpret the string as hex
+            if ( (pNext+1 < pEnd) && (pNext[0] == '0') && (pNext[1] == 'x'))
+            {
+               pNext+=2;
+               base = 16;
+               if (pNext >= pEnd)
+               {
+                  self->lastError = APX_PARSE_ERROR;
+                  self->pErrorNext = pNext;
+                  return 0;
+               }
+            }
             unsigned long value;
             dtl_sv_t *sv = dtl_sv_new();
             if (sv == 0)
@@ -226,7 +238,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
                self->pErrorNext = pNext;
                return 0;
             }
-            pResult = bscan_toUnsignedLong(pNext, pEnd, &value);
+            pResult = bstr_toUnsignedLong(pNext, pEnd, base, &value);
             if ( (pResult == 0) || (pResult == pNext))
             {
                dtl_sv_delete(sv);
@@ -235,6 +247,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
             dtl_sv_set_u32(sv, (uint32_t) value);
             pNext = pResult;
             initValueInternal = (dtl_dv_t*) sv;
+
          }
          else if(c=='-')
          {
@@ -253,7 +266,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
                if (isdigit(c) != 0)
                {
                   long value;
-                  pResult = bscan_toLong(pNext, pEnd, &value);
+                  pResult = bstr_toLong(pNext, pEnd, &value);
                   if ( (pResult == 0) || (pResult == pNext))
                   {
                      dtl_sv_delete(sv);
@@ -286,7 +299,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
                self->pErrorNext = pNext;
                return 0;
             }
-            pResult = bscan_matchPair(pNext, pEnd, '{', '}', 0);
+            pResult = bstr_matchPair(pNext, pEnd, '{', '}', 0);
             if ( (pResult == 0) || (pResult == pNext) )
             {
                //failed to parse
@@ -304,7 +317,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
             {
                dtl_dv_t *dv = 0;
                //search for optional white-space followed by a value followed by optional whitespace followed by optional comma
-               pResult = bscan_whilePredicate(pNext, pEnd, bscan_pred_isHorizontalSpace);
+               pResult = bstr_whilePredicate(pNext, pEnd, bstr_pred_isHorizontalSpace);
                if (pResult == pEnd)
                {
                   break;
@@ -324,7 +337,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
                   dtl_av_push(av, dv);
                }
                pNext = pResult;
-               pResult = bscan_whilePredicate(pNext, pEnd, bscan_pred_isHorizontalSpace);
+               pResult = bstr_whilePredicate(pNext, pEnd, bstr_pred_isHorizontalSpace);
                if (pResult == pEnd)
                {
                   break;
@@ -356,7 +369,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
                self->pErrorNext = pNext;
                return 0;
             }
-            pResult = bscan_matchPair(pNext, pEnd, '"', '"', '\\');
+            pResult = bstr_matchPair(pNext, pEnd, '"', '"', '\\');
             if ( (pResult == 0) || (pResult == pNext) )
             {
                //failed to parse
@@ -404,7 +417,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseQueueLength(apx_attributePars
       {
          const uint8_t *pResult;
          const uint8_t *pMark;
-         pResult = bscan_matchPair(pNext, pEnd, '[', ']', 0);
+         pResult = bstr_matchPair(pNext, pEnd, '[', ']', 0);
          if ( (pResult == 0) || (pResult == pNext) )
          {
             self->lastError = APX_PARSE_ERROR;
@@ -418,7 +431,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseQueueLength(apx_attributePars
          if (pNext < pResult)
          {
             long value;
-            pResult = bscan_toLong(pNext, pResult, &value);
+            pResult = bstr_toLong(pNext, pResult, &value);
             if ( (pResult == 0) || (pResult == pNext) )
             {
                self->lastError = APX_PARSE_ERROR;
@@ -432,7 +445,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseQueueLength(apx_attributePars
             }
             else
             {
-               self->lastError = APX_INVALID_VALUE_ERROR;
+               self->lastError = APX_VALUE_ERROR;
                self->pErrorNext = pNext;
                return 0;
             }
