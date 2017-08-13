@@ -8,6 +8,7 @@
 #include "apx_node.h"
 #include "apx_nodeInfo.h"
 #include "apx_logging.h"
+#include "apx_error.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -268,7 +269,18 @@ adt_bytearray_t *apx_node_createPortInitData(apx_node_t *self, apx_port_t *port)
    {
       adt_bytearray_t *initData = (adt_bytearray_t*) 0;
       apx_portAttributes_t *attr = port->portAttributes;
-      apx_dataElement_t *dataElement = port->derivedDsg.dataElement;
+      apx_dataElement_t *dataElement;
+
+      if (self->isFinalized == false)
+      {
+         apx_node_finalize(self);
+      }
+      dataElement = port->derivedDsg.dataElement;
+      if (dataElement == 0)
+      {
+         apx_setError(APX_VALUE_ERROR);
+         return 0;
+      }
 
       if ( (attr->initValue != 0) && ( dataElement->baseType != APX_BASE_TYPE_NONE) && (dataElement->packLen > 0) )
       {

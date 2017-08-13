@@ -27,5 +27,6 @@
 //////////////////////////////////////////////////////////////////////////////
 int32_t apx_getLastError(void);
 void apx_setError(int32_t error);
+void apx_clearError(void);
 
 #endif //APX_ERROR_H
