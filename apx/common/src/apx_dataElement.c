@@ -18,6 +18,7 @@
 
 /**************** Private Function Declarations *******************/
 static uint8_t *apx_dataElement_pack_sv(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_sv_t *sv);
+static uint8_t *apx_dataElement_pack_record(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_av_t *av);
 
 /**************** Private Variable Declarations *******************/
 
@@ -135,24 +136,41 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
       {
          if (dv_type == DTL_DV_ARRAY)
          {
-            int32_t i;
-            int32_t num_dv_elem;
-            int32_t num_child_elem;
-            dtl_av_t *av = (dtl_av_t*) dv;
-            num_dv_elem = dtl_av_length(av);
-            num_child_elem = apx_dataElement_getNumChild(self);
-            if (num_dv_elem != num_child_elem)
+            if (self->arrayLen > 0)
             {
-               apx_setError(APX_LENGTH_ERROR);
-               return 0;
-            }
+               uint32_t i;
+               uint32_t num_dv_elem;
+               dtl_av_t *av = (dtl_av_t*) dv;
+               num_dv_elem = (uint32_t) dtl_av_length(av);
+               if (num_dv_elem != self->arrayLen)
+               {
+                  apx_setError(APX_LENGTH_ERROR);
+                  return 0;
+               }
 
-            for (i = 0; i < num_child_elem; i++)
+               for (i=0; i<self->arrayLen; i++)
+               {
+                  dtl_dv_t *child_dv = *dtl_av_get(av, (int32_t) i);
+                  dv_type = dtl_dv_type(dv);
+                  if (dv_type == DTL_DV_ARRAY)
+                  {
+                     pResult = apx_dataElement_pack_record(self, pNext, pEnd, (dtl_av_t*) child_dv);
+                     if (pResult == 0 || (pResult == pNext) )
+                     {
+                        return 0;
+                     }
+                     pNext = pResult;
+                  }
+                  else
+                  {
+                     apx_setError(APX_DV_TYPE_ERROR); //expected array type from dv variable
+                     return 0;
+                  }
+               }
+            }
+            else
             {
-               apx_dataElement_t *child_element;
-               dtl_dv_t *child_dv = *dtl_av_get(av, i);
-               child_element = (apx_dataElement_t*) adt_ary_value(self->childElements, i);
-               pResult = apx_dataElement_pack_dv(child_element, pNext, pEnd, child_dv);
+               pResult = apx_dataElement_pack_record(self, pNext, pEnd, (dtl_av_t*) dv);
                if (pResult == 0 || (pResult == pNext) )
                {
                   return 0;
@@ -424,5 +442,39 @@ apx_dataElement_t *apx_dataElement_getChildAt(apx_dataElement_t *self, int32_t i
    return 0;
 }
 
+static uint8_t *apx_dataElement_pack_record(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_av_t *av)
+{
+   if ( (self != 0) && (pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd) && (av != 0))
+   {
+      int32_t i;
+      int32_t num_dv_elem;
+      int32_t num_child_elem;
+      uint8_t *pNext = pBegin;
+      uint8_t *pResult;
+      num_dv_elem = dtl_av_length(av);
+      num_child_elem = apx_dataElement_getNumChild(self);
+      if (num_dv_elem != num_child_elem)
+      {
+         apx_setError(APX_LENGTH_ERROR);
+         return 0;
+      }
+
+      for (i = 0; i < num_child_elem; i++)
+      {
+         apx_dataElement_t *child_element;
+         dtl_dv_t *child_dv = *dtl_av_get(av, i);
+         child_element = (apx_dataElement_t*) adt_ary_value(self->childElements, i);
+         pResult = apx_dataElement_pack_dv(child_element, pNext, pEnd, child_dv);
+         if (pResult == 0 || (pResult == pNext) )
+         {
+            return 0;
+         }
+         pNext = pResult;
+      }
+      return pNext;
+   }
+   errno = EINVAL;
+   return 0;
+}
 
 
