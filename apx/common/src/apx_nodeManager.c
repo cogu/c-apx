@@ -40,7 +40,7 @@ static void apx_nodeManager_executePortTriggerFunction(apx_nodeManager_t *self, 
 static void apx_nodeManager_attachLocalNodeToFileManager(apx_nodeManager_t *self, apx_nodeData_t *nodeData, apx_fileManager_t *fileManager);
 static void apx_nodeManager_removeRemoteNodeData(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
 static void apx_nodeManager_removeNodeInfo(apx_nodeManager_t *self, apx_nodeInfo_t *nodeInfo);
-
+static bool apx_nodeManager_createInitData(apx_node_t *node, uint8_t *buf, int32_t bufLen);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -454,6 +454,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
          apx_nodeInfo_t *nodeInfo;
          apx_node_t *apxNode = apx_parser_getNode(&self->parser, i);
          assert(apxNode != 0);
+         apx_node_finalize(apxNode);
          nodeInfo = apx_nodeInfo_new(apxNode);
          if (nodeInfo != 0)
          {
@@ -520,6 +521,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
             {
                //create local inPortData file
                apx_file_t *inDataFile;
+               bool result;
                strcpy(fileName,apxNode->name);
                p=fileName+strlen(fileName);
                strcpy(p,".in");
@@ -528,8 +530,11 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                assert(nodeData->inPortDataBuf);
                nodeData->inPortDirtyFlags = (uint8_t*) malloc(inPortDataLen);
                assert(nodeData->inPortDirtyFlags);
-               //TODO: implement init values
-               memset(nodeData->inPortDataBuf, 0, inPortDataLen);
+               result = apx_nodeManager_createInitData(apxNode, nodeData->inPortDataBuf, inPortDataLen);
+               if (result == false)
+               {
+                  fprintf(stderr, "Failed to create init data for node %s\n", apx_node_getName(apxNode));
+               }
                nodeData->inPortDataLen = inPortDataLen;
                nodeInfo->nodeData=nodeData;
                inDataFile = apx_file_newLocalInPortDataFile(nodeData);
@@ -663,4 +668,35 @@ static void apx_nodeManager_removeNodeInfo(apx_nodeManager_t *self, apx_nodeInfo
       void **tmp = adt_hash_remove(&self->nodeInfoMap, nodeInfo->node->name, 0);
       assert(tmp != 0);
    }
+}
+
+static bool apx_nodeManager_createInitData(apx_node_t *node, uint8_t *buf, int32_t bufLen)
+{
+   if ( (node != 0) && (buf != 0) && (bufLen > 0))
+   {
+      uint8_t *pNext = buf;
+      uint8_t *pEnd = buf+bufLen;
+      int32_t i;
+      int32_t numRequirePorts;
+      adt_bytearray_t *portData;
+      portData = adt_bytearray_new(0);
+      numRequirePorts = apx_node_getNumRequirePorts(node);
+      for(i=0; i<numRequirePorts; i++)
+      {
+         int32_t packLen;
+         int32_t dataLen;
+         apx_port_t *port = apx_node_getRequirePort(node, i);
+         assert(port != 0);
+         packLen = apx_port_getPackLen(port);
+         apx_node_fillPortInitData(node, port, portData);
+         dataLen = adt_bytearray_length(portData);
+         assert(packLen == dataLen);
+         memcpy(pNext, adt_bytearray_data(portData), packLen);
+         pNext+=packLen;
+         assert(pNext<=pEnd);
+      }
+      assert(pNext==pEnd);
+      adt_bytearray_delete(portData);
+   }
+   return false;
 }

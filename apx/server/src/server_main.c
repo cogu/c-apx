@@ -33,6 +33,7 @@ static void printUsage(char *name);
 static uint16_t m_port;
 static apx_server_t m_server;
 static int32_t m_count;
+static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -114,6 +115,7 @@ static void parse_args(int argc, char **argv)
 
 static void printUsage(char *name)
 {
+   printf("APX Server %s\n", SW_VERSION_STR);
    printf("%s -p<port>\n",name);
 }
 

@@ -32,11 +32,17 @@
 								<option id="gnu.c.compiler.cygwin.exe.debug.option.debugging.level.456475426" name="Debug Level" superClass="gnu.c.compiler.cygwin.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1805180701" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../../../util/inc"/>
+									<listOptionValue builtIn="false" value="../../../../bstr/inc"/>
 									<listOptionValue builtIn="false" value="../../../../adt/inc"/>
 									<listOptionValue builtIn="false" value="../../../../apx/common/inc"/>
 									<listOptionValue builtIn="false" value="../../../../apx/server/inc"/>
 									<listOptionValue builtIn="false" value="../../../../remotefile/inc"/>
 									<listOptionValue builtIn="false" value="../../../../msocket/inc"/>
+									<listOptionValue builtIn="false" value="../../../../dtl_type/inc"/>
+								</option>
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.854295620" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="MEM_LEAK_CHECK"/>
+									<listOptionValue builtIn="false" value="SW_VERSION_LITERAL=&quot;\&quot;0.1.2\&quot;&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.1515617663" superClass="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin"/>
 							</tool>
@@ -131,4 +137,5 @@
 		</buildTargets>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope"/>
 </cproject>

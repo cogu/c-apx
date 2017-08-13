@@ -97,6 +97,15 @@ void apx_node_setName(apx_node_t *self, const char *name){
    }
 }
 
+const char *apx_node_getName(apx_node_t *self)
+{
+   if (self != 0)
+   {
+      return self->name;
+   }
+   return (const char*) 0;
+}
+
 //datatype functions
 apx_datatype_t *apx_node_createDataType(apx_node_t *self, const char* name, const char *dsg, const char *attr)
 {
@@ -265,42 +274,19 @@ int32_t apx_node_getNumProvidePorts(apx_node_t *self)
 
 adt_bytearray_t *apx_node_createPortInitData(apx_node_t *self, apx_port_t *port)
 {
-   if ( (self != 0) && (port != 0) && (port->portAttributes != 0) )
+   if ( (self != 0) && (port != 0) )
    {
-      adt_bytearray_t *initData = (adt_bytearray_t*) 0;
-      apx_portAttributes_t *attr = port->portAttributes;
-      apx_dataElement_t *dataElement;
-
-      if (self->isFinalized == false)
+      int32_t result;
+      adt_bytearray_t *initData = adt_bytearray_new(0);
+      result = apx_node_fillPortInitData(self, port, initData);
+      if (result != 0)
       {
-         apx_node_finalize(self);
-      }
-      dataElement = port->derivedDsg.dataElement;
-      if (dataElement == 0)
-      {
-         apx_setError(APX_VALUE_ERROR);
+         adt_bytearray_delete(initData);
          return 0;
       }
-
-      if ( (attr->initValue != 0) && ( dataElement->baseType != APX_BASE_TYPE_NONE) && (dataElement->packLen > 0) )
-      {
-         uint8_t *pBegin;
-         uint8_t *pEnd;
-         uint8_t *pResult;
-         initData = adt_bytearray_new(0);
-         adt_bytearray_resize(initData, dataElement->packLen);
-         pBegin = adt_bytearray_data(initData);
-         pEnd = pBegin + dataElement->packLen;
-         pResult = apx_dataElement_pack_dv(dataElement, pBegin, pEnd, attr->initValue);
-         if ( (pResult == 0) || (pResult == pBegin) )
-         {
-            adt_bytearray_delete(initData);
-            return 0;
-         }
-         return initData;
-      }
+      return initData;
    }
-   errno = EINVAL;
+   errno=EINVAL;
    return 0;
 }
 
@@ -401,3 +387,60 @@ static void apx_parser_attributeParseError(apx_port_t *port, int32_t lastError)
    APX_LOG_ERROR("%s", errorStr);
 }
 
+/**
+ * returns zero on success, non-zero on error
+ */
+int32_t apx_node_fillPortInitData(apx_node_t *self, apx_port_t *port, adt_bytearray_t *output)
+{
+   if ( (self != 0) && (port != 0) )
+   {
+
+      apx_dataElement_t *dataElement;
+
+      if (self->isFinalized == false)
+      {
+         apx_node_finalize(self);
+      }
+      dataElement = port->derivedDsg.dataElement;
+      if ( (dataElement == 0) || (dataElement->baseType == APX_BASE_TYPE_NONE) || (dataElement->packLen == 0) )
+      {
+         apx_setError(APX_VALUE_ERROR);
+         return -1;
+      }
+      adt_bytearray_resize(output, dataElement->packLen);
+      if (port->portAttributes != 0)
+      {
+         apx_portAttributes_t *attr = port->portAttributes;
+         if (attr->initValue == 0)
+         {
+            //if no init value is given, set to 0
+            uint8_t *buf = adt_bytearray_data(output);
+            memset(buf, 0, dataElement->packLen);
+            return 0;
+         }
+         else
+         {
+            uint8_t *pBegin;
+            uint8_t *pEnd;
+            uint8_t *pResult;
+            pBegin = adt_bytearray_data(output);
+            pEnd = pBegin + dataElement->packLen;
+            pResult = apx_dataElement_pack_dv(dataElement, pBegin, pEnd, attr->initValue);
+            if ( (pResult == 0) || (pResult == pBegin) )
+            {
+               return -1;
+            }
+            return 0;
+         }
+      }
+      else
+      {
+         //if no init value is given, set to 0
+         uint8_t *buf = adt_bytearray_data(output);
+         memset(buf, 0, dataElement->packLen);
+         return 0;
+      }
+   }
+   errno = EINVAL;
+   return -1;
+}
