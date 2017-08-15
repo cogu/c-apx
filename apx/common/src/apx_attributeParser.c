@@ -208,7 +208,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
 {
    if ( (self != 0) && (ppInitValue != 0) && (pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd) )
    {
-      const uint8_t *pResult;
+      const uint8_t *pResult = 0;
       const uint8_t *pNext = pBegin;
       dtl_dv_t *initValueInternal = (dtl_dv_t*) 0;
 
