@@ -15,12 +15,12 @@ Current implementation status
    +-----------------------------+---------------------+-------------------+
    |   Linux (native)            |   (testing)         |  (testing)        |
    +-----------------------------+---------------------+-------------------+
-   |  APX for embedded systems   |   (not in scope)    |  (in development) |
+   |  APX for embedded systems   |   (not in scope)    |  (testing)        |
    +-----------------------------+---------------------+-------------------+
 
 APX server
 ----------
-An APX server is a light-weight server application that clients connects to using sockets.
+An APX server is a message broker that clients connects to using sockets.
 It's basically an APX router wrapped in a layer that provides socket communication. 
 You can either use the default APX server (with sockets) or you can add your own communication adapters like for instance IPC.
    
