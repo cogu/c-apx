@@ -233,7 +233,7 @@ void apx_es_fileManager_run(apx_es_fileManager_t *self)
             fprintf(stderr, "apx_es_fileManager_runEventLoop returned %d",result);
 #endif
          }
-         else if (result == 0)
+         else if ( (result == 0) || (self->pendingWrite == true) || (self->pendingCmd == true) )
          {
             break;
          }
