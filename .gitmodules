@@ -4,3 +4,6 @@
 [submodule "msocket"]
 	path = msocket
 	url = https://github.com/cogu/msocket
+[submodule "dtl_type"]
+	path = dtl_type
+	url = https://github.com/cogu/dtl_type.git

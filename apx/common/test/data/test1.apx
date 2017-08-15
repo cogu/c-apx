@@ -1,7 +1,7 @@
 APX/1.2
 N"test1"
 P"WheelBasedVehicleSpeed"S
-P"PS_CabTiltLockWarning"C(0,7)
-P"VehicleMode_Internal"C(0,15)
-R"PS_GearSelectionMode"C(0,7)
+P"CabTiltLockWarning"C(0,7)
+P"VehicleMode"C(0,15)
+R"GearSelectionMode"C(0,7)
 

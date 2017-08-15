@@ -64,7 +64,7 @@ void apx_nodeInfo_create(apx_nodeInfo_t *self, apx_node_t *node)
       numProvidePorts = adt_ary_length(&self->node->providePortList);
       adt_ary_resize(&self->requireConnectors,numRequirePorts);
       adt_ary_resize(&self->provideConnectors,numProvidePorts);
-      apx_node_resolvePortSignatures(node);
+      apx_node_finalize(node);
       apx_portDataMap_build(&self->inDataMap,node,APX_REQUIRE_PORT);
       apx_portDataMap_build(&self->outDataMap,node,APX_PROVIDE_PORT);
       requireDataLen = apx_portDataMap_getDataLen(&self->inDataMap);

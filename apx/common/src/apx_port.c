@@ -33,11 +33,18 @@ void apx_port_create(apx_port_t *self,uint8_t portDirection,const char *name, co
 	if(self != 0 ){
 			self->name = (name != 0)? STRDUP(name) : 0;
 			self->dataSignature = (dataSignature != 0)? STRDUP(dataSignature) : 0;
-			self->attributes = (attributes != 0)? STRDUP(attributes) : 0;
 			self->portType = portDirection;
+         self->portSignature = 0;
+         self->portIndex = -1;
 			apx_dataSignature_create(&self->derivedDsg,0);
-			self->portSignature = 0;
-			self->portIndex = -1;
+			if (attributes != 0)
+			{
+			   self->portAttributes = apx_portAttributes_new(attributes);
+			}
+			else
+			{
+			   self->portAttributes = (apx_portAttributes_t*) 0;
+			}
 	}
 }
 void apx_port_destroy(apx_port_t *self){
@@ -50,9 +57,9 @@ void apx_port_destroy(apx_port_t *self){
       {
          free(self->dataSignature);
       }
-		if (self->attributes != 0)
+		if (self->portAttributes != 0)
 		{
-			free(self->attributes);
+			apx_portAttributes_delete(self->portAttributes);
 		}
       if (self->portSignature != 0)
       {

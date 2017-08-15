@@ -5,11 +5,20 @@
 #include "Platform_Types.h"
 #define _UINT8 uint8
 #define _UINT32 uint32
+#define _UINT64 uint64
 #else
 #include <stdint.h>
 #define _UINT8 uint8_t
 #define _UINT32 uint32_t
+#define _UINT64 uint64_t
 #endif
+
+#if  defined(__GNUC__) && defined(__LP64__)
+#define _PACK_BASE_TYPE _UINT64
+#else
+#define _PACK_BASE_TYPE _UINT32
+#endif
+
 
 /**************************** Constants and Types ****************************/
 
@@ -18,65 +27,65 @@
 /************************* Local Function Prototypes *************************/
 
 /***************************** Exported Functions ****************************/
-void packBE(_UINT8* p, _UINT32 u32Val, _UINT8 u8Size)
+void packBE(_UINT8* p, _PACK_BASE_TYPE value, _UINT8 u8Size)
 {
-   if ((u8Size > 0) && (u8Size < 5))
+   if ((u8Size > 0) && (u8Size < 9))
    {
-      register _UINT32 u32Tmp = u32Val;
+      register _PACK_BASE_TYPE tmp = value;
       p += (u8Size - 1);
       while (u8Size > 0)
       {
-         *(p--) = (_UINT8)u32Tmp;
-         u32Tmp = u32Tmp >> 8;
+         *(p--) = (_UINT8)tmp;
+         tmp = tmp >> 8;
          u8Size--;
       }
    }
 }
 
 
-void packLE(_UINT8* p, _UINT32 u32Val, _UINT8 u8Size)
+void packLE(_UINT8* p, _PACK_BASE_TYPE value, _UINT8 u8Size)
 {
-   if ((u8Size > 0) && (u8Size < 5))
+   if ((u8Size > 0) && (u8Size < 9))
    {
-      register _UINT32 u32Tmp = u32Val;
+      register _PACK_BASE_TYPE tmp = value;
       while (u8Size > 0)
       {
-         *(p++) = (_UINT8)u32Tmp;
-         u32Tmp = u32Tmp >> 8;
+         *(p++) = (_UINT8)tmp;
+         tmp = tmp >> 8;
          u8Size--;
       }
    }
 }
 
 
-_UINT32 unpackBE(const _UINT8* p, _UINT8 u8Size)
+_PACK_BASE_TYPE unpackBE(const _UINT8* p, _UINT8 u8Size)
 {
-   if ((u8Size > 0) && (u8Size < 5))
+   if ((u8Size > 0) && (u8Size < 9))
    {
-      register _UINT32 u32Tmp = 0;
+      register _PACK_BASE_TYPE tmp = 0;
       while (u8Size > 0)
       {
-         u32Tmp = (u32Tmp << 8) | *(p++);
+         tmp = (tmp << 8) | *(p++);
          u8Size--;
       }
-      return u32Tmp;
+      return tmp;
    }
    return 0;
 }
 
 
-_UINT32 unpackLE(const _UINT8* p, _UINT8 u8Size)
+_PACK_BASE_TYPE unpackLE(const _UINT8* p, _UINT8 u8Size)
 {
-   if ((u8Size > 0) && (u8Size < 5))
+   if ((u8Size > 0) && (u8Size < 9))
    {
-      register _UINT32 u32Tmp = 0;
+      register _PACK_BASE_TYPE tmp = 0;
       p += (u8Size - 1);
       while (u8Size > 0)
       {
-         u32Tmp = (u32Tmp << 8) | *(p--);
+         tmp = (tmp << 8) | *(p--);
          u8Size--;
       }
-      return u32Tmp;
+      return tmp;
    }
    return 0;
 }

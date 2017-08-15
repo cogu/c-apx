@@ -8,11 +8,14 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stdio.h>
-
-#define APX_LOG_DEBUG(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
-#define APX_LOG_ERROR(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
-
+#ifdef UNIT_TEST
+# define APX_LOG_DEBUG(fmt, ...)
+# define APX_LOG_ERROR(fmt, ...)
+#else
+# include <stdio.h>
+# define APX_LOG_DEBUG(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
+# define APX_LOG_ERROR(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
+#endif
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////

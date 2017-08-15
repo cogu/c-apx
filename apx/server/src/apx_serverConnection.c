@@ -12,7 +12,7 @@
 #include "apx_serverConnection.h"
 #include "apx_server.h"
 #include "headerutil.h"
-#include "scan.h"
+#include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -208,7 +208,7 @@ static void apx_serverConnection_parseGreeting(apx_serverConnection_t *self, con
    while(pNext < pEnd)
    {
       const uint8_t *pResult;
-      pResult = scan_line(pNext, pEnd);
+      pResult = bstr_line(pNext, pEnd);
       if ( (pResult > pNext) || ((pResult==pNext) && *pNext==(uint8_t) '\n') )
       {
          //found a line ending with '\n'
