@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include "apx_clientConnection.h"
 #include "apx_client.h"
-#include "scan.h"
 #include "headerutil.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

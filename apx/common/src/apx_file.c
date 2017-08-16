@@ -5,11 +5,11 @@
 #include <errno.h>
 #ifndef APX_EMBEDDED
 #include <malloc.h>
+#include "bstr.h"
 #endif
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
