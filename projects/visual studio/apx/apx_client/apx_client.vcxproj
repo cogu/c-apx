@@ -49,6 +49,12 @@
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_transmitHandler.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_types.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\filestream.h" />
+    <ClInclude Include="..\..\..\..\bstr\inc\bstr.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_av.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_dv.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_hv.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_sv.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_type.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\msocket.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\msocket_server.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\osmacro.h" />
@@ -58,10 +64,8 @@
     <ClInclude Include="..\..\..\..\util\inc\headerutil.h" />
     <ClInclude Include="..\..\..\..\util\inc\msc_bool.h" />
     <ClInclude Include="..\..\..\..\util\inc\pack.h" />
-    <ClInclude Include="..\..\..\..\util\inc\pstr.h" />
     <ClInclude Include="..\..\..\..\util\inc\ringbuf.h" />
     <ClInclude Include="..\..\..\..\util\inc\ringbuf_cfg.h" />
-    <ClInclude Include="..\..\..\..\util\inc\scan.h" />
     <ClInclude Include="..\..\..\..\util\inc\soa.h" />
     <ClInclude Include="..\..\..\..\util\inc\soa_chunk.h" />
     <ClInclude Include="..\..\..\..\util\inc\soa_fsa.h" />
@@ -98,14 +102,17 @@
     <ClCompile Include="..\..\..\..\apx\common\src\apx_routerPortMapEntry.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_stream.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\filestream.c" />
+    <ClCompile Include="..\..\..\..\bstr\src\bstr.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_av.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_dv.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_hv.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_sv.c" />
     <ClCompile Include="..\..\..\..\msocket\src\msocket.c" />
     <ClCompile Include="..\..\..\..\msocket\src\osutil.c" />
     <ClCompile Include="..\..\..\..\remotefile\src\rmf.c" />
     <ClCompile Include="..\..\..\..\util\src\headerutil.c" />
     <ClCompile Include="..\..\..\..\util\src\pack.c" />
-    <ClCompile Include="..\..\..\..\util\src\pstr.c" />
     <ClCompile Include="..\..\..\..\util\src\ringbuf.c" />
-    <ClCompile Include="..\..\..\..\util\src\scan.c" />
     <ClCompile Include="..\..\..\..\util\src\soa.c" />
     <ClCompile Include="..\..\..\..\util\src\soa_chunk.c" />
     <ClCompile Include="..\..\..\..\util\src\soa_fsa.c" />
@@ -119,7 +126,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -140,7 +147,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)..\..\..\..\util\inc;$(ProjectDir)..\..\..\..\adt\inc;$(ProjectDir)..\..\..\..\apx\client\inc;$(ProjectDir)..\..\..\..\apx\common\inc;$(ProjectDir)..\..\..\..\apx\server\inc;$(ProjectDir)..\..\..\..\remotefile\inc;$(ProjectDir)..\..\..\..\msocket\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(ProjectDir)..\..\..\..\dtl_type\inc;$(ProjectDir)..\..\..\..\bstr\inc;$(ProjectDir)..\..\..\..\util\inc;$(ProjectDir)..\..\..\..\adt\inc;$(ProjectDir)..\..\..\..\apx\client\inc;$(ProjectDir)..\..\..\..\apx\common\inc;$(ProjectDir)..\..\..\..\apx\server\inc;$(ProjectDir)..\..\..\..\remotefile\inc;$(ProjectDir)..\..\..\..\msocket\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <TargetName>$(ProjectName)d</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

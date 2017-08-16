@@ -58,6 +58,24 @@
     <Filter Include="adt\src">
       <UniqueIdentifier>{409f6cc2-5734-4d86-b628-a2addb823be2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="dtl_type">
+      <UniqueIdentifier>{8da5fac0-94b1-43ba-af07-e7a9e201e0b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dtl_type\inc">
+      <UniqueIdentifier>{fccd2f3a-82f9-4461-8c23-06e125f911ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dtl_type\src">
+      <UniqueIdentifier>{cb29efee-4eb4-4fb3-935f-a955d0732b6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bstr">
+      <UniqueIdentifier>{bb1f5ff5-2722-4700-935c-8c0357f8f1a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bstr\inc">
+      <UniqueIdentifier>{1da8fa8f-fab8-4b85-b23f-233dd5d126da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bstr\src">
+      <UniqueIdentifier>{ffff1583-5335-4dbb-9935-8cd6f1aceee2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\remotefile\inc\rmf.h">
@@ -75,16 +93,10 @@
     <ClInclude Include="..\..\..\..\util\inc\pack.h">
       <Filter>util\inc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\util\inc\pstr.h">
-      <Filter>util\inc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\util\inc\ringbuf.h">
       <Filter>util\inc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\util\inc\ringbuf_cfg.h">
-      <Filter>util\inc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\util\inc\scan.h">
       <Filter>util\inc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\util\inc\soa.h">
@@ -222,6 +234,24 @@
     <ClInclude Include="..\..\..\..\adt\inc\adt_u16Map.h">
       <Filter>adt\inc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_av.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_dv.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_hv.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_sv.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_type.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\bstr\inc\bstr.h">
+      <Filter>bstr\inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\remotefile\src\rmf.c">
@@ -233,13 +263,7 @@
     <ClCompile Include="..\..\..\..\util\src\pack.c">
       <Filter>util\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\util\src\pstr.c">
-      <Filter>util\src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\util\src\ringbuf.c">
-      <Filter>util\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\util\src\scan.c">
       <Filter>util\src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\util\src\soa.c">
@@ -349,6 +373,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\adt\src\adt_u16Map.c">
       <Filter>adt\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_av.c">
+      <Filter>dtl_type\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_dv.c">
+      <Filter>dtl_type\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_hv.c">
+      <Filter>dtl_type\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_sv.c">
+      <Filter>dtl_type\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\bstr\src\bstr.c">
+      <Filter>bstr\src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
