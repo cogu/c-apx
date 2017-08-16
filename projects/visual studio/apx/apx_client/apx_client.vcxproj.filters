@@ -252,6 +252,15 @@
     <ClInclude Include="..\..\..\..\bstr\inc\bstr.h">
       <Filter>bstr\inc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_attributeParser.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_error.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_portAttributes.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\remotefile\src\rmf.c">
@@ -388,6 +397,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\bstr\src\bstr.c">
       <Filter>bstr\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_attributeParser.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_error.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_portAttributes.c">
+      <Filter>apx\common\src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

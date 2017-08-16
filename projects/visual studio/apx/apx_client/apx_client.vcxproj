@@ -22,11 +22,13 @@
     <ClInclude Include="..\..\..\..\apx\client\inc\apx_client.h" />
     <ClInclude Include="..\..\..\..\apx\client\inc\apx_clientConnection.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_allocator.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_attributeParser.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_cfg.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataElement.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataSignature.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataTrigger.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_datatype.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_error.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_file.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileManager.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileManager_cfg.h" />
@@ -40,6 +42,7 @@
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_nodeManager.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_parser.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_port.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_portAttributes.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portDataBuffer.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portDataMap.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portref.h" />
@@ -82,10 +85,12 @@
     <ClCompile Include="..\..\..\..\apx\client\src\apx_client.c" />
     <ClCompile Include="..\..\..\..\apx\client\src\apx_clientConnection.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_allocator.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_attributeParser.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataElement.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataSignature.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataTrigger.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_datatype.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_error.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_file.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_fileManager.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_fileMap.c" />
@@ -95,6 +100,7 @@
     <ClCompile Include="..\..\..\..\apx\common\src\apx_nodeManager.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_parser.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_port.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_portAttributes.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_portDataBuffer.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_portDataMap.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_portref.c" />
