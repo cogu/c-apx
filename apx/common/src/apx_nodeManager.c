@@ -697,6 +697,7 @@ static bool apx_nodeManager_createInitData(apx_node_t *node, uint8_t *buf, int32
       }
       assert(pNext==pEnd);
       adt_bytearray_delete(portData);
+      return true;
    }
    return false;
 }
