@@ -15,12 +15,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-
+#define DEFAULT_PORT 5000
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void parse_args(int argc, char **argv);
+static int parse_args(int argc, char **argv);
 static void printUsage(char *name);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -45,18 +45,23 @@ int main(int argc, char **argv)
    int err;
 #endif
    m_count = 0;
-   if(argc<2)
+   m_port = DEFAULT_PORT;
+   printf("APX Server %s\n", SW_VERSION_STR);
+   if(argc>1)
    {
-      printUsage(argv[0]);
-      return 0;
-   }
-   parse_args(argc, argv);
+      int result = parse_args(argc, argv);
+      if (result != 0)
+      {
+         return 0;
+      }      
+   }   
    if ( (m_port<0) )
    {
       printUsage(argv[0]);
       return 0;
    }
-#ifdef _WIN32
+   printf("Listening on port %d\n", (int)m_port);
+#ifdef _WIN32   
    wVersionRequested = MAKEWORD(2, 2);
    err = WSAStartup(wVersionRequested, &wsaData);
    if (err != 0) {
@@ -87,7 +92,7 @@ int main(int argc, char **argv)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void parse_args(int argc, char **argv)
+static int parse_args(int argc, char **argv)
 {
    int i;
    for(i=1;i<argc;i++)
@@ -110,12 +115,17 @@ static void parse_args(int argc, char **argv)
             m_port=(int)num;
          }
       }
+      else if (strncmp(argv[i], "-h", 2) == 0)
+      {
+         printUsage(argv[0]);
+         return -1;
+      }
    }
+   return 0;
 }
 
 static void printUsage(char *name)
-{
-   printf("APX Server %s\n", SW_VERSION_STR);
+{   
    printf("%s -p<port>\n",name);
 }
 
