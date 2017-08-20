@@ -473,6 +473,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
             }
             apx_nodeData_setFileManager(nodeData,fileManager);
             apx_nodeData_setNodeInfo(nodeData, nodeInfo);
+            apx_nodeInfo_setNodeData(nodeInfo, nodeData);
             nodeInfo->isWeakRef_node = false; //nodeInfo is now the owner of the node pointer (will trigger deletion when apx_nodeInfo_delete is called)
             adt_hash_set(&self->nodeInfoMap, apxNode->name, 0, nodeInfo);
             inPortDataLen = apx_nodeInfo_getInPortDataLen(nodeInfo);
@@ -535,8 +536,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                {
                   fprintf(stderr, "Failed to create init data for node %s\n", apx_node_getName(apxNode));
                }
-               nodeData->inPortDataLen = inPortDataLen;
-               nodeInfo->nodeData=nodeData;
+               nodeData->inPortDataLen = inPortDataLen;               
                inDataFile = apx_file_newLocalInPortDataFile(nodeData);
                if (inDataFile != 0)
                {

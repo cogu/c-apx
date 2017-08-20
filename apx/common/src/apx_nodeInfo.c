@@ -474,6 +474,14 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
    }
 }
 
+void apx_nodeInfo_setNodeData(apx_nodeInfo_t *self, apx_nodeData_t *nodeData)
+{
+   if (self != 0)
+   {
+      self->nodeData = nodeData;
+   }   
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -631,3 +639,4 @@ static void apx_nodeInfo_disconnectProvidePortInternal(apx_nodeInfo_t *providerN
       }
    }
 }
+
