@@ -524,6 +524,10 @@ static const uint8_t * apx_splitDeclarationLine(const uint8_t *pBegin,const uint
                   pStrNext+=attrLen;
                   *pStrNext++='\0';
                }
+               else
+               {
+                  data->attr = (char*) 0;
+               }
                assert(pStrNext<=pStrEnd); //check pointer post conditions
                return pNext;
             }
