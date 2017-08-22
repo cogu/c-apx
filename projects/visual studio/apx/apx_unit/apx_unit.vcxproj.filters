@@ -55,6 +55,24 @@
     <Filter Include="remotefile\test">
       <UniqueIdentifier>{b061f0ce-aaee-4f88-b4fb-ff116d09ac6e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="bstr">
+      <UniqueIdentifier>{98dc89fa-9a33-4398-ae1d-bb9bc1349a71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bstr\inc">
+      <UniqueIdentifier>{595e26c0-fc3f-4261-bdc1-4721c79e8f49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="bstr\src">
+      <UniqueIdentifier>{a15c60f0-e98a-4348-b3d2-7bcdd72c3042}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dtl_type">
+      <UniqueIdentifier>{622e85b4-aa24-4878-ae1b-39e440c0bb08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dtl_type\inc">
+      <UniqueIdentifier>{3fef7207-0fcb-421b-9ea0-7d495ceb675b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dtl_type\src">
+      <UniqueIdentifier>{d27f944d-808e-4885-b2d9-ef472ff0bba0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\apx\common\test\test_main.c">
@@ -72,13 +90,7 @@
     <ClCompile Include="..\..\..\..\util\src\pack.c">
       <Filter>util\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\util\src\pstr.c">
-      <Filter>util\src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\util\src\ringbuf.c">
-      <Filter>util\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\util\src\scan.c">
       <Filter>util\src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\util\src\soa.c">
@@ -213,6 +225,36 @@
     <ClCompile Include="..\..\..\..\remotefile\test\testsuite_remotefile.c">
       <Filter>remotefile\test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\bstr\src\bstr.c">
+      <Filter>bstr\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_av.c">
+      <Filter>dtl_type\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_dv.c">
+      <Filter>dtl_type\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_hv.c">
+      <Filter>dtl_type\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_sv.c">
+      <Filter>dtl_type\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_attributeParser.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_error.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_portAttributes.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_attributeParser.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_dataElement.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\cutest\CuTest.h">
@@ -227,16 +269,10 @@
     <ClInclude Include="..\..\..\..\util\inc\pack.h">
       <Filter>util\inc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\util\inc\pstr.h">
-      <Filter>util\inc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\util\inc\ringbuf.h">
       <Filter>util\inc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\util\inc\ringbuf_cfg.h">
-      <Filter>util\inc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\util\inc\scan.h">
       <Filter>util\inc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\util\inc\soa.h">
@@ -361,6 +397,33 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\adt\inc\adt_str.h">
       <Filter>adt\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\bstr\inc\bstr.h">
+      <Filter>bstr\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_av.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_dv.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_hv.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_sv.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_type.h">
+      <Filter>dtl_type\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_attributeParser.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_error.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_portAttributes.h">
+      <Filter>apx\common\inc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

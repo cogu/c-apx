@@ -28,7 +28,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -71,7 +71,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\..\..\util\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\apx\common\inc;$(SolutionDir)..\..\..\remotefile\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\cutest\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\util\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\apx\common\inc;$(SolutionDir)..\..\..\remotefile\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\cutest\;$(IncludePath)</IncludePath>
     <TargetName>$(ProjectName)_$(PlatformTarget)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -91,7 +91,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);_WIN32_WINNT=0x0601;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>UNIT_TEST;MEM_LEAK_CHECK;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);_WIN32_WINNT=0x0601;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
@@ -158,10 +158,12 @@
     <ClCompile Include="..\..\..\..\adt\src\adt_stack.c" />
     <ClCompile Include="..\..\..\..\adt\src\adt_str.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_allocator.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_attributeParser.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataElement.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataSignature.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataTrigger.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_datatype.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_error.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_file.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_fileManager.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_fileMap.c" />
@@ -171,6 +173,7 @@
     <ClCompile Include="..\..\..\..\apx\common\src\apx_nodeManager.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_parser.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_port.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_portAttributes.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_portDataMap.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_portref.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_router.c" />
@@ -178,6 +181,8 @@
     <ClCompile Include="..\..\..\..\apx\common\src\apx_stream.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\filestream.c" />
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_allocator.c" />
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_attributeParser.c" />
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_dataElement.c" />
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_dataSignature.c" />
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_file.c" />
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_fileMap.c" />
@@ -191,15 +196,18 @@
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_router.c" />
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_dataTrigger.c" />
     <ClCompile Include="..\..\..\..\apx\common\test\test_main.c" />
+    <ClCompile Include="..\..\..\..\bstr\src\bstr.c" />
     <ClCompile Include="..\..\..\..\cutest\CuTest.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_av.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_dv.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_hv.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_sv.c" />
     <ClCompile Include="..\..\..\..\remotefile\src\rmf.c" />
     <ClCompile Include="..\..\..\..\remotefile\test\testsuite_remotefile.c" />
     <ClCompile Include="..\..\..\..\util\src\CMemLeak.c" />
     <ClCompile Include="..\..\..\..\util\src\headerutil.c" />
     <ClCompile Include="..\..\..\..\util\src\pack.c" />
-    <ClCompile Include="..\..\..\..\util\src\pstr.c" />
     <ClCompile Include="..\..\..\..\util\src\ringbuf.c" />
-    <ClCompile Include="..\..\..\..\util\src\scan.c" />
     <ClCompile Include="..\..\..\..\util\src\soa.c" />
     <ClCompile Include="..\..\..\..\util\src\soa_chunk.c" />
     <ClCompile Include="..\..\..\..\util\src\soa_fsa.c" />
@@ -212,11 +220,13 @@
     <ClInclude Include="..\..\..\..\adt\inc\adt_stack.h" />
     <ClInclude Include="..\..\..\..\adt\inc\adt_str.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_allocator.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_attributeParser.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_cfg.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataElement.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataSignature.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataTrigger.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_datatype.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_error.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_file.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileManager.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileManager_cfg.h" />
@@ -230,6 +240,7 @@
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_nodeManager.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_parser.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_port.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_portAttributes.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portDataBuffer.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portDataMap.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portref.h" />
@@ -239,7 +250,13 @@
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_transmitHandler.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_types.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\filestream.h" />
+    <ClInclude Include="..\..\..\..\bstr\inc\bstr.h" />
     <ClInclude Include="..\..\..\..\cutest\CuTest.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_av.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_dv.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_hv.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_sv.h" />
+    <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_type.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\osmacro.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\osutil.h" />
     <ClInclude Include="..\..\..\..\remotefile\inc\rmf.h" />
@@ -247,10 +264,8 @@
     <ClInclude Include="..\..\..\..\util\inc\CMemLeak.h" />
     <ClInclude Include="..\..\..\..\util\inc\headerutil.h" />
     <ClInclude Include="..\..\..\..\util\inc\pack.h" />
-    <ClInclude Include="..\..\..\..\util\inc\pstr.h" />
     <ClInclude Include="..\..\..\..\util\inc\ringbuf.h" />
     <ClInclude Include="..\..\..\..\util\inc\ringbuf_cfg.h" />
-    <ClInclude Include="..\..\..\..\util\inc\scan.h" />
     <ClInclude Include="..\..\..\..\util\inc\soa.h" />
     <ClInclude Include="..\..\..\..\util\inc\soa_chunk.h" />
     <ClInclude Include="..\..\..\..\util\inc\soa_fsa.h" />
