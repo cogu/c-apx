@@ -319,11 +319,11 @@ static uint8_t *apx_dataElement_pack_sv(apx_dataElement_t *self, uint8_t *pBegin
 #if  defined(__GNUC__) && defined(__LP64__)
          if (pNext  + sizeof(uint64_t) <= pEnd)
          {
-            packU64(pNext, dtl_sv_get_u64(sv));
+            packU64LE(pNext, dtl_sv_get_u64(sv));
          }
          else
          {
-            apx_setError(APX_LENGTH_ERROR;
+            apx_setError(APX_LENGTH_ERROR);
             return 0;
          }
 #else
@@ -368,11 +368,11 @@ static uint8_t *apx_dataElement_pack_sv(apx_dataElement_t *self, uint8_t *pBegin
 #if  defined(__GNUC__) && defined(__LP64__)
          if (pNext  + sizeof(uint64_t) <= pEnd)
          {
-            packU64(pNext, (uint64_t) dtl_sv_get_i64(sv));
+            packU64LE(pNext, (uint64_t) dtl_sv_get_i64(sv));
          }
          else
          {
-            apx_setError(APX_LENGTH_ERROR;
+            apx_setError(APX_LENGTH_ERROR);
             return 0;
          }
 #else

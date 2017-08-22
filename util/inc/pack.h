@@ -31,8 +31,8 @@
 #define unpackU32LE(p) (_UINT32) unpackLE(p,4),p+=4
 
 #if  defined(__GNUC__) && defined(__LP64__)
-#define packU64LE(p,v) packLE64(p,v,8),p+=8
-#define unpackU64LE(p,v) (_UINT64) packLE64(p,v,4),p+=8
+#define packU64LE(p,v) packLE(p,v,8),p+=8
+#define unpackU64LE(p,v) (_UINT64) packLE(p,v,4),p+=8
 #endif
 
 
