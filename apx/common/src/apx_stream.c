@@ -470,7 +470,8 @@ static const uint8_t * apx_splitDeclarationLine(const uint8_t *pBegin,const uint
                   pNext = pResult;
                   if (pNext<pEnd)
                   {
-                     assert(':'==*pNext++);
+                     assert(':'==*pNext);
+                     pNext++;
                      if (pNext<pEnd)
                      {
                         attrLen = (uint32_t) (pEnd-pNext);
