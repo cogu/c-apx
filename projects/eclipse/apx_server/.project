@@ -37,22 +37,22 @@
 		<link>
 			<name>bstr/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/bstr/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/bstr/inc</locationURI>
 		</link>
 		<link>
 			<name>bstr/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/bstr/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/bstr/src</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_type/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/inc</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_type/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/src</locationURI>
 		</link>
 		<link>
 			<name>msocket/inc</name>

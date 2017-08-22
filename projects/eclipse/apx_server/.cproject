@@ -42,7 +42,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.854295620" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="MEM_LEAK_CHECK"/>
-									<listOptionValue builtIn="false" value="SW_VERSION_LITERAL=&quot;\&quot;0.1.2\&quot;&quot;"/>
+									<listOptionValue builtIn="false" value="SW_VERSION_LITERAL=&quot;\&quot;0.1.4\&quot;&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.1515617663" superClass="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin"/>
 							</tool>
