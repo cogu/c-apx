@@ -72,7 +72,9 @@ void apx_server_destroy(apx_server_t *self)
       //destroy the tcp server
       msocket_server_destroy(&self->tcpServer);
       //destroy the local socket server
+#ifndef _MSC_VER
       msocket_server_destroy(&self->localServer);
+#endif
       apx_nodeManager_destroy(&self->nodeManager);
       apx_router_destroy(&self->router);
    }

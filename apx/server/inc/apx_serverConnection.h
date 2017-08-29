@@ -16,19 +16,29 @@
 #ifdef _MSC_VER
 #include <Windows.h>
 #endif
+#ifdef UNIT_TEST
+#include "testsocket.h"
+#else
 #include "msocket.h"
-
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 struct apx_server_tag;
+struct apx_testServer_tag;
 
 typedef struct apx_serverConnection_tag
 {
    apx_fileManager_t fileManager;
+#ifdef UNIT_TEST
+   testsocket_t *testsocket;
+   struct apx_testServer_tag *server;
+#else
    msocket_t *msocket;
    struct apx_server_tag *server;
+#endif
+
    bool isGreetingParsed;
    adt_bytearray_t sendBuffer;
    uint8_t numHeaderMaxLen;
@@ -42,9 +52,17 @@ typedef struct apx_serverConnection_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_serverConnection_create(apx_serverConnection_t *self, msocket_t *msocket, struct apx_server_tag *server);
+#ifdef UNIT_TEST
+int8_t apx_serverConnection_create(apx_serverConnection_t *self, testsocket_t *socket, struct apx_testServer_tag *server);
+#else
+int8_t apx_serverConnection_create(apx_serverConnection_t *self, msocket_t *socket, struct apx_server_tag *server);
+#endif
 void apx_serverConnection_destroy(apx_serverConnection_t *self);
-apx_serverConnection_t *apx_serverConnection_new(msocket_t *msocket, struct apx_server_tag *server);
+#ifdef UNIT_TEST
+apx_serverConnection_t *apx_serverConnection_new(testsocket_t *socket, struct apx_testServer_tag *server);
+#else
+apx_serverConnection_t *apx_serverConnection_new(msocket_t *socket, struct apx_server_tag *server);
+#endif
 void apx_serverConnection_delete(apx_serverConnection_t *self);
 void apx_serverConnection_vdelete(void *arg);
 

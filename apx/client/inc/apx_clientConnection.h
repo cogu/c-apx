@@ -18,6 +18,9 @@
 //forward declarations
 struct apx_client_tag;
 
+/**
+ * APX client-side connection
+ */
 typedef struct apx_clientConnection_tag
 {
    apx_fileManager_t fileManager;

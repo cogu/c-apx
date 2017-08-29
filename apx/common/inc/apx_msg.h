@@ -22,7 +22,7 @@ typedef struct apx_msg_tag
 
 
 #define RMF_MSG_SIZE ((uint32_t) sizeof(apx_msg_t))
-                                        //data used in apx_msg_t
+                                      //data used in apx_msg_t
 #define RMF_MSG_EXIT                  0
 #define RMF_MSG_CONNECT               1
 #define RMF_MSG_DISCONNECT            2

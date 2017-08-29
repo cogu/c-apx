@@ -10,7 +10,11 @@
 #include <assert.h>
 #include <stdio.h>
 #include "apx_serverConnection.h"
+#ifdef UNIT_TEST
+#include "apx_testServer.h"
+#else
 #include "apx_server.h"
+#endif
 #include "headerutil.h"
 #include "bstr.h"
 #ifdef MEM_LEAK_CHECK
@@ -48,11 +52,19 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_serverConnection_create(apx_serverConnection_t *self, msocket_t *msocket, struct apx_server_tag *server)
+#ifdef UNIT_TEST
+int8_t apx_serverConnection_create(apx_serverConnection_t *self, testsocket_t *socket, struct apx_testServer_tag *server)
+#else
+int8_t apx_serverConnection_create(apx_serverConnection_t *self, msocket_t *socket, struct apx_server_tag *server)
+#endif
 {
-   if( (self != 0) && (msocket != 0) )
+   if( (self != 0) && (socket != 0) )
    {
-      self->msocket=msocket;
+#ifdef UNIT_TEST
+      self->testsocket=socket;
+#else
+      self->msocket = socket;
+#endif
       self->server=server;
       self->isGreetingParsed = false;
       self->numHeaderMaxLen = (int8_t) sizeof(uint32_t); //currently only 4-byte header is supported. There might be a future version where we support both 16-bit and 32-bit message headers
@@ -69,17 +81,25 @@ void apx_serverConnection_destroy(apx_serverConnection_t *self)
    {
       apx_fileManager_destroy(&self->fileManager);
       adt_bytearray_destroy(&self->sendBuffer);
+#ifdef UNIT_TEST
+      testsocket_delete(self->testsocket);
+#else
       msocket_delete(self->msocket);
+#endif
    }
 }
 
-apx_serverConnection_t *apx_serverConnection_new(msocket_t *msocket, struct apx_server_tag *server)
+#ifdef UNIT_TEST
+apx_serverConnection_t *apx_serverConnection_new(testsocket_t *socket, struct apx_testServer_tag *server)
+#else
+apx_serverConnection_t *apx_serverConnection_new(msocket_t *socket, struct apx_server_tag *server)
+#endif
 {
-   if (msocket != 0)
+   if (socket != 0)
    {
       apx_serverConnection_t *self = (apx_serverConnection_t*) malloc(sizeof(apx_serverConnection_t));
       if(self != 0){
-         int8_t result = apx_serverConnection_create(self, msocket, server);
+         int8_t result = apx_serverConnection_create(self, socket, server);
          if (result != 0)
          {
             free(self);
@@ -202,7 +222,6 @@ int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uin
  */
 static void apx_serverConnection_parseGreeting(apx_serverConnection_t *self, const uint8_t *msgBuf, int32_t msgLen)
 {
-   const uint8_t *pBegin = msgBuf;
    const uint8_t *pNext = msgBuf;
    const uint8_t *pEnd = msgBuf + msgLen;
    while(pNext < pEnd)
@@ -365,7 +384,11 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
 		 }
 		 printf("\n");
 #endif
-         msocket_send(self->msocket, pBegin, msgLen+headerLen);
+#ifdef UNIT_TEST
+		 testsocket_serverSend(self->testsocket, pBegin, msgLen+headerLen);
+#else
+		 msocket_send(self->msocket, pBegin, msgLen+headerLen);
+#endif
          return 0;
       }
       else

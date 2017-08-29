@@ -13,7 +13,7 @@
 # define APX_LOG_ERROR(fmt, ...)
 #else
 # include <stdio.h>
-# define APX_LOG_DEBUG(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
+# define APX_LOG_DEBUG(fmt, ...) fprintf(stdout, fmt "\n", ##__VA_ARGS__)
 # define APX_LOG_ERROR(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 #endif
 //////////////////////////////////////////////////////////////////////////////

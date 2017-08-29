@@ -21,6 +21,7 @@ CuSuite* testSuite_apx_nodeData(void);
 CuSuite* testsuite_apx_attributesParser(void);
 CuSuite* testSuite_apx_dataElement(void);
 CuSuite* testSuite_remotefile(void);
+CuSuite* testSuite_apx_testServer(void);
 
 
 
@@ -48,6 +49,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_remotefile());
    CuSuiteAddSuite(suite, testsuite_apx_attributesParser());
    CuSuiteAddSuite(suite, testSuite_apx_dataElement());
+   CuSuiteAddSuite(suite, testSuite_apx_testServer());
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);
    CuSuiteDetails(suite, output);
