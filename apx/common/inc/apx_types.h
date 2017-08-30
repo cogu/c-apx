@@ -20,4 +20,9 @@ typedef struct apx_dataWriteCmd_tag
 
 #define APX_DATA_WRITE_CMD_SIZE sizeof(apx_dataWriteCmd_t)
 
+#define APX_CONNECTION_TYPE_TEST_SOCKET       0
+#define APX_CONNECTION_TYPE_TCP_SOCKET        1
+#define APX_CONNECTION_TYPE_LOCAL_SOCKET      2
+
+
 #endif //APX_TYPES_H

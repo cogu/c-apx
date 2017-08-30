@@ -95,6 +95,21 @@
 			<locationURI>PARENT-3-PROJECT_LOC/util/src</locationURI>
 		</link>
 		<link>
+			<name>apx/client/inc</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/client/inc</locationURI>
+		</link>
+		<link>
+			<name>apx/client/src</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/client/src</locationURI>
+		</link>
+		<link>
+			<name>apx/client/test</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/client/test</locationURI>
+		</link>
+		<link>
 			<name>apx/common/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/apx/common/inc</locationURI>

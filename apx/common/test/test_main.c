@@ -22,11 +22,7 @@ CuSuite* testsuite_apx_attributesParser(void);
 CuSuite* testSuite_apx_dataElement(void);
 CuSuite* testSuite_remotefile(void);
 CuSuite* testSuite_apx_testServer(void);
-
-
-
-void streambuf_lock(void){}
-void streambuf_unlock(void){}
+CuSuite* testSuite_apx_clientSession(void);
 
 void RunAllTests(void)
 {
@@ -50,6 +46,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testsuite_apx_attributesParser());
    CuSuiteAddSuite(suite, testSuite_apx_dataElement());
    CuSuiteAddSuite(suite, testSuite_apx_testServer());
+   CuSuiteAddSuite(suite, testSuite_apx_clientSession());
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);
    CuSuiteDetails(suite, output);
