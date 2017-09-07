@@ -86,13 +86,13 @@ void apx_es_fileManager_requestRemoteFile(apx_es_fileManager_t *self, apx_file_t
       //prevent duplicates
       for(i=0;i<self->numRequestedFiles;i++)
       {
-         apx_file_t *file = &self->requestedFileList[i];
+         apx_file_t *file = self->requestedFileList[i];
          if (strcmp(requestedFile->fileInfo.name, file->fileInfo.name)==0)
          {
             return;
          }
       }
-      memcpy(&self->requestedFileList[self->numRequestedFiles++], requestedFile, sizeof(apx_file_t));
+      self->requestedFileList[self->numRequestedFiles++] = requestedFile;
    }
 }
 
@@ -628,7 +628,7 @@ static void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *self,
       int32_t removeIndex=-1;
       for(i=0;i<self->numRequestedFiles;i++)
       {
-         file = &self->requestedFileList[i];
+         file = self->requestedFileList[i];
          if (file != 0)
          {
             if (strcmp(file->fileInfo.name, fileInfo->name)==0)
@@ -772,7 +772,7 @@ DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *sel
       for(i=removeIndex+1; i<self->numRequestedFiles;i++)
       {
          //move item from removeIndex to removeIndex-1
-         memcpy(&self->requestedFileList[i-1], &self->requestedFileList[i],sizeof(apx_file_t));
+         self->requestedFileList[i-1] = self->requestedFileList[i];
       }
       self->numRequestedFiles--; //remove last item
       return 0;

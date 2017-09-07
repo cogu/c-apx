@@ -108,24 +108,24 @@ static void apx_es_filemanager_request_files(CuTest* tc)
    rc = apx_es_fileManager_removeRequestedAt(&fileManager,0); //removes file1, moves file2 and file3 left 1 step
    CuAssertIntEquals(tc, 0, (int) rc);
    CuAssertIntEquals(tc, 2, (int) fileManager.numRequestedFiles);
-   CuAssertIntEquals(tc,0,memcmp(&file2, &fileManager.requestedFileList[0], sizeof(apx_file_t)));
-   CuAssertIntEquals(tc,0,memcmp(&file3, &fileManager.requestedFileList[1], sizeof(apx_file_t)));
+   CuAssertPtrEquals(tc,&file2, fileManager.requestedFileList[0]);
+   CuAssertPtrEquals(tc,&file3, fileManager.requestedFileList[1]);
    apx_es_fileManager_requestRemoteFile(&fileManager, &file1); //appends file1 to end of list
    CuAssertIntEquals(tc, fileManager.numRequestedFiles, 3);
    //test 3. remove from middle of list
    rc = apx_es_fileManager_removeRequestedAt(&fileManager,1); //removes file3, moves file3 and file1 left 1 step
    CuAssertIntEquals(tc, 0, (int) rc);
    CuAssertIntEquals(tc, 2, (int) fileManager.numRequestedFiles);
-   CuAssertIntEquals(tc,0,memcmp(&file2, &fileManager.requestedFileList[0], sizeof(apx_file_t)));
-   CuAssertIntEquals(tc,0,memcmp(&file1, &fileManager.requestedFileList[1], sizeof(apx_file_t)));
+   CuAssertPtrEquals(tc,&file2, fileManager.requestedFileList[0]);
+   CuAssertPtrEquals(tc,&file1, fileManager.requestedFileList[1]);
    apx_es_fileManager_requestRemoteFile(&fileManager, &file3); //appends file3 to end of list
    CuAssertIntEquals(tc, fileManager.numRequestedFiles, 3);
    //test 4. remove from end of list
    rc = apx_es_fileManager_removeRequestedAt(&fileManager,2); //removes file3
    CuAssertIntEquals(tc, 0, (int) rc);
    CuAssertIntEquals(tc, 2, (int) fileManager.numRequestedFiles);
-   CuAssertIntEquals(tc,0,memcmp(&file2, &fileManager.requestedFileList[0], sizeof(apx_file_t)));
-   CuAssertIntEquals(tc,0,memcmp(&file1, &fileManager.requestedFileList[1], sizeof(apx_file_t)));
+   CuAssertPtrEquals(tc, &file2, fileManager.requestedFileList[0]);
+   CuAssertPtrEquals(tc, &file1, fileManager.requestedFileList[1]);
 
    //test 5. test with invalid arguments
    CuAssertIntEquals(tc,-1, (int) apx_es_fileManager_removeRequestedAt(&fileManager,-1));
@@ -133,9 +133,9 @@ static void apx_es_filemanager_request_files(CuTest* tc)
 
    //test 6. remove until list is empty
    CuAssertIntEquals(tc, fileManager.numRequestedFiles, 2);
-   CuAssertIntEquals(tc,0, (int) apx_es_fileManager_removeRequestedAt(&fileManager,0));
+   CuAssertIntEquals(tc, 0, (int) apx_es_fileManager_removeRequestedAt(&fileManager,0));
    CuAssertIntEquals(tc, fileManager.numRequestedFiles, 1);
-   CuAssertIntEquals(tc,0, (int) apx_es_fileManager_removeRequestedAt(&fileManager,0));
+   CuAssertIntEquals(tc, 0, (int) apx_es_fileManager_removeRequestedAt(&fileManager,0));
    CuAssertIntEquals(tc, fileManager.numRequestedFiles, 0);
 }
 

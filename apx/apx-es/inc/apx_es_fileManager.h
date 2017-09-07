@@ -55,7 +55,7 @@ typedef struct apx_es_fileManager_tag
 
    apx_es_fileMap_t localFileMap;
    apx_es_fileMap_t remoteFileMap;
-   apx_file_t requestedFileList[APX_ES_FILEMANAGER_MAX_NUM_REQUEST_FILES];
+   apx_file_t *requestedFileList[APX_ES_FILEMANAGER_MAX_NUM_REQUEST_FILES];
    uint16_t numRequestedFiles;
 
    apx_transmitHandler_t transmitHandler;
