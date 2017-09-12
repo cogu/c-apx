@@ -28,7 +28,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -71,7 +71,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\util\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\apx\common\inc;$(SolutionDir)..\..\..\remotefile\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\cutest\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\util\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\apx\client\inc;$(SolutionDir)..\..\..\apx\server\inc;$(SolutionDir)..\..\..\apx\common\inc;$(SolutionDir)..\..\..\remotefile\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\cutest\;$(IncludePath)</IncludePath>
     <TargetName>$(ProjectName)_$(PlatformTarget)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -91,7 +91,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>UNIT_TEST;MEM_LEAK_CHECK;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);_WIN32_WINNT=0x0601;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>UNIT_TEST;MEM_LEAK_CHECK;_CRT_SECURE_NO_WARNINGS;WIN32_LEAN_AND_MEAN;WIN32;_DEBUG;_CONSOLE;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);_WIN32_WINNT=0x0601;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
@@ -157,6 +157,9 @@
     <ClCompile Include="..\..\..\..\adt\src\adt_list.c" />
     <ClCompile Include="..\..\..\..\adt\src\adt_stack.c" />
     <ClCompile Include="..\..\..\..\adt\src\adt_str.c" />
+    <ClCompile Include="..\..\..\..\apx\client\src\apx_clientSession.c" />
+    <ClCompile Include="..\..\..\..\apx\client\src\apx_cmd.c" />
+    <ClCompile Include="..\..\..\..\apx\client\test\testsuite_apx_clientSession.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_allocator.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_attributeParser.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataElement.c" />
@@ -196,12 +199,16 @@
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_router.c" />
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_dataTrigger.c" />
     <ClCompile Include="..\..\..\..\apx\common\test\test_main.c" />
+    <ClCompile Include="..\..\..\..\apx\server\src\apx_serverConnection.c" />
+    <ClCompile Include="..\..\..\..\apx\server\src\apx_testServer.c" />
+    <ClCompile Include="..\..\..\..\apx\server\test\testsuite_apx_testServer.c" />
     <ClCompile Include="..\..\..\..\bstr\src\bstr.c" />
     <ClCompile Include="..\..\..\..\cutest\CuTest.c" />
     <ClCompile Include="..\..\..\..\dtl_type\src\dtl_av.c" />
     <ClCompile Include="..\..\..\..\dtl_type\src\dtl_dv.c" />
     <ClCompile Include="..\..\..\..\dtl_type\src\dtl_hv.c" />
     <ClCompile Include="..\..\..\..\dtl_type\src\dtl_sv.c" />
+    <ClCompile Include="..\..\..\..\msocket\src\testsocket.c" />
     <ClCompile Include="..\..\..\..\remotefile\src\rmf.c" />
     <ClCompile Include="..\..\..\..\remotefile\test\testsuite_remotefile.c" />
     <ClCompile Include="..\..\..\..\util\src\CMemLeak.c" />
@@ -219,6 +226,8 @@
     <ClInclude Include="..\..\..\..\adt\inc\adt_list.h" />
     <ClInclude Include="..\..\..\..\adt\inc\adt_stack.h" />
     <ClInclude Include="..\..\..\..\adt\inc\adt_str.h" />
+    <ClInclude Include="..\..\..\..\apx\client\inc\apx_clientSession.h" />
+    <ClInclude Include="..\..\..\..\apx\client\inc\apx_cmd.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_allocator.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_attributeParser.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_cfg.h" />
@@ -250,6 +259,8 @@
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_transmitHandler.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_types.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\filestream.h" />
+    <ClInclude Include="..\..\..\..\apx\server\inc\apx_serverConnection.h" />
+    <ClInclude Include="..\..\..\..\apx\server\inc\apx_testServer.h" />
     <ClInclude Include="..\..\..\..\bstr\inc\bstr.h" />
     <ClInclude Include="..\..\..\..\cutest\CuTest.h" />
     <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_av.h" />
@@ -259,6 +270,7 @@
     <ClInclude Include="..\..\..\..\dtl_type\inc\dtl_type.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\osmacro.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\osutil.h" />
+    <ClInclude Include="..\..\..\..\msocket\inc\testsocket.h" />
     <ClInclude Include="..\..\..\..\remotefile\inc\rmf.h" />
     <ClInclude Include="..\..\..\..\remotefile\inc\rmf_cfg.h" />
     <ClInclude Include="..\..\..\..\util\inc\CMemLeak.h" />

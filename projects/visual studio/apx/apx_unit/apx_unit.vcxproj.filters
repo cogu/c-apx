@@ -73,6 +73,33 @@
     <Filter Include="dtl_type\src">
       <UniqueIdentifier>{d27f944d-808e-4885-b2d9-ef472ff0bba0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="apx\server">
+      <UniqueIdentifier>{85859ec9-fe62-451a-b507-ca21dd4c1fd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\server\test">
+      <UniqueIdentifier>{cd1dcc82-6b8e-4b13-9a30-472efeb775e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\server\inc">
+      <UniqueIdentifier>{f9693f55-fae5-448f-bd68-242b2f4033b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\server\src">
+      <UniqueIdentifier>{e0d612aa-a114-4cdb-912b-b163a179f9d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="msocket\src">
+      <UniqueIdentifier>{52ffd5cc-e675-4d1d-8d79-db0562ecba24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\client">
+      <UniqueIdentifier>{e4d37a85-98b1-42f1-a15a-b50886a1fa7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\client\test">
+      <UniqueIdentifier>{00a692d2-5882-4013-9e78-d0232c1aa1d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\client\inc">
+      <UniqueIdentifier>{1d76e2ad-b854-4b25-b694-a0a25e262c87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="apx\client\src">
+      <UniqueIdentifier>{dcfa5f03-11fa-482c-af1b-ffbdbb810094}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\apx\common\test\test_main.c">
@@ -255,6 +282,27 @@
     <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_dataElement.c">
       <Filter>apx\common\test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\server\test\testsuite_apx_testServer.c">
+      <Filter>apx\server\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\server\src\apx_testServer.c">
+      <Filter>apx\server\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\server\src\apx_serverConnection.c">
+      <Filter>apx\server\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\msocket\src\testsocket.c">
+      <Filter>msocket\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\client\test\testsuite_apx_clientSession.c">
+      <Filter>apx\client\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\client\src\apx_clientSession.c">
+      <Filter>apx\client\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\client\src\apx_cmd.c">
+      <Filter>apx\client\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\cutest\CuTest.h">
@@ -424,6 +472,21 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portAttributes.h">
       <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\server\inc\apx_testServer.h">
+      <Filter>apx\server\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\server\inc\apx_serverConnection.h">
+      <Filter>apx\server\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\msocket\inc\testsocket.h">
+      <Filter>msocket\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\client\inc\apx_clientSession.h">
+      <Filter>apx\client\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\client\inc\apx_cmd.h">
+      <Filter>apx\client\inc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -53,6 +53,9 @@ typedef struct apx_clientSession_tag
 
    apx_clientConnection_t *clientConnection;
    apx_clientSessionHandler_t handler;
+#ifdef _WIN32
+   unsigned int threadId;
+#endif
 } apx_clientSession_t;
 
 
