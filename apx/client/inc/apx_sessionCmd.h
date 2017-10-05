@@ -40,7 +40,7 @@
 typedef struct apx_cmd_tag
 {
    int32_t cmdType;
-   void *cmdData;
+   void *cmdAny;
    void(*cmdDestructor)(void*);
 }apx_cmd_t;
 
@@ -56,11 +56,11 @@ typedef struct apx_connectCmd_tag
 //////////////////////////////////////////////////////////////////////////////
 void apx_cmd_create(apx_cmd_t *self);
 void apx_cmd_destroy(apx_cmd_t *self);
-void apx_connectCmd_tcp_create(apx_connectCmd_t *self, const char *tcp_hostname, uint16_t tcp_port);
-void apx_connectCmd_lsock_create(apx_connectCmd_t *self, const char *lsock_path);
+void apx_connectCmd_createTcpSock(apx_connectCmd_t *self, const char *tcp_hostname, uint16_t tcp_port);
+void apx_connectCmd_createLocalSock(apx_connectCmd_t *self, const char *lsock_path);
 void apx_connectCmd_destroy(apx_connectCmd_t *self);
-apx_connectCmd_t *apx_connectCmd_tcp_new(const char *tcp_hostname, uint16_t tcp_port);
-apx_connectCmd_t *apx_connectCmd_lsock_new(const char *lsock_path);
+apx_connectCmd_t *apx_connectCmd_newTcpSock(const char *tcp_hostname, uint16_t tcp_port);
+apx_connectCmd_t *apx_connectCmd_newLocalSock(const char *lsock_path);
 void apx_connectCmd_delete(apx_connectCmd_t *self);
 void apx_connectCmd_vdelete(void *arg);
 

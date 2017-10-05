@@ -18,7 +18,7 @@
 #endif
 #include "osmacro.h"
 #include "apx_clientConnection.h"
-#include "apx_cmd.h"
+#include "apx_sessionCmd.h"
 
 
 //////////////////////////////////////////////////////////////////////////////

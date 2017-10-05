@@ -2,9 +2,6 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_testServer.h"
-#ifdef _MSC_VER
-#include <process.h>
-#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

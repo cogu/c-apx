@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_cmd.h"
+#include "apx_sessionCmd.h"
 #include <malloc.h>
 #include <errno.h>
 #include "apx_logging.h"
@@ -40,21 +40,21 @@ void apx_cmd_create(apx_cmd_t *self)
    if (self != 0)
    {
       self->cmdType = APX_CMD_NONE;
-      self->cmdData = 0;
+      self->cmdAny = 0;
       self->cmdDestructor = (void (*)(void*)) 0;
    }
 }
 
 void apx_cmd_destroy(apx_cmd_t *self)
 {
-   if ( (self != 0) && (self->cmdData != (void*) 0) && (self->cmdDestructor != (void (*)(void*)) 0) )
+   if ( (self != 0) && (self->cmdAny != (void*) 0) && (self->cmdDestructor != (void (*)(void*)) 0) )
    {
-      self->cmdDestructor(self->cmdData);
-      self->cmdData = (void*) 0;
+      self->cmdDestructor(self->cmdAny);
+      self->cmdAny = (void*) 0;
    }
 }
 
-void apx_connectCmd_tcp_create(apx_connectCmd_t *self, const char *tcp_hostname, uint16_t tcp_port)
+void apx_connectCmd_createTcpSock(apx_connectCmd_t *self, const char *tcp_hostname, uint16_t tcp_port)
 {
    if(self != 0)
    {
@@ -64,7 +64,7 @@ void apx_connectCmd_tcp_create(apx_connectCmd_t *self, const char *tcp_hostname,
    }
 }
 
-void apx_connectCmd_lsock_create(apx_connectCmd_t *self, const char *lsock_path)
+void apx_connectCmd_createLocalSock(apx_connectCmd_t *self, const char *lsock_path)
 {
    if(self != 0)
    {
@@ -82,12 +82,12 @@ void apx_connectCmd_destroy(apx_connectCmd_t *self)
    }
 }
 
-apx_connectCmd_t *apx_connectCmd_tcp_new(const char *tcp_hostname, uint16_t tcp_port)
+apx_connectCmd_t *apx_connectCmd_newTcpSock(const char *tcp_hostname, uint16_t tcp_port)
 {
    apx_connectCmd_t *self = (apx_connectCmd_t*) malloc(sizeof(apx_connectCmd_t));
    if(self != 0)
    {
-      apx_connectCmd_tcp_create(self, tcp_hostname, tcp_port);
+      apx_connectCmd_createTcpSock(self, tcp_hostname, tcp_port);
    }
    else
    {
@@ -95,12 +95,12 @@ apx_connectCmd_t *apx_connectCmd_tcp_new(const char *tcp_hostname, uint16_t tcp_
    }
    return self;
 }
-apx_connectCmd_t *apx_connectCmd_lsock_new(const char *lsock_path)
+apx_connectCmd_t *apx_connectCmd_newLocalSock(const char *lsock_path)
 {
    apx_connectCmd_t *self = (apx_connectCmd_t*) malloc(sizeof(apx_connectCmd_t));
    if(self != 0)
    {
-      apx_connectCmd_lsock_create(self, lsock_path);
+      apx_connectCmd_createLocalSock(self, lsock_path);
    }
    else
    {
