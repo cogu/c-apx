@@ -390,7 +390,11 @@ static int32_t apx_es_fileManager_onInternalMessage(apx_es_fileManager_t *self, 
             else
             {
                //queue as pending write
-               assert(0); //not yet implemented
+               self->pendingWrite = true;
+               self->fileWriteInfo.localFile=file;
+               self->fileWriteInfo.readOffset=offset;
+               self->fileWriteInfo.writeAddress=address;
+               self->fileWriteInfo.remain=dataLen;
             }
          }
          break;
