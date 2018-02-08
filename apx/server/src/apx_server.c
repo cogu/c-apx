@@ -51,6 +51,7 @@ void apx_server_create(apx_server_t *self, uint16_t tcpPort)
       apx_nodeManager_create(&self->nodeManager);
       apx_router_create(&self->router);
       apx_nodeManager_setRouter(&self->nodeManager, &self->router);
+      MUTEX_INIT(self->mutex);
    }
 }
 
@@ -77,6 +78,7 @@ void apx_server_destroy(apx_server_t *self)
 #endif
       apx_nodeManager_destroy(&self->nodeManager);
       apx_router_destroy(&self->router);
+      MUTEX_DESTROY(self->mutex);
    }
 }
 
@@ -137,7 +139,6 @@ static int8_t apx_server_data(void *arg, const uint8_t *dataBuf, uint32_t dataLe
 
 /**
  * called by msocket worker thread when it detects a disconnect event on the msocket
- * //TODO: make this function thread-safe! If two sockets disconnect at exactly the same time the program probably crashes
  */
 static void apx_server_disconnected(void *arg)
 {
@@ -146,9 +147,11 @@ static void apx_server_disconnected(void *arg)
    connection = (apx_serverConnection_t*) arg;
    if (connection != 0)
    {
-      adt_list_remove(&connection->server->connections, connection);
+      apx_server_t *server = connection->server;
+      MUTEX_LOCK(server->mutex);
+      adt_list_remove(&server->connections, connection);
       //the thread inside the msocket class cannot shutdown itself, instead use the cleanup thread to do the job of shutting it down
-      apx_nodeManager_detachFileManager(&connection->server->nodeManager, &connection->fileManager);
+      apx_nodeManager_detachFileManager(&server->nodeManager, &connection->fileManager);
       switch (connection->msocket->addressFamily)
       {
          case AF_INET: //intentional fallthrough
@@ -163,6 +166,7 @@ static void apx_server_disconnected(void *arg)
          default:
             break;
       }
+      MUTEX_UNLOCK(server->mutex);
    }
 }
 

@@ -52,12 +52,12 @@
 		<link>
 			<name>dtl_type/inc</name>
 			<type>2</type>
-			<locationURI>PARENT-4-PROJECT_LOC/dtl_type/inc</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/inc</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/src</name>
 			<type>2</type>
-			<locationURI>PARENT-4-PROJECT_LOC/dtl_type/src</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/src</locationURI>
 		</link>
 		<link>
 			<name>msocket/inc</name>

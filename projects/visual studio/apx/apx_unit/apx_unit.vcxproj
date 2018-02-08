@@ -158,8 +158,9 @@
     <ClCompile Include="..\..\..\..\adt\src\adt_stack.c" />
     <ClCompile Include="..\..\..\..\adt\src\adt_str.c" />
     <ClCompile Include="..\..\..\..\apx\client\src\apx_clientSession.c" />
-    <ClCompile Include="..\..\..\..\apx\client\src\apx_cmd.c" />
+    <ClCompile Include="..\..\..\..\apx\client\src\apx_sessionCmd.c" />
     <ClCompile Include="..\..\..\..\apx\client\test\testsuite_apx_clientSession.c" />
+    <ClCompile Include="..\..\..\..\apx\client\test\testsuite_apx_sessionCmd.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_allocator.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_attributeParser.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataElement.c" />

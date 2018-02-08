@@ -14,7 +14,7 @@
 #include "apx_nodeData.h"
 #include "apx_file.h"
 #include "apx_transmitHandler.h"
-#include "apx_es_FileManager_cfg.h"
+#include "apx_es_fileManager_cfg.h"
 #include "apx_es_fileMap.h"
 #include "ringbuf.h"
 

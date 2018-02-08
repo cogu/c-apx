@@ -61,7 +61,7 @@ void apx_nodeManager_create(apx_nodeManager_t *self)
       adt_hash_create(&self->nodeInfoMap, apx_nodeInfo_vdelete);
       apx_parser_create(&self->parser);
       memset(&apx_istream_handler,0,sizeof(apx_istream_handler));
-
+      self->router = (apx_router_t*) 0;
       apx_istream_handler.arg = &self->parser;
       apx_istream_handler.open = apx_parser_vopen;
       apx_istream_handler.close = apx_parser_vclose;

@@ -300,8 +300,11 @@
     <ClCompile Include="..\..\..\..\apx\client\src\apx_clientSession.c">
       <Filter>apx\client\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\client\src\apx_cmd.c">
+    <ClCompile Include="..\..\..\..\apx\client\src\apx_sessionCmd.c">
       <Filter>apx\client\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\client\test\testsuite_apx_sessionCmd.c">
+      <Filter>apx\client\test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
