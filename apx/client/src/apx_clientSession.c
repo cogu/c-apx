@@ -6,6 +6,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include "apx_logging.h"
+#ifdef _MSC_VER
+#include <process.h>
+#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -168,7 +171,7 @@ static void apx_clientSession_startThread(apx_clientSession_t *self)
       THREAD_CREATE(self->workerThread,threadTask,self,self->threadId);
       if(self->workerThread == INVALID_HANDLE_VALUE){
          self->workerThreadValid = false;
-         return -1;
+         return;
       }
 #else
       int rc = THREAD_CREATE(self->workerThread,threadTask,self);
