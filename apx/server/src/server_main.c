@@ -53,9 +53,9 @@ int main(int argc, char **argv)
       if (result != 0)
       {
          return 0;
-      }      
-   }   
-   if ( (m_port<0) )
+      }
+   }
+   if(m_port==0)
    {
       printUsage(argv[0]);
       return 0;
