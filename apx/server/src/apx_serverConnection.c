@@ -293,7 +293,6 @@ static uint8_t apx_serverConnection_parseMessage(apx_serverConnection_t *self, c
          {
             apx_fileManager_parseMessage(&self->fileManager, pNext, msgLen);
          }
-         pNext+=msgLen;
       }
       else
       {
