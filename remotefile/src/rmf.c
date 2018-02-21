@@ -167,9 +167,9 @@ int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg)
    {
       int32_t addressLen;
       uint8_t c = (uint8_t) *buf;
-      bool high_bit = c & HIGH_BIT_MASK? true : false;
-      msg->more_bit = c & MORE_BIT_MASK? true : false;
-      addressLen = (high_bit==true)? 4 : 2;
+      bool high_bit = (c & HIGH_BIT_MASK) ? true : false;
+      msg->more_bit = (c & MORE_BIT_MASK) ? true : false;
+      addressLen = high_bit ? 4 : 2;
       if (bufLen < addressLen)
       {
          return 0; //no bytes consumed, retry later
@@ -210,7 +210,7 @@ int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_fileInfo_t *
       packLE(p, fileInfo->digestType, (uint8_t) sizeof(uint16_t)); p+=sizeof(uint16_t);
       memcpy(p, &fileInfo->digestData[0],RMF_DIGEST_SIZE); p+=RMF_DIGEST_SIZE;
       strcpy( (char*)p, fileInfo->name);
-      return totalLen; //add 1 for null terminator
+      return totalLen;
    }
    return -1;
 }
@@ -279,17 +279,17 @@ int32_t rmf_serialize_cmdOpenFile(uint8_t *buf, int32_t bufLen, rmf_cmdOpenFile_
 {
    if ( (buf != 0) && (cmdOpenFile !=0) )
    {
-      uint8_t *p;
+      uint8_t *p = buf;
       uint32_t totalLen = sizeof(uint32_t)*2u;
 
       if ((uint32_t) bufLen < totalLen )
       {
          return 0; //buffer too small
       }
-      p=buf;
-      packLE(p, RMF_CMD_FILE_OPEN, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      packLE(p, cmdOpenFile->address, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      return totalLen; //add 1 for null terminator
+      packLE(p, RMF_CMD_FILE_OPEN, (uint8_t) sizeof(uint32_t));
+      p+=sizeof(uint32_t);
+      packLE(p, cmdOpenFile->address, (uint8_t) sizeof(uint32_t));
+      return totalLen;
    }
    return -1;
 }
@@ -302,22 +302,22 @@ int32_t rmf_deserialize_cmdOpenFile(const uint8_t *buf, int32_t bufLen, rmf_cmdO
 {
    if ( (buf != 0) && (cmdOpenFile !=0) )
    {
-      const uint8_t *p;
+      const uint8_t *p = buf;
       uint32_t totalLen = sizeof(uint32_t)*2u;
       uint32_t cmdType;
       if ((uint32_t) bufLen < totalLen )
       {
          return 0; //buffer too small
       }
-      p=buf;
-      cmdType = unpackLE(p, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      cmdOpenFile->address = unpackLE(p, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
+      cmdType = unpackLE(p, (uint8_t) sizeof(uint32_t));
+      p+=sizeof(uint32_t);
+      cmdOpenFile->address = unpackLE(p, (uint8_t) sizeof(uint32_t));
       if(cmdType != RMF_CMD_FILE_OPEN)
       {
          //this is not the right deserializer
          return -1;
       }
-      return totalLen; //add 1 for null terminator
+      return totalLen;
    }
    return -1;
 }
@@ -330,17 +330,17 @@ int32_t rmf_serialize_cmdCloseFile(uint8_t *buf, int32_t bufLen, rmf_cmdCloseFil
 {
    if ( (buf != 0) && (cmdCloseFile !=0) )
    {
-      uint8_t *p;
+      uint8_t *p = buf;
       uint32_t totalLen = sizeof(uint32_t)*2u;
 
       if ((uint32_t) bufLen < totalLen )
       {
          return 0; //buffer too small
       }
-      p=buf;
-      packLE(p, RMF_CMD_FILE_CLOSE, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      packLE(p, cmdCloseFile->address, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      return totalLen; //add 1 for null terminator
+      packLE(p, RMF_CMD_FILE_CLOSE, (uint8_t) sizeof(uint32_t));
+      p+=sizeof(uint32_t);
+      packLE(p, cmdCloseFile->address, (uint8_t) sizeof(uint32_t));
+      return totalLen;
    }
    return -1;
 }
@@ -361,14 +361,15 @@ int32_t rmf_deserialize_cmdCloseFile(const uint8_t *buf, int32_t bufLen, rmf_cmd
          return 0; //buffer too small
       }
       p=buf;
-      cmdType = unpackLE(p, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
-      cmdCloseFile->address = unpackLE(p, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
+      cmdType = unpackLE(p, (uint8_t) sizeof(uint32_t));
+      p+=sizeof(uint32_t);
+      cmdCloseFile->address = unpackLE(p, (uint8_t) sizeof(uint32_t));
       if(cmdType != RMF_CMD_FILE_CLOSE)
       {
          //this is not the right deserializer
          return -1;
       }
-      return totalLen; //add 1 for null terminator
+      return totalLen;
    }
    return -1;
 }
@@ -484,7 +485,7 @@ int32_t rmf_serialize_acknowledge(uint8_t *buf, int32_t bufLen)
            return 0; //buffer too small
         }
         p=buf;
-        packLE(p, RMF_CMD_ACK, (uint8_t) sizeof(uint32_t)); p+=sizeof(uint32_t);
+        packLE(p, RMF_CMD_ACK, (uint8_t) sizeof(uint32_t));
         return totalLen; //add 1 for null terminator
      }
      return -1;

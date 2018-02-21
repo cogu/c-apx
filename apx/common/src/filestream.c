@@ -106,6 +106,7 @@ int ifstream_readTextFile(ifstream_t *self,const char *filename){
             }
             if (buf != 0) free(buf);
             if (chunk != 0) free(chunk);
+            fclose(fh);
             return 0;
          }
       }

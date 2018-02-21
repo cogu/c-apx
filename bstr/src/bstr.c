@@ -271,7 +271,7 @@ const uint8_t *bstr_toUnsignedLong(const uint8_t *pBegin, const uint8_t *pEnd, u
          for(i=0;i<len;i++)
          {
             int tmp2 = ASCIIHexToInt[pBegin[i]];
-            assert(tmp >= 0);
+            assert(tmp2 >= 0);
             tmp += tmp2*radix;
             radix/=base;
          }
