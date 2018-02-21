@@ -22,7 +22,7 @@ SRCDIR = \
 	dtl_type/src \
 
 # Source code files
-C_SOURCES = \
+SHARED_SOURCES = \
 	adt/src/adt_ary.c \
 	adt/src/adt_bytearray.c \
 	adt/src/adt_hash.c \
@@ -53,9 +53,6 @@ C_SOURCES = \
 	apx/common/src/apx_attributeParser.c \
 	apx/common/src/apx_stream.c \
 	apx/common/src/filestream.c \
-	apx/server/src/apx_server.c \
-	apx/server/src/apx_serverConnection.c \
-	apx/server/src/server_main.c \
 	msocket/src/msocket.c \
 	msocket/src/msocket_server.c \
 	msocket/src/osutil.c \
@@ -70,7 +67,13 @@ C_SOURCES = \
 	util/dtl_type/src/dtl_dv.c \
 	util/dtl_type/src/dtl_sv.c \
 	util/dtl_type/src/dtl_av.c \
-	util/dtl_type/src/dtl_hv.c \
+	util/dtl_type/src/dtl_hv.c
+
+SERVER_SOURCES = apx/server/src/apx_server.c \
+	apx/server/src/apx_serverConnection.c \
+	apx/server/src/server_main.c \
+
+LIB_SOURCES = $(SHARED_SOURCES)
 
 # Paths containing interface header files
 INCLUDES = \
@@ -86,21 +89,32 @@ INCLUDES = \
 	
 
 EXECUTABLE = $(BUILDDIR)/apx_server
+CLIENTLIB = $(BUILDDIR)/libapxclient.a
 
-OBJECTS = \
-	$(addprefix $(BUILDDIR)/, $(notdir $(C_SOURCES:.c=.o)))
+SHARED_OBJECTS = \
+	$(addprefix $(BUILDDIR)/, $(notdir $(SHARED_SOURCES:.c=.o)))
+
+SERVER_OBJECTS = \
+	$(addprefix $(BUILDDIR)/, $(notdir $(SERVER_SOURCES:.c=.o)))
 
 DEPS = $(patsubst %.o,%.d,$(OBJECTS))
 
 vpath %.c $(SRCDIR)
 
-all: $(BUILDDIR) $(EXECUTABLE)
+server: $(BUILDDIR) $(EXECUTABLE)
+
+lib: $(BUILDDIR) $(CLIENTLIB)
+
+all: server lib
 
 $(BUILDDIR):
 	mkdir -p $(BUILDDIR)
 
-$(EXECUTABLE): $(OBJECTS)
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $(EXECUTABLE)
+$(EXECUTABLE): $(SHARED_OBJECTS) $(SERVER_OBJECTS)
+	$(CC) $(SHARED_OBJECTS) $(SERVER_OBJECTS) $(LDFLAGS) -o $(EXECUTABLE)
+
+$(CLIENTLIB): $(SHARED_OBJECTS)
+	$(AR) rcs $(CLIENTLIB) $(SHARED_OBJECTS)
 
 $(BUILDDIR)/%.o : %.c
 	$(CC) -MD -MT $@ -MF $(patsubst %.o,%.d,$@) -c $(CFLAGS) $(INCLUDES) $< -o $@
