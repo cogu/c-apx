@@ -55,6 +55,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.exe.debug.420857305" name="Cygwin C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.exe.debug"/>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="apx/server/src/apx_testServer.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -99,6 +102,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.exe.release.1756111607" name="Cygwin C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.cygwin.exe.release"/>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="apx/server/src/apx_testServer.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
