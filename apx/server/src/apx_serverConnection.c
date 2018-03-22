@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "apx_serverConnection.h"
+#include "apx_logging.h"
 #ifdef UNIT_TEST
 #include "apx_testServer.h"
 #else
@@ -29,6 +30,8 @@
 #define MAX_HEADER_LEN 128
 #define SEND_BUFFER_GROW_SIZE 4096 //4KB
 #define MAX_DEBUG_BYTES 100
+#define MAX_DEBUG_MSG_SIZE 400
+#define HEX_DATA_LEN 3u
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -67,6 +70,7 @@ int8_t apx_serverConnection_create(apx_serverConnection_t *self, msocket_t *sock
 #endif
       self->server=server;
       self->isGreetingParsed = false;
+      self->isDebugModeEnabled = false;
       self->numHeaderMaxLen = (int8_t) sizeof(uint32_t); //currently only 4-byte header is supported. There might be a future version where we support both 16-bit and 32-bit message headers
       adt_bytearray_create(&self->sendBuffer, SEND_BUFFER_GROW_SIZE);
       return apx_fileManager_create(&self->fileManager, APX_FILEMANAGER_SERVER_MODE);
@@ -211,7 +215,13 @@ int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uin
    return -1;
 }
 
-
+void apx_serverConnection_setDebugMode(apx_serverConnection_t *self, bool mode)
+{
+   if (self != 0)
+   {
+      self->isDebugModeEnabled = mode;
+   }
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
@@ -239,7 +249,7 @@ static void apx_serverConnection_parseGreeting(apx_serverConnection_t *self, con
          {
             //this ends the header
             self->isGreetingParsed = true;
-            printf("\tparse greeting complete\n");
+            APX_LOG_INFO("[APX_SRV_CONNECTION] (%p) Greeting parsed", (void*) self);
             apx_fileManager_onConnected(&self->fileManager);
             break;
          }
@@ -251,7 +261,7 @@ static void apx_serverConnection_parseGreeting(apx_serverConnection_t *self, con
                char tmp[MAX_HEADER_LEN+1];
                memcpy(tmp,pMark,lengthOfLine);
                tmp[lengthOfLine]=0;
-               printf("\tgreeting-line: '%s'\n",tmp);
+               //printf("\tgreeting-line: '%s'\n",tmp);
             }
          }
       }
@@ -281,9 +291,23 @@ static uint8_t apx_serverConnection_parseMessage(apx_serverConnection_t *self, c
       if (pNext+msgLen<=pEnd)
       {
          totalParsed+=headerLen+msgLen;
-#if APX_DEBUG_ENABLE
-         printf("[APX_SERVER] received message %d+%d bytes\n",headerLen,msgLen);
-#endif
+         if (self->isDebugModeEnabled != false)
+         {
+            uint32_t i;
+            char msg[MAX_DEBUG_MSG_SIZE];
+            char *pMsg = &msg[0];
+            char *pMsgEnd = pMsg + MAX_DEBUG_MSG_SIZE;
+            pMsg += sprintf(msg, "(%p) Received %d+%d bytes:", (void*)self, (int)headerLen, (int)msgLen);            
+            for (i = 0; i < MAX_DEBUG_BYTES; i++)
+            {
+               if ( ( i >= (msgLen + headerLen) ) || ( (pMsg + HEX_DATA_LEN) > pMsgEnd))
+               {
+                  break;
+               }
+               pMsg += sprintf(pMsg, " %02X", (int)pBegin[i]);
+            }
+            APX_LOG_DEBUG("[APX_SRV_CONNECTION] %s", msg);
+         }
          
          if (self->isGreetingParsed == false)
          {
@@ -371,18 +395,24 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
          //place header just before user data begin
          pBegin = sendBuffer+(self->numHeaderMaxLen+offset-headerLen); //the part in the parenthesis is where the user data begins
          memcpy(pBegin, header, headerLen);
-#if APX_DEBUG_ENABLE		 
-		 printf("sending %d+%d to %p:", headerLen, msgLen, self->msocket);
-		 for (int i = 0; i < MAX_DEBUG_BYTES; i++)
-		 {
-			 if (i >= msgLen + headerLen)
-			 {
-				 break;
-			 }
-			 printf(" %02X", (int)pBegin[i]);
-		 }
-		 printf("\n");
-#endif
+         if (self->isDebugModeEnabled != false)
+         {
+            int i;
+            char msg[MAX_DEBUG_MSG_SIZE];
+            char *pMsg = &msg[0];
+            char *pMsgEnd = pMsg + MAX_DEBUG_MSG_SIZE;
+            pMsg += sprintf(msg, "(%p) Sending %d+%d bytes:", (void*)self, (int)headerLen, (int)msgLen);
+            for (i = 0; i < MAX_DEBUG_BYTES; i++)
+            {
+               if ((i >= msgLen + headerLen) || ( (pMsg + HEX_DATA_LEN) > pMsgEnd))
+               {
+                  break;
+               }
+               pMsg += sprintf(pMsg, " %02X", (int)pBegin[i]);
+            }
+            APX_LOG_DEBUG("[APX_SRV_CONNECTION] %s", msg);
+         }
+		 
 #ifdef UNIT_TEST
 		 testsocket_serverSend(self->testsocket, pBegin, msgLen+headerLen);
 #else

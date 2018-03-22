@@ -1,4 +1,5 @@
 #include "apx_stream.h"
+#include "apx_logging.h"
 #include <errno.h>
 #include <malloc.h>
 #include <assert.h>
@@ -127,7 +128,7 @@ void apx_istream_write(apx_istream_t *self, const uint8_t *pChunk, uint32_t chun
                if(pResult == 0){
                   //parse failure, ignore all data
                   adt_bytearray_clear(&self->buf);
-                  printf("[APX_STREAM] parse error");
+                  APX_LOG_ERROR("[APX_STREAM] %s", "Parse error");
                   return;
                }
             }
@@ -365,7 +366,7 @@ static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_
                }
                else
                {
-                  printf("[apx_stream:%d] parse error\n",__LINE__);
+                  APX_LOG_ERROR("[APX_STREAM](%d) Parse error\n", (int) __LINE__);
                   return 0;
                }
             }
@@ -384,7 +385,7 @@ static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_
                }
                else
                {
-                  printf("[apx_stream:%d] parse error\n",__LINE__);
+                  APX_LOG_ERROR("[APX_STREAM](%d) Parse error\n", (int)__LINE__);
                   return 0;
                }
             }

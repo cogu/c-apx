@@ -10,10 +10,14 @@
 //////////////////////////////////////////////////////////////////////////////
 #ifdef UNIT_TEST
 # define APX_LOG_DEBUG(fmt, ...)
+# define APX_LOG_INFO(fmt, ...)
+# define APX_LOG_WARNING(fmt, ...)
 # define APX_LOG_ERROR(fmt, ...)
 #else
 # include <stdio.h>
 # define APX_LOG_DEBUG(fmt, ...) fprintf(stdout, fmt "\n", ##__VA_ARGS__)
+# define APX_LOG_INFO(fmt, ...) fprintf(stdout, fmt "\n", ##__VA_ARGS__)
+# define APX_LOG_WARNING(fmt, ...) fprintf(stdout, fmt "\n", ##__VA_ARGS__)
 # define APX_LOG_ERROR(fmt, ...) fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 #endif
 //////////////////////////////////////////////////////////////////////////////

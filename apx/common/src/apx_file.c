@@ -2,6 +2,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_file.h"
+#include "apx_logging.h"
 #include <errno.h>
 #ifndef APX_EMBEDDED
 #include <malloc.h>
@@ -235,21 +236,21 @@ int8_t apx_file_read(apx_file_t *self, uint8_t *pDest, uint32_t offset, uint32_t
          result = apx_nodeData_readOutPortData(self->nodeData, pDest, offset, length);
          if (result != 0)
          {
-            fprintf(stderr, "apx_nodeData_readOutPortData failed\n");
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_readOutPortData failed");
          }
          break;
       case APX_INDATA_FILE:
          result = apx_nodeData_readInPortData(self->nodeData, pDest, offset, length);
          if (result != 0)
          {
-            fprintf(stderr, "apx_nodeData_writeInData failed\n");
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeInData failed");
          }
          break;
       case APX_DEFINITION_FILE:
          result = apx_nodeData_readDefinitionData(self->nodeData, pDest, offset, length);
          if (result != 0)
          {
-            fprintf(stderr, "apx_nodeData_readDefinitionData failed\n");
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_readDefinitionData failed");
          }
          break;
       default:
@@ -273,14 +274,14 @@ int8_t apx_file_write(apx_file_t *self, const uint8_t *pSrc, uint32_t offset, ui
          result = apx_nodeData_writeDefinitionData(self->nodeData, pSrc, offset, length);
          if (result != 0)
          {
-            fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeDefinitionData failed with %d\n", result);
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeDefinitionData failed with %d", result);
          }
          break;
       case APX_INDATA_FILE:
          result = apx_nodeData_writeInPortData(self->nodeData, pSrc, offset, length);
          if (result != 0)
          {
-            fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeInPortData failed with %d\n", result);
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeInPortData failed with %d", result);            
          }
          else
          {
@@ -291,7 +292,7 @@ int8_t apx_file_write(apx_file_t *self, const uint8_t *pSrc, uint32_t offset, ui
          result = apx_nodeData_writeOutPortData(self->nodeData, pSrc, offset, length);
          if (result != 0)
          {
-            fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeOutPortData failed with %d\n", result);
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeOutPortData failed with %d", result);            
          }
          break;
       default:

@@ -33,6 +33,7 @@ static void printUsage(char *name);
 static uint16_t m_port;
 static apx_server_t m_server;
 static int32_t m_count;
+static bool m_debug;
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
@@ -45,6 +46,7 @@ int main(int argc, char **argv)
    int err;
 #endif
    m_count = 0;
+   m_debug = false;
    m_port = DEFAULT_PORT;
    printf("APX Server %s\n", SW_VERSION_STR);
    if(argc>1)
@@ -71,6 +73,7 @@ int main(int argc, char **argv)
    }
 #endif
    apx_server_create(&m_server,m_port);
+   apx_server_setDebugMode(&m_server, m_debug);
    apx_server_start(&m_server);
    for(;;)
    {
@@ -114,11 +117,15 @@ static int parse_args(int argc, char **argv)
          {
             m_port=(int)num;
          }
-      }
+      }      
       else if (strncmp(argv[i], "-h", 2) == 0)
       {
          printUsage(argv[0]);
          return -1;
+      }
+      else if (strncmp(argv[i], "--debug", 7) == 0)
+      {
+         m_debug = true;
       }
    }
    return 0;
@@ -126,7 +133,7 @@ static int parse_args(int argc, char **argv)
 
 static void printUsage(char *name)
 {   
-   printf("%s -p<port>\n",name);
+   printf("%s -p<port> [--debug]\n",name);
 }
 
 

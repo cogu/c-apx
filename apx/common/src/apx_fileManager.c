@@ -187,12 +187,12 @@ void apx_fileManager_stop(apx_fileManager_t *self)
       result = WaitForSingleObject(self->workerThread, 5000);
       if (result == WAIT_TIMEOUT)
       {
-         fprintf(stderr, "[APX_FILE_MANAGER] timeout while joining workerThread\n");
+         APX_LOG_ERROR("[APX_FILE_MANAGER] timeout while joining workerThread");         
       }
       else if (result == WAIT_FAILED)
       {
          DWORD lastError = GetLastError();
-         fprintf(stderr, "[APX_FILE_MANAGER]  joining workerThread failed with %d\n", (int)lastError);
+         APX_LOG_ERROR("[APX_FILE_MANAGER]  joining workerThread failed with %d", (int)lastError);         
       }
       CloseHandle(self->workerThread);
       self->workerThread = INVALID_HANDLE_VALUE;
@@ -255,9 +255,9 @@ int32_t apx_fileManager_parseMessage(apx_fileManager_t *self, const uint8_t *msg
    if (result > 0)
    {
 #if APX_FILEMANAGER_DEBUG_ENABLE
-      printf("[REMOTEFILE] address: %08X\n", msg.address);
-      printf("[REMOTEFILE] length: %d\n", msg.dataLen);
-      printf("[REMOTEFILE] more_bit: %d\n", (int) msg.more_bit);
+      APX_LOG_DEBUG("[APX_FILE_MANAGER] address: %08X", msg.address);
+      APX_LOG_DEBUG("[APX_FILE_MANAGER] length: %d", msg.dataLen);
+      APX_LOG_DEBUG("[APX_FILE_MANAGER] more_bit: %d", (int) msg.more_bit);
 #endif
       if (msg.address == RMF_CMD_START_ADDR)
       {
@@ -274,7 +274,7 @@ int32_t apx_fileManager_parseMessage(apx_fileManager_t *self, const uint8_t *msg
    }
    else if (result < 0)
    {
-      fprintf(stderr, "rmf_unpackMsg failed with %d\n", result);
+      APX_LOG_ERROR("[APX_FILE_MANAGER] rmf_unpackMsg failed with %d", (int)result);      
    }
    else
    {
@@ -436,7 +436,7 @@ void apx_fileManager_triggerFileWriteCmdEvent(apx_fileManager_t *self, apx_file_
       dataCopy = apx_allocator_alloc(&self->allocator,length);
       if (dataCopy == 0)
       {
-         fprintf(stderr, "apx_allocator out of memory while attempting to allocate %d bytes\n", length);
+         APX_LOG_ERROR("[APX_REMOTE_FILE] apx_allocator out of memory while attempting to allocate %d bytes", (int)length);
       }
       else
       {
@@ -522,18 +522,18 @@ static THREAD_PROTO(threadTask,arg)
                apx_allocator_free(&self->allocator, (uint8_t*) msg.msgData3, (uint32_t) msg.msgData1);
                break;
             default:
-               fprintf(stderr, "[APX_FILE_MANAGER]: unknown message type: %u\n",msg.msgType);
+               APX_LOG_ERROR("[APX_FILE_MANAGER]: unknown message type: %u", msg.msgType);               
                isRunning=false;
                break;
             }
          }
          else
-         {
-            fprintf(stderr, "[APX_FILE_MANAGER]: failure while waiting for semaphore, errno=%d",errno);
+         {            
+            APX_LOG_ERROR("[APX_FILE_MANAGER]: failure while waiting for semaphore, errno=%d",errno);
             break;
          }
       }
-      fprintf(stderr, "[APX_FILE_MANAGER]: messages_processed: %u\n",messages_processed);
+      APX_LOG_ERROR("[APX_FILE_MANAGER]: messages_processed: %u",messages_processed);
    }
    THREAD_RETURN(0);
 }
@@ -602,21 +602,21 @@ static void apx_fileManager_fileWriteNotifyHandler(apx_fileManager_t *self, apx_
                result = apx_nodeData_readOutPortData(file->nodeData, dataBuf, offset, dataLen);
                if (result != 0)
                {
-                  fprintf(stderr, "apx_nodeData_readOutPortData failed\n");
+                  APX_LOG_ERROR("[APX_FILE_MANAGER] apx_nodeData_readOutPortData failed");
                }
                break;
             case APX_INDATA_FILE:
                result = apx_nodeData_readInPortData(file->nodeData, dataBuf, offset, dataLen);
                if (result != 0)
                {
-                  fprintf(stderr, "apx_nodeData_writeInData failed\n");
+                  APX_LOG_ERROR("[APX_FILE_MANAGER] apx_nodeData_writeInData failed");
                }
                break;
             case APX_DEFINITION_FILE:
                result = apx_nodeData_readDefinitionData(file->nodeData, dataBuf, offset, dataLen);
                if (result != 0)
                {
-                  fprintf(stderr, "apx_nodeData_readDefinitionData failed\n");
+                  APX_LOG_ERROR("[APX_FILE_MANAGER] apx_nodeData_readDefinitionData failed");
                }
                break;
             default:
@@ -649,16 +649,15 @@ static void apx_fileManager_fileWriteCmdHandler(apx_fileManager_t *self, apx_fil
          uint32_t endOffset = startOffset+len;
          if ( (startOffset >= file->fileInfo.length) || (endOffset > file->fileInfo.length) )
          {
-            fprintf(stderr,"[APX_FILE_MANAGER(%s)] attempted write outside bounds, file=%s, offset=%d, len=%d\n",apx_fileManager_modeString(self),file->fileInfo.name, offset, len);
+            APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] attempted write outside bounds, file=%s, offset=%d, len=%d", apx_fileManager_modeString(self), file->fileInfo.name, (int) offset, (int) len);
          }
          else
          {
-            int8_t result;
-            //printf("[APX_FILE_MANAGER(%s)] updating %s[%d], len=%d\n",apx_fileManager_modeString(self),file->fileInfo.name, offset, len);
+            int8_t result;            
             result = apx_nodeData_writeInPortData(file->nodeData, data, offset, len);
             if (result != 0)
             {
-               fprintf(stderr,"[APX_FILE_MANAGER(%s)] apx_nodeData_writeInPortData(%d,%d) failed, file=%s",apx_fileManager_modeString(self), offset, len, file->fileInfo.name);
+               APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] apx_nodeData_writeInPortData(%d,%d) failed, file=%s", apx_fileManager_modeString(self), offset, len, file->fileInfo.name);
             }
             else
             {
@@ -728,8 +727,7 @@ static void apx_fileManager_parseCmdMsg(apx_fileManager_t *self, const uint8_t *
    {
       uint32_t cmdType;
       int32_t result;
-      result = rmf_deserialize_cmdType(msgBuf, msgLen, &cmdType);
-      //printf("apx_fileManager_parseCmdMsg(%d)\n", msgLen);
+      result = rmf_deserialize_cmdType(msgBuf, msgLen, &cmdType);      
       if (result > 0)
       {
          switch(cmdType)
@@ -744,11 +742,11 @@ static void apx_fileManager_parseCmdMsg(apx_fileManager_t *self, const uint8_t *
                   }
                   else if (result < 0)
                   {
-                     fprintf(stderr, "rmf_deserialize_cmdFileInfo failed with %d\n", result);
+                     APX_LOG_ERROR("[APX_FILE_MANAGER] rmf_deserialize_cmdFileInfo failed with %d", (int) result);
                   }
                   else
                   {
-                     fprintf(stderr, "rmf_deserialize_cmdFileInfo returned 0\n");
+                     APX_LOG_ERROR("[APX_FILE_MANAGER] rmf_deserialize_cmdFileInfo returned 0");
                   }
                }
                break;
@@ -762,16 +760,29 @@ static void apx_fileManager_parseCmdMsg(apx_fileManager_t *self, const uint8_t *
                   }
                   else if (result < 0)
                   {
-                     fprintf(stderr, "rmf_deserialize_cmdOpenFile failed with %d\n", result);
+                     APX_LOG_ERROR("[APX_FILE_MANAGER] rmf_deserialize_cmdOpenFile failed with %d", (int) result);
                   }
                   else
                   {
-                     fprintf(stderr, "rmf_deserialize_cmdOpenFile returned 0\n");
+                     APX_LOG_ERROR("[APX_FILE_MANAGER] rmf_deserialize_cmdOpenFile returned 0");
                   }
                }
                break;
+            case RMF_CMD_HEARTBEAT_RQST:
+               ///TODO: implement
+               break;
+            case RMF_CMD_HEARTBEAT_RSP:
+               ///TODO: implement
+               break;
+            case RMF_CMD_PING_RQST:
+               ///TODO: implement
+               break;
+            case RMF_CMD_PING_RSP:
+               ///TODO: implement
+               break;
+
             default:
-               fprintf(stderr, "not implemented cmdType: %d\n", cmdType);
+               APX_LOG_ERROR("[APX_FILE_MANAGER] not implemented cmdType: %d\n", cmdType);
          }
       }
    }
@@ -795,7 +806,7 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
          self->curFile = apx_fileMap_findByAddress(&self->remoteFileMap,address);
          if (self->curFile == 0)
          {
-            fprintf(stderr, "[APX_FILE_MANAGER(%s)] invalid write attempted at address %08X, len=%d\n",apx_fileManager_modeString(self),address,dataLen);
+            APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] invalid write attempted at address %08X, len=%d",apx_fileManager_modeString(self), (int) address, (int) dataLen);
          }
          else
          {
@@ -811,7 +822,7 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
          assert(address >= self->curFileStartAddress);
          if (address+dataLen > self->curFileEndAddress)
          {
-            fprintf(stderr,"[APX_FILE_MANAGER(%s)] write outside file bounds attempted at address 0x%08X\n",apx_fileManager_modeString(self),address);
+            APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] write outside file bounds attempted at address 0x%08X", apx_fileManager_modeString(self), (int) address);
          }
          else
          {
@@ -826,14 +837,14 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
                      result = apx_nodeData_writeDefinitionData(remoteFile->nodeData, dataBuf, offset, dataLen);
                      if (result != 0)
                      {
-                        fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeDefinitionData failed with %d\n", result);
+                        APX_LOG_ERROR("[APX_FILE_MANAGER] apx_nodeData_writeDefinitionData failed with %d", (int) result);
                      }
                      break;
                   case APX_INDATA_FILE:
                      result = apx_nodeData_writeInPortData(remoteFile->nodeData, dataBuf, offset, dataLen);
                      if (result != 0)
                      {
-                        fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeInPortData failed with %d\n", result);
+                        APX_LOG_ERROR("[APX_FILE_MANAGER] apx_nodeData_writeInPortData failed with %d", (int) result);
                      }
                      else
                      {
@@ -844,7 +855,7 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
                      result = apx_nodeData_writeOutPortData(remoteFile->nodeData, dataBuf, offset, dataLen);
                      if (result != 0)
                      {
-                        fprintf(stderr, "[APX_FILE_MANAGER] apx_nodeData_writeOutPortData failed with %d\n", result);
+                        APX_LOG_ERROR("[APX_FILE_MANAGER] apx_nodeData_writeOutPortData failed with %d\n", (int) result);
                      }
                      break;
                   default:
@@ -861,7 +872,7 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
             }
             else
             {
-               fprintf(stderr, "[APX_FILE_MANAGER] write to file %s detected but no nodeData has been assigned to it\n",self->curFile->fileInfo.name);
+               APX_LOG_ERROR("[APX_FILE_MANAGER] write to file %s detected but no nodeData has been assigned to it", self->curFile->fileInfo.name);
             }
          }
       }
@@ -888,7 +899,7 @@ static void apx_fileManager_processRemoteFileInfo(apx_fileManager_t *self, const
       }
       else
       {
-         fprintf(stderr, "[APX_FILE_MANAGER] apx_file_newRemoteFile returned NULL\n");
+         APX_LOG_ERROR("[APX_FILE_MANAGER] apx_file_newRemoteFile returned NULL");
       }
    }
 }
@@ -904,7 +915,7 @@ static void apx_fileManager_processOpenFile(apx_fileManager_t *self, const rmf_c
       if (localFile != 0)
       {
          int32_t bytesToSend = localFile->fileInfo.length;
-         printf("Opened %s, bytes to send: %d\n", localFile->fileInfo.name, bytesToSend);
+         APX_LOG_INFO("[APX_FILE_MANAGER] Opened %s, bytes to send: %d", localFile->fileInfo.name, (int) bytesToSend);
          apx_fileManager_triggerFileUpdatedEvent(self, localFile, 0, bytesToSend);
          if ( (localFile->fileType == APX_OUTDATA_FILE) && (localFile->nodeData != 0) )
          {

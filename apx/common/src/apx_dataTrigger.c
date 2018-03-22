@@ -10,6 +10,7 @@
 
 #include "apx_dataTrigger.h"
 #include "apx_nodeInfo.h"
+#include "apx_logging.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -62,7 +63,7 @@ int8_t apx_dataTriggerTable_create(apx_dataTriggerTable_t *self, apx_nodeInfo_t 
             self->lookupTable = (apx_dataTriggerFunction_t**) malloc(dataSize);
             if (self->lookupTable == 0)
             {
-               fprintf(stderr,"apx_dataTriggerTable_create: malloc failed");
+               APX_LOG_ERROR("[APX_DATA_TRIGGER] apx_dataTriggerTable_create: malloc failed");
                errno=ENOMEM;
                return -1;
             }
@@ -166,7 +167,7 @@ void apx_dataTriggerTable_updateTrigger(apx_dataTriggerTable_t *self, apx_port_t
             }
             else
             {
-               fprintf(stderr, "apx_dataTriggerFunction_new returned NULL");
+               APX_LOG_ERROR("[APX_DATA_TRIGGER] apx_dataTriggerFunction_new returned NULL");
             }
          }
          assert(triggerFunction != 0);

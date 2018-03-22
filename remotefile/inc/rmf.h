@@ -32,21 +32,19 @@
 #define RMF_MAX_HEADER_SIZE RMF_HIGH_ADDRESS_SIZE
 #define RMF_CMD_TYPE_LEN           4u
 
-//server command messages
-#define RMF_CMD_ACK                (uint32_t) 0   //reserved for future use
-#define RMF_CMD_NACK               (uint32_t) 1   //negative response
-#define RMF_CMD_EOT                (uint32_t) 2   //end of transmission (used to indicate end of a list)
-#define RMF_CMD_FILE_INFO          (uint32_t) 3   //serialized file info data structure
-#define RMF_CMD_REVOKE_FILE        (uint32_t) 4   //used by server to tell clients that the file is no longer available
-#define RMF_CMD_PAGE_SELECT        (uint32_t) 5   //reserved for future use
-
-//client command messages
-#define RMF_CMD_GET_FILE_LIST     (uint32_t) 8   //request list of files
-#define RMF_CMD_GET_FILE_INFO     (uint32_t) 9   //request info about specific file
-#define RMF_CMD_FILE_OPEN         (uint32_t) 10  //opens a file
-#define RMF_CMD_FILE_CLOSE        (uint32_t) 11  //closes a file
-#define RMF_CMD_FILE_READ         (uint32_t) 12  //read parts of an open file (TBD)
-#define RMF_CMD_INVALID_MSG       (uint32_t) 0xFFFFFFFF //invalid command (default value)
+#define RMF_CMD_ACK                (uint32_t) 0  //reserved for future use
+#define RMF_CMD_NACK               (uint32_t) 1  //negative response
+#define RMF_CMD_EOT                (uint32_t) 2  //end of transmission (used to indicate end of a list)
+#define RMF_CMD_FILE_INFO          (uint32_t) 3  //serialized file info data structure
+#define RMF_CMD_REVOKE_FILE        (uint32_t) 4  //used by server to tell clients that the file is no longer available
+#define RMF_CMD_HEARTBEAT_RQST     (uint32_t) 5   //heartbeat request
+#define RMF_CMD_HEARTBEAT_RSP      (uint32_t) 6   //heartbeat response
+#define RMF_CMD_PING_RQST          (uint32_t) 7   //ping request (similar to hearbeat but also has timestamp)
+#define RMF_CMD_PING_RSP           (uint32_t) 8   //ping response (similar to hearbeat but also has timestamp)
+#define RMF_CMD_FILE_OPEN          (uint32_t) 10  //opens a file
+#define RMF_CMD_FILE_CLOSE         (uint32_t) 11  //closes a file
+#define RMF_CMD_FILE_READ          (uint32_t) 12  //read parts of an open file (TBD)
+#define RMF_CMD_INVALID_MSG        (uint32_t) 0xFFFFFFFF //invalid command (default value)
 
 #define RMF_DIGEST_SIZE          32u //32 bytes is suitable for storing a sha256 hash
 #define RMF_DIGEST_TYPE_NONE     0u

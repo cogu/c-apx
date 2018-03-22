@@ -73,12 +73,12 @@ void apx_nodeInfo_create(apx_nodeInfo_t *self, apx_node_t *node)
       //GFX_LOG_INFO("%s/provide: %d\n",node->name,provideDataLen);
       if(requireDataLen < 0)
       {
-         fprintf(stderr,"[APX_NODE_INFO] apx_portDataMap_getDataLen for requirePortDataMap return negative result");
+         APX_LOG_ERROR("[APX_NODE_INFO] %s", "apx_portDataMap_getDataLen for requirePortDataMap return negative result");
          requireDataLen=0;
       }
       if(provideDataLen < 0)
       {
-         fprintf(stderr, "[APX_NODE_INFO] apx_portDataMap_getDataLen for providePortDataMap return negative result");
+         APX_LOG_ERROR("[APX_NODE_INFO] %s", "apx_portDataMap_getDataLen for providePortDataMap return negative result");
          provideDataLen=0;
       }
       self->inPortDataLen = requireDataLen;
@@ -91,7 +91,7 @@ void apx_nodeInfo_create(apx_nodeInfo_t *self, apx_node_t *node)
       }
       else
       {
-         APX_LOG_ERROR("%s(%d): malloc failed\n",__FILE__,__LINE__);
+         APX_LOG_ERROR("[APX_NODE_INFO] (%d): malloc failed\n", (int) __LINE__);
       }
       if (self->providePortFlags != 0)
       {
@@ -99,7 +99,7 @@ void apx_nodeInfo_create(apx_nodeInfo_t *self, apx_node_t *node)
       }
       else
       {
-         APX_LOG_ERROR("%s(%d): malloc failed\n",__FILE__,__LINE__);
+         APX_LOG_ERROR("[APX_NODE_INFO] (%d) : malloc failed\n", (int) __LINE__);
       }
       apx_dataTriggerTable_create(&self->outDataTriggerTable,self,0,0);
       self->nodeData = (apx_nodeData_t*) 0; //default NULL
@@ -455,13 +455,13 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
                //array bounds check
                if ( ( (uint32_t)providePortEntry->offset >= provideNodeData->outPortDataLen) ||  ( ((uint32_t)(providePortEntry->offset+providePortEntry->length)) > provideNodeData->outPortDataLen) )
                {
-                  fprintf(stderr, "ERROR: offset/length in providePortEntry for %s/%s is outside outPortDataLen", portref->node->name, portref->port->name);
+                  APX_LOG_ERROR("[APX_NODE_INFO] offset/length in providePortEntry for %s/%s is outside outPortDataLen", portref->node->name, portref->port->name);
                }
                else
                {
                   if ( ((uint32_t)requirePortEntry->offset >= requireNodeData->inPortDataLen) ||  ((uint32_t)(requirePortEntry->offset+requirePortEntry->length) > requireNodeData->inPortDataLen))
                   {
-                     fprintf(stderr, "ERROR: offset/length in requirePortEntry for %s/%s is outside inPortDataLen", self->node->name, requirePortEntry->port->name);
+                     APX_LOG_ERROR("[APX_NODE_INFO] offset/length in requirePortEntry for %s/%s is outside inPortDataLen", self->node->name, requirePortEntry->port->name);
                   }
                   else
                   {

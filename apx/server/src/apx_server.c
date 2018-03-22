@@ -3,6 +3,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_server.h"
+#include "apx_logging.h"
 #include <stdio.h>
 
 
@@ -38,9 +39,9 @@ void apx_server_create(apx_server_t *self, uint16_t tcpPort)
    if (self != 0)
    {
       msocket_handler_t serverHandler;
-
       adt_list_create(&self->connections,apx_serverConnection_vdelete);
       self->tcpPort = tcpPort;
+      self->isDebugModeEnabled = false;
       memset(&serverHandler,0,sizeof(serverHandler));
       msocket_server_create(&self->tcpServer,AF_INET, apx_serverConnection_vdelete);
 #ifndef _MSC_VER
@@ -82,6 +83,14 @@ void apx_server_destroy(apx_server_t *self)
    }
 }
 
+void apx_server_setDebugMode(apx_server_t *self, bool mode)
+{
+   if (self != 0)
+   {
+      self->isDebugModeEnabled = mode;
+   }
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
@@ -90,7 +99,6 @@ void apx_server_destroy(apx_server_t *self)
 static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket)
 {
    apx_server_t *self = (apx_server_t*) arg;
-   printf("apx_server_accept\n");
    if (self != 0)
    {
       apx_serverConnection_t *newConnection = apx_serverConnection_new(msocket, self);
@@ -113,11 +121,15 @@ static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket
 
          if (msocket->addressFamily == AF_INET)
          {
-            printf("connection accepted %s\n",msocket->tcpInfo.addr);
+            APX_LOG_INFO("[APX_SERVER] New connection (%p) from %s", (void*) newConnection, msocket->tcpInfo.addr);
          }
          else
          {
-            printf("connection accepted\n");
+            APX_LOG_INFO("[APX_SERVER] New connection (%p)", (void*)newConnection);
+         }
+         if (self->isDebugModeEnabled != false)
+         {
+            apx_serverConnection_setDebugMode(newConnection, true);
          }
          //now that the handler is setup, start the internal listening thread in the msocket
          msocket_start_io(msocket);
@@ -126,7 +138,7 @@ static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket
       }
       else
       {
-         perror("apx_serverConnection_new() returned 0");
+         APX_LOG_ERROR("[APX_SERVER] %s", "apx_serverConnection_new() returned 0");
       }
    }
 }
@@ -142,8 +154,7 @@ static int8_t apx_server_data(void *arg, const uint8_t *dataBuf, uint32_t dataLe
  */
 static void apx_server_disconnected(void *arg)
 {
-   apx_serverConnection_t *connection;
-   printf("apx_server_disconnected\n");
+   apx_serverConnection_t *connection;   
    connection = (apx_serverConnection_t*) arg;
    if (connection != 0)
    {
@@ -154,9 +165,10 @@ static void apx_server_disconnected(void *arg)
       apx_nodeManager_detachFileManager(&server->nodeManager, &connection->fileManager);
       switch (connection->msocket->addressFamily)
       {
+         APX_LOG_INFO("[APX_SERVER] Client (%p) disconnected", (void*)connection);
          case AF_INET: //intentional fallthrough
-         case AF_INET6:
-            msocket_server_cleanup_connection(&connection->server->tcpServer,arg);
+         case AF_INET6:            
+            msocket_server_cleanup_connection(&connection->server->tcpServer, arg);
             break;
 #ifndef _MSC_VER
          case AF_LOCAL:

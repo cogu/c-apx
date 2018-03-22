@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include "apx_portDataMap.h"
 #include "apx_dataSignature.h"
+#include "apx_logging.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -203,7 +204,7 @@ static int32_t apx_portDataMap_buildInternal(adt_ary_t *entryList, adt_ary_t *po
             }
             else
             {
-               printf("%s has no length\n",port->name);
+               APX_LOG_ERROR("[APX_PORT_MANAGER] port %s has no length", port->name);
             }
          }
       }

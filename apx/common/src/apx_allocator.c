@@ -110,12 +110,12 @@ void apx_allocator_stop(apx_allocator_t *self)
       result = WaitForSingleObject(self->workerThread, 5000);
       if (result == WAIT_TIMEOUT)
       {
-         fprintf(stderr,"[APX_ALLOCATOR] timeout while joining workerThread\n");
+         APX_LOG_ERROR("[APX_ALLOCATOR] timeout while joining workerThread");
       }
       else if (result == WAIT_FAILED)
       {
          DWORD lastError = GetLastError();
-         fprintf(stderr, "[APX_ALLOCATOR]  joining workerThread failed with %d\n",(int) lastError);
+         APX_LOG_ERROR("[APX_ALLOCATOR]  joining workerThread failed with %d", (int)lastError);         
       }
       CloseHandle(self->workerThread);
       self->workerThread = INVALID_HANDLE_VALUE;
@@ -246,14 +246,14 @@ static THREAD_PROTO(threadTask,arg)
          {
 #ifdef _MSC_VER
             DWORD lastError = GetLastError();
-            fprintf(stderr, "[APX_ALLOCATOR]: failure while waiting for semaphore, lastError=%d", lastError);
+            APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, lastError=%d", lastError);
 #else
-            fprintf(stderr,"[APX_ALLOCATOR]: failure while waiting for semaphore, errno=%d",errno);
+            APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, errno=%d", errno);
 #endif
             break;
          }
       }
-      printf("[APX_ALLOCATOR]: messages_processed: %u\n",messages_processed); ///FIXME: remove debug printout
+      APX_LOG_DEBUG("[APX_ALLOCATOR]: messages_processed: %u\n", messages_processed);
    }
    THREAD_RETURN(0);
 }
