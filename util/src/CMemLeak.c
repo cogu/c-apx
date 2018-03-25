@@ -79,7 +79,15 @@ struct XWBList
 static struct XWBList xwbMem = 
 {
     (struct XWBNode*) 0,
-    (struct XWBNode*) 0
+    (struct XWBNode*) 0,
+    (FILE*) 0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
 };
 /*******************************************************************************
 * Forward declarations
