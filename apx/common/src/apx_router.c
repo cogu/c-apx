@@ -81,7 +81,7 @@ void apx_router_attachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
       apx_node_t *node = nodeInfo->node;
 
       debugInfoStr[0]=0;
-      if (nodeInfo->nodeData->fileManager->debugInfo != 0)
+      if ( (nodeInfo->nodeData != 0) && (nodeInfo->nodeData->fileManager->debugInfo) != 0)
       {
          sprintf(debugInfoStr, " (%p)", nodeInfo->nodeData->fileManager->debugInfo);
       }
@@ -156,7 +156,7 @@ void apx_router_detachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
       assert(node != 0);
 
       debugInfoStr[0]=0;
-      if (nodeInfo->nodeData->fileManager->debugInfo != 0)
+      if ( (nodeInfo->nodeData != 0) && (nodeInfo->nodeData->fileManager->debugInfo != 0) )
       {
          sprintf(debugInfoStr, " (%p)", nodeInfo->nodeData->fileManager->debugInfo);
       }

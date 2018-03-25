@@ -157,6 +157,9 @@
     <IncludePath>$(ProjectDir)..\..\..\..\dtl_type\inc;$(ProjectDir)..\..\..\..\bstr\inc;$(ProjectDir)..\..\..\..\util\inc;$(ProjectDir)..\..\..\..\adt\inc;$(ProjectDir)..\..\..\..\apx\client\inc;$(ProjectDir)..\..\..\..\apx\common\inc;$(ProjectDir)..\..\..\..\apx\server\inc;$(ProjectDir)..\..\..\..\remotefile\inc;$(ProjectDir)..\..\..\..\msocket\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <TargetName>$(ProjectName)d</TargetName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir)..\..\..\..\dtl_type\inc;$(ProjectDir)..\..\..\..\bstr\inc;$(ProjectDir)..\..\..\..\util\inc;$(ProjectDir)..\..\..\..\adt\inc;$(ProjectDir)..\..\..\..\apx\client\inc;$(ProjectDir)..\..\..\..\apx\common\inc;$(ProjectDir)..\..\..\..\apx\server\inc;$(ProjectDir)..\..\..\..\remotefile\inc;$(ProjectDir)..\..\..\..\msocket\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>
@@ -179,7 +182,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
