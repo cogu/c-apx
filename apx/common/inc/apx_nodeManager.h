@@ -37,6 +37,7 @@ typedef struct apx_nodeManager_tag
    adt_hash_t remoteNodeDataMap; //hash containing strong references to apx_nodeData_t remotely connected nodes, only used in server mode
    adt_hash_t localNodeDataMap; //hash containing weak references to apx_nodeData_t for locally connected nodes. only used in client mode
    adt_list_t fileManagerList; //linked list of attached file managers (so far there is a one-to-one relationship between connection and fileManager)
+   int8_t debugMode;
    MUTEX_T lock; //locking mechanism
 }apx_nodeManager_t;
 
@@ -57,5 +58,6 @@ void apx_nodeManager_setRouter(apx_nodeManager_t *self, struct apx_router_tag *r
 void apx_nodeManager_attachLocalNode(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
 void apx_nodeManager_attachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager);
 void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager);
+void apx_nodeManager_setDebugMode(apx_nodeManager_t *self, int8_t debugMode);
 
 #endif //APX_NODE_MANAGER_H

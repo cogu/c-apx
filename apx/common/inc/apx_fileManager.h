@@ -54,6 +54,7 @@ typedef struct apx_fileManager_tag
    //data object, all read/write accesses to these must be protected by the lock variable above
    rbfs_t ringbuffer; //pending messages
    bool workerThreadValid;
+   void *debugInfo;
    uint8_t *ringbufferData; //strong pointer to raw data used by our ringbuffer
    uint32_t ringbufferLen; //number of items in ringbuffer
    apx_allocator_t allocator;
@@ -84,7 +85,7 @@ typedef struct apx_fileManager_tag
 //////////////////////////////////////////////////////////////////////////////
 int8_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode);
 void apx_fileManager_destroy(apx_fileManager_t *self);
-apx_fileManager_t *apx_fileManager_new(uint8_t mode);
+apx_fileManager_t *apx_fileManager_new(uint8_t mod);
 void apx_fileManager_delete(apx_fileManager_t *self);
 void apx_fileManager_vdelete(void *arg);
 
@@ -99,6 +100,7 @@ apx_file_t *apx_fileManager_findRemoteFile(apx_fileManager_t *self, const char *
 void apx_fileManager_attachLocalDefinitionFile(apx_fileManager_t *self, apx_file_t *localFile);
 void apx_fileManager_attachLocalPortDataFile(apx_fileManager_t *self, apx_file_t *localFile);
 const char *apx_fileManager_modeString(apx_fileManager_t *self);
+void apx_fileManager_setDebugInfo(apx_fileManager_t *self, void *debugInfo);
 
 //these messages can be sent to the fileManager to be processed by its internal worker thread
 void apx_fileManager_onConnected(apx_fileManager_t *self);

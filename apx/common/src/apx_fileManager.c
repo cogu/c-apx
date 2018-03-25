@@ -80,6 +80,7 @@ int8_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode)
          self->workerThread = 0;
 #endif
          self->mode = mode;
+         self->debugInfo = (void*) 0;
          self->workerThreadValid=false;
          SPINLOCK_INIT(self->lock);
          SEMAPHORE_CREATE(self->semaphore);
@@ -240,6 +241,14 @@ void apx_fileManager_setTransmitHandler(apx_fileManager_t *self, apx_transmitHan
          memcpy(&self->transmitHandler, handler, sizeof(apx_transmitHandler_t));
       }
       SPINLOCK_LEAVE(self->lock);
+   }
+}
+
+void apx_fileManager_setDebugInfo(apx_fileManager_t *self, void *debugInfo)
+{
+   if (self != 0)
+   {
+      self->debugInfo = debugInfo;
    }
 }
 
@@ -661,10 +670,13 @@ static void apx_fileManager_fileWriteCmdHandler(apx_fileManager_t *self, apx_fil
             }
             else
             {
-               //TODO: check if file is open
-               if (self->isConnected == true) //and file open
+               if ( (self->isConnected == true) && (file->isOpen == true) )
                {
                   uint8_t *sendBuf=0;
+                  if (self->debugInfo != 0)
+                  {
+                     APX_LOG_DEBUG("[APX_FILE_MANAGER] (%p) Server Write %s[%d,%d]", self->debugInfo, file->fileInfo.name, (int) offset, (int) len );
+                  }
                   sendBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, len+RMF_MAX_HEADER_SIZE);
                   if (sendBuf != 0)
                   {
@@ -680,6 +692,10 @@ static void apx_fileManager_fileWriteCmdHandler(apx_fileManager_t *self, apx_fil
                         self->transmitHandler.send(self->transmitHandler.arg, RMF_MAX_HEADER_SIZE-headerLen, msgLen);
                      }
                   }
+               }
+               else if (file->isOpen == false)
+               {
+                  APX_LOG_WARNING("[APX_FILE_MANAGER] Attempted Write on closed file %s", file->fileInfo.name);
                }
             }
          }
@@ -915,18 +931,24 @@ static void apx_fileManager_processOpenFile(apx_fileManager_t *self, const rmf_c
       if (localFile != 0)
       {
          int32_t bytesToSend = localFile->fileInfo.length;
-         APX_LOG_INFO("[APX_FILE_MANAGER] Opened %s, bytes to send: %d", localFile->fileInfo.name, (int) bytesToSend);
-         apx_fileManager_triggerFileUpdatedEvent(self, localFile, 0, bytesToSend);
-         if ( (localFile->fileType == APX_OUTDATA_FILE) && (localFile->nodeData != 0) )
+         if (self->debugInfo != (void*) 0)
          {
-            apx_nodeData_setOutPortDataFile(localFile->nodeData, localFile);
-            apx_nodeData_setFileManager(localFile->nodeData, self);
-			apx_file_open(localFile);            
+            APX_LOG_DEBUG("[APX_FILE_MANAGER] (%p) Client opened %s", self->debugInfo, localFile->fileInfo.name);
          }
-         else if ( (localFile->fileType == APX_INDATA_FILE) && (localFile->nodeData != 0) )
+         apx_fileManager_triggerFileUpdatedEvent(self, localFile, 0, bytesToSend);
+         if (localFile->nodeData != 0)
          {
-            apx_nodeData_setInPortDataFile(localFile->nodeData, localFile);
-            apx_nodeData_setFileManager(localFile->nodeData, self);
+            apx_file_open(localFile);
+            if ( localFile->fileType == APX_OUTDATA_FILE )
+            {
+               apx_nodeData_setOutPortDataFile(localFile->nodeData, localFile);
+               apx_nodeData_setFileManager(localFile->nodeData, self);
+            }
+            else if ( localFile->fileType == APX_INDATA_FILE)
+            {
+               apx_nodeData_setInPortDataFile(localFile->nodeData, localFile);
+               apx_nodeData_setFileManager(localFile->nodeData, self);
+            }
          }
       }
    }
@@ -942,14 +964,13 @@ static void apx_fileManager_sendAck(apx_fileManager_t *self)
       uint8_t *sendBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, RMF_MAX_CMD_BUF_SIZE + RMF_MAX_HEADER_SIZE);
       if (sendBuf != 0)
       {
-         int32_t bufLen = RMF_MAX_CMD_BUF_SIZE;
          uint8_t *dataBuf = &sendBuf[RMF_MAX_HEADER_SIZE]; //the dataBuf starts RMF_MAX_HEADER_SIZE (4 bytes) into buf
          int32_t dataLen;
          dataLen = rmf_serialize_acknowledge(dataBuf, RMF_MAX_CMD_BUF_SIZE);
          if (dataLen > 0)
          {
             int32_t headerLen = rmf_packHeaderBeforeData(dataBuf, RMF_MAX_HEADER_SIZE, RMF_CMD_START_ADDR, false);
-            if ( (headerLen > 0) && (headerLen<= RMF_MAX_HEADER_SIZE) )
+            if ( (headerLen > 0) && (headerLen<= (int32_t) RMF_MAX_HEADER_SIZE) )
             {
                int32_t msgLen = (headerLen + dataLen);
                self->transmitHandler.send(self->transmitHandler.arg, RMF_MAX_HEADER_SIZE - headerLen, msgLen);

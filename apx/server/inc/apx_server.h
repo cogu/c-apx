@@ -31,7 +31,7 @@ typedef struct apx_server_tag
    apx_nodeManager_t nodeManager; //the server has a single instance of the node manager, all connections interface with this object
    apx_router_t router; //this component handles all routing tables within the server
    MUTEX_T mutex;
-   bool isDebugModeEnabled;
+   int8_t debugMode;
 }apx_server_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -45,7 +45,7 @@ typedef struct apx_server_tag
 void apx_server_create(apx_server_t *self, uint16_t port);
 void apx_server_destroy(apx_server_t *self);
 void apx_server_start(apx_server_t *self);
-void apx_server_setDebugMode(apx_server_t *self, bool mode);
+void apx_server_setDebugMode(apx_server_t *self, int8_t debugMode);
 
 
 #endif //APX_SERVER_H

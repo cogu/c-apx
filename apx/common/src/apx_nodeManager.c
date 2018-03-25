@@ -63,6 +63,7 @@ void apx_nodeManager_create(apx_nodeManager_t *self)
       apx_parser_create(&self->parser);
       memset(&apx_istream_handler,0,sizeof(apx_istream_handler));
       self->router = (apx_router_t*) 0;
+      self->debugMode = APX_DEBUG_NONE;
       apx_istream_handler.arg = &self->parser;
       apx_istream_handler.open = apx_parser_vopen;
       apx_istream_handler.close = apx_parser_vclose;
@@ -214,7 +215,7 @@ void apx_nodeManager_remoteFileWritten(apx_nodeManager_t *self, struct apx_fileM
       else
       {
          uint32_t endOffset = offset + length;
-         if ( (offset == 0) && (length == remoteFile->fileInfo.length) )
+         if ( (offset == 0) && (length == (int32_t) remoteFile->fileInfo.length) )
          {
             //printf("[APX_NODE_MANAGER(%s)] file received name=%s, len=%u\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, length);
          }
@@ -331,7 +332,15 @@ void apx_nodeManager_attachFileManager(apx_nodeManager_t *self, struct apx_fileM
  */
 void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager)
 {
-   APX_LOG_INFO("[APX_NODE_MANAGER] %s", "detaching file manager");
+   if (fileManager->debugInfo != 0)
+   {
+      APX_LOG_INFO("[APX_NODE_MANAGER] (%p) Detaching file manager", fileManager->debugInfo);
+   }
+   else
+   {
+      APX_LOG_INFO("[APX_NODE_MANAGER] %s", "Detaching file manager");
+   }
+
    if ( (self != 0) && (fileManager != 0) )
    {
       void **ppVal;
@@ -367,7 +376,6 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
       {
          apx_nodeInfo_t *nodeInfo = (apx_nodeInfo_t*) *adt_ary_get(&toBeDeleted, i);
          apx_nodeData_t *nodeData = nodeInfo->nodeData;
-         APX_LOG_INFO("[APX_NODE_MANAGER] Removing node %s", nodeInfo->node->name);
          if (self->router != 0)
          {
             apx_router_detachNodeInfo(self->router, nodeInfo);
@@ -428,6 +436,14 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
    }
 }
 
+void apx_nodeManager_setDebugMode(apx_nodeManager_t *self, int8_t debugMode)
+{
+   if (self != 0)
+   {
+      self->debugMode=debugMode;
+   }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -441,7 +457,15 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
    {
       int32_t numNodes;
       int32_t i;
-      APX_LOG_INFO("[APX_NODE_MANAGER] Processing APX definition, len=%d", (int) definitionLen);
+      char debugInfoStr[APX_DEBUG_INFO_MAX_LEN];
+      debugInfoStr[0]=0;
+      if (fileManager->debugInfo != 0)
+      {
+         sprintf(debugInfoStr, " (%p)", fileManager->debugInfo);
+      }
+      APX_LOG_INFO("[APX_NODE_MANAGER]%s Server processing APX definition, len=%d", debugInfoStr, (int) definitionLen);
+
+
       apx_istream_reset(&self->apx_istream);
       apx_istream_open(&self->apx_istream);
       apx_istream_write(&self->apx_istream, definitionBuf, (uint32_t) definitionLen);
@@ -489,15 +513,16 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                if (outDataFile != 0)
                {
                   //check if length of file is the expected length of our outPortDataLen calculation
-                  if (outPortDataLen != outDataFile->fileInfo.length)
+                  if (outPortDataLen != (int32_t) outDataFile->fileInfo.length)
                   {
                      APX_LOG_ERROR("[APX_NODE_MANAGER] length of file %s is %d, expected length was %d\n", fileName, outDataFile->fileInfo.length, outPortDataLen);
                   }
                   else
                   {
-                     APX_LOG_INFO("[APX_NODE_MANAGER] Found '%s'", fileName);
                      if (outDataFile->nodeData==0)
                      {
+
+
                         outDataFile->nodeData=nodeData;
                         //now create memory for the outPortData
                         nodeData->outPortDataBuf = (uint8_t*) malloc(outPortDataLen);
@@ -505,7 +530,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                         nodeData->outPortDirtyFlags = (uint8_t*) malloc(outPortDataLen);
                         assert(nodeData->outPortDirtyFlags);
                         nodeData->outPortDataLen = outPortDataLen;
-                        APX_LOG_INFO("[APX_NODE_MANAGER] Opening '%s' ", fileName);                        
+                        APX_LOG_INFO("[APX_NODE_MANAGER] %s Server opening client file %s[%d,%d]", debugInfoStr, fileName, outDataFile->fileInfo.address, outDataFile->fileInfo.length);
                         apx_nodeData_setNodeInfo(nodeData, nodeInfo);
                         apx_fileManager_sendFileOpen(fileManager, outDataFile->fileInfo.address);
                      }
@@ -539,11 +564,11 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                if (inDataFile != 0)
                {
                   apx_fileManager_attachLocalPortDataFile(fileManager, inDataFile);
-                  APX_LOG_INFO("[APX_NODE_MANAGER] Created local file '%s'", fileName);
+                  APX_LOG_INFO("[APX_NODE_MANAGER]%s Server created file %s[%d,%d]", debugInfoStr, fileName, inDataFile->fileInfo.address, inDataFile->fileInfo.length);
                }
                else
                {
-                  APX_LOG_ERROR("[APX_NODE_MANAGER] Failed to create local file '%s'", fileName);
+                  APX_LOG_ERROR("[APX_NODE_MANAGER]%s Server failed to create local file '%s'", debugInfoStr, fileName);
                }
             }
             //router is set, attach the newly create nodeInfo to the router

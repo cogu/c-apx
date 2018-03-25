@@ -387,6 +387,35 @@ apx_portDataMap_t *apx_nodeInfo_getOutDataMap(apx_nodeInfo_t *self)
    return 0;
 }
 
+int32_t apx_nodeInfo_getInPortDataOffset(apx_nodeInfo_t *self, int32_t requirePortIndex)
+{
+   if ( self != 0)
+   {
+      apx_portDataMapEntry_t *entry = apx_portDataMap_getEntry(&self->inDataMap, requirePortIndex);
+      if (entry != 0)
+      {
+         return entry->offset;
+      }
+   }
+   errno=EINVAL;
+   return -1;
+}
+
+int32_t apx_nodeInfo_getOutPortDataOffset(apx_nodeInfo_t *self, int32_t providePortIndex)
+{
+   if ( self != 0)
+   {
+      apx_portDataMapEntry_t *entry = apx_portDataMap_getEntry(&self->outDataMap, providePortIndex);
+      if (entry != 0)
+      {
+         return entry->offset;
+      }
+   }
+   errno=EINVAL;
+   return -1;
+}
+
+
 int32_t apx_nodeInfo_getInPortDataLen(apx_nodeInfo_t *self)
 {
    if (self != 0)

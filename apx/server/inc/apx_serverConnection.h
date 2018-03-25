@@ -40,7 +40,7 @@ typedef struct apx_serverConnection_tag
 #endif
 
    bool isGreetingParsed;
-   bool isDebugModeEnabled;
+   int8_t debugMode;
    adt_bytearray_t sendBuffer;
    uint8_t numHeaderMaxLen;
 }apx_serverConnection_t;
@@ -70,7 +70,7 @@ void apx_serverConnection_vdelete(void *arg);
 void apx_serverConnection_attachNodeManager(apx_serverConnection_t *self, apx_nodeManager_t *nodeManager);
 void apx_serverConnection_detachNodeManager(apx_serverConnection_t *self, apx_nodeManager_t *nodeManager);
 void apx_serverConnection_start(apx_serverConnection_t *self);
-void apx_serverConnection_setDebugMode(apx_serverConnection_t *self, bool mode);
+void apx_serverConnection_setDebugMode(apx_serverConnection_t *self, int8_t debugMode);
 
 int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 

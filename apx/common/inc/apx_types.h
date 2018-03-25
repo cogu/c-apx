@@ -24,5 +24,10 @@ typedef struct apx_dataWriteCmd_tag
 #define APX_CONNECTION_TYPE_TCP_SOCKET        1
 #define APX_CONNECTION_TYPE_LOCAL_SOCKET      2
 
+#define APX_DEBUG_NONE     0
+#define APX_DEBUG_LOW      1
+#define APX_DEBUG_HIGH     2
+
+#define APX_DEBUG_INFO_MAX_LEN 20
 
 #endif //APX_TYPES_H

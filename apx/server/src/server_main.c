@@ -33,7 +33,7 @@ static void printUsage(char *name);
 static uint16_t m_port;
 static apx_server_t m_server;
 static int32_t m_count;
-static bool m_debug;
+static int8_t m_debug;
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
    int err;
 #endif
    m_count = 0;
-   m_debug = false;
+   m_debug = 0;
    m_port = DEFAULT_PORT;
    printf("APX Server %s\n", SW_VERSION_STR);
    if(argc>1)
@@ -123,9 +123,20 @@ static int parse_args(int argc, char **argv)
          printUsage(argv[0]);
          return -1;
       }
-      else if (strncmp(argv[i], "--debug", 7) == 0)
+      else if (strncmp(argv[i], "--debug=", 8) == 0)
       {
-         m_debug = true;
+         char *endptr=0;
+         long num = strtol(&argv[i][8],&endptr,10);
+         if (endptr > &argv[i][8])
+         {
+            m_debug=(int8_t) num;
+         }
+      }
+      else
+      {
+         printf("Unknown argument %s\n", argv[i]);
+         printUsage(argv[0]);
+         return -1;
       }
    }
    return 0;

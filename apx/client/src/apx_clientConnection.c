@@ -49,7 +49,7 @@ int8_t apx_clientConnection_create(apx_clientConnection_t *self, msocket_t *msoc
       self->isAcknowledgeSeen = false;
       self->client = client;
       self->maxMsgHeaderSize = (uint8_t) sizeof(uint32_t);
-      apx_fileManager_create(&self->fileManager, APX_FILEMANAGER_CLIENT_MODE);
+      apx_fileManager_create(&self->fileManager, APX_FILEMANAGER_CLIENT_MODE, false);
       adt_bytearray_create(&self->sendBuffer, SEND_BUFFER_GROW_SIZE);
       return 0;
    }

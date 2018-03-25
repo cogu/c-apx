@@ -41,7 +41,7 @@ void apx_server_create(apx_server_t *self, uint16_t tcpPort)
       msocket_handler_t serverHandler;
       adt_list_create(&self->connections,apx_serverConnection_vdelete);
       self->tcpPort = tcpPort;
-      self->isDebugModeEnabled = false;
+      self->debugMode = APX_DEBUG_NONE;
       memset(&serverHandler,0,sizeof(serverHandler));
       msocket_server_create(&self->tcpServer,AF_INET, apx_serverConnection_vdelete);
 #ifndef _MSC_VER
@@ -83,11 +83,13 @@ void apx_server_destroy(apx_server_t *self)
    }
 }
 
-void apx_server_setDebugMode(apx_server_t *self, bool mode)
+void apx_server_setDebugMode(apx_server_t *self, int8_t debugMode)
 {
    if (self != 0)
    {
-      self->isDebugModeEnabled = mode;
+      self->debugMode = debugMode;
+      apx_nodeManager_setDebugMode(&self->nodeManager, debugMode);
+      apx_router_setDebugMode(&self->router, debugMode);
    }
 }
 
@@ -127,9 +129,9 @@ static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket
          {
             APX_LOG_INFO("[APX_SERVER] New connection (%p)", (void*)newConnection);
          }
-         if (self->isDebugModeEnabled != false)
+         if (self->debugMode > APX_DEBUG_NONE)
          {
-            apx_serverConnection_setDebugMode(newConnection, true);
+            apx_serverConnection_setDebugMode(newConnection, self->debugMode);
          }
          //now that the handler is setup, start the internal listening thread in the msocket
          msocket_start_io(msocket);

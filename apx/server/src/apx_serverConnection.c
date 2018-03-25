@@ -70,7 +70,7 @@ int8_t apx_serverConnection_create(apx_serverConnection_t *self, msocket_t *sock
 #endif
       self->server=server;
       self->isGreetingParsed = false;
-      self->isDebugModeEnabled = false;
+      self->debugMode = APX_DEBUG_NONE;
       self->numHeaderMaxLen = (int8_t) sizeof(uint32_t); //currently only 4-byte header is supported. There might be a future version where we support both 16-bit and 32-bit message headers
       adt_bytearray_create(&self->sendBuffer, SEND_BUFFER_GROW_SIZE);
       return apx_fileManager_create(&self->fileManager, APX_FILEMANAGER_SERVER_MODE);
@@ -215,11 +215,15 @@ int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uin
    return -1;
 }
 
-void apx_serverConnection_setDebugMode(apx_serverConnection_t *self, bool mode)
+void apx_serverConnection_setDebugMode(apx_serverConnection_t *self, int8_t debugMode)
 {
    if (self != 0)
    {
-      self->isDebugModeEnabled = mode;
+      self->debugMode = debugMode;
+      if (debugMode > APX_DEBUG_NONE)
+      {
+         apx_fileManager_setDebugInfo(&self->fileManager, (void*) self);
+      }
    }
 }
 
@@ -249,7 +253,15 @@ static void apx_serverConnection_parseGreeting(apx_serverConnection_t *self, con
          {
             //this ends the header
             self->isGreetingParsed = true;
-            APX_LOG_INFO("[APX_SRV_CONNECTION] (%p) Greeting parsed", (void*) self);
+            if (self->debugMode > APX_DEBUG_NONE)
+            {
+               APX_LOG_INFO("[APX_SRV_CONNECTION] (%p) Greeting parsed", (void*) self);
+            }
+            else
+            {
+               APX_LOG_INFO("%s", "[APX_SRV_CONNECTION] Greeting parsed");
+            }
+
             apx_fileManager_onConnected(&self->fileManager);
             break;
          }
@@ -291,7 +303,7 @@ static uint8_t apx_serverConnection_parseMessage(apx_serverConnection_t *self, c
       if (pNext+msgLen<=pEnd)
       {
          totalParsed+=headerLen+msgLen;
-         if (self->isDebugModeEnabled != false)
+         if (self->debugMode>= APX_DEBUG_HIGH)
          {
             uint32_t i;
             char msg[MAX_DEBUG_MSG_SIZE];
@@ -395,7 +407,7 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
          //place header just before user data begin
          pBegin = sendBuffer+(self->numHeaderMaxLen+offset-headerLen); //the part in the parenthesis is where the user data begins
          memcpy(pBegin, header, headerLen);
-         if (self->isDebugModeEnabled != false)
+         if (self->debugMode >= APX_DEBUG_HIGH)
          {
             int i;
             char msg[MAX_DEBUG_MSG_SIZE];

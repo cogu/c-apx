@@ -68,6 +68,8 @@ int32_t apx_nodeInfo_getNumRequirePorts(apx_nodeInfo_t *self);
 int32_t apx_nodeInfo_getNumProvidePorts(apx_nodeInfo_t *self);
 void apx_nodeInfo_updateDataTriggers(apx_nodeInfo_t *self,int32_t providePortIndex);
 apx_portDataMap_t *apx_nodeInfo_getOutDataMap(apx_nodeInfo_t *self);
+int32_t apx_nodeInfo_getInPortDataOffset(apx_nodeInfo_t *self, int32_t requirePortIndex);
+int32_t apx_nodeInfo_getOutPortDataOffset(apx_nodeInfo_t *self, int32_t providePortIndex);
 int32_t apx_nodeInfo_getInPortDataLen(apx_nodeInfo_t *self);
 int32_t apx_nodeInfo_getOutPortDataLen(apx_nodeInfo_t *self);
 apx_dataTriggerFunction_t *apx_nodeInfo_getTriggerFunction(apx_nodeInfo_t *self, int32_t offset);
