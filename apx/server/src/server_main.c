@@ -144,7 +144,7 @@ static int parse_args(int argc, char **argv)
 
 static void printUsage(char *name)
 {   
-   printf("%s -p<port> [--debug]\n",name);
+   printf("%s -p<port> [--debug=<level>]\n",name);
 }
 
 
