@@ -453,6 +453,7 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
    {
       int32_t i;
       int32_t numProvidePorts = adt_ary_length(&nodeInfo->node->providePortList);
+      adt_str_t *str = adt_str_new();
 
       for(i=0;i<numProvidePorts;i++)
       {
@@ -471,10 +472,9 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
                   numConnectors = adt_ary_length(connectorList);
                   if (numConnectors > 0)
                   {
-                     adt_str_t *str;
                      int32_t j;
                      bool first=true;
-                     str = adt_str_new();
+                     adt_str_clear(str);
                      for(j=0;j<numConnectors;j++)
                      {
                         apx_portref_t *portref;
@@ -493,7 +493,6 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
                         adt_str_append_cstr(str,portref->port->name);
                      }
                      APX_LOG_DEBUG("   %s/%s -> %s",nodeInfo->node->name, port->name, adt_str_cstr(str));
-                     adt_str_delete(str);
                   }
                   else
                   {
@@ -511,6 +510,7 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
             }
          }
       }
+      adt_str_delete(str);
       //clear flags
       memset(nodeInfo->providePortFlags,0,numProvidePorts);
    }
@@ -527,11 +527,11 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
             if (debugMode == APX_DEBUG_NONE)
             {
                apx_portref_t *portref;
-               apx_port_t *port = apx_node_getRequirePort(nodeInfo->node,i);
-               assert(port != 0);
                portref = apx_nodeInfo_getRequirePortConnector(nodeInfo,i);
                if (portref == 0)
                {
+                  apx_port_t *port = apx_node_getRequirePort(nodeInfo->node,i);
+                  assert(port != 0);
                   APX_LOG_DEBUG("   (null) -> %s/%s",nodeInfo->node->name, port->name);
                }
                else
