@@ -345,12 +345,14 @@ static bool apx_router_createDefaultPortConnector(const apx_router_t *self, apx_
                   {
                      if (self->debugMode > APX_DEBUG_2_LOW)
                      {
+#ifndef UNIT_TEST
                         int32_t requirePortOffset;
                         int32_t providePortOffset;
                         requirePortOffset = apx_nodeInfo_getInPortDataOffset(nodeInfo, port->portIndex);
                         providePortOffset = apx_nodeInfo_getOutPortDataOffset(providerNodeInfo, portref->port->portIndex);
                         APX_LOG_DEBUG("   %s/%s[%d] -> %s/%s[%d]", portref->node->name, portref->port->name, providePortOffset,
                               nodeInfo->node->name,port->name, requirePortOffset);
+#endif
                      }
                      apx_nodeInfo_connectPort(providerNodeInfo, portref->port->portIndex, nodeInfo, port->portIndex);
                      if (provideConnector != 0)
@@ -388,12 +390,14 @@ static bool apx_router_createDefaultPortConnector(const apx_router_t *self, apx_
                   }
                   if (self->debugMode > APX_DEBUG_2_LOW)
                   {
+#ifndef UNIT_TEST
                      int32_t requirePortOffset;
                      int32_t providePortOffset;
                      requirePortOffset = apx_nodeInfo_getInPortDataOffset(requireNodeInfo, requirePortIndex);
                      providePortOffset = apx_nodeInfo_getOutPortDataOffset(nodeInfo, port->portIndex);
                      APX_LOG_DEBUG("   %s/%s[%d] -> %s/%s[%d]",nodeInfo->node->name, port->name, providePortOffset,
                            portref->node->name,portref->port->name, requirePortOffset);
+#endif
                   }
                   apx_nodeInfo_connectPort(nodeInfo, port->portIndex, portref->node->nodeInfo, portref->port->portIndex);
                }

@@ -97,7 +97,7 @@ static void test_apx_testServer_greeting(CuTest* tc)
    SLEEP(10);
    CuAssertIntEquals(tc, 0, adt_bytearray_length(&socket->pendingServer));
    dataLen = adt_bytearray_length(&socket->pendingClient);
-   CuAssertIntEquals(tc, 9, dataLen);
+   CuAssertIntEquals(tc, 9+61, dataLen);
    data = adt_bytearray_data(&socket->pendingClient);
    CuAssertIntEquals(tc, 8, data[0]);
    i32HeaderLen = rmf_packHeader(&expectedArray[0], sizeof(expectedArray), RMF_CMD_START_ADDR, false);

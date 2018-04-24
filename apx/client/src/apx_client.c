@@ -43,6 +43,7 @@ int8_t apx_client_create(apx_client_t *self)
    {
       self->connection = 0;
       apx_nodeManager_create(&self->nodeManager);
+      return 0;
    }
    errno=EINVAL;
    return -1;

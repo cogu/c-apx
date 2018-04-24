@@ -396,7 +396,7 @@ int32_t rmf_deserialize_cmdType(const uint8_t *buf, int32_t bufLen, uint32_t *cm
 
 int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType)
 {
-   if ( (self != 0) && (name != 0) && ( (startAddress < RMF_DATA_HIGH_MAX_ADDR) || (startAddress == RMF_INVALID_ADDRESS) ) && (fileType < RMF_FILE_TYPE_STREAM) )
+   if ( (self != 0) && (name != 0) && ( (startAddress < RMF_DATA_HIGH_MAX_ADDR) || (startAddress == RMF_INVALID_ADDRESS) ) && (fileType <= RMF_FILE_TYPE_STREAM) )
    {
       size_t len = strlen(name);
       if (len<=RMF_MAX_FILE_NAME)

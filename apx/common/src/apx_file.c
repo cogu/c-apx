@@ -83,14 +83,18 @@ int8_t apx_file_createRemoteFile(apx_file_t *self, const rmf_fileInfo_t *cmdFile
 {
    if ( (self != 0) && (cmdFileInfo != 0))
    {
+      int8_t result;
       self->isRemoteFile = true;
       self->nodeData = 0;
       self->isOpen = false;
 
-      rmf_fileInfo_create(&self->fileInfo, cmdFileInfo->name, cmdFileInfo->address, cmdFileInfo->length, cmdFileInfo->fileType);
-      rmf_fileInfo_setDigestData(&self->fileInfo, cmdFileInfo->digestType, cmdFileInfo->digestData, 0);
-      self->fileType = apx_file_deriveFileType(self);
-      return 0;
+      result = rmf_fileInfo_create(&self->fileInfo, cmdFileInfo->name, cmdFileInfo->address, cmdFileInfo->length, cmdFileInfo->fileType);
+      if (result == 0)
+      {
+         rmf_fileInfo_setDigestData(&self->fileInfo, cmdFileInfo->digestType, cmdFileInfo->digestData, 0);
+         self->fileType = apx_file_deriveFileType(self);
+      }
+      return result;
    }
    errno = EINVAL;
    return -1;
