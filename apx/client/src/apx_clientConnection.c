@@ -27,6 +27,7 @@
 static int8_t apx_clientConnection_parseMessage(apx_clientConnection_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 static uint8_t *apx_clientConnection_getSendBuffer(void *arg, int32_t msgLen);
 static int32_t apx_clientConnection_send(void *arg, int32_t offset, int32_t msgLen);
+static void apx_clientConnection_sendGreeting(apx_clientConnection_t *self);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -123,26 +124,7 @@ void apx_clientConnection_start(apx_clientConnection_t *self)
       //register connection with the server nodeManager
       apx_nodeManager_attachFileManager(&self->client->nodeManager, &self->fileManager);
       apx_fileManager_start(&self->fileManager);
-      //send greeting
-      {
-         uint8_t *sendBuffer;
-         uint32_t greetingLen;
-         char greeting[RMF_GREETING_MAX_LEN];
-         strcpy(greeting, RMF_GREETING_START);
-         //headers end with an additional newline
-         strcat(greeting, "\n");
-         greetingLen = (uint32_t) strlen(greeting);
-         sendBuffer = apx_clientConnection_getSendBuffer((void*) self, greetingLen);
-         if (sendBuffer != 0)
-         {
-            memcpy(sendBuffer, greeting, greetingLen);
-            apx_clientConnection_send((void*) self, 0, greetingLen);
-         }
-         else
-         {
-            fprintf(stderr, "Failed to acquire sendBuffer while trying to send greeting\n");
-         }         
-      }
+      apx_clientConnection_sendGreeting(self);
    }
 }
 
@@ -161,9 +143,7 @@ int8_t apx_clientConnection_dataReceived(apx_clientConnection_t *self, const uin
       while(totalParseLen<dataLen)
       {
          uint32_t internalParseLen = 0;
-         result=0;
-
-         result = apx_clientConnection_parseMessage(self, pNext, remain, &internalParseLen);
+         result=apx_clientConnection_parseMessage(self, pNext, remain, &internalParseLen);
          if ( (result == 0) && (internalParseLen!=0) )
          {
             assert(internalParseLen<=dataLen);
@@ -187,6 +167,26 @@ int8_t apx_clientConnection_dataReceived(apx_clientConnection_t *self, const uin
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
+void apx_clientConnection_sendGreeting(apx_clientConnection_t *self)
+{
+   uint8_t *sendBuffer;
+   uint32_t greetingLen;
+   char greeting[RMF_GREETING_MAX_LEN];
+   strcpy(greeting, RMF_GREETING_START);
+   //headers end with an additional newline
+   strcat(greeting, "\n");
+   greetingLen = (uint32_t) strlen(greeting);
+   sendBuffer = apx_clientConnection_getSendBuffer((void*) self, greetingLen);
+   if (sendBuffer != 0)
+   {
+      memcpy(sendBuffer, greeting, greetingLen);
+      apx_clientConnection_send((void*) self, 0, greetingLen);
+   }
+   else
+   {
+      fprintf(stderr, "Failed to acquire sendBuffer while trying to send greeting\n");
+   }
+}
 
 /**
  * a message consists of a message length (first 1 or 4 bytes) packed as binary integer (big endian).
