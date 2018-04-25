@@ -95,6 +95,7 @@ int8_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode)
          apx_fileMap_create(&self->localFileMap);
          apx_fileMap_create(&self->remoteFileMap);
          apx_fileManager_setTransmitHandler(self, 0);
+         apx_allocator_start(&self->allocator);
 
          self->curFileStartAddress = 0;
          self->curFileEndAddress = 0;
@@ -112,6 +113,7 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
 {
    if (self != 0)
    {
+      apx_allocator_stop(&self->allocator);
       if (self->ringbufferData != 0)
       {
          free(self->ringbufferData);
@@ -121,7 +123,6 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
       apx_allocator_destroy(&self->allocator);
       apx_fileMap_destroy(&self->localFileMap);
       apx_fileMap_destroy(&self->remoteFileMap);
-
    }
 }
 
@@ -528,7 +529,7 @@ static THREAD_PROTO(threadTask,arg)
                break;
             case RMF_MSG_FILE_WRITE:
                apx_fileManager_fileWriteCmdHandler(self, (apx_file_t*) msg.msgData3, (const uint8_t*) msg.msgData4, (apx_offset_t) msg.msgData1, (apx_size_t) msg.msgData2);
-               apx_allocator_free(&self->allocator, (uint8_t*) msg.msgData3, (uint32_t) msg.msgData1);
+               apx_allocator_free(&self->allocator, (uint8_t*) msg.msgData4, (uint32_t) msg.msgData2);
                break;
             default:
                APX_LOG_ERROR("[APX_FILE_MANAGER]: unknown message type: %u", msg.msgType);               
