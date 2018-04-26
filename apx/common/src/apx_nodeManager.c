@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #endif
 #include "adt_ary.h"
+#include "adt_hash.h"
 #include "apx_nodeManager.h"
 #include "apx_fileManager.h"
 #include "apx_nodeData.h"

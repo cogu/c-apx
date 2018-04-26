@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
 #include <stdbool.h>
-#include "adt_hash.h"
 #include "adt_bytearray.h"
 #include "apx_fileManager.h"
 #include "apx_nodeManager.h"
