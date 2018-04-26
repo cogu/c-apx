@@ -142,7 +142,7 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
                }
                else
                {
-                  //client mode                  
+                  //client mode
                }
             }
             else
@@ -268,7 +268,7 @@ void apx_nodeManager_attachLocalNode(apx_nodeManager_t *self, apx_nodeData_t *no
    {
       adt_list_elem_t *pIter;
       apx_nodeManager_setLocalNodeData(self, nodeData);
-      //for each attached fileManager, create a new file      
+      //for each attached fileManager, create a new file
       adt_list_iter_init(&self->fileManagerList);
       do
       {
@@ -392,7 +392,7 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
          adt_list_elem_t *iter;
          adt_list_iter_init(&fileManager->remoteFileMap.fileList);
          do
-         {			
+         {
             iter = adt_list_iter_next(&fileManager->remoteFileMap.fileList);
             if (iter != 0)
             {
@@ -400,7 +400,7 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
                if ( (file != 0) && (file->nodeData != 0))
                {
                   bool found=false;
-				      end = adt_ary_length(&deletedNodeData);
+                  end = adt_ary_length(&deletedNodeData);
                   for (i=0; i<end; i++)
                   {
                      //prevent deleting nodeData twice
@@ -421,7 +421,7 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
                         APX_LOG_INFO("[APX_NODE_MANAGER] deleting nodeData for %s",file->nodeData->name);
                         apx_nodeManager_removeRemoteNodeData(self, file->nodeData);
                         apx_nodeData_delete(file->nodeData);
-						      adt_ary_push(&deletedNodeData, file->nodeData);						
+                        adt_ary_push(&deletedNodeData, file->nodeData);
 //                        apx_nodeManager_removeNodeInfo(self, nodeInfo);
 //                        apx_nodeInfo_delete(nodeInfo);
                      }
@@ -461,7 +461,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
       debugInfoStr[0]=0;
       if (fileManager->debugInfo != 0)
       {
-         sprintf(debugInfoStr, " (%p)", fileManager->debugInfo);
+         snprintf(debugInfoStr, APX_DEBUG_INFO_MAX_LEN, " (%p)", fileManager->debugInfo);
       }
       APX_LOG_INFO("[APX_NODE_MANAGER]%s Server processing APX definition, len=%d", debugInfoStr, (int) definitionLen);
 
@@ -559,7 +559,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                {
                   APX_LOG_ERROR("[APX_NODE_MANAGER] Failed to create init data for node %s", apx_node_getName(apxNode));
                }
-               nodeData->inPortDataLen = inPortDataLen;               
+               nodeData->inPortDataLen = inPortDataLen;
                inDataFile = apx_file_newLocalInPortDataFile(nodeData);
                if (inDataFile != 0)
                {

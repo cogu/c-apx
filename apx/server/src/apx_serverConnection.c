@@ -303,7 +303,7 @@ static uint8_t apx_serverConnection_parseMessage(apx_serverConnection_t *self, c
       if (pNext+msgLen<=pEnd)
       {
          totalParsed+=headerLen+msgLen;
-         if (self->debugMode>= APX_DEBUG_HIGH)
+         if (self->debugMode >= APX_DEBUG_4_HIGH)
          {
             uint32_t i;
             char msg[MAX_DEBUG_MSG_SIZE];
@@ -407,7 +407,7 @@ static int32_t apx_serverConnection_send(void *arg, int32_t offset, int32_t msgL
          //place header just before user data begin
          pBegin = sendBuffer+(self->numHeaderMaxLen+offset-headerLen); //the part in the parenthesis is where the user data begins
          memcpy(pBegin, header, headerLen);
-         if (self->debugMode >= APX_DEBUG_HIGH)
+         if (self->debugMode >= APX_DEBUG_4_HIGH)
          {
             int i;
             char msg[MAX_DEBUG_MSG_SIZE];

@@ -8,6 +8,7 @@
 #include <unistd.h>
 #endif
 #include "apx_server.h"
+#include "apx_types.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -130,6 +131,11 @@ static int parse_args(int argc, char **argv)
          if (endptr > &argv[i][8])
          {
             m_debug=(int8_t) num;
+            if (m_debug == APX_DEBUG_1_PROFILE)
+            {
+               // Disable stdout buffer to get accurate log timestamps
+               setvbuf(stdout, NULL, _IONBF, 0);
+            }
          }
       }
       else
@@ -144,7 +150,7 @@ static int parse_args(int argc, char **argv)
 
 static void printUsage(char *name)
 {   
-   printf("%s -p<port> [--debug=<level>]\n",name);
+   printf("%s -p<port> [--debug=<level 1-4>]\n",name);
 }
 
 
