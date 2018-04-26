@@ -468,7 +468,7 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
          if (portref != 0)
          {
             apx_portDataMapEntry_t *requirePortEntry;
-            const apx_nodeInfo_t* const provideNodeInfo = portref->node->nodeInfo;
+            apx_nodeInfo_t *provideNodeInfo = portref->node->nodeInfo;
             const apx_nodeData_t *provideNodeData;
             int32_t providePortIndex;
             requirePortEntry = apx_portDataMap_getEntry(&self->inDataMap, requirePortIndex);
