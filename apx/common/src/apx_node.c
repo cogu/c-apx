@@ -22,6 +22,7 @@
 
 #define ERROR_STR_MAX 128
 /**************** Private Function Declarations *******************/
+static void apx_node_setPortSignature(apx_node_t *self, apx_port_t *port);
 static int apx_node_getDatatypeId(apx_port_t *port);
 static const char *apx_node_resolveDataSignature(apx_node_t *self,apx_port_t *port);
 static void apx_parser_attributeParseError(apx_port_t *port, int32_t lastError);
@@ -193,39 +194,16 @@ int8_t apx_node_finalize(apx_node_t *self)
          return 0;
       }
       providePortLen = adt_ary_length(&self->providePortList);
-      requirePortLen = adt_ary_length(&self->requirePortList);
       for(i=0;i<providePortLen;i++)
       {
-         void **ptr;
-         ptr=adt_ary_get(&self->providePortList,i);
-         if (ptr != 0)
-         {
-            apx_port_t *port = (apx_port_t*) *ptr;
-            assert(port != 0);
-            if ( port->dataSignature != 0 )
-            {
-               const char *dataSignature = apx_node_resolveDataSignature(self,port);
-               apx_port_setDerivedDataSignature(port,dataSignature);
-            }
-            apx_port_derivePortSignature(port);
-         }
+         apx_port_t *port = (apx_port_t*) adt_ary_value(&self->providePortList,i);
+         apx_node_setPortSignature(self,port);
       }
+      requirePortLen = adt_ary_length(&self->requirePortList);
       for(i=0;i<requirePortLen;i++)
       {
-         void **ptr;
-         ptr=adt_ary_get(&self->requirePortList,i);
-         if (ptr != 0)
-         {
-            apx_port_t *port = (apx_port_t*) *ptr;
-            assert(port != 0);
-            assert(port != 0);
-            if ( port->dataSignature != 0 )
-            {
-               const char *dataSignature = apx_node_resolveDataSignature(self,port);
-               apx_port_setDerivedDataSignature(port,dataSignature);
-            }
-            apx_port_derivePortSignature(port);
-         }
+         apx_port_t *port = (apx_port_t*) adt_ary_value(&self->requirePortList,i);
+         apx_node_setPortSignature(self,port);
       }
       self->isFinalized = true;
       return 0;
@@ -292,6 +270,17 @@ adt_bytearray_t *apx_node_createPortInitData(apx_node_t *self, apx_port_t *port)
 
 
 /***************** Private Function Definitions *******************/
+static void apx_node_setPortSignature(apx_node_t *self, apx_port_t *port)
+{
+   assert(port != 0);
+   if ( port->dataSignature != 0 )
+   {
+      const char *dataSignature = apx_node_resolveDataSignature(self,port);
+      apx_port_setDerivedDataSignature(port,dataSignature);
+   }
+   apx_port_derivePortSignature(port);
+}
+
 static int apx_node_getDatatypeId(apx_port_t *port)
 {
    const uint8_t *pEnd;

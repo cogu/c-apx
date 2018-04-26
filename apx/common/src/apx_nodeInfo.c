@@ -218,7 +218,7 @@ void apx_nodeInfo_disconnectProvidePort(apx_nodeInfo_t *providerNodeInfo, int32_
          {
             apx_nodeInfo_t *requesterNodeInfo;
             int32_t requesterPortIndex;
-            apx_portref_t *portref = (apx_portref_t*) *adt_ary_get(connectionList,i);
+            apx_portref_t *portref = (apx_portref_t*) adt_ary_value(connectionList,i);
             requesterNodeInfo = portref->node->nodeInfo;
             requesterPortIndex = portref->port->portIndex;
             //We cannot use the normal function apx_nodeInfo_disconnectRequirePort here, it will cause a recursive loop.
@@ -468,8 +468,8 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
          if (portref != 0)
          {
             apx_portDataMapEntry_t *requirePortEntry;
-            apx_nodeInfo_t *provideNodeInfo = portref->node->nodeInfo;
-            apx_nodeData_t *provideNodeData;
+            const apx_nodeInfo_t* const provideNodeInfo = portref->node->nodeInfo;
+            const apx_nodeData_t *provideNodeData;
             int32_t providePortIndex;
             requirePortEntry = apx_portDataMap_getEntry(&self->inDataMap, requirePortIndex);
             assert(requirePortEntry != 0);
@@ -478,8 +478,7 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
             provideNodeData = provideNodeInfo->nodeData;
             if ( (provideNodeData!=0) && (provideNodeData->outPortDataBuf != 0) )
             {
-               apx_portDataMapEntry_t *providePortEntry;
-               providePortEntry = apx_portDataMap_getEntry(&provideNodeInfo->outDataMap, providePortIndex);
+               const apx_portDataMapEntry_t* const providePortEntry = apx_portDataMap_getEntry(&provideNodeInfo->outDataMap, providePortIndex);
                assert(providePortEntry != 0);
                //array bounds check
                if ( ( (uint32_t)providePortEntry->offset >= provideNodeData->outPortDataLen) ||  ( ((uint32_t)(providePortEntry->offset+providePortEntry->length)) > provideNodeData->outPortDataLen) )
@@ -601,7 +600,7 @@ static void apx_nodeInfo_connectProvidePortInternal(apx_nodeInfo_t *self, int32_
             end = adt_ary_length(innerConnectionList);
             for(i=0;i<end;i++)
             {
-               apx_portref_t *ref = (apx_portref_t*) *adt_ary_get(innerConnectionList,i);
+               apx_portref_t *ref = (apx_portref_t*) *adt_ary_get(innerConnectionList,i); // todo adt_ary_value
                if (apx_portref_equals(ref,newConnection) != 0)
                {
                   //identical connection found, don't add it again
@@ -656,7 +655,7 @@ static void apx_nodeInfo_disconnectProvidePortInternal(apx_nodeInfo_t *providerN
             end = adt_ary_length(innerList);
             for (i=0;i<end;i++)
             {
-               apx_portref_t *other = (apx_portref_t*) *adt_ary_get(innerList,i);
+               apx_portref_t *other = (apx_portref_t*) *adt_ary_get(innerList,i); // todo adt_ary_value
                if ( apx_portref_equals(portref,other) != 0)
                {
                   //found element
