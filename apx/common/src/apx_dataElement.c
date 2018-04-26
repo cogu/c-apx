@@ -196,7 +196,7 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
                dtl_av_t *av = (dtl_av_t*) dv;
 
                i32Length = dtl_av_length(av);
-               if (i32Length != self->arrayLen)
+               if (i32Length != (int32_t)self->arrayLen)
                {
                   apx_setError(APX_LENGTH_ERROR);
                   return 0;

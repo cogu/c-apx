@@ -24,9 +24,11 @@ typedef struct apx_dataWriteCmd_tag
 #define APX_CONNECTION_TYPE_TCP_SOCKET        1
 #define APX_CONNECTION_TYPE_LOCAL_SOCKET      2
 
-#define APX_DEBUG_NONE     0
-#define APX_DEBUG_LOW      1
-#define APX_DEBUG_HIGH     2
+#define APX_DEBUG_NONE                        0
+#define APX_DEBUG_1_PROFILE                   1  // Used to profile node connect performance using timestamped log
+#define APX_DEBUG_2_LOW                       2
+#define APX_DEBUG_3_MID                       3
+#define APX_DEBUG_4_HIGH                      4
 
 #define APX_DEBUG_INFO_MAX_LEN 20
 

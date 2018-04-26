@@ -83,7 +83,7 @@ void apx_router_attachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
       debugInfoStr[0]=0;
       if ( (nodeInfo->nodeData != 0) && (nodeInfo->nodeData->fileManager->debugInfo) != 0)
       {
-         sprintf(debugInfoStr, " (%p)", nodeInfo->nodeData->fileManager->debugInfo);
+         snprintf(debugInfoStr, APX_DEBUG_INFO_MAX_LEN, " (%p)", nodeInfo->nodeData->fileManager->debugInfo);
       }
 
       assert(node != 0);
@@ -121,6 +121,10 @@ void apx_router_attachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
          apx_port_t *port = apx_node_getProvidePort(node,i);
          apx_router_attachPortToPortMap(self,node,port);
       }
+      if (self->debugMode == APX_DEBUG_1_PROFILE)
+      {
+         APX_LOG_DEBUG("[APX_ROUTER] done registering ports for %s",node->name);
+      }
       //5. create connectors using default connection rules (latest attached node is provider of a signal)
       for (i=0;i<requirePortLen;i++)
       {
@@ -132,8 +136,16 @@ void apx_router_attachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
          apx_port_t *port = apx_node_getProvidePort(node,i);
          apx_router_createDefaultPortConnector(self,nodeInfo,port,0);
       }
-      //6. loop through all nodes and check for flags (flags indicate extra postprocessing steps are required)
+      if (self->debugMode == APX_DEBUG_1_PROFILE)
+      {
+         APX_LOG_DEBUG("[APX_ROUTER] done creating default connectors for %s",node->name);
+      }
+      //6. loop through all nodes and check for flags (flags indicate extra post processing steps are required)
       apx_router_postProcessNodes(self,0);
+      if (self->debugMode == APX_DEBUG_1_PROFILE)
+      {
+         APX_LOG_DEBUG("[APX_ROUTER] done post processing %s connect",node->name);
+      }
    }
 }
 
@@ -158,7 +170,7 @@ void apx_router_detachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
       debugInfoStr[0]=0;
       if ( (nodeInfo->nodeData != 0) && (nodeInfo->nodeData->fileManager->debugInfo != 0) )
       {
-         sprintf(debugInfoStr, " (%p)", nodeInfo->nodeData->fileManager->debugInfo);
+         snprintf(debugInfoStr, APX_DEBUG_INFO_MAX_LEN, " (%p)", nodeInfo->nodeData->fileManager->debugInfo);
       }
 
       APX_LOG_DEBUG("[APX_ROUTER]%s Detaching %s", debugInfoStr, node->name);
@@ -303,7 +315,7 @@ static bool apx_router_createDefaultPortConnector(apx_router_t *self, apx_nodeIn
       //debugInfoStr[0]=0;
 /*      if (nodeInfo->nodeData->fileManager->debugInfo != 0)
       {
-         sprintf(debugInfoStr, " (%p)", nodeInfo->nodeData->fileManager->debugInfo);
+         snprintf(debugInfoStr, APX_DEBUG_INFO_MAX_LEN, " (%p)", nodeInfo->nodeData->fileManager->debugInfo);
       }*/
       ptr = adt_hash_get(&self->portMap,psg,0);
       if (ptr == 0)
@@ -331,7 +343,7 @@ static bool apx_router_createDefaultPortConnector(apx_router_t *self, apx_nodeIn
 
                   if (providerNodeInfo != 0)
                   {
-                     if (self->debugMode > APX_DEBUG_NONE)
+                     if (self->debugMode > APX_DEBUG_2_LOW)
                      {
                         int32_t requirePortOffset;
                         int32_t providePortOffset;
@@ -374,7 +386,7 @@ static bool apx_router_createDefaultPortConnector(apx_router_t *self, apx_nodeIn
                      //and reroute it to our new provide port.
                      apx_nodeInfo_disconnectRequirePort(requireNodeInfo,requireConnector->port->portIndex);
                   }
-                  if (self->debugMode > APX_DEBUG_NONE)
+                  if (self->debugMode > APX_DEBUG_2_LOW)
                   {
                      int32_t requirePortOffset;
                      int32_t providePortOffset;
@@ -453,6 +465,7 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
    {
       int32_t i;
       int32_t numProvidePorts = adt_ary_length(&nodeInfo->node->providePortList);
+      adt_str_t *str = adt_str_new();
 
       for(i=0;i<numProvidePorts;i++)
       {
@@ -461,7 +474,7 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
             adt_ary_t *connectorList;
             apx_port_t *port = apx_node_getProvidePort(nodeInfo->node,i);
             assert(port != 0);
-            if (debugMode == APX_DEBUG_NONE)
+            if (debugMode == APX_DEBUG_2_LOW)
             {
                //1. generate debug printout describing the change in connection status
                connectorList = apx_nodeInfo_getProvidePortConnectorList(nodeInfo,i);
@@ -471,10 +484,9 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
                   numConnectors = adt_ary_length(connectorList);
                   if (numConnectors > 0)
                   {
-                     adt_str_t *str;
                      int32_t j;
                      bool first=true;
-                     str = adt_str_new();
+                     adt_str_clear(str);
                      for(j=0;j<numConnectors;j++)
                      {
                         apx_portref_t *portref;
@@ -493,7 +505,6 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
                         adt_str_append_cstr(str,portref->port->name);
                      }
                      APX_LOG_DEBUG("   %s/%s -> %s",nodeInfo->node->name, port->name, adt_str_cstr(str));
-                     adt_str_delete(str);
                   }
                   else
                   {
@@ -511,6 +522,7 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
             }
          }
       }
+      adt_str_delete(str);
       //clear flags
       memset(nodeInfo->providePortFlags,0,numProvidePorts);
    }
@@ -524,14 +536,14 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
          if (nodeInfo->requirePortFlags[i] != 0)
          {
             //1. generate debug printout describing the change in connection status
-            if (debugMode == APX_DEBUG_NONE)
+            if (debugMode == APX_DEBUG_2_LOW)
             {
                apx_portref_t *portref;
-               apx_port_t *port = apx_node_getRequirePort(nodeInfo->node,i);
-               assert(port != 0);
                portref = apx_nodeInfo_getRequirePortConnector(nodeInfo,i);
                if (portref == 0)
                {
+                  apx_port_t *port = apx_node_getRequirePort(nodeInfo->node,i);
+                  assert(port != 0);
                   APX_LOG_DEBUG("   (null) -> %s/%s",nodeInfo->node->name, port->name);
                }
                else

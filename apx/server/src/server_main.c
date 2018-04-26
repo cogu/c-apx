@@ -8,6 +8,8 @@
 #include <unistd.h>
 #endif
 #include "apx_server.h"
+#include "apx_types.h"
+#include "apx_logging.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -26,6 +28,7 @@ static void printUsage(char *name);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
+int8_t g_debug; // Global so apx_logging can use it from everywhere
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -33,7 +36,6 @@ static void printUsage(char *name);
 static uint16_t m_port;
 static apx_server_t m_server;
 static int32_t m_count;
-static int8_t m_debug;
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
@@ -46,7 +48,7 @@ int main(int argc, char **argv)
    int err;
 #endif
    m_count = 0;
-   m_debug = 0;
+   g_debug = 0;
    m_port = DEFAULT_PORT;
    printf("APX Server %s\n", SW_VERSION_STR);
    if(argc>1)
@@ -62,18 +64,18 @@ int main(int argc, char **argv)
       printUsage(argv[0]);
       return 0;
    }
-   printf("Listening on port %d\n", (int)m_port);
+   APX_LOG_INFO("Listening on port %d\n", (int)m_port);
 #ifdef _WIN32   
    wVersionRequested = MAKEWORD(2, 2);
    err = WSAStartup(wVersionRequested, &wsaData);
    if (err != 0) {
       /* Tell the user that we could not find a usable Winsock DLL*/
-      printf("WSAStartup failed with error: %d\n", err);
+      APX_LOG_ERROR("WSAStartup failed with error: %d\n", err);
       return 1;
    }
 #endif
    apx_server_create(&m_server,m_port);
-   apx_server_setDebugMode(&m_server, m_debug);
+   apx_server_setDebugMode(&m_server, g_debug);
    apx_server_start(&m_server);
    for(;;)
    {
@@ -83,7 +85,7 @@ int main(int argc, char **argv)
          break;
       }*/
    }
-   printf("destroying server\n");
+   APX_LOG_INFO("destroying server\n");
    apx_server_destroy(&m_server);
 #ifdef _WIN32
    WSACleanup();
@@ -129,7 +131,12 @@ static int parse_args(int argc, char **argv)
          long num = strtol(&argv[i][8],&endptr,10);
          if (endptr > &argv[i][8])
          {
-            m_debug=(int8_t) num;
+            g_debug=(int8_t) num;
+            if (g_debug == APX_DEBUG_1_PROFILE)
+            {
+               // Disable stdout buffer to get accurate log timestamps
+               setvbuf(stdout, NULL, _IONBF, 0);
+            }
          }
       }
       else
@@ -144,7 +151,7 @@ static int parse_args(int argc, char **argv)
 
 static void printUsage(char *name)
 {   
-   printf("%s -p<port> [--debug]\n",name);
+   printf("%s -p<port> [--debug=<level 1-4>]\n",name);
 }
 
 

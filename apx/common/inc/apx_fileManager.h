@@ -28,7 +28,6 @@
 #include "apx_fileMap.h"
 #include "adt_bytearray.h"
 #include "apx_transmitHandler.h"
-#include "adt_hash.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
