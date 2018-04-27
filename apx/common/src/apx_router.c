@@ -471,11 +471,11 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
       {
          if (nodeInfo->providePortFlags[i] != 0)
          {
-            adt_ary_t *connectorList;
-            apx_port_t *port = apx_node_getProvidePort(nodeInfo->node,i);
-            assert(port != 0);
             if (debugMode == APX_DEBUG_2_LOW)
             {
+               adt_ary_t *connectorList;
+               apx_port_t *port = apx_node_getProvidePort(nodeInfo->node,i);
+               assert(port != 0);
                //1. generate debug printout describing the change in connection status
                connectorList = apx_nodeInfo_getProvidePortConnectorList(nodeInfo,i);
                if (connectorList != 0)
