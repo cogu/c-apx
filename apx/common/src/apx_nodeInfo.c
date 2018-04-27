@@ -28,7 +28,7 @@ static void apx_nodeInfo_connectRequirePortInternal(apx_nodeInfo_t *self, int32_
 static void apx_nodeInfo_connectProvidePortInternal(apx_nodeInfo_t *self, int32_t portIndex, apx_node_t *requesterNode, apx_port_t *requirePort);
 static void apx_nodeInfo_disconnectRequirePortInternal(apx_nodeInfo_t *requesterNodeInfo, int32_t requesterPortIndex);
 static void apx_nodeInfo_disconnectProvidePortInternal(apx_nodeInfo_t *providerNodeInfo, int32_t providerPortIndex, apx_portref_t *portref);
-static inline bool apx_nodeInfo_isPortEntryOutside(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen);
+static bool apx_nodeInfo_isPortEntryOutside(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -438,7 +438,7 @@ int32_t apx_nodeInfo_getOutPortDataLen(apx_nodeInfo_t *self)
 /**
  * returns dataTriggerFunction based on offset
  */
-apx_dataTriggerFunction_t *apx_nodeInfo_getTriggerFunction(apx_nodeInfo_t *self, int32_t offset)
+apx_dataTriggerFunction_t *apx_nodeInfo_getTriggerFunction(const apx_nodeInfo_t *self, int32_t offset)
 {
    if ( (self != 0) )
    {
@@ -512,7 +512,7 @@ void apx_nodeInfo_setNodeData(apx_nodeInfo_t *self, apx_nodeData_t *nodeData)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static inline bool apx_nodeInfo_isPortEntryOutside(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen)
+static bool apx_nodeInfo_isPortEntryOutside(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen)
 {
    return ( (uint32_t)portEntry->offset >= portDataLen) || ( (uint32_t)(portEntry->offset+portEntry->length) > portDataLen);
 }

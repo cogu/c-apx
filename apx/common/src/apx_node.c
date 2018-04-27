@@ -22,9 +22,9 @@
 
 #define ERROR_STR_MAX 128
 /**************** Private Function Declarations *******************/
-static void apx_node_setPortSignature(apx_node_t *self, apx_port_t *port);
+static void apx_node_setPortSignature(const apx_node_t *self, apx_port_t *port);
 static int apx_node_getDatatypeId(apx_port_t *port);
-static const char *apx_node_resolveDataSignature(apx_node_t *self,apx_port_t *port);
+static const char *apx_node_resolveDataSignature(const apx_node_t *self,apx_port_t *port);
 static void apx_parser_attributeParseError(apx_port_t *port, int32_t lastError);
 
 /**************** Private Variable Declarations *******************/
@@ -270,7 +270,7 @@ adt_bytearray_t *apx_node_createPortInitData(apx_node_t *self, apx_port_t *port)
 
 
 /***************** Private Function Definitions *******************/
-static void apx_node_setPortSignature(apx_node_t *self, apx_port_t *port)
+static void apx_node_setPortSignature(const apx_node_t *self, apx_port_t *port)
 {
    assert(port != 0);
    if ( port->dataSignature != 0 )
@@ -310,7 +310,7 @@ static int apx_node_getDatatypeId(apx_port_t *port)
 /**
  * returns the datasignature of the port. If the datasignature is a typereference it will resolve the type reference and return the true data signature
  */
-static const char *apx_node_resolveDataSignature(apx_node_t *self,apx_port_t *port)
+static const char *apx_node_resolveDataSignature(const apx_node_t *self,apx_port_t *port)
 {
    if ( (self != 0) && (port != 0) )
    {
@@ -323,8 +323,7 @@ static const char *apx_node_resolveDataSignature(apx_node_t *self,apx_port_t *po
                int typeId = apx_node_getDatatypeId(port);
                if ( (typeId >= 0) && (typeId < ((int)adt_ary_length(&self->datatypeList))) )
                {
-                  void **ptr=adt_ary_get(&self->datatypeList,typeId);
-                  apx_datatype_t *datatype = (apx_datatype_t*) *ptr;
+                  apx_datatype_t *datatype = (apx_datatype_t*) adt_ary_value(&self->datatypeList,typeId);
                   return datatype->dsg;
                }
                else

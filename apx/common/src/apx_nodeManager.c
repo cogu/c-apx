@@ -36,10 +36,10 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *definitionBuf, int32_t definitionLen, struct apx_fileManager_tag *fileManager);
-static apx_nodeData_t *apx_nodeManager_getNodeData(apx_nodeManager_t *self, const char *name);
+static apx_nodeData_t *apx_nodeManager_getNodeData(const apx_nodeManager_t *self, const char *name);
 static void apx_nodeManager_setLocalNodeData(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
-static void apx_nodeManager_executePortTriggerFunction(apx_nodeManager_t *self, apx_dataTriggerFunction_t *triggerFunction, apx_nodeInfo_t *nodeInfo, apx_file_t *file);
-static void apx_nodeManager_attachLocalNodeToFileManager(apx_nodeManager_t *self, apx_nodeData_t *nodeData, apx_fileManager_t *fileManager);
+static void apx_nodeManager_executePortTriggerFunction(const apx_dataTriggerFunction_t *triggerFunction, const apx_file_t *file);
+static void apx_nodeManager_attachLocalNodeToFileManager(apx_nodeData_t *nodeData, apx_fileManager_t *fileManager);
 static void apx_nodeManager_removeRemoteNodeData(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
 static void apx_nodeManager_removeNodeInfo(apx_nodeManager_t *self, apx_nodeInfo_t *nodeInfo);
 static bool apx_nodeManager_createInitData(apx_node_t *node, uint8_t *buf, int32_t bufLen);
@@ -234,7 +234,7 @@ void apx_nodeManager_remoteFileWritten(apx_nodeManager_t *self, struct apx_fileM
                triggerFunction = apx_nodeInfo_getTriggerFunction(nodeInfo, offset);
                if (triggerFunction != 0)
                {
-                  apx_nodeManager_executePortTriggerFunction(self, triggerFunction, nodeInfo, remoteFile);
+                  apx_nodeManager_executePortTriggerFunction(triggerFunction, remoteFile);
                   offset = triggerFunction->srcOffset + triggerFunction->dataLength;
                }
                else
@@ -277,7 +277,7 @@ void apx_nodeManager_attachLocalNode(apx_nodeManager_t *self, apx_nodeData_t *no
          if (pIter != 0)
          {
             apx_fileManager_t *fileManager = (apx_fileManager_t*) pIter->pItem;
-            apx_nodeManager_attachLocalNodeToFileManager(self, nodeData, fileManager);
+            apx_nodeManager_attachLocalNodeToFileManager(nodeData, fileManager);
          }
       }while(pIter != 0);
 
@@ -322,7 +322,7 @@ void apx_nodeManager_attachFileManager(apx_nodeManager_t *self, struct apx_fileM
          if (ppVal != 0 )
          {
             apx_nodeData_t *nodeData = *ppVal;
-            apx_nodeManager_attachLocalNodeToFileManager(self, nodeData, fileManager);
+            apx_nodeManager_attachLocalNodeToFileManager(nodeData, fileManager);
          }
       } while(ppVal != 0);
    }
@@ -586,7 +586,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
 /**
  * searches both local and remote nodeData maps using name as key
  */
-static apx_nodeData_t *apx_nodeManager_getNodeData(apx_nodeManager_t *self, const char *name)
+static apx_nodeData_t *apx_nodeManager_getNodeData(const apx_nodeManager_t *self, const char *name)
 {
    if ( (self != 0) && (name != 0) )
    {
@@ -619,9 +619,9 @@ static void apx_nodeManager_setLocalNodeData(apx_nodeManager_t *self, apx_nodeDa
 /**
  * applies the portTriggerFunction
  */
-static void apx_nodeManager_executePortTriggerFunction(apx_nodeManager_t *self, apx_dataTriggerFunction_t *triggerFunction, apx_nodeInfo_t *nodeInfo, apx_file_t *file)
+static void apx_nodeManager_executePortTriggerFunction(const apx_dataTriggerFunction_t *triggerFunction, const apx_file_t *file)
 {
-   if( (self != 0) && (triggerFunction != 0) && (file != 0) )
+   if( (triggerFunction != 0) && (file != 0) )
    {
       if (file->fileType == APX_OUTDATA_FILE)
       {
@@ -635,7 +635,7 @@ static void apx_nodeManager_executePortTriggerFunction(apx_nodeManager_t *self, 
                int32_t end = adt_ary_length(&triggerFunction->writeInfoList);
                for(i=0;i<end;i++)
                {
-                  apx_dataWriteInfo_t *writeInfo = (apx_dataWriteInfo_t*) *adt_ary_get(&triggerFunction->writeInfoList, i);
+                  apx_dataWriteInfo_t *writeInfo = (apx_dataWriteInfo_t*) adt_ary_value(&triggerFunction->writeInfoList, i);
                   apx_nodeInfo_t *targetNodeInfo = writeInfo->requesterNodeInfo;
                   if( targetNodeInfo->nodeData != 0)
                   {
@@ -653,7 +653,7 @@ static void apx_nodeManager_executePortTriggerFunction(apx_nodeManager_t *self, 
    }
 }
 
-static void apx_nodeManager_attachLocalNodeToFileManager(apx_nodeManager_t *self, apx_nodeData_t *nodeData, apx_fileManager_t *fileManager)
+static void apx_nodeManager_attachLocalNodeToFileManager(apx_nodeData_t *nodeData, apx_fileManager_t *fileManager)
 {
    if (nodeData->definitionDataLen > 0)
    {

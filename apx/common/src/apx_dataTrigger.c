@@ -197,7 +197,7 @@ void apx_dataTriggerTable_updateTrigger(apx_dataTriggerTable_t *self, apx_port_t
    }
 }
 
-apx_dataTriggerFunction_t *apx_dataTriggerTable_get(apx_dataTriggerTable_t *self, int32_t offset)
+apx_dataTriggerFunction_t *apx_dataTriggerTable_get(const apx_dataTriggerTable_t *self, int32_t offset)
 {
    if ( (self != 0) && (offset>=0) && ( ((uint32_t)offset) < (self->lookupTableLen) ) )
    {

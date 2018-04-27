@@ -58,7 +58,7 @@ apx_dataTriggerTable_t *apx_dataTriggerTable_new(struct apx_nodeInfo_tag *nodeIn
 void apx_dataTriggerTable_delete(apx_dataTriggerTable_t *self);
 void apx_dataTriggerTable_vdelete(void *arg);
 void apx_dataTriggerTable_updateTrigger(apx_dataTriggerTable_t *self, apx_port_t *port);
-apx_dataTriggerFunction_t *apx_dataTriggerTable_get(apx_dataTriggerTable_t *self, int32_t offset);
+apx_dataTriggerFunction_t *apx_dataTriggerTable_get(const apx_dataTriggerTable_t *self, int32_t offset);
 
 //apx_dataTriggerFunction
 void apx_dataTriggerFunction_create(apx_dataTriggerFunction_t *self, uint32_t srcOffset, uint32_t dataLength);

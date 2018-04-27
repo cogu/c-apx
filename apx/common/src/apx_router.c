@@ -24,9 +24,9 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_router_attachPortToPortMap(apx_router_t *self, apx_node_t *node, apx_port_t *port);
 static void apx_router_detachPortFromPortMap(apx_router_t *self, apx_node_t *node, apx_port_t *port);
-static bool apx_router_createDefaultPortConnector(apx_router_t *self, apx_nodeInfo_t *nodeInfo, apx_port_t *port, apx_portref_t *provideConnector);
+static bool apx_router_createDefaultPortConnector(const apx_router_t *self, apx_nodeInfo_t *nodeInfo, apx_port_t *port, apx_portref_t *provideConnector);
 static void apx_router_build_requireRefs(apx_nodeInfo_t *nodeInfo, adt_ary_t *requireRefs);
-static void apx_router_postProcessNodes(apx_router_t *self, apx_nodeInfo_t *detachedNodeInfo);
+static void apx_router_postProcessNodes(const apx_router_t *self, apx_nodeInfo_t *detachedNodeInfo);
 static void apx_router_postProcessNode(apx_nodeInfo_t *extraNodeInfo, int8_t debugMode);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -304,7 +304,7 @@ static void apx_router_detachPortFromPortMap(apx_router_t *self, apx_node_t *nod
 /**
  * use the apx_routerPortMap to try and complete the connector for this port
  */
-static bool apx_router_createDefaultPortConnector(apx_router_t *self, apx_nodeInfo_t *nodeInfo, apx_port_t *port, apx_portref_t *provideConnector)
+static bool apx_router_createDefaultPortConnector(const apx_router_t *self, apx_nodeInfo_t *nodeInfo, apx_port_t *port, apx_portref_t *provideConnector)
 {
    if ( (self != 0) && (nodeInfo != 0) && (port != 0) )
    {
@@ -442,7 +442,7 @@ static void apx_router_build_requireRefs(apx_nodeInfo_t *nodeInfo, adt_ary_t *re
    }
 }
 
-static void apx_router_postProcessNodes(apx_router_t *self, apx_nodeInfo_t *detachedNodeInfo)
+static void apx_router_postProcessNodes(const apx_router_t *self, apx_nodeInfo_t *detachedNodeInfo)
 {
    int32_t numNodes;
    int32_t i;
