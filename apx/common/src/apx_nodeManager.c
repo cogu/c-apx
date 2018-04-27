@@ -522,8 +522,6 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                   {
                      if (outDataFile->nodeData==0)
                      {
-
-
                         outDataFile->nodeData=nodeData;
                         //now create memory for the outPortData
                         nodeData->outPortDataBuf = (uint8_t*) malloc(outPortDataLen);
@@ -531,7 +529,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                         nodeData->outPortDirtyFlags = (uint8_t*) malloc(outPortDataLen);
                         assert(nodeData->outPortDirtyFlags);
                         nodeData->outPortDataLen = outPortDataLen;
-                        APX_LOG_INFO("[APX_NODE_MANAGER] %s Server opening client file %s[%d,%d]", debugInfoStr, fileName, outDataFile->fileInfo.address, outDataFile->fileInfo.length);
+                        APX_LOG_INFO("[APX_NODE_MANAGER]%s Server opening client file %s[%d,%d]", debugInfoStr, fileName, outDataFile->fileInfo.address, outDataFile->fileInfo.length);
                         apx_nodeData_setNodeInfo(nodeData, nodeInfo);
                         apx_fileManager_sendFileOpen(fileManager, outDataFile->fileInfo.address);
                      }
