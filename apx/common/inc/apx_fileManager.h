@@ -28,8 +28,7 @@
 #include "apx_fileMap.h"
 #include "adt_bytearray.h"
 #include "apx_transmitHandler.h"
-//#include "apx_logFile.h"
-//#include "adt_hash.h"
+#include "apx_serverEventRecorder.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -68,7 +67,7 @@ typedef struct apx_fileManager_tag
    uint32_t curFileStartAddress; //cached start address of last accessed file
    uint32_t curFileEndAddress; //cached end address of of last accessed file
    apx_file_t *curFile; //weak pointer to last accessed file
-   //apx_logFile_t *logFile; //remote logging capture and playback
+   apx_serverEventRecorder_t *serverEventRecorder; //strong pointer to event recorder (only used while in server mode)
 
    struct apx_nodeManager_tag *nodeManager; //weak pointer to attached nodeManager
    bool isConnected;

@@ -22,7 +22,6 @@
 #include "apx_nodeInfo.h"
 #include "apx_router.h"
 #include "apx_logging.h" //internal logging
-#include "apx_remoteLog.h" //external logging
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -188,13 +187,9 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
       }
       else if (remoteFile->fileType == APX_USER_DATA_FILE)
       {
-         if (strcmp(remoteFile->fileInfo.name, APX_LOG_FILE_NAME) == 0)
+         if(self->debugMode >= APX_DEBUG_2_LOW)
          {
-            printf("seen log file\n");
-         }
-         else
-         {
-            printf("Unknown file: %s\n", remoteFile->fileInfo.name);
+            APX_LOG_INFO("[APX_NODE_MANAGER(%s)] Unsupported file: %s\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name);
          }
       }
       else

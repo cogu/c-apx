@@ -14,6 +14,7 @@
 #include "apx_fileManager.h"
 #include "apx_nodeManager.h"
 #include "apx_logging.h"
+#include "apx_event.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -97,6 +98,7 @@ int8_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode)
          apx_fileManager_setTransmitHandler(self, 0);
          apx_allocator_start(&self->allocator);
 
+         self->serverEventRecorder = (apx_serverEventRecorder_t*) 0;
          self->curFileStartAddress = 0;
          self->curFileEndAddress = 0;
          self->curFile = 0;
@@ -117,6 +119,13 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
       if (self->ringbufferData != 0)
       {
          free(self->ringbufferData);
+      }
+      if (self->mode == APX_FILEMANAGER_SERVER_MODE)
+      {
+         if (self->serverEventRecorder != 0)
+         {
+            apx_serverEventRecorder_delete(self->serverEventRecorder);
+         }
       }
       SEMAPHORE_DESTROY(self->semaphore);
       SPINLOCK_DESTROY(self->lock);
@@ -901,6 +910,7 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
  */
 static void apx_fileManager_processRemoteFileInfo(apx_fileManager_t *self, const rmf_fileInfo_t *cmdFileInfo)
 {
+   printf("apx_fileManager_processRemoteFileInfo\n");
    if ( (self != 0) && (cmdFileInfo != 0) )
    {
       apx_file_t *remoteFile = apx_file_newRemoteFile(cmdFileInfo);
@@ -909,9 +919,16 @@ static void apx_fileManager_processRemoteFileInfo(apx_fileManager_t *self, const
          SPINLOCK_ENTER(self->lock);
          apx_fileMap_insertFile(&self->remoteFileMap, remoteFile);
          SPINLOCK_LEAVE(self->lock);
-         if (self->nodeManager != 0)
+         if(strcmp(remoteFile->fileInfo.name, APX_EVENT_FILE_NAME)==0)
          {
-            apx_nodeManager_remoteFileAdded(self->nodeManager, self, remoteFile);
+            printf("event file seen\n");
+         }
+         else
+         {
+            if (self->nodeManager != 0)
+            {
+               apx_nodeManager_remoteFileAdded(self->nodeManager, self, remoteFile);
+            }
          }
       }
       else

@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_remoteLog.c
-* \author    Conny Gustafsson
-* \date      2018-04-15
-* \brief     APX control file (stream)
+* \file:    apx_clientEventRecorder.c
+* \author:  Conny Gustafsson
+* \date:    2018-05-01
+* \brief:   Receives APX events from server and records them into a binary log file
 *
 * Copyright (c) 2018 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include <stdlib.h>
-#include "apx_remoteLog.h"
+#include "apx_clientEventRecorder.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -49,38 +49,35 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_remoteLog_create(apx_remoteLog_t *self)
+void apx_clientEventRecorder_create(apx_clientEventRecorder_t *self)
 {
    if (self != 0)
    {
-      rmf_fileInfo_create(&self->fileInfo,  APX_LOG_FILE_NAME, APX_LOG_FILE_ADDRESS, APX_LOG_FILE_LEN, RMF_FILE_TYPE_STREAM);
-      self->isOpen=false;
    }
 }
 
-void apx_remoteLog_destroy(apx_remoteLog_t *self)
+void apx_clientEventRecorder_destroy(apx_clientEventRecorder_t *self)
 {
    if (self != 0)
    {
-      rmf_fileInfo_destroy(&self->fileInfo);
    }
 }
 
-apx_remoteLog_t *apx_remoteLog_new(void)
+apx_clientEventRecorder_t *apx_clientEventRecorder_new(void)
 {
-   apx_remoteLog_t *self = (apx_remoteLog_t*) malloc(sizeof(apx_remoteLog_t));
+   apx_clientEventRecorder_t *self = (apx_clientEventRecorder_t*) malloc(sizeof(apx_clientEventRecorder_t));
    if(self != 0)
    {
-      apx_remoteLog_create(self);
+      apx_clientEventRecorder_create(self);
    }
    return self;
 }
 
-void apx_remoteLog_delete(apx_remoteLog_t *self)
+void apx_clientEventRecorder_delete(apx_clientEventRecorder_t *self)
 {
    if(self != 0)
    {
-      apx_remoteLog_destroy(self);
+      apx_clientEventRecorder_destroy(self);
       free(self);
    }
 }
