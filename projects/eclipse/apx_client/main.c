@@ -6,6 +6,7 @@
 
 static apx_client_t m_client;
 static apx_nodeData_t *m_nodeData;
+int8_t g_debug;
 
 
 static void print_values(void)

@@ -37,9 +37,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+//forward declaration
+struct apx_fileManager_tag;
+
 typedef struct apx_serverEventRecorder_tag
 {
    apx_file_t *file;
+   struct apx_fileManager_tag *parent; //weak pointer to parent file manager
 }apx_serverEventRecorder_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -49,9 +53,9 @@ typedef struct apx_serverEventRecorder_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverEventRecorder_create(apx_serverEventRecorder_t *self);
+void apx_serverEventRecorder_create(apx_serverEventRecorder_t *self, struct apx_fileManager_tag *parent);
 void apx_serverEventRecorder_destroy(apx_serverEventRecorder_t *self);
-apx_serverEventRecorder_t *apx_serverEventRecorder_new(void);
+apx_serverEventRecorder_t *apx_serverEventRecorder_new(struct apx_fileManager_tag *parent);
 void apx_serverEventRecorder_delete(apx_serverEventRecorder_t *self);
 
 #endif //APX_SERVER_EVENT_RECORDER_H

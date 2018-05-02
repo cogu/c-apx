@@ -34,7 +34,7 @@ static uint8_t apx_file_deriveFileType(apx_file_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_file_createLocalFile(apx_file_t *self, uint8_t fileType, apx_nodeData_t *nodeData)
+int8_t apx_file_createLocalFileFromNodeData(apx_file_t *self, uint8_t fileType, apx_nodeData_t *nodeData)
 {
    if ( (self != 0) && (nodeData != 0) )
    {
@@ -109,12 +109,12 @@ void apx_file_destroy(apx_file_t *self)
 }
 
 #ifndef APX_EMBEDDED
-apx_file_t *apx_file_newLocalFile(uint8_t fileType, apx_nodeData_t *nodeData)
+apx_file_t *apx_file_newLocalFileFromNodeData(uint8_t fileType, apx_nodeData_t *nodeData)
 {
    apx_file_t *self = (apx_file_t*) malloc(sizeof(apx_file_t));
    if(self != 0)
    {
-      int8_t result = apx_file_createLocalFile(self, fileType, nodeData);
+      int8_t result = apx_file_createLocalFileFromNodeData(self, fileType, nodeData);
       if (result<0)
       {
          free(self);
@@ -130,17 +130,17 @@ apx_file_t *apx_file_newLocalFile(uint8_t fileType, apx_nodeData_t *nodeData)
 
 apx_file_t *apx_file_newLocalDefinitionFile(apx_nodeData_t *nodeData)
 {
-   return apx_file_newLocalFile(APX_DEFINITION_FILE, nodeData);
+   return apx_file_newLocalFileFromNodeData(APX_DEFINITION_FILE, nodeData);
 }
 
 apx_file_t *apx_file_newLocalOutPortDataFile(apx_nodeData_t *nodeData)
 {
-   return apx_file_newLocalFile(APX_OUTDATA_FILE, nodeData);
+   return apx_file_newLocalFileFromNodeData(APX_OUTDATA_FILE, nodeData);
 }
 
 apx_file_t *apx_file_newLocalInPortDataFile(apx_nodeData_t *nodeData)
 {
-   return apx_file_newLocalFile(APX_INDATA_FILE, nodeData);
+   return apx_file_newLocalFileFromNodeData(APX_INDATA_FILE, nodeData);
 }
 
 apx_file_t *apx_file_newRemoteFile(const rmf_fileInfo_t *fileInfo)

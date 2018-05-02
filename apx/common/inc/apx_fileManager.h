@@ -29,6 +29,9 @@
 #include "adt_bytearray.h"
 #include "apx_transmitHandler.h"
 #include "apx_serverEventRecorder.h"
+#include "apx_serverEventPlayer.h"
+#include "apx_clientEventRecorder.h"
+#include "apx_clientEventPlayer.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -42,7 +45,17 @@ struct apx_nodeManager_tag;
 #define APX_FILEMANAGER_SERVER_MODE 1
 
 
+typedef struct apx_serverEventContainer_tag
+{
+   apx_serverEventRecorder_t *recorder;
+   apx_serverEventPlayer_t *player;
+}apx_serverEventContainer_t;
 
+typedef struct apx_clientEventContainer_tag
+{
+   apx_clientEventRecorder_t *recorder;
+   apx_clientEventPlayer_t *player;
+}apx_clientEventContainer_t;
 
 typedef struct apx_fileManager_tag
 {
@@ -67,10 +80,15 @@ typedef struct apx_fileManager_tag
    uint32_t curFileStartAddress; //cached start address of last accessed file
    uint32_t curFileEndAddress; //cached end address of of last accessed file
    apx_file_t *curFile; //weak pointer to last accessed file
-   apx_serverEventRecorder_t *serverEventRecorder; //strong pointer to event recorder (only used while in server mode)
 
    struct apx_nodeManager_tag *nodeManager; //weak pointer to attached nodeManager
    bool isConnected;
+   union events_tag
+   {
+      //A file manager cannot be both server and client at the same time. Determine which union value is valid by testing self->mode variable.
+      apx_serverEventContainer_t server;
+      apx_clientEventContainer_t client;
+   } event;
 #ifdef _WIN32
    unsigned int threadId;
 #endif
@@ -100,6 +118,7 @@ void apx_fileManager_sendFileOpen(apx_fileManager_t *self, uint32_t remoteAddres
 apx_file_t *apx_fileManager_findRemoteFile(apx_fileManager_t *self, const char *name);
 void apx_fileManager_attachLocalDefinitionFile(apx_fileManager_t *self, apx_file_t *localFile);
 void apx_fileManager_attachLocalPortDataFile(apx_fileManager_t *self, apx_file_t *localFile);
+void apx_fileManager_attachLocalDataFile(apx_fileManager_t *self, apx_file_t *localFile);
 const char *apx_fileManager_modeString(apx_fileManager_t *self);
 void apx_fileManager_setDebugInfo(apx_fileManager_t *self, void *debugInfo);
 

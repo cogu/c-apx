@@ -23,6 +23,7 @@
 #define APX_INDATA_FILE           2
 #define APX_DEFINITION_FILE       3
 #define APX_USER_DATA_FILE        4
+#define APX_EVENT_FILE            5
 
 #define APX_MAX_FILE_EXT_LEN      4 //'.xxx'
 #define APX_OUTDATA_FILE_EXT      ".out"
@@ -31,11 +32,11 @@
 
 typedef struct apx_file_tag
 {
-   bool isRemoteFile; //true or false
+   bool isRemoteFile;
+   bool isOpen;
+   uint8_t fileType;
    apx_nodeData_t *nodeData;
    rmf_fileInfo_t fileInfo;
-   uint16_t fileType;
-   bool isOpen;
 } apx_file_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -46,11 +47,11 @@ typedef struct apx_file_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_file_createLocalFile(apx_file_t *self, uint8_t fileType, apx_nodeData_t *nodeData);
+int8_t apx_file_createLocalFileFromNodeData(apx_file_t *self, uint8_t fileType, apx_nodeData_t *nodeData);
 int8_t apx_file_createRemoteFile(apx_file_t *self, const rmf_fileInfo_t *fileInfo);
 #ifndef APX_EMBEDDED
 void apx_file_destroy(apx_file_t *self);
-apx_file_t *apx_file_newLocalFile(uint8_t fileType, apx_nodeData_t *nodeData);
+apx_file_t *apx_file_newLocalFileFromNodeData(uint8_t fileType, apx_nodeData_t *nodeData);
 apx_file_t *apx_file_newLocalDefinitionFile(apx_nodeData_t *nodeData);
 apx_file_t *apx_file_newLocalOutPortDataFile(apx_nodeData_t *nodeData);
 apx_file_t *apx_file_newLocalInPortDataFile(apx_nodeData_t *nodeData);

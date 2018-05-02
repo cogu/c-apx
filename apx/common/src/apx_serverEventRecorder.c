@@ -30,6 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "apx_serverEventRecorder.h"
+#include "apx_fileManager.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -50,10 +51,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverEventRecorder_create(apx_serverEventRecorder_t *self)
+void apx_serverEventRecorder_create(apx_serverEventRecorder_t *self, struct apx_fileManager_tag *parent)
 {
-   if (self != 0)
+   if ( (self != 0) && (self->parent != 0) )
    {
+      self->parent = parent;
    }
 }
 
@@ -64,12 +66,12 @@ void apx_serverEventRecorder_destroy(apx_serverEventRecorder_t *self)
    }
 }
 
-apx_serverEventRecorder_t *apx_serverEventRecorder_new(void)
+apx_serverEventRecorder_t *apx_serverEventRecorder_new(struct apx_fileManager_tag *parent)
 {
    apx_serverEventRecorder_t *self = (apx_serverEventRecorder_t*) malloc(sizeof(apx_serverEventRecorder_t));
    if(self != 0)
    {
-      apx_serverEventRecorder_create(self);
+      apx_serverEventRecorder_create(self, parent);
    }
    return self;
 }

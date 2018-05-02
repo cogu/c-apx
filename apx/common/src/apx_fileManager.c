@@ -98,12 +98,21 @@ int8_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode)
          apx_fileManager_setTransmitHandler(self, 0);
          apx_allocator_start(&self->allocator);
 
-         self->serverEventRecorder = (apx_serverEventRecorder_t*) 0;
          self->curFileStartAddress = 0;
          self->curFileEndAddress = 0;
          self->curFile = 0;
          self->nodeManager = (apx_nodeManager_t*) 0;
          self->isConnected = false;
+         if (self->mode == APX_FILEMANAGER_SERVER_MODE)
+         {
+            self->event.server.recorder = apx_serverEventRecorder_new(self);
+            self->event.server.player = apx_serverEventPlayer_new();
+         }
+         else
+         {
+            self->event.client.recorder = apx_clientEventRecorder_new();
+            self->event.client.player = apx_clientEventPlayer_new();
+         }
          return 0;
       }
    }
@@ -122,9 +131,26 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
       }
       if (self->mode == APX_FILEMANAGER_SERVER_MODE)
       {
-         if (self->serverEventRecorder != 0)
+         apx_serverEventContainer_t *event = &self->event.server;
+         if (event->recorder != (apx_serverEventRecorder_t*) 0)
          {
-            apx_serverEventRecorder_delete(self->serverEventRecorder);
+            apx_serverEventRecorder_delete(event->recorder);
+         }
+         if (event->player != (apx_serverEventPlayer_t*) 0)
+         {
+            apx_serverEventPlayer_delete(event->player);
+         }
+      }
+      else
+      {
+         apx_clientEventContainer_t *event = &self->event.client;
+         if (event->recorder != (apx_clientEventRecorder_t*) 0)
+         {
+            apx_clientEventRecorder_delete(event->recorder);
+         }
+         if (event->player != (apx_clientEventPlayer_t*) 0)
+         {
+            apx_clientEventPlayer_delete(event->player);
          }
       }
       SEMAPHORE_DESTROY(self->semaphore);
@@ -355,11 +381,11 @@ void apx_fileManager_attachLocalDefinitionFile(apx_fileManager_t *self, apx_file
       SPINLOCK_ENTER(self->lock);
       isConnected = self->isConnected;
       apx_fileMap_autoInsertDefinitionFile(&self->localFileMap, localFile);
+      SPINLOCK_LEAVE(self->lock);
       if ( (isConnected == true) && (self->transmitHandler.send != 0) )
       {
          apx_fileManager_sendFileInfo(self, &localFile->fileInfo);
       }
-      SPINLOCK_LEAVE(self->lock);
    }
 }
 
@@ -375,11 +401,39 @@ void apx_fileManager_attachLocalPortDataFile(apx_fileManager_t *self, apx_file_t
       SPINLOCK_ENTER(self->lock);
       isConnected = self->isConnected;
       apx_fileMap_autoInsertPortDataFile(&self->localFileMap, localFile);
+      SPINLOCK_LEAVE(self->lock);
       if ( (isConnected == true) && (self->transmitHandler.send != 0) )
       {
          apx_fileManager_sendFileInfo(self, &localFile->fileInfo);
       }
+
+   }
+}
+
+/**
+ * attaches a new local file to file manager, if transmit function is enabled, send a new file info to remote side
+ * fileManager takes ownership of the pointer to localFile (will be deleted when fileManager is destroyed)
+ */
+void apx_fileManager_attachLocalDataFile(apx_fileManager_t *self, apx_file_t *localFile)
+{
+   if ( (self != 0) && (localFile != 0) )
+   {
+      bool isConnected;
+      SPINLOCK_ENTER(self->lock);
+      isConnected = self->isConnected;
+      if (localFile->fileInfo.address == RMF_INVALID_ADDRESS)
+      {
+         apx_fileMap_autoInsertDataFile(&self->localFileMap, localFile);
+      }
+      else
+      {
+         apx_fileMap_insertFile(&self->localFileMap, localFile);
+      }
       SPINLOCK_LEAVE(self->lock);
+      if ( (isConnected == true) && (self->transmitHandler.send != 0) )
+      {
+         apx_fileManager_sendFileInfo(self, &localFile->fileInfo);
+      }
    }
 }
 
@@ -919,9 +973,9 @@ static void apx_fileManager_processRemoteFileInfo(apx_fileManager_t *self, const
          SPINLOCK_ENTER(self->lock);
          apx_fileMap_insertFile(&self->remoteFileMap, remoteFile);
          SPINLOCK_LEAVE(self->lock);
-         if(strcmp(remoteFile->fileInfo.name, APX_EVENT_FILE_NAME)==0)
+         if(strcmp(remoteFile->fileInfo.name, APX_EVENT_CLI_FILE_NAME)==0)
          {
-            printf("event file seen\n");
+            printf("client event file seen\n");
          }
          else
          {
