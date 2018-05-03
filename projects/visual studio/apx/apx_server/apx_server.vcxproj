@@ -160,6 +160,8 @@
     <ClCompile Include="..\..\..\..\adt\src\adt_str.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_allocator.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_attributeParser.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_clientEventPlayer.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_clientEventRecorder.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataElement.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataSignature.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_dataTrigger.c" />
@@ -180,6 +182,8 @@
     <ClCompile Include="..\..\..\..\apx\common\src\apx_portref.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_router.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_routerPortMapEntry.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_serverEventPlayer.c" />
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_serverEventRecorder.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\apx_stream.c" />
     <ClCompile Include="..\..\..\..\apx\common\src\filestream.c" />
     <ClCompile Include="..\..\..\..\apx\server\src\apx_server.c" />
@@ -212,11 +216,15 @@
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_allocator.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_attributeParser.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_cfg.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_clientEventPlayer.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_clientEventRecorder.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataElement.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataSignature.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_dataTrigger.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_datatype.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_error.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_event.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_eventListener.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_file.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileManager.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_fileManager_cfg.h" />
@@ -236,6 +244,8 @@
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portref.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_router.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_routerPortMapEntry.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_serverEventPlayer.h" />
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_serverEventRecorder.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_stream.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_transmitHandler.h" />
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_types.h" />

@@ -225,6 +225,18 @@
     <ClCompile Include="..\..\..\..\apx\common\src\apx_portAttributes.c">
       <Filter>apx\common\src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_serverEventPlayer.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_serverEventRecorder.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_clientEventPlayer.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\src\apx_clientEventRecorder.c">
+      <Filter>apx\common\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h">
@@ -408,6 +420,24 @@
       <Filter>apx\common\inc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\apx\common\inc\apx_portAttributes.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_clientEventPlayer.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_clientEventRecorder.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_event.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_eventListener.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_serverEventPlayer.h">
+      <Filter>apx\common\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\common\inc\apx_serverEventRecorder.h">
       <Filter>apx\common\inc</Filter>
     </ClInclude>
   </ItemGroup>
