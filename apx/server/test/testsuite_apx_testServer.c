@@ -76,6 +76,7 @@ static void test_apx_testServer_greeting(CuTest* tc)
    int32_t dataLen;
    uint8_t expectedArray[8];
    int32_t i32Result;
+   int fileNameLen;
    char greeting[RMF_GREETING_MAX_LEN];
    socket = testsocket_new();
    apx_testServer_create(&server);
@@ -97,7 +98,8 @@ static void test_apx_testServer_greeting(CuTest* tc)
    SLEEP(10);
    CuAssertIntEquals(tc, 0, adt_bytearray_length(&socket->pendingServer));
    dataLen = adt_bytearray_length(&socket->pendingClient);
-   CuAssertIntEquals(tc, 9+61, dataLen);
+   fileNameLen = strlen(APX_EVENT_SRV_FILE_NAME);
+   CuAssertIntEquals(tc, 9+5+CMD_FILE_INFO_BASE_SIZE+fileNameLen+1, dataLen);
    data = adt_bytearray_data(&socket->pendingClient);
    CuAssertIntEquals(tc, 8, data[0]);
    i32HeaderLen = rmf_packHeader(&expectedArray[0], sizeof(expectedArray), RMF_CMD_START_ADDR, false);

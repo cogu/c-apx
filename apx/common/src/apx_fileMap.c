@@ -224,6 +224,15 @@ apx_file_t *apx_fileMap_findByName(apx_fileMap_t *self, const char *name)
    return retval;
 }
 
+int32_t apx_fileMap_length(const apx_fileMap_t *self)
+{
+   if (self != 0)
+   {
+      return adt_list_length((adt_list_t*) &self->fileList);
+   }
+   return -1;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS

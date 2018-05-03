@@ -30,6 +30,7 @@ int8_t apx_fileMap_insertFile(apx_fileMap_t *self, apx_file_t *pFile);
 int8_t apx_fileMap_removeFile(apx_fileMap_t *self, apx_file_t *pFile);
 apx_file_t *apx_fileMap_findByAddress(apx_fileMap_t *self, uint32_t address);
 apx_file_t *apx_fileMap_findByName(apx_fileMap_t *self, const char *name);
+int32_t apx_fileMap_length(const apx_fileMap_t *self);
 
 
 

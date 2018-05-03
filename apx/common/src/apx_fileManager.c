@@ -124,7 +124,6 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
 {
    if (self != 0)
    {
-      apx_allocator_stop(&self->allocator);
       if (self->ringbufferData != 0)
       {
          free(self->ringbufferData);
@@ -153,9 +152,10 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
             apx_clientEventPlayer_delete(event->player);
          }
       }
+      apx_allocator_stop(&self->allocator);
+      apx_allocator_destroy(&self->allocator);
       SEMAPHORE_DESTROY(self->semaphore);
       SPINLOCK_DESTROY(self->lock);
-      apx_allocator_destroy(&self->allocator);
       apx_fileMap_destroy(&self->localFileMap);
       apx_fileMap_destroy(&self->remoteFileMap);
    }
@@ -623,29 +623,26 @@ static void apx_fileManager_connectHandler(apx_fileManager_t *self)
       SPINLOCK_LEAVE(self->lock);
       if (self->transmitHandler.send != 0)
       {
-         if (self->mode == APX_FILEMANAGER_CLIENT_MODE)
-         {
-            adt_list_elem_t *iter;
-            SPINLOCK_ENTER(self->lock);
-            adt_list_iter_init(&self->localFileMap.fileList);
-            SPINLOCK_LEAVE(self->lock);
-            do
-            {
-               SPINLOCK_ENTER(self->lock);
-               iter = adt_list_iter_next(&self->localFileMap.fileList);
-               SPINLOCK_LEAVE(self->lock);
-               if (iter != 0)
-               {
-                  apx_file_t *file = (apx_file_t*)iter->pItem;
-                  assert(file != 0);
-                  apx_fileManager_sendFileInfo(self, &file->fileInfo);
-               }
-            } while (iter != 0);
-         }
-         else if (self->mode == APX_FILEMANAGER_SERVER_MODE)
+         adt_list_elem_t *iter;
+         if (self->mode == APX_FILEMANAGER_SERVER_MODE)
          {
             apx_fileManager_sendAck(self);
          }
+         SPINLOCK_ENTER(self->lock);
+         adt_list_iter_init(&self->localFileMap.fileList);
+         SPINLOCK_LEAVE(self->lock);
+         do
+         {
+            SPINLOCK_ENTER(self->lock);
+            iter = adt_list_iter_next(&self->localFileMap.fileList);
+            SPINLOCK_LEAVE(self->lock);
+            if (iter != 0)
+            {
+               apx_file_t *file = (apx_file_t*)iter->pItem;
+               assert(file != 0);
+               apx_fileManager_sendFileInfo(self, &file->fileInfo);
+            }
+         } while (iter != 0);
       }      
    }
 }
@@ -967,7 +964,7 @@ static void apx_fileManager_processRemoteFileInfo(apx_fileManager_t *self, const
    printf("apx_fileManager_processRemoteFileInfo\n");
    if ( (self != 0) && (cmdFileInfo != 0) )
    {
-      apx_file_t *remoteFile = apx_file_newRemoteFile(cmdFileInfo);
+      apx_file_t *remoteFile = apx_file_new(APX_UNKNOWN_FILE, cmdFileInfo);
       if (remoteFile != 0)
       {
          SPINLOCK_ENTER(self->lock);

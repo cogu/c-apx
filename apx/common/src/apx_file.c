@@ -79,20 +79,27 @@ int8_t apx_file_createLocalFileFromNodeData(apx_file_t *self, uint8_t fileType, 
    return -1;
 }
 
-int8_t apx_file_createRemoteFile(apx_file_t *self, const rmf_fileInfo_t *cmdFileInfo)
+int8_t apx_file_create(apx_file_t *self, uint8_t fileType, const rmf_fileInfo_t *fileInfo)
 {
-   if ( (self != 0) && (cmdFileInfo != 0))
+   if ( (self != 0) && (fileType<=APX_EVENT_FILE) && (fileInfo != 0) )
    {
       int8_t result;
       self->isRemoteFile = true;
       self->nodeData = 0;
       self->isOpen = false;
 
-      result = rmf_fileInfo_create(&self->fileInfo, cmdFileInfo->name, cmdFileInfo->address, cmdFileInfo->length, cmdFileInfo->fileType);
+      result = rmf_fileInfo_create(&self->fileInfo, fileInfo->name, fileInfo->address, fileInfo->length, fileInfo->fileType);
       if (result == 0)
       {
-         rmf_fileInfo_setDigestData(&self->fileInfo, cmdFileInfo->digestType, cmdFileInfo->digestData, 0);
-         self->fileType = apx_file_deriveFileType(self);
+         rmf_fileInfo_setDigestData(&self->fileInfo, fileInfo->digestType, fileInfo->digestData, 0);
+         if (fileType == APX_UNKNOWN_FILE)
+         {
+            self->fileType = apx_file_deriveFileType(self);
+         }
+         else
+         {
+            self->fileType = fileType;
+         }
       }
       return result;
    }
@@ -143,12 +150,12 @@ apx_file_t *apx_file_newLocalInPortDataFile(apx_nodeData_t *nodeData)
    return apx_file_newLocalFileFromNodeData(APX_INDATA_FILE, nodeData);
 }
 
-apx_file_t *apx_file_newRemoteFile(const rmf_fileInfo_t *fileInfo)
+apx_file_t *apx_file_new(uint8_t fileType, const rmf_fileInfo_t *fileInfo)
 {
    apx_file_t *self = (apx_file_t*) malloc(sizeof(apx_file_t));
    if(self != 0)
    {
-      int8_t result = apx_file_createRemoteFile(self, fileInfo);
+      int8_t result = apx_file_create(self, fileType, fileInfo);
       if (result<0)
       {
          free(self);

@@ -37,8 +37,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define APX_EVENT_SRV_FILE_NAME "apx_srv_event.stream"
-#define APX_EVENT_CLI_FILE_NAME "apx_cli_event.stream"
+#define APX_EVENT_SRV_FILE_NAME "apx_srv.event"
+#define APX_EVENT_CLI_FILE_NAME "apx_cli.event"
 #define APX_EVENT_FILE_LEN 0x200000 //2MB
 #define APX_EVENT_FILE_ADDRESS 0x3FDFFC00
 

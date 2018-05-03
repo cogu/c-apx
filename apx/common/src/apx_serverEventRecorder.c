@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include "apx_serverEventRecorder.h"
 #include "apx_fileManager.h"
+#include "apx_file.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -55,7 +56,15 @@ void apx_serverEventRecorder_create(apx_serverEventRecorder_t *self, struct apx_
 {
    if ( (self != 0) && (self->parent != 0) )
    {
+      apx_file_t *apx_file;
+      rmf_fileInfo_t info;
       self->parent = parent;
+      rmf_fileInfo_create(&info, APX_EVENT_SRV_FILE_NAME, APX_EVENT_FILE_ADDRESS, APX_EVENT_FILE_LEN, RMF_FILE_TYPE_STREAM);
+      apx_file = apx_file_new(APX_EVENT_FILE, &info);
+      if (apx_file != 0)
+      {
+         apx_fileManager_attachLocalDataFile(parent, apx_file); //note that file manager takes ownership of apx_file and will be responsible for deleting it.
+      }
    }
 }
 
