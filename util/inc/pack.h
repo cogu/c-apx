@@ -41,6 +41,8 @@ void packBE(_UINT8* p, _PACK_BASE_TYPE value, _UINT8 u8Size);
 void packLE(_UINT8* p, _PACK_BASE_TYPE value, _UINT8 u8Size);
 _PACK_BASE_TYPE unpackBE(const _UINT8* p, _UINT8 u8Size);
 _PACK_BASE_TYPE unpackLE(const _UINT8* p, _UINT8 u8Size);
+void packLE64(_UINT8* p, _UINT64 value); //forces data to be 64-bits (8 bytes), even on 32-bit machines
+_UINT64 unpackLE64(const _UINT8* p); //forces data to be 64-bits (8 bytes), even on 32-bit machines
 
 #undef _UINT8
 #undef _UINT32

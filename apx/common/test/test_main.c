@@ -4,7 +4,7 @@
 #include "CMemLeak.h"
 #endif
 
-
+//apx
 CuSuite* testsuite_apx_dataSignature(void);
 CuSuite* testsuite_apx_port(void);
 CuSuite* testSuite_apx_node(void);
@@ -25,6 +25,10 @@ CuSuite* testSuite_apx_testServer(void);
 CuSuite* testSuite_apx_clientSession(void);
 CuSuite* testSuite_apx_sessionCmd(void);
 CuSuite* testSuite_apx_fileManager(void);
+
+//util
+CuSuite* testsuite_headerutil(void);
+CuSuite* testsuite_pack(void);
 
 void RunAllTests(void)
 {
@@ -51,6 +55,9 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_clientSession());
    CuSuiteAddSuite(suite, testSuite_apx_sessionCmd());
    CuSuiteAddSuite(suite, testSuite_apx_fileManager());
+   CuSuiteAddSuite(suite, testsuite_headerutil());
+   CuSuiteAddSuite(suite, testsuite_pack());
+
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);
    CuSuiteDetails(suite, output);

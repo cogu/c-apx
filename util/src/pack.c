@@ -90,6 +90,36 @@ _PACK_BASE_TYPE unpackLE(const _UINT8* p, _UINT8 u8Size)
    return 0;
 }
 
+/**
+ * Special version of packLE that can be used to pack 64-bit integers on 32-bit machines
+ */
+void packLE64(_UINT8* p, _UINT64 value)
+{
+   _UINT8 u8Size = 8u;
+   _UINT64 tmp = value;
+   while (u8Size > 0)
+   {
+      *(p++) = (_UINT8)tmp;
+      tmp = tmp >> 8;
+      u8Size--;
+   }
+}
+
+/**
+ * Special version of unpackLE that can be used to unpack 64-bit integers on 32-bit machines
+ */
+_UINT64 unpackLE64(const _UINT8* p)
+{
+   _UINT8 u8Size = 8u;
+   _UINT64 tmp = 0;
+   p += (u8Size - 1);
+   while (u8Size > 0)
+   {
+      tmp = (tmp << 8) | *(p--);
+      u8Size--;
+   }
+   return tmp;
+}
 
 /****************************** Local Functions ******************************/
 
