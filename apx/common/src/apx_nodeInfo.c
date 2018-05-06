@@ -28,7 +28,7 @@ static void apx_nodeInfo_connectRequirePortInternal(apx_nodeInfo_t *self, int32_
 static void apx_nodeInfo_connectProvidePortInternal(apx_nodeInfo_t *self, int32_t portIndex, apx_node_t *requesterNode, apx_port_t *requirePort);
 static void apx_nodeInfo_disconnectRequirePortInternal(apx_nodeInfo_t *requesterNodeInfo, int32_t requesterPortIndex);
 static void apx_nodeInfo_disconnectProvidePortInternal(apx_nodeInfo_t *providerNodeInfo, int32_t providerPortIndex, apx_portref_t *portref);
-static bool apx_nodeInfo_isPortEntryOutside(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen);
+static bool apx_nodeInfo_isPortEntryOutsidePortDataLen(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -478,7 +478,7 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
                const apx_portDataMapEntry_t* const providePortEntry = apx_portDataMap_getEntry(&provideNodeInfo->outDataMap, providePortIndex);
                assert(providePortEntry != 0);
                //array bounds check
-               if ( apx_nodeInfo_isPortEntryOutside(providePortEntry, provideNodeData->outPortDataLen))
+               if (apx_nodeInfo_isPortEntryOutsidePortDataLen(providePortEntry, provideNodeData->outPortDataLen))
                {
                   APX_LOG_ERROR("[APX_NODE_INFO] offset/length in providePortEntry for %s/%s is outside outPortDataLen", portref->node->name, portref->port->name);
                }
@@ -486,7 +486,7 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
                {
                   apx_portDataMapEntry_t *requirePortEntry = apx_portDataMap_getEntry(&self->inDataMap, requirePortIndex);
                   assert(requirePortEntry != 0);
-                  if ( apx_nodeInfo_isPortEntryOutside(requirePortEntry, requireNodeData->inPortDataLen))
+                  if (apx_nodeInfo_isPortEntryOutsidePortDataLen(requirePortEntry, requireNodeData->inPortDataLen))
                   {
                      APX_LOG_ERROR("[APX_NODE_INFO] offset/length in requirePortEntry for %s/%s is outside inPortDataLen", self->node->name, requirePortEntry->port->name);
                   }
@@ -512,7 +512,7 @@ void apx_nodeInfo_setNodeData(apx_nodeInfo_t *self, apx_nodeData_t *nodeData)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static bool apx_nodeInfo_isPortEntryOutside(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen)
+static bool apx_nodeInfo_isPortEntryOutsidePortDataLen(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen)
 {
    return ( (uint32_t)portEntry->offset >= portDataLen) || ( (uint32_t)(portEntry->offset+portEntry->length) > portDataLen);
 }
@@ -604,7 +604,7 @@ static void apx_nodeInfo_connectProvidePortInternal(apx_nodeInfo_t *self, int32_
             end = adt_ary_length(innerConnectionList);
             for(i=0;i<end;i++)
             {
-               apx_portref_t *ref = (apx_portref_t*) *adt_ary_get(innerConnectionList,i); // todo adt_ary_value
+               apx_portref_t *ref = (apx_portref_t*) adt_ary_value(innerConnectionList,i);
                if (apx_portref_equals(ref,newConnection) != 0)
                {
                   //identical connection found, don't add it again

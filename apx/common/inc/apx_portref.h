@@ -32,6 +32,6 @@ void apx_portref_destroy(apx_portref_t *self);
 apx_portref_t *apx_portref_new(apx_node_t *node,apx_port_t *port);
 void apx_portref_delete(apx_portref_t *self);
 void apx_portref_vdelete(void *arg);
-int8_t apx_portref_equals(apx_portref_t *a, apx_portref_t *b);
+int8_t apx_portref_equals(const apx_portref_t *a, const apx_portref_t *b);
 
 #endif //APX_PORT_REF_H
