@@ -75,7 +75,7 @@ void apx_portref_vdelete(void *arg)
 /**
  * returns nonzero if objects are equal, zero otherwise
  */
-int8_t apx_portref_equals(apx_portref_t *a, apx_portref_t *b)
+int8_t apx_portref_equals(const apx_portref_t *a, const apx_portref_t *b)
 {
    if ( (a == 0) || ( b== 0) )
    {
@@ -92,7 +92,7 @@ int8_t apx_portref_createFromRequirePort(apx_portref_t *self,apx_node_t *node,in
       int32_t length = adt_ary_length(&node->requirePortList);
       if (portIndex < length)
       {
-         apx_port_t *port = (apx_port_t*) *adt_ary_get(&node->requirePortList,portIndex);
+         apx_port_t *port = (apx_port_t*) adt_ary_value(&node->requirePortList,portIndex);
          apx_portref_create(self,node,port);
          return 0;
       }
@@ -113,7 +113,7 @@ int8_t apx_portref_createFromProvidePort(apx_portref_t *self,apx_node_t *node,in
       int32_t length = adt_ary_length(&node->providePortList);
       if (portIndex < length)
       {
-         apx_port_t *port = (apx_port_t*) *adt_ary_get(&node->providePortList,portIndex);
+         apx_port_t *port = (apx_port_t*) adt_ary_value(&node->providePortList,portIndex);
          apx_portref_create(self,node,port);
          return 0;
       }

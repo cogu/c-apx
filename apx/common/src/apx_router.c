@@ -24,9 +24,9 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_router_attachPortToPortMap(apx_router_t *self, apx_node_t *node, apx_port_t *port);
 static void apx_router_detachPortFromPortMap(apx_router_t *self, apx_node_t *node, apx_port_t *port);
-static bool apx_router_createDefaultPortConnector(apx_router_t *self, apx_nodeInfo_t *nodeInfo, apx_port_t *port, apx_portref_t *provideConnector);
+static bool apx_router_createDefaultPortConnector(const apx_router_t *self, apx_nodeInfo_t *nodeInfo, apx_port_t *port, apx_portref_t *provideConnector);
 static void apx_router_build_requireRefs(apx_nodeInfo_t *nodeInfo, adt_ary_t *requireRefs);
-static void apx_router_postProcessNodes(apx_router_t *self, apx_nodeInfo_t *detachedNodeInfo);
+static void apx_router_postProcessNodes(const apx_router_t *self, apx_nodeInfo_t *detachedNodeInfo);
 static void apx_router_postProcessNode(apx_nodeInfo_t *extraNodeInfo, int8_t debugMode);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@ void apx_router_attachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
       //1. Is the node already attached?
       for (i=0;i<nodeInfoListLen;i++)
       {
-         apx_nodeInfo_t *elem = (apx_nodeInfo_t*) *adt_ary_get(&self->nodeInfoList,i);
+         apx_nodeInfo_t *elem = (apx_nodeInfo_t*) adt_ary_value(&self->nodeInfoList,i);
          if (elem == nodeInfo)
          {
             //node already attached, ignore request
@@ -179,7 +179,7 @@ void apx_router_detachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
       providePortLen = adt_ary_length(&node->providePortList);
       for (i=0;i<nodeInfoListLen;i++)
       {
-         apx_nodeInfo_t *elem = (apx_nodeInfo_t*) *adt_ary_get(&self->nodeInfoList,i);
+         apx_nodeInfo_t *elem = (apx_nodeInfo_t*) adt_ary_value(&self->nodeInfoList,i);
          if (elem == nodeInfo)
          {
             found = 1;
@@ -227,7 +227,7 @@ void apx_router_detachNodeInfo(apx_router_t *self, apx_nodeInfo_t *nodeInfo)
       {
          apx_nodeInfo_t *requesterNodeInfo; //this is the node that requested the signal this node provided
          apx_portref_t *requireConnector;
-         apx_portref_t *portref = (apx_portref_t*) *adt_ary_get(&requireRefs,i);
+         apx_portref_t *portref = (apx_portref_t*) adt_ary_value(&requireRefs,i);
          requesterNodeInfo = portref->node->nodeInfo;
          requireConnector = apx_nodeInfo_getRequirePortConnector(requesterNodeInfo, portref->port->portIndex);
          assert(requireConnector == 0);
@@ -304,7 +304,7 @@ static void apx_router_detachPortFromPortMap(apx_router_t *self, apx_node_t *nod
 /**
  * use the apx_routerPortMap to try and complete the connector for this port
  */
-static bool apx_router_createDefaultPortConnector(apx_router_t *self, apx_nodeInfo_t *nodeInfo, apx_port_t *port, apx_portref_t *provideConnector)
+static bool apx_router_createDefaultPortConnector(const apx_router_t *self, apx_nodeInfo_t *nodeInfo, apx_port_t *port, apx_portref_t *provideConnector)
 {
    if ( (self != 0) && (nodeInfo != 0) && (port != 0) )
    {
@@ -428,7 +428,7 @@ static void apx_router_build_requireRefs(apx_nodeInfo_t *nodeInfo, adt_ary_t *re
          int32_t numConnectors = adt_ary_length(connectorList);
          for (j=0;j<numConnectors;j++)
          {
-            apx_portref_t *connector = (apx_portref_t*) *adt_ary_get(connectorList,j);
+            apx_portref_t *connector = (apx_portref_t*) adt_ary_value(connectorList,j);
             if (connector != 0)
             {
                apx_portref_t *portref = apx_portref_new(connector->node,connector->port);
@@ -442,14 +442,14 @@ static void apx_router_build_requireRefs(apx_nodeInfo_t *nodeInfo, adt_ary_t *re
    }
 }
 
-static void apx_router_postProcessNodes(apx_router_t *self, apx_nodeInfo_t *detachedNodeInfo)
+static void apx_router_postProcessNodes(const apx_router_t *self, apx_nodeInfo_t *detachedNodeInfo)
 {
    int32_t numNodes;
    int32_t i;
    numNodes = adt_ary_length(&self->nodeInfoList);
    for (i=0;i<numNodes;i++)
    {
-      apx_nodeInfo_t *nodeInfo = (apx_nodeInfo_t*) *adt_ary_get(&self->nodeInfoList,i);
+      apx_nodeInfo_t *nodeInfo = (apx_nodeInfo_t*) adt_ary_value(&self->nodeInfoList,i);
       assert(nodeInfo != 0);
       apx_router_postProcessNode(nodeInfo, self->debugMode);
    }
@@ -471,11 +471,11 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
       {
          if (nodeInfo->providePortFlags[i] != 0)
          {
-            adt_ary_t *connectorList;
-            apx_port_t *port = apx_node_getProvidePort(nodeInfo->node,i);
-            assert(port != 0);
             if (debugMode == APX_DEBUG_2_LOW)
             {
+               adt_ary_t *connectorList;
+               apx_port_t *port = apx_node_getProvidePort(nodeInfo->node,i);
+               assert(port != 0);
                //1. generate debug printout describing the change in connection status
                connectorList = apx_nodeInfo_getProvidePortConnectorList(nodeInfo,i);
                if (connectorList != 0)
@@ -498,7 +498,7 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
                         {
                            adt_str_append_cstr(str,", ");
                         }
-                        portref = (apx_portref_t*) *adt_ary_get(connectorList,j);
+                        portref = (apx_portref_t*) adt_ary_value(connectorList,j);
                         assert(portref != 0);
                         adt_str_append_cstr(str,portref->node->name);
                         adt_str_push(str,'/');

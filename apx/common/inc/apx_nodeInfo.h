@@ -72,7 +72,7 @@ int32_t apx_nodeInfo_getInPortDataOffset(apx_nodeInfo_t *self, int32_t requirePo
 int32_t apx_nodeInfo_getOutPortDataOffset(apx_nodeInfo_t *self, int32_t providePortIndex);
 int32_t apx_nodeInfo_getInPortDataLen(apx_nodeInfo_t *self);
 int32_t apx_nodeInfo_getOutPortDataLen(apx_nodeInfo_t *self);
-apx_dataTriggerFunction_t *apx_nodeInfo_getTriggerFunction(apx_nodeInfo_t *self, int32_t offset);
+apx_dataTriggerFunction_t *apx_nodeInfo_getTriggerFunction(const apx_nodeInfo_t *self, int32_t offset);
 void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self);
 void apx_nodeInfo_setNodeData(apx_nodeInfo_t *self, apx_nodeData_t *nodeData);
 #endif //APX_NODE_INFO_H

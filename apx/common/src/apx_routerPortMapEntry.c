@@ -109,7 +109,7 @@ int8_t apx_routerPortMapEntry_insertPort(apx_routerPortMapEntry_t *self, apx_nod
       end = adt_ary_length(portrefList);
       for (i=0;i<end;i++)
       {
-         apx_portref_t *elem = (apx_portref_t*) *adt_ary_get(portrefList,i);
+         apx_portref_t *elem = (apx_portref_t*) adt_ary_value(portrefList,i);
          if (apx_portref_equals(elem,portref) != 0)
          {
             //the portref already exists in this list, take no more action
@@ -184,7 +184,7 @@ int8_t apx_routerPortMapEntry_removePort(apx_routerPortMapEntry_t *self, apx_nod
       end = adt_ary_length(portrefList);
       for (i=0;i<end;i++)
       {
-         apx_portref_t *elem = (apx_portref_t*) *adt_ary_get(portrefList,i);
+         apx_portref_t *elem = (apx_portref_t*) adt_ary_value(portrefList,i);
          if (apx_portref_equals(elem,&portref) != 0)
          {
             //found in list, we can now remove it and shorten the list.

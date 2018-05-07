@@ -28,6 +28,7 @@ static void apx_nodeInfo_connectRequirePortInternal(apx_nodeInfo_t *self, int32_
 static void apx_nodeInfo_connectProvidePortInternal(apx_nodeInfo_t *self, int32_t portIndex, apx_node_t *requesterNode, apx_port_t *requirePort);
 static void apx_nodeInfo_disconnectRequirePortInternal(apx_nodeInfo_t *requesterNodeInfo, int32_t requesterPortIndex);
 static void apx_nodeInfo_disconnectProvidePortInternal(apx_nodeInfo_t *providerNodeInfo, int32_t providerPortIndex, apx_portref_t *portref);
+static bool apx_nodeInfo_isPortEntryOutsidePortDataLen(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -218,7 +219,7 @@ void apx_nodeInfo_disconnectProvidePort(apx_nodeInfo_t *providerNodeInfo, int32_
          {
             apx_nodeInfo_t *requesterNodeInfo;
             int32_t requesterPortIndex;
-            apx_portref_t *portref = (apx_portref_t*) *adt_ary_get(connectionList,i);
+            apx_portref_t *portref = (apx_portref_t*) adt_ary_value(connectionList,i);
             requesterNodeInfo = portref->node->nodeInfo;
             requesterPortIndex = portref->port->portIndex;
             //We cannot use the normal function apx_nodeInfo_disconnectRequirePort here, it will cause a recursive loop.
@@ -437,7 +438,7 @@ int32_t apx_nodeInfo_getOutPortDataLen(apx_nodeInfo_t *self)
 /**
  * returns dataTriggerFunction based on offset
  */
-apx_dataTriggerFunction_t *apx_nodeInfo_getTriggerFunction(apx_nodeInfo_t *self, int32_t offset)
+apx_dataTriggerFunction_t *apx_nodeInfo_getTriggerFunction(const apx_nodeInfo_t *self, int32_t offset)
 {
    if ( (self != 0) )
    {
@@ -461,34 +462,31 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
       numRequirePorts = apx_nodeInfo_getNumRequirePorts(self);
       for (requirePortIndex=0;requirePortIndex<numRequirePorts;requirePortIndex++)
       {
-
          apx_portref_t *portref = apx_nodeInfo_getRequirePortConnector(self, requirePortIndex);
-
 
          if (portref != 0)
          {
-            apx_portDataMapEntry_t *requirePortEntry;
             apx_nodeInfo_t *provideNodeInfo = portref->node->nodeInfo;
-            apx_nodeData_t *provideNodeData;
+            const apx_nodeData_t *provideNodeData;
             int32_t providePortIndex;
-            requirePortEntry = apx_portDataMap_getEntry(&self->inDataMap, requirePortIndex);
-            assert(requirePortEntry != 0);
+            
             providePortIndex = portref->port->portIndex;
             assert( (provideNodeInfo != 0) && (providePortIndex>=0) );
             provideNodeData = provideNodeInfo->nodeData;
             if ( (provideNodeData!=0) && (provideNodeData->outPortDataBuf != 0) )
             {
-               apx_portDataMapEntry_t *providePortEntry;
-               providePortEntry = apx_portDataMap_getEntry(&provideNodeInfo->outDataMap, providePortIndex);
+               const apx_portDataMapEntry_t* const providePortEntry = apx_portDataMap_getEntry(&provideNodeInfo->outDataMap, providePortIndex);
                assert(providePortEntry != 0);
                //array bounds check
-               if ( ( (uint32_t)providePortEntry->offset >= provideNodeData->outPortDataLen) ||  ( ((uint32_t)(providePortEntry->offset+providePortEntry->length)) > provideNodeData->outPortDataLen) )
+               if (apx_nodeInfo_isPortEntryOutsidePortDataLen(providePortEntry, provideNodeData->outPortDataLen))
                {
                   APX_LOG_ERROR("[APX_NODE_INFO] offset/length in providePortEntry for %s/%s is outside outPortDataLen", portref->node->name, portref->port->name);
                }
                else
                {
-                  if ( ((uint32_t)requirePortEntry->offset >= requireNodeData->inPortDataLen) ||  ((uint32_t)(requirePortEntry->offset+requirePortEntry->length) > requireNodeData->inPortDataLen))
+                  apx_portDataMapEntry_t *requirePortEntry = apx_portDataMap_getEntry(&self->inDataMap, requirePortIndex);
+                  assert(requirePortEntry != 0);
+                  if (apx_nodeInfo_isPortEntryOutsidePortDataLen(requirePortEntry, requireNodeData->inPortDataLen))
                   {
                      APX_LOG_ERROR("[APX_NODE_INFO] offset/length in requirePortEntry for %s/%s is outside inPortDataLen", self->node->name, requirePortEntry->port->name);
                   }
@@ -508,12 +506,17 @@ void apx_nodeInfo_setNodeData(apx_nodeInfo_t *self, apx_nodeData_t *nodeData)
    if (self != 0)
    {
       self->nodeData = nodeData;
-   }   
+   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+static bool apx_nodeInfo_isPortEntryOutsidePortDataLen(const apx_portDataMapEntry_t* portEntry, uint32_t portDataLen)
+{
+   return ( (uint32_t)portEntry->offset >= portDataLen) || ( (uint32_t)(portEntry->offset+portEntry->length) > portDataLen);
+}
+
 /**
  * connect one of our require ports to another nodes' provide port
  */
@@ -601,7 +604,7 @@ static void apx_nodeInfo_connectProvidePortInternal(apx_nodeInfo_t *self, int32_
             end = adt_ary_length(innerConnectionList);
             for(i=0;i<end;i++)
             {
-               apx_portref_t *ref = (apx_portref_t*) *adt_ary_get(innerConnectionList,i);
+               apx_portref_t *ref = (apx_portref_t*) adt_ary_value(innerConnectionList,i);
                if (apx_portref_equals(ref,newConnection) != 0)
                {
                   //identical connection found, don't add it again
@@ -656,7 +659,7 @@ static void apx_nodeInfo_disconnectProvidePortInternal(apx_nodeInfo_t *providerN
             end = adt_ary_length(innerList);
             for (i=0;i<end;i++)
             {
-               apx_portref_t *other = (apx_portref_t*) *adt_ary_get(innerList,i);
+               apx_portref_t *other = (apx_portref_t*) *adt_ary_get(innerList,i); // todo adt_ary_value
                if ( apx_portref_equals(portref,other) != 0)
                {
                   //found element

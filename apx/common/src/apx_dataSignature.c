@@ -470,13 +470,9 @@ static void calcPackLen(apx_dataElement_t *pDataElement)
       pDataElement->packLen=0;
       for(i=0;i<end;i++)
       {
-         void **ptr;
-         ptr = adt_ary_get(pDataElement->childElements,i);
-         if (ptr != 0)
-         {
-            apx_dataElement_t *pChildElement = (apx_dataElement_t*) *ptr;
-            pDataElement->packLen+=pChildElement->packLen;
-         }
+         apx_dataElement_t *pChildElement = (apx_dataElement_t*) adt_ary_value(pDataElement->childElements,i);
+         assert (pChildElement != 0);
+         pDataElement->packLen+=pChildElement->packLen;
       }
    }
    else
