@@ -220,7 +220,7 @@ void apx_serverConnection_setDebugMode(apx_serverConnection_t *self, int8_t debu
    if (self != 0)
    {
       self->debugMode = debugMode;
-      if (debugMode > APX_DEBUG_NONE)
+      if (debugMode > APX_DEBUG_2_LOW)
       {
          apx_fileManager_setDebugInfo(&self->fileManager, (void*) self);
       }
