@@ -2,8 +2,6 @@
 **/Debug/
 **/Release
 **/build/
-#user files
-**/*vcxproj.user
 **.vs/
 *.VC.db
 *.VC.opendb
