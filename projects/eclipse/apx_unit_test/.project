@@ -25,6 +25,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>cutest</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/cutest</locationURI>
+		</link>
+		<link>
 			<name>adt/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/adt/inc</locationURI>
@@ -43,11 +48,6 @@
 			<name>bstr/src</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/bstr/src</locationURI>
-		</link>
-		<link>
-			<name>cutest/cutest</name>
-			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/cutest</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/inc</name>
@@ -93,6 +93,11 @@
 			<name>util/src</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/util/src</locationURI>
+		</link>
+		<link>
+			<name>util/test</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/util/test</locationURI>
 		</link>
 		<link>
 			<name>apx/client/inc</name>
