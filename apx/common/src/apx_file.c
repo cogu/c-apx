@@ -231,6 +231,7 @@ int8_t apx_file_read(apx_file_t *self, uint8_t *pDest, uint32_t offset, uint32_t
       switch(self->fileType)
       {
       case APX_UNKNOWN_FILE:
+         result = 0;
          break;
       case APX_OUTDATA_FILE:
          result = apx_nodeData_readOutPortData(self->nodeData, pDest, offset, length);
