@@ -444,6 +444,33 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
    }
 }
 
+void apx_nodeManager_shutdownFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager)
+{
+   if ( (self != 0) && (fileManager != 0) )
+   {
+      int32_t i;
+      int32_t numFiles;
+      adt_ary_t detachedFiles;
+      adt_ary_t nodesToBeDeleted; //list of string pointers to apx_nodeData_t
+
+      adt_ary_create(&detachedFiles, apx_file_vdelete);
+      adt_ary_create(&nodesToBeDeleted, apx_nodeData_vdelete);
+      apx_fileManager_stop(fileManager);
+      apx_fileManager_detachFiles(fileManager, &detachedFiles); //this will transfer ownership of file objects to the detachedFiles list
+      numFiles = adt_ary_length(&detachedFiles);
+      for(i=0;i<numFiles;i++)
+      {
+         apx_file_t *file = (apx_file_t*) adt_ary_value(&detachedFiles, i);
+         if (file->nodeData != 0)
+         {
+            adt_ary_push_unique(&nodesToBeDeleted, file->nodeData);
+         }
+      }
+      adt_ary_destroy(&nodesToBeDeleted); //this will delete all nodeData objects using its virtual destructor.
+      adt_ary_destroy(&detachedFiles); //this will delete all files using the virtual destructor.
+   }
+}
+
 void apx_nodeManager_setDebugMode(apx_nodeManager_t *self, int8_t debugMode)
 {
    if (self != 0)

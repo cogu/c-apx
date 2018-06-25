@@ -438,6 +438,51 @@ void apx_fileManager_attachLocalDataFile(apx_fileManager_t *self, apx_file_t *lo
 }
 
 /**
+ *
+ * It is assumed that the detachedFiles array is empty when this function is called. This function will populate it.
+ * \param self - the object
+ * \param detachedFiles - an array with nodeData pointers to be detached and deleted by caller.
+ *
+ */
+void apx_fileManager_detachFiles(apx_fileManager_t *self, adt_ary_t *detachedFiles)
+{
+   if ( (self != 0) && (detachedFiles != 0) )
+   {
+      adt_list_elem_t *iter;
+      adt_list_iter_init(&self->remoteFileMap.fileList);
+      do
+      {
+         iter = adt_list_iter_next(&self->remoteFileMap.fileList);
+         if (iter != 0)
+         {
+            apx_file_t *file = (apx_file_t*)iter->pItem;
+            if ( file != 0 )
+            {
+               apx_file_close(file);
+               adt_ary_push(detachedFiles, file);
+            }
+         }
+      }while(iter != 0);
+      adt_list_iter_init(&self->localFileMap.fileList);
+      do
+      {
+         iter = adt_list_iter_next(&self->localFileMap.fileList);
+         if (iter != 0)
+         {
+            apx_file_t *file = (apx_file_t*)iter->pItem;
+            if ( file != 0 )
+            {
+               apx_file_close(file);
+               adt_ary_push(detachedFiles, file);
+            }
+         }
+      }while(iter != 0);
+   }
+   apx_fileMap_clear_weak(&self->remoteFileMap);
+   apx_fileMap_clear_weak(&self->localFileMap);
+}
+
+/**
  * returns string CLI or SRV depending on its mode (used for debug print messages)
  */
 const char *apx_fileManager_modeString(apx_fileManager_t *self)

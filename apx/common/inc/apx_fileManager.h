@@ -21,12 +21,13 @@
 #endif
 #include "osmacro.h"
 #include "ringbuf.h"
+#include "adt_bytearray.h"
+#include "adt_ary.h"
 #include "apx_allocator.h"
 #include "apx_msg.h"
 #include "apx_types.h"
 #include "apx_nodeData.h"
 #include "apx_fileMap.h"
-#include "adt_bytearray.h"
 #include "apx_transmitHandler.h"
 #include "apx_serverEventRecorder.h"
 #include "apx_serverEventPlayer.h"
@@ -119,8 +120,10 @@ apx_file_t *apx_fileManager_findRemoteFile(apx_fileManager_t *self, const char *
 void apx_fileManager_attachLocalDefinitionFile(apx_fileManager_t *self, apx_file_t *localFile);
 void apx_fileManager_attachLocalPortDataFile(apx_fileManager_t *self, apx_file_t *localFile);
 void apx_fileManager_attachLocalDataFile(apx_fileManager_t *self, apx_file_t *localFile);
+void apx_fileManager_detachFiles(apx_fileManager_t *self, adt_ary_t *affectedNodes);
 const char *apx_fileManager_modeString(apx_fileManager_t *self);
 void apx_fileManager_setDebugInfo(apx_fileManager_t *self, void *debugInfo);
+
 
 //these messages can be sent to the fileManager to be processed by its internal worker thread
 void apx_fileManager_onConnected(apx_fileManager_t *self);

@@ -150,7 +150,7 @@ void apx_serverConnection_detachNodeManager(apx_serverConnection_t *self, apx_no
 {
    if ( (self != 0) && (nodeManager != 0) )
    {
-      apx_nodeManager_detachFileManager(nodeManager, &self->fileManager);
+      apx_nodeManager_shutdownFileManager(nodeManager, &self->fileManager);
    }
 }
 

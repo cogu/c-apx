@@ -233,6 +233,19 @@ int32_t apx_fileMap_length(const apx_fileMap_t *self)
    return -1;
 }
 
+/**
+ * clears internal list of files without deleting them.
+ * The caller of this function must have taken ownership of internal file objects before calling this function.
+ */
+void  apx_fileMap_clear_weak(apx_fileMap_t *self)
+{
+   if (self != 0)
+   {
+      adt_list_destructorEnable(&self->fileList, false);
+      adt_list_clear(&self->fileList);
+      adt_list_destructorEnable(&self->fileList, true);
+   }
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
