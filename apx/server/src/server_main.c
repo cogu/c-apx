@@ -1,8 +1,13 @@
-
+#define CLEANUP_TEST 0                   //0=no cleanup test (default), 1=enable cleanup test
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #ifdef _MSC_VER
+#if CLEANUP_TEST
+#   define _CRTDBG_MAP_ALLOC
+#   include <stdlib.h>
+#   include <crtdbg.h>
+#endif
 #include <Windows.h>
 #else
 #include <unistd.h>
@@ -18,6 +23,7 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 #define DEFAULT_PORT 5000
+#define CLEANUP_TEST_DURATION_SEC 30     //number of seconds before server shutdown is triggered in a cleanup test
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -35,7 +41,10 @@ int8_t g_debug; // Global so apx_logging can use it from everywhere
 //////////////////////////////////////////////////////////////////////////////
 static uint16_t m_port;
 static apx_server_t m_server;
+#if CLEANUP_TEST
 static int32_t m_count;
+#endif
+
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
@@ -47,7 +56,9 @@ int main(int argc, char **argv)
    WSADATA wsaData;
    int err;
 #endif
-   m_count = 0;
+#if CLEANUP_TEST
+   m_count = CLEANUP_TEST_DURATION_SEC;
+#endif
    g_debug = 0;
    m_port = DEFAULT_PORT;
    printf("APX Server %s\n", SW_VERSION_STR);
@@ -79,16 +90,24 @@ int main(int argc, char **argv)
    apx_server_start(&m_server);
    for(;;)
    {
-      SLEEP(5000); //main thread is sleeping while child threads do all the work
-/*    if (++m_count==20) //this counter is used during testing to verify that all resources are properly cleaned up
-      {
-         break;
-      }*/
-   }
-   APX_LOG_INFO("destroying server\n");
+      SLEEP(1000); //main thread is sleeping while child threads do all the work
+#if CLEANUP_TEST
+    if (--m_count==0) //this counter is used during a cleanup test to verify that all resources are properly cleaned up
+    {
+       break;
+    }
+    else
+    {
+       printf("Shutdown in %d\n", m_count);
+    }
+#endif
+   }   
    apx_server_destroy(&m_server);
 #ifdef _WIN32
    WSACleanup();
+#endif
+#if defined(_MSC_VER) && (CLEANUP_TEST != 0)
+   _CrtDumpMemoryLeaks();
 #endif
    return 0;
 }
