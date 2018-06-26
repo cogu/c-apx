@@ -133,10 +133,11 @@ static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket
          {
             apx_serverConnection_setDebugMode(newConnection, self->debugMode);
          }
+         //activate internal handler
+         apx_serverConnection_start(newConnection);
+
          //now that the handler is setup, start the internal listening thread in the msocket
          msocket_start_io(msocket);
-         //trigger the new connection to send the greeting message (in case there is any to be sent)
-         apx_serverConnection_start(newConnection);
       }
       else
       {
