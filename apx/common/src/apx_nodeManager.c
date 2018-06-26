@@ -311,6 +311,7 @@ void apx_nodeManager_attachFileManager(apx_nodeManager_t *self, struct apx_fileM
          {
             if (pIter->pItem == (void*) fileManager)
             {
+               printf("FileManager already attached to list\n");
                //fileManager already attached to list, take no action
                return;
             }
@@ -335,135 +336,44 @@ void apx_nodeManager_attachFileManager(apx_nodeManager_t *self, struct apx_fileM
    }
 }
 
-/**
- * detaches a fileManager from this nodeManager
- */
-void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager)
-{
-   if (fileManager->debugInfo != 0)
-   {
-      APX_LOG_INFO("[APX_NODE_MANAGER] (%p) Detaching file manager", fileManager->debugInfo);
-   }
-   else
-   {
-      APX_LOG_INFO("[APX_NODE_MANAGER] %s", "Detaching file manager");
-   }
-
-   if ( (self != 0) && (fileManager != 0) )
-   {
-      void **ppVal;
-      const char *key;
-      int32_t i;
-      int32_t end;
-      uint32_t keyLen;
-      adt_ary_t toBeDeleted; //list of nodeInfo_t that we need to remove from nodeInfoMap due to the removal of the file manager
-      adt_ary_t deletedNodeData; //list of deleted nodeData_t, used to prevent duplicate deletions
-
-      adt_ary_create(&toBeDeleted, NULL);
-      adt_ary_create(&deletedNodeData, NULL);
-      adt_list_remove(&self->fileManagerList, fileManager);
-      adt_hash_iter_init(&self->nodeInfoMap);
-      do
-      {
-         ppVal = adt_hash_iter_next(&self->nodeInfoMap,&key, &keyLen);
-         if (ppVal != 0)
-         {
-            apx_nodeInfo_t *nodeInfo = (apx_nodeInfo_t*) *ppVal;
-            assert(nodeInfo != 0);
-            if (nodeInfo->nodeData != 0)
-            {
-               if (nodeInfo->nodeData->fileManager == fileManager)
-               {
-                  adt_ary_push(&toBeDeleted, nodeInfo);
-               }
-            }
-         }
-      } while(ppVal != 0);
-      end = adt_ary_length(&toBeDeleted);
-      for (i=0; i<end; i++)
-      {
-         apx_nodeInfo_t *nodeInfo = (apx_nodeInfo_t*) *adt_ary_get(&toBeDeleted, i);
-         apx_nodeData_t *nodeData = nodeInfo->nodeData;
-         if (self->router != 0)
-         {
-            apx_router_detachNodeInfo(self->router, nodeInfo);
-         }
-         apx_nodeManager_removeRemoteNodeData(self, nodeData);
-         apx_nodeData_delete(nodeData);
-         adt_ary_push(&deletedNodeData,nodeData);
-         apx_nodeManager_removeNodeInfo(self, nodeInfo);
-         apx_nodeInfo_delete(nodeInfo);
-      }
-      
-      {
-         //remove any remaining nodeInfos attached to this fileManager
-         adt_list_elem_t *iter;
-         adt_list_iter_init(&fileManager->remoteFileMap.fileList);
-         do
-         {
-            iter = adt_list_iter_next(&fileManager->remoteFileMap.fileList);
-            if (iter != 0)
-            {
-               apx_file_t *file = (apx_file_t*)iter->pItem;
-               if ( (file != 0) && (file->nodeData != 0))
-               {
-                  bool found=false;
-                  end = adt_ary_length(&deletedNodeData);
-                  for (i=0; i<end; i++)
-                  {
-                     //prevent deleting nodeData twice
-                     apx_nodeData_t *nodeData = (apx_nodeData_t*) *adt_ary_get(&deletedNodeData, i);
-                     if (nodeData == file->nodeData)
-                     {
-                        found=true;
-                        break;
-                     }
-                  }
-                  if (found == false)
-                  {
-                     void** ppVal;
-                     MUTEX_LOCK(self->lock);
-                     ppVal = adt_hash_get(&self->remoteNodeDataMap, file->nodeData->name, 0);
-                     if (ppVal != 0)
-                     {
-                        APX_LOG_INFO("[APX_NODE_MANAGER] deleting nodeData for %s",file->nodeData->name);
-                        apx_nodeManager_removeRemoteNodeData(self, file->nodeData);
-                        apx_nodeData_delete(file->nodeData);
-                        adt_ary_push(&deletedNodeData, file->nodeData);
-//                        apx_nodeManager_removeNodeInfo(self, nodeInfo);
-//                        apx_nodeInfo_delete(nodeInfo);
-                     }
-                     MUTEX_UNLOCK(self->lock);
-                  }
-               }
-            }
-         }while(iter != 0);
-      }
-      adt_ary_destroy(&toBeDeleted);
-      adt_ary_destroy(&deletedNodeData);
-   }
-}
-
 void apx_nodeManager_shutdownFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager)
 {
    if ( (self != 0) && (fileManager != 0) )
    {
       int32_t i;
       int32_t numFiles;
+      int32_t numNodes;
       adt_ary_t detachedFiles;
       adt_ary_t nodesToBeDeleted; //list of string pointers to apx_nodeData_t
 
+      adt_list_remove(&self->fileManagerList, fileManager);
       adt_ary_create(&detachedFiles, apx_file_vdelete);
       adt_ary_create(&nodesToBeDeleted, apx_nodeData_vdelete);
       apx_fileManager_stop(fileManager);
       apx_fileManager_detachFiles(fileManager, &detachedFiles); //this will transfer ownership of file objects to the detachedFiles list
       numFiles = adt_ary_length(&detachedFiles);
-      for(i=0;i<numFiles;i++)
+      for (i=0; i<numFiles; i++)
       {
          apx_file_t *file = (apx_file_t*) adt_ary_value(&detachedFiles, i);
          if (file->nodeData != 0)
          {
             adt_ary_push_unique(&nodesToBeDeleted, file->nodeData);
+         }
+      }
+      numNodes = adt_ary_length(&nodesToBeDeleted);
+      for (i = 0; i < numNodes; i++)
+      {
+         apx_nodeData_t *nodeData = (apx_nodeData_t*)adt_ary_value(&nodesToBeDeleted, i);
+         apx_nodeManager_removeRemoteNodeData(self, nodeData);
+         if (nodeData->nodeInfo != 0)
+         {
+            apx_nodeInfo_t *nodeInfo = nodeData->nodeInfo;
+            if (self->router != 0)
+            {
+               apx_router_detachNodeInfo(self->router, nodeInfo);
+            }
+            apx_nodeManager_removeNodeInfo(self, nodeInfo);
+            apx_nodeInfo_delete(nodeInfo);
          }
       }
       adt_ary_destroy(&nodesToBeDeleted); //this will delete all nodeData objects using its virtual destructor.

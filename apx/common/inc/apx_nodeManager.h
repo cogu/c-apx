@@ -57,7 +57,6 @@ void apx_nodeManager_remoteFileWritten(apx_nodeManager_t *self, struct apx_fileM
 void apx_nodeManager_setRouter(apx_nodeManager_t *self, struct apx_router_tag *router);
 void apx_nodeManager_attachLocalNode(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
 void apx_nodeManager_attachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager);
-void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager);
 void apx_nodeManager_shutdownFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager);
 void apx_nodeManager_setDebugMode(apx_nodeManager_t *self, int8_t debugMode);
 
