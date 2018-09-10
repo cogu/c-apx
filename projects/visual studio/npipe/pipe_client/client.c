@@ -11,7 +11,7 @@ static void onPipeConnected(void *arg)
    uint8_t val;
    npipe_t *pipe = (npipe_t*)arg;
    int8_t result = npipe_send(pipe, greeting, strlen(greeting));
-   printf("npipe_send result=%d\n", result);
+   printf("npipe_send result=%d\n", (int)result);
 }
 
 static int8_t onPipeData(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)

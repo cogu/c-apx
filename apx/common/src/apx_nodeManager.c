@@ -167,7 +167,7 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
             {
                if (nodeData->inPortDataLen != remoteFile->fileInfo.length)
                {
-                  APX_LOG_ERROR("[APX_NODE_MANAGER(%s)] file %s has length %d, expected %d\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, remoteFile->fileInfo.length, nodeData->inPortDataLen);
+                  APX_LOG_ERROR("[APX_NODE_MANAGER(%s)] file %s has length %u, expected %u\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, remoteFile->fileInfo.length, nodeData->inPortDataLen);
                }
                else
                {
@@ -222,7 +222,7 @@ void apx_nodeManager_remoteFileWritten(apx_nodeManager_t *self, struct apx_fileM
          }
          else
          {
-            //printf("[APX_NODE_MANAGER(%s)] file updated name=%s, offset=%d, len=%u\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, offset, length);
+            //printf("[APX_NODE_MANAGER(%s)] file updated name=%s, offset=%u, len=%u\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, offset, length);
          }
          if (remoteFile->fileType == APX_OUTDATA_FILE)
          {
@@ -516,7 +516,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                   //check if length of file is the expected length of our outPortDataLen calculation
                   if (outPortDataLen != (int32_t) outDataFile->fileInfo.length)
                   {
-                     APX_LOG_ERROR("[APX_NODE_MANAGER] length of file %s is %d, expected length was %d\n", fileName, outDataFile->fileInfo.length, outPortDataLen);
+                     APX_LOG_ERROR("[APX_NODE_MANAGER] length of file %s is %u, expected length was %d\n", fileName, outDataFile->fileInfo.length, outPortDataLen);
                   }
                   else
                   {
@@ -529,7 +529,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                         nodeData->outPortDirtyFlags = (uint8_t*) malloc(outPortDataLen);
                         assert(nodeData->outPortDirtyFlags);
                         nodeData->outPortDataLen = outPortDataLen;
-                        APX_LOG_INFO("[APX_NODE_MANAGER]%s Server opening client file %s[%d,%d]", debugInfoStr, fileName, outDataFile->fileInfo.address, outDataFile->fileInfo.length);
+                        APX_LOG_INFO("[APX_NODE_MANAGER]%s Server opening client file %s[%u,%u]", debugInfoStr, fileName, outDataFile->fileInfo.address, outDataFile->fileInfo.length);
                         apx_nodeData_setNodeInfo(nodeData, nodeInfo);
                         apx_fileManager_sendFileOpen(fileManager, outDataFile->fileInfo.address);
                      }
@@ -563,7 +563,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                if (inDataFile != 0)
                {
                   apx_fileManager_attachLocalPortDataFile(fileManager, inDataFile);
-                  APX_LOG_INFO("[APX_NODE_MANAGER]%s Server created file %s[%d,%d]", debugInfoStr, fileName, inDataFile->fileInfo.address, inDataFile->fileInfo.length);
+                  APX_LOG_INFO("[APX_NODE_MANAGER]%s Server created file %s[%u,%u]", debugInfoStr, fileName, inDataFile->fileInfo.address, inDataFile->fileInfo.length);
                }
                else
                {

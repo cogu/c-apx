@@ -529,7 +529,7 @@ static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uin
                break;
             default:
 #if APX_DEBUG_ENABLE
-               fprintf(stderr, "not implemented cmdType: %d\n", cmdType);
+               fprintf(stderr, "not implemented cmdType: %u\n", cmdType);
 #endif
                break;
 
@@ -583,7 +583,7 @@ static void apx_es_fileManager_parseDataMsg(apx_es_fileManager_t *self, uint32_t
          {
             self->dropMessage = true; //drop message since offsets don't match
 #if APX_DEBUG_ENABLE
-            fprintf(stderr, "[APX_ES_FILEMANAGER] invalid offset (%d), message dropped\n",offset);
+            fprintf(stderr, "[APX_ES_FILEMANAGER] invalid offset (%u), message dropped\n",offset);
 #endif
          }
          else if(self->receiveBufOffset+dataLen<=self->receiveBufLen)
@@ -709,8 +709,8 @@ static int32_t apx_es_processPendingWrite(apx_es_fileManager_t *self)
       if (sendAvail >= (int32_t) RMF_MIN_MSG_LEN)
       {
 #if APX_DEBUG_ENABLE
-         printf("apx_es_processPendingWrite, remain=%d, offset=%d, address=%08X\n",
-               (int) self->fileWriteInfo.remain, (int) self->fileWriteInfo.readOffset, self->fileWriteInfo.writeAddress);
+         printf("apx_es_processPendingWrite, remain=%u, offset=%u, address=%08X\n",
+               self->fileWriteInfo.remain, self->fileWriteInfo.readOffset, self->fileWriteInfo.writeAddress);
 #endif
          uint32_t dataLen;
          uint32_t msgLen;

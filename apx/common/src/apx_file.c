@@ -275,14 +275,14 @@ int8_t apx_file_write(apx_file_t *self, const uint8_t *pSrc, uint32_t offset, ui
          result = apx_nodeData_writeDefinitionData(self->nodeData, pSrc, offset, length);
          if (result != 0)
          {
-            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeDefinitionData failed with %d", result);
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeDefinitionData failed with %d", (int)result);
          }
          break;
       case APX_INDATA_FILE:
          result = apx_nodeData_writeInPortData(self->nodeData, pSrc, offset, length);
          if (result != 0)
          {
-            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeInPortData failed with %d", result);            
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeInPortData failed with %d", (int)result);
          }
          else
          {
@@ -293,7 +293,7 @@ int8_t apx_file_write(apx_file_t *self, const uint8_t *pSrc, uint32_t offset, ui
          result = apx_nodeData_writeOutPortData(self->nodeData, pSrc, offset, length);
          if (result != 0)
          {
-            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeOutPortData failed with %d", result);            
+            APX_LOG_ERROR("[APX_FILE] apx_nodeData_writeOutPortData failed with %d", (int)result);
          }
          break;
       default:

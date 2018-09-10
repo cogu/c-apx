@@ -187,12 +187,12 @@ int8_t apx_serverConnection_dataReceived(apx_serverConnection_t *self, const uin
       while(totalParseLen<dataLen)
       {
          uint32_t internalParseLen = 0;
-         uint8_t result;         
+         uint8_t result;
          result = apx_serverConnection_parseMessage(self, pNext, remain, &internalParseLen);
          //check parse result
          if (result == 0)
          {
-            //printf("\tinternalParseLen(%s): %d\n",parseFunc, internalParseLen);
+            //printf("\tinternalParseLen(%s): %u\n",parseFunc, internalParseLen);
             assert(internalParseLen<=dataLen);
             pNext+=internalParseLen;
             totalParseLen+=internalParseLen;
