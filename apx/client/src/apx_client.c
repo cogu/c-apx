@@ -108,7 +108,7 @@ int8_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint16_t 
       retval = msocket_connect(msocket, address, port);
       if (retval != 0)
       {
-         fprintf(stderr, "[apx_client] msocket_connect failed with %d\n",retval);
+         fprintf(stderr, "[apx_client] msocket_connect failed with %d\n",(int)retval);
       }
    }
    else

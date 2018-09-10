@@ -663,11 +663,11 @@ static void apx_fileManager_fileWriteCmdHandler(apx_fileManager_t *self, apx_fil
          }
          else
          {
-            int8_t result;            
+            int8_t result;
             result = apx_nodeData_writeInPortData(file->nodeData, data, offset, len);
             if (result != 0)
             {
-               APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] apx_nodeData_writeInPortData(%d,%d) failed, file=%s", apx_fileManager_modeString(self), offset, len, file->fileInfo.name);
+               APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] apx_nodeData_writeInPortData(%d,%d) failed, file=%s", apx_fileManager_modeString(self), (int)offset, (int)len, file->fileInfo.name);
             }
             else
             {
@@ -799,7 +799,7 @@ static void apx_fileManager_parseCmdMsg(apx_fileManager_t *self, const uint8_t *
                break;
 
             default:
-               APX_LOG_ERROR("[APX_FILE_MANAGER] not implemented cmdType: %d\n", cmdType);
+               APX_LOG_ERROR("[APX_FILE_MANAGER] not implemented cmdType: %u\n", cmdType);
          }
       }
    }
