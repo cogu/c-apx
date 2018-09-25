@@ -195,10 +195,15 @@ void apx_nodeManager_remoteFileAdded(apx_nodeManager_t *self, struct apx_fileMan
 }
 
 /**
- * this is caled by fileManager when a file has been removed
+ * this is called by fileManager when a file has been removed
  */
 void apx_nodeManager_remotefileRemoved(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager, apx_file_t *remotefile)
 {
+   // Suppress warnings about unused parameters
+   (void)self;
+   (void)fileManager;
+   (void)remotefile;
+
    //printf("apx_nodeManager_remotefileRemoved\n");
 }
 
