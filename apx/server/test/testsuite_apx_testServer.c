@@ -93,7 +93,7 @@ static void test_apx_testServer_greeting(CuTest* tc)
    memcpy(&sendBuffer[u32HeaderLen], greeting, greetingLen);
    testsocket_clientSend(socket, sendBuffer, u32HeaderLen+greetingLen);
    CuAssertIntEquals(tc, u32HeaderLen+greetingLen, adt_bytearray_length(&socket->pendingServer));
-   testSocket_run(socket);
+   testsocket_run(socket);
    SLEEP(10);
    CuAssertIntEquals(tc, 0, adt_bytearray_length(&socket->pendingServer));
    dataLen = adt_bytearray_length(&socket->pendingClient);
