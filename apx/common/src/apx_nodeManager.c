@@ -493,6 +493,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
             char *p;
             int32_t inPortDataLen;
             int32_t outPortDataLen;
+            apx_file_t *inDataFile = (apx_file_t*) 0;
 
 
             nodeData = apx_nodeManager_getNodeData(self, apxNode->name);
@@ -550,7 +551,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
             if (inPortDataLen > 0)
             {
                //create local inPortData file
-               apx_file_t *inDataFile;
+
                bool result;
                strcpy(fileName,apxNode->name);
                p=fileName+strlen(fileName);
@@ -567,12 +568,7 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                }
                nodeData->inPortDataLen = inPortDataLen;
                inDataFile = apx_file_newLocalInPortDataFile(nodeData);
-               if (inDataFile != 0)
-               {
-                  apx_fileManager_attachLocalPortDataFile(fileManager, inDataFile);
-                  APX_LOG_INFO("[APX_NODE_MANAGER]%s Server created file %s[%d,%d]", debugInfoStr, fileName, inDataFile->fileInfo.address, inDataFile->fileInfo.length);
-               }
-               else
+               if (inDataFile == 0)
                {
                   APX_LOG_ERROR("[APX_NODE_MANAGER]%s Server failed to create local file '%s'", debugInfoStr, fileName);
                }
@@ -584,6 +580,11 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
             }
             //for all connected require ports copy data from the provide port into our newly create inDataFile buffer
             apx_nodeInfo_copyInitDataFromProvideConnectors(nodeInfo);
+            if (inDataFile != 0)
+            {
+               apx_fileManager_attachLocalPortDataFile(fileManager, inDataFile);
+               APX_LOG_INFO("[APX_NODE_MANAGER]%s Server created file %s[%d,%d]", debugInfoStr, fileName, inDataFile->fileInfo.address, inDataFile->fileInfo.length);
+            }
          }
       }
       apx_parser_clearNodes(&self->parser);
