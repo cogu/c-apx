@@ -20,8 +20,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define HIGH_BIT_MASK 0x80
-#define MORE_BIT_MASK 0x40
+#define HIGH_BIT_MASK     0x80u
+#define MORE_BIT_MASK     0x40u
+#define ADDRESS_MASK_LOW  0x3FFFu
+#define ADDRESS_MASK_HIGH 0x3FFFFFFFu
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -166,23 +168,32 @@ int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg)
    if ( (buf != 0) && (bufLen>0) && (msg != 0) )
    {
       int32_t addressLen;
+      uint32_t addressMask;
       uint8_t c = (uint8_t) *buf;
       bool high_bit = (c & HIGH_BIT_MASK) ? true : false;
       msg->more_bit = (c & MORE_BIT_MASK) ? true : false;
-      addressLen = high_bit ? 4 : 2;
+      if (high_bit)
+      {
+         addressLen = (int32_t) sizeof(uint32_t);
+         addressMask = (uint32_t) ADDRESS_MASK_HIGH;
+      }
+      else
+      {
+         addressLen = (int32_t) sizeof(uint16_t);
+         addressMask = (uint32_t) ADDRESS_MASK_LOW;
+      }
       if (bufLen < addressLen)
       {
          return 0; //no bytes consumed, retry later
       }
-      msg->address = unpackBE(buf, addressLen);
-      msg->address &= RMF_CMD_END_ADDR; //the highest address also happens to be the bit-mask
-      msg->dataLen=bufLen-addressLen;
-      msg->data = &buf[addressLen];
+      msg->address = unpackBE(buf, (uint8_t) addressLen);
+      msg->address &= addressMask; //clear away potential high bit and more bit from address
+      msg->dataLen = bufLen-addressLen;
+      msg->data    = &buf[addressLen];
       return bufLen;
    }
    return -1;
 }
-
 
 /**
  * On failure: returns 0 if buffer is too small, -1 on any other error
