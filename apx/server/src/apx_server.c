@@ -165,9 +165,9 @@ static void apx_server_disconnected(void *arg)
       adt_list_remove(&server->connections, connection);
       //the thread inside the msocket class cannot shutdown itself, instead use the cleanup thread to do the job of shutting it down
       apx_nodeManager_detachFileManager(&server->nodeManager, &connection->fileManager);
+      APX_LOG_INFO("[APX_SERVER] Client (%p) disconnected", (void*)connection);
       switch (connection->msocket->addressFamily)
       {
-         APX_LOG_INFO("[APX_SERVER] Client (%p) disconnected", (void*)connection);
          case AF_INET: //intentional fallthrough
          case AF_INET6:            
             msocket_server_cleanup_connection(&connection->server->tcpServer, arg);
