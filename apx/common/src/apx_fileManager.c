@@ -83,6 +83,7 @@ int8_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode)
          self->debugInfo = (void*) 0;
          self->workerThreadValid=false;
          SPINLOCK_INIT(self->lock);
+         SPINLOCK_INIT(self->sendLock);
          SEMAPHORE_CREATE(self->semaphore);
          self->ringbufferLen = numItems;
          self->ringbufferData = (uint8_t*) malloc(numItems*elemSize);
@@ -120,6 +121,7 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
       }
       SEMAPHORE_DESTROY(self->semaphore);
       SPINLOCK_DESTROY(self->lock);
+      SPINLOCK_DESTROY(self->sendLock);
       apx_allocator_destroy(&self->allocator);
       apx_fileMap_destroy(&self->localFileMap);
       apx_fileMap_destroy(&self->remoteFileMap);
@@ -300,6 +302,7 @@ void apx_fileManager_sendFileOpen(apx_fileManager_t *self, uint32_t remoteAddres
 {
    uint8_t *buf;
    assert(self->transmitHandler.getSendBuffer != 0);
+   SPINLOCK_ENTER(self->sendLock);
    buf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, RMF_MAX_CMD_BUF_SIZE+RMF_MAX_HEADER_SIZE);
    if (buf != 0)
    {
@@ -319,6 +322,7 @@ void apx_fileManager_sendFileOpen(apx_fileManager_t *self, uint32_t remoteAddres
          }
       }
    }
+   SPINLOCK_LEAVE(self->sendLock);
 }
 
 /**
@@ -597,6 +601,7 @@ static void apx_fileManager_fileWriteNotifyHandler(apx_fileManager_t *self, apx_
       //in addition to the data itself we need to send a 2 byte or 4 byte header in addition to the actual data
       //to achieve this we increase the len variable with 4 bytes and then adjust for the header length later
       uint8_t *buf=0;
+      SPINLOCK_ENTER(self->sendLock);
       buf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, len+RMF_MAX_HEADER_SIZE);
       if (buf != 0)
       {
@@ -643,6 +648,7 @@ static void apx_fileManager_fileWriteNotifyHandler(apx_fileManager_t *self, apx_
             }
          }
       }
+      SPINLOCK_LEAVE(self->sendLock);
    }
 }
 
@@ -678,6 +684,7 @@ static void apx_fileManager_fileWriteCmdHandler(apx_fileManager_t *self, apx_fil
                   {
                      APX_LOG_DEBUG("[APX_FILE_MANAGER] (%p) Server Write %s[%d,%d]", self->debugInfo, file->fileInfo.name, (int) offset, (int) len );
                   }
+                  SPINLOCK_ENTER(self->sendLock);
                   sendBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, len+RMF_MAX_HEADER_SIZE);
                   if (sendBuf != 0)
                   {
@@ -693,6 +700,7 @@ static void apx_fileManager_fileWriteCmdHandler(apx_fileManager_t *self, apx_fil
                         self->transmitHandler.send(self->transmitHandler.arg, RMF_MAX_HEADER_SIZE-headerLen, msgLen);
                      }
                   }
+                  SPINLOCK_LEAVE(self->sendLock);
                }
                else if (file->isOpen == false)
                {
@@ -709,6 +717,7 @@ static void apx_fileManager_sendFileInfo(apx_fileManager_t *self, rmf_fileInfo_t
    if (self != 0)
    {
       uint8_t *buf;
+      SPINLOCK_ENTER(self->sendLock);
       buf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, RMF_MAX_CMD_BUF_SIZE+RMF_MAX_HEADER_SIZE);
       if (buf != 0)
       {
@@ -733,6 +742,7 @@ static void apx_fileManager_sendFileInfo(apx_fileManager_t *self, rmf_fileInfo_t
             }
          }
       }
+      SPINLOCK_LEAVE(self->sendLock);
    }
 }
 
@@ -962,6 +972,7 @@ static void apx_fileManager_sendAck(apx_fileManager_t *self)
 {
    if (self != 0)
    {
+      SPINLOCK_ENTER(self->sendLock);
       uint8_t *sendBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, RMF_MAX_CMD_BUF_SIZE + RMF_MAX_HEADER_SIZE);
       if (sendBuf != 0)
       {
@@ -978,5 +989,6 @@ static void apx_fileManager_sendAck(apx_fileManager_t *self)
             }
          }
       }
+      SPINLOCK_LEAVE(self->sendLock);
    }
 }

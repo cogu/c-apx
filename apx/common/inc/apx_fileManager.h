@@ -48,6 +48,7 @@ typedef struct apx_fileManager_tag
    //OS interaction variables
    THREAD_T workerThread; //local worker thread
    SPINLOCK_T lock;  //variable lock
+   SPINLOCK_T sendLock;  //lock for transmitHandler send
    SEMAPHORE_T semaphore; //thread semaphore
 
    //data object, all read/write accesses to these must be protected by the lock variable above
