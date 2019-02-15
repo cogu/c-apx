@@ -37,7 +37,7 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.preprocessor.def.symbols.2108083512" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="MEM_LEAK_CHECK"/>
-									<listOptionValue builtIn="false" value="SW_VERSION_LITERAL=&quot;\&quot;0.2.2\&quot;&quot;"/>
+									<listOptionValue builtIn="false" value="SW_VERSION_LITERAL=&quot;\&quot;0.2.3\&quot;&quot;"/>
 									<listOptionValue builtIn="false" value="APX_DEBUG_ENABLE=0"/>
 								</option>
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.option.optimization.level.441379866" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
