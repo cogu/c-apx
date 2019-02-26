@@ -221,25 +221,38 @@ static THREAD_PROTO(threadTask,arg)
          if (result == 0)
 #endif
          {
+            uint8_t bufResult;
+            bool delayedFree = false;
             SPINLOCK_ENTER(self->lock);
-            rbfs_remove(&self->messages,(uint8_t*) &data);
+            bufResult = rbfs_remove(&self->messages,(uint8_t*) &data);
+            if (bufResult == E_BUF_OK)
+            {
+               if (data.ptr != 0)
+               {
+                  if (data.size<=SOA_SMALL_OBJECT_MAX_SIZE)
+                  {
+                     soa_free(&self->soa,data.ptr,data.size);
+                  }
+                  else
+                  {
+                     delayedFree = true;
+                  }
+               }
+            }
             SPINLOCK_LEAVE(self->lock);
             messages_processed++;
-            if (data.ptr != 0)
+            if (delayedFree == true)
             {
-               if (data.size<=SOA_SMALL_OBJECT_MAX_SIZE)
-               {
-                  soa_free(&self->soa,data.ptr,data.size);
-               }
-               else
-               {
-                  //this is a large object, use default free
-                  free(data.ptr);
-               }
+               free(data.ptr);
+            }
+            else if ( (bufResult == E_BUF_OK) && (data.ptr == 0) )
+            {
+               break; //NULL pointer is used to exit the thread
             }
             else
             {
-               break; //break if received null ptr
+               //Already handled by soa_free or bufResult != E_BUF_OK
+               assert(bufResult == E_BUF_OK);
             }
          }
          else
