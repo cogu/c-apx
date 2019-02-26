@@ -1,8 +1,8 @@
 /*****************************************************************************
-* @file:   		soa.h
-* @author:		Conny Gustafsson
-* @date:		2011-08-20
-* @brief:		Small Object Allocator ( An adaptation from "Modern C++ Design", chapter 4 )
+* @file:   soa.h
+* @author: Conny Gustafsson
+* @date:   2011-08-20
+* @brief:  Small Object Allocator ( An adaptation from "Modern C++ Design", chapter 4 )
 *
 * Copyright 2011 Conny Gustafsson
 *
@@ -11,11 +11,12 @@
 #define SOA_H__
 #include "soa_fsa.h"
 
-#define SMALL_OBJECT_MAX_SIZE 32 //maximum size (in bytes) of object to be considered "small"
+#define SOA_SMALL_OBJECT_MAX_SIZE 32 //maximum size (in bytes) of object to be considered "small"
+#define SOA_DEFAULT_NUM_BLOCKS 255u
 
 typedef struct soa_tag
 {
-  soa_fsa_t* fsa[SMALL_OBJECT_MAX_SIZE];
+  soa_fsa_t* fsa[SOA_SMALL_OBJECT_MAX_SIZE];
 } soa_t;
 
 /***************** Public Function Declarations *******************/

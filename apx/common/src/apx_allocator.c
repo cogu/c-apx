@@ -142,7 +142,7 @@ uint8_t *apx_allocator_alloc(apx_allocator_t *self, size_t size)
    uint8_t *data = 0;
    if ( (self != 0) && (size > 0) )
    {
-      if (size <= SMALL_OBJECT_MAX_SIZE)
+      if (size <= SOA_SMALL_OBJECT_MAX_SIZE)
       {
          //use the small object allocator
          SPINLOCK_ENTER(self->lock);
@@ -227,7 +227,7 @@ static THREAD_PROTO(threadTask,arg)
             messages_processed++;
             if (data.ptr != 0)
             {
-               if (data.size<=SMALL_OBJECT_MAX_SIZE)
+               if (data.size<=SOA_SMALL_OBJECT_MAX_SIZE)
                {
                   soa_free(&self->soa,data.ptr,data.size);
                }

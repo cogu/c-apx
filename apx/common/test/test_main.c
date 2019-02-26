@@ -24,6 +24,7 @@ CuSuite* testSuite_remotefile(void);
 CuSuite* testSuite_apx_testServer(void);
 CuSuite* testSuite_apx_clientSession(void);
 CuSuite* testSuite_apx_sessionCmd(void);
+CuSuite* testsuite_soa_fsa(void);
 
 void RunAllTests(void)
 {
@@ -49,6 +50,8 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_testServer());
    CuSuiteAddSuite(suite, testSuite_apx_clientSession());
    CuSuiteAddSuite(suite, testSuite_apx_sessionCmd());
+   CuSuiteAddSuite(suite, testsuite_soa_fsa());
+
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);
    CuSuiteDetails(suite, output);

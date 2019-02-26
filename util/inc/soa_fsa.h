@@ -16,7 +16,7 @@ typedef struct soa_fsa_tag
   size_t blockSize;
   unsigned char numBlocks;
   soa_chunk_t *chunks, *allocChunk, *deallocChunk;
-  size_t chunks_len;  
+  size_t chunks_len;
 } soa_fsa_t;
 
 /***************** Public Function Declarations *******************/

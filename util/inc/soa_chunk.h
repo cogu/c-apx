@@ -1,8 +1,8 @@
 /*****************************************************************************
-* @file:   		soa_chunk.h
-* @author:		Conny Gustafsson
-* @date:		2011-08-20
-* @brief:		Chunk Allocator ( An adaptation from "Modern C++ Design", chapter 4 )
+* @file:   soa_chunk.h
+* @author: Conny Gustafsson
+* @date:   2011-08-20
+* @brief:  Chunk Allocator ( An adaptation from "Modern C++ Design", chapter 4 )
 *
 * Copyright 2011 Conny Gustafsson
 *
