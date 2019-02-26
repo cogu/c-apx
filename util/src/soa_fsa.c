@@ -58,9 +58,17 @@ void * soa_fsa_alloc( soa_fsa_t *allocator )
     if(allocator->allocChunk == 0) //We still have not found a chunk with a free block?
     {
       soa_chunk_t *ptr,*chunk;
-      //grow chunk array by one (note: the first time, when allocator->chunks is empty (NULL) realloc() automatically calls malloc())
+      //grow chunk array by one
       allocator->chunks_len++;
-      ptr = (soa_chunk_t*) realloc(allocator->chunks,allocator->chunks_len * sizeof(soa_chunk_t));
+      if (allocator->chunks == 0)
+      {
+         ptr = (soa_chunk_t*) malloc(allocator->chunks_len * sizeof(soa_chunk_t));
+      }
+      else
+      {
+         ptr = (soa_chunk_t*) realloc(allocator->chunks,allocator->chunks_len * sizeof(soa_chunk_t));
+      }
+
       if(ptr)
       {
         if(ptr != allocator->chunks)
