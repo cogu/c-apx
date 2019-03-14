@@ -23,7 +23,7 @@ static const uint8_t m_inPortInitData[APX_IN_PORT_DATA_LEN]= {
 };
 
 static uint8 m_inPortdata[APX_IN_PORT_DATA_LEN];
-static uint8_t m_inPortDirtyFlags[APX_OUT_PORT_DATA_LEN];
+static uint8_t m_inPortDirtyFlags[APX_IN_PORT_DATA_LEN];
 static apx_nodeData_t m_nodeData;
 static const char *m_apxDefinitionData=
 "APX/1.2\n"

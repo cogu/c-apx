@@ -421,7 +421,6 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
                   }
                   if (found == false)
                   {
-                     void** ppVal;
                      MUTEX_LOCK(self->lock);
                      ppVal = adt_hash_get(&self->remoteNodeDataMap, file->nodeData->name, 0);
                      if (ppVal != 0)

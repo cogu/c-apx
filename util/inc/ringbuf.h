@@ -52,6 +52,7 @@ typedef struct rbfs_tag   //ring buffer (fixed block size) -
    uint8_t* u8ReadPtr;
    uint16_t u16MaxNumElem;
    uint16_t u16NumElem;
+   uint16_t u16PeakNumElem; // = 0 unless debug enabled
    uint8_t u8ElemSize;
 } rbfs_t;
 #endif
@@ -82,12 +83,17 @@ typedef struct rbfu16_t   //ring buffer (fixed block size) -
 
 /***************** Public Function Declarations *******************/
 #if(RBFS_ENABLE)
-uint8_t rbfs_create(rbfs_t* rbf, uint8_t* u8Buffer, uint16_t u32NumElem, uint8_t u8ElemSize);
+void rbfs_create(rbfs_t* rbf, uint8_t* u8Buffer, uint16_t u32NumElem, uint8_t u8ElemSize);
+// returns E_BUF_OK or E_BUF_OVERFLOW
 uint8_t rbfs_insert(rbfs_t* rbf, const uint8_t* u8Data);
+// returns E_BUF_OK or E_BUF_UNDERFLOW
 uint8_t rbfs_remove(rbfs_t* rbf, uint8_t* u8Data);
-uint8_t rbfs_peek(rbfs_t* rbf, uint8_t* u8Data);
-uint16_t rbfs_size(rbfs_t* rbf);
-uint16_t rbfs_free(rbfs_t* rbf);
+// returns E_BUF_OK if the u8Data existed in rbf else E_BUF_UNDERFLOW.
+// Warning: Consider struct elements with padding can not use this function
+uint8_t rbfs_exists(const rbfs_t* rbf, const uint8_t* u8Data);
+uint8_t rbfs_peek(const rbfs_t* rbf, uint8_t* u8Data);
+uint16_t rbfs_size(const rbfs_t* rbf);
+uint16_t rbfs_free(const rbfs_t* rbf);
 void rbfs_clear(rbfs_t* rbf);
 #endif
 

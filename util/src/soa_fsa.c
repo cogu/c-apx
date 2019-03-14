@@ -45,7 +45,7 @@ void * soa_fsa_alloc( soa_fsa_t *allocator )
   {
     //linear search through all chunks to find a free block
     size_t i;
-    soa_chunk_t *chunk;    
+    soa_chunk_t *chunk;
     allocator->allocChunk = 0; //invalidate allocChunk
     for(i=0,chunk=allocator->chunks;i<allocator->chunks_len;i++,chunk++)
     {
@@ -57,7 +57,7 @@ void * soa_fsa_alloc( soa_fsa_t *allocator )
     }
     if(allocator->allocChunk == 0) //We still have not found a chunk with a free block?
     {
-      soa_chunk_t *ptr,*chunk;
+      soa_chunk_t *ptr;
       //grow chunk array by one
       allocator->chunks_len++;
       if (allocator->chunks == 0)
@@ -80,7 +80,7 @@ void * soa_fsa_alloc( soa_fsa_t *allocator )
         allocator->chunks = ptr;
         chunk = allocator->chunks+allocator->chunks_len-1; //pointer to last chunk
         soa_chunk_init(chunk,allocator->blockSize,allocator->numBlocks); //call constructor on newly created chunk
-        allocator->allocChunk = chunk;        
+        allocator->allocChunk = chunk;
       }
       else
       {
