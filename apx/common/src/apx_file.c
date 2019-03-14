@@ -206,6 +206,11 @@ char *apx_file_basename(const apx_file_t *self)
 }
 #endif
 
+bool apx_file_isOpen(const apx_file_t *self)
+{
+   return (self != 0) && self->isOpen;
+}
+
 void apx_file_open(apx_file_t *self)
 {
    if (self != 0)

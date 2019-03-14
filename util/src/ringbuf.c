@@ -24,6 +24,10 @@
 *
 ******************************************************************************/
 
+#ifndef APX_DEBUG_ENABLE
+#define APX_DEBUG_ENABLE 0
+#endif
+
 #include "ringbuf.h"
 
 
@@ -35,8 +39,7 @@
 
 /****************** Public Function Definitions *******************/
 #if(RBFS_ENABLE)
-//returns 0 on success
-uint8_t rbfs_create(rbfs_t* u8Rbf, uint8_t* u8Buffer, uint16_t u16NumElem, uint8_t u8ElemSize)
+void rbfs_create(rbfs_t* u8Rbf, uint8_t* u8Buffer, uint16_t u16NumElem, uint8_t u8ElemSize)
 {
    u8Rbf->u8Buffer = u8Buffer;
    u8Rbf->u8ReadPtr = u8Buffer;
@@ -44,11 +47,10 @@ uint8_t rbfs_create(rbfs_t* u8Rbf, uint8_t* u8Buffer, uint16_t u16NumElem, uint8
    u8Rbf->u8ElemSize = u8ElemSize;
    u8Rbf->u16MaxNumElem = u16NumElem;
    u8Rbf->u16NumElem = 0;
-   return E_BUF_OK;
+   u8Rbf->u16PeakNumElem = 0;
 }
 
 
-//returns 0 on success, 1 on overflow, 2 on underflow
 uint8_t rbfs_insert(rbfs_t* u8Rbf, const uint8_t* u8Data)
 {
    uint8_t u8i;
@@ -58,9 +60,16 @@ uint8_t rbfs_insert(rbfs_t* u8Rbf, const uint8_t* u8Data)
    {
       return E_BUF_OVERFLOW;
    }
-   
+
    u8Rbf->u16NumElem++;
-   
+#if APX_DEBUG_ENABLE
+   if (u8Rbf->u16NumElem > u8Rbf->u16PeakNumElem)
+   {
+      // Store to be able to view in debugger
+      u8Rbf->u16PeakNumElem = u8Rbf->u16NumElem;
+   }
+#endif
+
    //copy data from elem to buffer
    for (u8i = 0; u8i < u8Rbf->u8ElemSize; u8i++)
    {
@@ -77,7 +86,6 @@ uint8_t rbfs_insert(rbfs_t* u8Rbf, const uint8_t* u8Data)
 }
 
 
-//returns 0 on success, 1 on overflow, 2 on underflow
 uint8_t rbfs_remove(rbfs_t* u8Rbf, uint8_t* u8Data)
 {
    uint8_t u8i;
@@ -105,17 +113,48 @@ uint8_t rbfs_remove(rbfs_t* u8Rbf, uint8_t* u8Data)
 }
 
 
-uint16_t rbfs_size(rbfs_t* u8Rbf)
+uint8_t rbfs_exists(const rbfs_t* u8Rbf, const uint8_t* u8Data)
+{
+   uint8_t found = E_BUF_UNDERFLOW;
+   uint8_t u8j;
+   uint16_t u16i;
+   uint8_t* u8ReadPtr = u8Rbf->u8ReadPtr;
+   uint8_t* u8EndPtr = u8Rbf->u8Buffer + (u8Rbf->u16MaxNumElem * u8Rbf->u8ElemSize);
+
+   for (u16i = 0; u16i < u8Rbf->u16NumElem; ++u16i)
+   {
+      found = E_BUF_OK;
+      for (u8j = 0; u8j < u8Rbf->u8ElemSize; ++u8j)
+      {
+         if (*(u8Data++) != *(u8ReadPtr++))
+         {
+            found = E_BUF_UNDERFLOW;
+         }
+      }
+      if (found == E_BUF_OK)
+      {
+         break;
+      }
+      if (u8ReadPtr >= u8EndPtr)
+      {
+         //rewind
+         u8ReadPtr = u8Rbf->u8Buffer;
+      }
+   }
+   return found;
+}
+
+uint16_t rbfs_size(const rbfs_t* u8Rbf)
 {
    return u8Rbf->u16NumElem;
 }
 
-uint16_t rbfs_free(rbfs_t* rbf)
+uint16_t rbfs_free(const rbfs_t* rbf)
 {
    return (uint16_t) (rbf->u16MaxNumElem-rbf->u16NumElem);
 }
 
-uint8_t rbfs_peek(rbfs_t* rbf, uint8_t* u8Data)
+uint8_t rbfs_peek(const rbfs_t* rbf, uint8_t* u8Data)
 {
    uint8_t u8i;
    uint8_t* u8ReadPtr = rbf->u8ReadPtr;

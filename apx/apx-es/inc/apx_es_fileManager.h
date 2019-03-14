@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include "apx_nodeData.h"
 #include "apx_file.h"
+#include "apx_msg.h"
 #include "apx_transmitHandler.h"
 #include "apx_es_fileManager_cfg.h"
 #include "apx_es_fileMap.h"
@@ -21,13 +22,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-//forward declaration
-struct apx_nodeData_tag;
-struct apx_es_nodeManager_tag;
-
-#define APX_FILEMANAGER_CLIENT_MODE 0
-#define APX_FILEMANAGER_SERVER_MODE 1
-
 typedef struct apx_es_file_write_tag
 {
    uint32_t writeAddress;
@@ -36,18 +30,10 @@ typedef struct apx_es_file_write_tag
    uint32_t remain;
 } apx_es_file_write_t;
 
-typedef struct apx_es_command_tag
-{
-   uint8_t buf[RMF_MAX_CMD_BUF_SIZE];
-   uint32_t length;
-}apx_es_command_t;
-
 typedef struct apx_es_fileManager_tag
 {
-    //data object, all read/write accesses to these must be protected by the lock variable above
    rbfs_t messageQueue; //internal message queue (contains apx_msg_t object)
-   uint8_t *messageQueueBuf; //strong reference to byte buffer
-   uint16_t messageQueueLen; //number of items in messageQueue (length of each message is sizeof(apx_msg_t))
+
    uint8_t *receiveBuf; //receive buffer for large writes
    uint32_t receiveBufLen; //length of receive buffer
    uint32_t receiveBufOffset; //current write position (and length) of receive buffer
@@ -59,18 +45,19 @@ typedef struct apx_es_fileManager_tag
    uint16_t numRequestedFiles;
 
    apx_transmitHandler_t transmitHandler;
+   // Buffer used to pack multiple messages prior to transmitHandler.send()
+   uint8_t *transmitBuf;
+   uint32_t transmitBufLen; // Max size allowed
+   uint32_t transmitBufFilledBytes;
 
-   apx_file_t *curFile; //weak pointer to last accessed file
+   bool pendingWrite; // Used then a sent message is fragmented using more_bit
+   bool dropMessage; // Used when received messages are larger than receive buffer
+   bool isConnected; // When fileManager is connected to an underlying communication device (like a TCP socket or SPI stream)
+   apx_file_t *curFile; // Weak pointer to last accessed file
 
-   bool pendingWrite;
-   bool pendingCmd;
-   bool dropMessage;
-
-   apx_es_command_t cmdInfo;
+   apx_msg_t queuedWriteNotify; // Last write notification waiting for more data (until apx_es_fileManager_run() is called)
+   apx_msg_t pendingMsg; // Message taken out of the queue and not yet serialized
    apx_es_file_write_t fileWriteInfo;
-
-   struct apx_es_nodeManager_tag *nodeManager; //weak pointer to attached nodeManager
-   bool isConnected; //true if this fileManager is connected to an underlying communication device (like a TCP socket or SPI stream)
 }apx_es_fileManager_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -81,12 +68,16 @@ typedef struct apx_es_fileManager_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-//int8_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueLen, uint8_t *messageDataBuf, uint16_t messageDataLen);
 int8_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueLen, uint8_t *receiveBuf, uint16_t receiveBufLen);
 
+// Files added will be kept track of thur connect/disconnect events
+// The fileManager will open/close these files as requested by the server
 void apx_es_fileManager_attachLocalFile(apx_es_fileManager_t *self, apx_file_t *localFile);
 void apx_es_fileManager_requestRemoteFile(apx_es_fileManager_t *self, apx_file_t *requestedFile);
 
+// Ensure the transmitHandler normally can provide a MAX(APX_ES_FILEMANAGER_MAX_CMD_BUF_SIZE,
+// APX_ES_FILE_WRITE_MSG_FRAGMENTATION_THRESHOLD) sized send buffer
+// The transmitHandler arg is used to set optimal write size (currently not supported by apx-server)
 void apx_es_fileManager_setTransmitHandler(apx_es_fileManager_t *self, apx_transmitHandler_t *handler);
 
 //these messages can be sent to the fileManager to be processed by its internal worker thread
@@ -100,6 +91,7 @@ void apx_es_fileManager_run(apx_es_fileManager_t *self);
 #define DYN_STATIC
 
 DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *self, int32_t removeIndex);
+DYN_STATIC void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *self, const rmf_fileInfo_t *fileInfo);
 
 #else
 #define DYN_STATIC static

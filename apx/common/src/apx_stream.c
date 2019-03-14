@@ -326,7 +326,6 @@ static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_
             {
                if ( (header.majorVersion==1) && (header.minorVersion>=2))
                {
-                  pNext=pResult;
                   self->parseState=APX_ISTREAM_STATE_NODE;
                }
             }
@@ -337,7 +336,6 @@ static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_
                pResult = apx_istream_parseNodeName(self,pLineBegin+1,pLineEnd);
                if (pResult != 0)
                {
-                  pNext=pResult;
                   self->parseState=APX_ISTREAM_STATE_TYPES;
                }
             }

@@ -122,8 +122,6 @@ int8_t apx_fileMap_insertFile(apx_fileMap_t *self, apx_file_t *pFile)
             if (pLast != 0)
             {
                //check if there is room to fit this file between pLast and pFile
-               uint32_t start_address;
-               uint32_t end_address;
                start_address = pLast->fileInfo.address;
                end_address = start_address+pLast->fileInfo.length;
                if (end_address > pFile->fileInfo.address)
@@ -243,7 +241,6 @@ static int8_t apx_fileMap_autoInsertFile(apx_fileMap_t *self, apx_file_t *pFile,
       }
       else
       {
-         adt_list_elem_t *pIter=0;
          adt_list_elem_t *pFound=0;
          uint32_t placement_address = start_address;
          adt_list_iter_init(&self->fileList);

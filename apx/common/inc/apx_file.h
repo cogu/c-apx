@@ -59,6 +59,7 @@ void apx_file_delete(apx_file_t *self);
 void apx_file_vdelete(void *arg);
 #endif
 char *apx_file_basename(const apx_file_t *self);
+bool apx_file_isOpen(const apx_file_t *self);
 void apx_file_open(apx_file_t *self);
 void apx_file_close(apx_file_t *self);
 int8_t apx_file_read(apx_file_t *self, uint8_t *pDest, uint32_t offset, uint32_t length);
