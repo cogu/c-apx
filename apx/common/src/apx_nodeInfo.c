@@ -492,6 +492,10 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
                   }
                   else
                   {
+                     if (requireNodeData->inPortDirtyFlags != 0)
+                     {
+                        requireNodeData->inPortDirtyFlags[requirePortEntry->offset] = 1;
+                     }
                      memcpy(&requireNodeData->inPortDataBuf[requirePortEntry->offset], &provideNodeData->outPortDataBuf[providePortEntry->offset], providePortEntry->length);
                   }
                }
