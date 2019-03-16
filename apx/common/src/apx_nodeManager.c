@@ -44,7 +44,8 @@ static void apx_nodeManager_executePortTriggerFunction(const apx_dataTriggerFunc
 static void apx_nodeManager_attachLocalNodeToFileManager(apx_nodeData_t *nodeData, apx_fileManager_t *fileManager);
 static void apx_nodeManager_removeRemoteNodeData(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
 static void apx_nodeManager_removeNodeInfo(apx_nodeManager_t *self, apx_nodeInfo_t *nodeInfo);
-static bool apx_nodeManager_createInitData(apx_node_t *node, uint8_t *buf, int32_t bufLen);
+static bool apx_nodeManager_setNoneDirtyInDataFromDefinition(apx_node_t *node, apx_nodeData_t *nodeData);
+static bool apx_nodeManager_createOutInitDataFromDefinition(apx_node_t *node, apx_nodeData_t *nodeData);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -537,6 +538,11 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
                         assert(nodeData->outPortDirtyFlags);
                         nodeData->outPortDataLen = outPortDataLen;
                         APX_LOG_INFO("[APX_NODE_MANAGER]%s Server opening client file %s[%d,%d]", debugInfoStr, fileName, outDataFile->fileInfo.address, outDataFile->fileInfo.length);
+                        // Prior to a response to the file open request let the data be read as defined by definition
+                        if (!apx_nodeManager_createOutInitDataFromDefinition(apxNode, nodeData))
+                        {
+                           APX_LOG_ERROR("[APX_NODE_MANAGER] createOutInitDataFromDefinition failed");
+                        }
                         apx_nodeData_setNodeInfo(nodeData, nodeInfo);
                         apx_fileManager_sendFileOpen(fileManager, outDataFile->fileInfo.address);
                      }
@@ -551,20 +557,15 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
             {
                //create local inPortData file
 
-               bool result;
                strcpy(fileName,apxNode->name);
                p=fileName+strlen(fileName);
                strcpy(p,".in");
-               
+
                nodeData->inPortDataBuf = (uint8_t*) malloc(inPortDataLen);
                assert(nodeData->inPortDataBuf);
                nodeData->inPortDirtyFlags = (uint8_t*) malloc(inPortDataLen);
                assert(nodeData->inPortDirtyFlags);
-               result = apx_nodeManager_createInitData(apxNode, nodeData->inPortDataBuf, inPortDataLen);
-               if (result == false)
-               {
-                  APX_LOG_ERROR("[APX_NODE_MANAGER] Failed to create init data for node %s", apx_node_getName(apxNode));
-               }
+               memset(nodeData->inPortDirtyFlags, 0, inPortDataLen);
                nodeData->inPortDataLen = inPortDataLen;
                inDataFile = apx_file_newLocalInPortDataFile(nodeData);
                if (inDataFile == 0)
@@ -577,10 +578,15 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
             {
                apx_router_attachNodeInfo(self->router, nodeInfo);
             }
-            //for all connected require ports copy data from the provide port into our newly create inDataFile buffer
-            apx_nodeInfo_copyInitDataFromProvideConnectors(nodeInfo);
             if (inDataFile != 0)
             {
+               // For all connected require ports copy data from the provide port into our newly create inDataFile buffer
+               apx_nodeInfo_copyInitDataFromProvideConnectors(nodeInfo);
+               // For any require port that did not get data from a provider - get the in init data from the definition instead
+               if (!apx_nodeManager_setNoneDirtyInDataFromDefinition(apxNode, nodeData))
+               {
+                  APX_LOG_ERROR("[APX_NODE_MANAGER] Failed to create init data for node %s", apx_node_getName(apxNode));
+               }
                apx_fileManager_attachLocalPortDataFile(fileManager, inDataFile);
                APX_LOG_INFO("[APX_NODE_MANAGER]%s Server created file %s[%d,%d]", debugInfoStr, fileName, inDataFile->fileInfo.address, inDataFile->fileInfo.length);
             }
@@ -697,13 +703,14 @@ static void apx_nodeManager_removeNodeInfo(apx_nodeManager_t *self, apx_nodeInfo
    }
 }
 
-static bool apx_nodeManager_createInitData(apx_node_t *node, uint8_t *buf, int32_t bufLen)
+static bool apx_nodeManager_setNoneDirtyInDataFromDefinition(apx_node_t *node, apx_nodeData_t *nodeData)
 {
-   if ( (node != 0) && (buf != 0) && (bufLen > 0))
+   if ( (node != 0) && (nodeData->inPortDataBuf != 0) && (nodeData->inPortDataLen > 0))
    {
-      uint8_t *pNext = buf;
-      uint8_t *pEnd = buf+bufLen;
+      uint8_t *pNext = nodeData->inPortDataBuf;
+      uint8_t *pEnd = pNext + nodeData->inPortDataLen;
       int32_t i;
+      uint32_t offset = 0;
       int32_t numRequirePorts;
       adt_bytearray_t *portData;
       portData = adt_bytearray_new(0);
@@ -711,16 +718,50 @@ static bool apx_nodeManager_createInitData(apx_node_t *node, uint8_t *buf, int32
       for(i=0; i<numRequirePorts; i++)
       {
          int32_t packLen;
-         int32_t dataLen;
          apx_port_t *port = apx_node_getRequirePort(node, i);
          assert(port != 0);
          packLen = apx_port_getPackLen(port);
+         // Only get init data from own definition if no provider is connected
+         if (nodeData->inPortDirtyFlags[offset] == 0)
+         {
+            apx_node_fillPortInitData(node, port, portData);
+            assert(packLen == adt_bytearray_length(portData));
+            memcpy(pNext, adt_bytearray_data(portData), packLen);
+         }
+         pNext += packLen;
+         offset += packLen;
+         assert(pNext <= pEnd);
+         assert(offset <= nodeData->inPortDataLen);
+      }
+      assert(pNext==pEnd);
+      adt_bytearray_delete(portData);
+      return true;
+   }
+   return false;
+}
+
+static bool apx_nodeManager_createOutInitDataFromDefinition(apx_node_t *node, apx_nodeData_t *nodeData)
+{
+   if ( (node != 0) && (nodeData->outPortDataBuf != 0) && (nodeData->outPortDataLen > 0))
+   {
+      uint8_t *pNext = nodeData->outPortDataBuf;
+      uint8_t *pEnd = pNext + nodeData->outPortDataLen;
+      int32_t i;
+      int32_t numProvidePorts;
+      adt_bytearray_t *portData;
+      portData = adt_bytearray_new(0);
+      numProvidePorts = apx_node_getNumProvidePorts(node);
+      for(i=0; i<numProvidePorts; i++)
+      {
+         int32_t packLen;
+         apx_port_t *port = apx_node_getProvidePort(node, i);
+         assert(port != 0);
+         packLen = apx_port_getPackLen(port);
          apx_node_fillPortInitData(node, port, portData);
-         dataLen = adt_bytearray_length(portData);
-         assert(packLen == dataLen);
+         assert(packLen == adt_bytearray_length(portData));
          memcpy(pNext, adt_bytearray_data(portData), packLen);
-         pNext+=packLen;
-         assert(pNext<=pEnd);
+         pNext += packLen;
+         assert(pNext <= pEnd);
       }
       assert(pNext==pEnd);
       adt_bytearray_delete(portData);
