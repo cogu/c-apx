@@ -315,6 +315,9 @@
     <ClCompile Include="..\..\..\..\util\test\testsuite_headerutil.c">
       <Filter>util\test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\common\test\testsuite_apx_fileManager.c">
+      <Filter>apx\common\test</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\cutest\CuTest.h">
