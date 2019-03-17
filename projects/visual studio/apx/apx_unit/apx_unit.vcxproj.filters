@@ -100,6 +100,9 @@
     <Filter Include="apx\client\src">
       <UniqueIdentifier>{dcfa5f03-11fa-482c-af1b-ffbdbb810094}</UniqueIdentifier>
     </Filter>
+    <Filter Include="util\test">
+      <UniqueIdentifier>{1f610f96-056c-43cc-ba79-7b9d63bae574}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\apx\common\test\test_main.c">
@@ -306,6 +309,12 @@
     <ClCompile Include="..\..\..\..\apx\client\test\testsuite_apx_sessionCmd.c">
       <Filter>apx\client\test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\util\test\testsuite_soa_fsa.c">
+      <Filter>util\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\test\testsuite_headerutil.c">
+      <Filter>util\test</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\cutest\CuTest.h">
@@ -490,6 +499,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\apx\client\inc\apx_cmd.h">
       <Filter>apx\client\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\adt\inc\adt_error.h">
+      <Filter>adt\inc</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

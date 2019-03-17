@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "CuTest.h"
 #include "soa.h"
 #ifdef MEM_LEAK_CHECK
