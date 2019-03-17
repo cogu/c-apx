@@ -166,7 +166,7 @@ static void test_free_3_at_beginning_then_allocate_5_more(CuTest* tc)
    int32_t i;
    void *ptr;
    void *allocated1[255];
-   void *allocated2[4];
+   void *allocated2[5];
    soa_fsa_init(&fsa1, sizeof(uint8_t), SOA_DEFAULT_NUM_BLOCKS);
    for(i=0; i<254; i++)
    {
