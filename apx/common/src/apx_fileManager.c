@@ -114,6 +114,7 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
 {
    if (self != 0)
    {
+      apx_fileManager_stop(self);
       apx_allocator_stop(&self->allocator);
       if (self->ringbufferData != 0)
       {
