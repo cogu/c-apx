@@ -82,6 +82,19 @@ typedef struct apx_nodeData_tag
    struct apx_nodeInfo_tag *nodeInfo;
 } apx_nodeData_t;
 
+#if 0
+typedef struct ApxWriteBuf16_Tag
+{
+   uint16_t *readOffset;
+   uint16_t *writeOffset;
+   uint16_t *numFree;
+   uint8_t *dataBegin;
+   uint8_t *dataEnd;
+   uint16_t elemSize;
+}ApxWriteBuf16_T;
+
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -106,15 +119,20 @@ void apx_nodeData_lockOutPortData(apx_nodeData_t *self);
 void apx_nodeData_unlockOutPortData(apx_nodeData_t *self);
 void apx_nodeData_lockInPortData(apx_nodeData_t *self);
 void apx_nodeData_unlockInPortData(apx_nodeData_t *self);
+
+//DEPRECATED INTERFACE (Regenerate your APX node using latest py-apx code generator)
 void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len);
+
 int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 int8_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 int8_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
-void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len);
+void apx_nodeData_inPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len);
+int8_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len, bool directWriteEnabled);
 void apx_nodeData_setInPortDataFile(apx_nodeData_t *self, struct apx_file_tag *file);
 void apx_nodeData_setOutPortDataFile(apx_nodeData_t *self, struct apx_file_tag *file);
 #ifdef APX_EMBEDDED
 void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_es_fileManager_tag *fileManager);
+//int8_t apx_nodeData_bufferedWrite16(apx_nodeData_t *self, const uint8_t *srcPtr, uint32_t offset, ApxWriteBuf16_T *writeBuf);
 #else
 void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_tag *fileManager);
 void apx_nodeData_setNodeInfo(apx_nodeData_t *self, struct apx_nodeInfo_tag *nodeInfo);

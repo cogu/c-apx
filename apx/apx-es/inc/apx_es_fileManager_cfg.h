@@ -22,15 +22,16 @@
 #define APX_ES_FILEMANAGER_MAX_CMD_BUF_SIZE 256u
 #endif
 
-#ifndef APX_ES_FILE_WRITE_MSG_FRAGMENTATION_THRESHOLD
-// Fragmentation will not occur for smaller files or write notifications
-// Do not configure below RMF_MIN_MSG_LEN
-#define APX_ES_FILE_WRITE_MSG_FRAGMENTATION_THRESHOLD (RMF_HIGH_ADDRESS_SIZE + sizeof(uint64_t))
+#ifndef APX_ES_FILEMANAGER_MIN_BUFFER_TRESHOLD
+# define APX_ES_FILEMANAGER_MIN_BUFFER_TRESHOLD 128 //File manager will wait until this many bytes is available before any transmit
 #endif
 
-#ifndef APX_ES_FILEMANAGER_OPTIMIZE_WRITE_NOTIFICATIONS
-// When set to 1 the fileManager avoids adding duplicates to the message queue
-#define APX_ES_FILEMANAGER_OPTIMIZE_WRITE_NOTIFICATIONS 1
+#ifndef APX_ES_FILE_WRITE_FRAGMENTATION_THRESHOLD
+# define APX_ES_FILE_WRITE_FRAGMENTATION_THRESHOLD 128 //Small writes are sent in atomic chunks.
+#endif                                                 //Large writes are potentially fragmented depending on available buffer size
+//sanity check
+#if (APX_ES_FILE_WRITE_FRAGMENTATION_THRESHOLD < RMF_HIGH_ADDRESS_SIZE)
+#error("APX_ES_FILE_WRITE_FRAGMENTATION_THRESHOLD cannot be set smaller than RMF_HIGH_ADDRESS_SIZE")
 #endif
 
 #endif //APX_ES_FILE_MANAGER_CFG_H

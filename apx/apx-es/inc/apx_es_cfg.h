@@ -11,8 +11,9 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-#define APX_ES_FILEMAP_MAX_NUM_FILES           10
-#define APX_MAX_NAME_LEN 256
+#define APX_ES_FILEMAP_MAX_NUM_FILES   10
+#define APX_MAX_NAME_LEN               256
+#define APX_SMALL_DATA_SIZE            4
 
 
 #endif //APX_ES_CFG_H

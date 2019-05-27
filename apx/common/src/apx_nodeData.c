@@ -3,24 +3,30 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include <stdio.h>
-#include <errno.h>
 #include <assert.h>
+#include <errno.h>
 #include "apx_nodeData.h"
 #include "apx_file.h"
 #include "rmf.h"
+#include "apx_error.h"
 #ifdef APX_EMBEDDED
 #include "apx_es_fileManager.h"
+#include "apx_es_integration.h"
+#include "apx_es_cfg.h"
 #else
 #include <malloc.h>
 #include <assert.h>
 #include "apx_fileManager.h"
 #include "apx_nodeInfo.h"
+#include "apx_cfg.h"
 #endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
 
 
+//TEMPORARY include
+#include <stdio.h>
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -35,6 +41,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+static int8_t apx_nodeData_processSmallData(apx_nodeData_t *self, apx_offset_t offset, apx_size_t len, bool directWriteEnabled);
+static int8_t apx_nodeData_processLargeData(apx_nodeData_t *self, apx_offset_t offset, apx_size_t len);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -266,10 +274,9 @@ int8_t apx_nodeData_readInPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t
 #ifndef APX_EMBEDDED
       SPINLOCK_LEAVE(self->inPortDataLock);
 #endif
-      return 0;
+      return APX_NO_ERROR;
    }
-   errno = EINVAL;
-   return -1;
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 
@@ -278,28 +285,40 @@ int8_t apx_nodeData_readInPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t
 
 void apx_nodeData_lockOutPortData(apx_nodeData_t *self)
 {
-#ifndef APX_EMBEDDED
+#ifdef APX_EMBEDDED
+   (void) self;
+   apx_es_nodeData_lock();
+#else
       SPINLOCK_ENTER(self->outPortDataLock);
 #endif
 }
 
 void apx_nodeData_unlockOutPortData(apx_nodeData_t *self)
 {
-#ifndef APX_EMBEDDED
+#ifdef APX_EMBEDDED
+   (void) self;
+   apx_es_nodeData_unlock();
+#else
       SPINLOCK_LEAVE(self->outPortDataLock);
 #endif
 }
 
 void apx_nodeData_lockInPortData(apx_nodeData_t *self)
 {
-#ifndef APX_EMBEDDED
+#ifdef APX_EMBEDDED
+   (void) self;
+   apx_es_nodeData_lock();
+#else
       SPINLOCK_ENTER(self->inPortDataLock);
 #endif
 }
 
 void apx_nodeData_unlockInPortData(apx_nodeData_t *self)
 {
-#ifndef APX_EMBEDDED
+#ifdef APX_EMBEDDED
+   (void) self;
+   apx_es_nodeData_unlock();
+#else
       SPINLOCK_LEAVE(self->inPortDataLock);
 #endif
 }
@@ -311,7 +330,7 @@ void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, apx_offset_t offset, a
       if ( (self->fileManager != 0) && (self->outPortDataFile != 0) && (self->outPortDataFile->isOpen == true) )
       {
 #ifdef APX_EMBEDDED
-         apx_es_fileManager_onFileUpdate(self->fileManager, self->outPortDataFile, offset, length);
+         (void) apx_es_fileManager_triggerFileUpdate(self->fileManager, self->outPortDataFile, offset, length);
 #else
          apx_fileManager_triggerFileUpdatedEvent(self->fileManager, self->outPortDataFile, offset, length);
 #endif
@@ -419,16 +438,122 @@ void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_ta
    }
 }
 
+#if 0
+int8_t apx_nodeData_bufferedWrite16(apx_nodeData_t *self, const uint8_t *srcPtr, uint32_t offset, ApxWriteBuf16_T *writeBuf)
+{
+   if ( (self != 0) && (srcPtr != 0) && (writeBuf != 0) )
+   {
+      if (*writeBuf->numFree == 0)
+      {
+         errno = ENOBUFS;
+         return -1;
+      }
+      else
+      {
+         uint8_t *writePtr = writeBuf->dataBegin + *writeBuf->writeOffset;
+         (*writeBuf->numFree)--;
+         memcpy(writePtr, srcPtr, writeBuf->elemSize);
+         writePtr+=writeBuf->elemSize;
+         if (writePtr >= writeBuf->dataEnd)
+         {
+            *writeBuf->writeOffset = 0;
+         }
+         else
+         {
+            *writeBuf->writeOffset+=writeBuf->elemSize;
+         }
 
-void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len)
+         apx_nodeData_lockOutPortData(self);
+         if ( (self->outPortDirtyFlags[offset] == 0) && (self->fileManager != 0) && (self->outPortDataFile != 0) && (self->outPortDataFile->isOpen == true) )
+         {
+            //Set Flag + Release Lock + Trigger Event
+            self->outPortDirtyFlags[offset] = (uint8_t) 1u;
+            apx_nodeData_unlockOutPortData(self);
+            apx_nodeData_triggerBufferedWriteEvent(self, offset, writeBuf->elemSize);
+         }
+         else
+         {
+            //Just release lock
+            apx_nodeData_unlockOutPortData(self);
+         }
+         return 0;
+      }
+   }
+   errno = EINVAL;
+   return -1;
+}
+#endif
+
+
+void apx_nodeData_inPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len)
 {   
    if ( (self != 0) && (self->handlerTable.inPortDataWritten != 0) )
    {
       self->handlerTable.inPortDataWritten(self->handlerTable.arg, self, offset, len);
    }
 }
+
+/**
+ * This functions assumes that the caller has previously taken (and still holds) the outPortData lock.
+ * Returns 0 on success, -1 on error.
+ */
+int8_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len, bool directWriteEnabled)
+{
+   if ( (self != 0) && (self->fileManager != 0) && (self->outPortDataFile != 0) )
+   {
+      if (self->outPortDataFile->isOpen == true)
+      {
+         int8_t result = apx_nodeData_processSmallData(self, offset, len, directWriteEnabled);
+         if (result == APX_DATA_NOT_PROCESSED_ERROR)
+         {
+            result = apx_nodeData_processLargeData(self, offset, len);
+         }
+         return result;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+static int8_t apx_nodeData_processSmallData(apx_nodeData_t *self, apx_offset_t offset, apx_size_t len, bool directWriteEnabled )
+{
+   int8_t retval = APX_DATA_NOT_PROCESSED_ERROR;
+#if APX_SMALL_DATA_SIZE > 0
+   if ( (directWriteEnabled == true) && (len <= APX_SMALL_DATA_SIZE) )
+   {
+# ifdef APX_EMBEDDED
+      retval = apx_es_fileManager_triggerDirectWrite(self->fileManager, &self->outPortDataBuf[offset], self->outPortDataFile->fileInfo.address+offset, len);
+      apx_nodeData_unlockOutPortData(self);
+# else
+      //NOT YET IMPLEMENTED (NORMAL C-APX CLIENTS)
+# endif
+    }
+#else
+   (void) self;
+   (void) directWriteEnabled;
+   (void) offset;
+   (void) len;
+#endif
+   return retval;
+}
+
+static int8_t apx_nodeData_processLargeData(apx_nodeData_t *self, apx_offset_t offset, apx_size_t len)
+{
+   if (self->outPortDirtyFlags[offset] == 0 )
+   {
+      //Set Flag + Release Lock + Notify
+      self->outPortDirtyFlags[offset] = (uint8_t) 1u;
+      apx_nodeData_unlockOutPortData(self);
+      apx_nodeData_outPortDataNotify(self, (uint32_t) offset, (uint32_t) len);
+   }
+   else
+   {
+      //Just release lock
+      apx_nodeData_unlockOutPortData(self);
+   }
+   return APX_NO_ERROR;
+}
 
 
