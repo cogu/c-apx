@@ -291,7 +291,7 @@ int8_t apx_file_write(apx_file_t *self, const uint8_t *pSrc, uint32_t offset, ui
          }
          else
          {
-            apx_nodeData_triggerInPortDataWritten(self->nodeData, offset, length);
+            apx_nodeData_inPortDataWriteNotify(self->nodeData, offset, length);
          }
          break;
       case APX_OUTDATA_FILE:

@@ -114,7 +114,6 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
 {
    if (self != 0)
    {
-      apx_fileManager_stop(self);
       apx_allocator_stop(&self->allocator);
       if (self->ringbufferData != 0)
       {
@@ -183,7 +182,7 @@ void apx_fileManager_stop(apx_fileManager_t *self)
 #ifdef _MSC_VER
       DWORD result;
 #endif
-      apx_msg_t msg = {RMF_MSG_EXIT,0,0,0,0}; //{msgType, sender, msgData1, msgData2, msgData3}
+      apx_msg_t msg = {RMF_MSG_EXIT, 0, 0, {0}, 0 }; //{msgType, msgData1, msgData2, msgData3.ptr, msgData4}
       SPINLOCK_ENTER(self->lock);
       rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
@@ -404,7 +403,7 @@ void apx_fileManager_onConnected(apx_fileManager_t *self)
 {
    if (self != 0)
    {
-      apx_msg_t msg = {RMF_MSG_CONNECT,0,0,0,0}; //{msgType,  msgData1, msgData2, msgData3, msgData4}
+      apx_msg_t msg = {RMF_MSG_CONNECT, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
       SPINLOCK_ENTER(self->lock);
       rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
@@ -416,7 +415,7 @@ void apx_fileManager_onDisconnected(apx_fileManager_t *self)
 {
    if (self != 0)
    {
-      apx_msg_t msg = {RMF_MSG_DISCONNECT,0,0,0,0}; //{msgType,  msgData1, msgData2, msgData3, msgData4}
+      apx_msg_t msg = {RMF_MSG_DISCONNECT, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
       SPINLOCK_ENTER(self->lock);
       rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
@@ -428,10 +427,10 @@ void apx_fileManager_triggerFileUpdatedEvent(apx_fileManager_t *self, apx_file_t
 {
    if (self !=0 )
    {
-      apx_msg_t msg = {RMF_MSG_WRITE_NOTIFY,0,0,0,0}; //{msgType,  msgData1, msgData2, msgData3, msgData4}
+      apx_msg_t msg = {RMF_MSG_WRITE_NOTIFY, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
       msg.msgData1 = (uint32_t) offset;
       msg.msgData2 = (uint32_t) length;
-      msg.msgData3 = file; //sent from node in nodeDataPtr
+      msg.msgData3.ptr = file; //sent from node in nodeDataPtr
       SPINLOCK_ENTER(self->lock);
       rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
@@ -444,10 +443,10 @@ void apx_fileManager_triggerFileWriteCmdEvent(apx_fileManager_t *self, apx_file_
    if (self !=0 )
    {
       uint8_t *dataCopy;
-      apx_msg_t msg = {RMF_MSG_FILE_WRITE,0,0,0,0}; //{msgType,  msgData1, msgData2, msgData3, msgData4}
+      apx_msg_t msg = {RMF_MSG_FILE_WRITE, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
       msg.msgData1 = (uint32_t) offset;
       msg.msgData2 = (uint32_t) length;
-      msg.msgData3 = file; //sent from node in nodeDataPtr
+      msg.msgData3.ptr = file; //sent from node in nodeDataPtr
       dataCopy = apx_allocator_alloc(&self->allocator,length);
       if (dataCopy == 0)
       {
@@ -530,10 +529,10 @@ static THREAD_PROTO(threadTask,arg)
                apx_fileManager_connectHandler(self);
                break;
             case RMF_MSG_WRITE_NOTIFY:
-               apx_fileManager_fileWriteNotifyHandler(self, (apx_file_t*) msg.msgData3, (apx_offset_t) msg.msgData1, (apx_size_t) msg.msgData2);
+               apx_fileManager_fileWriteNotifyHandler(self, (apx_file_t*) msg.msgData3.ptr, (apx_offset_t) msg.msgData1, (apx_size_t) msg.msgData2);
                break;
             case RMF_MSG_FILE_WRITE:
-               apx_fileManager_fileWriteCmdHandler(self, (apx_file_t*) msg.msgData3, (const uint8_t*) msg.msgData4, (apx_offset_t) msg.msgData1, (apx_size_t) msg.msgData2);
+               apx_fileManager_fileWriteCmdHandler(self, (apx_file_t*) msg.msgData3.ptr, (const uint8_t*) msg.msgData4, (apx_offset_t) msg.msgData1, (apx_size_t) msg.msgData2);
                apx_allocator_free(&self->allocator, (uint8_t*) msg.msgData4, (uint32_t) msg.msgData2);
                break;
             default:
@@ -876,7 +875,7 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
                      }
                      else
                      {
-                        apx_nodeData_triggerInPortDataWritten(remoteFile->nodeData, offset, dataLen);
+                        apx_nodeData_inPortDataWriteNotify(remoteFile->nodeData, offset, dataLen);
                      }
                      break;
                   case APX_OUTDATA_FILE:

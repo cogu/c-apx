@@ -75,6 +75,11 @@
 			<locationURI>PARENT-3-PROJECT_LOC/apx/apx-es/test</locationURI>
 		</link>
 		<link>
+			<name>apx/apx_es/inc/apx_error.h</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/common/inc/apx_error.h</locationURI>
+		</link>
+		<link>
 			<name>apx/apx_es/inc/apx_file.h</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/apx/common/inc/apx_file.h</locationURI>
@@ -103,6 +108,11 @@
 			<name>apx/apx_es/inc/apx_types.h</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/apx/common/inc/apx_types.h</locationURI>
+		</link>
+		<link>
+			<name>apx/apx_es/src/apx_error.c</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/common/src/apx_error.c</locationURI>
 		</link>
 		<link>
 			<name>apx/apx_es/src/apx_file.c</name>

@@ -219,7 +219,7 @@ void apx_dataWriteInfo_create(apx_dataWriteInfo_t *self,apx_nodeInfo_t *nodeInfo
 
 void apx_dataWriteInfo_destroy(apx_dataWriteInfo_t *self)
 {
-   //nothing to do
+   (void) self;
 }
 
 apx_dataWriteInfo_t *apx_dataWriteInfo_new(apx_nodeInfo_t *nodeInfo, uint32_t destOffset)
