@@ -111,6 +111,7 @@ void apx_nodeData_delete(apx_nodeData_t *self);
 void apx_nodeData_vdelete(void *arg);
 
 bool apx_nodeData_isOutPortDataOpen(apx_nodeData_t *self);
+bool apx_nodeData_isInPortDataOpen(apx_nodeData_t *self);
 void apx_nodeData_setHandlerTable(apx_nodeData_t *self, apx_nodeDataHandlerTable_t *handlerTable);
 int8_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
 int8_t apx_nodeData_readOutPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
@@ -132,7 +133,6 @@ void apx_nodeData_setInPortDataFile(apx_nodeData_t *self, struct apx_file_tag *f
 void apx_nodeData_setOutPortDataFile(apx_nodeData_t *self, struct apx_file_tag *file);
 #ifdef APX_EMBEDDED
 void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_es_fileManager_tag *fileManager);
-//int8_t apx_nodeData_bufferedWrite16(apx_nodeData_t *self, const uint8_t *srcPtr, uint32_t offset, ApxWriteBuf16_T *writeBuf);
 #else
 void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_tag *fileManager);
 void apx_nodeData_setNodeInfo(apx_nodeData_t *self, struct apx_nodeInfo_tag *nodeInfo);

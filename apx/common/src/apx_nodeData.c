@@ -190,6 +190,27 @@ bool apx_nodeData_isOutPortDataOpen(apx_nodeData_t *self)
    return retval;
 }
 
+bool apx_nodeData_isInPortDataOpen(apx_nodeData_t *self)
+{
+   bool retval = false;
+   if (self != 0)
+   {
+#ifndef APX_EMBEDDED
+      SPINLOCK_ENTER(self->internalLock);
+#endif
+
+      if ( (self->fileManager != 0) && (self->inPortDataFile != 0) && (self->inPortDataFile->isOpen == true) )
+      {
+         retval = true;
+      }
+
+#ifndef APX_EMBEDDED
+      SPINLOCK_LEAVE(self->internalLock);
+#endif
+   }
+   return retval;
+}
+
 void apx_nodeData_setHandlerTable(apx_nodeData_t *self, apx_nodeDataHandlerTable_t *handlerTable)
 {
    if (self != 0)
@@ -437,53 +458,6 @@ void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_ta
       self->fileManager = fileManager;
    }
 }
-
-#if 0
-int8_t apx_nodeData_bufferedWrite16(apx_nodeData_t *self, const uint8_t *srcPtr, uint32_t offset, ApxWriteBuf16_T *writeBuf)
-{
-   if ( (self != 0) && (srcPtr != 0) && (writeBuf != 0) )
-   {
-      if (*writeBuf->numFree == 0)
-      {
-         errno = ENOBUFS;
-         return -1;
-      }
-      else
-      {
-         uint8_t *writePtr = writeBuf->dataBegin + *writeBuf->writeOffset;
-         (*writeBuf->numFree)--;
-         memcpy(writePtr, srcPtr, writeBuf->elemSize);
-         writePtr+=writeBuf->elemSize;
-         if (writePtr >= writeBuf->dataEnd)
-         {
-            *writeBuf->writeOffset = 0;
-         }
-         else
-         {
-            *writeBuf->writeOffset+=writeBuf->elemSize;
-         }
-
-         apx_nodeData_lockOutPortData(self);
-         if ( (self->outPortDirtyFlags[offset] == 0) && (self->fileManager != 0) && (self->outPortDataFile != 0) && (self->outPortDataFile->isOpen == true) )
-         {
-            //Set Flag + Release Lock + Trigger Event
-            self->outPortDirtyFlags[offset] = (uint8_t) 1u;
-            apx_nodeData_unlockOutPortData(self);
-            apx_nodeData_triggerBufferedWriteEvent(self, offset, writeBuf->elemSize);
-         }
-         else
-         {
-            //Just release lock
-            apx_nodeData_unlockOutPortData(self);
-         }
-         return 0;
-      }
-   }
-   errno = EINVAL;
-   return -1;
-}
-#endif
-
 
 void apx_nodeData_inPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len)
 {   
