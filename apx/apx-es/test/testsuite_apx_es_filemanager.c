@@ -50,14 +50,15 @@ static void test_apx_es_fileManager_sendDefinitionOverTwoCycles(CuTest* tc);
 static void test_apx_es_fileManager_triggerFileUpdate_unaligned(CuTest* tc);
 static void test_apx_es_fileManager_triggerFileUpdate_aligned(CuTest* tc);
 static void test_apx_es_fileManager_triggerFileUpdate_aligned_large(CuTest* tc);
-//static void apx_es_filemanager_serialize_all_commands(CuTest* tc);
-//static void apx_es_filemanager_request_files(CuTest* tc);
-//static void apx_es_filemanager_enter_pending_mode_when_buffer_is_full(CuTest* tc);
+static void test_apx_es_fileManager_openRequestedFiles(CuTest* tc);
+static void test_node_isConnected(CuTest* tc);
+static void test_node_writeNormal(CuTest* tc);
 
 static uint8_t* testStub_getMsgBuffer(void *arg, int32_t *maxMsgLen, int32_t *sendAvail);
 static int32_t testStub_sendMsg(void *arg, int32_t offset, int32_t msgLen);
 static void testHelper_mockInit(void);
 static void testHelper_mockReset(int32_t newDataLen);
+static void testHelper_mockAutoReset(void);
 static int32_t testHelper_mockNumMessages(void);
 static int32_t testHelper_mockGetMessage(void);
 static int32_t testHelper_mockGetWriteAvail(void);
@@ -97,6 +98,9 @@ CuSuite* testsuite_apx_es_filemanager(void)
    SUITE_ADD_TEST(suite, test_apx_es_fileManager_triggerFileUpdate_unaligned);
    SUITE_ADD_TEST(suite, test_apx_es_fileManager_triggerFileUpdate_aligned);
    SUITE_ADD_TEST(suite, test_apx_es_fileManager_triggerFileUpdate_aligned_large);
+   SUITE_ADD_TEST(suite, test_apx_es_fileManager_openRequestedFiles);
+   SUITE_ADD_TEST(suite, test_node_isConnected);
+   SUITE_ADD_TEST(suite, test_node_writeNormal);
 
    return suite;
 }
@@ -513,10 +517,141 @@ static void test_apx_es_fileManager_triggerFileUpdate_aligned_large(CuTest* tc)
    CuAssertIntEquals(tc, 0, memcmp(&topOfQueue, &prevQueued, sizeof(apx_msg_t)));
    CuAssertUIntEquals(tc, offset, fileManager.queuedWriteNotify.msgData1);
    CuAssertUIntEquals(tc, large_write_size, fileManager.queuedWriteNotify.msgData2);
+}
+
+static void test_apx_es_fileManager_openRequestedFiles(CuTest* tc)
+{
+   apx_es_fileManager_t fileManager;
+   apx_nodeData_t *nodeData;
+   apx_fileContainer_t fileContainer;
+   uint8_t msgBuf[1024];
+   int32_t bufRemain = (int32_t) sizeof(msgBuf);
+   int32_t msgLen;
+   int32_t bytesUsed;
+   uint32_t inDataFileAddress = 0x0u;
+   rmf_fileInfo_t fileInfo;
+   rmf_cmdOpenFile_t openFile;
+   rmf_msg_t msg;
+
+   testHelper_mockInit();
+   apx_es_fileManager_create(&fileManager, m_messageQueueBuf, APX_FILE_MANAGER_MAX_NUM_MESSAGES, 0, 0);
+   ApxNode_Init_ButtonStatus();
+   nodeData = ApxNode_GetNodeData_ButtonStatus();
+   testHelper_attachNode(&fileManager, nodeData, &fileContainer);
+   testHelper_setTransmitHandler(&fileManager);
+   apx_es_fileManager_onConnected(&fileManager);
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 2, testHelper_mockNumMessages());
+   //assume these are the fileInfo structures
+   testHelper_mockAutoReset();
+   //Verify that fileManager does not produce any additional messages while idling
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   CuAssertTrue(tc, !apx_file_isOpen(&fileContainer.inDataFile));
+   rmf_fileInfo_create(&fileInfo, fileContainer.inDataFile.fileInfo.name, inDataFileAddress, fileContainer.inDataFile.fileInfo.length, RMF_FILE_TYPE_FIXED);
+   bytesUsed = rmf_packHeader(&msgBuf[0], bufRemain, RMF_CMD_START_ADDR, false);
+   bufRemain -= bytesUsed;
+   bytesUsed += rmf_serialize_cmdFileInfo(&msgBuf[bytesUsed], bufRemain, &fileInfo);
+   msgLen = bytesUsed;
+   apx_es_fileManager_onMsgReceived(&fileManager, &msgBuf[0], msgLen);
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 1, testHelper_mockNumMessages());
+   CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE+8, testHelper_mockGetMessage());
+   CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE+8, rmf_unpackMsg(&m_msgBuf[0], RMF_HIGH_ADDRESS_SIZE+8, &msg));
+   CuAssertUIntEquals(tc, RMF_CMD_START_ADDR, msg.address);
+   CuAssertUIntEquals(tc, 8, msg.dataLen);
+   CuAssertTrue(tc, !msg.more_bit);
+   CuAssertIntEquals(tc, msg.dataLen, rmf_deserialize_cmdOpenFile(msg.data, msg.dataLen, &openFile));
+   CuAssertUIntEquals(tc, fileContainer.inDataFile.fileInfo.address, openFile.address);
+   CuAssertTrue(tc, apx_file_isOpen(&fileContainer.inDataFile));
+
+}
+
+static void test_node_isConnected(CuTest* tc)
+{
+   apx_es_fileManager_t fileManager;
+   apx_nodeData_t *nodeData;
+   apx_fileContainer_t fileContainer;
+   uint8_t msgBuf[1024];
+   int32_t bufRemain = (int32_t) sizeof(msgBuf);
+   int32_t msgLen;
+   int32_t bytesUsed;
+   uint32_t inDataFileAddress = 0x0u;
+   rmf_fileInfo_t fileInfo;
+   rmf_cmdOpenFile_t openFile;
+   rmf_msg_t msg;
+
+   testHelper_mockInit();
+   apx_es_fileManager_create(&fileManager, m_messageQueueBuf, APX_FILE_MANAGER_MAX_NUM_MESSAGES, 0, 0);
+   ApxNode_Init_ButtonStatus();
+   nodeData = ApxNode_GetNodeData_ButtonStatus();
+   testHelper_attachNode(&fileManager, nodeData, &fileContainer);
+   testHelper_setTransmitHandler(&fileManager);
+   apx_es_fileManager_onConnected(&fileManager);
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 2, testHelper_mockNumMessages());
+   //assume these are the fileInfo structures
+   testHelper_mockAutoReset();
+   CuAssertTrue(tc, !ApxNode_IsConnected_ButtonStatus());
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+
+   //Open indata file
+   rmf_fileInfo_create(&fileInfo, fileContainer.inDataFile.fileInfo.name, inDataFileAddress, fileContainer.inDataFile.fileInfo.length, RMF_FILE_TYPE_FIXED);
+   bytesUsed = rmf_packHeader(&msgBuf[0], bufRemain, RMF_CMD_START_ADDR, false);
+   bufRemain -= bytesUsed;
+   bytesUsed += rmf_serialize_cmdFileInfo(&msgBuf[bytesUsed], bufRemain, &fileInfo);
+   msgLen = bytesUsed;
+   apx_es_fileManager_onMsgReceived(&fileManager, &msgBuf[0], msgLen);
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 1, testHelper_mockNumMessages());
+   //This is the file open request of ButtonStatus.in
+   testHelper_mockAutoReset();
+   CuAssertTrue(tc, !ApxNode_IsConnected_ButtonStatus());
+
+   //Open outdata file
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   bufRemain = (int32_t) sizeof(msgBuf);
+   openFile.address = fileContainer.outDataFile.fileInfo.address;
+   bytesUsed = rmf_packHeader(&msgBuf[0], bufRemain, RMF_CMD_START_ADDR, false);
+   bufRemain -= bytesUsed;
+   bytesUsed += rmf_serialize_cmdOpenFile(&msgBuf[bytesUsed], bufRemain, &openFile);
+   msgLen = bytesUsed;
+   apx_es_fileManager_onMsgReceived(&fileManager, &msgBuf[0], msgLen);
+   CuAssertTrue(tc, !ApxNode_IsConnected_ButtonStatus()); //file should not open until file has started transmission
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 1, testHelper_mockNumMessages());
+   //This is the file data. Should open the file. Node should finally report itself as connected
+   CuAssertTrue(tc, ApxNode_IsConnected_ButtonStatus());
+
+}
+
+static void test_node_writeNormal(CuTest* tc)
+{
+/*   apx_es_fileManager_t fileManager;
+   apx_nodeData_t *nodeData;
+   apx_fileContainer_t fileContainer;
+   rmf_msg_t msg;
+   int i;
+   int32_t msgLen;
+   uint32_t definitionFileAddress = 0x4000000u;
+   int32_t remain = APX_DEFINITON_LEN;
+   int32_t offset = 0;
+   int32_t blockLen;
+
+   testHelper_mockInit();
+   apx_es_fileManager_create(&fileManager, m_messageQueueBuf, APX_FILE_MANAGER_MAX_NUM_MESSAGES, 0, 0);
+   ApxNode_Init_ButtonStatus();
+   nodeData = ApxNode_GetNodeData_ButtonStatus();
+   testHelper_attachNode(&fileManager, nodeData, &fileContainer);
+   testHelper_setTransmitHandler(&fileManager);*/
 
 }
 
 
+//HELPERS AND STUBS//
 
 static void testHelper_mockInit(void)
 {
@@ -527,6 +662,12 @@ static void testHelper_mockReset(int32_t newDataLen)
 {
    mockTransmitter_reset(&m_mockTransmitter, newDataLen);
 }
+
+static void testHelper_mockAutoReset(void)
+{
+   mockTransmitter_autoReset(&m_mockTransmitter);
+}
+
 static int32_t testHelper_mockNumMessages(void)
 {
    return mockTransmitter_getNumWrites(&m_mockTransmitter);

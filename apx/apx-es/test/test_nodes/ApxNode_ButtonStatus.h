@@ -1,6 +1,7 @@
 #ifndef APXNODE_BUTTONSTATUS_H
 #define APXNODE_BUTTONSTATUS_H
 
+#include <stdbool.h>
 #include "apx_nodeData.h"
 #include "ApxTypeDefs.h"
 
@@ -11,8 +12,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void ApxNode_Init_ButtonStatus(void);
+apx_nodeData_t * ApxNode_Init_ButtonStatus(void);
 apx_nodeData_t * ApxNode_GetNodeData_ButtonStatus(void);
+bool ApxNode_IsConnected_ButtonStatus(void);
 
 Std_ReturnType ApxNode_Read_ButtonStatus_VehicleMode(VehicleMode_T *val);
 Std_ReturnType ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Back(PushButtonStatus_T val);
