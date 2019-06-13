@@ -13,6 +13,7 @@
 #include "mockTransmitter.h"
 #include "headerutil.h"
 #include "ApxNode_ButtonStatus.h"
+#include "ApxNode_ButtonStatusDirect.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -53,6 +54,7 @@ static void test_apx_es_fileManager_triggerFileUpdate_aligned_large(CuTest* tc);
 static void test_apx_es_fileManager_openRequestedFiles(CuTest* tc);
 static void test_node_isConnected(CuTest* tc);
 static void test_node_writeNormal(CuTest* tc);
+static void test_node_writeDirect(CuTest* tc);
 
 static uint8_t* testStub_getMsgBuffer(void *arg, int32_t *maxMsgLen, int32_t *sendAvail);
 static int32_t testStub_sendMsg(void *arg, int32_t offset, int32_t msgLen);
@@ -101,6 +103,7 @@ CuSuite* testsuite_apx_es_filemanager(void)
    SUITE_ADD_TEST(suite, test_apx_es_fileManager_openRequestedFiles);
    SUITE_ADD_TEST(suite, test_node_isConnected);
    SUITE_ADD_TEST(suite, test_node_writeNormal);
+   SUITE_ADD_TEST(suite, test_node_writeDirect);
 
    return suite;
 }
@@ -630,24 +633,109 @@ static void test_node_isConnected(CuTest* tc)
 
 static void test_node_writeNormal(CuTest* tc)
 {
-/*   apx_es_fileManager_t fileManager;
+   apx_es_fileManager_t fileManager;
    apx_nodeData_t *nodeData;
    apx_fileContainer_t fileContainer;
-   rmf_msg_t msg;
-   int i;
+   uint8_t msgBuf[1024];
+   int32_t bufRemain = (int32_t) sizeof(msgBuf);
    int32_t msgLen;
-   uint32_t definitionFileAddress = 0x4000000u;
-   int32_t remain = APX_DEFINITON_LEN;
-   int32_t offset = 0;
-   int32_t blockLen;
+   int32_t bytesUsed;
+   uint32_t inDataFileAddress = 0x0u;
+   rmf_fileInfo_t fileInfo;
+   rmf_cmdOpenFile_t openFile;
+   rmf_msg_t msg;
+   PushButtonStatus_T button;
 
    testHelper_mockInit();
    apx_es_fileManager_create(&fileManager, m_messageQueueBuf, APX_FILE_MANAGER_MAX_NUM_MESSAGES, 0, 0);
    ApxNode_Init_ButtonStatus();
    nodeData = ApxNode_GetNodeData_ButtonStatus();
    testHelper_attachNode(&fileManager, nodeData, &fileContainer);
-   testHelper_setTransmitHandler(&fileManager);*/
+   testHelper_setTransmitHandler(&fileManager);
+   apx_es_fileManager_onConnected(&fileManager);
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 2, testHelper_mockNumMessages());
+   testHelper_mockAutoReset();
 
+   //Open outdata file
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   bufRemain = (int32_t) sizeof(msgBuf);
+   openFile.address = fileContainer.outDataFile.fileInfo.address;
+   bytesUsed = rmf_packHeader(&msgBuf[0], bufRemain, RMF_CMD_START_ADDR, false);
+   bufRemain -= bytesUsed;
+   bytesUsed += rmf_serialize_cmdOpenFile(&msgBuf[bytesUsed], bufRemain, &openFile);
+   msgLen = bytesUsed;
+   apx_es_fileManager_onMsgReceived(&fileManager, &msgBuf[0], msgLen);
+   CuAssertTrue(tc, !ApxNode_IsConnected_ButtonStatus()); //file should not open until file has started transmission
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 1, testHelper_mockNumMessages());
+   testHelper_mockAutoReset();
+
+   //normal apx-es ports only allows write once per run cycle
+   button = 1u;
+   ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Back(&button);
+   button = 0u;
+   ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Back(&button);
+   button = 1u;
+   ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Back(&button);
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 1, testHelper_mockNumMessages());
+}
+
+static void test_node_writeDirect(CuTest* tc)
+{
+   apx_es_fileManager_t fileManager;
+   apx_nodeData_t *nodeData;
+   apx_fileContainer_t fileContainer;
+   uint8_t msgBuf[1024];
+   int32_t bufRemain = (int32_t) sizeof(msgBuf);
+   int32_t msgLen;
+   int32_t bytesUsed;
+   uint32_t inDataFileAddress = 0x0u;
+   rmf_fileInfo_t fileInfo;
+   rmf_cmdOpenFile_t openFile;
+   rmf_msg_t msg;
+   PushButtonStatus_T button;
+
+   testHelper_mockInit();
+   apx_es_fileManager_create(&fileManager, m_messageQueueBuf, APX_FILE_MANAGER_MAX_NUM_MESSAGES, 0, 0);
+   nodeData = ApxNode_Init_ButtonStatusDirect();
+   testHelper_attachNode(&fileManager, nodeData, &fileContainer);
+   testHelper_setTransmitHandler(&fileManager);
+   apx_es_fileManager_onConnected(&fileManager);
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 2, testHelper_mockNumMessages());
+   testHelper_mockAutoReset();
+
+   //Open outdata file
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   bufRemain = (int32_t) sizeof(msgBuf);
+   openFile.address = fileContainer.outDataFile.fileInfo.address;
+   bytesUsed = rmf_packHeader(&msgBuf[0], bufRemain, RMF_CMD_START_ADDR, false);
+   bufRemain -= bytesUsed;
+   bytesUsed += rmf_serialize_cmdOpenFile(&msgBuf[bytesUsed], bufRemain, &openFile);
+   msgLen = bytesUsed;
+   apx_es_fileManager_onMsgReceived(&fileManager, &msgBuf[0], msgLen);
+   CuAssertTrue(tc, !ApxNode_IsConnected_ButtonStatus()); //file should not open until file has started transmission
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 1, testHelper_mockNumMessages());
+   testHelper_mockAutoReset();
+
+   //direct apx-es ports allows multipe writes per run cycle
+   button = 1u;
+   ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Back(&button);
+   button = 0u;
+   ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Back(&button);
+   button = 1u;
+   ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Back(&button);
+   button = 0u;
+   ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Back(&button);
+   CuAssertIntEquals(tc, 0, testHelper_mockNumMessages());
+   apx_es_fileManager_run(&fileManager);
+   CuAssertIntEquals(tc, 4, testHelper_mockNumMessages());
 }
 
 
@@ -762,8 +850,3 @@ static int32_t testStub_sendMsg(void *arg, int32_t offset, int32_t msgLen)
    }
    return APX_TRANSMIT_HANDLER_INVALID_ARGUMENT_ERROR;
 }
-
-
-
-
-

@@ -5,7 +5,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include <stdio.h>
-#include "ApxNode_ButtonStatus.h"
+#include "ApxNode_ButtonStatusDirect.h"
 #include "pack.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ static const char *m_apxDefinitionData=
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_nodeData_t * ApxNode_Init_ButtonStatus(void)
+apx_nodeData_t * ApxNode_Init_ButtonStatusDirect(void)
 {
    memcpy(&m_inPortdata[0], &m_inPortInitData[0], APX_IN_PORT_DATA_LEN);
    memset(&m_inPortDirtyFlags[0], 0, sizeof(m_inPortDirtyFlags));
@@ -63,79 +63,79 @@ apx_nodeData_t * ApxNode_Init_ButtonStatus(void)
    return &m_nodeData;
 }
 
-apx_nodeData_t * ApxNode_GetNodeData_ButtonStatus(void)
+apx_nodeData_t * ApxNode_GetNodeData_ButtonStatusDirect(void)
 {
    return &m_nodeData;
 }
 
-bool ApxNode_IsConnected_ButtonStatus(void)
+bool ApxNode_IsConnected_ButtonStatusDirect(void)
 {
    return ( apx_nodeData_isInPortDataOpen(&m_nodeData) && apx_nodeData_isOutPortDataOpen(&m_nodeData) );
 }
 
-Std_ReturnType ApxNode_Read_ButtonStatus_VehicleMode(VehicleMode_T *val)
+Std_ReturnType ApxNode_Read_ButtonStatusDirect_VehicleMode(VehicleMode_T *val)
 {
    *val = (uint8_t) m_inPortdata[0];
    return E_OK;
 }
 
-Std_ReturnType ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Back(PushButtonStatus_T val)
+Std_ReturnType ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Back(PushButtonStatus_T val)
 {
    apx_nodeData_lockOutPortData(&m_nodeData);
    m_outPortdata[0]=(uint8_t) val;
-   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 0, 1, false);
+   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 0, 1, true);
    return E_OK;
 }
 
-Std_ReturnType ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Down(PushButtonStatus_T val)
+Std_ReturnType ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Down(PushButtonStatus_T val)
 {
    apx_nodeData_lockOutPortData(&m_nodeData);
    m_outPortdata[1]=(uint8_t) val;
-   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 1, 1, false);
+   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 1, 1, true);
    return E_OK;
 }
 
-Std_ReturnType ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Enter(PushButtonStatus_T val)
+Std_ReturnType ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Enter(PushButtonStatus_T val)
 {
    apx_nodeData_lockOutPortData(&m_nodeData);
    m_outPortdata[2]=(uint8_t) val;
-   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 2, 1, false);
+   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 2, 1, true);
    return E_OK;
 }
 
-Std_ReturnType ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Home(PushButtonStatus_T val)
+Std_ReturnType ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Home(PushButtonStatus_T val)
 {
    apx_nodeData_lockOutPortData(&m_nodeData);
    m_outPortdata[3]=(uint8_t) val;
-   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 3, 1, false);
+   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 3, 1, true);
    return E_OK;
 }
 
-Std_ReturnType ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Left(PushButtonStatus_T val)
+Std_ReturnType ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Left(PushButtonStatus_T val)
 {
    apx_nodeData_lockOutPortData(&m_nodeData);
    m_outPortdata[4]=(uint8_t) val;
-   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 4, 1, false);
+   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 4, 1, true);
    return E_OK;
 }
 
-Std_ReturnType ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Right(PushButtonStatus_T val)
+Std_ReturnType ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Right(PushButtonStatus_T val)
 {
    apx_nodeData_lockOutPortData(&m_nodeData);
    m_outPortdata[5]=(uint8_t) val;
-   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 5, 1, false);
+   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 5, 1, true);
    return E_OK;
 }
 
-Std_ReturnType ApxNode_Write_ButtonStatus_SWS_PushbuttonStatus_Up(PushButtonStatus_T val)
+Std_ReturnType ApxNode_Write_ButtonStatusDirect_SWS_PushbuttonStatus_Up(PushButtonStatus_T val)
 {
    apx_nodeData_lockOutPortData(&m_nodeData);
    m_outPortdata[6]=(uint8_t) val;
-   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 6, 1, false);
+   apx_nodeData_outPortDataWriteNotify(&m_nodeData, 6, 1, true);
    return E_OK;
 }
 
-void ButtonStatus_inPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
+void ButtonStatusDirect_inPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
 {
    (void)arg;
    (void)nodeData;
