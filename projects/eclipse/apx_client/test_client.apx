@@ -1,9 +1,10 @@
 APX/1.2
 N"test_client"
+T"OffOn_T"C(0,3)
 T"Percent_T"C
-T"OffOn_T"C(0,3):VT("OffOn_Off","OffOn_On","OffOn_Error","OffOn_NotAvailable")
 T"VehicleSpeed_T"S
-P"FuelLevelPercent"T[0]:=255
-R"EngineRunningStatus"T[1]:=3
+P"VehicleMode"C(0,15):=15
+R"EngineRunningStatus"T[0]:=3
+R"FuelLevelPercent"T[1]:=255
 R"VehicleSpeed"T[2]:=0xFFFF
 
