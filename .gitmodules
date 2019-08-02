@@ -7,3 +7,9 @@
 [submodule "dtl_type"]
 	path = dtl_type
 	url = https://github.com/cogu/dtl_type.git
+[submodule "bstr"]
+	path = bstr
+	url = https://github.com/cogu/bstr.git
+[submodule "cutil"]
+	path = cutil
+	url = https://github.com/cogu/cutil.git
