@@ -5,11 +5,6 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
-#ifdef APX_EMBEDDED
-#include "apx_es_cfg.h"
-#else
-#include "apx_cfg.h"
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -19,10 +14,7 @@ typedef struct apx_msg_tag
    uint32_t msgType;
    uint32_t msgData1; //generic uint32 value
    uint32_t msgData2; //generic uint32 value
-   union msgData3_tag{
-      void *ptr;                         //generic void* pointer value
-      uint8_t data[APX_SMALL_DATA_SIZE]; //port data (when port data length is small)
-   } msgData3;
+   void *msgData3;    //generic void* pointer value
 #ifndef APX_EMBEDDED
    void *msgData4;    //generic void* pointer value
 #endif
@@ -30,17 +22,24 @@ typedef struct apx_msg_tag
 
 
 #define RMF_MSG_SIZE ((uint32_t) sizeof(apx_msg_t))
-                                      //data used in apx_msg_t
-#define RMF_MSG_EXIT                  0
-#define RMF_MSG_CONNECT               1
-#define RMF_MSG_DISCONNECT            2
-#define RMF_MSG_FILEINFO              3 //msgData1=size, msgData3=apx_file_t *file
-#define RMF_MSG_FILE_OPEN             4 //msgData1=file startAddress
-#define RMF_MSG_FILE_CLOSE            5 //msgData1=file startAddress
-#define RMF_MSG_WRITE_NOTIFY          6 //msgData1=offset, msgData2=length, msgData3.ptr=apx_file_t *file
-#define RMF_MSG_FILE_WRITE            7 //msgData1=writeAddress, msgData2=length, msgData3.ptr=apx_file_t *file, msgData4=data
-#define RMF_MSG_FILE_SEND             8 //msgData3=apx_file_t *file
-#define RMF_MSG_DIRECT_WRITE          9 //msgData1=writeAddress, msgData2=length, msgData3.data=port data
+                                           //data used in apx_msg_t
+#define APX_MSG_EXIT                       0
+#define APX_MSG_SEND_ACKNOWLEDGE           1 //no extra info
+#define APX_MSG_SEND_FILEINFO              2 //msgData3=apx_file_t *file
+#define APX_MSG_SEND_FILE_OPEN             3 //msgData1=startAddress
+#define APX_MSG_SEND_FILE_CLOSE            4 //msgData1=startAddress
+#define APX_MSG_READ_FILE                  5 //msgData1=offset, msgData2=length, msgData3=apx_file_t *file
+#define APX_MSG_WRITE_FILE                 6 //msgData1=offset, msgData3=apx_file_t *file, msgData4=data
+#define APX_MSG_ERROR_CODE                 7 //msgData1=errorCode
+#define APX_MSG_ERROR_INVALID_CMD          8 //msgData1=commandId
+#define APX_MSG_ERROR_INVALID_WRITE        9 //msgData1=address, msgData2=length
+#define APX_MSG_ERROR_INVALID_READ_HANDLER 10 //msgData1=address
+#define APX_MSG_ERROR_FILE_ALREADY_EXISTS  11 //msgData1=address, msgData3=char* (name of file)
+
+
+
+
+
 
 
 //////////////////////////////////////////////////////////////////////////////

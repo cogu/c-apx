@@ -43,10 +43,15 @@ int8_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
 {
    if (self != 0)
    {
-      size_t numElem;
       size_t elemSize = sizeof(rbf_data_t);
+      adt_buf_err_t bufResult;
 
-      numElem = (size_t) maxPendingMessages;
+      bufResult = adt_rbfh_createEx(&self->messages, (uint8_t) elemSize, ADT_RBFSH_MIN_NUM_ELEMS_DEFAULT, maxPendingMessages);
+      if (bufResult != BUF_E_OK)
+      {
+         return -1;
+      }
+
 #ifdef _WIN32
       self->workerThread = INVALID_HANDLE_VALUE;
 #else
@@ -56,13 +61,6 @@ int8_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
       SPINLOCK_INIT(self->lock);
       SEMAPHORE_CREATE(self->semaphore);
       self->isRunning = false;
-      self->ringBufferLen = (uint16_t) numElem;
-      self->ringBufferData = (uint8_t*) malloc(numElem*elemSize);
-      if (self->ringBufferData == 0)
-      {
-         return -1;
-      }
-      rbfs_create(&self->messages,self->ringBufferData,(uint16_t) numElem,(uint8_t) elemSize);
       soa_init(&self->soa);
       return 0;
    }
@@ -73,10 +71,7 @@ void apx_allocator_destroy(apx_allocator_t *self)
 {
    if (self != 0)
    {
-      if (self->ringBufferData != 0)
-      {
-         free(self->ringBufferData);
-      }
+      adt_rbfh_destroy(&self->messages);
       soa_destroy(&self->soa);
       SEMAPHORE_DESTROY(self->semaphore);
       SPINLOCK_DESTROY(self->lock);
@@ -102,7 +97,7 @@ void apx_allocator_stop(apx_allocator_t *self)
       //1. enqueue message
       SPINLOCK_ENTER(self->lock);
       self->isRunning = false;
-      rbfs_insert(&self->messages,(const uint8_t*) &data);
+      adt_rbfh_insert(&self->messages,(const uint8_t*) &data);
       SPINLOCK_LEAVE(self->lock);
       //2. wake workerThread
       SEMAPHORE_POST(self->semaphore);
@@ -158,22 +153,30 @@ uint8_t *apx_allocator_alloc(apx_allocator_t *self, size_t size)
    return data;
 }
 
-void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, uint32_t size)
+void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size)
 {
    if (self != 0)
    {
       rbf_data_t data;
       data.ptr=ptr;
-      data.size=size;
+      data.size=(uint32_t) size;
       //1. enqueue message
       SPINLOCK_ENTER(self->lock);
-      rbfs_insert(&self->messages,(const uint8_t*) &data);
+      adt_rbfh_insert(&self->messages,(const uint8_t*) &data);
       SPINLOCK_LEAVE(self->lock);
       //2. wake worker thread
       SEMAPHORE_POST(self->semaphore);
    }
 }
 
+bool apx_allocator_isRunning(apx_allocator_t *self)
+{
+   if ( self != 0)
+   {
+      return self->isRunning;
+   }
+   return false;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
@@ -224,8 +227,8 @@ static THREAD_PROTO(threadTask,arg)
             uint8_t bufResult;
             bool delayedFree = false;
             SPINLOCK_ENTER(self->lock);
-            bufResult = rbfs_remove(&self->messages,(uint8_t*) &data);
-            if (bufResult == E_BUF_OK)
+            bufResult = adt_rbfh_remove(&self->messages,(uint8_t*) &data);
+            if (bufResult == BUF_E_OK)
             {
                if (data.ptr != 0)
                {
@@ -245,14 +248,14 @@ static THREAD_PROTO(threadTask,arg)
             {
                free(data.ptr);
             }
-            else if ( (bufResult == E_BUF_OK) && (data.ptr == 0) )
+            else if ( (bufResult == BUF_E_OK) && (data.ptr == 0) )
             {
                break; //NULL pointer is used to exit the thread
             }
             else
             {
                //Already handled by soa_free or bufResult != E_BUF_OK
-               assert(bufResult == E_BUF_OK);
+               assert(bufResult == BUF_E_OK);
             }
          }
          else

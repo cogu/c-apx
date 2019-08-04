@@ -1,126 +1,87 @@
+/*****************************************************************************
+* \file      testsuite_apx_nodeInfo.c
+* \author    Conny Gustafsson
+* \date      2019-01-04
+* \brief     Unit test for apx_nodeInfo_t
+*
+* Copyright (c) 2019 Conny Gustafsson
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include "CuTest.h"
 #include "apx_nodeInfo.h"
 #include "apx_parser.h"
+#include "apx_test_nodes.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
 
-
 //////////////////////////////////////////////////////////////////////////////
-// CONSTANTS AND DATA TYPES
-//////////////////////////////////////////////////////////////////////////////
-
-#ifdef _MSC_VER
-#define APX_TEST_DATA_PATH "..\\..\\..\\apx\\common\\test\\data\\"
-#else 
-#define APX_TEST_DATA_PATH  "../../../apx/common/test/data/"
-#endif
-//////////////////////////////////////////////////////////////////////////////
-// LOCAL FUNCTION PROTOTYPES
-//////////////////////////////////////////////////////////////////////////////
-static void test_apx_nodeInfo_create(CuTest* tc);
-
-//////////////////////////////////////////////////////////////////////////////
-// GLOBAL VARIABLES
+// PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// LOCAL VARIABLES
+// PRIVATE FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
+static void test_apx_nodeInfo_updateFromString(CuTest *tc);
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 
-
 //////////////////////////////////////////////////////////////////////////////
-// GLOBAL FUNCTIONS
+// PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-
 CuSuite* testSuite_apx_nodeInfo(void)
 {
    CuSuite* suite = CuSuiteNew();
 
-   SUITE_ADD_TEST(suite, test_apx_nodeInfo_create);
+   SUITE_ADD_TEST(suite, test_apx_nodeInfo_updateFromString);
 
    return suite;
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// LOCAL FUNCTIONS
+// PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_nodeInfo_create(CuTest* tc)
+static void test_apx_nodeInfo_updateFromString(CuTest *tc)
 {
-
-   apx_node_t *node1;
-   apx_node_t *node2;
-   apx_node_t *node3;
-   apx_node_t *node4;
-   apx_node_t *node5;
-   apx_nodeInfo_t nodeInfo1;
-   apx_nodeInfo_t nodeInfo2;
-   apx_nodeInfo_t nodeInfo3;
-   apx_nodeInfo_t nodeInfo4;
-   apx_nodeInfo_t nodeInfo5;
    apx_parser_t parser;
-
-
+   apx_nodeInfo_t *nodeInfo;
 
    apx_parser_create(&parser);
-   node1 = apx_parser_parseFile(&parser, APX_TEST_DATA_PATH "test1.apx");
-   CuAssertPtrNotNull(tc,node1);
-   CuAssertStrEquals(tc,"test1",node1->name);
+   nodeInfo = apx_nodeInfo_new();
+   CuAssertPtrNotNull(tc, nodeInfo);
 
-   node2 = apx_parser_parseFile(&parser, APX_TEST_DATA_PATH "test2.apx");
-   CuAssertPtrNotNull(tc,node2);
-   CuAssertStrEquals(tc,"test2",node2->name);
+   CuAssertPtrEquals(tc, 0, nodeInfo->node);
+   CuAssertPtrEquals(tc, 0, nodeInfo->text);
+   CuAssertUIntEquals(tc, 0u, nodeInfo->textLen);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInfo_updateFromString(nodeInfo, &parser, g_apx_test_node1));
+   CuAssertPtrNotNull(tc, nodeInfo->node);
+   CuAssertPtrNotNull(tc, nodeInfo->text);
+   CuAssertTrue(tc, nodeInfo->textLen > 0);
 
-   node3 = apx_parser_parseFile(&parser, APX_TEST_DATA_PATH "test3.apx");
-   CuAssertPtrNotNull(tc,node3);
-   CuAssertStrEquals(tc,"test3",node3->name);
-
-   node4 = apx_parser_parseFile(&parser, APX_TEST_DATA_PATH "test4.apx");
-   CuAssertPtrNotNull(tc,node4);
-   CuAssertStrEquals(tc,"test4",node4->name);
-
-   node5 = apx_parser_parseFile(&parser, APX_TEST_DATA_PATH "test5.apx");
-   CuAssertPtrNotNull(tc,node5);
-   CuAssertStrEquals(tc,"test5",node5->name);
-
-   apx_nodeInfo_create(&nodeInfo1,node1);
-   apx_nodeInfo_create(&nodeInfo2,node2);
-   apx_nodeInfo_create(&nodeInfo3,node3);
-   apx_nodeInfo_create(&nodeInfo4,node4);
-   apx_nodeInfo_create(&nodeInfo5,node5);
-   CuAssertIntEquals(tc,1,apx_portDataMap_getDataLen(&nodeInfo1.inDataMap));
-   CuAssertIntEquals(tc,4,apx_portDataMap_getDataLen(&nodeInfo1.outDataMap));
-   CuAssertIntEquals(tc,1,apx_portDataMap_getDataLen(&nodeInfo2.inDataMap));
-   CuAssertIntEquals(tc,3,apx_portDataMap_getDataLen(&nodeInfo2.outDataMap));
-   CuAssertIntEquals(tc,2,apx_portDataMap_getDataLen(&nodeInfo3.inDataMap));
-   CuAssertIntEquals(tc,0,apx_portDataMap_getDataLen(&nodeInfo3.outDataMap));
-   CuAssertIntEquals(tc,4,apx_portDataMap_getDataLen(&nodeInfo4.inDataMap));
-   CuAssertIntEquals(tc,0,apx_portDataMap_getDataLen(&nodeInfo4.outDataMap));
-   CuAssertIntEquals(tc,3,apx_portDataMap_getDataLen(&nodeInfo5.inDataMap));
-   CuAssertIntEquals(tc,1,apx_portDataMap_getDataLen(&nodeInfo5.outDataMap));
-   CuAssertPtrEquals(tc,&nodeInfo1,node1->nodeInfo);
-   CuAssertPtrEquals(tc,&nodeInfo2,node2->nodeInfo);
-   CuAssertPtrEquals(tc,&nodeInfo3,node3->nodeInfo);
-   CuAssertPtrEquals(tc,&nodeInfo4,node4->nodeInfo);
-   CuAssertPtrEquals(tc,&nodeInfo5,node5->nodeInfo);
-
-
-   apx_nodeInfo_destroy(&nodeInfo1);
-   apx_nodeInfo_destroy(&nodeInfo2);
-   apx_nodeInfo_destroy(&nodeInfo3);
-   apx_nodeInfo_destroy(&nodeInfo4);
-   apx_nodeInfo_destroy(&nodeInfo5);
    apx_parser_destroy(&parser);
-
+   apx_nodeInfo_delete(nodeInfo);
 }
-
 

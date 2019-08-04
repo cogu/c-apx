@@ -33,19 +33,26 @@
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.preprocessor.def.symbols.1379207730" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="MEM_LEAK_CHECK"/>
 									<listOptionValue builtIn="false" value="UNIT_TEST"/>
+									<listOptionValue builtIn="false" value="ADT_RBFH_ENABLE=1"/>
+									<listOptionValue builtIn="false" value="PLATFORM_BYTE_ORDER=0"/>
+									<listOptionValue builtIn="false" value="UNIT_TEST_NO_THREAD"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.795688587" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="../../../../util/inc"/>
 									<listOptionValue builtIn="false" value="../../../../adt/inc"/>
+									<listOptionValue builtIn="false" value="../../../../cutil/inc"/>
+									<listOptionValue builtIn="false" value="../../../../cutil/cutest"/>
 									<listOptionValue builtIn="false" value="../../../../apx/common/inc"/>
+									<listOptionValue builtIn="false" value="../../../../apx/common/test"/>
 									<listOptionValue builtIn="false" value="../../../../apx/server/inc"/>
 									<listOptionValue builtIn="false" value="../../../../apx/client/inc"/>
+									<listOptionValue builtIn="false" value="../../../../apx/client/test"/>
 									<listOptionValue builtIn="false" value="../../../../remotefile/inc"/>
 									<listOptionValue builtIn="false" value="../../../../msocket/inc"/>
-									<listOptionValue builtIn="false" value="../../../../cutest"/>
 									<listOptionValue builtIn="false" value="../../../../apx/server/inc"/>
 									<listOptionValue builtIn="false" value="../../../../dtl_type/inc"/>
 									<listOptionValue builtIn="false" value="../../../../bstr/inc"/>
+									<listOptionValue builtIn="false" value="../../../../local_util/inc"/>
+									<listOptionValue builtIn="false" value="../../../../autosar/inc"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.607575035" superClass="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin"/>
 							</tool>
@@ -59,7 +66,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="apx/server/src/server_main.c|apx/server/src/apx_server.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -106,7 +113,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="apx/server/src/apx_server.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

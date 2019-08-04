@@ -88,7 +88,7 @@ static void test_apx_attributesParser_parse(CuTest* tc)
    CuAssertPtrNotNull(tc, attr.initValue);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(attr.initValue));
    sv = (dtl_sv_t*) attr.initValue;
-   CuAssertUIntEquals(tc, 3, dtl_sv_get_u32(sv));
+   CuAssertUIntEquals(tc, 3, dtl_sv_to_u32(sv, NULL));
    CuAssertTrue(tc, attr.isParameter == false);
    CuAssertTrue(tc, attr.isQueued == false);
    CuAssertIntEquals(tc, -1, attr.queueLen);
@@ -108,7 +108,7 @@ static void test_apx_attributesParser_parse(CuTest* tc)
    CuAssertPtrNotNull(tc, attr.initValue);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(attr.initValue));
    sv = (dtl_sv_t*) attr.initValue;
-   CuAssertUIntEquals(tc, 3, dtl_sv_get_u32(sv));
+   CuAssertUIntEquals(tc, 3, dtl_sv_to_u32(sv, NULL));
    CuAssertTrue(tc, attr.isParameter == true);
    CuAssertTrue(tc, attr.isQueued == false);
    CuAssertIntEquals(tc, -1, attr.queueLen);
@@ -161,7 +161,7 @@ static void test_apx_attributesParser_parse(CuTest* tc)
 
    CuAssertConstPtrEquals(tc, 0, pResult);
    lastError = apx_attributeParser_getLastError(&parser, &pErrorNext);
-   CuAssertIntEquals(tc, APX_PARSE_ERROR, lastError);
+   CuAssertIntEquals(tc, APX_INVALID_ATTRIBUTE_ERROR, lastError);
    CuAssertConstPtrEquals(tc, pBegin + 3, pErrorNext);
    apx_portAttributes_destroy(&attr);
 
@@ -187,26 +187,26 @@ static void test_apx_attributesParser_parse(CuTest* tc)
       dtl_dv_t *dv;
       dtl_av_t *av = (dtl_av_t*) attr.initValue;
       CuAssertIntEquals(tc, 2, dtl_av_length(av));
-      dv = *dtl_av_get(av, 0);
+      dv = dtl_av_value(av, 0);
       CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
       {
          dtl_av_t *av0 = (dtl_av_t*) dv;
          CuAssertIntEquals(tc, 2, dtl_av_length(av0));
-         dv = *dtl_av_get(av0, 0);
+         dv = dtl_av_value(av0, 0);
          CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
-         CuAssertUIntEquals(tc, 255, dtl_sv_get_u32( (dtl_sv_t*) dv));
-         dv = *dtl_av_get(av0, 1);
+         CuAssertUIntEquals(tc, 255, dtl_sv_to_u32( (dtl_sv_t*) dv, NULL));
+         dv = dtl_av_value(av0, 1);
          CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
-         CuAssertUIntEquals(tc, 0, dtl_sv_get_u32( (dtl_sv_t*) dv));
+         CuAssertUIntEquals(tc, 0, dtl_sv_to_u32( (dtl_sv_t*) dv, NULL));
       }
-      dv = *dtl_av_get(av, 1);
+      dv = dtl_av_value(av, 1);
       CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
       {
-         const char *str;
+         const char *cstr;
          sv = (dtl_sv_t*) dv;
-         CuAssertIntEquals(tc, DTL_SV_CSTR, dtl_sv_type(sv));
-         str = dtl_sv_get_cstr(sv);
-         CuAssertUIntEquals(tc, 0, strlen(str));
+         CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+         cstr = dtl_sv_to_cstr(sv);
+         CuAssertUIntEquals(tc, 0, strlen(cstr));
       }
 
    }
@@ -274,7 +274,7 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(initValue));
    sv = (dtl_sv_t*) initValue;
    CuAssertIntEquals(tc, DTL_SV_U32, dtl_sv_type(sv));
-   u32Value = dtl_sv_get_u32(sv);
+   u32Value = dtl_sv_to_u32(sv, NULL);
    CuAssertUIntEquals(tc, 7, u32Value);
    dtl_sv_delete(sv);
 
@@ -285,7 +285,7 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(initValue));
    sv = (dtl_sv_t*) initValue;
    CuAssertIntEquals(tc, DTL_SV_U32, dtl_sv_type(sv));
-   u32Value = dtl_sv_get_u32(sv);
+   u32Value = dtl_sv_to_u32(sv, NULL);
    CuAssertUIntEquals(tc, 65535, u32Value);
    dtl_sv_delete(sv);
 
@@ -296,7 +296,7 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(initValue));
    sv = (dtl_sv_t*) initValue;
    CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
-   s32Value = dtl_sv_get_i32(sv);
+   s32Value = dtl_sv_to_i32(sv, NULL);
    CuAssertIntEquals(tc, -1, s32Value);
    dtl_sv_delete(sv);
 
@@ -308,11 +308,11 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(initValue));
    av = (dtl_av_t*) initValue;
    CuAssertIntEquals(tc, 3, dtl_av_length(av));
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 0));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 0), NULL);
    CuAssertIntEquals(tc, 1, u32Value);
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 1));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 1), NULL);
    CuAssertIntEquals(tc, 2, u32Value);
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 2));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 2), NULL);
    CuAssertIntEquals(tc, 3, u32Value);
    dtl_av_delete(av);
 
@@ -324,11 +324,11 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(initValue));
    av = (dtl_av_t*) initValue;
    CuAssertIntEquals(tc, 3, dtl_av_length(av));
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 0));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 0), NULL);
    CuAssertIntEquals(tc, 1, u32Value);
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 1));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 1), NULL);
    CuAssertIntEquals(tc, 2, u32Value);
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 2));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 2), NULL);
    CuAssertIntEquals(tc, 3, u32Value);
    dtl_av_delete(av);
 
@@ -340,11 +340,11 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(initValue));
    av = (dtl_av_t*) initValue;
    CuAssertIntEquals(tc, 3, dtl_av_length(av));
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 0));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 0), NULL);
    CuAssertIntEquals(tc, 1, u32Value);
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 1));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 1), NULL);
    CuAssertIntEquals(tc, 2, u32Value);
-   u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av, 2));
+   u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av, 2), NULL);
    CuAssertIntEquals(tc, 3, u32Value);
    dtl_av_delete(av);
 
@@ -358,44 +358,44 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertIntEquals(tc, 3, dtl_av_length(av));
    {
       dtl_dv_t *dv;
-      dv = *dtl_av_get(av, 0);
+      dv = dtl_av_value(av, 0);
       CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
       {
          dtl_av_t *av0;
          av0 = (dtl_av_t*) dv;
          CuAssertIntEquals(tc, 3, dtl_av_length(av0));
-         u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av0, 0));
+         u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av0, 0), NULL);
          CuAssertIntEquals(tc, 1, u32Value);
-         u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av0, 1));
+         u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av0, 1), NULL);
          CuAssertIntEquals(tc, 2, u32Value);
-         dv = *dtl_av_get(av0, 2);
+         dv = dtl_av_value(av0, 2);
          CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
          {
             dtl_av_t *av02 = (dtl_av_t*) dv;
             CuAssertIntEquals(tc, 2, dtl_av_length(av02));
-            u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av02, 0));
+            u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av02, 0), NULL);
             CuAssertUIntEquals(tc, 3, u32Value);
-            u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av02, 1));
+            u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av02, 1), NULL);
             CuAssertUIntEquals(tc, 4, u32Value);
          }
       }
-      dv = *dtl_av_get(av, 1);
+      dv = dtl_av_value(av, 1);
       CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
       {
          dtl_av_t *av1 = (dtl_av_t*) dv;
          CuAssertIntEquals(tc, 3, dtl_av_length(av1));
-         u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av1, 0));
+         u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av1, 0), NULL);
          CuAssertUIntEquals(tc, 5, u32Value);
-         u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av1, 1));
+         u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av1, 1), NULL);
          CuAssertUIntEquals(tc, 6, u32Value);
-         u32Value = dtl_sv_get_u32((dtl_sv_t*) *dtl_av_get(av1, 2));
+         u32Value = dtl_sv_to_u32((dtl_sv_t*) dtl_av_value(av1, 2), NULL);
          CuAssertIntEquals(tc, 7, u32Value);
       }
-      dv = *dtl_av_get(av, 2);
+      dv = dtl_av_value(av, 2);
       CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
       {
          dtl_sv_t *sv2 = (dtl_sv_t*) dv;
-         u32Value = dtl_sv_get_u32(sv2);
+         u32Value = dtl_sv_to_u32(sv2, NULL);
          CuAssertUIntEquals(tc, 8, u32Value);
       }
    }
@@ -408,8 +408,8 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertPtrNotNull(tc, initValue);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(initValue));
    sv = (dtl_sv_t*) initValue;
-   CuAssertIntEquals(tc, DTL_SV_CSTR, dtl_sv_type(sv));
-   str = dtl_sv_get_cstr(sv);
+   CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+   str = dtl_sv_to_cstr(sv);
    CuAssertUIntEquals(tc, 0, strlen(str));
    dtl_sv_delete(sv);
 
@@ -419,8 +419,8 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertPtrNotNull(tc, initValue);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(initValue));
    sv = (dtl_sv_t*) initValue;
-   CuAssertIntEquals(tc, DTL_SV_CSTR, dtl_sv_type(sv));
-   str = dtl_sv_get_cstr(sv);
+   CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+   str = dtl_sv_to_cstr(sv);
    CuAssertUIntEquals(tc, 4, strlen(str));
    CuAssertIntEquals(tc, 0, strcmp(str, "test"));
    dtl_sv_delete(sv);
@@ -435,33 +435,33 @@ static void test_apx_attributeParser_parseInitValue(CuTest* tc)
    CuAssertIntEquals(tc, 2, dtl_av_length(av));
    {
       dtl_dv_t *dv;
-      dv = *dtl_av_get(av, 0);
+      dv = dtl_av_value(av, 0);
       CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
       sv = (dtl_sv_t*) dv;
-      CuAssertIntEquals(tc, DTL_SV_CSTR, dtl_sv_type(sv));
-      str = dtl_sv_get_cstr(sv);
+      CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+      str = dtl_sv_to_cstr(sv);
       CuAssertIntEquals(tc, 0, strcmp(str, "test1"));
-      dv = *dtl_av_get(av, 1);
+      dv = dtl_av_value(av, 1);
       CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
       {
          dtl_av_t *av1 = (dtl_av_t*) dv;
          CuAssertIntEquals(tc, 3, dtl_av_length(av1));
-         dv = *dtl_av_get(av1, 0);
+         dv = dtl_av_value(av1, 0);
          CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
          sv = (dtl_sv_t*) dv;
-         CuAssertIntEquals(tc, DTL_SV_CSTR, dtl_sv_type(sv));
-         str = dtl_sv_get_cstr(sv);
+         CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+         str = dtl_sv_to_cstr(sv);
          CuAssertIntEquals(tc, 0, strcmp(str, "test2"));
-         dv = *dtl_av_get(av1, 1);
+         dv = dtl_av_value(av1, 1);
          CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
          sv = (dtl_sv_t*) dv;
          CuAssertIntEquals(tc, DTL_SV_U32, dtl_sv_type(sv));
-         CuAssertUIntEquals(tc, 3, dtl_sv_get_u32(sv));
-         dv = *dtl_av_get(av1, 2);
+         CuAssertUIntEquals(tc, 3, dtl_sv_to_u32(sv, NULL));
+         dv = dtl_av_value(av1, 2);
          CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
          sv = (dtl_sv_t*) dv;
          CuAssertIntEquals(tc, DTL_SV_U32, dtl_sv_type(sv));
-         CuAssertUIntEquals(tc, 4, dtl_sv_get_u32(sv));
+         CuAssertUIntEquals(tc, 4, dtl_sv_to_u32(sv, NULL));
       }
    }
    dtl_av_delete(av);
@@ -491,7 +491,7 @@ static void test_apx_attributeParser_parseQueueLength(CuTest* tc)
    test_data = test_data1;
    pBegin = (const uint8_t*)test_data, pEnd = pBegin+strlen(test_data);
    CuAssertIntEquals(tc, -1, attr.queueLen);
-   pResult = apx_attributeParser_parseQueueLength(&parser, pBegin, pEnd, &attr);
+   pResult = apx_attributeParser_parseArrayLength(&parser, pBegin, pEnd, &attr.queueLen);
    CuAssertConstPtrEquals(tc, pEnd, pResult);
    CuAssertIntEquals(tc, 1, attr.queueLen);
    apx_portAttributes_destroy(&attr);
@@ -500,7 +500,7 @@ static void test_apx_attributeParser_parseQueueLength(CuTest* tc)
    test_data = test_data2;
    pBegin = (const uint8_t*)test_data, pEnd = pBegin+strlen(test_data);
    CuAssertIntEquals(tc, -1, attr.queueLen);
-   pResult = apx_attributeParser_parseQueueLength(&parser, pBegin, pEnd, &attr);
+   pResult = apx_attributeParser_parseArrayLength(&parser, pBegin, pEnd, &attr.queueLen);
    CuAssertConstPtrEquals(tc, pEnd, pResult);
    CuAssertIntEquals(tc, 120, attr.queueLen);
    apx_portAttributes_destroy(&attr);
@@ -508,7 +508,7 @@ static void test_apx_attributeParser_parseQueueLength(CuTest* tc)
    apx_portAttributes_create(&attr, test_data);
    test_data = test_data3;
    pBegin = (const uint8_t*)test_data, pEnd = pBegin+strlen(test_data);
-   pResult = apx_attributeParser_parseQueueLength(&parser, pBegin, pEnd, &attr);
+   pResult = apx_attributeParser_parseArrayLength(&parser, pBegin, pEnd, &attr.queueLen);
    CuAssertConstPtrEquals(tc, 0, pResult);
    lastError = apx_attributeParser_getLastError(&parser, &pErrorNext);
    CuAssertIntEquals(tc, APX_VALUE_ERROR, lastError);
@@ -518,7 +518,7 @@ static void test_apx_attributeParser_parseQueueLength(CuTest* tc)
    apx_portAttributes_create(&attr, test_data);
    test_data = test_data4;
    pBegin = (const uint8_t*)test_data, pEnd = pBegin+strlen(test_data);
-   pResult = apx_attributeParser_parseQueueLength(&parser, pBegin, pEnd, &attr);
+   pResult = apx_attributeParser_parseArrayLength(&parser, pBegin, pEnd, &attr.queueLen);
    CuAssertConstPtrEquals(tc, 0, pResult);
    lastError = apx_attributeParser_getLastError(&parser, &pErrorNext);
    CuAssertIntEquals(tc, APX_PARSE_ERROR, lastError);
@@ -528,7 +528,7 @@ static void test_apx_attributeParser_parseQueueLength(CuTest* tc)
    apx_portAttributes_create(&attr, test_data);
    test_data = test_data5;
    pBegin = (const uint8_t*)test_data, pEnd = pBegin+strlen(test_data);
-   pResult = apx_attributeParser_parseQueueLength(&parser, pBegin, pEnd, &attr);
+   pResult = apx_attributeParser_parseArrayLength(&parser, pBegin, pEnd, &attr.queueLen);
    CuAssertConstPtrEquals(tc, 0,pResult);
    lastError = apx_attributeParser_getLastError(&parser, &pErrorNext);
    CuAssertIntEquals(tc, APX_PARSE_ERROR, lastError);

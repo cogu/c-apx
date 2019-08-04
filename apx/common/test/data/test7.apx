@@ -1,5 +1,0 @@
-APX/1.2
-N"test5"
-R"WheelBasedVehicleSpeed"S:=65535
-R"CabTiltLockWarning"C(0,7):=7
-R"VehicleMode"C(0,15):=15

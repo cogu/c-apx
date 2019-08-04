@@ -43,57 +43,6 @@
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-/**
- * returns number of bytes encoded in buf
- * on error it returns 0 when bufLen is too small or -1 if one or more arguments are invalid
- */
-#if 0 //DEPCRECATED
-int32_t rmf_packMsg(uint8_t *buf, int32_t bufLen, uint32_t address, uint8_t *data, int32_t dataLen, int32_t *consumed)
-{
-   if ( (buf != 0) && (bufLen > 0) &&  (data != 0) && (dataLen > 0) && (consumed != 0) )
-   {
-      bool high_bit;
-      int32_t addressLen;
-      address &= RMF_CMD_END_ADDR;
-      if (address <= RMF_DATA_LOW_MAX_ADDR)
-      {
-         high_bit = false;
-         addressLen=RMF_LOW_ADDRESS_SIZE;
-      }
-      else
-      {
-         high_bit = true;
-         addressLen=RMF_HIGH_ADDRESS_SIZE;
-      }
-      if (addressLen+1 > bufLen)
-      {
-         //buffer is too small to fit any data in it. return 0 to let the user know to retry later with a bigger buffer
-         return 0;
-      }
-      packBE(buf,address, (uint8_t) addressLen);
-      if (high_bit == true)
-      {
-         buf[0]|= (uint8_t) HIGH_BIT_MASK;
-      }
-      if(addressLen+dataLen > bufLen)
-      {
-         //all data will not fit into the message, activate more_bit and send whatever fits into the buffer
-         int32_t copyLen = bufLen-addressLen;
-         buf[0]|= (uint8_t) MORE_BIT_MASK;
-         memcpy(&buf[addressLen],data,copyLen);
-         *consumed=copyLen;
-         return bufLen;
-      }
-      else
-      {
-         memcpy(&buf[addressLen],data,dataLen);
-         *consumed=dataLen;
-         return (addressLen+dataLen);
-      }
-   }
-   return -1;
-}
-#endif
 
 /**
  * encodes the address header into dataBuf
@@ -195,17 +144,18 @@ int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg)
    return -1;
 }
 
+
 /**
  * On failure: returns 0 if buffer is too small, -1 on any other error
  * On success: returns number of bytes written in buffer
  */
-int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, rmf_fileInfo_t *fileInfo)
+int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, const rmf_fileInfo_t *fileInfo)
 {
    if ( (buf != 0) && (fileInfo !=0) && (bufLen>0) )
    {
       uint8_t *p;
       uint32_t totalLen;
-      uint32_t baseSize = (uint32_t) CMD_FILE_INFO_BASE_SIZE;
+      uint32_t baseSize = (uint32_t) RMF_CMD_FILE_INFO_BASE_SIZE;
       uint32_t nameLen = (uint32_t) strlen(fileInfo->name);
 
       totalLen = baseSize+nameLen+1; //add 1 for null terminator
@@ -240,7 +190,7 @@ int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_file
       char *pStrNext;
       char *pStrEnd;
       uint32_t totalLen;
-      uint32_t baseSize = (uint32_t) CMD_FILE_INFO_BASE_SIZE;
+      uint32_t baseSize = (uint32_t) RMF_CMD_FILE_INFO_BASE_SIZE;
       uint32_t cmdType;
       pEnd = buf+bufLen;
       pStrNext = &fileInfo->name[0];
@@ -404,10 +354,55 @@ int32_t rmf_deserialize_cmdType(const uint8_t *buf, int32_t bufLen, uint32_t *cm
    return unpackLen;
 }
 
+int32_t rmf_serialize_errorInvalidReadHandler(uint8_t *buf, int32_t bufLen, uint32_t address)
+{
+   if ( (buf != 0) && (address < RMF_DATA_HIGH_MAX_ADDR) )
+   {
+      uint8_t *p = buf;
+      const uint32_t totalLen = RMF_ERROR_INVALID_READ_HANDLER_LEN;
+
+      if ((uint32_t) bufLen < totalLen )
+      {
+         return 0; //buffer too small
+      }
+      packLE(p, RMF_ERROR_INVALID_READ_HANDLER, (uint8_t) RMF_CMD_TYPE_LEN);
+      p+=RMF_CMD_TYPE_LEN;
+      packLE(p, address, (uint8_t) RMF_CMD_ADDRESS_LEN);
+      return totalLen;
+   }
+   return -1;
+}
+
+int32_t rmf_deserialize_errorInvalidReadHandler(const uint8_t *buf, int32_t bufLen, uint32_t *address)
+{
+   if ( (buf != 0) && (address !=0) )
+   {
+      const uint8_t *p;
+      const uint32_t totalLen = RMF_ERROR_INVALID_READ_HANDLER_LEN;
+      uint32_t cmdType;
+      if ((uint32_t)bufLen < totalLen )
+      {
+         return 0; //buffer too small
+      }
+      p=buf;
+      cmdType = unpackLE(p, (uint8_t) RMF_CMD_TYPE_LEN);
+      p+=sizeof(uint32_t);
+      *address = unpackLE(p, (uint8_t) RMF_CMD_ADDRESS_LEN);
+      if(cmdType != RMF_ERROR_INVALID_READ_HANDLER)
+      {
+         //this is not the right deserializer
+         return -1;
+      }
+      return totalLen;
+   }
+   return -1;
+}
+
+
 
 int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType)
 {
-   if ( (self != 0) && (name != 0) && ( (startAddress < RMF_DATA_HIGH_MAX_ADDR) || (startAddress == RMF_INVALID_ADDRESS) ) && (fileType < RMF_FILE_TYPE_STREAM) )
+   if ( (self != 0) && (name != 0) && ( (startAddress < RMF_DATA_HIGH_MAX_ADDR) || (startAddress == RMF_INVALID_ADDRESS) ) && (fileType <= RMF_FILE_TYPE_STREAM) )
    {
       size_t len = strlen(name);
       if (len<=RMF_MAX_FILE_NAME)

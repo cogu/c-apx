@@ -1,29 +1,62 @@
+/*****************************************************************************
+* \file      apx_dataElement.c
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     Data element data structure
+*
+* Copyright (c) 2017-2019 Conny Gustafsson
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+******************************************************************************/
+//////////////////////////////////////////////////////////////////////////////
+// INCLUDES
+//////////////////////////////////////////////////////////////////////////////
 #include <errno.h>
 #include <malloc.h>
 #include <assert.h>
 #include <string.h>
 #include "apx_dataElement.h"
 #include "apx_error.h"
+#include "apx_types.h"
+#include "apx_dataType.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
 
-#ifdef _MSC_VER
-#define STRDUP _strdup
-#else
-#define STRDUP strdup
-#endif
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE CONSTANTS AND DATA TYPES
+//////////////////////////////////////////////////////////////////////////////
 
-
-/**************** Private Function Declarations *******************/
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
 static uint8_t *apx_dataElement_pack_sv(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_sv_t *sv);
 static uint8_t *apx_dataElement_pack_record(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_av_t *av);
+static void setError(apx_dataElement_t *self, apx_error_t errorCode);
 
-/**************** Private Variable Declarations *******************/
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE VARIABLES
+//////////////////////////////////////////////////////////////////////////////
 
-
-/****************** Public Function Definitions *******************/
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
 apx_dataElement_t *apx_dataElement_new(int8_t baseType, const char *name)
 {
    apx_dataElement_t *self = (apx_dataElement_t*) malloc(sizeof(apx_dataElement_t));
@@ -83,10 +116,19 @@ int8_t apx_dataElement_create(apx_dataElement_t *self, int8_t baseType, const ch
       {
          self->childElements = (adt_ary_t*) 0;
       }
-      self->arrayLen=0;
-      self->min.s32=0;
-      self->max.s32=0;
-      self->packLen=0;
+      self->arrayLen = 0;
+      self->min.s32 = 0;
+      self->max.s32 = 0;
+      self->packLen = 0;
+      self->isDynamicArray = false;
+      if (baseType == APX_BASE_TYPE_REF_NAME)
+      {
+         self->typeRef.name = 0;
+      }
+      else
+      {
+         self->typeRef.id = 0;
+      }
    }
    return 0;
 }
@@ -102,6 +144,10 @@ void apx_dataElement_destroy(apx_dataElement_t *self)
       if (self->childElements != 0)
       {
          adt_ary_delete(self->childElements);
+      }
+      if ( (self->baseType == APX_BASE_TYPE_REF_NAME) && (self->typeRef.name != 0) )
+      {
+         free(self->typeRef.name);
       }
    }
 }
@@ -129,7 +175,7 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
 
       if (element_type == APX_BASE_TYPE_NONE)
       {
-         apx_setError(APX_ELEMENT_TYPE_ERROR);
+         setError(self, APX_ELEMENT_TYPE_ERROR);
          return 0;
       }
       else if (element_type == APX_BASE_TYPE_RECORD)
@@ -144,7 +190,7 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
                num_dv_elem = (uint32_t) dtl_av_length(av);
                if (num_dv_elem != self->arrayLen)
                {
-                  apx_setError(APX_LENGTH_ERROR);
+                  setError(self, APX_LENGTH_ERROR);
                   return 0;
                }
 
@@ -163,7 +209,7 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
                   }
                   else
                   {
-                     apx_setError(APX_DV_TYPE_ERROR); //expected array type from dv variable
+                     setError(self, APX_DV_TYPE_ERROR); //expected array type from dv variable
                      return 0;
                   }
                }
@@ -180,7 +226,7 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
          }
          else
          {
-            apx_setError(APX_DV_TYPE_ERROR); //expected array type from dv variable
+            setError(self, APX_DV_TYPE_ERROR); //expected array type from dv variable
             return 0;
          }
       }
@@ -198,7 +244,7 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
                i32Length = dtl_av_length(av);
                if (i32Length != (int32_t)self->arrayLen)
                {
-                  apx_setError(APX_LENGTH_ERROR);
+                  setError(self, APX_LENGTH_ERROR);
                   return 0;
                }
                for (i = 0; i < i32Length; i++)
@@ -215,14 +261,14 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
                   }
                   else
                   {
-                     apx_setError(APX_DV_TYPE_ERROR); //expected array type from dv variable
+                     setError(self, APX_DV_TYPE_ERROR); //expected array type from dv variable
                      return 0;
                   }
                }
             }
             else
             {
-               apx_setError(APX_DV_TYPE_ERROR); //expected array type from dv variable
+               setError(self, APX_DV_TYPE_ERROR); //expected array type from dv variable
                return 0;
             }
          }
@@ -240,7 +286,7 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
             }
             else
             {
-               apx_setError(APX_DV_TYPE_ERROR); //expected scalar type from dv variable
+               setError(self, APX_DV_TYPE_ERROR); //expected scalar type from dv variable
                return 0;
             }
          }
@@ -268,144 +314,183 @@ uint32_t apx_dataElement_getArrayLen(apx_dataElement_t *self)
    return 0;
 }
 
-
-/***************** Private Function Definitions *******************/
-
-static uint8_t *apx_dataElement_pack_sv(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_sv_t *sv)
+void apx_dataElement_setDynamicArray(apx_dataElement_t *self)
 {
-   if ( (self != 0) && (pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd) && (sv != 0) )
+   if (self != 0)
    {
-      uint8_t *pNext = pBegin;
-      const char *cstr;
-      size_t len;
-      switch(self->baseType)
-      {
-      case APX_BASE_TYPE_NONE:
-         break;
-      case APX_BASE_TYPE_UINT8:
-         if (pNext + sizeof(uint8_t) <= pEnd)
-         {
-            packU8(pNext, (uint8_t) dtl_sv_get_u32(sv));
-         }
-         else
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-         break;
-      case APX_BASE_TYPE_UINT16:
-         if (pNext  + sizeof(uint16_t) <= pEnd)
-         {
-            packU16LE(pNext, (uint16_t) dtl_sv_get_u32(sv));
-         }
-         else
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-         break;
-      case APX_BASE_TYPE_UINT32:
-         if (pNext  + sizeof(uint32_t) <= pEnd)
-         {
-            packU32LE(pNext, dtl_sv_get_u32(sv));
-         }
-         else
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-         break;
-      case APX_BASE_TYPE_UINT64:
-#if  defined(__GNUC__) && defined(__LP64__)
-         if (pNext  + sizeof(uint64_t) <= pEnd)
-         {
-            packU64LE(pNext, dtl_sv_get_u64(sv));
-         }
-         else
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-#else
-         apx_setError(APX_UNSUPPORTED_ERROR);
-         return 0;
-#endif
-         break;
-      case APX_BASE_TYPE_SINT8:
-         if (pNext  + sizeof(uint8_t) <= pEnd)
-         {
-            packU8(pNext, (uint8_t) dtl_sv_get_i32(sv));
-         }
-         else
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-         break;
-      case APX_BASE_TYPE_SINT16:
-         if (pNext  + sizeof(uint16_t) <= pEnd)
-         {
-            packU16LE(pNext, (uint16_t) dtl_sv_get_i32(sv));
-         }
-         else
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-         break;
-      case APX_BASE_TYPE_SINT32:
-         if (pNext  + sizeof(uint32_t) <= pEnd)
-         {
-            packU32LE(pNext, (uint32_t) dtl_sv_get_i32(sv));
-         }
-         else
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-         break;
-      case APX_BASE_TYPE_SINT64:
-#if  defined(__GNUC__) && defined(__LP64__)
-         if (pNext  + sizeof(uint64_t) <= pEnd)
-         {
-            packU64LE(pNext, (uint64_t) dtl_sv_get_i64(sv));
-         }
-         else
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-#else
-         apx_setError(APX_UNSUPPORTED_ERROR);
-         return 0;
-#endif
-         break;
-      case APX_BASE_TYPE_STRING:
-         cstr = dtl_sv_get_cstr(sv);
-         if (cstr == 0)
-         {
-            apx_setError(APX_DV_TYPE_ERROR);
-            return 0;
-         }
-         len = strlen(cstr);
-         if (len > self->arrayLen)
-         {
-            apx_setError(APX_LENGTH_ERROR);
-            return 0;
-         }
-         memcpy(pNext, cstr, len);
-         pNext[len] = 0;
-         pNext+=self->arrayLen;
-         break;
-      case APX_BASE_TYPE_RECORD:
-         apx_setError(APX_DV_TYPE_ERROR);
-         return 0;
-         break;
-      }
-      return pNext;
+      self->isDynamicArray = true;
    }
-   errno = EINVAL;
-   return 0;
+}
+
+bool apx_dataElement_isDynamicArray(apx_dataElement_t *self)
+{
+   if (self != 0)
+   {
+      return self->isDynamicArray;
+   }
+   return false;
+}
+
+
+void apx_dataElement_setTypeReferenceId(apx_dataElement_t *self, int32_t typeId)
+{
+   if (self != 0)
+   {
+      if ( (self->baseType == APX_BASE_TYPE_REF_NAME) && (self->typeRef.name != 0) )
+      {
+         free(self->typeRef.name);
+      }
+      if (self->baseType != APX_BASE_TYPE_REF_ID)
+      {
+         self->baseType = APX_BASE_TYPE_REF_ID;
+      }
+      self->typeRef.id = typeId;
+   }
+}
+
+int32_t apx_dataElement_getTypeReferenceId(apx_dataElement_t *self)
+{
+   if ( (self != 0) && (self->baseType == APX_BASE_TYPE_REF_ID))
+   {
+      return self->typeRef.id;
+   }
+   return -1;
+}
+
+void apx_dataElement_setTypeReferenceName(apx_dataElement_t *self, const char *typeName)
+{
+   if (self != 0)
+   {
+      if ( (self->baseType == APX_BASE_TYPE_REF_NAME) && (self->typeRef.name != 0) )
+      {
+         free(self->typeRef.name);
+      }
+      if (self->baseType != APX_BASE_TYPE_REF_NAME)
+      {
+         self->baseType = APX_BASE_TYPE_REF_NAME;
+      }
+      self->typeRef.name = STRDUP(typeName);
+   }
+}
+
+const char *apx_dataElement_getTypeReferenceName(apx_dataElement_t *self)
+{
+   if ( (self != 0) && (self->baseType == APX_BASE_TYPE_REF_NAME) )
+   {
+      return self->typeRef.name;
+   }
+   return (const char*) 0;
+}
+
+void apx_dataElement_setTypeReferencePtr(apx_dataElement_t *self, struct apx_datatype_tag *ptr)
+{
+   if (self != 0)
+   {
+      if ( (self->baseType == APX_BASE_TYPE_REF_NAME) && (self->typeRef.name != 0) )
+      {
+         free(self->typeRef.name);
+      }
+      if (self->baseType != APX_BASE_TYPE_REF_PTR)
+      {
+         self->baseType = APX_BASE_TYPE_REF_PTR;
+      }
+      self->typeRef.ptr = ptr;
+   }
+}
+
+apx_datatype_t *apx_dataElement_getTypeReferencePtr(apx_dataElement_t *self)
+{
+   if ( (self != 0) && (self->baseType == APX_BASE_TYPE_REF_PTR) )
+   {
+      return self->typeRef.ptr;
+   }
+   return (apx_datatype_t*) 0;
+}
+
+int32_t apx_dataElement_calcPackLen(apx_dataElement_t *self)
+{
+   if (self != 0)
+   {
+      self->packLen=0;
+      if (self->baseType == APX_BASE_TYPE_RECORD)
+      {
+         int32_t i;
+         int32_t end = adt_ary_length(self->childElements);
+         for(i=0;i<end;i++)
+         {
+            apx_dataElement_t *pChildElement = (apx_dataElement_t*) adt_ary_value(self->childElements,i);
+            assert (pChildElement != 0);
+            self->packLen+=apx_dataElement_calcPackLen(pChildElement);
+         }
+      }
+      else
+      {
+         int32_t elemLen = 0;
+         apx_error_t errorCode = APX_NO_ERROR;
+         switch(self->baseType)
+         {
+         case APX_BASE_TYPE_NONE:
+            break;
+         case APX_BASE_TYPE_UINT8:
+            elemLen = (uint32_t) sizeof(uint8_t);
+            break;
+         case APX_BASE_TYPE_UINT16:
+            elemLen = (uint32_t) sizeof(uint16_t);
+            break;
+         case APX_BASE_TYPE_UINT32:
+            elemLen = (uint32_t) sizeof(uint32_t);
+            break;
+         case APX_BASE_TYPE_SINT8:
+            elemLen = (uint32_t) sizeof(int8_t);
+            break;
+         case APX_BASE_TYPE_SINT16:
+            elemLen = (uint32_t) sizeof(int16_t);
+            break;
+         case APX_BASE_TYPE_SINT32:
+            elemLen = (uint32_t) sizeof(int32_t);
+            break;
+         case APX_BASE_TYPE_STRING:
+            elemLen = (uint32_t) sizeof(uint8_t);
+            break;
+         case APX_BASE_TYPE_REF_PTR:
+            errorCode = apx_datatype_calcPackLen(self->typeRef.ptr, &elemLen);
+            break;
+         default:
+            break;
+         }
+         if ( (elemLen > 0) && (errorCode == APX_NO_ERROR) )
+         {
+            if (self->arrayLen > 0)
+            {
+               self->packLen=(uint32_t) elemLen*self->arrayLen;
+            }
+            else
+            {
+               self->packLen=elemLen;
+            }
+         }
+      }
+      return self->packLen;
+   }
+   return -1;
+}
+
+int32_t apx_dataElement_getPackLen(apx_dataElement_t *self)
+{
+   if (self != 0)
+   {
+      return self->packLen;
+   }
+   return -1;
+}
+
+apx_error_t apx_dataElement_getLastError(apx_dataElement_t *self)
+{
+   if (self != 0)
+   {
+      return self->lastError;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_dataElement_appendChild(apx_dataElement_t *self, apx_dataElement_t *child)
@@ -442,6 +527,151 @@ apx_dataElement_t *apx_dataElement_getChildAt(apx_dataElement_t *self, int32_t i
    return 0;
 }
 
+
+
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
+
+static uint8_t *apx_dataElement_pack_sv(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_sv_t *sv)
+{
+   if ( (self != 0) && (pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd) && (sv != 0) )
+   {
+      uint8_t *pNext = pBegin;
+      const char *cstr;
+      size_t len;
+      switch(self->baseType)
+      {
+      case APX_BASE_TYPE_NONE:
+         break;
+      case APX_BASE_TYPE_UINT8:
+         if (pNext + sizeof(uint8_t) <= pEnd)
+         {
+            packU8(pNext, (uint8_t) dtl_sv_to_u32(sv, NULL));
+         }
+         else
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+         break;
+      case APX_BASE_TYPE_UINT16:
+         if (pNext  + sizeof(uint16_t) <= pEnd)
+         {
+            packU16LE(pNext, (uint16_t) dtl_sv_to_u32(sv, NULL));
+         }
+         else
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+         break;
+      case APX_BASE_TYPE_UINT32:
+         if (pNext  + sizeof(uint32_t) <= pEnd)
+         {
+            packU32LE(pNext, dtl_sv_to_u32(sv, NULL));
+         }
+         else
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+         break;
+      case APX_BASE_TYPE_UINT64:
+#if  defined(__GNUC__) && defined(__LP64__)
+         if (pNext  + sizeof(uint64_t) <= pEnd)
+         {
+            packU64LE(pNext, dtl_sv_to_u64(sv, NULL));
+         }
+         else
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+#else
+         setError(self, APX_UNSUPPORTED_ERROR);
+         return 0;
+#endif
+         break;
+      case APX_BASE_TYPE_SINT8:
+         if (pNext  + sizeof(uint8_t) <= pEnd)
+         {
+            packU8(pNext, (uint8_t) dtl_sv_to_i32(sv, NULL));
+         }
+         else
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+         break;
+      case APX_BASE_TYPE_SINT16:
+         if (pNext  + sizeof(uint16_t) <= pEnd)
+         {
+            packU16LE(pNext, (uint16_t) dtl_sv_to_i32(sv, NULL));
+         }
+         else
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+         break;
+      case APX_BASE_TYPE_SINT32:
+         if (pNext  + sizeof(uint32_t) <= pEnd)
+         {
+            packU32LE(pNext, (uint32_t) dtl_sv_to_i32(sv, NULL));
+         }
+         else
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+         break;
+      case APX_BASE_TYPE_SINT64:
+#if  defined(__GNUC__) && defined(__LP64__)
+         if (pNext  + sizeof(uint64_t) <= pEnd)
+         {
+            packU64LE(pNext, (uint64_t) dtl_sv_to_i64(sv, NULL));
+         }
+         else
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+#else
+         setError(self, APX_UNSUPPORTED_ERROR);
+         return 0;
+#endif
+         break;
+      case APX_BASE_TYPE_STRING:
+         cstr = dtl_sv_to_cstr(sv);
+         if (cstr == 0)
+         {
+            setError(self, APX_DV_TYPE_ERROR);
+            return 0;
+         }
+         len = strlen(cstr);
+         if (len > self->arrayLen)
+         {
+            setError(self, APX_LENGTH_ERROR);
+            return 0;
+         }
+         memcpy(pNext, cstr, len);
+         pNext[len] = 0;
+         pNext+=self->arrayLen;
+         break;
+      case APX_BASE_TYPE_RECORD:
+         setError(self, APX_DV_TYPE_ERROR);
+         return 0;
+         break;
+      }
+      return pNext;
+   }
+   errno = EINVAL;
+   return 0;
+}
+
+
+
 static uint8_t *apx_dataElement_pack_record(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_av_t *av)
 {
    if ( (self != 0) && (pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd) && (av != 0))
@@ -455,7 +685,7 @@ static uint8_t *apx_dataElement_pack_record(apx_dataElement_t *self, uint8_t *pB
       num_child_elem = apx_dataElement_getNumChild(self);
       if (num_dv_elem != num_child_elem)
       {
-         apx_setError(APX_LENGTH_ERROR);
+         setError(self, APX_LENGTH_ERROR);
          return 0;
       }
 
@@ -475,6 +705,11 @@ static uint8_t *apx_dataElement_pack_record(apx_dataElement_t *self, uint8_t *pB
    }
    errno = EINVAL;
    return 0;
+}
+
+static void setError(apx_dataElement_t *self, apx_error_t errorCode)
+{
+   self->lastError = errorCode;
 }
 
 

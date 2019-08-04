@@ -16,8 +16,10 @@ typedef struct apx_portAttributes_tag
 {
    bool isQueued;
    bool isParameter;
+   bool isDynamic;
    bool isFinalized; //internal variable
    int32_t queueLen;
+   int32_t dynLen;
    char *rawValue; //raw attribute string
    dtl_dv_t *initValue;
 }apx_portAttributes_t;
