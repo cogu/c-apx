@@ -1,36 +1,79 @@
+/*****************************************************************************
+* \file      apx_datatype.c
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     APX datatype class
+*
+* Copyright (c) 2017-2018 Conny Gustafsson
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+******************************************************************************/
+//////////////////////////////////////////////////////////////////////////////
+// INCLUDES
+//////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
 #include <malloc.h>
-#include "apx_datatype.h"
+#include "apx_dataType.h"
+#include "apx_types.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE CONSTANTS AND DATA TYPES
+//////////////////////////////////////////////////////////////////////////////
 
-/**************** Private Function Declarations *******************/
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE VARIABLES
+//////////////////////////////////////////////////////////////////////////////
 
-/**************** Private Variable Declarations *******************/
-
-
-/****************** Public Function Definitions *******************/
-apx_datatype_t* apx_datatype_new(const char *name, const char *dsg, const char *attr)
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
+apx_datatype_t* apx_datatype_new(const char *name, const char *dsg, const char *attr, int32_t lineNumber, apx_error_t *errorCode)
 {
    apx_datatype_t *self = (apx_datatype_t*) malloc(sizeof(apx_datatype_t));
    if(self != 0)
    {
-      int8_t result = apx_datatype_create(self,name,dsg,attr);
-      if (result != 0)
+      apx_error_t result = apx_datatype_create(self, name, dsg, attr, lineNumber);
+      if (result != APX_NO_ERROR)
       {
          free(self);
          self=0;
       }
+      if (errorCode != 0)
+      {
+         *errorCode = result;
+      }
    }
    else
    {
-      errno = ENOMEM;
+      if (errorCode != 0)
+      {
+         *errorCode = APX_MEM_ERROR;
+      }
    }
    return self;
 }
@@ -48,76 +91,124 @@ void apx_datatype_vdelete(void *arg)
    apx_datatype_delete((apx_datatype_t*) arg);
 }
 
-int8_t apx_datatype_create(apx_datatype_t *self, const char *name, const char *dsg, const char *attr)
+apx_error_t apx_datatype_create(apx_datatype_t *self, const char *name, const char *dsg, const char *attr, int32_t lineNumber)
 {
    if (self != 0)
    {
-      uint32_t nameLen;
-      uint32_t dsgLen;
-      uint32_t attrLen;
-      uint32_t numNullChars=0;
-      char *pNext;
-      char *pEnd;
+      if (name != 0)
+      {
+         self->name = STRDUP(name);
+         if (self->name == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+      }
+      else
+      {
+         self->name = 0;
+      }
+      if (dsg != 0)
+      {
+         apx_error_t err;
+         self->dataSignature = apx_dataSignature_new(dsg, &err);
+         if (self->dataSignature == 0)
+         {
+            if (self->name != NULL)
+            {
+               free(self->name);
+            }
+            return err;
+         }
+      }
+      else
+      {
+         self->dataSignature = NULL;
+      }
 
-      nameLen = (name==0)? 0 : (uint32_t) strlen(name);
-      dsgLen  = (dsg==0)?  0 : (uint32_t) strlen(dsg);
-      attrLen = (attr==0)? 0 : (uint32_t) strlen(attr);
-      if (nameLen > 0)
+      if (attr != 0)
       {
-         numNullChars++;
+         self->attribute = apx_typeAttribute_new(attr);
+         if (self->attribute == 0)
+         {
+            if (self->name != NULL)
+            {
+               free(self->name);
+            }
+            if (self->dataSignature != 0)
+            {
+               apx_dataSignature_delete(self->dataSignature);
+            }
+            return APX_MEM_ERROR;
+         }
       }
-      if (dsgLen > 0)
+      else
       {
-         numNullChars++;
+         self->attribute = NULL;
       }
-      if (attrLen > 0)
-      {
-         numNullChars++;
-      }
-      self->allocLen=nameLen+dsgLen+attrLen+numNullChars;
-      self->pAlloc=(char*) malloc(self->allocLen);
-      if (self->pAlloc==0)
-      {
-         errno = ENOMEM;
-         return -1;
-      }
-      pNext=self->pAlloc;
-      pEnd=self->pAlloc+self->allocLen;
-      if (nameLen > 0)
-      {
-         self->name=pNext;
-         memcpy(pNext,name,nameLen);
-         pNext+=nameLen;
-         *pNext++='\0';
-      }
-      if (dsgLen > 0)
-      {
-         self->dsg=pNext;
-         memcpy(pNext,dsg,dsgLen);
-         pNext+=dsgLen;
-         *pNext++='\0';
-      }
-      if (attrLen > 0)
-      {
-         self->attr=pNext;
-         memcpy(pNext,attr,attrLen);
-         pNext+=attrLen;
-         *pNext++='\0';
-      }
-      assert(pNext==pEnd); //check post-conditions
+      self->lineNumber = lineNumber;
    }
-   return 0;
+   return APX_NO_ERROR;
 }
 
 void apx_datatype_destroy(apx_datatype_t *self)
 {
-   if ( (self!=0) && (self->pAlloc != 0) )
+   if ( self !=0 )
    {
-      free(self->pAlloc);
-      self->pAlloc=0;
+      if (self->name != 0)
+      {
+         free(self->name);
+         self->name = NULL;
+      }
+      if (self->dataSignature != 0)
+      {
+         apx_dataSignature_delete(self->dataSignature);
+         self->dataSignature = NULL;
+      }
+      if (self->attribute != 0)
+      {
+         apx_typeAttribute_delete(self->attribute);
+         self->attribute = NULL;
+      }
    }
 }
 
+int32_t apx_datatype_getLineNumber(apx_datatype_t *self)
+{
+   if (self != 0)
+   {
+      return self->lineNumber;
+   }
+   return -1;
+}
 
-/***************** Private Function Definitions *******************/
+apx_error_t apx_datatype_calcPackLen(apx_datatype_t *self, int32_t *packLen)
+{
+   if ( (self != 0) && (packLen != 0))
+   {
+      if (self->dataSignature != 0)
+      {
+         *packLen = apx_dataSignature_calcPackLen(self->dataSignature);
+      }
+      else
+      {
+         return APX_DATA_SIGNATURE_ERROR;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_datatype_getLastError(apx_datatype_t *self)
+{
+   if ( (self != 0) && (self->dataSignature != 0) )
+   {
+      return apx_dataSignature_getLastError(self->dataSignature);
+   }
+   return APX_NO_ERROR;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
+
 

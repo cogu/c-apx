@@ -20,9 +20,11 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_attributeParser_tag
 {
-   int32_t lastError;
+   apx_error_t lastError;
    const uint8_t *pErrorNext;
    int32_t lastErrorPos;
+   int16_t majorVersion;
+   int16_t minorVersion;
 }apx_attributeParser_t;
 
 #ifdef UNIT_TEST
@@ -40,14 +42,15 @@ typedef struct apx_attributeParser_tag
 //////////////////////////////////////////////////////////////////////////////
 void apx_attributeParser_create(apx_attributeParser_t *self);
 void apx_attributeParser_destroy(apx_attributeParser_t *self);
-bool apx_attributeParser_parseObject(apx_attributeParser_t *self, apx_portAttributes_t *attributeObject);
+void apx_attributeParser_setVersion(apx_attributeParser_t *self, int16_t majorVersion, int16_t minorVersion);
+apx_error_t apx_attributeParser_parseObject(apx_attributeParser_t *self, apx_portAttributes_t *attributeObject);
 const uint8_t* apx_attributeParser_parse(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, apx_portAttributes_t *attr);
-int32_t apx_attributeParser_getLastError(apx_attributeParser_t *self, const uint8_t **ppNext);
+apx_error_t apx_attributeParser_getLastError(apx_attributeParser_t *self, const uint8_t **ppNext);
 
 #ifdef UNIT_TEST
 DYN_STATIC const uint8_t* apx_attributeParser_parseSingleAttribute(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, apx_portAttributes_t *attr);
 DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, dtl_dv_t **ppInitValue);
-DYN_STATIC const uint8_t* apx_attributeParser_parseQueueLength(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, apx_portAttributes_t *attr);
+DYN_STATIC const uint8_t* apx_attributeParser_parseArrayLength(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, int32_t *pValue);
 #endif
 
 

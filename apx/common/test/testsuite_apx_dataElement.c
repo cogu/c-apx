@@ -1,3 +1,28 @@
+/*****************************************************************************
+* \file      testsuite_apx_dataElement.c
+* \author    Conny Gustafsson
+* \date      my_date
+* \brief     unit tests for apx_dataElement_t
+*
+* Copyright (c) 2018 Conny Gustafsson
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
@@ -8,6 +33,7 @@
 #include <string.h>
 #include "CuTest.h"
 #include "apx_dataElement.h"
+#include "apx_dataType.h"
 #include "adt_bytearray.h"
 
 #ifdef MEM_LEAK_CHECK
@@ -38,6 +64,9 @@ static void test_apx_dataElement_pack_string(CuTest *tc);
 static void test_apx_dataElement_pack_pair(CuTest *tc);
 static void test_apx_dataElement_pack_nested(CuTest *tc);
 static void test_apx_dataElement_pack_record_array(CuTest *tc);
+static void test_apx_dataElement_create_typeReferenceId(CuTest *tc);
+static void test_apx_dataElement_create_typeReferenceName(CuTest *tc);
+static void test_apx_dataElement_create_typeReferencePtr(CuTest *tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -74,6 +103,9 @@ CuSuite* testSuite_apx_dataElement(void)
    SUITE_ADD_TEST(suite, test_apx_dataElement_pack_pair);
    SUITE_ADD_TEST(suite, test_apx_dataElement_pack_nested);
    SUITE_ADD_TEST(suite, test_apx_dataElement_pack_record_array);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferenceId);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferenceName);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferencePtr);
 
 
    return suite;
@@ -249,19 +281,19 @@ static void test_apx_dataElement_pack_U8_array(CuTest* tc)
    pEnd = pBegin + adt_bytearray_length(array);
    av = dtl_av_new();
    CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(4));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(5));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(6));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(7));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(8));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(4), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(5), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(6), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(7), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(8), false);
 
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, 0, pResult); //one element still missing
-   CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_getLastError());
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(9));
+   CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_dataElement_getLastError(&dataElement));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(9), false);
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
    CuAssertIntEquals(tc, pBegin[0], 1);
@@ -297,19 +329,19 @@ static void test_apx_dataElement_pack_U16_array(CuTest* tc)
    pEnd = pBegin + adt_bytearray_length(array);
    av = dtl_av_new();
    CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(4));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(5));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(6));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(7));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(8));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(4), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(5), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(6), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(7), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(8), false);
 
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, 0, pResult); //one element still missing
-   CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_getLastError());
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(9));
+   CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_dataElement_getLastError(&dataElement));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(9), false);
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
    CuAssertIntEquals(tc, pBegin[0], 1);
@@ -354,9 +386,9 @@ static void test_apx_dataElement_pack_U32_array(CuTest* tc)
    pEnd = pBegin + adt_bytearray_length(array);
    av = dtl_av_new();
    CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3), false);
 
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
@@ -396,11 +428,11 @@ static void test_apx_dataElement_pack_S8_array(CuTest* tc)
    pEnd = pBegin + adt_bytearray_length(array);
    av = dtl_av_new();
    CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-4));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-5));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-4), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-5), false);
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
    CuAssertIntEquals(tc, pBegin[0], 0xFF);
@@ -432,11 +464,11 @@ static void test_apx_dataElement_pack_S16_array(CuTest* tc)
    pEnd = pBegin + adt_bytearray_length(array);
    av = dtl_av_new();
    CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-4));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-5));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-4), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-5), false);
 
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
@@ -474,9 +506,9 @@ static void test_apx_dataElement_pack_S32_array(CuTest* tc)
    pEnd = pBegin + adt_bytearray_length(array);
    av = dtl_av_new();
    CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3), false);
 
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
@@ -574,8 +606,8 @@ static void test_apx_dataElement_pack_pair(CuTest *tc)
    pEnd = pBegin + adt_bytearray_length(array);
    av = dtl_av_new();
    CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(7));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(15));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(7), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(15), false);
 
    pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
@@ -618,12 +650,12 @@ static void test_apx_dataElement_pack_nested(CuTest *tc)
    pEnd = pBegin + adt_bytearray_length(array);
    av1 = dtl_av_new();
    CuAssertPtrNotNull(tc, av1);
-   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_i32(3));
-   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_cstr("        "));
+   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_i32(3), false);
+   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_cstr("        "), false);
    av = dtl_av_new();
    CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0xFFFFFFFF));
-   dtl_av_push(av, (dtl_dv_t*) av1);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0xFFFFFFFF), false);
+   dtl_av_push(av, (dtl_dv_t*) av1, false);
 
    pResult = apx_dataElement_pack_dv(rootElem, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
@@ -684,18 +716,18 @@ static void test_apx_dataElement_pack_record_array(CuTest *tc)
    CuAssertPtrNotNull(tc, av2);
    CuAssertPtrNotNull(tc, av22);
    //{{0x12345678, {1,2,3}}, {0x12345678, {4,5,6}}
-   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_u32(0x12345678));
-   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(1));
-   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(2));
-   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(3));
-   dtl_av_push(av1, (dtl_dv_t*) av12);
-   dtl_av_push(av, (dtl_dv_t*) av1);
-   dtl_av_push(av2, (dtl_dv_t*) dtl_sv_make_u32(0x12345678));
-   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(4));
-   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(5));
-   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(6));
-   dtl_av_push(av2, (dtl_dv_t*) av22);
-   dtl_av_push(av, (dtl_dv_t*) av2);
+   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_u32(0x12345678), false);
+   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(1), false);
+   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(2), false);
+   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(3), false);
+   dtl_av_push(av1, (dtl_dv_t*) av12, false);
+   dtl_av_push(av, (dtl_dv_t*) av1, false);
+   dtl_av_push(av2, (dtl_dv_t*) dtl_sv_make_u32(0x12345678), false);
+   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(4), false);
+   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(5), false);
+   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(6), false);
+   dtl_av_push(av2, (dtl_dv_t*) av22, false);
+   dtl_av_push(av, (dtl_dv_t*) av2, false);
 
    pResult = apx_dataElement_pack_dv(rootElement, pBegin, pEnd, (dtl_dv_t*) av);
    CuAssertPtrEquals(tc, pEnd, pResult);
@@ -716,4 +748,38 @@ static void test_apx_dataElement_pack_record_array(CuTest *tc)
    apx_dataElement_delete(rootElement);
    adt_bytearray_delete(array);
    dtl_av_delete(av);
+}
+
+static void test_apx_dataElement_create_typeReferenceId(CuTest *tc)
+{
+   apx_dataElement_t *element;
+   element = apx_dataElement_new(APX_BASE_TYPE_REF_ID, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setTypeReferenceId(element, 64);
+   CuAssertIntEquals(tc, 64, apx_dataElement_getTypeReferenceId(element));
+   apx_dataElement_delete(element);
+}
+
+static void test_apx_dataElement_create_typeReferenceName(CuTest *tc)
+{
+   apx_dataElement_t *element;
+   element = apx_dataElement_new(APX_BASE_TYPE_REF_NAME, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setTypeReferenceName(element, "typeName");
+   CuAssertStrEquals(tc, "typeName", apx_dataElement_getTypeReferenceName(element));
+   apx_dataElement_delete(element);
+}
+
+static void test_apx_dataElement_create_typeReferencePtr(CuTest *tc)
+{
+   apx_error_t err;
+   apx_dataElement_t *element;
+   apx_datatype_t *dataType;
+   element = apx_dataElement_new(APX_BASE_TYPE_REF_PTR, NULL);
+   CuAssertPtrNotNull(tc, element);
+   dataType = apx_datatype_new("TypeName_T","C(0,1)", NULL, 0, &err);
+   apx_dataElement_setTypeReferencePtr(element, dataType);
+   CuAssertPtrEquals(tc, dataType, apx_dataElement_getTypeReferencePtr(element));
+   apx_dataElement_delete(element);
+   apx_datatype_delete(dataType);
 }

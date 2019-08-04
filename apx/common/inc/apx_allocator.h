@@ -18,7 +18,7 @@
 #include <semaphore.h>
 #endif
 #include "osmacro.h"
-#include "ringbuf.h"
+#include "adt_ringbuf.h"
 #include "soa.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -35,11 +35,9 @@ typedef struct apx_allocator_tag
    SEMAPHORE_T semaphore; //thread semaphore
 
    //data object, all read/write accesses to these must be protected by the lock variable above
-   rbfs_t messages; //pending messages (ringbuffer)
+   adt_rbfh_t messages; //pending cleanup messages (ringbuffer)
    bool isRunning; //when false it's time do shut down
    bool workerThreadValid; //true if workerThread is a valid variable
-   uint8_t *ringBufferData; //memory for ringbuffer
-   uint32_t ringBufferLen; //number of items in ringbuffer
    soa_t soa;
 
 #ifdef _MSC_VER
@@ -68,6 +66,7 @@ void apx_allocator_destroy(apx_allocator_t *self);
 void apx_allocator_start(apx_allocator_t *self);
 void apx_allocator_stop(apx_allocator_t *self);
 uint8_t *apx_allocator_alloc(apx_allocator_t *self, size_t size);
-void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, uint32_t size);
+void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size);
+bool apx_allocator_isRunning(apx_allocator_t *self);
 
 #endif //APX_ALLOCATOR_H

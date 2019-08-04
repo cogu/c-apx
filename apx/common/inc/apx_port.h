@@ -1,41 +1,73 @@
+/*****************************************************************************
+* \file      apx_port.h
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     APX port class
+*
+* Copyright (c) 2017-2018 Conny Gustafsson
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+******************************************************************************/
 #ifndef APX_PORT_H
 #define APX_PORT_H
-//simple port - data port with one data element
+
+//////////////////////////////////////////////////////////////////////////////
+// INCLUDES
+//////////////////////////////////////////////////////////////////////////////
 #include "apx_dataSignature.h"
 #include "apx_portAttributes.h"
+#include "apx_error.h"
+#include "apx_types.h"
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC CONSTANTS AND DATA TYPES
+//////////////////////////////////////////////////////////////////////////////
+//forward declarations
+struct adt_ary_tag;
+struct adt_hash_tag;
 
-#define APX_REQUIRE_PORT 0
-#define APX_PROVIDE_PORT 1
+typedef struct apx_port_tag
+{
+   char *name;
+   apx_dataSignature_t dataSignature; //Container for both raw and derived data signature
+   apx_portAttributes_t *portAttributes; //port attributes object, includes the raw attributes string
+   char *derivedPortSignature; //Derived port signature, excluding the initial 'R' or 'P'
+   int32_t lineNumber; //line number in the APX-file where this port is defines. Special value 0 is used in case this port was created without an APX-file
+   apx_portId_t portId; //index of the port 0..len(ports) where it resides on its parent node
+   apx_portType_t portType; //APX_REQUIRE_PORT or APX_PROVIDE_PORT
+} apx_port_t;
 
-typedef struct apx_port_tag{
-	char *name;
-	char *dataSignature; //underived data signature, this string usually contains just a type reference, e.g. "T[0]"
-	apx_dataSignature_t derivedDsg; //this is the true data signature, e.g. "C(0.7)"
-	apx_portAttributes_t *portAttributes; //port attributes object, includes the raw attributes string
-	char *portSignature; //full port signature, excluding the initial 'R' or 'P'
-	uint8_t portType; //APX_REQUIRE_PORT or APX_PROVIDE_PORT
-	int32_t portIndex; //index of the port 0..len(ports) where it resides on its parent node
-}apx_port_t;
-
-/***************** Public Function Declarations *******************/
-
-void apx_port_create(apx_port_t *self,uint8_t portDirection,const char *name, const char* dataSignature, const char *attributes);
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
+apx_port_t* apx_providePort_new(const char *name, const char* dataSignature, const char *attributes, int32_t lineNumber, apx_error_t *errorCode);
+apx_port_t* apx_requirePort_new(const char *name, const char* dataSignature, const char *attributes, int32_t lineNumber,  apx_error_t *errorCode);
+apx_error_t apx_port_create(apx_port_t *self, apx_portType_t portType, const char *name, const char* dataSignature, const char *attributes, int32_t lineNumber);
 void apx_port_destroy(apx_port_t *self);
-apx_port_t* apx_providePort_new(const char *name, const char* dataSignature, const char *attributes);
-apx_port_t* apx_requirePort_new(const char *name, const char* dataSignature, const char *attributes);
 void apx_port_delete(apx_port_t *self);
 void apx_port_vdelete(void *arg);
 
-void apx_port_setDerivedDataSignature(apx_port_t *self, const char *dataSignature);
-const char *apx_port_derivePortSignature(apx_port_t *self);
-const char *apx_port_getPortSignature(apx_port_t *self);
+apx_error_t apx_port_resolveTypes(apx_port_t *self, struct adt_ary_tag *typeList, struct adt_hash_tag *typeMap);
+apx_error_t apx_port_updateDerivedPortSignature(apx_port_t *self);
+const char *apx_port_getDerivedPortSignature(apx_port_t *self);
+apx_error_t apx_port_updatePackLen(apx_port_t *self);
+
 int32_t apx_port_getPackLen(apx_port_t *self);
-void apx_port_setPortIndex(apx_port_t *self, int32_t portIndex);
-int32_t  apx_port_getPortIndex(apx_port_t *self);
-
-
-#ifdef UNIT_TEST
-
-#endif
+void apx_port_setPortId(apx_port_t *self, apx_portId_t portId);
+apx_portId_t  apx_port_getPortId(apx_port_t *self);
 
 #endif //APX_PORT_H

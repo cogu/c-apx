@@ -41,6 +41,8 @@ int8_t apx_portAttributes_create(apx_portAttributes_t *self, const char *attribu
       self->isFinalized = false;
       self->isParameter = false;
       self->isQueued = false;
+      self->isDynamic = false;
+      self->dynLen = -1;
       self->queueLen = -1;
       self->initValue = 0;
       self->rawValue = 0;

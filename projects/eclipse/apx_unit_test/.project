@@ -27,7 +27,7 @@
 		<link>
 			<name>cutest</name>
 			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/cutest</locationURI>
+			<location>C:/Users/cogu/repo/c-apx/cutil/cutest</location>
 		</link>
 		<link>
 			<name>adt/inc</name>
@@ -40,6 +40,11 @@
 			<locationURI>PARENT-3-PROJECT_LOC/adt/src</locationURI>
 		</link>
 		<link>
+			<name>autosar/inc</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/autosar/inc</location>
+		</link>
+		<link>
 			<name>bstr/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/bstr/inc</locationURI>
@@ -48,6 +53,16 @@
 			<name>bstr/src</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/bstr/src</locationURI>
+		</link>
+		<link>
+			<name>cutil/inc</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/cutil/inc</location>
+		</link>
+		<link>
+			<name>cutil/src</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/cutil/src</location>
 		</link>
 		<link>
 			<name>dtl_type/inc</name>
@@ -83,21 +98,6 @@
 			<name>remotefile/test</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/remotefile/test</locationURI>
-		</link>
-		<link>
-			<name>util/inc</name>
-			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/util/inc</locationURI>
-		</link>
-		<link>
-			<name>util/src</name>
-			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/util/src</locationURI>
-		</link>
-		<link>
-			<name>util/test</name>
-			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/util/test</locationURI>
 		</link>
 		<link>
 			<name>apx/client/inc</name>

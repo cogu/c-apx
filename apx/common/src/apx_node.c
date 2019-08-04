@@ -6,26 +6,22 @@
 #include <stdio.h>
 #include "bstr.h"
 #include "apx_node.h"
-#include "apx_nodeInfo.h"
 #include "apx_logging.h"
 #include "apx_error.h"
-#include "pack.h"
+#include "apx_types.h"
+#include "adt_ary.h"
+#include "adt_hash.h"
+#include "apx_dataType.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
 
-#ifdef _MSC_VER
-#define STRDUP _strdup
-#else
-#define STRDUP strdup
-#endif
-
 #define ERROR_STR_MAX 128
+
 /**************** Private Function Declarations *******************/
-static void apx_node_setPortSignature(const apx_node_t *self, apx_port_t *port);
-static int apx_node_getDatatypeId(apx_port_t *port);
-static const char *apx_node_resolveDataSignature(const apx_node_t *self,apx_port_t *port);
-static void apx_parser_attributeParseError(apx_port_t *port, int32_t lastError);
+static apx_error_t apx_node_finalizePort(apx_port_t *port, adt_ary_t *typeList, adt_hash_t *typeMap);
+static void setError(apx_node_t *self, apx_error_t errorCode);
+//static void clearError(apx_node_t *self);
 
 /**************** Private Variable Declarations *******************/
 
@@ -55,7 +51,7 @@ void apx_node_vdelete(void *arg)
    apx_node_delete((apx_node_t*) arg);
 }
 
-void apx_node_create(apx_node_t *self,const char *name){
+void apx_node_create(apx_node_t *self, const char *name){
    if(self != 0){
       self->name = 0;
       adt_ary_create(&self->datatypeList,apx_datatype_vdelete);
@@ -63,11 +59,8 @@ void apx_node_create(apx_node_t *self,const char *name){
       adt_ary_create(&self->providePortList,apx_port_vdelete);
       apx_attributeParser_create(&self->attributeParser);
       apx_node_setName(self,name);
-      self->lastPortError=0;
-      self->lastPortId=-1;
-      self->lastPortType=-1;
-      self->nodeInfo=(apx_nodeInfo_t*) 0;
       self->isFinalized = false;
+      self->lastError = APX_NO_ERROR;
    }
 }
 
@@ -107,74 +100,89 @@ const char *apx_node_getName(apx_node_t *self)
    return (const char*) 0;
 }
 
+void apx_node_setVersion(apx_node_t *self, int16_t majorVersion, int16_t minorVersion)
+{
+   if ( (self != 0) && (majorVersion >= 0) && (minorVersion >= 0))
+   {
+      apx_attributeParser_setVersion(&self->attributeParser, majorVersion, minorVersion);
+   }
+}
+
 //datatype functions
-apx_datatype_t *apx_node_createDataType(apx_node_t *self, const char* name, const char *dsg, const char *attr)
+apx_datatype_t *apx_node_createDataType(apx_node_t *self, const char* name, const char *dsg, const char *attr, int32_t lineNumber)
 {
    apx_datatype_t *datatype=0;
    if (self != 0)
    {
-     datatype = apx_datatype_new(name,dsg,attr);
-     if (datatype != 0)
-     {
-        adt_ary_push(&self->datatypeList,datatype);
-     }
+      apx_error_t err;
+      datatype = apx_datatype_new(name,dsg,attr, lineNumber, &err);
+      if ( (datatype != 0) && (err == APX_NO_ERROR) )
+      {
+         adt_ary_push(&self->datatypeList,datatype);
+      }
    }
    return datatype;
 }
 
 //port functions
-apx_port_t *apx_node_createRequirePort(apx_node_t *self, const char* name, const char *dsg, const char *attr)
+apx_port_t *apx_node_createRequirePort(apx_node_t *self, const char* name, const char *dsg, const char *attr, int32_t lineNumber)
 {
    apx_port_t *port=0;
    if (self != 0)
    {
-     port = apx_requirePort_new(name,dsg,attr);
-     if (port != 0)
-     {
-        int32_t portIndex = adt_ary_length(&self->requirePortList);
-        if ( port->portAttributes != 0 )
-        {
-           bool result = apx_attributeParser_parseObject(&self->attributeParser, port->portAttributes);
-           if (result == false)
-           {
-              int32_t lastError;
-              lastError = apx_attributeParser_getLastError(&self->attributeParser, 0);
-              apx_parser_attributeParseError(port, lastError);
-              apx_port_delete(port);
-              return 0;
-           }
-        }
-        apx_port_setPortIndex(port,portIndex);
-        adt_ary_push(&self->requirePortList,port);
-     }
+      apx_error_t err;
+      port = apx_requirePort_new(name, dsg, attr, lineNumber, &err);
+      if (port != 0)
+      {
+         apx_portId_t portId = (apx_portId_t) adt_ary_length(&self->requirePortList);
+         if ( port->portAttributes != 0 )
+         {
+            apx_error_t result = apx_attributeParser_parseObject(&self->attributeParser, port->portAttributes);
+            if (result != APX_NO_ERROR)
+            {
+               apx_port_delete(port);
+               setError(self, result);
+               return NULL;
+            }
+         }
+         apx_port_setPortId(port, portId);
+         adt_ary_push(&self->requirePortList,port);
+      }
+      else
+      {
+         setError(self, err);
+      }
    }
    return port;
 }
 
-apx_port_t *apx_node_createProvidePort(apx_node_t *self, const char* name, const char *dsg, const char *attr)
+apx_port_t *apx_node_createProvidePort(apx_node_t *self, const char* name, const char *dsg, const char *attr, int32_t lineNumber)
 {
    apx_port_t *port=0;
    if (self != 0)
    {
-     port = apx_providePort_new(name,dsg,attr);
-     if (port != 0)
-     {
-        int32_t portIndex = adt_ary_length(&self->providePortList);
-        if ( port->portAttributes != 0 )
-        {
-           bool result = apx_attributeParser_parseObject(&self->attributeParser, port->portAttributes);
-           if (result == false)
-           {
-              int32_t lastError;
-              lastError = apx_attributeParser_getLastError(&self->attributeParser, 0);
-              apx_parser_attributeParseError(port, lastError);
-              apx_port_delete(port);
-              return 0;
-           }
-        }
-        apx_port_setPortIndex(port,portIndex);
-        adt_ary_push(&self->providePortList,port);
-     }
+      apx_error_t err;
+      port = apx_providePort_new(name, dsg, attr, lineNumber, &err);
+      if (port != 0)
+      {
+         apx_portId_t portId = (apx_portId_t )adt_ary_length(&self->providePortList);
+         if ( port->portAttributes != 0 )
+         {
+            apx_error_t result = apx_attributeParser_parseObject(&self->attributeParser, port->portAttributes);
+            if (result != APX_NO_ERROR)
+            {
+               apx_port_delete(port);
+               setError(self, result);
+               return NULL;
+            }
+         }
+         apx_port_setPortId(port, portId);
+         adt_ary_push(&self->providePortList,port);
+      }
+      else
+      {
+         setError(self, err);
+      }
    }
    return port;
 }
@@ -182,50 +190,84 @@ apx_port_t *apx_node_createProvidePort(apx_node_t *self, const char* name, const
 /**
  * return 0 on success, -1 on error
  */
-int8_t apx_node_finalize(apx_node_t *self)
+apx_error_t apx_node_finalize(apx_node_t *self, int32_t *errorLine)
 {
+   apx_error_t retval = APX_INVALID_ARGUMENT_ERROR;
    if (self != 0)
    {
-      int32_t i;
-      int32_t providePortLen;
-      int32_t requirePortLen;
       if (self->isFinalized == true)
       {
-         return 0;
+         retval = APX_NO_ERROR;
       }
-      providePortLen = adt_ary_length(&self->providePortList);
-      for(i=0;i<providePortLen;i++)
+      else
       {
-         apx_port_t *port = (apx_port_t*) adt_ary_value(&self->providePortList,i);
-         apx_node_setPortSignature(self,port);
+         int32_t i;
+         int32_t dataTypeLen;
+         int32_t providePortLen;
+         int32_t requirePortLen;
+         adt_hash_t typeMap;
+
+         retval = APX_NO_ERROR;
+         adt_hash_create(&typeMap, NULL);
+         dataTypeLen = adt_ary_length(&self->datatypeList);
+         for(i=0;i<dataTypeLen;i++)
+         {
+            apx_datatype_t *datatype = (apx_datatype_t*) adt_ary_value(&self->datatypeList, i);
+            if ( (datatype->name != 0) && (strlen(datatype->name)>0) )
+            {
+               adt_hash_set(&typeMap, datatype->name, datatype);
+            }
+         }
+         providePortLen = adt_ary_length(&self->providePortList);
+         for(i=0;i<providePortLen;i++)
+         {
+            apx_error_t result;
+            apx_port_t *port = (apx_port_t*) adt_ary_value(&self->providePortList, i);
+            result = apx_node_finalizePort(port, &self->datatypeList, &typeMap);
+            if (result != APX_NO_ERROR)
+            {
+               if (errorLine != 0) *errorLine = port->lineNumber;
+               retval = result;
+               break;
+            }
+         }
+         if (retval == APX_NO_ERROR)
+         {
+            requirePortLen = adt_ary_length(&self->requirePortList);
+            for(i=0;i<requirePortLen;i++)
+            {
+               apx_error_t result;
+               apx_port_t *port = (apx_port_t*) adt_ary_value(&self->requirePortList, i);
+               result = apx_node_finalizePort(port, &self->datatypeList, &typeMap);
+               if (result != APX_NO_ERROR)
+               {
+                  if (errorLine != 0) *errorLine = port->lineNumber;
+                  retval = result;
+                  break;
+               }
+            }
+         }
+         adt_hash_destroy(&typeMap);
+         self->isFinalized = true;
       }
-      requirePortLen = adt_ary_length(&self->requirePortList);
-      for(i=0;i<requirePortLen;i++)
-      {
-         apx_port_t *port = (apx_port_t*) adt_ary_value(&self->requirePortList,i);
-         apx_node_setPortSignature(self,port);
-      }
-      self->isFinalized = true;
-      return 0;
    }
-   errno = EINVAL;
-   return -1;
+   return retval;
 }
 
-apx_port_t *apx_node_getRequirePort(apx_node_t *self, int32_t portIndex)
+apx_port_t *apx_node_getRequirePort(const apx_node_t *self, int32_t portIndex)
 {
    if (self != 0)
    {
-      return (apx_port_t*) *adt_ary_get(&self->requirePortList,portIndex);
+      return (apx_port_t*) *adt_ary_get((adt_ary_t*)&self->requirePortList,portIndex);
    }
    return (apx_port_t*) 0;
 }
 
-apx_port_t *apx_node_getProvidePort(apx_node_t *self, int32_t portIndex)
+apx_port_t *apx_node_getProvidePort(const apx_node_t *self, int32_t portIndex)
 {
    if (self != 0)
    {
-      return (apx_port_t*) *adt_ary_get(&self->providePortList,portIndex);
+      return (apx_port_t*) *adt_ary_get((adt_ary_t*) &self->providePortList,portIndex);
    }
    return (apx_port_t*) 0;
 }
@@ -254,131 +296,22 @@ adt_bytearray_t *apx_node_createPortInitData(apx_node_t *self, apx_port_t *port)
 {
    if ( (self != 0) && (port != 0) )
    {
-      int32_t result;
+      apx_error_t result;
       adt_bytearray_t *initData = adt_bytearray_new(0);
       result = apx_node_fillPortInitData(self, port, initData);
-      if (result != 0)
+      if (result != APX_NO_ERROR)
       {
          adt_bytearray_delete(initData);
-         return 0;
+         setError(self, result);
+         initData = (adt_bytearray_t*) 0;
       }
       return initData;
    }
-   errno=EINVAL;
-   return 0;
+   setError(self, APX_INVALID_ARGUMENT_ERROR);
+   return (adt_bytearray_t*) 0;
 }
 
-
-/***************** Private Function Definitions *******************/
-static void apx_node_setPortSignature(const apx_node_t *self, apx_port_t *port)
-{
-   assert(port != 0);
-   if ( port->dataSignature != 0 )
-   {
-      const char *dataSignature = apx_node_resolveDataSignature(self,port);
-      apx_port_setDerivedDataSignature(port,dataSignature);
-   }
-   apx_port_derivePortSignature(port);
-}
-
-static int apx_node_getDatatypeId(apx_port_t *port)
-{
-   const uint8_t *pEnd;
-   const uint8_t *pMark;
-   const uint8_t *pNext;
-   const uint8_t *pBegin = (const uint8_t*) port->dataSignature;
-   if ( (port->dataSignature[0]=='T') && (port->dataSignature[1]=='[') )
-   {
-      pEnd = pBegin+strlen(port->dataSignature);
-      pNext=pBegin+1;
-      pMark=bstr_matchPair(pNext,pEnd,'[',']','\\');
-      if (pMark>pBegin)
-      {
-         long value;
-         const uint8_t *pResult;
-         pNext+=1; //move past the '['
-         pResult = bstr_toLong(pNext,pMark,&value);
-         if (pResult > pNext)
-         {
-            return (int) value;
-         }
-      }
-   }
-   return -1;
-}
-
-/**
- * returns the datasignature of the port. If the datasignature is a typereference it will resolve the type reference and return the true data signature
- */
-static const char *apx_node_resolveDataSignature(const apx_node_t *self,apx_port_t *port)
-{
-   if ( (self != 0) && (port != 0) )
-   {
-      if (port->dataSignature != 0)
-      {
-         if (port->dataSignature[0]=='T')
-         {
-            if (port->dataSignature[1]=='[')
-            {
-               int typeId = apx_node_getDatatypeId(port);
-               if ( (typeId >= 0) && (typeId < ((int)adt_ary_length(&self->datatypeList))) )
-               {
-                  apx_datatype_t *datatype = (apx_datatype_t*) adt_ary_value(&self->datatypeList,typeId);
-                  return datatype->dsg;
-               }
-               else
-               {
-                  return (const char *) NULL;
-               }
-            }
-            if (port->dataSignature[1]=='"')
-            {
-               //TODO: implement type reference by name
-            }
-         }
-         else
-         {
-            return port->dataSignature;
-         }
-      }
-   }
-   return 0;
-}
-
-
-static void apx_parser_attributeParseError(apx_port_t *port, int32_t lastError)
-{
-   char errorStr[ERROR_STR_MAX+1];
-   uint32_t remain = ERROR_STR_MAX;
-   uint32_t errorStrLen=0;
-   uint32_t attrLen = strlen(port->portAttributes->rawValue);
-   switch(lastError)
-   {
-   case APX_PARSE_ERROR:
-      errorStrLen = sprintf(errorStr, "Failed to parse port attribute string: ");
-      break;
-   default:
-      return;
-   }
-   remain -= errorStrLen;
-   if (remain >= attrLen)
-   {
-      strcpy(&errorStr[errorStrLen], port->portAttributes->rawValue);
-   }
-   else
-   {
-      //truncate the port attribute string adding "..." at the end
-      uint32_t bytesToCopy = remain-3;
-      strncpy(&errorStr[errorStrLen], port->portAttributes->rawValue, bytesToCopy);
-      strcpy(&errorStr[errorStrLen+bytesToCopy], "...");
-   }
-   APX_LOG_ERROR("%s", errorStr);
-}
-
-/**
- * returns zero on success, non-zero on error
- */
-int32_t apx_node_fillPortInitData(apx_node_t *self, apx_port_t *port, adt_bytearray_t *output)
+apx_error_t apx_node_fillPortInitData(apx_node_t *self, apx_port_t *port, adt_bytearray_t *output)
 {
    if ( (self != 0) && (port != 0) )
    {
@@ -387,14 +320,24 @@ int32_t apx_node_fillPortInitData(apx_node_t *self, apx_port_t *port, adt_bytear
 
       if (self->isFinalized == false)
       {
-         apx_node_finalize(self);
+         int32_t errorLine;
+         apx_node_finalize(self, &errorLine);
       }
-      dataElement = port->derivedDsg.dataElement;
+      dataElement = port->dataSignature.dataElement;
       if ( (dataElement == 0) || (dataElement->baseType == APX_BASE_TYPE_NONE) || (dataElement->packLen == 0) )
       {
-         apx_setError(APX_VALUE_ERROR);
-         return -1;
+         return APX_VALUE_ERROR;
       }
+      if (dataElement->baseType == APX_BASE_TYPE_REF_PTR)
+      {
+         apx_datatype_t *datatype = dataElement->typeRef.ptr;
+         if (datatype->dataSignature->dataElement != 0)
+         {
+
+            dataElement = datatype->dataSignature->dataElement;
+         }
+      }
+      assert(dataElement->packLen > 0);
       adt_bytearray_resize(output, dataElement->packLen);
       if (port->portAttributes != 0)
       {
@@ -404,7 +347,7 @@ int32_t apx_node_fillPortInitData(apx_node_t *self, apx_port_t *port, adt_bytear
             //if no init value is given, set to 0
             uint8_t *buf = adt_bytearray_data(output);
             memset(buf, 0, dataElement->packLen);
-            return 0;
+            return APX_NO_ERROR;
          }
          else
          {
@@ -416,9 +359,9 @@ int32_t apx_node_fillPortInitData(apx_node_t *self, apx_port_t *port, adt_bytear
             pResult = apx_dataElement_pack_dv(dataElement, pBegin, pEnd, attr->initValue);
             if ( (pResult == 0) || (pResult == pBegin) )
             {
-               return -1;
+               return apx_dataElement_getLastError(dataElement);
             }
-            return 0;
+            return APX_NO_ERROR;
          }
       }
       else
@@ -426,9 +369,95 @@ int32_t apx_node_fillPortInitData(apx_node_t *self, apx_port_t *port, adt_bytear
          //if no init value is given, set to 0
          uint8_t *buf = adt_bytearray_data(output);
          memset(buf, 0, dataElement->packLen);
-         return 0;
+         return APX_NO_ERROR;
       }
    }
-   errno = EINVAL;
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+int32_t apx_node_calcOutPortDataLen(apx_node_t *self)
+{
+   if (self != 0)
+   {
+      int32_t providePortLen;
+      int32_t total=0;
+      int32_t i;
+      providePortLen = apx_node_getNumProvidePorts(self);
+      for(i=0;i<providePortLen;i++)
+      {
+         int32_t outPortDataLen;
+         apx_port_t *port = apx_node_getProvidePort(self, i);
+         outPortDataLen = apx_port_getPackLen(port);
+         if (outPortDataLen < 0)
+         {
+            return -1;
+         }
+         total+=outPortDataLen;
+      }
+      return total;
+   }
    return -1;
 }
+
+int32_t apx_node_calcInPortDataLen(apx_node_t *self)
+{
+   if (self != 0)
+   {
+      int32_t providePortLen;
+      int32_t total=0;
+      int32_t i;
+      providePortLen = apx_node_getNumRequirePorts(self);
+      for(i=0;i<providePortLen;i++)
+      {
+         int32_t outPortDataLen;
+         apx_port_t *port = apx_node_getRequirePort(self, i);
+         outPortDataLen = apx_port_getPackLen(port);
+         if (outPortDataLen < 0)
+         {
+            return -1;
+         }
+         total+=outPortDataLen;
+      }
+      return total;
+   }
+   return -1;
+}
+
+apx_error_t apx_node_getLastError(apx_node_t *self)
+{
+   if (self != 0)
+   {
+      return self->lastError;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+
+/***************** Private Function Definitions *******************/
+
+static apx_error_t apx_node_finalizePort(apx_port_t *port, adt_ary_t *typeList, adt_hash_t *typeMap)
+{
+   apx_error_t result;
+   result = apx_port_resolveTypes(port, typeList, typeMap);
+   if (result == APX_NO_ERROR)
+   {
+      result = apx_port_updateDerivedPortSignature(port);
+      if (result == APX_NO_ERROR)
+      {
+         result = apx_port_updatePackLen(port);
+      }
+   }
+   return result;
+}
+
+static void setError(apx_node_t *self, apx_error_t errorCode)
+{
+  self->lastError = errorCode;
+}
+
+/*
+static void clearError(apx_node_t *self)
+{
+   self->lastError = APX_NO_ERROR;
+}
+*/

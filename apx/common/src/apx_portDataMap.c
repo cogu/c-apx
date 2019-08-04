@@ -1,111 +1,124 @@
+/*****************************************************************************
+* \file      apx_nodePortMap.c
+* \author    Conny Gustafsson
+* \date      2018-11-26
+* \brief     Description
+*
+* Copyright (c) 2018 Conny Gustafsson
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
-#include <errno.h>
 #include <assert.h>
-#include <stdio.h>
+#include <string.h>
 #include "apx_portDataMap.h"
-#include "apx_dataSignature.h"
-#include "apx_logging.h"
+#include "apx_portTriggerList.h"
+#include "apx_portConnectionTable.h"
+
+#include <stdio.h> //DEBUG ONLY
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
 
-
 //////////////////////////////////////////////////////////////////////////////
-// CONSTANTS AND DATA TYPES
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// LOCAL FUNCTION PROTOTYPES
-//////////////////////////////////////////////////////////////////////////////
-static int32_t apx_portDataMap_buildInternal(adt_ary_t *entryList, adt_ary_t *portList);
-
-//////////////////////////////////////////////////////////////////////////////
-// GLOBAL VARIABLES
+// PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
+static apx_error_t apx_portDataMap_allocateMemory(apx_portDataMap_t *self);
+static void apx_portDataMap_freeMemory(apx_portDataMap_t *self);
+static void apx_portDataMap_createRequirePortData(apx_portDataMap_t *self, apx_nodeData_t *nodeData);
+static void apx_portDataMap_createProvidePortData(apx_portDataMap_t *self, apx_nodeData_t *nodeData);
+static apx_size_t apx_portDataMap_createPortDataAttribute(apx_portDataAttributes_t *attr, apx_port_t *port, apx_portId_t portId, apx_size_t offset);
+static void apx_portDataMap_createPortTriggerList(apx_portDataMap_t *self);
+static void apx_portDataMap_destroyPortTriggerList(apx_portDataMap_t *self);
+static void apx_portDataMap_attachPortsToTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs);
+static void apx_portDataMap_detachPortsFromTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs);
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC VARIABLES
+//////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// LOCAL VARIABLES
+// PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 
-
 //////////////////////////////////////////////////////////////////////////////
-// GLOBAL FUNCTIONS
+// PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataMapEntry_create(apx_portDataMapEntry_t *self, apx_port_t *port, int32_t offset, int32_t length)
+apx_error_t apx_portDataMap_create(apx_portDataMap_t *self, apx_nodeData_t *nodeData)
 {
-   if (self != 0)
+   if ( (self != 0) && (nodeData != 0) && (nodeData->node != 0))
    {
-      self->port=port;
-      self->offset=offset;
-      self->length=length;
+      apx_error_t errorCode;
+      memset(self, 0, sizeof(apx_portDataMap_t));
+      self->numRequirePorts = adt_ary_length(&nodeData->node->requirePortList);
+      self->numProvidePorts = adt_ary_length(&nodeData->node->providePortList);
+      errorCode = apx_portDataMap_allocateMemory(self);
+      if (errorCode != APX_NO_ERROR)
+      {
+         apx_portDataMap_freeMemory(self);
+         return errorCode;
+      }
+      apx_portDataMap_createRequirePortData(self, nodeData);
+      apx_portDataMap_createProvidePortData(self, nodeData);
+      self->requirePortPrograms = (apx_portProgramArray_t*) 0; //JIT-compiled programs not needed when ApxNode has been generated using source code generator
+      self->providePortPrograms = (apx_portProgramArray_t*) 0; //JIT-compiled programs not needed when ApxNode has been generated using source code generator
+      return APX_NO_ERROR;
    }
-}
-
-void apx_portDataMapEntry_destroy(apx_portDataMapEntry_t *self)
-{
-  //nothing to do, self->port is a shared pointer
-}
-
-apx_portDataMapEntry_t *apx_portDataMapEntry_new(apx_port_t *port,int32_t offset, int32_t length)
-{
-   apx_portDataMapEntry_t *self = (apx_portDataMapEntry_t*) malloc(sizeof(apx_portDataMapEntry_t));
-   if(self != 0){
-      apx_portDataMapEntry_create(self,port,offset,length);
-   }
-   else{
-      errno = ENOMEM;
-   }
-   return self;
-}
-
-void apx_portDataMapEntry_delete(apx_portDataMapEntry_t *self)
-{
-   if (self != 0)
-   {
-      apx_portDataMapEntry_destroy(self);
-      free(self);
-   }
-}
-
-/**
- * virtual destructor
- */
-void apx_portDataMapEntry_vdelete(void *arg)
-{
-   apx_portDataMapEntry_delete((apx_portDataMapEntry_t*) arg);
-}
-
-void apx_portDataMap_create(apx_portDataMap_t *self)
-{
-   if (self != 0)
-   {
-      adt_ary_create(&self->elements,apx_portDataMapEntry_vdelete);
-      self->node = (apx_node_t*) 0;
-      self->mapType = -1;
-      self->totalLen = -1;
-   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_portDataMap_destroy(apx_portDataMap_t *self)
 {
    if (self != 0)
    {
-      adt_ary_destroy(&self->elements);
+      if (self->portTriggerList != 0)
+      {
+         apx_portDataMap_destroyPortTriggerList(self);
+      }
+      if (self->requirePortByteMap != 0)
+      {
+         apx_bytePortMap_delete(self->requirePortByteMap);
+      }
+      if (self->providePortByteMap != 0)
+      {
+         apx_bytePortMap_delete(self->providePortByteMap);
+      }
+      apx_portDataMap_freeMemory(self);
    }
 }
 
-apx_portDataMap_t *apx_portDataMap_new(void)
+apx_portDataMap_t *apx_portDataMap_new(apx_nodeData_t *nodeData)
 {
    apx_portDataMap_t *self = (apx_portDataMap_t*) malloc(sizeof(apx_portDataMap_t));
-   if(self != 0){
-      apx_portDataMap_create(self);
-   }
-   else{
-      errno = ENOMEM;
+   if (self != 0)
+   {
+      apx_error_t err = apx_portDataMap_create(self, nodeData);
+      if (err != APX_NO_ERROR)
+      {
+         free(self);
+         self =  (apx_portDataMap_t*) 0;
+      }
    }
    return self;
 }
@@ -119,97 +132,287 @@ void apx_portDataMap_delete(apx_portDataMap_t *self)
    }
 }
 
-void apx_portDataMap_vdelete(void *arg)
+apx_portDataAttributes_t *apx_portDataMap_getRequirePortAttributes(apx_portDataMap_t *self, apx_portId_t portId)
 {
-   apx_portDataMap_delete((apx_portDataMap_t*) arg);
-}
-
-
-int8_t apx_portDataMap_build(apx_portDataMap_t *self, apx_node_t *node, uint8_t portType)
-{
-   if ( (self != 0) && (node != 0) )
+   if ( (self != 0) && (portId>=0) && (portId < self->numRequirePorts))
    {
-      if (portType == APX_REQUIRE_PORT)
-      {
-         self->mapType = APX_REQUIRE_PORT;
-         self->totalLen=apx_portDataMap_buildInternal(&self->elements,&node->requirePortList);
-      }
-      else if (portType == APX_PROVIDE_PORT)
-      {
-         self->mapType = APX_PROVIDE_PORT;
-         self->totalLen=apx_portDataMap_buildInternal(&self->elements,&node->providePortList);
-      }
-      else
-      {
-         return -1;
-      }
-      return 0;
+      return &self->requirePortDataAttributes[portId];
    }
-   return -1;
+   return (apx_portDataAttributes_t*) 0;
+}
+
+apx_portDataAttributes_t *apx_portDataMap_getProvidePortAttributes(apx_portDataMap_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId>=0) && (portId < self->numProvidePorts))
+   {
+      return &self->providePortDataAttributes[portId];
+   }
+   return (apx_portDataAttributes_t*) 0;
+}
+
+apx_portDataRef_t *apx_portDataMap_getRequirePortDataRef(apx_portDataMap_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId>=0) && (portId < self->numRequirePorts))
+   {
+      return &self->requirePortData[portId];
+   }
+   return (apx_portDataRef_t*) 0;
+}
+
+apx_portDataRef_t *apx_portDataMap_getProvidePortDataRef(apx_portDataMap_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId>=0) && (portId < self->numProvidePorts))
+   {
+      return &self->providePortData[portId];
+   }
+   return (apx_portDataRef_t*) 0;
 }
 
 
-int32_t apx_portDataMap_getDataLen(apx_portDataMap_t *self)
+/**
+ * Initializes the self->portTriggerList member. Only used in server mode
+ */
+apx_error_t apx_portDataMap_initPortTriggerList(apx_portDataMap_t *self)
 {
    if (self != 0)
    {
-      return self->totalLen;
-   }
-   return -1;
-}
-
-apx_portDataMapEntry_t *apx_portDataMap_getEntry(apx_portDataMap_t *self, int32_t portIndex)
-{
-   if (self != 0)
-   {
-      int32_t numPorts = adt_ary_length(&self->elements);
-      if ( (portIndex>=0) && (portIndex < numPorts) )
+      if (self->numProvidePorts > 0)
       {
-         return (apx_portDataMapEntry_t*) *adt_ary_get(&self->elements,portIndex);
-      }
-   }
-   errno=EINVAL;
-   return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// LOCAL FUNCTIONS
-//////////////////////////////////////////////////////////////////////////////
-static int32_t apx_portDataMap_buildInternal(adt_ary_t *entryList, adt_ary_t *portList)
-{
-   int32_t retval=-1;
-   if ( (entryList != 0) && (portList != 0) )
-   {
-      int32_t i;
-      int32_t end;
-      int32_t offset = 0;
-
-      adt_ary_clear(entryList);
-      end = adt_ary_length(portList);
-      for (i=0;i<end;i++)
-      {
-         void **ptr = adt_ary_get(portList,i);
-         if (ptr != 0)
+         self->portTriggerList = (apx_portTriggerList_t*) malloc(sizeof(apx_portTriggerList_t)*self->numProvidePorts);
+         if (self->portTriggerList == 0)
          {
-            apx_port_t *port = (apx_port_t*) *ptr;
-            apx_portDataMapEntry_t *entry;
-            int32_t packLen;
-            assert( port != 0);
-            packLen = apx_port_getPackLen(port);
-            if (packLen>0)
+            return APX_MEM_ERROR;
+         }
+         else
+         {
+            apx_portDataMap_createPortTriggerList(self);
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_portDataMap_initRequirePortByteMap(apx_portDataMap_t *self, apx_node_t *node)
+{
+   if (self != 0)
+   {
+      apx_error_t err = APX_NO_ERROR;
+      self->requirePortByteMap = apx_bytePortMap_new(node, APX_REQUIRE_PORT, &err);
+      if (self->requirePortByteMap == 0)
+      {
+         return err;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_portDataMap_initProvidePortByteMap(apx_portDataMap_t *self, apx_node_t *node)
+{
+   if (self != 0)
+   {
+      apx_error_t err = APX_NO_ERROR;
+      self->providePortByteMap = apx_bytePortMap_new(node, APX_PROVIDE_PORT, &err);
+      if (self->providePortByteMap == 0)
+      {
+         return err;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+void apx_portDataMap_updatePortTriggerList(apx_portDataMap_t *self, struct apx_portConnectionTable_tag *portConnectionTable)
+{
+   if ( (self != 0) && (portConnectionTable != 0) )
+   {
+      if ( (self->portTriggerList != 0) && (self->numProvidePorts) == portConnectionTable->numPorts)
+      {
+         int32_t portId;
+         for(portId = 0; portId < portConnectionTable->numPorts; portId++)
+         {
+            apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(portConnectionTable, portId);
+            if (entry != 0)
             {
-               entry = apx_portDataMapEntry_new(port,offset,packLen);
-               offset+=packLen;
-               adt_ary_push(entryList,(void*) entry);
-            }
-            else
-            {
-               APX_LOG_ERROR("[APX_PORT_MANAGER] port %s has no length", port->name);
+               int32_t count = apx_portConnectionEntry_count(entry);
+               if (count > 0)
+               {
+                  apx_portDataMap_attachPortsToTriggerList(self, entry, count);
+               }
+               else if (count < 0)
+               {
+                  apx_portDataMap_detachPortsFromTriggerList(self, entry, (-count));
+               }
+               else
+               {
+                  //MISRA
+               }
             }
          }
       }
-      retval=offset;
    }
-   return retval;
 }
 
+apx_portTriggerList_t *apx_portDataMap_getPortTriggerList(apx_portDataMap_t *self)
+{
+   if (self != 0)
+   {
+      return self->portTriggerList;
+   }
+   return (apx_portTriggerList_t*) 0;
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
+
+static apx_error_t apx_portDataMap_allocateMemory(apx_portDataMap_t *self)
+{
+   if (self->numRequirePorts > 0)
+   {
+      self->requirePortData = (apx_portDataRef_t*) malloc(sizeof(apx_portDataRef_t)*self->numRequirePorts);
+      if (self->requirePortData == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+      self->requirePortDataAttributes = (apx_portDataAttributes_t*) malloc(sizeof(apx_portDataAttributes_t)*self->numRequirePorts);
+      if (self->requirePortDataAttributes == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+   }
+   if (self->numProvidePorts > 0)
+   {
+      self->providePortData = (apx_portDataRef_t*) malloc(sizeof(apx_portDataRef_t)*self->numProvidePorts);
+      if (self->providePortData == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+      self->providePortDataAttributes = (apx_portDataAttributes_t*) malloc(sizeof(apx_portDataAttributes_t)*self->numProvidePorts);
+      if (self->providePortDataAttributes == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+   }
+   return APX_NO_ERROR;
+}
+
+static void apx_portDataMap_freeMemory(apx_portDataMap_t *self)
+{
+   if (self != 0)
+   {
+      if (self->portTriggerList != 0)
+      {
+         free(self->portTriggerList);
+      }
+      if (self->requirePortData != 0)
+      {
+         free(self->requirePortData);
+      }
+      if (self->requirePortDataAttributes != 0)
+      {
+         free(self->requirePortDataAttributes);
+      }
+      if (self->providePortData != 0)
+      {
+         free(self->providePortData);
+      }
+      if (self->providePortDataAttributes != 0)
+      {
+         free(self->providePortDataAttributes);
+      }
+   }
+}
+
+static void apx_portDataMap_createRequirePortData(apx_portDataMap_t *self, apx_nodeData_t *nodeData)
+{
+   if (self->numRequirePorts > 0)
+   {
+      int32_t portId;
+      apx_size_t offset = 0;
+      for(portId=0;portId<self->numRequirePorts;portId++)
+      {
+         apx_portDataAttributes_t *attr = &self->requirePortDataAttributes[portId];
+         apx_portDataRef_t *data = &self->requirePortData[portId];
+         apx_uniquePortId_t uniquePortId = (uint32_t) portId;
+         apx_port_t *port = apx_node_getRequirePort(nodeData->node, portId);
+         offset += apx_portDataMap_createPortDataAttribute(attr, port, portId, offset);
+         apx_portDataRef_create(data, nodeData, uniquePortId, attr);
+      }
+   }
+}
+
+static void apx_portDataMap_createProvidePortData(apx_portDataMap_t *self, apx_nodeData_t *nodeData)
+{
+   if (self->numProvidePorts > 0)
+   {
+      int32_t portId;
+      apx_size_t offset = 0;
+      for(portId=0;portId<self->numProvidePorts;portId++)
+      {
+         apx_portDataAttributes_t *attr = &self->providePortDataAttributes[portId];
+         apx_portDataRef_t *data = &self->providePortData[portId];
+         apx_uniquePortId_t uniquePortId = ((uint32_t) portId) | APX_PORT_ID_PROVIDE_PORT;
+         apx_port_t *port = apx_node_getProvidePort(nodeData->node, portId);
+         offset += apx_portDataMap_createPortDataAttribute(attr, port, portId, offset);
+         apx_portDataRef_create(data, nodeData, uniquePortId, attr);
+      }
+   }
+}
+
+/**
+ * Returns the total data size of the port
+ */
+static apx_size_t apx_portDataMap_createPortDataAttribute(apx_portDataAttributes_t *attr, apx_port_t *port, apx_portId_t portId, apx_size_t offset)
+{
+   apx_size_t dataElementSize = apx_dataSignature_getPackLen(&port->dataSignature);
+   apx_portDataAttributes_create(attr, port->portType, portId, offset, dataElementSize);
+   return dataElementSize;
+}
+
+/**
+ * Each provide port has its own portTriggerList. This function initializes all of the lists. (yes it's a list where each element is also a list).
+ */
+static void apx_portDataMap_createPortTriggerList(apx_portDataMap_t *self)
+{
+   int32_t portId;
+   for(portId=0;portId<self->numProvidePorts;portId++)
+   {
+      apx_portTriggerList_create(&self->portTriggerList[portId]);
+   }
+}
+
+/**
+ * Destroys each portTriggerList in the portTriggerList array.
+ */
+static void apx_portDataMap_destroyPortTriggerList(apx_portDataMap_t *self)
+{
+   int32_t portId;
+   for(portId=0;portId<self->numProvidePorts;portId++)
+   {
+      apx_portTriggerList_destroy(&self->portTriggerList[portId]);
+   }
+}
+
+static void apx_portDataMap_attachPortsToTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs)
+{
+   int32_t i;
+   for(i=0; i < numPortRefs; i++)
+   {
+      apx_portDataRef_t *portDataRef = apx_portConnectionEntry_get(entry, i);
+      apx_portTriggerList_insert(self->portTriggerList, portDataRef);
+   }
+}
+
+static void apx_portDataMap_detachPortsFromTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs)
+{
+   int32_t i;
+   for(i=0; i < numPortRefs; i++)
+   {
+      apx_portDataRef_t *portDataRef = apx_portConnectionEntry_get(entry, i);
+      apx_portTriggerList_remove(self->portTriggerList, portDataRef);
+   }
+}

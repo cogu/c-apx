@@ -1,45 +1,76 @@
+/*****************************************************************************
+* \file      apx_stream.c
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     Generates events while parsing a block stream
+*
+* Copyright (c) 2017-2018 Conny Gustafsson
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+******************************************************************************/
+//////////////////////////////////////////////////////////////////////////////
+// INCLUDES
+//////////////////////////////////////////////////////////////////////////////
 #include "apx_stream.h"
-#include "apx_logging.h"
 #include <errno.h>
 #include <malloc.h>
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include "pack.h"
+#include "apx_error.h"
 #include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
 
-
-
-
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE CONSTANTS AND DATA TYPES
+//////////////////////////////////////////////////////////////////////////////
 typedef struct apx_headerLine_tag
 {
-   int majorVersion;
-   int minorVersion;
+   int16_t majorVersion;
+   int16_t minorVersion;
 }apx_headerLine_t;
 
-
-
-/**************** Private Function Declarations *******************/
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
 static void apx_istream_handler_open(const apx_istream_handler_t *handler);
-static void apx_istream_handler_node(const apx_istream_handler_t *handler, const char *name); //N"<name>"
-static void apx_istream_handler_datatype(const apx_istream_handler_t *handler,const char *name, const char *dsg, const char *attr); //T"<name>"<dsg>:<attr>
-static void apx_istream_handler_require(const apx_istream_handler_t *handler,const char *name, const char *dsg, const char *attr); //R"<name>"<dsg>:<attr>
-static void apx_istream_handler_provide(const apx_istream_handler_t *handler,const char *name, const char *dsg, const char *attr); //P"<name>"<dsg>:<attr>
+static bool apx_istream_handler_header(const apx_istream_handler_t *handler, int32_t majorVersion, int32_t minorVersion);
+static void apx_istream_handler_node(const apx_istream_handler_t *handler, const char *name, int32_t lineNumber); //N"<name>"
+static int32_t apx_istream_handler_datatype(const apx_istream_handler_t *handler,const char *name, const char *dsg, const char *attr, int32_t lineNumber); //T"<name>"<dsg>:<attr>
+static int32_t apx_istream_handler_require(const apx_istream_handler_t *handler,const char *name, const char *dsg, const char *attr, int32_t lineNumber); //R"<name>"<dsg>:<attr>
+static int32_t apx_istream_handler_provide(const apx_istream_handler_t *handler,const char *name, const char *dsg, const char *attr, int32_t lineNumber); //P"<name>"<dsg>:<attr>
 static void apx_istream_handler_close(const apx_istream_handler_t *handler);
 
 static const uint8_t* apx_istream_parseNodeName(apx_istream_t *self,const uint8_t *pBegin, const uint8_t *pEnd);
-static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_t *pLineBegin,const uint8_t *pLineEnd);
+static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_t *pLineBegin,const uint8_t *pLineEnd, int32_t lineNumber);
 static const uint8_t *apx_stream_parseApxHeaderLine(const uint8_t *pBegin, const uint8_t *pEnd, apx_headerLine_t *data);
 static const uint8_t * apx_splitDeclarationLine(const uint8_t *pBegin,const uint8_t *pEnd, apx_declarationLine_t *data);
+static void apx_istream_triggerParseError(const apx_istream_t *handler);
 
-/**************** Private Variable Declarations *******************/
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE VARIABLES
+//////////////////////////////////////////////////////////////////////////////
 
-
-/****************** Public Function Definitions *******************/
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
 //constructor/destructor
 apx_istream_t *apx_istream_new(apx_istream_handler_t *handler){
    apx_istream_t *self = (apx_istream_t*) malloc(sizeof(apx_istream_t));
@@ -64,6 +95,7 @@ void apx_istream_create(apx_istream_t *self, apx_istream_handler_t *handler){
       memcpy(&self->handler,handler,sizeof(apx_istream_handler_t));
       adt_bytearray_create(&self->buf,APX_BUF_GROW_SIZE);
       self->parseState = APX_ISTREAM_STATE_HEADER;
+      self->currentLine = 0;
       apx_declarationLine_create(&self->declarationLine);
    }
 }
@@ -79,6 +111,7 @@ void apx_istream_destroy(apx_istream_t *self){
 //istream functions
 void apx_istream_open(apx_istream_t *self){
    if(self != 0){
+      self->currentLine = 1;
       apx_istream_handler_open(&self->handler);
    }
 }
@@ -107,11 +140,11 @@ void apx_istream_write(apx_istream_t *self, const uint8_t *pChunk, uint32_t chun
          if(firstByte < 128U){
             //ascii character if firstByte is in the range 0-127-
             //wait to parse until a complete line has been seen. lines end with a single \n (not with \r\n as in HTML)
-            //if the line is empty it means end of data-block. This is the same principe as the empty \r\n at the end of an HTML request header.
+            //if the line is empty it means end of data-block. This is the same principle as the empty \r\n at the end of an HTML request header.
             const uint8_t *pLineEnd = 0;
             const uint8_t *pLineBegin = pNext;
 
-            pLineEnd = bstr_searchVal(pNext,pEnd,(uint8_t) '\n');
+            pLineEnd = bstr_search_val(pNext,pEnd,(uint8_t) '\n');
 
             if(pLineEnd == pLineBegin){
                pNext = pLineEnd+1;
@@ -121,21 +154,32 @@ void apx_istream_write(apx_istream_t *self, const uint8_t *pChunk, uint32_t chun
                }
             }
             else if(pLineEnd > pLineBegin){
-
                pNext = pLineEnd+1;
-               assert( ((char) *pLineEnd) == '\n'); //check during development, remove later
-               pResult = apx_stream_parse_textLine(self,pLineBegin,pLineEnd);
+               pResult = apx_stream_parse_textLine(self,pLineBegin,pLineEnd, self->currentLine);
                if(pResult == 0){
                   //parse failure, ignore all data
                   adt_bytearray_clear(&self->buf);
-                  APX_LOG_ERROR("[APX_STREAM] %s", "Parse error");
+                  apx_istream_triggerParseError(self);
                   return;
                }
+               else if (pResult != pLineEnd)
+               {
+                  //stray character found after parsing line
+                  adt_bytearray_clear(&self->buf);
+                  apx_istream_triggerParseError(self);
+                  return;
+               }
+               self->currentLine++;
             }
             else{
-               //'\n' not seen, trim byffer and try parsing again later
+               //'\n' not seen, trim buffer and try parsing again later
                break;
             }
+         }
+         else
+         {
+            //non-ansi character detected. In the experimental version APX/1.1 these used to trigger special commands.
+            //During development of APX/1.2 the use of non-ansi characters was disallowed and should now trigger an error instead.
          }
       }
       if (pNext <= pEnd)
@@ -242,51 +286,63 @@ void apx_istream_reset(apx_istream_t *self)
    }
 }
 
-/***************** Private Function Definitions *******************/
-void apx_istream_handler_open(const apx_istream_handler_t *handler){
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
+
+static void apx_istream_handler_open(const apx_istream_handler_t *handler){
    if((handler != 0) && (handler->open != 0)){
       handler->open(handler->arg);
    }
 }
 
-void apx_istream_handler_node(const apx_istream_handler_t *handler, const char *name){ //N"<name>"
+static bool apx_istream_handler_header(const apx_istream_handler_t *handler, int32_t majorVersion, int32_t minorVersion){
+   if((handler != 0) && (handler->header != 0)){
+      return handler->header(handler->arg, majorVersion, minorVersion);
+   }
+   return false;
+}
+
+
+static void apx_istream_handler_node(const apx_istream_handler_t *handler, const char *name, int32_t lineNumber){ //N"<name>"
    if((handler != 0) && (name != 0) && (handler->node != 0)){
-      handler->node(handler->arg,name);
+      handler->node(handler->arg, name, lineNumber);
    }
 }
 
-static void apx_istream_handler_datatype(const apx_istream_handler_t *handler,const char *name, const char *dsg, const char *attr) //T"<name>"<dsg>:<attr>
+static int32_t apx_istream_handler_datatype(const apx_istream_handler_t *handler,const char *name, const char *dsg, const char *attr, int32_t lineNumber) //T"<name>"<dsg>:<attr>
 {
    if((handler != 0) && (handler->datatype != 0)){
-      handler->datatype(handler->arg,name,dsg,attr);
+      return handler->datatype(handler->arg, name, dsg, attr, lineNumber);
    }
+   return -1;
 }
 
-void apx_istream_handler_require(const apx_istream_handler_t *handler, const char *name, const char *dsg, const char *attr){ //R"<name>"<dsg>:<attr>
+static int32_t apx_istream_handler_require(const apx_istream_handler_t *handler, const char *name, const char *dsg, const char *attr, int32_t lineNumber){ //R"<name>"<dsg>:<attr>
    if((handler != 0) && (handler->require != 0)){
-      handler->require(handler->arg,name,dsg,attr);
+      return handler->require(handler->arg, name, dsg, attr, lineNumber);
    }
+   return -1;
 }
 
-void apx_istream_handler_provide(const apx_istream_handler_t *handler, const char *name, const char *dsg, const char *attr){ //P"<name>"<dsg>:<attr>
+static int32_t apx_istream_handler_provide(const apx_istream_handler_t *handler, const char *name, const char *dsg, const char *attr, int32_t lineNumber){ //P"<name>"<dsg>:<attr>
    if((handler != 0) && (handler->provide != 0)){
-      handler->provide(handler->arg,name,dsg,attr);
+      return handler->provide(handler->arg, name, dsg, attr, lineNumber);
    }
+   return -1;
 }
 
-
-
-void apx_istream_handler_close(const apx_istream_handler_t *handler){
+static void apx_istream_handler_close(const apx_istream_handler_t *handler){
    if( (handler != 0) && (handler->close != 0) ){
       handler->close(handler->arg);
    }
 }
 
-const uint8_t* apx_istream_parseNodeName(apx_istream_t *self, const uint8_t *pBegin, const uint8_t *pEnd){
+static const uint8_t* apx_istream_parseNodeName(apx_istream_t *self, const uint8_t *pBegin, const uint8_t *pEnd){
    if (self != 0){
       const uint8_t *pNext;
       char name[APX_MAX_NAME_LEN+1];
-      pNext = bstr_matchPair(pBegin,pEnd,(uint8_t) '\"', (uint8_t) '\"','\\');
+      pNext = bstr_match_pair(pBegin,pEnd,(uint8_t) '\"', (uint8_t) '\"','\\');
       if( (pNext > pBegin) && (pNext<=pEnd) ){
          //pBegin[0] == '"'
          //pNext[0] == '"'
@@ -295,7 +351,7 @@ const uint8_t* apx_istream_parseNodeName(apx_istream_t *self, const uint8_t *pBe
          if(len <= APX_MAX_NAME_LEN){
             memcpy(name,pBegin+1,len);
             name[len]=0;
-            apx_istream_handler_node(&self->handler,name);
+            apx_istream_handler_node(&self->handler, name, self->currentLine);
          }
          return pNext+1; //return the first character after the right '"'
       }
@@ -304,7 +360,7 @@ const uint8_t* apx_istream_parseNodeName(apx_istream_t *self, const uint8_t *pBe
 }
 
 
-static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_t *pLineBegin,const uint8_t *pLineEnd)
+static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_t *pLineBegin,const uint8_t *pLineEnd, int32_t lineNumber)
 {
    if (self != 0)
    {
@@ -324,9 +380,15 @@ static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_
             pResult = apx_stream_parseApxHeaderLine(pLineBegin,pLineEnd,&header);
             if (pResult != 0)
             {
-               if ( (header.majorVersion==1) && (header.minorVersion>=2))
+               bool isSupported = apx_istream_handler_header(&self->handler, header.majorVersion, header.minorVersion);
+               if ( isSupported )
                {
+                  pNext=pResult;
                   self->parseState=APX_ISTREAM_STATE_NODE;
+               }
+               else
+               {
+                  apx_istream_triggerParseError(self);
                }
             }
             break;
@@ -336,6 +398,7 @@ static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_
                pResult = apx_istream_parseNodeName(self,pLineBegin+1,pLineEnd);
                if (pResult != 0)
                {
+                  pNext=pResult;
                   self->parseState=APX_ISTREAM_STATE_TYPES;
                }
             }
@@ -350,21 +413,30 @@ static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_
             {
                if (self->declarationLine.lineType==(uint8_t)'T')
                {
-                  apx_istream_handler_datatype(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr);
+                  if (apx_istream_handler_datatype(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr, lineNumber) != 0)
+                  {
+                     return 0;
+                  }
                }
                else if (self->declarationLine.lineType==(uint8_t)'P')
                {
                   self->parseState=APX_ISTREAM_STATE_PORTS;
-                  apx_istream_handler_provide(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr);
+                  if (apx_istream_handler_provide(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr, lineNumber) != 0)
+                  {
+                     return 0;
+                  }
                }
                else if (self->declarationLine.lineType==(uint8_t)'R')
                {
                   self->parseState=APX_ISTREAM_STATE_PORTS;
-                  apx_istream_handler_require(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr);
+                  if (apx_istream_handler_require(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr, lineNumber) !=0 )
+                  {
+                     return 0;
+                  }
                }
                else
                {
-                  APX_LOG_ERROR("[APX_STREAM](%d) Parse error\n", (int) __LINE__);
+                  apx_istream_triggerParseError(self);
                   return 0;
                }
             }
@@ -375,15 +447,21 @@ static const uint8_t *apx_stream_parse_textLine(apx_istream_t *self,const uint8_
             {
                if (self->declarationLine.lineType==(uint8_t)'P')
                {
-                  apx_istream_handler_provide(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr);
+                  if (apx_istream_handler_provide(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr, lineNumber) !=0)
+                  {
+                     return 0;
+                  }
                }
                else if (self->declarationLine.lineType==(uint8_t)'R')
                {
-                  apx_istream_handler_require(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr);
+                  if (apx_istream_handler_require(&self->handler,self->declarationLine.name,self->declarationLine.dsg,self->declarationLine.attr, lineNumber) != 0)
+                  {
+                     return 0;
+                  }
                }
                else
                {
-                  APX_LOG_ERROR("[APX_STREAM](%d) Parse error\n", (int)__LINE__);
+                  apx_istream_triggerParseError(self);
                   return 0;
                }
             }
@@ -407,7 +485,7 @@ static const uint8_t *apx_stream_parseApxHeaderLine(const uint8_t *pBegin, const
    const uint8_t *pResult = 0;
    const char *str = "APX/";
    int len = (int) strlen(str);
-   pResult = bstr_matchStr(pNext,pEnd,(const uint8_t*) str,((const uint8_t*) str)+len);
+   pResult = bstr_match_bstr(pNext,pEnd,(const uint8_t*) str,((const uint8_t*) str)+len);
    if ( (pResult > pNext) && (pNext+len == pResult))
    {
       long number;
@@ -454,13 +532,13 @@ static const uint8_t * apx_splitDeclarationLine(const uint8_t *pBegin,const uint
          uint8_t c = (uint8_t) *pNext;
          if (c == '"')
          {
-            pResult = bstr_matchPair(pNext,pEnd,'"','"','\\');
+            pResult = bstr_match_pair(pNext,pEnd,'"','"','\\');
             if (pResult > pNext)
             {
                nameLen = (uint32_t) (pResult-pNext-1); //compensate for the first '"' character
                pNameBegin=(pNext+1);
                pNext = pResult+1;
-               pResult = bstr_searchVal(pNext,pEnd,':');
+               pResult = bstr_search_val(pNext,pEnd,':');
                if (pResult > pNext)
                {
 
@@ -537,6 +615,8 @@ static const uint8_t * apx_splitDeclarationLine(const uint8_t *pBegin,const uint
    return 0; //parse failure
 }
 
-
-
-
+static void apx_istream_triggerParseError(const apx_istream_t *self){
+   if ( (self != 0) && (self->handler.parse_error != 0) ){
+      self->handler.parse_error(self->handler.arg, APX_PARSE_ERROR, self->currentLine);
+   }
+}

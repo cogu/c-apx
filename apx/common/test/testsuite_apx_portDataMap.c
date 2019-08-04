@@ -1,10 +1,33 @@
+/*****************************************************************************
+* \file      testsuite_apx_portDataMap.c
+* \author    Conny Gustafsson
+* \date      2018-10-09
+* \brief     Unit tests for apx_portDataMap
+*
+* Copyright (c) 2018 Conny Gustafsson
+* Permission is hereby granted, free of charge, to any person obtaining a copy of
+* this software and associated documentation files (the "Software"), to deal in
+* the Software without restriction, including without limitation the rights to
+* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Software, and to permit persons to whom the Software is furnished to do so,
+* subject to the following conditions:
+
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include "CuTest.h"
 #include "apx_portDataMap.h"
@@ -13,74 +36,203 @@
 #include "CMemLeak.h"
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE CONSTANTS AND DATA TYPES
+//////////////////////////////////////////////////////////////////////////////
+#define ERROR_SIZE 15
 
 //////////////////////////////////////////////////////////////////////////////
-// CONSTANTS AND DATA TYPES
+// PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-#ifdef _MSC_VER
-#define APX_TEST_DATA_PATH "..\\..\\..\\apx\\common\\test\\data\\"
-#else 
-#define APX_TEST_DATA_PATH  "../../../apx/common/test/data/"
-#endif
+static void test_apx_portDataMap_createFromNodeWithOnlyRequirePorts(CuTest* tc);
+static void test_apx_portDataMap_createFromNodeWithOnlyProvidePorts(CuTest* tc);
+static void test_create_portDataMap_fromNodeData(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
-// LOCAL FUNCTION PROTOTYPES
-//////////////////////////////////////////////////////////////////////////////
-static void test_apx_portDataMap_create(CuTest* tc);
-
-//////////////////////////////////////////////////////////////////////////////
-// GLOBAL VARIABLES
+// PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// LOCAL VARIABLES
+// PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// GLOBAL FUNCTIONS
-//////////////////////////////////////////////////////////////////////////////
-
-
 CuSuite* testSuite_apx_portDataMap(void)
 {
    CuSuite* suite = CuSuiteNew();
 
-   SUITE_ADD_TEST(suite, test_apx_portDataMap_create);
+   SUITE_ADD_TEST(suite, test_apx_portDataMap_createFromNodeWithOnlyRequirePorts);
+   SUITE_ADD_TEST(suite, test_apx_portDataMap_createFromNodeWithOnlyProvidePorts);
+   SUITE_ADD_TEST(suite, test_create_portDataMap_fromNodeData);
 
    return suite;
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// LOCAL FUNCTIONS
+// PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_portDataMap_create(CuTest* tc)
+static void test_apx_portDataMap_createFromNodeWithOnlyRequirePorts(CuTest* tc)
 {
-   apx_portDataMap_t dataMap;
+   const char *apx_text =
+         "APX/1.2\n"
+         "N\"TestNode\"\n"
+         "R\"ComplexPort\"{\"Left\"L\"Right\"L}\n"
+         "R\"U8Port\"C\n"
+         "R\"U16Port\"S\n"
+         "R\"StrPort\"a[21]\n";
    apx_parser_t parser;
    apx_node_t *node;
-   apx_portDataMapEntry_t *entry;
+   apx_nodeData_t *nodeData;
+   apx_portDataAttributes_t *portAttr;
+   apx_portDataMap_t portDataMap;
 
-   apx_portDataMap_create(&dataMap);
    apx_parser_create(&parser);
-   node = apx_parser_parseFile(&parser, APX_TEST_DATA_PATH "test5.apx");
-   CuAssertPtrNotNull(tc,node);
-   apx_portDataMap_build(&dataMap,node,APX_REQUIRE_PORT);
+   node = apx_parser_parseString(&parser, apx_text);
+   CuAssertPtrNotNull(tc, node);
+   apx_parser_clearNodes(&parser);
+   nodeData = apx_nodeData_new((uint32_t) strlen(apx_text));
+   apx_nodeData_setNode(nodeData, node);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataBuffers(nodeData));
 
-   CuAssertIntEquals(tc,2,adt_ary_length(&dataMap.elements));
+   apx_portDataMap_create(&portDataMap, nodeData);
+   CuAssertIntEquals(tc, 4, portDataMap.numRequirePorts);
+   CuAssertIntEquals(tc, 0, portDataMap.numProvidePorts);
+   CuAssertPtrNotNull(tc, portDataMap.requirePortData);
+   CuAssertPtrNotNull(tc, portDataMap.requirePortDataAttributes);
+   CuAssertPtrEquals(tc, 0, portDataMap.providePortData);
+   CuAssertPtrEquals(tc, 0, portDataMap.providePortDataAttributes);
 
-   entry = (apx_portDataMapEntry_t*) *(adt_ary_get(&dataMap.elements,0));
-   CuAssertStrEquals(tc,"WheelBasedVehicleSpeed",entry->port->name);
-   CuAssertIntEquals(tc,0,entry->offset);
-   CuAssertIntEquals(tc,2,entry->length);
+   portAttr = apx_portDataMap_getRequirePortAttributes(&portDataMap, 0);
+   CuAssertPtrNotNull(tc, portAttr);
+   CuAssertIntEquals(tc, 0, portAttr->portId);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portAttr->portType);
+   CuAssertUIntEquals(tc, 0, portAttr->offset);
+   CuAssertUIntEquals(tc, 8, portAttr->dataSize);
+   CuAssertUIntEquals(tc, 8, portAttr->totalSize);
 
-   entry = (apx_portDataMapEntry_t*) *(adt_ary_get(&dataMap.elements,1));
-   CuAssertStrEquals(tc,"CabTiltLockWarning",entry->port->name);
-   CuAssertIntEquals(tc,2,entry->offset);
-   CuAssertIntEquals(tc,1,entry->length);
+   portAttr = apx_portDataMap_getRequirePortAttributes(&portDataMap, 1);
+   CuAssertPtrNotNull(tc, portAttr);
+   CuAssertIntEquals(tc, 1, portAttr->portId);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portAttr->portType);
+   CuAssertUIntEquals(tc, 8, portAttr->offset);
+   CuAssertUIntEquals(tc, 1, portAttr->dataSize);
+   CuAssertUIntEquals(tc, 1, portAttr->totalSize);
+
+   portAttr = apx_portDataMap_getRequirePortAttributes(&portDataMap, 2);
+   CuAssertPtrNotNull(tc, portAttr);
+   CuAssertIntEquals(tc, 2, portAttr->portId);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portAttr->portType);
+   CuAssertUIntEquals(tc, 9, portAttr->offset);
+   CuAssertUIntEquals(tc, 2, portAttr->dataSize);
+   CuAssertUIntEquals(tc, 2, portAttr->totalSize);
+
+   portAttr = apx_portDataMap_getRequirePortAttributes(&portDataMap, 3);
+   CuAssertPtrNotNull(tc, portAttr);
+   CuAssertIntEquals(tc, 3, portAttr->portId);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portAttr->portType);
+   CuAssertUIntEquals(tc, 11, portAttr->offset);
+   CuAssertUIntEquals(tc, 21, portAttr->dataSize);
+   CuAssertUIntEquals(tc, 21, portAttr->totalSize);
+
+   CuAssertUIntEquals(tc, 11+21, nodeData->inPortDataLen);
 
    apx_parser_destroy(&parser);
-   apx_portDataMap_destroy(&dataMap);
+   apx_portDataMap_destroy(&portDataMap);
+   apx_nodeData_delete(nodeData);
 }
 
+static void test_apx_portDataMap_createFromNodeWithOnlyProvidePorts(CuTest* tc)
+{
+   const char *apx_text =
+         "APX/1.2\n"
+         "N\"TestNode\"\n"
+         "P\"ComplexPort\"{\"Left\"L\"Right\"L}\n"
+         "P\"U8Port\"C\n"
+         "P\"U16Port\"S\n"
+         "P\"U32ArrayPort\"L[10]\n";
+   apx_parser_t parser;
+   apx_node_t *node;
+   apx_nodeData_t *nodeData;
+   apx_portDataAttributes_t *portAttr;
 
+   apx_portDataMap_t portDataMap;
+   apx_parser_create(&parser);
+   node = apx_parser_parseString(&parser, apx_text);
+   CuAssertPtrNotNull(tc, node);
+   apx_parser_clearNodes(&parser);
+   nodeData = apx_nodeData_new((uint32_t) strlen(apx_text));
+   apx_nodeData_setNode(nodeData, node);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataBuffers(nodeData));
+
+   apx_portDataMap_create(&portDataMap, nodeData);
+   CuAssertIntEquals(tc, 0, portDataMap.numRequirePorts);
+   CuAssertIntEquals(tc, 4, portDataMap.numProvidePorts);
+   CuAssertPtrEquals(tc, 0, portDataMap.requirePortData);
+   CuAssertPtrEquals(tc, 0, portDataMap.requirePortDataAttributes);
+   CuAssertPtrNotNull(tc, portDataMap.providePortData);
+   CuAssertPtrNotNull(tc, portDataMap.providePortDataAttributes);
+
+   portAttr = apx_portDataMap_getProvidePortAttributes(&portDataMap, 0);
+   CuAssertPtrNotNull(tc, portAttr);
+   CuAssertIntEquals(tc, 0, portAttr->portId);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portAttr->portType);
+   CuAssertUIntEquals(tc, 0, portAttr->offset);
+   CuAssertUIntEquals(tc, 8, portAttr->dataSize);
+   CuAssertUIntEquals(tc, 8, portAttr->totalSize);
+
+   portAttr = apx_portDataMap_getProvidePortAttributes(&portDataMap, 1);
+   CuAssertPtrNotNull(tc, portAttr);
+   CuAssertIntEquals(tc, 1, portAttr->portId);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portAttr->portType);
+   CuAssertUIntEquals(tc, 8, portAttr->offset);
+   CuAssertUIntEquals(tc, 1, portAttr->dataSize);
+   CuAssertUIntEquals(tc, 1, portAttr->totalSize);
+
+   portAttr = apx_portDataMap_getProvidePortAttributes(&portDataMap, 2);
+   CuAssertPtrNotNull(tc, portAttr);
+   CuAssertIntEquals(tc, 2, portAttr->portId);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portAttr->portType);
+   CuAssertUIntEquals(tc, 9, portAttr->offset);
+   CuAssertUIntEquals(tc, 2, portAttr->dataSize);
+   CuAssertUIntEquals(tc, 2, portAttr->totalSize);
+
+   portAttr = apx_portDataMap_getProvidePortAttributes(&portDataMap, 3);
+   CuAssertPtrNotNull(tc, portAttr);
+   CuAssertIntEquals(tc, 3, portAttr->portId);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portAttr->portType);
+   CuAssertUIntEquals(tc, 11, portAttr->offset);
+   CuAssertUIntEquals(tc, 4*10, portAttr->dataSize);
+   CuAssertUIntEquals(tc, 4*10, portAttr->totalSize);
+
+   CuAssertUIntEquals(tc, 11+4*10, nodeData->outPortDataLen);
+
+   apx_parser_destroy(&parser);
+   apx_portDataMap_destroy(&portDataMap);
+   apx_nodeData_delete(nodeData);
+}
+
+static void test_create_portDataMap_fromNodeData(CuTest* tc)
+{
+   const char *apx_text =
+         "APX/1.2\n"
+         "N\"TestNode\"\n"
+         "P\"ComplexPort\"{\"Left\"L\"Right\"L}\n"
+         "P\"U8Port\"C\n"
+         "P\"U16Port\"S\n"
+         "P\"U32ArrayPort\"L[10]\n";
+   apx_parser_t parser;
+   apx_node_t *node;
+   apx_nodeData_t *nodeData;
+   apx_parser_create(&parser);
+   node = apx_parser_parseString(&parser, apx_text);
+   CuAssertPtrNotNull(tc, node);
+   apx_parser_clearNodes(&parser);
+   nodeData = apx_nodeData_new((uint32_t) strlen(apx_text));
+   apx_nodeData_setNode(nodeData, node);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataBuffers(nodeData));
+   CuAssertPtrEquals(tc, 0, nodeData->portDataMap);
+   apx_nodeData_createPortDataMap(nodeData, APX_SERVER_MODE);
+   CuAssertPtrNotNull(tc, nodeData->portDataMap);
+
+   apx_parser_destroy(&parser);
+   apx_nodeData_delete(nodeData);
+
+}

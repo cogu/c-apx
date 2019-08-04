@@ -1,15 +1,24 @@
-
+#define CLEANUP_TEST 1                  //0=no cleanup test (default), 1=enable cleanup test
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #ifdef _MSC_VER
+#if CLEANUP_TEST
+#   define _CRTDBG_MAP_ALLOC
+#   include <stdlib.h>
+#   include <crtdbg.h>
+#endif
 #include <Windows.h>
 #else
 #include <unistd.h>
+#include <signal.h>
 #endif
 #include "apx_server.h"
 #include "apx_types.h"
 #include "apx_logging.h"
+#include "apx_eventListener.h"
+#include "apx_eventRecorderSrvTxt.h"
+//#include "apx_eventRecorderSrvRmfMgr.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,38 +27,50 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 #define DEFAULT_PORT 5000
+#define CLEANUP_TEST_DURATION_SEC 10     //number of seconds before server shutdown is triggered in a cleanup test
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static int parse_args(int argc, char **argv);
+static void signal_handler_setup(void);
+void signal_handler(int signum);
 static void printUsage(char *name);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 int8_t g_debug; // Global so apx_logging can use it from everywhere
+int m_runFlag = 1;
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static uint16_t m_port;
 static apx_server_t m_server;
+#if CLEANUP_TEST
 static int32_t m_count;
+#endif
+
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
+   apx_eventRecorderSrvTxt_t *eventRecorderSrvTxt;
+//   apx_eventRecorderSrvRmfMgr_t *apx_eventRecorderSrvRmfMgr;
 #ifdef _WIN32
    WORD wVersionRequested;
    WSADATA wsaData;
    int err;
 #endif
-   m_count = 0;
+#if CLEANUP_TEST
+   m_count = CLEANUP_TEST_DURATION_SEC;
+#endif
    g_debug = 0;
    m_port = DEFAULT_PORT;
+   m_runFlag = 1;
    printf("APX Server %s\n", SW_VERSION_STR);
    if(argc>1)
    {
@@ -74,21 +95,41 @@ int main(int argc, char **argv)
       return 1;
    }
 #endif
-   apx_server_create(&m_server,m_port);
+   signal_handler_setup();
+   apx_server_create(&m_server, m_port);
+
+   eventRecorderSrvTxt = apx_eventRecorderSrvTxt_new();
+   if (eventRecorderSrvTxt != 0)
+   {
+      apx_eventRecorderSrvTxt_open(eventRecorderSrvTxt, "server.apxlog");
+      apx_eventRecorderSrvTxt_register(eventRecorderSrvTxt, &m_server);
+   }
+
    apx_server_setDebugMode(&m_server, g_debug);
    apx_server_start(&m_server);
-   for(;;)
+   while(m_runFlag != 0)
    {
-      SLEEP(5000); //main thread is sleeping while child threads do all the work
-/*    if (++m_count==20) //this counter is used during testing to verify that all resources are properly cleaned up
-      {
-         break;
-      }*/
+      SLEEP(1000); //main thread is sleeping while child threads do all the work
+#if CLEANUP_TEST
+    if (--m_count==0) //this counter is used during a cleanup test to verify that all resources are properly cleaned up
+    {
+       break;
+    }
+    else
+    {
+       printf("Shutdown in %d\n", m_count);
+    }
+#endif
    }
-   APX_LOG_INFO("destroying server\n");
+   printf("Server shutdown started\n");
    apx_server_destroy(&m_server);
+   printf("Server shutdown complete\n");
+   apx_eventRecorderSrvTxt_delete(eventRecorderSrvTxt);
 #ifdef _WIN32
    WSACleanup();
+#endif
+#if defined(_MSC_VER) && (CLEANUP_TEST != 0)
+   _CrtDumpMemoryLeaks();
 #endif
    return 0;
 }
@@ -97,6 +138,23 @@ int main(int argc, char **argv)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+
+static void signal_handler_setup(void)
+{
+   if(signal (SIGINT, signal_handler) == SIG_IGN) {
+      signal (SIGINT, SIG_IGN);
+   }
+   if(signal (SIGTERM, signal_handler) == SIG_IGN) {
+      signal (SIGTERM, SIG_IGN);
+   }
+}
+
+void signal_handler(int signum)
+{
+   (void)signum;
+   m_runFlag = false;
+}
+
 static int parse_args(int argc, char **argv)
 {
    int i;
@@ -153,5 +211,3 @@ static void printUsage(char *name)
 {   
    printf("%s -p<port> [--debug=<level 1-4>]\n",name);
 }
-
-
