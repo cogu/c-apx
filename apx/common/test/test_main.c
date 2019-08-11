@@ -35,7 +35,7 @@ CuSuite* testSuite_apx_portDataMap(void);
 CuSuite* testSuite_apx_portTriggerList(void);
 CuSuite* testSuite_apx_routingTable(void);
 CuSuite* testSuite_apx_vm(void);
-CuSuite* testSuite_apx_vmstate(void);
+CuSuite* testSuite_apx_vmSerializer(void);
 
 /** APX Server **/
 CuSuite* testSuite_apx_serverSocketConnection(void);
@@ -76,7 +76,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_portDataMap());
    CuSuiteAddSuite(suite, testSuite_apx_portTriggerList());
    CuSuiteAddSuite(suite, testSuite_apx_routingTable());
-   CuSuiteAddSuite(suite, testSuite_apx_vmstate());
+   CuSuiteAddSuite(suite, testSuite_apx_vmSerializer());
    CuSuiteAddSuite(suite, testSuite_apx_vm());
 
 // APX Server
