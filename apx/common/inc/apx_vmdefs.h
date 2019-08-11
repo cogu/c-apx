@@ -119,16 +119,12 @@
 #define APX_MAX_INST_PACK_SIZE          3u
 #define APX_MAX_INST_UNPACK_SIZE        3u
 
+
 #define APX_VALUE_TYPE_NONE                0
-#define APX_VALUE_TYPE_INT32               1
-#define APX_VALUE_TYPE_UINT32              2
-#define APX_VALUE_TYPE_INT64               3
-#define APX_VALUE_TYPE_UINT64              4
-#define APX_VALUE_TYPE_STR                 5
-#define APX_VALUE_TYPE_BOOL                6
-#define APX_VALUE_TYPE_ARRAY               7
-#define APX_VALUE_TYPE_RECORD              8
-typedef uint8_t apx_value_t;
+#define APX_VALUE_TYPE_SCALAR              1
+#define APX_VALUE_TYPE_ARRAY               2
+#define APX_VALUE_TYPE_RECORD              3
+typedef uint8_t apx_valueType_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
