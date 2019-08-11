@@ -13,3 +13,6 @@
 [submodule "cutil"]
 	path = cutil
 	url = https://github.com/cogu/cutil.git
+[submodule "dtl_json"]
+	path = dtl_json
+	url = https://github.com/cogu/dtl_json.git

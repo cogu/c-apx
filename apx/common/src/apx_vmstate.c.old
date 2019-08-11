@@ -150,7 +150,7 @@ void apx_vmstate_delete(apx_vmstate_t *self)
    }
 }
 
-apx_error_t apx_vmstate_setWriteData(apx_vmstate_t *self, uint8_t *pData, uint32_t dataLen)
+apx_error_t apx_vmstate_setWriteBuf(apx_vmstate_t *self, uint8_t *pData, uint32_t dataLen)
 {
    if (self != 0 && (pData != 0) && (dataLen > 0))
    {
@@ -179,6 +179,11 @@ uint8_t* apx_vmstate_getWritePtr(apx_vmstate_t *self)
       return self->data.write.pNext;
    }
    return (uint8_t*) 0;
+}
+
+apx_error_t apx_vmState_setReadValue(apx_vmstate_t *self)
+{
+
 }
 
 /**
@@ -261,6 +266,11 @@ apx_error_t apx_vmstate_packU32(apx_vmstate_t *self, uint32_t u32Value)
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmstate_packS8(apx_vmstate_t *self, int8_t s8Value)
+{
+   return apx_vmstate_packU8(self, (uint8_t) s8Value);
 }
 
 /**
@@ -356,7 +366,7 @@ apx_error_t apx_vmstate_packU8U32DynArray(apx_vmstate_t *self, uint8_t *pArrayVa
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmstate_packU8DynArray(apx_vmstate_t *self, uint8_t arrayLen)
+apx_error_t apx_vmstate_packU8DynArrayHeader(apx_vmstate_t *self, uint8_t arrayLen)
 {
    if ( self != 0)
    {
@@ -382,7 +392,7 @@ apx_error_t apx_vmstate_packU8DynArray(apx_vmstate_t *self, uint8_t arrayLen)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmstate_packU16DynArray(apx_vmstate_t *self, uint16_t arrayLen)
+apx_error_t apx_vmstate_packU16DynArrayHeader(apx_vmstate_t *self, uint16_t arrayLen)
 {
    if ( self != 0)
    {
@@ -408,7 +418,7 @@ apx_error_t apx_vmstate_packU16DynArray(apx_vmstate_t *self, uint16_t arrayLen)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmstate_packU32DynArray(apx_vmstate_t *self, uint32_t arrayLen)
+apx_error_t apx_vmstate_packU32DynArrayHeader(apx_vmstate_t *self, uint32_t arrayLen)
 {
    if ( self != 0)
    {

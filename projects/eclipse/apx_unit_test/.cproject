@@ -50,6 +50,7 @@
 									<listOptionValue builtIn="false" value="../../../../msocket/inc"/>
 									<listOptionValue builtIn="false" value="../../../../apx/server/inc"/>
 									<listOptionValue builtIn="false" value="../../../../dtl_type/inc"/>
+									<listOptionValue builtIn="false" value="../../../../dtl_json/inc"/>
 									<listOptionValue builtIn="false" value="../../../../bstr/inc"/>
 									<listOptionValue builtIn="false" value="../../../../local_util/inc"/>
 									<listOptionValue builtIn="false" value="../../../../autosar/inc"/>
