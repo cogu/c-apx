@@ -1004,19 +1004,19 @@ bool apx_nodeData_isComplete(apx_nodeData_t *self)
 /**
  * Internal write function used by APX server
  */
-apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataAttributes_tag *destDataAttributes,
-      apx_nodeData_t *srcNodeData, struct apx_portDataAttributes_tag *srcDataAttributes)
+apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataElement_tag *destDatElem,
+      apx_nodeData_t *srcNodeData, struct apx_portDataElement_tag *srcDataElem)
 {
-   if ( (destNodeData != 0) && (destDataAttributes != 0) && (srcNodeData != 0) && (srcDataAttributes != 0) && (destDataAttributes->dataSize == srcDataAttributes->dataSize) )
+   if ( (destNodeData != 0) && (destDatElem != 0) && (srcNodeData != 0) && (srcDataElem != 0) && (destDatElem->dataSize == srcDataElem->dataSize) )
    {
-      if (apx_portDataAttributes_isPlainOldData(destDataAttributes) )
+      if (apx_portDataElement_isPlainOldData(destDatElem) )
       {
 #ifndef APX_EMBEDDED
          SPINLOCK_ENTER(destNodeData->inPortDataLock);
          SPINLOCK_ENTER(srcNodeData->outPortDataLock);
 #endif
 
-         memcpy(&destNodeData->inPortDataBuf[destDataAttributes->offset], &srcNodeData->outPortDataBuf[srcDataAttributes->offset], srcDataAttributes->dataSize);
+         memcpy(&destNodeData->inPortDataBuf[destDatElem->offset], &srcNodeData->outPortDataBuf[srcDataElem->offset], srcDataElem->dataSize);
 
 #ifndef APX_EMBEDDED
          SPINLOCK_LEAVE(srcNodeData->outPortDataLock);
@@ -1042,11 +1042,11 @@ apx_error_t apx_nodeData_updatePortDataDirectById(apx_nodeData_t *destNodeData, 
       }
       else
       {
-         apx_portDataAttributes_t *destDataAttributes;
-         apx_portDataAttributes_t *srcDataAttributes;
-         destDataAttributes = apx_portDataMap_getRequirePortAttributes(destNodeData->portDataMap, destPortId);
-         srcDataAttributes = apx_portDataMap_getProvidePortAttributes(srcNodeData->portDataMap, srcPortId);
-         return apx_nodeData_updatePortDataDirect(destNodeData, destDataAttributes, srcNodeData, srcDataAttributes);
+         apx_portDataElement_t *destDataElem;
+         apx_portDataElement_t *srcDataElem;
+         destDataElem = apx_portDataMap_getRequirePortDataElement(destNodeData->portDataMap, destPortId);
+         srcDataElem = apx_portDataMap_getProvidePortDataElement(srcNodeData->portDataMap, srcPortId);
+         return apx_nodeData_updatePortDataDirect(destNodeData, destDataElem, srcNodeData, srcDataElem);
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;

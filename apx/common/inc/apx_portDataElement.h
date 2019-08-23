@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portDataAttributes.h
+* \file      apx_portDataElement.h
 * \author    Conny Gustafsson
 * \date      2018-11-25
 * \brief     This is port _data_ attributes, not to be confused with apx_portAttributes_t
@@ -34,7 +34,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_portDataAttributes_tag
+typedef struct apx_portDataElement_tag
 {
    apx_portId_t portId;
    apx_size_t dataSize; //Size of the data portion in the port data
@@ -45,16 +45,16 @@ typedef struct apx_portDataAttributes_tag
    apx_queLenType_t queLenType; //Is this a queued port?
    apx_size_t maxDynLen; //What is the maximum length of the dynamic array?
    apx_size_t maxQueLen; //What is the maximum number of queued elements?
-}apx_portDataAttributes_t;
+}apx_portDataElement_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataAttributes_create(apx_portDataAttributes_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize);
-apx_portDataAttributes_t *apx_portDataAttributes_new(apx_portType_t portType, apx_portId_t portIndex, apx_offset_t offset, apx_size_t dataSize);
-void apx_portDataAttributes_delete(apx_portDataAttributes_t *self);
-void apx_portDataAttributes_vdelete(void *arg);
+void apx_portDataElement_create(apx_portDataElement_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize);
+apx_portDataElement_t *apx_portDataElement_new(apx_portType_t portType, apx_portId_t portIndex, apx_offset_t offset, apx_size_t dataSize);
+void apx_portDataElement_delete(apx_portDataElement_t *self);
+void apx_portDataElement_vdelete(void *arg);
 
-bool apx_portDataAttributes_isPlainOldData(apx_portDataAttributes_t *self);
+bool apx_portDataElement_isPlainOldData(apx_portDataElement_t *self);
 
 #endif //APX_PORT_DATA_ATTRIBUTES_H

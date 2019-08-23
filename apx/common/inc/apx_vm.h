@@ -31,7 +31,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_types.h"
 #include "apx_vmdefs.h"
-#include "apx_portDataAttributes.h"
+#include "apx_portDataElement.h"
 #include "adt_bytearray.h"
 
 
@@ -40,7 +40,7 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_vm_tag
 {
-   apx_portDataAttributes_t *portDataAttr; //current port data attributes, weak reference
+   apx_portDataElement_t *portDataElement; //current port data element, weak reference
    uint8_t *data; //weak reference
    uint32_t dataLen;
    uint32_t dataOffset;

@@ -54,7 +54,8 @@ void apx_compiler_create(apx_compiler_t *self)
    if (self != 0)
    {
       self->program = (adt_bytearray_t*) 0;
-      self->minDataSize = 0;
+      self->minDataSize = 0u;
+      self->maxDataSize = 0u;
    }
 }
 
@@ -259,8 +260,8 @@ static void apx_compiler_appendPlaceHolderHeader(apx_compiler_t *self, uint8_t p
 {
    if ( (self->program != 0) && ((progType == APX_HEADER_UNPACK_PROG) || (progType == APX_HEADER_PACK_PROG)) )
    {
-      uint8_t instruction[APX_HEADER_SIZE] = {0, 0, 0, 0, 0, 0, 0};
-      packLE(&instruction[0], APX_VM_VERSION, sizeof(uint16_t));
+      uint8_t instruction[APX_HEADER_SIZE] = {'G', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      packLE(&instruction[0], APX_BYTE_CODE_VERSION, sizeof(uint16_t));
       instruction[2] = progType;
       adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_HEADER_SIZE);
    }
