@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portDataAttributes.c
+* \file      apx_portDataElement.c
 * \author    Conny Gustafsson
 * \date      2018-10-08
 * \brief     Description
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include "apx_error.h"
-#include "apx_portDataAttributes.h"
+#include "apx_portDataElement.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -48,7 +48,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataAttributes_create(apx_portDataAttributes_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize)
+void apx_portDataElement_create(apx_portDataElement_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize)
 {
    if (self != 0)
    {
@@ -64,17 +64,17 @@ void apx_portDataAttributes_create(apx_portDataAttributes_t *self, apx_portType_
    }
 }
 
-apx_portDataAttributes_t *apx_portDataAttributes_new(apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize)
+apx_portDataElement_t *apx_portDataElement_new(apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize)
 {
-   apx_portDataAttributes_t *self = (apx_portDataAttributes_t*) malloc(sizeof(apx_portDataAttributes_t));
+   apx_portDataElement_t *self = (apx_portDataElement_t*) malloc(sizeof(apx_portDataElement_t));
    if(self != 0)
    {
-      apx_portDataAttributes_create(self, portType, portId, offset, dataSize);
+      apx_portDataElement_create(self, portType, portId, offset, dataSize);
    }
    return self;
 }
 
-void apx_portDataAttributes_delete(apx_portDataAttributes_t *self)
+void apx_portDataElement_delete(apx_portDataElement_t *self)
 {
    if (self != 0)
    {
@@ -82,12 +82,12 @@ void apx_portDataAttributes_delete(apx_portDataAttributes_t *self)
    }
 }
 
-void apx_portDataAttributes_vdelete(void *arg)
+void apx_portDataElement_vdelete(void *arg)
 {
-   apx_portDataAttributes_delete((apx_portDataAttributes_t*) arg);
+   apx_portDataElement_delete((apx_portDataElement_t*) arg);
 }
 
-bool apx_portDataAttributes_isPlainOldData(apx_portDataAttributes_t *self)
+bool apx_portDataElement_isPlainOldData(apx_portDataElement_t *self)
 {
    if ( (self != 0) && (self->dynLenType == APX_DYN_LEN_NONE) && (self->queLenType == APX_QUE_LEN_NONE) )
    {

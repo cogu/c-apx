@@ -205,6 +205,7 @@ int32_t apx_allocator_numPendingMessages(apx_allocator_t *self)
    {
       return adt_rbfh_length(&self->messages);
    }
+   return -1;
 }
 #endif
 

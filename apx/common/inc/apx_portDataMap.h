@@ -31,7 +31,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_types.h"
 #include "apx_error.h"
-#include "apx_portDataAttributes.h"
+#include "apx_portDataElement.h"
 #include "apx_portDataRef.h"
 #include "apx_bytePortMap.h"
 #include "apx_nodeData.h"
@@ -46,8 +46,8 @@ struct apx_portConnectionTable_tag;
 
 typedef struct apx_portDataMap_tag
 {
-   apx_portDataAttributes_t *requirePortDataAttributes; //strong reference to apx_portDataRefAttributes_t, length of array=numRequirePorts
-   apx_portDataAttributes_t *providePortDataAttributes; //strong reference to apx_portDataRefAttributes_t, length of array=numProvidePorts
+   apx_portDataElement_t *requirePortDataAttributes; //strong reference to apx_portDataRefAttributes_t, length of array=numRequirePorts
+   apx_portDataElement_t *providePortDataAttributes; //strong reference to apx_portDataRefAttributes_t, length of array=numProvidePorts
    apx_portDataRef_t *requirePortData; //strong references to apx_portDataRef_t, length of array=numRequirePorts
    apx_portDataRef_t *providePortData; //strong references to apx_portDataRef_t, length of array=numProvidePorts
    apx_bytePortMap_t *requirePortByteMap; //used in client mode, maps byte offset back to require port ID
@@ -70,8 +70,8 @@ apx_error_t apx_portDataMap_create(apx_portDataMap_t *self, apx_nodeData_t *node
 void apx_portDataMap_destroy(apx_portDataMap_t *self);
 apx_portDataMap_t *apx_portDataMap_new(apx_nodeData_t *nodeData);
 void apx_portDataMap_delete(apx_portDataMap_t *self);
-apx_portDataAttributes_t *apx_portDataMap_getRequirePortAttributes(apx_portDataMap_t *self, apx_portId_t portId);
-apx_portDataAttributes_t *apx_portDataMap_getProvidePortAttributes(apx_portDataMap_t *self, apx_portId_t portId);
+apx_portDataElement_t *apx_portDataMap_getRequirePortDataElement(apx_portDataMap_t *self, apx_portId_t portId);
+apx_portDataElement_t *apx_portDataMap_getProvidePortDataElement(apx_portDataMap_t *self, apx_portId_t portId);
 apx_error_t apx_portDataMap_initPortTriggerList(apx_portDataMap_t *self);
 apx_error_t apx_portDataMap_initRequirePortByteMap(apx_portDataMap_t *self, apx_node_t *node);
 apx_error_t apx_portDataMap_initProvidePortByteMap(apx_portDataMap_t *self, apx_node_t *node);

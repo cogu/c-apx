@@ -51,7 +51,7 @@ void apx_vm_create(apx_vm_t *self)
 {
    if (self != 0)
    {
-      self->portDataAttr = (apx_portDataAttributes_t*) 0;
+      self->portDataElement = (apx_portDataElement_t*) 0;
       self->data = (uint8_t *) 0;
       self->dataLen =  0u;
       self->dataOffset = 0u;

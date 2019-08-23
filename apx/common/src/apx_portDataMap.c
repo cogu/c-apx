@@ -49,7 +49,7 @@ static apx_error_t apx_portDataMap_allocateMemory(apx_portDataMap_t *self);
 static void apx_portDataMap_freeMemory(apx_portDataMap_t *self);
 static void apx_portDataMap_createRequirePortData(apx_portDataMap_t *self, apx_nodeData_t *nodeData);
 static void apx_portDataMap_createProvidePortData(apx_portDataMap_t *self, apx_nodeData_t *nodeData);
-static apx_size_t apx_portDataMap_createPortDataAttribute(apx_portDataAttributes_t *attr, apx_port_t *port, apx_portId_t portId, apx_size_t offset);
+static apx_size_t apx_portDataMap_createPortDataElement(apx_portDataElement_t *attr, apx_port_t *port, apx_portId_t portId, apx_size_t offset);
 static void apx_portDataMap_createPortTriggerList(apx_portDataMap_t *self);
 static void apx_portDataMap_destroyPortTriggerList(apx_portDataMap_t *self);
 static void apx_portDataMap_attachPortsToTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs);
@@ -132,22 +132,22 @@ void apx_portDataMap_delete(apx_portDataMap_t *self)
    }
 }
 
-apx_portDataAttributes_t *apx_portDataMap_getRequirePortAttributes(apx_portDataMap_t *self, apx_portId_t portId)
+apx_portDataElement_t *apx_portDataMap_getRequirePortDataElement(apx_portDataMap_t *self, apx_portId_t portId)
 {
    if ( (self != 0) && (portId>=0) && (portId < self->numRequirePorts))
    {
       return &self->requirePortDataAttributes[portId];
    }
-   return (apx_portDataAttributes_t*) 0;
+   return (apx_portDataElement_t*) 0;
 }
 
-apx_portDataAttributes_t *apx_portDataMap_getProvidePortAttributes(apx_portDataMap_t *self, apx_portId_t portId)
+apx_portDataElement_t *apx_portDataMap_getProvidePortDataElement(apx_portDataMap_t *self, apx_portId_t portId)
 {
    if ( (self != 0) && (portId>=0) && (portId < self->numProvidePorts))
    {
       return &self->providePortDataAttributes[portId];
    }
-   return (apx_portDataAttributes_t*) 0;
+   return (apx_portDataElement_t*) 0;
 }
 
 apx_portDataRef_t *apx_portDataMap_getRequirePortDataRef(apx_portDataMap_t *self, apx_portId_t portId)
@@ -278,7 +278,7 @@ static apx_error_t apx_portDataMap_allocateMemory(apx_portDataMap_t *self)
       {
          return APX_MEM_ERROR;
       }
-      self->requirePortDataAttributes = (apx_portDataAttributes_t*) malloc(sizeof(apx_portDataAttributes_t)*self->numRequirePorts);
+      self->requirePortDataAttributes = (apx_portDataElement_t*) malloc(sizeof(apx_portDataElement_t)*self->numRequirePorts);
       if (self->requirePortDataAttributes == 0)
       {
          return APX_MEM_ERROR;
@@ -291,7 +291,7 @@ static apx_error_t apx_portDataMap_allocateMemory(apx_portDataMap_t *self)
       {
          return APX_MEM_ERROR;
       }
-      self->providePortDataAttributes = (apx_portDataAttributes_t*) malloc(sizeof(apx_portDataAttributes_t)*self->numProvidePorts);
+      self->providePortDataAttributes = (apx_portDataElement_t*) malloc(sizeof(apx_portDataElement_t)*self->numProvidePorts);
       if (self->providePortDataAttributes == 0)
       {
          return APX_MEM_ERROR;
@@ -335,11 +335,11 @@ static void apx_portDataMap_createRequirePortData(apx_portDataMap_t *self, apx_n
       apx_size_t offset = 0;
       for(portId=0;portId<self->numRequirePorts;portId++)
       {
-         apx_portDataAttributes_t *attr = &self->requirePortDataAttributes[portId];
+         apx_portDataElement_t *attr = &self->requirePortDataAttributes[portId];
          apx_portDataRef_t *data = &self->requirePortData[portId];
          apx_uniquePortId_t uniquePortId = (uint32_t) portId;
          apx_port_t *port = apx_node_getRequirePort(nodeData->node, portId);
-         offset += apx_portDataMap_createPortDataAttribute(attr, port, portId, offset);
+         offset += apx_portDataMap_createPortDataElement(attr, port, portId, offset);
          apx_portDataRef_create(data, nodeData, uniquePortId, attr);
       }
    }
@@ -353,11 +353,11 @@ static void apx_portDataMap_createProvidePortData(apx_portDataMap_t *self, apx_n
       apx_size_t offset = 0;
       for(portId=0;portId<self->numProvidePorts;portId++)
       {
-         apx_portDataAttributes_t *attr = &self->providePortDataAttributes[portId];
+         apx_portDataElement_t *attr = &self->providePortDataAttributes[portId];
          apx_portDataRef_t *data = &self->providePortData[portId];
          apx_uniquePortId_t uniquePortId = ((uint32_t) portId) | APX_PORT_ID_PROVIDE_PORT;
          apx_port_t *port = apx_node_getProvidePort(nodeData->node, portId);
-         offset += apx_portDataMap_createPortDataAttribute(attr, port, portId, offset);
+         offset += apx_portDataMap_createPortDataElement(attr, port, portId, offset);
          apx_portDataRef_create(data, nodeData, uniquePortId, attr);
       }
    }
@@ -366,10 +366,10 @@ static void apx_portDataMap_createProvidePortData(apx_portDataMap_t *self, apx_n
 /**
  * Returns the total data size of the port
  */
-static apx_size_t apx_portDataMap_createPortDataAttribute(apx_portDataAttributes_t *attr, apx_port_t *port, apx_portId_t portId, apx_size_t offset)
+static apx_size_t apx_portDataMap_createPortDataElement(apx_portDataElement_t *attr, apx_port_t *port, apx_portId_t portId, apx_size_t offset)
 {
    apx_size_t dataElementSize = apx_dataSignature_getPackLen(&port->dataSignature);
-   apx_portDataAttributes_create(attr, port->portType, portId, offset, dataElementSize);
+   apx_portDataElement_create(attr, port->portType, portId, offset, dataElementSize);
    return dataElementSize;
 }
 

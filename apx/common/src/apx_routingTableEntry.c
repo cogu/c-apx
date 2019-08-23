@@ -121,7 +121,7 @@ void apx_routingTableEntry_attachPortDataRef(apx_routingTableEntry_t *self, apx_
          apx_routingTableEntry_insertRequirePortData(self, portDataRef);
          if (provider != (apx_portDataRef_t*) 0)
          {
-            apx_nodeData_updatePortDataDirect(portDataRef->nodeData, portDataRef->attributes, provider->nodeData, provider->attributes);
+            apx_nodeData_updatePortDataDirect(portDataRef->nodeData, portDataRef->portDataElement, provider->nodeData, provider->portDataElement);
          }
          apx_routingTableEntry_updateProvidePortConnections(self, portDataRef, apx_portConnectionTable_connect);
       }
