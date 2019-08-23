@@ -68,5 +68,9 @@ void apx_allocator_stop(apx_allocator_t *self);
 uint8_t *apx_allocator_alloc(apx_allocator_t *self, size_t size);
 void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size);
 bool apx_allocator_isRunning(apx_allocator_t *self);
+#ifdef UNIT_TEST
+void apx_allocator_processAll(apx_allocator_t *self);
+int32_t apx_allocator_numPendingMessages(apx_allocator_t *self);
+#endif
 
 #endif //APX_ALLOCATOR_H

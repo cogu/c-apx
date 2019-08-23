@@ -68,7 +68,6 @@ static void test_apx_fileManagerShared_create(CuTest* tc)
    CuAssertPtrEquals(tc, 0, data.sendFileInfo);
    CuAssertPtrEquals(tc, 0, data.sendFileOpen);
    CuAssertPtrEquals(tc, 0, data.openFileRequest);
-   CuAssertTrue(tc, apx_allocator_isRunning(&data.allocator));
    apx_fileManagerShared_destroy(&data);
 }
 
@@ -88,6 +87,7 @@ static void test_apx_fileManagerShared_alloc(CuTest* tc)
       sprintf(msg, "size=%d", i);
       CuAssertPtrNotNullMsg(tc, msg, ptr);
       apx_fileManagerShared_free(&data, ptr, size);
+      apx_allocator_processAll(&data.allocator);
    }
    //allocate some large objects
    size = 100;
@@ -102,6 +102,7 @@ static void test_apx_fileManagerShared_alloc(CuTest* tc)
    ptr = apx_fileManagerShared_alloc(&data, size);
    CuAssertPtrNotNull(tc, ptr);
    apx_fileManagerShared_free(&data, ptr, size);
+   apx_allocator_processAll(&data.allocator);
 
    apx_fileManagerShared_destroy(&data);
 }

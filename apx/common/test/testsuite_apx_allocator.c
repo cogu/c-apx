@@ -69,11 +69,13 @@ static void test_apx_allocator_create(CuTest* tc)
    data4 = apx_allocator_alloc(&allocator,4);
    data128 = apx_allocator_alloc(&allocator,128);
    CuAssertPtrNotNull(tc,data4);
-   apx_allocator_free(&allocator,data1,1);
-   apx_allocator_free(&allocator,data2,2);
-   apx_allocator_free(&allocator,data3,3);
-   apx_allocator_free(&allocator,data4,4);
-   apx_allocator_free(&allocator,data128,128);
+   apx_allocator_free(&allocator,data1, 1);
+   apx_allocator_free(&allocator,data2, 2);
+   apx_allocator_free(&allocator,data3, 3);
+   apx_allocator_free(&allocator,data4, 4);
+   apx_allocator_free(&allocator,data128, 128);
+   CuAssertIntEquals(tc, 5, apx_allocator_numPendingMessages(&allocator));
+   apx_allocator_processAll(&allocator);
    apx_allocator_stop(&allocator);
    apx_allocator_destroy(&allocator);
 }
