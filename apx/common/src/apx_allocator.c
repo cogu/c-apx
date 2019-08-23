@@ -25,6 +25,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static int8_t apx_allocator_startThread(apx_allocator_t *self);
 static THREAD_PROTO(threadTask,arg);
+static bool apx_allocator_processEvent(apx_allocator_t *self);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -59,7 +60,9 @@ int8_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
 #endif
       self->workerThreadValid=false;
       SPINLOCK_INIT(self->lock);
+#ifndef UNIT_TEST
       SEMAPHORE_CREATE(self->semaphore);
+#endif
       self->isRunning = false;
       soa_init(&self->soa);
       return 0;
@@ -73,17 +76,21 @@ void apx_allocator_destroy(apx_allocator_t *self)
    {
       adt_rbfh_destroy(&self->messages);
       soa_destroy(&self->soa);
+#ifndef UNIT_TEST
       SEMAPHORE_DESTROY(self->semaphore);
+#endif
       SPINLOCK_DESTROY(self->lock);
    }
 }
 
 void apx_allocator_start(apx_allocator_t *self)
 {
+#ifndef UNIT_TEST
    if( (self != 0) && (self->workerThreadValid == false) )
    {
       apx_allocator_startThread(self);
    }
+#endif
 }
 
 void apx_allocator_stop(apx_allocator_t *self)
@@ -100,7 +107,9 @@ void apx_allocator_stop(apx_allocator_t *self)
       adt_rbfh_insert(&self->messages,(const uint8_t*) &data);
       SPINLOCK_LEAVE(self->lock);
       //2. wake workerThread
+#ifndef UNIT_TEST
       SEMAPHORE_POST(self->semaphore);
+#endif
 #ifdef _MSC_VER
       result = WaitForSingleObject(self->workerThread, 5000);
       if (result == WAIT_TIMEOUT)
@@ -164,8 +173,10 @@ void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size)
       SPINLOCK_ENTER(self->lock);
       adt_rbfh_insert(&self->messages,(const uint8_t*) &data);
       SPINLOCK_LEAVE(self->lock);
+#ifndef UNIT_TEST
       //2. wake worker thread
       SEMAPHORE_POST(self->semaphore);
+#endif
    }
 }
 
@@ -177,6 +188,25 @@ bool apx_allocator_isRunning(apx_allocator_t *self)
    }
    return false;
 }
+
+#ifdef UNIT_TEST
+void apx_allocator_processAll(apx_allocator_t *self)
+{
+   bool result = true;
+   while(result)
+   {
+      result = apx_allocator_processEvent(self);
+   }
+}
+
+int32_t apx_allocator_numPendingMessages(apx_allocator_t *self)
+{
+   if (self != 0)
+   {
+      return adt_rbfh_length(&self->messages);
+   }
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
@@ -210,7 +240,7 @@ static THREAD_PROTO(threadTask,arg)
 {
    if(arg!=0)
    {
-      rbf_data_t data;
+
       apx_allocator_t *self;
       uint32_t messages_processed=0;
       self = (apx_allocator_t*) arg;
@@ -224,39 +254,8 @@ static THREAD_PROTO(threadTask,arg)
          if (result == 0)
 #endif
          {
-            uint8_t bufResult;
-            bool delayedFree = false;
-            SPINLOCK_ENTER(self->lock);
-            bufResult = adt_rbfh_remove(&self->messages,(uint8_t*) &data);
-            if (bufResult == BUF_E_OK)
-            {
-               if (data.ptr != 0)
-               {
-                  if (data.size<=SOA_SMALL_OBJECT_MAX_SIZE)
-                  {
-                     soa_free(&self->soa,data.ptr,data.size);
-                  }
-                  else
-                  {
-                     delayedFree = true;
-                  }
-               }
-            }
-            SPINLOCK_LEAVE(self->lock);
             messages_processed++;
-            if (delayedFree == true)
-            {
-               free(data.ptr);
-            }
-            else if ( (bufResult == BUF_E_OK) && (data.ptr == 0) )
-            {
-               break; //NULL pointer is used to exit the thread
-            }
-            else
-            {
-               //Already handled by soa_free or bufResult != E_BUF_OK
-               assert(bufResult == BUF_E_OK);
-            }
+            apx_allocator_processEvent(self);
          }
          else
          {
@@ -274,6 +273,48 @@ static THREAD_PROTO(threadTask,arg)
    THREAD_RETURN(0);
 }
 
+static bool apx_allocator_processEvent(apx_allocator_t *self)
+{
+   bool retval = true;
+   uint8_t rc;
+   rbf_data_t data;
+   bool delayedFree = false;
+   SPINLOCK_ENTER(self->lock);
+   rc = adt_rbfh_remove(&self->messages,(uint8_t*) &data);
+   if (rc == BUF_E_OK)
+   {
+      if (data.ptr != 0)
+      {
+         if (data.size<=SOA_SMALL_OBJECT_MAX_SIZE)
+         {
+            soa_free(&self->soa,data.ptr,data.size);
+         }
+         else
+         {
+            delayedFree = true;
+         }
+      }
+   }
+   else
+   {
+      retval = false;
+   }
+   SPINLOCK_LEAVE(self->lock);
+
+   if (delayedFree == true)
+   {
+      free(data.ptr);
+   }
+   else if ( (rc == BUF_E_OK) && (data.ptr == 0) )
+   {
+      retval = false; //NULL data pointer is a valid exit message
+   }
+   else
+   {
+      //Already handled by soa_free or bufResult != E_BUF_OK
+   }
+   return retval;
+}
 
 
 
