@@ -596,14 +596,14 @@ static const uint8_t *parseLimit(apx_dataSignature_t *self, const uint8_t *pBegi
                   case APX_BASE_TYPE_UINT8:
                   case APX_BASE_TYPE_UINT16:
                   case APX_BASE_TYPE_UINT32:
-                     pDataElement->min.u32 = (uint32_t) min; //TODO: implement support for unsigned parsing of min/max
-                     pDataElement->max.u32 = (uint32_t) max;
+                     pDataElement->lowerLimit.u32 = (uint32_t) min; //TODO: implement support for unsigned parsing of min/max
+                     pDataElement->upperLimit.u32 = (uint32_t) max;
                      break;
                   case APX_BASE_TYPE_SINT8:
                   case APX_BASE_TYPE_SINT16:
                   case APX_BASE_TYPE_SINT32:
-                     pDataElement->min.s32 = min;
-                     pDataElement->max.s32 = max;
+                     pDataElement->lowerLimit.s32 = min;
+                     pDataElement->upperLimit.s32 = max;
                      break;
                   case APX_BASE_TYPE_STRING:
                      break;

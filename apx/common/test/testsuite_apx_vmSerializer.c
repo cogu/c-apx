@@ -56,7 +56,12 @@ static void test_apx_vmSerializer_packU32DynArrayHeader(CuTest* tc);
 static void test_apx_vmSerializer_packFixedStr(CuTest* tc);
 static void test_apx_vmSerializer_packRecordU8(CuTest* tc);
 static void test_apx_vmSerializer_packRecordStrU32(CuTest* tc);
-static void test_apx_vmSerializer_packU16FixedArray(CuTest* tc);
+static void test_apx_vmSerializer_packBytes(CuTest* tc);
+static void test_apx_vmSerializer_packU8Array(CuTest* tc);
+static void test_apx_vmSerializer_packU16Array(CuTest* tc);
+static void test_apx_vmSerializer_packU32Array(CuTest* tc);
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -79,7 +84,11 @@ CuSuite* testSuite_apx_vmSerializer(void)
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packFixedStr);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packRecordU8);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packRecordStrU32);
-   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU16FixedArray);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packBytes);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU8Array);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU16Array);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU32Array);
+
 
 
    return suite;
@@ -326,9 +335,54 @@ static void test_apx_vmSerializer_packRecordStrU32(CuTest* tc)
 
 }
 
-static void test_apx_vmSerializer_packU16FixedArray(CuTest* tc)
+static void test_apx_vmSerializer_packBytes(CuTest* tc)
 {
-   uint8_t packedData[4*UINT16_SIZE]; //Assume that array length is 4
+   uint8_t packedData[8];
+   const uint8_t bytes[8] = {82, 29, 14, 11, 0xff, 0xff, 0xff, 10};
+   dtl_sv_t *sv;
+   apx_vmSerializer_t *sr = apx_vmSerializer_new();
+
+   memset(&packedData[0], 0xff, sizeof(packedData));
+   sv = dtl_sv_make_bytes_raw(bytes, (uint32_t) sizeof(bytes));
+   apx_vmSerializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_setValue(sr, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsBytes(sr, false));
+   CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(sr));
+   CuAssertIntEquals(tc, 0, memcmp(packedData, bytes, sizeof(packedData)));
+
+   apx_vmSerializer_delete(sr);
+   dtl_dec_ref(sv);
+}
+
+
+static void test_apx_vmSerializer_packU8Array(CuTest* tc)
+{
+   uint8_t packedData[5];
+   uint8_t verificationData[5] = {1u, 2u, 3u, 4u, 5u};
+   dtl_av_t *av = dtl_av_new();
+   apx_vmSerializer_t *sr = apx_vmSerializer_new();
+
+   memset(&packedData[0], 0xff, sizeof(packedData));
+
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(2), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(3), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(4), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(5), false);
+
+   apx_vmSerializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_setValue(sr, (dtl_dv_t*) av));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsU8Array(sr, 5, false));
+   CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(sr));
+   CuAssertIntEquals(tc, 0, memcmp(packedData, verificationData, sizeof(packedData)));
+
+   apx_vmSerializer_delete(sr);
+   dtl_av_delete(av);
+}
+
+static void test_apx_vmSerializer_packU16Array(CuTest* tc)
+{
+   uint8_t packedData[4*UINT16_SIZE];
    uint8_t verificationData[4*UINT16_SIZE] = {0x00, 0x00, 0x34, 0x12, 0x10, 0xff, 0xff, 0xff};
                                               //0x0000   ,  0x1234     0xff10       0xffff
    dtl_av_t *av = dtl_av_new();
@@ -344,6 +398,30 @@ static void test_apx_vmSerializer_packU16FixedArray(CuTest* tc)
    apx_vmSerializer_begin(sr, &packedData[0], sizeof(packedData));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_setValue(sr, (dtl_dv_t*) av));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsU16Array(sr, 4, false));
+   CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(sr));
+   CuAssertIntEquals(tc, 0, memcmp(packedData, verificationData, sizeof(packedData)));
+
+   apx_vmSerializer_delete(sr);
+   dtl_av_delete(av);
+}
+
+static void test_apx_vmSerializer_packU32Array(CuTest* tc)
+{
+   uint8_t packedData[3*UINT32_SIZE];
+   uint8_t verificationData[3*UINT32_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0xff, 0xff, 0xff, 0xff};
+                                              //0x00000000          , 0x1234578             , 0xffffffff
+   dtl_av_t *av = dtl_av_new();
+   apx_vmSerializer_t *sr = apx_vmSerializer_new();
+
+   memset(&packedData[0], 0xff, sizeof(packedData));
+
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0x00000000), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0x12345678), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0xffffffff), false);
+
+   apx_vmSerializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_setValue(sr, (dtl_dv_t*) av));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsU32Array(sr, 3, false));
    CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(sr));
    CuAssertIntEquals(tc, 0, memcmp(packedData, verificationData, sizeof(packedData)));
 

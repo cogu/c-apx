@@ -33,51 +33,109 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define APX_VM_VERSION                2u
+#define APX_VM_VERSION                0x0200u //version number (major in high byte, minor in low byte)
+
+#define APX_HEADER_PACK_PROG          ((uint8_t) 'P') //Pack program
+#define APX_HEADER_UNPACK_PROG        ((uint8_t) 'U') //unpack program mode
+
 #define APX_OPCODE_SIZE               1u //sizeof(uint8_t)
 
-#define APX_OPCODE_NOP                0u
+/*
+FORMAT:
++-------------+----------------+---------------+
+| 1 FLag bit  | 4 variant bits | 3 opcode bits |
++-------------+----------------+---------------+
 
-#define APX_OPCODE_PACK_U8            1u
-#define APX_OPCODE_PACK_U16           2u
-#define APX_OPCODE_PACK_U32           3u
-#define APX_OPCODE_PACK_U64           4u  //reserved but not implemented
-#define APX_OPCODE_PACK_S8            5u
-#define APX_OPCODE_PACK_S16           6u
-#define APX_OPCODE_PACK_S32           7u
-#define APX_OPCODE_PACK_S64           8u  //reserved but not implemented
-#define APX_OPCODE_PACK_STR           9u  //null-terminated string. An array length must have been set by previous instruction
-#define APX_OPCODE_PACK_BOOL          10u
+OP CODES
 
-//reserved for future data types
-#define APX_OPCODE_UNPACK_U8          64u
-#define APX_OPCODE_UNPACK_U16         65u
-#define APX_OPCODE_UNPACK_U32         66u
-#define APX_OPCODE_UNPACK_U64         67u
-#define APX_OPCODE_UNPACK_S8          68u
-#define APX_OPCODE_UNPACK_S16         69u
-#define APX_OPCODE_UNPACK_S32         70u
-#define APX_OPCODE_UNPACK_S64         70u
-#define APX_OPCODE_UNPACK_STR         70u
-#define APX_OPCODE_UNPACK_BOOL        71u
+0: UNPACK:   14 variants
+   0: U8
+   1: U16
+   2: U32
+   3: U64
+   4: S8
+   5: S16
+   6: S32
+   7: S64
+   8: ARRAY
+   9: RECORD
+   10: BOOL
+   11: BYTES
+   12: STR
+   13: ZSTR (not yet decided if needed)
 
-//reserved for future data types
+1: PACK  14 variants
+   0: U8
+   1: U16
+   2: U32
+   3: U64
+   4: S8
+   5: S16
+   6: S32
+   7: S64
+   8: ARRAY
+   9: RECORD
+   10: BOOL
+   11: BYTES
+   12: STR
+   13: ZSTR (not yet decided if needed)
 
-//flow control op codes
-#define APX_OPCODE_U8ARRAY            192u //next 1 byte of program is the length of array
-#define APX_OPCODE_U16ARRAY           193u //next 2 bytes of program is the length of array (uint16_le)
-#define APX_OPCODE_U32ARRAY           194u //next 4 bytes of program is the length of array (uint32_le)
-#define APX_OPCODE_RECORD_PUSH        195u //enter new record element
-#define APX_OPCODE_RECORD_POP         196u //leave current record element
-#define APX_OPCODE_RECORD_SELECT      197u //Reads key as string from program. Next n bytes in program is the key, it keeps reading until a null-terminator is encountered.
+2: ARRAY     : 6 variants
+   0: U8
+   1: U16
+   2: U32
 
-#define APX_OPCODE_PACK_PROG          198u //pack program mode
-#define APX_OPCODE_UNPACK_PROG        198u //unpack program mode
+3: DATA_CTRL  : 1 variant
+   0: RECORD_SELECT
 
-//data op codes
-#define APX_OPCODE_U8DYNARRAY   198u //next 1 byte of data is the length of array
-#define APX_OPCODE_U16DYNARRAY  199u //next 2 bytes of data is the length of array (uint16_le)
-#define APX_OPCODE_U32DYNARRAY  200u //next 4 bytes of data is the length of array (uint32_le)
+4: FLOW_CTRL     : 1 variant
+   1: ARRAY_NEXT
+
+5: UNPACK2 (reserved for 16 additional data types)
+6: PACK2 (reserved for 16 additional data types)
+7: INVALID
+
+*/
+
+//OPCODE UNPACK
+#define APX_OPCODE_UNPACK               0u
+//If flagbit is set it means the next instruction is an opcode ARRAY
+//PACK VARIANTS
+#define APX_VARIANT_U8                0u
+#define APX_VARIANT_U16               1u
+#define APX_VARIANT_U32               2u
+#define APX_VARIANT_U64               3u
+#define APX_VARIANT_S8                4u
+#define APX_VARIANT_S16               5u
+#define APX_VARIANT_S32               6u
+#define APX_VARIANT_S64               7u
+#define APX_VARIANT_ARRAY             8u
+#define APX_VARIANT_RECORD            9u
+#define APX_VARIANT_BOOL              10u
+#define APX_VARIANT_BYTES             11u
+#define APX_VARIANT_STR               12u //string
+#define APX_VARIANT_ZSTR              13u //null-terminated string (not yet decided if needed)
+
+//OPCODE PACK
+#define APX_OPCODE_PACK             1u
+//SAME VARIANTS and FLAG as APX_OPCODE_UNPACK
+
+//OPCODE ARRAY
+#define APX_OPCODE_ARRAY            2u
+//Uses VARIANT_U8, VARIANT_U16, VARIANT_U32.
+//If flag is 0, the array is fixed (array length read from program), ELSE it is dynamic (array length read from data).
+
+//OPCODE DATA_CTRL
+#define APX_OPCODE_DATA_CTRL        3u
+//DATA_CTRL variants
+#define APX_VARIANT_RECORD_SELECT   0u //When flag is 1 it means this is the last field in the record
+
+//OPCODE FLOW_CTRL
+#define APX_OPCODE_FLOW_CTRL        4u
+//APX_OPCODE_FLOW_CTRL variants
+#define APX_VARIANT_ARRAY_NEXT      0u
+
+#define APX_OPCODE_INVALID          7u
 
 #define UINT8_SIZE   1u
 #define UINT16_SIZE  2u
@@ -89,42 +147,25 @@
 #define SINT64_SIZE  8u
 #define BOOL_SIZE    sizeof(bool)
 
-#define APX_INST_PACK_PROG_SIZE         7u //bytes 0-1: VM_VERSION(uint16_le), byte2: program_type, bytes 3-6: expected_data_length (uint32_le)
-#define APX_INST_UNPACK_PROG_SIZE       7u //bytes 0-1: VM_VERSION(uint16_le), byte2: program_type, bytes 3-6: expected_data_length (uint32_le)
-#define APX_INST_PACK_U8_SIZE           1u
-#define APX_INST_PACK_U16_SIZE          1u
-#define APX_INST_PACK_U32_SIZE          1u
-#define APX_INST_PACK_S8_SIZE           1u
-#define APX_INST_PACK_S16_SIZE          1u
-#define APX_INST_PACK_S32_SIZE          1u
-#define APX_INST_PACK_STR_SIZE          3u
-#define APX_INST_PACK_U8AR_SIZE         3u
-#define APX_INST_PACK_S8AR_SIZE         3u
-#define APX_INST_UNPACK_U8_SIZE         1u
-#define APX_INST_UNPACK_U16_SIZE        1u
-#define APX_INST_UNPACK_U32_SIZE        1u
-#define APX_INST_UNPACK_S8_SIZE         1u
-#define APX_INST_UNPACK_S16_SIZE        1u
-#define APX_INST_UNPACK_S32_SIZE        1u
-#define APX_INST_UNPACK_STR_SIZE        3u
-#define APX_INST_UNPACK_U8AR_SIZE       3u
-#define APX_INST_UNPACK_S8AR_SIZE       3u
-#define APX_INST_RECORD_ENTER_SIZE      1u
-#define APX_INST_RECORD_SELECT_SIZE     3u
-#define APX_INST_RECORD_LEAVE_SIZE      1u
-#define APX_INST_ARRAY_ENTER_SIZE       3u
-#define APX_INST_DYNARRAY_ENTER_SIZE    1u
-#define APX_INST_ARRAY_NEXT_SIZE        1u
-
-#define APX_MAX_INST_PACK_SIZE          3u
-#define APX_MAX_INST_UNPACK_SIZE        3u
-
+#define APX_HEADER_SIZE 8u //byte 0: magic number 0x58 ('X'), bytes 1-2: VM_VERSION(uint16_le), byte3: program_type, bytes 4-7: expected_data_length (uint32_le)
+#define APX_INST_SIZE 1u
+#define APX_INST_OPCODE_MASK 0x07u
+#define APX_INST_VARIANT_SHIFT 3u
+#define APX_INST_VARIANT_MASK 0xfu
+#define APX_INST_FLAG_MASK 0x01u
+#define APX_INST_FLAG_SHIFT 7u
+#define APX_INST_FLAG       0x01u
+#define APX_LAST_FIELD_FLAG APX_INST_FLAG
+#define APX_ARRAY_FLAG      APX_INST_FLAG
+#define APX_DYN_ARRAY_FLAG  APX_INST_FLAG
 
 #define APX_VALUE_TYPE_NONE                0
 #define APX_VALUE_TYPE_SCALAR              1
 #define APX_VALUE_TYPE_ARRAY               2
 #define APX_VALUE_TYPE_RECORD              3
 typedef uint8_t apx_valueType_t;
+
+#define APX_PROGRAM_GROW_SIZE              64
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES

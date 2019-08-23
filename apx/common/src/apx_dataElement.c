@@ -117,8 +117,8 @@ int8_t apx_dataElement_create(apx_dataElement_t *self, int8_t baseType, const ch
          self->childElements = (adt_ary_t*) 0;
       }
       self->arrayLen = 0;
-      self->min.s32 = 0;
-      self->max.s32 = 0;
+      self->lowerLimit.s32 = 0;
+      self->upperLimit.s32 = 0;
       self->packLen = 0;
       self->isDynamicArray = false;
       if (baseType == APX_BASE_TYPE_REF_NAME)
