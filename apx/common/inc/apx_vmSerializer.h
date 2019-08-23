@@ -99,13 +99,16 @@ apx_error_t apx_vmSerializer_packU32(apx_vmSerializer_t *self, uint32_t u32Value
 apx_error_t apx_vmSerializer_packS8(apx_vmSerializer_t *self, int8_t s8Value);
 apx_error_t apx_vmSerializer_packS16(apx_vmSerializer_t *self, int16_t s16Value);
 apx_error_t apx_vmSerializer_packS32(apx_vmSerializer_t *self, int32_t s32Value);
-apx_error_t apx_vmSerializer_packFixedStr(apx_vmSerializer_t *self, adt_str_t *str, int32_t writeLen);
+apx_error_t apx_vmSerializer_packFixedStr(apx_vmSerializer_t *self, const adt_str_t *str, int32_t writeLen);
+apx_error_t apx_vmSerializer_packBytes(apx_vmSerializer_t *self, const adt_bytes_t *bytes);
 
 apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, bool autoPopState);
 apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, bool autoPopState);
-apx_error_t apx_vmSerializer_packValueAsU16Array(apx_vmSerializer_t *self, int32_t arrayLen, bool autoPopState);
-
+apx_error_t apx_vmSerializer_packValueAsU8Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState);
+apx_error_t apx_vmSerializer_packValueAsU16Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState);
+apx_error_t apx_vmSerializer_packValueAsU32Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState);
 apx_error_t apx_vmSerializer_packValueAsFixedStr(apx_vmSerializer_t *self, int32_t writeLen, bool autoPopState);
+apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool autoPopState);
 
 apx_error_t apx_vmSerializer_packU8DynArrayHeader(apx_vmSerializer_t *self, uint8_t arrayLen);
 apx_error_t apx_vmSerializer_packU16DynArrayHeader(apx_vmSerializer_t *self, uint16_t arrayLen);

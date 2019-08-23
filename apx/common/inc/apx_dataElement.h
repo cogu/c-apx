@@ -33,6 +33,7 @@
 #include "adt_ary.h"
 #include "dtl_type.h"
 #include "apx_error.h"
+#include "apx_types.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -40,36 +41,22 @@
 //forward declarations
 struct apx_datatype_tag;
 
-#define APX_BASE_TYPE_NONE     -1
-#define APX_BASE_TYPE_UINT8    0 //'C' (uint8)
-#define APX_BASE_TYPE_UINT16   1 //'S' (uint16)
-#define APX_BASE_TYPE_UINT32   2 //'L' (uin32)
-#define APX_BASE_TYPE_UINT64   3 //'U' (uint64)
-#define APX_BASE_TYPE_SINT8    4 //'c'
-#define APX_BASE_TYPE_SINT16   5 //'s'
-#define APX_BASE_TYPE_SINT32   6 //'l'
-#define APX_BASE_TYPE_SINT64   7 //'u'
-#define APX_BASE_TYPE_STRING   8 //'a' (string)
-#define APX_BASE_TYPE_RECORD   9 //"{}" (record)
-#define APX_BASE_TYPE_REF_ID   10 //type ID
-#define APX_BASE_TYPE_REF_NAME 11 //type name
-#define APX_BASE_TYPE_REF_PTR  12 //pointer to type (this is achieved only after derived has been called on data signature)
 
 typedef struct apx_dataElement_tag
 {
    char *name;
-   int8_t baseType;
+   apx_baseType_t baseType;
    bool isDynamicArray;
    uint32_t arrayLen;
    uint32_t packLen;
    union {
       uint32_t u32;
       int32_t  s32;
-   }min;
+   }lowerLimit;
    union {
       uint32_t u32;
       int32_t  s32;
-   }max;
+   }upperLimit;
    adt_ary_t *childElements; //NULL for all cases except when baseType is exactly == APX_BASE_TYPE_RECORD. Contains strong references to apx_dataElement_t
    union {
       int32_t id; //used when baseType is APX_BASE_TYPE_REFERENCE_INT

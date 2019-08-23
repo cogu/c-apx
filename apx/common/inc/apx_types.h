@@ -5,6 +5,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
+#include <stdbool.h>
 #include "apx_cfg.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -82,11 +83,21 @@ typedef struct apx_dataWriteCmd_tag
 #define APX_PORT_ID_PROVIDE_PORT 0x80000000 //used inside an uint32_t to carry either a provide port ID and a require port ID.
 #define APX_PORT_ID_MASK         0x7FFFFFFF //used to clear the port flag (ready to cast it into an int32_t)
 
-#if defined(_MSC_PLATFORM_TOOLSET) && (_MSC_PLATFORM_TOOLSET<=110)
-#include "msc_bool.h"
-#else
-#include <stdbool.h>
-#endif
+#define APX_BASE_TYPE_NONE     -1
+#define APX_BASE_TYPE_UINT8    0 //'C' (uint8)
+#define APX_BASE_TYPE_UINT16   1 //'S' (uint16)
+#define APX_BASE_TYPE_UINT32   2 //'L' (uin32)
+#define APX_BASE_TYPE_UINT64   3 //'U' (uint64)
+#define APX_BASE_TYPE_SINT8    4 //'c'
+#define APX_BASE_TYPE_SINT16   5 //'s'
+#define APX_BASE_TYPE_SINT32   6 //'l'
+#define APX_BASE_TYPE_SINT64   7 //'u'
+#define APX_BASE_TYPE_STRING   8 //'a' (string)
+#define APX_BASE_TYPE_RECORD   9 //"{}" (record)
+#define APX_BASE_TYPE_REF_ID   10 //type ID
+#define APX_BASE_TYPE_REF_NAME 11 //type name
+#define APX_BASE_TYPE_REF_PTR  12 //pointer to type (this is achieved only after derived has been called on data signature)
+typedef int8_t apx_baseType_t;
 
 #ifdef _MSC_VER
 #define STRDUP _strdup
