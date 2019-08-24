@@ -48,28 +48,26 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataElement_create(apx_portDataElement_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize)
+void apx_portDataElement_create(apx_portDataElement_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t elemSize)
 {
    if (self != 0)
    {
       self->portType = portType;
       self->portId = portId;
       self->offset = offset;
-      self->dataSize = dataSize;
-      self->totalSize = dataSize;
-      self->dynLenType = APX_DYN_LEN_NONE;
+      self->elemSize = elemSize;
+      self->totalSize = elemSize;
       self->queLenType = APX_QUE_LEN_NONE;
-      self->maxDynLen = 0;
       self->maxQueLen = 0;
    }
 }
 
-apx_portDataElement_t *apx_portDataElement_new(apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize)
+apx_portDataElement_t *apx_portDataElement_new(apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t elemSize)
 {
    apx_portDataElement_t *self = (apx_portDataElement_t*) malloc(sizeof(apx_portDataElement_t));
    if(self != 0)
    {
-      apx_portDataElement_create(self, portType, portId, offset, dataSize);
+      apx_portDataElement_create(self, portType, portId, offset, elemSize);
    }
    return self;
 }
@@ -89,7 +87,7 @@ void apx_portDataElement_vdelete(void *arg)
 
 bool apx_portDataElement_isPlainOldData(apx_portDataElement_t *self)
 {
-   if ( (self != 0) && (self->dynLenType == APX_DYN_LEN_NONE) && (self->queLenType == APX_QUE_LEN_NONE) )
+   if ( (self != 0) && (!self->isDynamicArray) && (self->queLenType == APX_QUE_LEN_NONE) )
    {
       return true;
    }

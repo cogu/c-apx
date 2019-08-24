@@ -46,9 +46,10 @@ typedef struct apx_dataElement_tag
 {
    char *name;
    apx_baseType_t baseType;
+   apx_dynLenType_t dynLenType;
    bool isDynamicArray;
    uint32_t arrayLen;
-   uint32_t packLen;
+   apx_size_t packLen;
    union {
       uint32_t u32;
       int32_t  s32;
@@ -76,11 +77,11 @@ int8_t apx_dataElement_create(apx_dataElement_t *self, int8_t baseType, const ch
 void apx_dataElement_destroy(apx_dataElement_t *self);
 void apx_dataElement_initRecordType(apx_dataElement_t *self);
 uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_dv_t *dv);
-
-void apx_dataElement_setArrayLen(apx_dataElement_t *self, uint32_t arrayLen);
+apx_error_t apx_dataElement_setArrayLen(apx_dataElement_t *self, uint32_t arrayLen);
 uint32_t apx_dataElement_getArrayLen(apx_dataElement_t *self);
-void apx_dataElement_setDynamicArray(apx_dataElement_t *self);
+apx_error_t apx_dataElement_setDynamicArray(apx_dataElement_t *self);
 bool apx_dataElement_isDynamicArray(apx_dataElement_t *self);
+apx_dynLenType_t apx_dataElement_getDynLenType(apx_dataElement_t *self);
 void apx_dataElement_appendChild(apx_dataElement_t *self, apx_dataElement_t *child);
 int32_t apx_dataElement_getNumChild(apx_dataElement_t *self);
 apx_dataElement_t *apx_dataElement_getChildAt(apx_dataElement_t *self, int32_t index);
@@ -90,8 +91,8 @@ void apx_dataElement_setTypeReferenceName(apx_dataElement_t *self, const char *t
 const char *apx_dataElement_getTypeReferenceName(apx_dataElement_t *self);
 void apx_dataElement_setTypeReferencePtr(apx_dataElement_t *self, struct apx_datatype_tag *ptr);
 struct apx_datatype_tag *apx_dataElement_getTypeReferencePtr(apx_dataElement_t *self);
-int32_t apx_dataElement_calcPackLen(apx_dataElement_t *self);
-int32_t apx_dataElement_getPackLen(apx_dataElement_t *self);
+apx_error_t apx_dataElement_calcPackLen(apx_dataElement_t *self, apx_size_t *packLen);
+apx_size_t apx_dataElement_getPackLen(apx_dataElement_t *self);
 apx_error_t apx_dataElement_getLastError(apx_dataElement_t *self);
 
 #endif //APX_DATAELEMENT_H

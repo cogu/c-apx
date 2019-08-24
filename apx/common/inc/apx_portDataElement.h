@@ -37,21 +37,20 @@
 typedef struct apx_portDataElement_tag
 {
    apx_portId_t portId;
-   apx_size_t dataSize; //Size of the data portion in the port data
-   apx_size_t totalSize; //Total size of port data, including possible headers
+   apx_size_t elemSize; //Size of the data portion on the port data
+   apx_size_t totalSize; //elementSize+queueHeaderSize
    apx_offset_t offset; //offset in file
    apx_portType_t portType; //Is this a provide or require port?
-   apx_dynLenType_t dynLenType; //Is this a dynamically sized array port?
    apx_queLenType_t queLenType; //Is this a queued port?
-   apx_size_t maxDynLen; //What is the maximum length of the dynamic array?
-   apx_size_t maxQueLen; //What is the maximum number of queued elements?
-}apx_portDataElement_t;
+   bool isDynamicArray; //True if elementSize can vary from element to element
+   apx_size_t maxQueLen; //What is the maximum length of the queue?
+} apx_portDataElement_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataElement_create(apx_portDataElement_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize);
-apx_portDataElement_t *apx_portDataElement_new(apx_portType_t portType, apx_portId_t portIndex, apx_offset_t offset, apx_size_t dataSize);
+void apx_portDataElement_create(apx_portDataElement_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t elemSize);
+apx_portDataElement_t *apx_portDataElement_new(apx_portType_t portType, apx_portId_t portIndex, apx_offset_t offset, apx_size_t elemSize);
 void apx_portDataElement_delete(apx_portDataElement_t *self);
 void apx_portDataElement_vdelete(void *arg);
 

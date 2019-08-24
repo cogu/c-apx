@@ -118,7 +118,7 @@ static void test_apx_dataSignature_uint8(CuTest* tc)
 {
    apx_error_t err;
    apx_dataSignature_t *pSignature;
-
+   apx_size_t packLen = 0;
    //base type
    pSignature = apx_dataSignature_new("C", &err);
    CuAssertPtrNotNull(tc, pSignature);
@@ -127,7 +127,8 @@ static void test_apx_dataSignature_uint8(CuTest* tc)
    CuAssertUIntEquals(tc,0,pSignature->dataElement->arrayLen);
    CuAssertIntEquals(tc,0,pSignature->dataElement->lowerLimit.s32);
    CuAssertIntEquals(tc,0,pSignature->dataElement->upperLimit.s32);
-   CuAssertUIntEquals(tc,sizeof(uint8_t), apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT8_SIZE, packLen);
    apx_dataSignature_delete(pSignature);
 
    //limit
@@ -138,7 +139,8 @@ static void test_apx_dataSignature_uint8(CuTest* tc)
    CuAssertUIntEquals(tc,0,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,7,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint8_t), apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT8_SIZE, packLen);
    apx_dataSignature_delete(pSignature);
 
    //array
@@ -147,7 +149,8 @@ static void test_apx_dataSignature_uint8(CuTest* tc)
    CuAssertIntEquals(tc,APX_BASE_TYPE_UINT8,pSignature->dataElement->baseType);
    CuAssertPtrEquals(tc,NULL,pSignature->dataElement->name);
    CuAssertUIntEquals(tc,8,pSignature->dataElement->arrayLen);
-   CuAssertUIntEquals(tc,sizeof(uint8_t)*8, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT8_SIZE*8u, packLen);
    apx_dataSignature_delete(pSignature);
 
    //array with limit
@@ -158,7 +161,8 @@ static void test_apx_dataSignature_uint8(CuTest* tc)
    CuAssertUIntEquals(tc,8,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,7,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint8_t)*8, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT8_SIZE*8u, packLen);
    apx_dataSignature_delete(pSignature);
 
 
@@ -169,6 +173,7 @@ static void test_apx_dataSignature_uint16(CuTest* tc)
 {
    apx_error_t err;
    apx_dataSignature_t *pSignature;
+   apx_size_t packLen = 0;
 
    //base type
    pSignature = apx_dataSignature_new("S", &err);
@@ -178,7 +183,8 @@ static void test_apx_dataSignature_uint16(CuTest* tc)
    CuAssertUIntEquals(tc,0,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint16_t), apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT16_SIZE, packLen);
    apx_dataSignature_delete(pSignature);
 
    //limit
@@ -189,7 +195,8 @@ static void test_apx_dataSignature_uint16(CuTest* tc)
    CuAssertUIntEquals(tc,0,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,512,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint16_t), apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT16_SIZE, packLen);
    apx_dataSignature_delete(pSignature);
 
    //array
@@ -200,7 +207,8 @@ static void test_apx_dataSignature_uint16(CuTest* tc)
    CuAssertUIntEquals(tc,16,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint16_t)*16, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT16_SIZE*16u, packLen);
    apx_dataSignature_delete(pSignature);
 
    //array+limit
@@ -211,7 +219,8 @@ static void test_apx_dataSignature_uint16(CuTest* tc)
    CuAssertUIntEquals(tc,16,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,512,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint16_t)*16, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT16_SIZE*16u, packLen);
    apx_dataSignature_delete(pSignature);
 
 }
@@ -220,6 +229,7 @@ static void test_apx_dataSignature_uint32(CuTest* tc)
 {
    apx_error_t err;
    apx_dataSignature_t *pSignature;
+   apx_size_t packLen = 0;
 
    //base type
    pSignature = apx_dataSignature_new("L", &err);
@@ -229,7 +239,8 @@ static void test_apx_dataSignature_uint32(CuTest* tc)
    CuAssertUIntEquals(tc,0,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint32_t), apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT32_SIZE, packLen);
    apx_dataSignature_delete(pSignature);
 
    //limit
@@ -240,7 +251,8 @@ static void test_apx_dataSignature_uint32(CuTest* tc)
    CuAssertUIntEquals(tc,0,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,999999,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint32_t), apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT32_SIZE, packLen);
    apx_dataSignature_delete(pSignature);
 
    //array
@@ -251,7 +263,8 @@ static void test_apx_dataSignature_uint32(CuTest* tc)
    CuAssertUIntEquals(tc,2,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint32_t)*2, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT32_SIZE*2u, packLen);
    apx_dataSignature_delete(pSignature);
 
    //array+limit
@@ -262,7 +275,8 @@ static void test_apx_dataSignature_uint32(CuTest* tc)
    CuAssertUIntEquals(tc,2,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,999999,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc,sizeof(uint32_t)*2, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT32_SIZE*2u, packLen);
    apx_dataSignature_delete(pSignature);
 }
 
@@ -270,6 +284,7 @@ static void test_apx_dataSignature_record(CuTest* tc)
 {
    apx_error_t err;
    apx_dataSignature_t *pSignature;
+   apx_size_t packLen = 0;
 
    //base type
    pSignature = apx_dataSignature_new("{\"NodeId\"C\"DTCId\"S\"FailT\"C\"RqstData\"C(0,3)}", &err);
@@ -277,8 +292,8 @@ static void test_apx_dataSignature_record(CuTest* tc)
    CuAssertIntEquals(tc,APX_BASE_TYPE_RECORD,pSignature->dataElement->baseType);
    CuAssertPtrEquals(tc,NULL,pSignature->dataElement->name);
    CuAssertPtrNotNull(tc,pSignature->dataElement->childElements);
-   apx_dataSignature_calcPackLen(pSignature);
-   CuAssertUIntEquals(tc, 5, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT8_SIZE+UINT8_SIZE+UINT16_SIZE+UINT8_SIZE, packLen);
    apx_dataSignature_delete(pSignature);
 
 
@@ -288,8 +303,8 @@ static void test_apx_dataSignature_record(CuTest* tc)
    CuAssertIntEquals(tc,APX_BASE_TYPE_RECORD,pSignature->dataElement->baseType);
    CuAssertPtrEquals(tc,NULL,pSignature->dataElement->name);
    CuAssertPtrNotNull(tc,pSignature->dataElement->childElements);
-   apx_dataSignature_calcPackLen(pSignature);
-   CuAssertUIntEquals(tc, 36, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, 36u, packLen);
    apx_dataSignature_delete(pSignature);
 
 }
@@ -298,6 +313,8 @@ static void test_apx_dataSignature_string(CuTest* tc)
 {
    apx_error_t err;
    apx_dataSignature_t *pSignature;
+   apx_size_t packLen = 0;
+
    pSignature = apx_dataSignature_new("a[10]", &err);
    CuAssertPtrNotNull(tc, pSignature);
    CuAssertIntEquals(tc,APX_BASE_TYPE_STRING,pSignature->dataElement->baseType);
@@ -305,7 +322,8 @@ static void test_apx_dataSignature_string(CuTest* tc)
    CuAssertUIntEquals(tc,10,pSignature->dataElement->arrayLen);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->lowerLimit.u32);
    CuAssertUIntEquals(tc,0,pSignature->dataElement->upperLimit.u32);
-   CuAssertUIntEquals(tc, 10, apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT8_SIZE*10u, packLen);
    apx_dataSignature_delete(pSignature);
 
 }
@@ -567,6 +585,8 @@ static void test_apx_dataSignature_u8DynamicArray(CuTest* tc)
 {
    apx_error_t err;
    apx_dataSignature_t *pSignature;
+   apx_size_t packLen=0;
+   const uint32_t arrayLen = 4096u;
 
    //base type
    pSignature = apx_dataSignature_new("C[*]", &err);
@@ -576,7 +596,9 @@ static void test_apx_dataSignature_u8DynamicArray(CuTest* tc)
    CuAssertUIntEquals(tc, 0, apx_dataElement_getArrayLen(pSignature->dataElement));
    CuAssertIntEquals(tc, 0, pSignature->dataElement->lowerLimit.s32);
    CuAssertIntEquals(tc, 0, pSignature->dataElement->upperLimit.s32);
+   apx_dataElement_setArrayLen(pSignature->dataElement, arrayLen);
    CuAssertTrue(tc, apx_dataElement_isDynamicArray(pSignature->dataElement));
-   CuAssertUIntEquals(tc,sizeof(uint8_t), apx_dataSignature_calcPackLen(pSignature));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataSignature_calcPackLen(pSignature, &packLen));
+   CuAssertUIntEquals(tc, UINT16_SIZE+UINT8_SIZE*arrayLen, packLen);
    apx_dataSignature_delete(pSignature);
 }

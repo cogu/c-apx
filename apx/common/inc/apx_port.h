@@ -66,7 +66,7 @@ apx_error_t apx_port_updateDerivedPortSignature(apx_port_t *self);
 const char *apx_port_getDerivedPortSignature(apx_port_t *self);
 apx_error_t apx_port_updatePackLen(apx_port_t *self);
 
-int32_t apx_port_getPackLen(apx_port_t *self);
+apx_size_t apx_port_getPackLen(apx_port_t *self);
 void apx_port_setPortId(apx_port_t *self, apx_portId_t portId);
 apx_portId_t  apx_port_getPortId(apx_port_t *self);
 

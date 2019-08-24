@@ -49,6 +49,7 @@
 static uint8_t *apx_dataElement_pack_sv(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_sv_t *sv);
 static uint8_t *apx_dataElement_pack_record(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_av_t *av);
 static void setError(apx_dataElement_t *self, apx_error_t errorCode);
+static apx_error_t apx_dataElement_calcDynLenType(apx_dataElement_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -121,6 +122,7 @@ int8_t apx_dataElement_create(apx_dataElement_t *self, int8_t baseType, const ch
       self->upperLimit.s32 = 0;
       self->packLen = 0;
       self->isDynamicArray = false;
+      self->dynLenType = APX_DYN_LEN_NONE;
       if (baseType == APX_BASE_TYPE_REF_NAME)
       {
          self->typeRef.name = 0;
@@ -297,12 +299,22 @@ uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8
    return 0;
 }
 
-void apx_dataElement_setArrayLen(apx_dataElement_t *self, uint32_t arrayLen)
+apx_error_t apx_dataElement_setArrayLen(apx_dataElement_t *self, uint32_t arrayLen)
 {
+   apx_error_t retval = APX_NO_ERROR;
    if (self != 0)
    {
       self->arrayLen = arrayLen;
+      if (self->isDynamicArray)
+      {
+         retval = apx_dataElement_calcDynLenType(self);
+      }
    }
+   else
+   {
+      retval = APX_INVALID_ARGUMENT_ERROR;
+   }
+   return retval;
 }
 
 uint32_t apx_dataElement_getArrayLen(apx_dataElement_t *self)
@@ -314,21 +326,37 @@ uint32_t apx_dataElement_getArrayLen(apx_dataElement_t *self)
    return 0;
 }
 
-void apx_dataElement_setDynamicArray(apx_dataElement_t *self)
+apx_error_t apx_dataElement_setDynamicArray(apx_dataElement_t *self)
 {
+   apx_error_t retval = APX_NO_ERROR;
    if (self != 0)
    {
       self->isDynamicArray = true;
+      retval = apx_dataElement_calcDynLenType(self);
    }
+   else
+   {
+      retval = APX_INVALID_ARGUMENT_ERROR;
+   }
+   return retval;
 }
 
 bool apx_dataElement_isDynamicArray(apx_dataElement_t *self)
 {
    if (self != 0)
    {
-      return self->isDynamicArray;
+      return self->dynLenType != APX_DYN_LEN_NONE;
    }
    return false;
+}
+
+apx_dynLenType_t apx_dataElement_getDynLenType(apx_dataElement_t *self)
+{
+   if (self != 0)
+   {
+      return self->dynLenType;
+   }
+   return APX_DYN_LEN_NONE;
 }
 
 
@@ -407,8 +435,9 @@ apx_datatype_t *apx_dataElement_getTypeReferencePtr(apx_dataElement_t *self)
    return (apx_datatype_t*) 0;
 }
 
-int32_t apx_dataElement_calcPackLen(apx_dataElement_t *self)
+apx_error_t apx_dataElement_calcPackLen(apx_dataElement_t *self, apx_size_t *packLen)
 {
+   apx_error_t retval = APX_NO_ERROR;
    if (self != 0)
    {
       self->packLen=0;
@@ -418,15 +447,21 @@ int32_t apx_dataElement_calcPackLen(apx_dataElement_t *self)
          int32_t end = adt_ary_length(self->childElements);
          for(i=0;i<end;i++)
          {
+            apx_size_t childPackLen = 0;
             apx_dataElement_t *pChildElement = (apx_dataElement_t*) adt_ary_value(self->childElements,i);
             assert (pChildElement != 0);
-            self->packLen+=apx_dataElement_calcPackLen(pChildElement);
+            retval = apx_dataElement_calcPackLen(pChildElement, &childPackLen);
+            self->packLen+=childPackLen;
+            if (retval != APX_NO_ERROR)
+            {
+               break;
+            }
          }
       }
       else
       {
-         int32_t elemLen = 0;
-         apx_error_t errorCode = APX_NO_ERROR;
+         apx_size_t elemLen = 0;
+         apx_error_t rc = APX_NO_ERROR;
          switch(self->baseType)
          {
          case APX_BASE_TYPE_NONE:
@@ -453,35 +488,57 @@ int32_t apx_dataElement_calcPackLen(apx_dataElement_t *self)
             elemLen = (uint32_t) sizeof(uint8_t);
             break;
          case APX_BASE_TYPE_REF_PTR:
-            errorCode = apx_datatype_calcPackLen(self->typeRef.ptr, &elemLen);
+            rc = apx_datatype_calcPackLen(self->typeRef.ptr, &elemLen);
             break;
          default:
             break;
          }
-         if ( (elemLen > 0) && (errorCode == APX_NO_ERROR) )
+         if ( (elemLen > 0) && (rc == APX_NO_ERROR) )
          {
             if (self->arrayLen > 0)
             {
-               self->packLen=(uint32_t) elemLen*self->arrayLen;
+               if (self->dynLenType != APX_DYN_LEN_NONE)
+               {
+                  if (self->dynLenType == APX_DYN_LEN_U8)
+                  {
+                     self->packLen+=UINT8_SIZE;
+                  }
+                  else if (self->dynLenType == APX_DYN_LEN_U16)
+                  {
+                     self->packLen+=UINT16_SIZE;
+                  }
+                  else
+                  {
+                     self->packLen+=UINT32_SIZE;
+                  }
+               }
+               self->packLen+=elemLen*self->arrayLen;
             }
             else
             {
-               self->packLen=elemLen;
+               self->packLen+=elemLen;
             }
          }
+         else
+         {
+            retval = rc;
+         }
       }
-      return self->packLen;
+      if ( (retval == APX_NO_ERROR) && (packLen != 0) )
+      {
+         *packLen = self->packLen;
+      }
    }
-   return -1;
+   return retval;
 }
 
-int32_t apx_dataElement_getPackLen(apx_dataElement_t *self)
+apx_size_t apx_dataElement_getPackLen(apx_dataElement_t *self)
 {
    if (self != 0)
    {
       return self->packLen;
    }
-   return -1;
+   return 0u;
 }
 
 apx_error_t apx_dataElement_getLastError(apx_dataElement_t *self)
@@ -713,3 +770,28 @@ static void setError(apx_dataElement_t *self, apx_error_t errorCode)
 }
 
 
+static apx_error_t apx_dataElement_calcDynLenType(apx_dataElement_t *self)
+{
+   apx_error_t retval = APX_NO_ERROR;
+   if (self->arrayLen == 0u)
+   {
+      self->dynLenType=APX_DYN_LEN_NONE;
+   }
+   if (self->arrayLen <= UINT8_MAX)
+   {
+      self->dynLenType=APX_DYN_LEN_U8;
+   }
+   else if (self->arrayLen <= UINT16_MAX)
+   {
+      self->dynLenType=APX_DYN_LEN_U16;
+   }
+   else if (self->arrayLen <= UINT32_MAX)
+   {
+      self->dynLenType=APX_DYN_LEN_U32;
+   }
+   else
+   {
+      retval = APX_LENGTH_ERROR;
+   }
+   return retval;
+}
