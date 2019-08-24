@@ -27,12 +27,15 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <assert.h>
+#include <string.h>
 #include "apx_compiler.h"
 #include "apx_vmdefs.h"
 #include "pack.h"
 #include <malloc.h>
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
+#else
+#define vfree free
 #endif
 
 
@@ -45,6 +48,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_compiler_appendPlaceHolderHeader(apx_compiler_t *self, uint8_t progType);
 static uint8_t apx_compiler_encodePackArrayInstruction(apx_compiler_t *self,  uint32_t arrayLen, bool isDynamic, uint8_t *packLen);
+static uint8_t apx_compiler_encodeRecordSelectInstruction(bool isLastField);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -54,14 +58,25 @@ void apx_compiler_create(apx_compiler_t *self)
    if (self != 0)
    {
       self->program = (adt_bytearray_t*) 0;
-      self->minDataSize = 0u;
-      self->maxDataSize = 0u;
+      adt_stack_create(&self->offsetStack, vfree);
+      self->dataOffset = (apx_size_t*) malloc(sizeof(apx_size_t));
+      if (self->dataOffset != 0)
+      {
+         *self->dataOffset = 0u;
+      }
    }
 }
 
 void apx_compiler_destroy(apx_compiler_t *self)
 {
-   //nothing to do (yet)
+   if (self != 0)
+   {
+      adt_stack_destroy(&self->offsetStack);
+      if (self->dataOffset != 0)
+      {
+         free(self->dataOffset);
+      }
+   }
 }
 
 apx_compiler_t* apx_compiler_new(void)
@@ -100,7 +115,12 @@ apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataEl
       uint8_t opcode = APX_OPCODE_PACK;
       uint8_t variant = 0;
       uint8_t flags = 0;
-      apx_size_t elemSize = 0;
+      apx_size_t elemSize = 0u;
+      uint8_t arrayPackLen = 0u;
+      uint32_t arrayLen;
+      bool isDynamicArray;
+      arrayLen = apx_dataElement_getArrayLen(dataElement);
+      isDynamicArray = apx_dataElement_isDynamicArray(dataElement);
 
       if (self->program == 0)
       {
@@ -125,7 +145,7 @@ apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataEl
          elemSize = UINT16_SIZE;
          break;
       case APX_BASE_TYPE_UINT32:
-         variant = APX_VARIANT_U16;
+         variant = APX_VARIANT_U32;
          elemSize = UINT32_SIZE;
          break;
       case APX_BASE_TYPE_SINT8:
@@ -137,47 +157,116 @@ apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataEl
          elemSize = UINT16_SIZE;
          break;
       case APX_BASE_TYPE_SINT32:
-         variant = APX_VARIANT_S16;
+         variant = APX_VARIANT_S32;
          elemSize = UINT32_SIZE;
          break;
+      case APX_BASE_TYPE_RECORD:
+         variant = APX_VARIANT_RECORD;
+         break;
+      case APX_BASE_TYPE_STRING:
+         variant = APX_VARIANT_STR;
+         elemSize = UINT8_SIZE;
+         break;
       default:
-         retval = APX_ELEMENT_TYPE_ERROR;
+         retval = APX_NOT_IMPLEMENTED_ERROR;
          break;
       }
-      if ( elemSize > 0)
+      if (retval == APX_NO_ERROR)
       {
          uint8_t instruction = apx_compiler_encodeInstruction(opcode, variant, flags);
          adt_bytearray_push(self->program, instruction);
-         if (dataElement->arrayLen > 0)
+         if (arrayLen > 0u)
          {
-            uint8_t packLen = 0u;
-            uint32_t arrayLen;
-            bool isDynamicArray;
-            arrayLen = apx_dataElement_getArrayLen(dataElement);
-            isDynamicArray = apx_dataElement_isDynamicArray(dataElement);
-            instruction = apx_compiler_encodePackArrayInstruction(self, arrayLen, isDynamicArray, &packLen);
+            instruction = apx_compiler_encodePackArrayInstruction(self, arrayLen, isDynamicArray, &arrayPackLen);
             if (instruction != APX_OPCODE_INVALID)
             {
+               uint8_t tmp[UINT32_SIZE];
                adt_bytearray_push(self->program, instruction);
-               if ( !isDynamicArray )
+               assert(arrayPackLen<=UINT32_SIZE);
+               packLE(&tmp[0], arrayLen, arrayPackLen);
+               adt_bytearray_append(self->program, &tmp[0], (uint32_t) arrayPackLen);
+            }
+            else
+            {
+               retval = APX_LENGTH_ERROR;
+            }
+         }
+
+      }
+      if (variant == APX_VARIANT_RECORD)
+      {
+         adt_stack_push(&self->offsetStack, (void*) self->dataOffset);
+         self->dataOffset = (apx_size_t*) malloc(sizeof(apx_size_t));
+         if (self->dataOffset != 0)
+         {
+            *self->dataOffset = 0u;
+            int32_t i;
+            int32_t end = adt_ary_length(dataElement->childElements);
+            for(i=0; i<end; i++)
+            {
+               apx_dataElement_t *childElement = (apx_dataElement_t*) adt_ary_value(dataElement->childElements,i);
+               assert(childElement != 0);
+               if (childElement->name != 0)
                {
-                  uint8_t tmp[UINT32_SIZE];
-                  assert(packLen<=UINT32_SIZE);
-                  packLE(&tmp[0], arrayLen, packLen);
-                  adt_bytearray_append(self->program, &tmp[0], (uint32_t) packLen);
-                  self->minDataSize += (elemSize*dataElement->arrayLen);
+                  uint8_t instruction = apx_compiler_encodeRecordSelectInstruction(i==end-1);
+                  if (instruction != APX_OPCODE_INVALID)
+                  {
+
+                     size_t len = strlen(childElement->name);
+                     adt_bytearray_push(self->program, instruction);
+                     if (len > 0)
+                     {
+                        adt_bytearray_append(self->program, (const uint8_t*) childElement->name, len);
+                     }
+                     adt_bytearray_push(self->program, 0u); //Null-terminator
+                  }
+                  else
+                  {
+                     break;
+                  }
+               }
+               else
+               {
+                  retval = APX_NAME_MISSING_ERROR;
+                  break;
+               }
+               retval = apx_compiler_compilePackDataElement(self, childElement);
+               if (retval != APX_NO_ERROR)
+               {
+                  break;
+               }
+            }
+            elemSize = *self->dataOffset;
+            free(self->dataOffset);
+            self->dataOffset = (apx_size_t*) adt_stack_top(&self->offsetStack);
+            adt_stack_pop(&self->offsetStack);
+         }
+         else
+         {
+            retval = APX_MEM_ERROR;
+         }
+      }
+      if (retval == APX_NO_ERROR)
+      {
+         if (elemSize > 0u)
+         {
+            if ( (arrayLen > 0u) )
+            {
+               *self->dataOffset += (elemSize*dataElement->arrayLen);
+               if (isDynamicArray)
+               {
+                  *self->dataOffset += arrayPackLen;
                }
             }
             else
             {
-               return APX_LENGTH_ERROR;
+               *self->dataOffset += elemSize;
             }
          }
          else
          {
-            self->minDataSize += elemSize;
+            retval = APX_ELEMENT_TYPE_ERROR;
          }
-
       }
       return retval;
    }
@@ -272,17 +361,17 @@ static uint8_t apx_compiler_encodePackArrayInstruction(apx_compiler_t *self,  ui
    const uint8_t opcode = APX_OPCODE_ARRAY;
    uint8_t variant;
    uint8_t flag = isDynamic? APX_DYN_ARRAY_FLAG : 0;
-   if (arrayLen < UINT8_MAX)
+   if (arrayLen <= UINT8_MAX)
    {
       variant = APX_VARIANT_U8;
       *packLen = UINT8_SIZE;
    }
-   else if (arrayLen < UINT16_MAX)
+   else if (arrayLen <= UINT16_MAX)
    {
       variant = APX_VARIANT_U16;
       *packLen = UINT16_SIZE;
    }
-   else if (arrayLen < UINT32_MAX)
+   else if (arrayLen <= UINT32_MAX)
    {
       variant = APX_VARIANT_U32;
       *packLen = UINT32_SIZE;
@@ -294,4 +383,10 @@ static uint8_t apx_compiler_encodePackArrayInstruction(apx_compiler_t *self,  ui
    return apx_compiler_encodeInstruction(opcode, variant, flag);
 }
 
-
+static uint8_t apx_compiler_encodeRecordSelectInstruction(bool isLastField)
+{
+   const uint8_t opcode = APX_OPCODE_DATA_CTRL;
+   const uint8_t variant = APX_VARIANT_RECORD_SELECT;
+   uint8_t flag = isLastField? APX_LAST_FIELD_FLAG : 0u;
+   return apx_compiler_encodeInstruction(opcode, variant, flag);
+}
