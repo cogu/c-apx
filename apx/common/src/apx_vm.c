@@ -27,6 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_vm.h"
+#include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -83,6 +84,36 @@ void apx_vm_delete(apx_vm_t *self)
       apx_vm_destroy(self);
       free(self);
    }
+}
+
+apx_error_t apx_vm_parsePackHeader(adt_bytearray_t *program, uint8_t *majorVersion, uint8_t *minorVersion, apx_size_t *dataSize)
+{
+   if ( (program != 0) && (majorVersion != 0) && (minorVersion != 0) && (dataSize != 0) )
+   {
+      if (adt_bytearray_length(program) >= APX_HEADER_SIZE)
+      {
+         uint8_t progType;
+         const uint8_t *pNext = adt_bytearray_data(program);
+         if (*pNext++ != APX_VM_MAGIC_NUMBER)
+         {
+            return APX_UNEXPECTED_DATA_ERROR;
+         }
+         *majorVersion = *pNext++;
+         *minorVersion = *pNext++;
+         progType = *pNext++;
+         if (progType != APX_HEADER_PACK_PROG)
+         {
+            return APX_UNEXPECTED_DATA_ERROR;
+         }
+         *dataSize = (apx_size_t) unpackLE(pNext, UINT32_SIZE);
+         return APX_NO_ERROR;
+      }
+      else
+      {
+         return APX_LENGTH_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -33,6 +33,7 @@
 #include "apx_vmdefs.h"
 #include "apx_portDataElement.h"
 #include "adt_bytearray.h"
+#include "apx_error.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -56,5 +57,6 @@ void apx_vm_create(apx_vm_t *self);
 void apx_vm_destroy(apx_vm_t *self);
 apx_vm_t* apx_vm_new(void);
 void apx_vm_delete(apx_vm_t *self);
+apx_error_t apx_vm_parsePackHeader(adt_bytearray_t *program, uint8_t *majorVersion, uint8_t *minorVersion, apx_size_t *dataSize);
 
 #endif //APX_VM_H

@@ -35,17 +35,19 @@
 #include "apx_dataElement.h"
 #include "adt_bytearray.h"
 #include "adt_stack.h"
+#include "apx_vmdefs.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef adt_bytearray_t apx_program_t;
+
 
 typedef struct apx_compiler_tag
 {
-   apx_program_t *program;
+   apx_program_t *program; //program buffer
    adt_stack_t offsetStack; //strong references to apx_size_t
    apx_size_t *dataOffset;
+   bool hasHeader;
 }apx_compiler_t;
 
 #define APX_PROGRAM_GROW_DEFAULT 128
@@ -57,11 +59,13 @@ void apx_compiler_create(apx_compiler_t *self);
 void apx_compiler_destroy(apx_compiler_t *self);
 apx_compiler_t* apx_compiler_new(void);
 void apx_compiler_delete(apx_compiler_t *self);
-void apx_compiler_setProgram(apx_compiler_t *self, adt_bytearray_t *program);
+void apx_compiler_setBuffer(apx_compiler_t *self, adt_bytearray_t *buffer);
+void apx_compiler_resetState(apx_compiler_t *self);
+void apx_compiler_finalize(apx_compiler_t *self);
+
 
 apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement);
-apx_error_t apx_compiler_compileRequirePort(apx_compiler_t *self, apx_node_t *node, apx_portId_t portId, apx_program_t *program);
-apx_error_t apx_compiler_compileProvidePort(apx_compiler_t *self, apx_node_t *node, apx_portId_t portId, apx_program_t *program);
+apx_error_t apx_compiler_encodePackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
 
 uint8_t apx_compiler_encodeInstruction(uint8_t opCode, uint8_t variant, uint8_t flags);
 apx_error_t apx_compiler_decodeInstruction(uint8_t instruction, uint8_t *opCode, uint8_t *variant, uint8_t *flags);
