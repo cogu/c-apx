@@ -99,6 +99,17 @@ typedef struct apx_dataWriteCmd_tag
 #define APX_BASE_TYPE_REF_PTR  12 //pointer to type (this is achieved only after derived has been called on data signature)
 typedef int8_t apx_baseType_t;
 
+#define UINT8_SIZE   1u
+#define UINT16_SIZE  2u
+#define UINT32_SIZE  4u
+#define UINT64_SIZE  8u
+#define SINT8_SIZE   1u
+#define SINT16_SIZE  2u
+#define SINT32_SIZE  4u
+#define SINT64_SIZE  8u
+#define BOOL_SIZE    sizeof(bool)
+
+
 #ifdef _MSC_VER
 #define STRDUP _strdup
 #else

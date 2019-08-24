@@ -1007,7 +1007,7 @@ bool apx_nodeData_isComplete(apx_nodeData_t *self)
 apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataElement_tag *destDatElem,
       apx_nodeData_t *srcNodeData, struct apx_portDataElement_tag *srcDataElem)
 {
-   if ( (destNodeData != 0) && (destDatElem != 0) && (srcNodeData != 0) && (srcDataElem != 0) && (destDatElem->dataSize == srcDataElem->dataSize) )
+   if ( (destNodeData != 0) && (destDatElem != 0) && (srcNodeData != 0) && (srcDataElem != 0) && (destDatElem->elemSize == srcDataElem->elemSize) )
    {
       if (apx_portDataElement_isPlainOldData(destDatElem) )
       {
@@ -1016,7 +1016,7 @@ apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, stru
          SPINLOCK_ENTER(srcNodeData->outPortDataLock);
 #endif
 
-         memcpy(&destNodeData->inPortDataBuf[destDatElem->offset], &srcNodeData->outPortDataBuf[srcDataElem->offset], srcDataElem->dataSize);
+         memcpy(&destNodeData->inPortDataBuf[destDatElem->offset], &srcNodeData->outPortDataBuf[srcDataElem->offset], srcDataElem->elemSize);
 
 #ifndef APX_EMBEDDED
          SPINLOCK_LEAVE(srcNodeData->outPortDataLock);

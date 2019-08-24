@@ -368,9 +368,14 @@ static void apx_portDataMap_createProvidePortData(apx_portDataMap_t *self, apx_n
  */
 static apx_size_t apx_portDataMap_createPortDataElement(apx_portDataElement_t *attr, apx_port_t *port, apx_portId_t portId, apx_size_t offset)
 {
-   apx_size_t dataElementSize = apx_dataSignature_getPackLen(&port->dataSignature);
-   apx_portDataElement_create(attr, port->portType, portId, offset, dataElementSize);
-   return dataElementSize;
+   apx_size_t dataElementSize;
+   apx_error_t result = apx_dataSignature_calcPackLen(&port->dataSignature, &dataElementSize);
+   if (result == APX_NO_ERROR)
+   {
+      apx_portDataElement_create(attr, port->portType, portId, offset, dataElementSize);
+      return dataElementSize;
+   }
+   return 0u;
 }
 
 /**

@@ -181,19 +181,20 @@ int32_t apx_datatype_getLineNumber(apx_datatype_t *self)
    return -1;
 }
 
-apx_error_t apx_datatype_calcPackLen(apx_datatype_t *self, int32_t *packLen)
+apx_error_t apx_datatype_calcPackLen(apx_datatype_t *self, apx_size_t *packLen)
 {
    if ( (self != 0) && (packLen != 0))
    {
+      apx_error_t result = APX_NO_ERROR;
       if (self->dataSignature != 0)
       {
-         *packLen = apx_dataSignature_calcPackLen(self->dataSignature);
+         result = apx_dataSignature_calcPackLen(self->dataSignature, packLen);
       }
       else
       {
          return APX_DATA_SIGNATURE_ERROR;
       }
-      return APX_NO_ERROR;
+      return result;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

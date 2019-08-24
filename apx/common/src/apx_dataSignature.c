@@ -167,28 +167,20 @@ void apx_dataSignature_destroy(apx_dataSignature_t *self)
    }
 }
 
-int32_t apx_dataSignature_getPackLen(apx_dataSignature_t *self)
-{
-   if (self != 0)
-   {
-      if (self->dataElement != 0)
-      {
-         return apx_dataElement_getPackLen(self->dataElement);
-      }
-   }
-   return -1;
-}
-
-int32_t apx_dataSignature_calcPackLen(apx_dataSignature_t *self)
+apx_error_t apx_dataSignature_calcPackLen(apx_dataSignature_t *self, apx_size_t *packLen)
 {
    if (self != 0)
    {
       if (self->dsgType == APX_DSG_TYPE_SENDER_RECEIVER)
       {
-         return apx_dataElement_calcPackLen(self->dataElement);
+         return apx_dataElement_calcPackLen(self->dataElement, packLen);
+      }
+      else
+      {
+         return APX_NOT_IMPLEMENTED_ERROR;
       }
    }
-   return -1;
+   return APX_INVALID_ATTRIBUTE_ERROR;
 }
 
 apx_error_t apx_dataSignature_resolveTypes(apx_dataSignature_t *self, struct adt_ary_tag *typeList, struct adt_hash_tag *typeMap)

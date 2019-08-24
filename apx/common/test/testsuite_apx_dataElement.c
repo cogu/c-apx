@@ -67,6 +67,9 @@ static void test_apx_dataElement_pack_record_array(CuTest *tc);
 static void test_apx_dataElement_create_typeReferenceId(CuTest *tc);
 static void test_apx_dataElement_create_typeReferenceName(CuTest *tc);
 static void test_apx_dataElement_create_typeReferencePtr(CuTest *tc);
+static void test_apx_dataElement_create_U8DynArrayU8(CuTest *tc);
+static void test_apx_dataElement_create_U8DynArrayU16(CuTest *tc);
+static void test_apx_dataElement_create_U8DynArrayU32(CuTest *tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -106,6 +109,9 @@ CuSuite* testSuite_apx_dataElement(void)
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferenceId);
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferenceName);
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferencePtr);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_create_U8DynArrayU8);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_create_U8DynArrayU16);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_create_U8DynArrayU32);
 
 
    return suite;
@@ -783,3 +789,55 @@ static void test_apx_dataElement_create_typeReferencePtr(CuTest *tc)
    apx_dataElement_delete(element);
    apx_datatype_delete(dataType);
 }
+
+static void test_apx_dataElement_create_U8DynArrayU8(CuTest *tc)
+{
+
+   apx_dataElement_t *element;
+
+   const uint32_t arrayLen = 10;
+   apx_size_t packLen;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+   apx_dataElement_setDynamicArray(element);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &packLen));
+   CuAssertIntEquals(tc, UINT8_SIZE+UINT8_SIZE*arrayLen, packLen);
+   apx_dataElement_delete(element);
+
+}
+
+static void test_apx_dataElement_create_U8DynArrayU16(CuTest *tc)
+{
+
+   apx_dataElement_t *element;
+
+   const uint32_t arrayLen = 256;
+   apx_size_t packLen;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+   apx_dataElement_setDynamicArray(element);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &packLen));
+   CuAssertIntEquals(tc, UINT16_SIZE+UINT8_SIZE*arrayLen, packLen);
+   apx_dataElement_delete(element);
+
+}
+
+static void test_apx_dataElement_create_U8DynArrayU32(CuTest *tc)
+{
+
+   apx_dataElement_t *element;
+
+   const uint32_t arrayLen = 65536;
+   apx_size_t packLen;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+   apx_dataElement_setDynamicArray(element);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &packLen));
+   CuAssertIntEquals(tc, UINT32_SIZE+UINT8_SIZE*arrayLen, packLen);
+   apx_dataElement_delete(element);
+
+}
+

@@ -33,7 +33,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define APX_VM_VERSION                0x0200u //version number (major in high byte, minor in low byte)
+#define APX_BYTE_CODE_VERSION                0x0200u //version number (major in high byte, minor in low byte)
 
 #define APX_HEADER_PACK_PROG          ((uint8_t) 'P') //Pack program
 #define APX_HEADER_UNPACK_PROG        ((uint8_t) 'U') //unpack program mode
@@ -137,17 +137,13 @@ OP CODES
 
 #define APX_OPCODE_INVALID          7u
 
-#define UINT8_SIZE   1u
-#define UINT16_SIZE  2u
-#define UINT32_SIZE  4u
-#define UINT64_SIZE  8u
-#define SINT8_SIZE   1u
-#define SINT16_SIZE  2u
-#define SINT32_SIZE  4u
-#define SINT64_SIZE  8u
-#define BOOL_SIZE    sizeof(bool)
 
-#define APX_HEADER_SIZE 8u //byte 0: magic number 0x58 ('X'), bytes 1-2: VM_VERSION(uint16_le), byte3: program_type, bytes 4-7: expected_data_length (uint32_le)
+#define APX_HEADER_SIZE 12u
+//byte 0: magic number 0x47 ('G'),
+//bytes 1-2: APX_BYTE_CODE_VERSION(uint16_le),
+//byte3: program_type,
+//bytes 4-7: minDataSize (uint32_le),
+//bytes 8-11: maxDataSize (uint32_le),
 #define APX_INST_SIZE 1u
 #define APX_INST_OPCODE_MASK 0x07u
 #define APX_INST_VARIANT_SHIFT 3u

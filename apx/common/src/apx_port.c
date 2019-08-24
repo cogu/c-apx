@@ -240,15 +240,7 @@ apx_error_t apx_port_updatePackLen(apx_port_t *self)
    {
       if(self->dataSignature.dsgType == APX_DSG_TYPE_SENDER_RECEIVER)
       {
-          int32_t result = apx_dataSignature_calcPackLen(&self->dataSignature);
-          if (result < 0)
-          {
-             return APX_DATA_SIGNATURE_ERROR;
-          }
-          else
-          {
-             return APX_NO_ERROR;
-          }
+          return apx_dataSignature_calcPackLen(&self->dataSignature, (apx_size_t*) 0);
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -273,16 +265,21 @@ const char *apx_port_getDerivedPortSignature(apx_port_t *self)
 }
 
 
-int32_t apx_port_getPackLen(apx_port_t *self)
+apx_size_t apx_port_getPackLen(apx_port_t *self)
 {
    if (self != 0)
    {
       if(self->dataSignature.dsgType == APX_DSG_TYPE_SENDER_RECEIVER)
       {
-         return apx_dataSignature_getPackLen(&self->dataSignature);
+         apx_size_t packLen = 0;
+         apx_error_t result = apx_dataSignature_calcPackLen(&self->dataSignature, &packLen);
+         if (result == APX_NO_ERROR)
+         {
+            return packLen;
+         }
       }
    }
-   return -1;
+   return 0u;
 }
 
 
