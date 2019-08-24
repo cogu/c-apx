@@ -45,7 +45,9 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_vm_create(CuTest* tc);
+static void test_apx_vm_parsePackHeader(CuTest* tc);
 static void test_apx_vm_pack_u8(CuTest* tc);
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -58,6 +60,7 @@ CuSuite* testSuite_apx_vm(void)
    CuSuite* suite = CuSuiteNew();
 
    SUITE_ADD_TEST(suite, test_apx_vm_create);
+   SUITE_ADD_TEST(suite, test_apx_vm_parsePackHeader);
    SUITE_ADD_TEST(suite, test_apx_vm_pack_u8);
 
    return suite;
@@ -71,6 +74,27 @@ static void test_apx_vm_create(CuTest* tc)
    apx_vm_t *vm = apx_vm_new();
    CuAssertPtrNotNull(tc, vm);
    apx_vm_delete(vm);
+}
+
+static void test_apx_vm_parsePackHeader(CuTest* tc)
+{
+   apx_compiler_t *compiler;
+   uint8_t majorVersion;
+   uint8_t minorVersion;
+   uint32_t dataSize;
+
+   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   compiler =  apx_compiler_new();
+   CuAssertPtrNotNull(tc, compiler);
+   apx_compiler_setBuffer(compiler, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_encodePackHeader(compiler, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0x12345678));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_parsePackHeader(program, &majorVersion, &minorVersion, &dataSize));
+   CuAssertUIntEquals(tc, APX_VM_MAJOR_VERSION, majorVersion);
+   CuAssertUIntEquals(tc, APX_VM_MINOR_VERSION, minorVersion);
+   CuAssertUIntEquals(tc,  0x12345678, dataSize);
+
+   apx_compiler_delete(compiler);
+   adt_bytearray_delete(program);
 }
 
 static void test_apx_vm_pack_u8(CuTest* tc)

@@ -30,11 +30,14 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_types.h"
+#include "adt_bytearray.h"
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define APX_BYTE_CODE_VERSION                0x0200u //version number (major in high byte, minor in low byte)
+#define APX_VM_MAJOR_VERSION ((uint8_t) 2u)
+#define APX_VM_MINOR_VERSION ((uint8_t) 0u)
 
+#define APX_VM_MAGIC_NUMBER ((uint8_t) 'B')
 #define APX_HEADER_PACK_PROG          ((uint8_t) 'P') //Pack program
 #define APX_HEADER_UNPACK_PROG        ((uint8_t) 'U') //unpack program mode
 
@@ -138,12 +141,11 @@ OP CODES
 #define APX_OPCODE_INVALID          7u
 
 
-#define APX_HEADER_SIZE 12u
-//byte 0: magic number 0x47 ('G'),
+#define APX_HEADER_SIZE 8u
+//byte 0: magic number 0x42 ('B'),
 //bytes 1-2: APX_BYTE_CODE_VERSION(uint16_le),
 //byte3: program_type,
-//bytes 4-7: minDataSize (uint32_le),
-//bytes 8-11: maxDataSize (uint32_le),
+//bytes 4-7: dataSize (uint32_le)
 #define APX_INST_SIZE 1u
 #define APX_INST_OPCODE_MASK 0x07u
 #define APX_INST_VARIANT_SHIFT 3u
@@ -162,6 +164,8 @@ OP CODES
 typedef uint8_t apx_valueType_t;
 
 #define APX_PROGRAM_GROW_SIZE              64
+
+typedef adt_bytearray_t apx_program_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES

@@ -29,7 +29,6 @@
 #include <assert.h>
 #include <string.h>
 #include "apx_compiler.h"
-#include "apx_vmdefs.h"
 #include "pack.h"
 #include <malloc.h>
 #ifdef MEM_LEAK_CHECK
@@ -43,10 +42,11 @@
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_compiler_appendPlaceHolderHeader(apx_compiler_t *self, uint8_t progType);
+
 static uint8_t apx_compiler_encodePackArrayInstruction(apx_compiler_t *self,  uint32_t arrayLen, bool isDynamic, uint8_t *packLen);
 static uint8_t apx_compiler_encodeRecordSelectInstruction(bool isLastField);
 
@@ -57,6 +57,7 @@ void apx_compiler_create(apx_compiler_t *self)
 {
    if (self != 0)
    {
+      self->hasHeader = false;
       self->program = (adt_bytearray_t*) 0;
       adt_stack_create(&self->offsetStack, vfree);
       self->dataOffset = (apx_size_t*) malloc(sizeof(apx_size_t));
@@ -98,14 +99,15 @@ void apx_compiler_delete(apx_compiler_t *self)
    }
 }
 
-void apx_compiler_setProgram(apx_compiler_t *self, adt_bytearray_t *program)
+void apx_compiler_setBuffer(apx_compiler_t *self, adt_bytearray_t *buffer)
 {
-   if ( (self != 0) && (program != 0) )
+   if ( (self != 0) && (buffer != 0) )
    {
-      self->program = program;
+      self->program = buffer;
+      self->hasHeader = false;
+      *self->dataOffset = 0;
    }
 }
-
 
 apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement)
 {
@@ -273,6 +275,7 @@ apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataEl
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+#if 0
 apx_error_t apx_compiler_compileRequirePort(apx_compiler_t *self, apx_node_t *node, apx_portId_t portId, apx_program_t *program)
 {
    if ( (self != 0) && (node != 0) && (program != 0) && (portId>=0) )
@@ -318,6 +321,7 @@ apx_error_t apx_compiler_compileProvidePort(apx_compiler_t *self, apx_node_t *no
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+#endif
 
 uint8_t apx_compiler_encodeInstruction(uint8_t opcode, uint8_t variant, uint8_t flags)
 {
@@ -341,20 +345,29 @@ apx_error_t apx_compiler_decodeInstruction(uint8_t instruction, uint8_t *opcode,
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_compiler_encodePackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize)
+{
+   if (self != 0)
+   {
+      if (self->program != 0)
+      {
+         uint8_t instruction[APX_HEADER_SIZE] = {APX_VM_MAGIC_NUMBER, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, APX_HEADER_PACK_PROG, 0, 0, 0, 0};
+         packLE(&instruction[4], dataSize, UINT32_SIZE);
+         adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_HEADER_SIZE);
+         self->hasHeader = true;
+         return APX_NO_ERROR;
+      }
+      else
+      {
+         return APX_MISSING_BUFFER_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_compiler_appendPlaceHolderHeader(apx_compiler_t *self, uint8_t progType)
-{
-   if ( (self->program != 0) && ((progType == APX_HEADER_UNPACK_PROG) || (progType == APX_HEADER_PACK_PROG)) )
-   {
-      uint8_t instruction[APX_HEADER_SIZE] = {'G', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-      packLE(&instruction[0], APX_BYTE_CODE_VERSION, sizeof(uint16_t));
-      instruction[2] = progType;
-      adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_HEADER_SIZE);
-   }
-}
 
 static uint8_t apx_compiler_encodePackArrayInstruction(apx_compiler_t *self,  uint32_t arrayLen, bool isDynamic, uint8_t *packLen)
 {
