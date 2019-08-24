@@ -44,7 +44,8 @@ typedef adt_bytearray_t apx_program_t;
 typedef struct apx_compiler_tag
 {
    apx_program_t *program;
-   apx_size_t minDataSize;
+   adt_stack_t offsetStack; //strong references to apx_size_t
+   apx_size_t *dataOffset;
 }apx_compiler_t;
 
 #define APX_PROGRAM_GROW_DEFAULT 128

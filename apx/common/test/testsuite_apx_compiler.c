@@ -28,6 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include <stddef.h>
+#include <string.h>
 #include "CuTest.h"
 #include "apx_compiler.h"
 #include "apx_parser.h"
@@ -59,6 +60,9 @@ static void test_apx_compiler_compilePackDataElement_U8FixArrayU8(CuTest* tc);
 static void test_apx_compiler_compilePackDataElement_U8FixArrayU16(CuTest* tc);
 static void test_apx_compiler_compilePackDataElement_U8FixArrayU32(CuTest* tc);
 static void test_apx_compiler_compilePackDataElement_U8DynArrayU8(CuTest* tc);
+static void test_apx_compiler_compilePackDataElement_U8DynArrayU16(CuTest* tc);
+static void test_apx_compiler_compilePackDataElement_U8DynArrayU32(CuTest* tc);
+static void test_apx_compiler_compilePackDataElement_RecordContainingDynStrU8(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -88,6 +92,10 @@ CuSuite* testSuite_apx_compiler(void)
    SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_U8FixArrayU16);
    SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_U8FixArrayU32);
    SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_U8DynArrayU8);
+   SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_U8DynArrayU16);
+   SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_U8DynArrayU32);
+   SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_RecordContainingDynStrU8);
+
 
    return suite;
 }
@@ -270,6 +278,10 @@ static void test_apx_compiler_compilePackDataElement_U8(CuTest* tc)
    CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
    CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
    CuAssertUIntEquals(tc, 0, flags);
+   apx_size_t elementPackLen;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
 
    apx_compiler_delete(compiler);
    apx_dataElement_delete(element);
@@ -299,6 +311,10 @@ static void test_apx_compiler_compilePackDataElement_U8FixArrayU8(CuTest* tc)
    CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
    CuAssertUIntEquals(tc, 0, flags);
    CuAssertUIntEquals(tc, apx_dataElement_getArrayLen(element), code[2]);
+   apx_size_t elementPackLen;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
 
    apx_compiler_delete(compiler);
    apx_dataElement_delete(element);
@@ -329,35 +345,10 @@ static void test_apx_compiler_compilePackDataElement_U8FixArrayU16(CuTest* tc)
    CuAssertUIntEquals(tc, 0, flags);
    CuAssertUIntEquals(tc, 0xff, code[2]);
    CuAssertUIntEquals(tc, 0x0f, code[3]);
+   apx_size_t elementPackLen;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
 
-   apx_compiler_delete(compiler);
-   apx_dataElement_delete(element);
-   adt_bytearray_delete(program);
-}
-
-static void test_apx_compiler_compilePackDataElement_U8DynArrayU8(CuTest* tc)
-{
-   uint8_t opcode, variant, flags;
-   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
-   apx_dataElement_t *element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
-   apx_compiler_t *compiler = apx_compiler_new();
-   uint8_t *code;
-   CuAssertPtrNotNull(tc, compiler);
-   apx_dataElement_setArrayLen(element, 32);
-   apx_dataElement_setDynamicArray(element);
-
-   apx_compiler_setProgram(compiler, program);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, element));
-   CuAssertIntEquals(tc, 2, adt_bytearray_length(program));
-   code = adt_bytearray_data(program);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[0], &opcode, &variant, &flags));
-   CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
-   CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
-   CuAssertUIntEquals(tc, APX_ARRAY_FLAG, flags);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[1], &opcode, &variant, &flags));
-   CuAssertUIntEquals(tc, APX_OPCODE_ARRAY, opcode);
-   CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
-   CuAssertUIntEquals(tc, APX_DYN_ARRAY_FLAG, flags);
 
    apx_compiler_delete(compiler);
    apx_dataElement_delete(element);
@@ -390,8 +381,195 @@ static void test_apx_compiler_compilePackDataElement_U8FixArrayU32(CuTest* tc)
    CuAssertUIntEquals(tc, 0x73, code[3]);
    CuAssertUIntEquals(tc, 0x01, code[4]);
    CuAssertUIntEquals(tc, 0x00, code[5]);
+   apx_size_t elementPackLen;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
 
    apx_compiler_delete(compiler);
    apx_dataElement_delete(element);
    adt_bytearray_delete(program);
 }
+
+static void test_apx_compiler_compilePackDataElement_U8DynArrayU8(CuTest* tc)
+{
+   const uint32_t arrayLen = 32u;
+   uint8_t opcode, variant, flags;
+   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   apx_dataElement_t *element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   apx_compiler_t *compiler = apx_compiler_new();
+   uint8_t *code;
+   CuAssertPtrNotNull(tc, compiler);
+   apx_dataElement_setArrayLen(element, arrayLen);
+   apx_dataElement_setDynamicArray(element);
+
+   apx_compiler_setProgram(compiler, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, element));
+   CuAssertIntEquals(tc, 3, adt_bytearray_length(program));
+   code = adt_bytearray_data(program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[0], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
+   CuAssertUIntEquals(tc, APX_ARRAY_FLAG, flags);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[1], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_ARRAY, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
+   CuAssertUIntEquals(tc, APX_DYN_ARRAY_FLAG, flags);
+   //Compiler encodes the maximum array length into the program while the current array length will be parsed from the data
+   CuAssertUIntEquals(tc, arrayLen, code[2]);
+   apx_size_t elementPackLen;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
+
+   apx_compiler_delete(compiler);
+   apx_dataElement_delete(element);
+   adt_bytearray_delete(program);
+}
+
+static void test_apx_compiler_compilePackDataElement_U8DynArrayU16(CuTest* tc)
+{
+   const uint32_t arrayLen = UINT16_MAX;
+   uint8_t opcode, variant, flags;
+   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   apx_dataElement_t *element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   apx_compiler_t *compiler = apx_compiler_new();
+   uint8_t *code;
+   CuAssertPtrNotNull(tc, compiler);
+   apx_dataElement_setArrayLen(element, arrayLen);
+   apx_dataElement_setDynamicArray(element);
+
+   apx_compiler_setProgram(compiler, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, element));
+   CuAssertIntEquals(tc, 4, adt_bytearray_length(program));
+   code = adt_bytearray_data(program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[0], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
+   CuAssertUIntEquals(tc, APX_ARRAY_FLAG, flags);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[1], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_ARRAY, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U16, variant);
+   CuAssertUIntEquals(tc, APX_DYN_ARRAY_FLAG, flags);
+   CuAssertUIntEquals(tc, 0xff, code[2]);
+   CuAssertUIntEquals(tc, 0xff, code[3]);
+   apx_size_t elementPackLen;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
+
+   apx_compiler_delete(compiler);
+   apx_dataElement_delete(element);
+   adt_bytearray_delete(program);
+}
+
+static void test_apx_compiler_compilePackDataElement_U8DynArrayU32(CuTest* tc)
+{
+   const uint32_t arrayLen = 0x12345678;
+   uint8_t opcode, variant, flags;
+   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   apx_dataElement_t *element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   apx_compiler_t *compiler = apx_compiler_new();
+   uint8_t *code;
+   CuAssertPtrNotNull(tc, compiler);
+   apx_dataElement_setArrayLen(element, arrayLen);
+   apx_dataElement_setDynamicArray(element);
+
+   apx_compiler_setProgram(compiler, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, element));
+   CuAssertIntEquals(tc, 6, adt_bytearray_length(program));
+   code = adt_bytearray_data(program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[0], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
+   CuAssertUIntEquals(tc, APX_ARRAY_FLAG, flags);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[1], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_ARRAY, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U32, variant);
+   CuAssertUIntEquals(tc, APX_DYN_ARRAY_FLAG, flags);
+   CuAssertUIntEquals(tc, 0x78, code[2]);
+   CuAssertUIntEquals(tc, 0x56, code[3]);
+   CuAssertUIntEquals(tc, 0x34, code[4]);
+   CuAssertUIntEquals(tc, 0x12, code[5]);
+   apx_size_t elementPackLen;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
+   apx_compiler_delete(compiler);
+   apx_dataElement_delete(element);
+   adt_bytearray_delete(program);
+}
+
+static void test_apx_compiler_compilePackDataElement_RecordContainingDynStrU8(CuTest* tc)
+{
+   const uint32_t stringLen = 64;
+   uint8_t opcode, variant, flags;
+   apx_dataElement_t *rootElem, *childElem;
+   apx_compiler_t *compiler;
+   uint8_t *code;
+   apx_size_t elementPackLen;
+   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+
+   //DSG: {a[64*]LL}
+   rootElem = apx_dataElement_new(APX_BASE_TYPE_RECORD, 0);
+   childElem = apx_dataElement_new(APX_BASE_TYPE_STRING, "Name");
+   apx_dataElement_setArrayLen(childElem, stringLen);
+   apx_dataElement_setDynamicArray(childElem);
+   apx_dataElement_appendChild(rootElem, childElem); //name @code[2..6]
+   apx_dataElement_appendChild(rootElem, apx_dataElement_new(APX_BASE_TYPE_UINT32, "UserId")); //name @code[11..17]
+   apx_dataElement_appendChild(rootElem, apx_dataElement_new(APX_BASE_TYPE_UINT32, "SessionId")); //name @code[20..29]
+
+   compiler =  apx_compiler_new();
+   CuAssertPtrNotNull(tc, compiler);
+
+   apx_compiler_setProgram(compiler, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, rootElem));
+   CuAssertIntEquals(tc, 1+3+(4+1)+(6+1)+(9+1)+3+2, adt_bytearray_length(program));
+   code = adt_bytearray_data(program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[0], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_RECORD, variant);
+   CuAssertUIntEquals(tc, 0u, flags);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[1], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_DATA_CTRL, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_RECORD_SELECT, variant);
+   CuAssertUIntEquals(tc, 0u, flags);
+   CuAssertULIntEquals(tc, 0, strcmp((const char*) &code[2], "Name"));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[7], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_STR, variant);
+   CuAssertUIntEquals(tc, APX_ARRAY_FLAG, flags);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[8], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_ARRAY, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U8, variant);
+   CuAssertUIntEquals(tc, APX_DYN_ARRAY_FLAG, flags);
+   CuAssertUIntEquals(tc, stringLen, code[9]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[10], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_DATA_CTRL, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_RECORD_SELECT, variant);
+   CuAssertUIntEquals(tc, 0u, flags);
+   CuAssertULIntEquals(tc, 0, strcmp((const char*) &code[11], "UserId"));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[18], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U32, variant);
+   CuAssertUIntEquals(tc, 0u, flags);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[19], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_DATA_CTRL, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_RECORD_SELECT, variant);
+   CuAssertUIntEquals(tc, APX_LAST_FIELD_FLAG, flags);
+   CuAssertULIntEquals(tc, 0, strcmp((const char*) &code[20], "SessionId"));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_decodeInstruction(code[30], &opcode, &variant, &flags));
+   CuAssertUIntEquals(tc, APX_OPCODE_PACK, opcode);
+   CuAssertUIntEquals(tc, APX_VARIANT_U32, variant);
+   CuAssertUIntEquals(tc, 0u, flags);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(rootElem, &elementPackLen));
+   CuAssertUIntEquals(tc, UINT8_SIZE+UINT8_SIZE*64+UINT32_SIZE*2, elementPackLen);
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
+
+   apx_compiler_delete(compiler);
+   apx_dataElement_delete(rootElem);
+   adt_bytearray_delete(program);
+}
+
