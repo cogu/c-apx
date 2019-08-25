@@ -49,8 +49,10 @@ typedef struct apx_vmWriteState_tag
    } value;
    struct apx_vmWriteState_tag *parent;
    apx_valueType_t valueType;
-   int32_t arrayIdx; //current array index
-   int32_t arrayLen; //array index
+   uint32_t arrayIdx; //array index
+   uint32_t arrayLen; //array length of current object
+   uint32_t maxArrayLen; //maximum array length of current object. This is only applicable for dynamic arrays
+   bool isDynamicArray;
 } apx_vmWriteState_t;
 
 typedef struct apx_vmWriteBuf_tag
@@ -58,6 +60,7 @@ typedef struct apx_vmWriteBuf_tag
    uint8_t *pBegin;
    uint8_t *pEnd;
    uint8_t *pNext;
+   uint8_t *adjustedNext;
 }apx_vmWriteBuf_t;
 
 typedef struct apx_vmSerializer_tag
@@ -91,6 +94,7 @@ apx_vmSerializer_t* apx_vmSerializer_new(void);
 void apx_vmSerializer_delete(apx_vmSerializer_t *self);
 
 uint8_t* apx_vmSerializer_getWritePtr(apx_vmSerializer_t *self);
+uint8_t* apx_vmSerializer_getAdjustedWritePtr(apx_vmSerializer_t *self);
 apx_error_t apx_vmSerializer_begin(apx_vmSerializer_t *self, uint8_t *pData, uint32_t dataLen);
 apx_error_t apx_vmSerializer_setValue(apx_vmSerializer_t *self, const dtl_dv_t *dv);
 apx_error_t apx_vmSerializer_packU8(apx_vmSerializer_t *self, uint8_t u8Value);
@@ -102,11 +106,11 @@ apx_error_t apx_vmSerializer_packS32(apx_vmSerializer_t *self, int32_t s32Value)
 apx_error_t apx_vmSerializer_packFixedStr(apx_vmSerializer_t *self, const adt_str_t *str, int32_t writeLen);
 apx_error_t apx_vmSerializer_packBytes(apx_vmSerializer_t *self, const adt_bytes_t *bytes);
 
-apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, bool autoPopState);
-apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, bool autoPopState);
-apx_error_t apx_vmSerializer_packValueAsU8Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState);
-apx_error_t apx_vmSerializer_packValueAsU16Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState);
-apx_error_t apx_vmSerializer_packValueAsU32Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState);
+
+
+apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray);
+apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray);
+void apx_vmSerializer_adjustWritePtr(apx_vmSerializer_t *self);
 apx_error_t apx_vmSerializer_packValueAsFixedStr(apx_vmSerializer_t *self, int32_t writeLen, bool autoPopState);
 apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool autoPopState);
 
@@ -116,5 +120,7 @@ apx_error_t apx_vmSerializer_packU32DynArrayHeader(apx_vmSerializer_t *self, uin
 
 apx_error_t apx_vmSerializer_recordSelect_cstr(apx_vmSerializer_t *self, const char *key);
 apx_error_t apx_vmSerializer_pop(apx_vmSerializer_t *self);
+
+apx_size_t apx_vmSerializer_getBytesWritten(apx_vmSerializer_t *self);
 
 #endif //APX_VM_SERIALIZER_H

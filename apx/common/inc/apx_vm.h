@@ -34,20 +34,24 @@
 #include "apx_portDataElement.h"
 #include "adt_bytearray.h"
 #include "apx_error.h"
-
+#include "apx_vmSerializer.h"
+#include "dtl_type.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_vm_tag
 {
-   apx_portDataElement_t *portDataElement; //current port data element, weak reference
-   uint8_t *data; //weak reference
-   uint32_t dataLen;
-   uint32_t dataOffset;
-   uint8_t *progBegin; //weak reference
-   uint8_t *progEnd;   //weak reference
-   uint8_t *progNext;  //weak reference
+   apx_vmSerializer_t serializer;
+   apx_size_t dataSize;
+   const uint8_t *codeBegin; //weak reference
+   const uint8_t *codeEnd;   //weak reference
+   const uint8_t *codeNext;  //weak reference
+   uint8_t progType;
+   uint8_t expectedCode;
+   uint32_t arrayLen;
+   bool isArray;
+   bool isDynamicArray;
 } apx_vm_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -57,6 +61,15 @@ void apx_vm_create(apx_vm_t *self);
 void apx_vm_destroy(apx_vm_t *self);
 apx_vm_t* apx_vm_new(void);
 void apx_vm_delete(apx_vm_t *self);
-apx_error_t apx_vm_parsePackHeader(adt_bytearray_t *program, uint8_t *majorVersion, uint8_t *minorVersion, apx_size_t *dataSize);
+apx_error_t apx_vm_setProgram(apx_vm_t *self, apx_program_t *program);
+uint8_t apx_vm_getProgType(apx_vm_t *self);
+apx_size_t apx_vm_getDataSize(apx_vm_t *self);
+apx_error_t apx_vm_setWriteBuffer(apx_vm_t *self, uint8_t *buffer, uint32_t bufSize);
+apx_error_t apx_vm_serialize(apx_vm_t *self, const dtl_dv_t *dv);
+apx_size_t apx_vm_getBytesWritten(apx_vm_t *self);
+
+//stateless functions
+apx_error_t apx_vm_parsePackHeader(adt_bytearray_t *program, uint8_t *majorVersion, uint8_t *minorVersion, uint8_t *progType, apx_size_t *dataSize);
+apx_error_t apx_vm_decodeInstruction(uint8_t instruction, uint8_t *opCode, uint8_t *variant, uint8_t *flags);
 
 #endif //APX_VM_H
