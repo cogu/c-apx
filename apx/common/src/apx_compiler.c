@@ -99,7 +99,7 @@ void apx_compiler_delete(apx_compiler_t *self)
    }
 }
 
-void apx_compiler_setBuffer(apx_compiler_t *self, adt_bytearray_t *buffer)
+void apx_compiler_begin(apx_compiler_t *self, adt_bytearray_t *buffer)
 {
    if ( (self != 0) && (buffer != 0) )
    {
@@ -108,6 +108,22 @@ void apx_compiler_setBuffer(apx_compiler_t *self, adt_bytearray_t *buffer)
       *self->dataOffset = 0;
    }
 }
+
+void apx_compiler_end(apx_compiler_t *self)
+{
+   if ( (self != 0) && (self->program != 0))
+   {
+      if (self->hasHeader)
+      {
+         uint8_t *code = adt_bytearray_data(self->program);
+         assert(adt_bytearray_length(self->program) >= APX_VM_HEADER_SIZE);
+         packLE(&code[APX_VM_HEADER_DATA_OFFSET], *self->dataOffset, UINT32_SIZE);
+      }
+      self->program = (adt_bytearray_t*) 0;
+   }
+}
+
+
 
 apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement)
 {
@@ -333,17 +349,6 @@ uint8_t apx_compiler_encodeInstruction(uint8_t opcode, uint8_t variant, uint8_t 
    return result;
 }
 
-apx_error_t apx_compiler_decodeInstruction(uint8_t instruction, uint8_t *opcode, uint8_t *variant, uint8_t *flags)
-{
-   if ( (opcode != 0) && (variant != 0) && (flags != 0) )
-   {
-      *opcode = instruction & APX_INST_OPCODE_MASK;
-      *variant = (instruction >> APX_INST_VARIANT_SHIFT) & APX_INST_VARIANT_MASK;
-      *flags = (instruction >> APX_INST_FLAG_SHIFT) & APX_INST_FLAG_MASK;
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
 
 apx_error_t apx_compiler_encodePackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize)
 {
@@ -351,9 +356,9 @@ apx_error_t apx_compiler_encodePackHeader(apx_compiler_t *self, uint8_t majorVer
    {
       if (self->program != 0)
       {
-         uint8_t instruction[APX_HEADER_SIZE] = {APX_VM_MAGIC_NUMBER, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, APX_HEADER_PACK_PROG, 0, 0, 0, 0};
+         uint8_t instruction[APX_VM_HEADER_SIZE] = {APX_VM_MAGIC_NUMBER, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, APX_VM_HEADER_PACK_PROG, 0, 0, 0, 0};
          packLE(&instruction[4], dataSize, UINT32_SIZE);
-         adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_HEADER_SIZE);
+         adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_VM_HEADER_SIZE);
          self->hasHeader = true;
          return APX_NO_ERROR;
       }

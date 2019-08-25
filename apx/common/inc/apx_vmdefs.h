@@ -37,11 +37,17 @@
 #define APX_VM_MAJOR_VERSION ((uint8_t) 2u)
 #define APX_VM_MINOR_VERSION ((uint8_t) 0u)
 
+#define APX_VM_HEADER_SIZE 8u
+//byte 0: magic number 0x42 ('B'),
+//bytes 1-2: APX_BYTE_CODE_VERSION(uint16_le),
+//byte3: program_type,
+//bytes 4-7: dataSize (uint32_le)
+#define APX_VM_HEADER_DATA_OFFSET 4
 #define APX_VM_MAGIC_NUMBER ((uint8_t) 'B')
-#define APX_HEADER_PACK_PROG          ((uint8_t) 'P') //Pack program
-#define APX_HEADER_UNPACK_PROG        ((uint8_t) 'U') //unpack program mode
+#define APX_VM_HEADER_PACK_PROG          ((uint8_t) 'P') //Pack program
+#define APX_VM_HEADER_UNPACK_PROG        ((uint8_t) 'U') //unpack program mode
 
-#define APX_OPCODE_SIZE               1u //sizeof(uint8_t)
+#define APX_VM_OPCODE_SIZE               1u //sizeof(uint8_t)
 
 /*
 FORMAT:
@@ -118,6 +124,7 @@ OP CODES
 #define APX_VARIANT_BYTES             11u
 #define APX_VARIANT_STR               12u //string
 #define APX_VARIANT_ZSTR              13u //null-terminated string (not yet decided if needed)
+typedef uint8_t apx_vmVariant_t;
 
 //OPCODE PACK
 #define APX_OPCODE_PACK             1u
@@ -141,11 +148,7 @@ OP CODES
 #define APX_OPCODE_INVALID          7u
 
 
-#define APX_HEADER_SIZE 8u
-//byte 0: magic number 0x42 ('B'),
-//bytes 1-2: APX_BYTE_CODE_VERSION(uint16_le),
-//byte3: program_type,
-//bytes 4-7: dataSize (uint32_le)
+
 #define APX_INST_SIZE 1u
 #define APX_INST_OPCODE_MASK 0x07u
 #define APX_INST_VARIANT_SHIFT 3u

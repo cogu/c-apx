@@ -28,6 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <string.h>
+#include <assert.h>
 #include "apx_vmSerializer.h"
 #include "apx_vmdefs.h"
 #include "pack.h"
@@ -44,7 +45,7 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t apx_vmWriteState_setValue(apx_vmWriteState_t *self, const dtl_dv_t *dv);
-static apx_error_t apx_vmSerializer_packValueAsArray(apx_vmSerializer_t *self, apx_baseType_t baseType, uint32_t arrayLen, bool autoPopState);
+static void apx_vmSerializer_updateStateInfo(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -59,9 +60,12 @@ void apx_vmWriteState_create(apx_vmWriteState_t *self)
    if (self != 0)
    {
       self->valueType = APX_VALUE_TYPE_NONE;
-      self->arrayIdx = -1;
-      self->arrayLen = -1;
+      self->arrayIdx = 0u;
+      self->arrayLen = 0u;
+      self->maxArrayLen = 0u;
+      self->isDynamicArray = false;
       self->parent = (apx_vmWriteState_t*) 0;
+
    }
 }
 
@@ -148,6 +152,15 @@ uint8_t* apx_vmSerializer_getWritePtr(apx_vmSerializer_t *self)
    return (uint8_t*) 0;
 }
 
+uint8_t* apx_vmSerializer_getAdjustedWritePtr(apx_vmSerializer_t *self)
+{
+   if ( (self != 0) && (self->state != 0))
+   {
+      return self->buf.adjustedNext;
+   }
+   return (uint8_t*) 0;
+}
+
 apx_error_t apx_vmSerializer_begin(apx_vmSerializer_t *self, uint8_t *pData, uint32_t dataLen)
 {
    if (self != 0 && (pData != 0) && (dataLen > 0))
@@ -155,6 +168,7 @@ apx_error_t apx_vmSerializer_begin(apx_vmSerializer_t *self, uint8_t *pData, uin
       self->buf.pBegin = pData;
       self->buf.pEnd = pData+dataLen;
       self->buf.pNext = pData;
+      self->buf.adjustedNext = (uint8_t*) 0;
       self->hasValidWriteBuf = true;
       if (self->state != 0)
       {
@@ -318,76 +332,173 @@ apx_error_t apx_vmSerializer_packBytes(apx_vmSerializer_t *self, const adt_bytes
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, bool autoPopState)
+
+
+apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray)
 {
    if (self != 0)
    {
-      if (self->state != 0)
+      const apx_size_t elemSize = UINT8_SIZE;
+      apx_vmWriteState_t *state = self->state;
+      if (state != 0)
       {
-         if (self->state->valueType == APX_VALUE_TYPE_SCALAR)
+         apx_vmSerializer_updateStateInfo(self, arrayLen, isDynamicArray);
+         if ( (state->valueType == APX_VALUE_TYPE_SCALAR) && (state->maxArrayLen == 0u) )
          {
             bool valueOk = false;
-            uint8_t u8Value = (uint8_t) dtl_sv_to_u32(self->state->value.sv, &valueOk);
+            uint8_t u8Value = (uint8_t) dtl_sv_to_u32(state->value.sv, &valueOk);
             if (valueOk)
             {
-               apx_error_t result = apx_vmSerializer_packU8(self, u8Value);
-               if ( (result == APX_NO_ERROR) && (autoPopState) )
+               apx_error_t rc = apx_vmSerializer_packU8(self, u8Value);
+               if ( rc != APX_NO_ERROR )
                {
-                  result = apx_vmSerializer_pop(self);
+                  return rc;
                }
-               return result;
             }
-            return APX_VALUE_ERROR;
+            else
+            {
+               return APX_VALUE_ERROR;
+            }
+            return apx_vmSerializer_pop(self);
          }
-         return APX_DV_TYPE_ERROR;
+         else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
+         {
+            state->arrayLen = dtl_av_length(state->value.av);
+            if ( ( (state->isDynamicArray) && (state->arrayLen <= state->maxArrayLen) ) ||
+                 ( (!state->isDynamicArray) && (state->arrayLen == state->maxArrayLen) ) )
+            {
+               uint32_t i;
+               if (state->isDynamicArray)
+               {
+                  self->buf.adjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
+               }
+               for(i=0; i < state->arrayLen; i++)
+               {
+                  const dtl_dv_t *childValue = dtl_av_value(self->state->value.av, i);
+                  if ( (childValue != 0) && (dtl_dv_type(childValue) == DTL_DV_SCALAR) )
+                  {
+                     bool valueOk = false;
+                     uint32_t u32Value = dtl_sv_to_u32((dtl_sv_t*) childValue, &valueOk);
+                     if (valueOk)
+                     {
+                        apx_error_t rc = apx_vmSerializer_packU8(self, (uint8_t) u32Value);
+                        if (rc != APX_NO_ERROR)
+                        {
+                           return rc;
+                        }
+                     }
+                     else
+                     {
+                        return APX_VALUE_ERROR;
+                     }
+                  }
+                  else
+                  {
+                     return APX_VALUE_ERROR;
+                  }
+               }
+               return apx_vmSerializer_pop(self);
+            }
+            else
+            {
+               return APX_LENGTH_ERROR;
+            }
+         }
+         else
+         {
+            return APX_DV_TYPE_ERROR;
+         }
       }
       return APX_NULL_PTR_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, bool autoPopState)
+apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray)
 {
    if (self != 0)
    {
-      if (self->state != 0)
+      const apx_size_t elemSize = UINT32_SIZE;
+      apx_vmWriteState_t *state = self->state;
+      if (state != 0)
       {
-         if (self->state->valueType == APX_VALUE_TYPE_SCALAR)
+         apx_vmSerializer_updateStateInfo(self, arrayLen, isDynamicArray);
+         if ( (state->valueType == APX_VALUE_TYPE_SCALAR) && (state->maxArrayLen == 0u) )
          {
             bool valueOk = false;
-            uint32_t u32Value = dtl_sv_to_u32(self->state->value.sv, &valueOk);
+            uint32_t u32Value = dtl_sv_to_u32(state->value.sv, &valueOk);
             if (valueOk)
             {
-               apx_error_t result = apx_vmSerializer_packU32(self, u32Value);
-               if ( (result == APX_NO_ERROR) && (autoPopState) )
+               apx_error_t rc = apx_vmSerializer_packU32(self, u32Value);
+               if ( rc != APX_NO_ERROR )
                {
-                  result = apx_vmSerializer_pop(self);
+                  return rc;
                }
-               return result;
             }
-            return APX_VALUE_ERROR;
+            else
+            {
+               return APX_VALUE_ERROR;
+            }
+            return apx_vmSerializer_pop(self);
          }
-         return APX_DV_TYPE_ERROR;
+         else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
+         {
+            state->arrayLen = dtl_av_length(state->value.av);
+            if ( ( (state->isDynamicArray) && (state->arrayLen <= state->maxArrayLen) ) ||
+                 ( (!state->isDynamicArray) && (state->arrayLen == state->maxArrayLen) ) )
+            {
+               uint32_t i;
+               if (state->isDynamicArray)
+               {
+                  self->buf.adjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
+               }
+               for(i=0; i < state->arrayLen; i++)
+               {
+                  const dtl_dv_t *childValue = dtl_av_value(self->state->value.av, i);
+                  if ( (childValue != 0) && (dtl_dv_type(childValue) == DTL_DV_SCALAR) )
+                  {
+                     bool valueOk = false;
+                     uint32_t u32Value = dtl_sv_to_u32((dtl_sv_t*) childValue, &valueOk);
+                     if (valueOk)
+                     {
+                        apx_error_t rc = apx_vmSerializer_packU32(self, u32Value);
+                        if (rc != APX_NO_ERROR)
+                        {
+                           return rc;
+                        }
+                     }
+                     else
+                     {
+                        return APX_VALUE_ERROR;
+                     }
+                  }
+                  else
+                  {
+                     return APX_VALUE_ERROR;
+                  }
+               }
+               return apx_vmSerializer_pop(self);
+            }
+            else
+            {
+               return APX_LENGTH_ERROR;
+            }
+         }
+         else
+         {
+            return APX_DV_TYPE_ERROR;
+         }
       }
       return APX_NULL_PTR_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmSerializer_packValueAsU8Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState)
+void apx_vmSerializer_adjustWritePtr(apx_vmSerializer_t *self)
 {
-   return apx_vmSerializer_packValueAsArray(self, APX_BASE_TYPE_UINT8, arrayLen, autoPopState);
+
 }
 
-apx_error_t apx_vmSerializer_packValueAsU16Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState)
-{
-   return apx_vmSerializer_packValueAsArray(self, APX_BASE_TYPE_UINT16, arrayLen, autoPopState);
-}
-
-apx_error_t apx_vmSerializer_packValueAsU32Array(apx_vmSerializer_t *self, uint32_t arrayLen, bool autoPopState)
-{
-   return apx_vmSerializer_packValueAsArray(self, APX_BASE_TYPE_UINT32, arrayLen, autoPopState);
-}
 
 apx_error_t apx_vmSerializer_packValueAsFixedStr(apx_vmSerializer_t *self, int32_t writeLen, bool autoPopState)
 {
@@ -504,6 +615,16 @@ apx_error_t apx_vmSerializer_pop(apx_vmSerializer_t *self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_size_t apx_vmSerializer_getBytesWritten(apx_vmSerializer_t *self)
+{
+   apx_size_t retval = 0u;
+   if ( (self != 0) && (self->hasValidWriteBuf))
+   {
+      retval = (apx_size_t) (self->buf.pNext-self->buf.pBegin);
+   }
+   return retval;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -529,78 +650,8 @@ static apx_error_t apx_vmWriteState_setValue(apx_vmWriteState_t *self, const dtl
    return APX_NO_ERROR;
 }
 
-static apx_error_t apx_vmSerializer_packValueAsArray(apx_vmSerializer_t *self, apx_baseType_t baseType, uint32_t arrayLen, bool autoPopState)
+static void apx_vmSerializer_updateStateInfo(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray)
 {
-   if (self != 0)
-   {
-      if (self->state != 0)
-      {
-         if (self->state->valueType == APX_VALUE_TYPE_ARRAY)
-         {
-            uint32_t valueLen = (uint32_t) dtl_av_length(self->state->value.av);
-            if (valueLen == arrayLen)
-            {
-               uint32_t i;
-               for(i=0; i < arrayLen; i++)
-               {
-                  const dtl_dv_t *childValue = dtl_av_value(self->state->value.av, i);
-                  if (childValue != 0)
-                  {
-                     if (dtl_dv_type(childValue) == DTL_DV_SCALAR)
-                     {
-                        bool valueOk = false;
-                        uint32_t u32Value = dtl_sv_to_u32((dtl_sv_t*) childValue, &valueOk);
-                        if (valueOk)
-                        {
-                           apx_error_t result;
-                           switch(baseType)
-                           {
-                           case APX_BASE_TYPE_UINT8:
-                              result = apx_vmSerializer_packU8(self, (uint8_t) u32Value);
-                              break;
-                           case APX_BASE_TYPE_UINT16:
-                              result = apx_vmSerializer_packU16(self, (uint16_t) u32Value);
-                              break;
-                           case APX_BASE_TYPE_UINT32:
-                              result = apx_vmSerializer_packU32(self, u32Value);
-                              break;
-                           default:
-                              result = APX_NOT_IMPLEMENTED_ERROR;
-                           }
-                           if (result != APX_NO_ERROR)
-                           {
-                              return result;
-                           }
-                        }
-                        else
-                        {
-                           return APX_VALUE_ERROR;
-                        }
-                     }
-                     else
-                     {
-                        return APX_DV_TYPE_ERROR;
-                     }
-                  }
-                  else
-                  {
-                     return APX_NULL_PTR_ERROR;
-                  }
-               }
-               if ( autoPopState )
-               {
-                  return apx_vmSerializer_pop(self);
-               }
-               else
-               {
-                  return APX_NO_ERROR;
-               }
-            }
-            return APX_LENGTH_ERROR;
-         }
-         return APX_DV_TYPE_ERROR;
-      }
-      return APX_NULL_PTR_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+   self->state->maxArrayLen = arrayLen;
+   self->state->isDynamicArray = isDynamicArray;
 }
