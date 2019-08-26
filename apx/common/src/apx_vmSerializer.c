@@ -45,7 +45,8 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t apx_vmWriteState_setValue(apx_vmWriteState_t *self, const dtl_dv_t *dv);
-static void apx_vmSerializer_updateStateInfo(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray);
+static void apx_vmSerializer_updateStateInfo(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
+static apx_error_t apx_vmSerializer_packDynArrayHeader(apx_vmSerializer_t *self, apx_dynLenType_t dynLenType, uint32_t arrayLen);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -63,7 +64,7 @@ void apx_vmWriteState_create(apx_vmWriteState_t *self)
       self->arrayIdx = 0u;
       self->arrayLen = 0u;
       self->maxArrayLen = 0u;
-      self->isDynamicArray = false;
+      self->dynLenType = APX_DYN_LEN_NONE;
       self->parent = (apx_vmWriteState_t*) 0;
 
    }
@@ -334,7 +335,7 @@ apx_error_t apx_vmSerializer_packBytes(apx_vmSerializer_t *self, const adt_bytes
 
 
 
-apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray)
+apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType)
 {
    if (self != 0)
    {
@@ -342,7 +343,7 @@ apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t ar
       apx_vmWriteState_t *state = self->state;
       if (state != 0)
       {
-         apx_vmSerializer_updateStateInfo(self, arrayLen, isDynamicArray);
+         apx_vmSerializer_updateStateInfo(self, arrayLen, dynLenType);
          if ( (state->valueType == APX_VALUE_TYPE_SCALAR) && (state->maxArrayLen == 0u) )
          {
             bool valueOk = false;
@@ -364,13 +365,19 @@ apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t ar
          else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
          {
             state->arrayLen = dtl_av_length(state->value.av);
-            if ( ( (state->isDynamicArray) && (state->arrayLen <= state->maxArrayLen) ) ||
-                 ( (!state->isDynamicArray) && (state->arrayLen == state->maxArrayLen) ) )
+            if ( ( (state->dynLenType != APX_DYN_LEN_NONE) && (state->arrayLen <= state->maxArrayLen) ) ||
+                 ( (state->dynLenType == APX_DYN_LEN_NONE) && (state->arrayLen == state->maxArrayLen) ) )
             {
                uint32_t i;
-               if (state->isDynamicArray)
+               if (state->dynLenType != APX_DYN_LEN_NONE)
                {
+                  apx_error_t rc;
                   self->buf.adjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
+                  rc = apx_vmSerializer_packDynArrayHeader(self, state->dynLenType, state->arrayLen);
+                  if (rc != APX_NO_ERROR)
+                  {
+                     return rc;
+                  }
                }
                for(i=0; i < state->arrayLen; i++)
                {
@@ -414,7 +421,7 @@ apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t ar
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray)
+apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType)
 {
    if (self != 0)
    {
@@ -422,7 +429,7 @@ apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t a
       apx_vmWriteState_t *state = self->state;
       if (state != 0)
       {
-         apx_vmSerializer_updateStateInfo(self, arrayLen, isDynamicArray);
+         apx_vmSerializer_updateStateInfo(self, arrayLen, dynLenType);
          if ( (state->valueType == APX_VALUE_TYPE_SCALAR) && (state->maxArrayLen == 0u) )
          {
             bool valueOk = false;
@@ -444,13 +451,19 @@ apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t a
          else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
          {
             state->arrayLen = dtl_av_length(state->value.av);
-            if ( ( (state->isDynamicArray) && (state->arrayLen <= state->maxArrayLen) ) ||
-                 ( (!state->isDynamicArray) && (state->arrayLen == state->maxArrayLen) ) )
+            if ( ( (state->dynLenType != APX_DYN_LEN_NONE) && (state->arrayLen <= state->maxArrayLen) ) ||
+                 ( (state->dynLenType == APX_DYN_LEN_NONE) && (state->arrayLen == state->maxArrayLen) ) )
             {
                uint32_t i;
-               if (state->isDynamicArray)
+               if (state->dynLenType != APX_DYN_LEN_NONE)
                {
+                  apx_error_t rc;
                   self->buf.adjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
+                  rc = apx_vmSerializer_packDynArrayHeader(self, state->dynLenType, state->arrayLen);
+                  if (rc != APX_NO_ERROR)
+                  {
+                     return rc;
+                  }
                }
                for(i=0; i < state->arrayLen; i++)
                {
@@ -556,21 +569,6 @@ apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool aut
 }
 
 
-apx_error_t apx_vmSerializer_packU8DynArrayHeader(apx_vmSerializer_t *self, uint8_t arrayLen)
-{
-   return apx_vmSerializer_packU8(self, arrayLen);
-}
-
-apx_error_t apx_vmSerializer_packU16DynArrayHeader(apx_vmSerializer_t *self, uint16_t arrayLen)
-{
-   return apx_vmSerializer_packU16(self, arrayLen);
-}
-
-apx_error_t apx_vmSerializer_packU32DynArrayHeader(apx_vmSerializer_t *self, uint32_t arrayLen)
-{
-   return apx_vmSerializer_packU32(self, arrayLen);
-}
-
 apx_error_t apx_vmSerializer_recordSelect_cstr(apx_vmSerializer_t *self, const char *key)
 {
    if ( (self != 0) && (key != 0) )
@@ -650,8 +648,24 @@ static apx_error_t apx_vmWriteState_setValue(apx_vmWriteState_t *self, const dtl
    return APX_NO_ERROR;
 }
 
-static void apx_vmSerializer_updateStateInfo(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray)
+static void apx_vmSerializer_updateStateInfo(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType)
 {
    self->state->maxArrayLen = arrayLen;
-   self->state->isDynamicArray = isDynamicArray;
+   self->state->dynLenType = dynLenType;
+}
+
+static apx_error_t apx_vmSerializer_packDynArrayHeader(apx_vmSerializer_t *self, apx_dynLenType_t dynLenType, uint32_t arrayLen)
+{
+   switch(dynLenType)
+   {
+   case APX_DYN_LEN_NONE:
+      return APX_NO_ERROR;
+   case APX_DYN_LEN_U8:
+      return apx_vmSerializer_packU8(self, (uint8_t) arrayLen);
+   case APX_DYN_LEN_U16:
+      return apx_vmSerializer_packU16(self, (uint16_t) arrayLen);
+   case APX_DYN_LEN_U32:
+      return apx_vmSerializer_packU32(self, arrayLen);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }

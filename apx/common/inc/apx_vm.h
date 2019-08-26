@@ -51,7 +51,7 @@ typedef struct apx_vm_tag
    uint8_t expectedCode;
    uint32_t arrayLen;
    bool isArray;
-   bool isDynamicArray;
+   apx_dynLenType_t dynLenType;
 } apx_vm_t;
 
 //////////////////////////////////////////////////////////////////////////////

@@ -50,6 +50,7 @@ static void test_apx_vm_parsePackHeader(CuTest* tc);
 static void test_apx_vm_selectPackProgram(CuTest* tc);
 static void test_apx_vm_packU8(CuTest* tc);
 static void test_apx_vm_packU8FixArray(CuTest* tc);
+static void test_apx_vm_packU8DynArray(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -67,6 +68,7 @@ CuSuite* testSuite_apx_vm(void)
    SUITE_ADD_TEST(suite, test_apx_vm_selectPackProgram);
    SUITE_ADD_TEST(suite, test_apx_vm_packU8);
    SUITE_ADD_TEST(suite, test_apx_vm_packU8FixArray);
+   SUITE_ADD_TEST(suite, test_apx_vm_packU8DynArray);
 
    return suite;
 }
@@ -196,4 +198,38 @@ static void test_apx_vm_packU8FixArray(CuTest* tc)
    adt_bytearray_delete(program);
    apx_dataElement_delete(element);
    dtl_dec_ref(av);
+}
+
+static void test_apx_vm_packU8DynArray(CuTest* tc)
+{
+   apx_vm_t *vm = apx_vm_new();
+   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   apx_dataElement_t *element;
+   apx_compiler_t *compiler = apx_compiler_new();
+   dtl_av_t *av = dtl_av_new();
+   uint8_t dataBuffer[UINT8_SIZE*10];
+
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   apx_dataElement_setArrayLen(element, 10);
+   apx_dataElement_setDynamicArray(element);
+
+   apx_compiler_begin(compiler, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_encodePackHeader(compiler, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0u));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, element));
+   apx_compiler_end(compiler);
+   apx_compiler_delete(compiler);
+   memset(&dataBuffer[0], 0xff, sizeof(dataBuffer));
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(1u), false);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_setProgram(vm, program));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_serialize(vm, (dtl_dv_t*) av));
+   CuAssertUIntEquals(tc, 2u, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 1u, dataBuffer[0]);
+   CuAssertUIntEquals(tc, 1u, dataBuffer[1]);
+
+   apx_vm_delete(vm);
+   adt_bytearray_delete(program);
+   apx_dataElement_delete(element);
+   dtl_dec_ref(av);
+
 }

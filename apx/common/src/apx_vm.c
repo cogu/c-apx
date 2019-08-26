@@ -64,7 +64,7 @@ void apx_vm_create(apx_vm_t *self)
       self->expectedCode = APX_OPCODE_INVALID;
       self->arrayLen = 0u;
       self->isArray = false;
-      self->isDynamicArray = false;
+      self->dynLenType = APX_DYN_LEN_NONE;
    }
 }
 
@@ -239,7 +239,7 @@ static void apx_vm_prepareForPackInstruction(apx_vm_t *self)
 {
    self->arrayLen = 0u;
    self->isArray = false;
-   self->isDynamicArray = false;
+   self->dynLenType = APX_DYN_LEN_NONE;
 }
 
 static apx_error_t apx_vm_runPackProg(apx_vm_t *self)
@@ -308,7 +308,7 @@ static apx_error_t apx_vm_executePackInstruction(apx_vm_t *self, uint8_t variant
    switch(variant)
    {
    case APX_VARIANT_U8:
-      return apx_vmSerializer_packValueAsU8(&self->serializer, self->arrayLen, self->isDynamicArray);
+      return apx_vmSerializer_packValueAsU8(&self->serializer, self->arrayLen, self->dynLenType);
    }
    return APX_NOT_IMPLEMENTED_ERROR;
 }
@@ -316,16 +316,20 @@ static apx_error_t apx_vm_executePackInstruction(apx_vm_t *self, uint8_t variant
 static apx_error_t apx_vm_executeArrayInstruction(apx_vm_t *self, uint8_t variant, bool isDynamicArray)
 {
    uint8_t valueSize = 0;
+   apx_dynLenType_t dynLenType = APX_DYN_LEN_NONE;
    switch(variant)
    {
    case APX_VARIANT_U8:
       valueSize = UINT8_SIZE;
+      dynLenType = APX_DYN_LEN_U8;
       break;
    case APX_VARIANT_U16:
       valueSize = UINT16_SIZE;
+      dynLenType = APX_DYN_LEN_U16;
       break;
    case APX_VARIANT_U32:
       valueSize = UINT32_SIZE;
+      dynLenType = APX_DYN_LEN_U32;
       break;
    default:
       return APX_INVALID_INSTRUCTION_ERROR;
@@ -333,6 +337,7 @@ static apx_error_t apx_vm_executeArrayInstruction(apx_vm_t *self, uint8_t varian
    if (self->codeNext+valueSize <= self->codeEnd)
    {
       self->arrayLen = unpackLE(self->codeNext, valueSize);
+      self->dynLenType = isDynamicArray? dynLenType : APX_DYN_LEN_NONE;
       self->codeNext+=valueSize;
    }
    else
