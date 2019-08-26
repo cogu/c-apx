@@ -60,6 +60,7 @@ void apx_compiler_destroy(apx_compiler_t *self);
 apx_compiler_t* apx_compiler_new(void);
 void apx_compiler_delete(apx_compiler_t *self);
 void apx_compiler_begin(apx_compiler_t *self, adt_bytearray_t *buffer);
+apx_error_t apx_compiler_begin_packProgram(apx_compiler_t *self, adt_bytearray_t *buffer);
 void apx_compiler_end(apx_compiler_t *self);
 
 

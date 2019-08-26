@@ -109,6 +109,19 @@ void apx_compiler_begin(apx_compiler_t *self, adt_bytearray_t *buffer)
    }
 }
 
+/**
+ * Same as apx_compiler_begin but also appends a pack program header at the start
+ */
+apx_error_t apx_compiler_begin_packProgram(apx_compiler_t *self, adt_bytearray_t *buffer)
+{
+   if ( (self != 0) && (buffer != 0) )
+   {
+      apx_compiler_begin(self, buffer);
+      return apx_compiler_encodePackHeader(self, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0u);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 void apx_compiler_end(apx_compiler_t *self)
 {
    if ( (self != 0) && (self->program != 0))
