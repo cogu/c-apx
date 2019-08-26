@@ -52,7 +52,7 @@ typedef struct apx_vmWriteState_tag
    uint32_t arrayIdx; //array index
    uint32_t arrayLen; //array length of current object
    uint32_t maxArrayLen; //maximum array length of current object. This is only applicable for dynamic arrays
-   bool isDynamicArray;
+   apx_dynLenType_t dynLenType;
 } apx_vmWriteState_t;
 
 typedef struct apx_vmWriteBuf_tag
@@ -108,15 +108,11 @@ apx_error_t apx_vmSerializer_packBytes(apx_vmSerializer_t *self, const adt_bytes
 
 
 
-apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray);
-apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t arrayLen, bool isDynamicArray);
+apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 void apx_vmSerializer_adjustWritePtr(apx_vmSerializer_t *self);
 apx_error_t apx_vmSerializer_packValueAsFixedStr(apx_vmSerializer_t *self, int32_t writeLen, bool autoPopState);
 apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool autoPopState);
-
-apx_error_t apx_vmSerializer_packU8DynArrayHeader(apx_vmSerializer_t *self, uint8_t arrayLen);
-apx_error_t apx_vmSerializer_packU16DynArrayHeader(apx_vmSerializer_t *self, uint16_t arrayLen);
-apx_error_t apx_vmSerializer_packU32DynArrayHeader(apx_vmSerializer_t *self, uint32_t arrayLen);
 
 apx_error_t apx_vmSerializer_recordSelect_cstr(apx_vmSerializer_t *self, const char *key);
 apx_error_t apx_vmSerializer_pop(apx_vmSerializer_t *self);
