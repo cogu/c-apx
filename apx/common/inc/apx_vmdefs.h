@@ -47,7 +47,9 @@
 #define APX_VM_HEADER_PACK_PROG          ((uint8_t) 'P') //Pack program
 #define APX_VM_HEADER_UNPACK_PROG        ((uint8_t) 'U') //unpack program mode
 
-#define APX_VM_OPCODE_SIZE               1u //sizeof(uint8_t)
+#define APX_VM_INSTRUCTION_SIZE          1u
+#define APX_VM_OPCODE_SIZE               APX_VM_OPCODE_SIZE
+
 
 /*
 FORMAT:

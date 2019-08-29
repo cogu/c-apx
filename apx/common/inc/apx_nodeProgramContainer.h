@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_vm.h
+* \file      apx_nodeProgramContainer.h
 * \author    Conny Gustafsson
-* \date      2019-02-24
-* \brief     APX virtual machine (implements v2 of APX byte code language)
+* \date      2019-08-27
+* \brief     Container for compiled byte code programs
 *
 * Copyright (c) 2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -23,53 +23,43 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_VM_H
-#define APX_VM_H
+#ifndef APX_NODE_PROGRAM_CONTAINER_H
+#define APX_NODE_PROGRAM_CONTAINER_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_vmdefs.h"
-#include "apx_portDataElement.h"
-#include "adt_bytearray.h"
+#include "apx_node.h"
 #include "apx_error.h"
-#include "apx_vmSerializer.h"
-#include "dtl_type.h"
+#include "apx_types.h"
+#include "adt_bytes.h"
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_vm_tag
+typedef struct apx_nodeProgramContainer_tag
 {
-   apx_vmSerializer_t serializer;
-   apx_size_t dataSize;
-   const uint8_t *codeBegin; //weak reference
-   const uint8_t *codeEnd;   //weak reference
-   const uint8_t *codeNext;  //weak reference
-   uint8_t progType;
-   uint8_t expectedCode;
-   uint32_t arrayLen;
-   bool isArray;
-   apx_dynLenType_t dynLenType;
-} apx_vm_t;
+   adt_bytes_t **requirePortUnpackPrograms;
+   adt_bytes_t **providePortUnpackPrograms;
+   adt_bytes_t **requirePortPackPrograms;
+   adt_bytes_t **providePortPackPrograms;
+   int32_t numRequirePorts;
+   int32_t numProvidePorts;
+}apx_nodeProgramContainer_t;
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_vm_create(apx_vm_t *self);
-void apx_vm_destroy(apx_vm_t *self);
-apx_vm_t* apx_vm_new(void);
-void apx_vm_delete(apx_vm_t *self);
-apx_error_t apx_vm_setProgram(apx_vm_t *self, apx_program_t *program);
-uint8_t apx_vm_getProgType(apx_vm_t *self);
-apx_size_t apx_vm_getDataSize(apx_vm_t *self);
-apx_error_t apx_vm_setWriteBuffer(apx_vm_t *self, uint8_t *buffer, uint32_t bufSize);
-apx_error_t apx_vm_serialize(apx_vm_t *self, const dtl_dv_t *dv);
-apx_size_t apx_vm_getBytesWritten(apx_vm_t *self);
+void apx_nodeProgramContainer_create(apx_nodeProgramContainer_t *self);
+void apx_nodeProgramContainer_destroy(apx_nodeProgramContainer_t *self);
+apx_nodeProgramContainer_t* apx_nodeProgramContainer_new(void);
+void apx_nodeProgramContainer_delete(apx_nodeProgramContainer_t *self);
+apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node);
+apx_error_t apx_nodeProgramContainer_compileUnpackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node);
+adt_bytes_t* apx_nodeProgramContainer_getRequirePortPackProgram(apx_nodeProgramContainer_t *self, apx_portId_t portId);
 
-//stateless functions
-apx_error_t apx_vm_parsePackHeader(adt_bytearray_t *program, uint8_t *majorVersion, uint8_t *minorVersion, uint8_t *progType, apx_size_t *dataSize);
-apx_error_t apx_vm_decodeInstruction(uint8_t instruction, uint8_t *opcode, uint8_t *variant, uint8_t *flags);
 
-#endif //APX_VM_H
+
+#endif //APX_NODE_PROGRAM_CONTAINER_H

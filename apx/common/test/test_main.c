@@ -36,6 +36,7 @@ CuSuite* testSuite_apx_portTriggerList(void);
 CuSuite* testSuite_apx_routingTable(void);
 CuSuite* testSuite_apx_vm(void);
 CuSuite* testSuite_apx_vmSerializer(void);
+CuSuite* testSuite_apx_nodeProgramContainer(void);
 
 /** APX Server **/
 CuSuite* testSuite_apx_serverSocketConnection(void);
@@ -78,7 +79,8 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_routingTable());
    CuSuiteAddSuite(suite, testSuite_apx_vmSerializer());
    CuSuiteAddSuite(suite, testSuite_apx_vm());
-
+   CuSuiteAddSuite(suite, testSuite_apx_nodeProgramContainer());
+/*
 // APX Server
    CuSuiteAddSuite(suite, testSuite_apx_serverSocketConnection());
    CuSuiteAddSuite(suite, testSuite_apx_server());
@@ -86,7 +88,7 @@ void RunAllTests(void)
 // APX Client
    CuSuiteAddSuite(suite, testSuite_apx_client_socketConnection());
    CuSuiteAddSuite(suite, testSuite_apx_client_testConnection());
-
+*/
 // RemoteFile
    CuSuiteAddSuite(suite, testSuite_remotefile());
 
