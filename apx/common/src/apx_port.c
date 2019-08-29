@@ -299,6 +299,25 @@ apx_portId_t  apx_port_getPortId(apx_port_t *self)
    }
    return -1;
 }
+
+apx_dataElement_t *apx_port_getDerivedDataElement(apx_port_t *self)
+{
+   if (self != 0)
+   {
+      return apx_dataSignature_getDerivedDataElement(&self->dataSignature);
+   }
+   return (apx_dataElement_t*) 0;
+}
+
+const char *apx_port_getName(const apx_port_t *self)
+{
+   if (self != 0)
+   {
+      return self->name;
+   }
+   return (const char*) 0;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
