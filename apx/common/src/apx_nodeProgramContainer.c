@@ -93,10 +93,10 @@ void apx_nodeProgramContainer_delete(apx_nodeProgramContainer_t *self)
    }
 }
 
-apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node)
+apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node, apx_uniquePortId_t *errPortId)
 {
    apx_error_t retval = APX_NO_ERROR;
-   if ( (self != 0) && (node != 0) )
+   if ( (self != 0) && (node != 0) && (errPortId != 0))
    {
       int32_t portIndex;
       apx_compiler_t compiler;
@@ -125,6 +125,7 @@ apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContaine
          }
          if (retval == APX_NO_ERROR)
          {
+            *errPortId = (apx_uniquePortId_t) 0;
             for(portIndex=0; portIndex < self->numRequirePorts; portIndex++)
             {
                apx_dataElement_t *dataElement;
@@ -133,6 +134,7 @@ apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContaine
                assert(port != 0);
                dataElement = apx_port_getDerivedDataElement(port);
                assert(dataElement != 0);
+
 
                adt_bytearray_clear(&program);
                apx_compiler_begin_packProgram(&compiler, &program);
@@ -151,6 +153,7 @@ apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContaine
                   retval = compilationResult;
                   break;
                }
+               (*errPortId)++;
             }
          }
       }
@@ -169,6 +172,7 @@ apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContaine
          }
          if (retval == APX_NO_ERROR)
          {
+            *errPortId = (apx_uniquePortId_t) APX_PORT_ID_PROVIDE_PORT;
             for(portIndex=0; portIndex < self->numProvidePorts; portIndex++)
             {
                apx_dataElement_t *dataElement;
@@ -195,6 +199,7 @@ apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContaine
                   retval = compilationResult;
                   break;
                }
+               (*errPortId)++;
             }
          }
       }
@@ -212,9 +217,9 @@ apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContaine
    return retval;
 }
 
-apx_error_t apx_nodeProgramContainer_compileUnpackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node)
+apx_error_t apx_nodeProgramContainer_compileUnpackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node, apx_uniquePortId_t *errPortId)
 {
-   if ( (self != 0) && (node != 0) )
+   if ( (self != 0) && (node != 0) && (errPortId != 0))
    {
       return APX_NOT_IMPLEMENTED_ERROR;
    }
@@ -259,9 +264,9 @@ static void apx_nodeProgramContainer_clearPackPrograms(apx_nodeProgramContainer_
          {
             adt_bytes_delete(program);
          }
-         free(self->providePortPackPrograms);
-         self->providePortPackPrograms = (adt_bytes_t**) 0;
       }
+      free(self->providePortPackPrograms);
+      self->providePortPackPrograms = (adt_bytes_t**) 0;
    }
 }
 

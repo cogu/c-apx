@@ -88,11 +88,11 @@ CuSuite* testSuite_apx_nodeDataManager(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_nodeDataManager_create(CuTest* tc)
 {
-   apx_nodeDataManager_t factory;
+   apx_nodeDataManager_t manager;
 
-   apx_nodeDataManager_create(&factory);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
 
-   apx_nodeDataManager_destroy(&factory);
+   apx_nodeDataManager_destroy(&manager);
 }
 
 static void test_apx_nodeDataManager_fromValidString1(CuTest *tc)
@@ -105,7 +105,7 @@ static void test_apx_nodeDataManager_fromValidString1(CuTest *tc)
          "N\"TestNode\"\n"
          "P\"OutPort1\"C(0,1):=0\n";
    definitionLen = (uint32_t) strlen(testDefinition);
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
    nodeData = apx_nodeData_new(definitionLen);
    CuAssertPtrNotNull(tc, nodeData);
    CuAssertPtrNotNull(tc, nodeData->definitionDataBuf);
@@ -137,7 +137,7 @@ static void test_apx_nodeDataManager_fromValidString2(CuTest *tc)
          "N\"TestNode\"\n"
          "R\"InPort1\"C(0,1):=0\n";
    definitionLen = (uint32_t) strlen(testDefinition);
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
 
    nodeData = apx_nodeData_new(definitionLen);
    CuAssertPtrNotNull(tc, nodeData);
@@ -171,7 +171,7 @@ static void test_apx_nodeDataManager_fromInvalidString1(CuTest *tc)
          "N\"TestNode\"" //missing the new-line character here
          "P\"OutPort1\"C(0,1):=0\n";
    definitionLen = (uint32_t) strlen(testDefinition);
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
 
    nodeData = apx_nodeData_new(definitionLen);
    CuAssertPtrNotNull(tc, nodeData);
@@ -194,7 +194,7 @@ static void test_apx_nodeDataManager_fromInvalidString2(CuTest *tc)
          "N\"TestNode\"" //missing the new-line character here
          "R\"OutPort1\"a[10]:\n";
    definitionLen = (uint32_t) strlen(testDefinition);
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
 
    nodeData = apx_nodeData_new(definitionLen);
    CuAssertPtrNotNull(tc, nodeData);
@@ -212,7 +212,7 @@ static void test_apx_nodeDataManager_verifyStaticNode(CuTest *tc)
    apx_nodeDataManager_t manager;
    apx_nodeData_t *nodeData;
 
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
 
    ApxNode_Init_TestNode1();
    nodeData = ApxNode_GetNodeData_TestNode1();
@@ -234,7 +234,7 @@ static void test_apx_nodeDataManager_attachStaticNode(CuTest *tc)
    apx_nodeData_t *nodeData;
    const char *nodeName;
 
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
 
    ApxNode_Init_TestNode1();
    nodeData = ApxNode_GetNodeData_TestNode1();
@@ -254,7 +254,7 @@ static void test_apx_nodeDataManager_attachStaticNodeProtectFromDuplicates(CuTes
    apx_nodeData_t *nodeData;
    const char *nodeName;
 
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
 
    ApxNode_Init_TestNode1();
    nodeData = ApxNode_GetNodeData_TestNode1();
@@ -277,7 +277,7 @@ static void test_apx_nodeDataManager_attachMultipleStaticNodes(CuTest *tc)
    const char *nodeName1;
    const char *nodeName2;
 
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
 
    ApxNode_Init_TestNode1();
    ApxNode_Init_TestNode2();
@@ -302,7 +302,7 @@ static void test_apx_nodeDataManager_verifyInitValueWhenNodeIsCreated(CuTest *tc
                  "N\"TestNode\"\n"
                  "T\"VehicleSpeed_T\"S\n"
                  "R\"VehicleSpeed\"T[0]:=65535\n";
-   apx_nodeDataManager_create(&manager);
+   apx_nodeDataManager_create(&manager, APX_SERVER_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeDataManager_attachFromString(&manager, testDefinition));
    nodeData = apx_nodeDataManager_getLastAttached(&manager);
    CuAssertPtrNotNull(tc, nodeData);

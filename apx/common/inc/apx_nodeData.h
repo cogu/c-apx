@@ -34,6 +34,7 @@ struct apx_es_fileManager_tag;
 #else
 struct apx_fileManager_tag;
 struct apx_portDataMap_tag;
+struct apx_nodeProgramContainer_tag;
 
 #endif
 struct apx_node_tag;
@@ -54,6 +55,7 @@ typedef struct apx_nodeData_tag
 {
    bool isRemote; //true if this is a remote nodeData structure. Default: false
    bool isWeakref; //when true all pointers in this object is owned by some other part of the program. if false then all pointers are created/freed by this class.
+   bool isDynamic; //true if this nodeData object shoule to generate its own port programs
    const char *name; //only used when node is code-generated
    uint8_t *inPortDataBuf;
    uint8_t *outPortDataBuf;
@@ -92,6 +94,7 @@ typedef struct apx_nodeData_tag
    struct apx_connectionBase_tag *connection;
    struct apx_portConnectionTable_tag *requirePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
    struct apx_portConnectionTable_tag *providePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
+   struct apx_nodeProgramContainer_tag *portPrograms; //compiled byte code for packing and unpacking port data
 
 #endif
    struct apx_file2_tag *definitionFile;
@@ -130,7 +133,6 @@ void apx_nodeData_lockOutPortData(apx_nodeData_t *self);
 void apx_nodeData_unlockOutPortData(apx_nodeData_t *self);
 void apx_nodeData_lockInPortData(apx_nodeData_t *self);
 void apx_nodeData_unlockInPortData(apx_nodeData_t *self);
-void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, apx_offset_t offset, apx_size_t length);
 apx_error_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
@@ -142,6 +144,9 @@ struct apx_file2_tag *apx_nodeData_getInPortDataFile(apx_nodeData_t *self);
 struct apx_file2_tag *apx_nodeData_getOutPortDataFile(apx_nodeData_t *self);
 apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataElement_tag *destDataElem, apx_nodeData_t *srcNodeData, struct apx_portDataElement_tag *srcDataElem);
 apx_error_t apx_nodeData_updatePortDataDirectById(apx_nodeData_t *destNodeData, apx_portId_t destPortId, apx_nodeData_t *srcNodeData, apx_portId_t srcPortId);
+void apx_nodeData_inPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len, bool directWriteEnabled);
+
 
 //Port Connection count API
 apx_connectionCount_t apx_nodeData_getRequirePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
@@ -164,6 +169,8 @@ apx_error_t apx_nodeData_createPortDataBuffers(apx_nodeData_t *self);
 
 void apx_nodeData_setNode(apx_nodeData_t *self, struct apx_node_tag *node);
 struct apx_node_tag *apx_nodeData_getNode(apx_nodeData_t *self);
+
+struct apx_nodeProgramContainer_tag*  apx_nodeData_initPortPrograms(apx_nodeData_t *self);
 
 //PortDataMap API
 apx_error_t apx_nodeData_createPortDataMap(apx_nodeData_t *self, uint8_t mode);

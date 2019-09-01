@@ -74,6 +74,7 @@ static void test_apx_nodeProgramContainer_compilePackPrograms(CuTest* tc)
    adt_bytes_t *portProgram = NULL;
    const uint8_t *code;
    uint8_t opcode, variant, flags;
+   apx_uniquePortId_t errPortId;
 
 
    node = apx_node_new("TestNode");
@@ -86,7 +87,7 @@ static void test_apx_nodeProgramContainer_compilePackPrograms(CuTest* tc)
    CuAssertPtrNotNull(tc, container);
    CuAssertIntEquals(tc, 0, container->numProvidePorts);
    CuAssertIntEquals(tc, 0, container->numRequirePorts);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeProgramContainer_compilePackPrograms(container, node));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeProgramContainer_compilePackPrograms(container, node, &errPortId));
    CuAssertIntEquals(tc, 0, container->numProvidePorts);
    CuAssertIntEquals(tc, 2, container->numRequirePorts);
    portProgram = apx_nodeProgramContainer_getRequirePortPackProgram(container, 0);
