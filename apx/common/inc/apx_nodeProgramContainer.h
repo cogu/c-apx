@@ -56,8 +56,8 @@ void apx_nodeProgramContainer_create(apx_nodeProgramContainer_t *self);
 void apx_nodeProgramContainer_destroy(apx_nodeProgramContainer_t *self);
 apx_nodeProgramContainer_t* apx_nodeProgramContainer_new(void);
 void apx_nodeProgramContainer_delete(apx_nodeProgramContainer_t *self);
-apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node);
-apx_error_t apx_nodeProgramContainer_compileUnpackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node);
+apx_error_t apx_nodeProgramContainer_compilePackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node, apx_uniquePortId_t *errPortId);
+apx_error_t apx_nodeProgramContainer_compileUnpackPrograms(apx_nodeProgramContainer_t *self, apx_node_t *node, apx_uniquePortId_t *errPortId);
 adt_bytes_t* apx_nodeProgramContainer_getRequirePortPackProgram(apx_nodeProgramContainer_t *self, apx_portId_t portId);
 
 

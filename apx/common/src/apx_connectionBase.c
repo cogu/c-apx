@@ -95,7 +95,7 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       self->totalBytesReceived = 0u;
       self->totalBytesSent = 0u;
 
-      apx_nodeDataManager_create(&self->nodeDataManager);
+      apx_nodeDataManager_create(&self->nodeDataManager, mode);
 #ifdef _WIN32
       self->workerThread = INVALID_HANDLE_VALUE;
 #else

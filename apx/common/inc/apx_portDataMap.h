@@ -36,7 +36,6 @@
 #include "apx_bytePortMap.h"
 #include "apx_nodeData.h"
 #include "apx_portTriggerList.h"
-#include "apx_portProgramArray.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -53,8 +52,6 @@ typedef struct apx_portDataMap_tag
    apx_bytePortMap_t *requirePortByteMap; //used in client mode, maps byte offset back to require port ID
    apx_bytePortMap_t *providePortByteMap; //used in server mode, maps byte offset back to provide port ID
    apx_portTriggerList_t *portTriggerList; //used in server mode, strong reference to apx_portTriggerList_t, length of array=numProvidePorts
-   apx_portProgramArray_t *requirePortPrograms; //used only in client mode for APX node created during runtime;
-   apx_portProgramArray_t *providePortPrograms; //used only in client mode for APX node created during runtime;
    int32_t numRequirePorts;
    int32_t numProvidePorts;
 }apx_portDataMap_t;

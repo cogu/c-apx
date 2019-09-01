@@ -55,14 +55,15 @@ typedef struct apx_nodeDataManager_tag
    adt_hash_t nodeDataMap; //references to apx_nodeData_t (can be either weak or strong)
    MUTEX_T mutex; //locking mechanism
    apx_nodeData_t *lastAttached; //weak reference
+   apx_mode_t mode;
 }apx_nodeDataManager_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_nodeDataManager_create(apx_nodeDataManager_t *self);
+void apx_nodeDataManager_create(apx_nodeDataManager_t *self, apx_mode_t mode);
 void apx_nodeDataManager_destroy(apx_nodeDataManager_t *self);
-apx_nodeDataManager_t *apx_nodeDataManager_new(void);
+apx_nodeDataManager_t *apx_nodeDataManager_new(apx_mode_t mode);
 void apx_nodeDataManager_delete(apx_nodeDataManager_t *self);
 apx_error_t apx_nodeDataManager_getLastError(apx_nodeDataManager_t *self);
 int32_t apx_nodeDataManager_getErrorLine(apx_nodeDataManager_t *self);

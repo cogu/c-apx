@@ -18,6 +18,8 @@
 #include "apx_parser.h"
 #include "apx_connectionBase.h"
 #include "apx_portConnectionTable.h"
+#include "apx_nodeProgramContainer.h"
+#include "apx_compiler.h"
 #endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -66,6 +68,7 @@ void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *defini
    {
       self->isRemote = false; //default false, used by nodeManager to determine whether this belongs to a remote or a local node
       self->isWeakref = true; //default true, all pointers in this object are weak references (will not be automatically deleted when this object is destroyed)
+      self->isDynamic = false; //default false. When true this is used by a node data manager to also compile port programs
       self->name=name;
       self->definitionDataBuf = definitionBuf;
       self->definitionDataLen = definitionDataLen;
@@ -105,6 +108,7 @@ void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *defini
       self->connection = (apx_connectionBase_t*) 0;
       self->requirePortConnections = (apx_portConnectionTable_t*) 0;
       self->providePortConnections = (apx_portConnectionTable_t*) 0;
+      self->portPrograms = (apx_nodeProgramContainer_t*) 0;
 #endif
    }
 }
@@ -149,6 +153,10 @@ void apx_nodeData_destroy(apx_nodeData_t *self)
       {
          apx_portConnectionTable_delete(self->providePortConnections);
          self->providePortConnections = (apx_portConnectionTable_t*) 0;
+      }
+      if (self->portPrograms != 0)
+      {
+         apx_nodeProgramContainer_delete(self->portPrograms);
       }
 #endif
    }
@@ -292,7 +300,7 @@ apx_nodeData_t *apx_nodeData_makeFromString(struct apx_parser_tag *parser, const
    return (apx_nodeData_t*) 0;
 }
 
-#endif
+#endif //APX_EMBEDDED
 
 apx_error_t apx_nodeData_setChecksumData(apx_nodeData_t *self, uint8_t checksumType, uint8_t *checksumData)
 {
@@ -1001,6 +1009,21 @@ bool apx_nodeData_isComplete(apx_nodeData_t *self)
    return retval;
 }
 
+struct apx_nodeProgramContainer_tag* apx_nodeData_initPortPrograms(apx_nodeData_t *self)
+{
+   if (self != 0)
+   {
+      if (self->portPrograms == 0)
+      {
+         self->portPrograms = apx_nodeProgramContainer_new();
+      }
+      return self->portPrograms;
+   }
+   return (struct apx_nodeProgramContainer_tag*) 0;
+}
+
+#endif //!APX_EMBEDDED
+
 /**
  * Internal write function used by APX server
  */
@@ -1052,8 +1075,16 @@ apx_error_t apx_nodeData_updatePortDataDirectById(apx_nodeData_t *destNodeData, 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+void apx_nodeData_inPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len)
+{
 
-#endif //!APX_EMBEDDED
+}
+
+apx_error_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len, bool directWriteEnabled)
+{
+   return APX_NOT_IMPLEMENTED_ERROR;
+}
+
 
 uint32_t apx_nodeData_getInPortDataLen(apx_nodeData_t *self)
 {
@@ -1085,16 +1116,6 @@ void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_fileManager_ta
       self->fileManager = fileManager;
    }
 }
-
-#if 0
-void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len)
-{   
-   if ( (self != 0) && (self->apxNodeWriteCbk != 0) )
-   {
-      self->apxNodeWriteCbk(offset, len);
-   }
-}
-#endif
 
 apx_file2_t *apx_nodeData_newLocalDefinitionFile(apx_nodeData_t *self)
 {

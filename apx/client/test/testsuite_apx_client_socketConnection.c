@@ -140,16 +140,15 @@ static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge1(CuTest*
    uint32_t len;
    const char *data;
    uint8_t msgBuf[FILE_INFO_MAX_SIZE];
-   apx_error_t result;
+
    rmf_fileInfo_t fileInfo;
 
-   //init
+   //setup
    testsocket_spy_create();
    client = apx_client_new();
-   CuAssertIntEquals(tc, 0, apx_client_getNumLocalNodes(client));
-   result = apx_client_attachLocalNodeFromString(client, g_apx_test_node1);
-   CuAssertIntEquals(tc, APX_NO_ERROR, result);
-   CuAssertIntEquals(tc, 1, apx_client_getNumLocalNodes(client));
+   CuAssertIntEquals(tc, 0, apx_client_getNumAttachedNodes(client));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_createLocalNode_cstr(client, g_apx_test_node1));
+   CuAssertIntEquals(tc, 1, apx_client_getNumAttachedNodes(client));
    sock = testsocket_spy_server();
    CuAssertPtrNotNull(tc, sock);
    CuAssertIntEquals(tc, 0, testsocket_spy_getServerConnectedCount());
@@ -193,10 +192,10 @@ static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge2(CuTest*
    //init
    testsocket_spy_create();
    client = apx_client_new();
-   CuAssertIntEquals(tc, 0, apx_client_getNumLocalNodes(client));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_attachLocalNodeFromString(client, g_apx_test_node1));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_attachLocalNodeFromString(client, g_apx_test_node2));
-   CuAssertIntEquals(tc, 2, apx_client_getNumLocalNodes(client));
+   CuAssertIntEquals(tc, 0, apx_client_getNumAttachedNodes(client));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_createLocalNode_cstr(client, g_apx_test_node1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_createLocalNode_cstr(client, g_apx_test_node2));
+   CuAssertIntEquals(tc, 2, apx_client_getNumAttachedNodes(client));
    sock = testsocket_spy_server();
    CuAssertPtrNotNull(tc, sock);
    CuAssertIntEquals(tc, 0, testsocket_spy_getServerConnectedCount());

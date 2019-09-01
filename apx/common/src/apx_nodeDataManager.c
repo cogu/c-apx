@@ -51,10 +51,11 @@ static void apx_nodeDataManager_mapDestructor(void *arg);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_nodeDataManager_create(apx_nodeDataManager_t *self)
+void apx_nodeDataManager_create(apx_nodeDataManager_t *self, apx_mode_t mode)
 {
-   if (self != 0)
+   if ( (self != 0) && ( (mode == APX_CLIENT_MODE) || (mode == APX_SERVER_MODE) ) )
    {
+      void (*nodeDataDestructor)(void*) = (void (*)(void*)) 0;
       apx_istream_handler_t apx_istream_handler;
       memset(&apx_istream_handler,0,sizeof(apx_istream_handler));
       apx_istream_handler.arg = &self->parser;
@@ -70,7 +71,12 @@ void apx_nodeDataManager_create(apx_nodeDataManager_t *self)
       apx_istream_create(&self->apx_istream, &apx_istream_handler);
       apx_parser_create(&self->parser);
       self->lastAttached = (apx_nodeData_t*) 0;
-      adt_hash_create(&self->nodeDataMap, apx_nodeDataManager_mapDestructor);
+      self->mode = mode;
+      if (mode == APX_SERVER_MODE)
+      {
+         nodeDataDestructor = apx_nodeDataManager_mapDestructor;
+      }
+      adt_hash_create(&self->nodeDataMap, nodeDataDestructor);
       MUTEX_INIT(self->mutex);
    }
 }
@@ -86,12 +92,12 @@ void apx_nodeDataManager_destroy(apx_nodeDataManager_t *self)
    }
 }
 
-apx_nodeDataManager_t *apx_nodeDataManager_new(void)
+apx_nodeDataManager_t *apx_nodeDataManager_new(apx_mode_t mode)
 {
    apx_nodeDataManager_t *self = (apx_nodeDataManager_t*) malloc(sizeof(apx_nodeDataManager_t));
    if (self != 0)
    {
-      apx_nodeDataManager_create(self);
+      apx_nodeDataManager_create(self, mode);
    }
    return self;
 }

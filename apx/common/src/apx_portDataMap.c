@@ -81,8 +81,6 @@ apx_error_t apx_portDataMap_create(apx_portDataMap_t *self, apx_nodeData_t *node
       }
       apx_portDataMap_createRequirePortData(self, nodeData);
       apx_portDataMap_createProvidePortData(self, nodeData);
-      self->requirePortPrograms = (apx_portProgramArray_t*) 0; //JIT-compiled programs not needed when ApxNode has been generated using source code generator
-      self->providePortPrograms = (apx_portProgramArray_t*) 0; //JIT-compiled programs not needed when ApxNode has been generated using source code generator
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
