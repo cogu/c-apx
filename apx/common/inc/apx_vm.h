@@ -31,7 +31,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_types.h"
 #include "apx_vmdefs.h"
-#include "apx_portDataElement.h"
 #include "adt_bytearray.h"
 #include "apx_error.h"
 #include "apx_vmSerializer.h"

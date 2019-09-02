@@ -41,7 +41,7 @@ struct apx_node_tag;
 struct apx_parser_tag;
 struct apx_connectionBase_tag;
 struct apx_portDataRef_tag;
-struct apx_portDataElement_tag;
+struct apx_portDataProps_tag;
 struct apx_portConnectionTable_tag;
 
 
@@ -142,7 +142,7 @@ void apx_nodeData_setDefinitionFile(apx_nodeData_t *self, struct apx_file2_tag *
 struct apx_file2_tag *apx_nodeData_getDefinitionFile(apx_nodeData_t *self);
 struct apx_file2_tag *apx_nodeData_getInPortDataFile(apx_nodeData_t *self);
 struct apx_file2_tag *apx_nodeData_getOutPortDataFile(apx_nodeData_t *self);
-apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataElement_tag *destDataElem, apx_nodeData_t *srcNodeData, struct apx_portDataElement_tag *srcDataElem);
+apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataProps_tag *destDatProps, apx_nodeData_t *srcNodeData, struct apx_portDataProps_tag *srcDataProps);
 apx_error_t apx_nodeData_updatePortDataDirectById(apx_nodeData_t *destNodeData, apx_portId_t destPortId, apx_nodeData_t *srcNodeData, apx_portId_t srcPortId);
 void apx_nodeData_inPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len, bool directWriteEnabled);

@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_portDataElement.h
+* \file      apx_portDataProps.h
 * \author    Conny Gustafsson
 * \date      2018-11-25
-* \brief     This is port _data_ attributes, not to be confused with apx_portAttributes_t
+* \brief     Port data properties, a combination of apx_dataElement_t and apx_portAttributes_t
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -34,26 +34,26 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_portDataElement_tag
+typedef struct apx_portDataProps_tag
 {
    apx_portId_t portId;
-   apx_size_t elemSize; //Size of the data portion on the port data
+   apx_size_t dataSize; //Size of the data portion on the port data
    apx_size_t totalSize; //elementSize+queueHeaderSize
    apx_offset_t offset; //offset in file
    apx_portType_t portType; //Is this a provide or require port?
    apx_queLenType_t queLenType; //Is this a queued port?
    bool isDynamicArray; //True if elementSize can vary from element to element
    apx_size_t maxQueLen; //What is the maximum length of the queue?
-} apx_portDataElement_t;
+} apx_portDataProps_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataElement_create(apx_portDataElement_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t elemSize);
-apx_portDataElement_t *apx_portDataElement_new(apx_portType_t portType, apx_portId_t portIndex, apx_offset_t offset, apx_size_t elemSize);
-void apx_portDataElement_delete(apx_portDataElement_t *self);
-void apx_portDataElement_vdelete(void *arg);
+void apx_portDataProps_create(apx_portDataProps_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize);
+apx_portDataProps_t *apx_portDataProps_new(apx_portType_t portType, apx_portId_t portIndex, apx_offset_t offset, apx_size_t elemSize);
+void apx_portDataProps_delete(apx_portDataProps_t *self);
+void apx_portDataProps_vdelete(void *arg);
 
-bool apx_portDataElement_isPlainOldData(apx_portDataElement_t *self);
+bool apx_portDataProps_isPlainOldData(apx_portDataProps_t *self);
 
 #endif //APX_PORT_DATA_ATTRIBUTES_H

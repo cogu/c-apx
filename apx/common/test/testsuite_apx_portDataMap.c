@@ -81,7 +81,7 @@ static void test_apx_portDataMap_createFromNodeWithOnlyRequirePorts(CuTest* tc)
    apx_parser_t parser;
    apx_node_t *node;
    apx_nodeData_t *nodeData;
-   apx_portDataElement_t *portDataElement;
+   apx_portDataProps_t *portDataProps;
    apx_portDataMap_t portDataMap;
 
    apx_parser_create(&parser);
@@ -100,37 +100,37 @@ static void test_apx_portDataMap_createFromNodeWithOnlyRequirePorts(CuTest* tc)
    CuAssertPtrEquals(tc, 0, portDataMap.providePortData);
    CuAssertPtrEquals(tc, 0, portDataMap.providePortDataAttributes);
 
-   portDataElement = apx_portDataMap_getRequirePortDataElement(&portDataMap, 0);
-   CuAssertPtrNotNull(tc, portDataElement);
-   CuAssertIntEquals(tc, 0, portDataElement->portId);
-   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portDataElement->portType);
-   CuAssertUIntEquals(tc, 0, portDataElement->offset);
-   CuAssertUIntEquals(tc, 8, portDataElement->elemSize);
-   CuAssertUIntEquals(tc, 8, portDataElement->totalSize);
+   portDataProps = apx_portDataMap_getRequirePortDataProps(&portDataMap, 0);
+   CuAssertPtrNotNull(tc, portDataProps);
+   CuAssertIntEquals(tc, 0, portDataProps->portId);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portDataProps->portType);
+   CuAssertUIntEquals(tc, 0, portDataProps->offset);
+   CuAssertUIntEquals(tc, 8, portDataProps->dataSize);
+   CuAssertUIntEquals(tc, 8, portDataProps->totalSize);
 
-   portDataElement = apx_portDataMap_getRequirePortDataElement(&portDataMap, 1);
-   CuAssertPtrNotNull(tc, portDataElement);
-   CuAssertIntEquals(tc, 1, portDataElement->portId);
-   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portDataElement->portType);
-   CuAssertUIntEquals(tc, 8, portDataElement->offset);
-   CuAssertUIntEquals(tc, 1, portDataElement->elemSize);
-   CuAssertUIntEquals(tc, 1, portDataElement->totalSize);
+   portDataProps = apx_portDataMap_getRequirePortDataProps(&portDataMap, 1);
+   CuAssertPtrNotNull(tc, portDataProps);
+   CuAssertIntEquals(tc, 1, portDataProps->portId);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portDataProps->portType);
+   CuAssertUIntEquals(tc, 8, portDataProps->offset);
+   CuAssertUIntEquals(tc, 1, portDataProps->dataSize);
+   CuAssertUIntEquals(tc, 1, portDataProps->totalSize);
 
-   portDataElement = apx_portDataMap_getRequirePortDataElement(&portDataMap, 2);
-   CuAssertPtrNotNull(tc, portDataElement);
-   CuAssertIntEquals(tc, 2, portDataElement->portId);
-   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portDataElement->portType);
-   CuAssertUIntEquals(tc, 9, portDataElement->offset);
-   CuAssertUIntEquals(tc, 2, portDataElement->elemSize);
-   CuAssertUIntEquals(tc, 2, portDataElement->totalSize);
+   portDataProps = apx_portDataMap_getRequirePortDataProps(&portDataMap, 2);
+   CuAssertPtrNotNull(tc, portDataProps);
+   CuAssertIntEquals(tc, 2, portDataProps->portId);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portDataProps->portType);
+   CuAssertUIntEquals(tc, 9, portDataProps->offset);
+   CuAssertUIntEquals(tc, 2, portDataProps->dataSize);
+   CuAssertUIntEquals(tc, 2, portDataProps->totalSize);
 
-   portDataElement = apx_portDataMap_getRequirePortDataElement(&portDataMap, 3);
-   CuAssertPtrNotNull(tc, portDataElement);
-   CuAssertIntEquals(tc, 3, portDataElement->portId);
-   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portDataElement->portType);
-   CuAssertUIntEquals(tc, 11, portDataElement->offset);
-   CuAssertUIntEquals(tc, 21, portDataElement->elemSize);
-   CuAssertUIntEquals(tc, 21, portDataElement->totalSize);
+   portDataProps = apx_portDataMap_getRequirePortDataProps(&portDataMap, 3);
+   CuAssertPtrNotNull(tc, portDataProps);
+   CuAssertIntEquals(tc, 3, portDataProps->portId);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT, portDataProps->portType);
+   CuAssertUIntEquals(tc, 11, portDataProps->offset);
+   CuAssertUIntEquals(tc, 21, portDataProps->dataSize);
+   CuAssertUIntEquals(tc, 21, portDataProps->totalSize);
 
    CuAssertUIntEquals(tc, 11+21, nodeData->inPortDataLen);
 
@@ -151,7 +151,7 @@ static void test_apx_portDataMap_createFromNodeWithOnlyProvidePorts(CuTest* tc)
    apx_parser_t parser;
    apx_node_t *node;
    apx_nodeData_t *nodeData;
-   apx_portDataElement_t *portDataElement;
+   apx_portDataProps_t *portDataProps;
 
    apx_portDataMap_t portDataMap;
    apx_parser_create(&parser);
@@ -170,37 +170,37 @@ static void test_apx_portDataMap_createFromNodeWithOnlyProvidePorts(CuTest* tc)
    CuAssertPtrNotNull(tc, portDataMap.providePortData);
    CuAssertPtrNotNull(tc, portDataMap.providePortDataAttributes);
 
-   portDataElement = apx_portDataMap_getProvidePortDataElement(&portDataMap, 0);
-   CuAssertPtrNotNull(tc, portDataElement);
-   CuAssertIntEquals(tc, 0, portDataElement->portId);
-   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portDataElement->portType);
-   CuAssertUIntEquals(tc, 0, portDataElement->offset);
-   CuAssertUIntEquals(tc, 8, portDataElement->elemSize);
-   CuAssertUIntEquals(tc, 8, portDataElement->totalSize);
+   portDataProps = apx_portDataMap_getProvidePortDataProps(&portDataMap, 0);
+   CuAssertPtrNotNull(tc, portDataProps);
+   CuAssertIntEquals(tc, 0, portDataProps->portId);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portDataProps->portType);
+   CuAssertUIntEquals(tc, 0, portDataProps->offset);
+   CuAssertUIntEquals(tc, 8, portDataProps->dataSize);
+   CuAssertUIntEquals(tc, 8, portDataProps->totalSize);
 
-   portDataElement = apx_portDataMap_getProvidePortDataElement(&portDataMap, 1);
-   CuAssertPtrNotNull(tc, portDataElement);
-   CuAssertIntEquals(tc, 1, portDataElement->portId);
-   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portDataElement->portType);
-   CuAssertUIntEquals(tc, 8, portDataElement->offset);
-   CuAssertUIntEquals(tc, 1, portDataElement->elemSize);
-   CuAssertUIntEquals(tc, 1, portDataElement->totalSize);
+   portDataProps = apx_portDataMap_getProvidePortDataProps(&portDataMap, 1);
+   CuAssertPtrNotNull(tc, portDataProps);
+   CuAssertIntEquals(tc, 1, portDataProps->portId);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portDataProps->portType);
+   CuAssertUIntEquals(tc, 8, portDataProps->offset);
+   CuAssertUIntEquals(tc, 1, portDataProps->dataSize);
+   CuAssertUIntEquals(tc, 1, portDataProps->totalSize);
 
-   portDataElement = apx_portDataMap_getProvidePortDataElement(&portDataMap, 2);
-   CuAssertPtrNotNull(tc, portDataElement);
-   CuAssertIntEquals(tc, 2, portDataElement->portId);
-   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portDataElement->portType);
-   CuAssertUIntEquals(tc, 9, portDataElement->offset);
-   CuAssertUIntEquals(tc, 2, portDataElement->elemSize);
-   CuAssertUIntEquals(tc, 2, portDataElement->totalSize);
+   portDataProps = apx_portDataMap_getProvidePortDataProps(&portDataMap, 2);
+   CuAssertPtrNotNull(tc, portDataProps);
+   CuAssertIntEquals(tc, 2, portDataProps->portId);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portDataProps->portType);
+   CuAssertUIntEquals(tc, 9, portDataProps->offset);
+   CuAssertUIntEquals(tc, 2, portDataProps->dataSize);
+   CuAssertUIntEquals(tc, 2, portDataProps->totalSize);
 
-   portDataElement = apx_portDataMap_getProvidePortDataElement(&portDataMap, 3);
-   CuAssertPtrNotNull(tc, portDataElement);
-   CuAssertIntEquals(tc, 3, portDataElement->portId);
-   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portDataElement->portType);
-   CuAssertUIntEquals(tc, 11, portDataElement->offset);
-   CuAssertUIntEquals(tc, 4*10, portDataElement->elemSize);
-   CuAssertUIntEquals(tc, 4*10, portDataElement->totalSize);
+   portDataProps = apx_portDataMap_getProvidePortDataProps(&portDataMap, 3);
+   CuAssertPtrNotNull(tc, portDataProps);
+   CuAssertIntEquals(tc, 3, portDataProps->portId);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT, portDataProps->portType);
+   CuAssertUIntEquals(tc, 11, portDataProps->offset);
+   CuAssertUIntEquals(tc, 4*10, portDataProps->dataSize);
+   CuAssertUIntEquals(tc, 4*10, portDataProps->totalSize);
 
    CuAssertUIntEquals(tc, 11+4*10, nodeData->outPortDataLen);
 
