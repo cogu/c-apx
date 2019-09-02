@@ -92,6 +92,7 @@ void apx_client_registerEventListener(apx_client_t *self, struct apx_clientEvent
 int32_t apx_client_getNumAttachedNodes(apx_client_t *self);
 void apx_client_attachConnection(apx_client_t *self, apx_clientConnectionBase_t *connection);
 apx_clientConnectionBase_t *apx_client_getConnection(apx_client_t *self);
+apx_nodeData_t *apx_client_getDynamicNode(apx_client_t *self, int32_t index);
 
 #ifdef UNIT_TEST
 void apx_client_run(apx_client_t *self);

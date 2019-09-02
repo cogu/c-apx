@@ -43,9 +43,9 @@ struct apx_file2_tag;
 
 typedef struct apx_portDataRef_tag
 {
-   struct apx_nodeData_tag *nodeData; //weak reference
+   struct apx_nodeData_tag *nodeData; //weak reference to parent nodeData
    apx_uniquePortId_t portId; //This is a provide-port ID if APX_PORT_ID_PROVIDE_PORT is set, otherwise it's a require-port ID.
-   apx_portDataProps_t *portDataElement; //weak reference
+   apx_portDataProps_t *portDataProps; //weak reference to port data properties
 }apx_portDataRef_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -55,8 +55,8 @@ typedef struct apx_portDataRef_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeData_tag *nodeData, apx_uniquePortId_t portId, apx_portDataProps_t *portDataElement);
-apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeData_tag *nodedata, apx_uniquePortId_t portId, apx_portDataProps_t *portDataElement);
+void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeData_tag *nodeData, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps);
+apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeData_tag *nodedata, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps);
 void apx_portDataRef_delete(apx_portDataRef_t *self);
 void apx_portDataRef_vdelete(void *arg);
 bool apx_portDataRef_isProvidePortRef(apx_portDataRef_t *self);

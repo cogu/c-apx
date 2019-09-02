@@ -36,6 +36,8 @@
 #include "apx_bytePortMap.h"
 #include "apx_nodeData.h"
 #include "apx_portTriggerList.h"
+#include "apx_compiler.h"
+#include "adt_bytes.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -45,13 +47,15 @@ struct apx_portConnectionTable_tag;
 
 typedef struct apx_portDataMap_tag
 {
-   apx_portDataProps_t *requirePortDataAttributes; //strong reference to apx_portDataRefAttributes_t, length of array=numRequirePorts
-   apx_portDataProps_t *providePortDataAttributes; //strong reference to apx_portDataRefAttributes_t, length of array=numProvidePorts
-   apx_portDataRef_t *requirePortData; //strong references to apx_portDataRef_t, length of array=numRequirePorts
-   apx_portDataRef_t *providePortData; //strong references to apx_portDataRef_t, length of array=numProvidePorts
+   apx_portDataProps_t *requirePortDataProps; //strong reference to apx_portDataProps_t, length of array: numRequirePorts
+   apx_portDataProps_t *providePortDataProps; //strong reference to apx_portDataProps_t, length of array: numProvidePorts
+   apx_portDataRef_t *requirePortDataRef; //strong references to apx_portDataRef_t, length of array: numRequirePorts
+   apx_portDataRef_t *providePortDataRef; //strong references to apx_portDataRef_t, length of array: numProvidePorts
    apx_bytePortMap_t *requirePortByteMap; //used in client mode, maps byte offset back to require port ID
    apx_bytePortMap_t *providePortByteMap; //used in server mode, maps byte offset back to provide port ID
    apx_portTriggerList_t *portTriggerList; //used in server mode, strong reference to apx_portTriggerList_t, length of array=numProvidePorts
+   adt_bytes_t **requirePortPackPrograms; //Strong reference to adt_bytes_t*,length of array: numRequirePorts
+   adt_bytes_t **providePortPackPrograms; //Strong reference to adt_bytes_t*,length of array: numRequirePorts
    int32_t numRequirePorts;
    int32_t numProvidePorts;
 }apx_portDataMap_t;
@@ -76,6 +80,7 @@ apx_portDataRef_t *apx_portDataMap_getRequirePortDataRef(apx_portDataMap_t *self
 apx_portDataRef_t *apx_portDataMap_getProvidePortDataRef(apx_portDataMap_t *self, apx_portId_t portId);
 void apx_portDataMap_updatePortTriggerList(apx_portDataMap_t *self, struct apx_portConnectionTable_tag *portConnectionTable);
 apx_portTriggerList_t *apx_portDataMap_getPortTriggerList(apx_portDataMap_t *self);
+apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_compiler_t *compiler, apx_node_t *node, apx_uniquePortId_t *errPortId);
 
 
 #endif //APX_PORT_DATA_MAP_H

@@ -44,8 +44,8 @@
 #include "adt_hash.h"
 #include "apx_nodeData.h"
 #include "apx_eventListener.h"
-#include "apx_nodeProgramContainer.h"
 #include "apx_compiler.h"
+#include "apx_portDataMap.h"
 
 #ifdef UNIT_TEST
 #include "testsocket.h"
@@ -278,34 +278,46 @@ apx_error_t apx_client_createLocalNode_cstr(apx_client_t *self, const char *apx_
       }
       else
       {
-         adt_error_t rc = adt_ary_push(self->nodeDataList, nodeData);
-         apx_uniquePortId_t errPortId = 0;
-         if (rc != ADT_NO_ERROR)
+         nodeData->isDynamic = true;
+         if (nodeData->portDataMap == 0)
          {
-            if (nodeData != 0)
+            result = apx_nodeData_createPortDataMap(nodeData, APX_CLIENT_MODE);
+            if (result != APX_NO_ERROR)
             {
                apx_nodeData_delete(nodeData);
-            }
-            return (apx_error_t) rc;
-         }
-         result = apx_client_compilePortPrograms(self, nodeData, &errPortId);
-         if (result != APX_NO_ERROR)
-         {
-            if (result == APX_MEM_ERROR)
-            {
-               printf("%s: Compile MEM_ERROR\n", apx_nodeData_getName(nodeData));
+               return result;
             }
             else
             {
-               int32_t portId = (int32_t) (errPortId & APX_PORT_ID_MASK);
-               const char *portType = (errPortId & APX_PORT_ID_PROVIDE_PORT)? "P" : "R";
-               printf("%s.%s[%d]: Compile error %d\n", apx_nodeData_getName(nodeData), portType, (int) portId, (int) result);
+               apx_uniquePortId_t errPortId = 0;
+               result = apx_client_compilePortPrograms(self, nodeData, &errPortId);
+               if (result != APX_NO_ERROR)
+               {
+                  if (result == APX_MEM_ERROR)
+                  {
+                     fprintf(stderr, "%s: Compile MEM_ERROR\n", apx_nodeData_getName(nodeData));
+                  }
+                  else
+                  {
+                     int32_t portId = (int32_t) (errPortId & APX_PORT_ID_MASK);
+                     const char *portType = (errPortId & APX_PORT_ID_PROVIDE_PORT)? "P" : "R";
+                     fprintf(stderr, "%s.%s[%d]: Compile error %d\n", apx_nodeData_getName(nodeData), portType, (int) portId, (int) result);
+                  }
+                  apx_nodeData_delete(nodeData);
+               }
+               else
+               {
+                  adt_error_t rc;
+                  rc = adt_ary_push(self->nodeDataList, nodeData);
+                  if (rc != ADT_NO_ERROR)
+                  {
+                     apx_nodeData_delete(nodeData);
+                     return (apx_error_t) rc;
+                  }
+                  result = apx_client_attachLocalNode(self, nodeData);
+               }
+               return result;
             }
-         }
-         else
-         {
-            printf("Compile success!\n");
-            return apx_client_attachLocalNode(self, nodeData);
          }
       }
    }
@@ -420,6 +432,18 @@ apx_clientConnectionBase_t *apx_client_getConnection(apx_client_t *self)
    return (apx_clientConnectionBase_t*) 0;
 }
 
+apx_nodeData_t *apx_client_getDynamicNode(apx_client_t *self, int32_t index)
+{
+   if (self != 0)
+   {
+      void **ptr = adt_ary_get(self->nodeDataList, index);
+      if (ptr != 0)
+      {
+         return (apx_nodeData_t*) *ptr;
+      }
+   }
+   return (apx_nodeData_t*) 0;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
@@ -468,35 +492,30 @@ static void apx_client_triggerNodeCompleteEvent(apx_client_t *self, apx_nodeData
 
 static apx_error_t apx_client_compilePortPrograms(apx_client_t *self, apx_nodeData_t *nodeData, apx_uniquePortId_t *errPortId)
 {
-   nodeData->isDynamic = true;
-   apx_error_t retval = APX_NO_ERROR;
-   apx_node_t *node = apx_nodeData_getNode(nodeData);
    bool usePackPrograms = true;
    bool useUnpackPrograms = false;
-   apx_nodeProgramContainer_t *portPrograms;
+   apx_error_t retval = APX_NO_ERROR;
+   apx_portDataMap_t *portDataMap;
+   apx_node_t *node;
+   apx_compiler_t compiler;
+   node = apx_nodeData_getNode(nodeData);
+   portDataMap = apx_nodeData_getPortDataMap(nodeData);
 
-   if ( node == 0)
+
+   if ( (node == 0) || (portDataMap == 0) )
    {
       return APX_NULL_PTR_ERROR;
    }
-   portPrograms = apx_nodeData_initPortPrograms(nodeData);
-   if (portPrograms != 0)
+   apx_compiler_create(&compiler);
+   if(usePackPrograms)
    {
-      apx_compiler_t compiler;
-      apx_compiler_create(&compiler);
-      if(usePackPrograms)
-      {
-         retval = apx_nodeProgramContainer_compilePackPrograms(portPrograms, node, errPortId);
-      }
-      if( (retval == APX_NO_ERROR) && (useUnpackPrograms) )
-      {
-         retval = apx_nodeProgramContainer_compileUnpackPrograms(portPrograms, node, errPortId);
-      }
-      apx_compiler_destroy(&compiler);
+      retval = apx_portDataMap_createPackPrograms(portDataMap, &compiler, node, errPortId);
    }
-   else
+   if( (retval == APX_NO_ERROR) && (useUnpackPrograms) )
    {
-      retval = APX_MEM_ERROR;
+      //retval = apx_portDataMap_createUnpackPrograms(portDataMap, &compiler, node, errPortId);
+      retval = APX_NO_ERROR;
    }
+   apx_compiler_destroy(&compiler);
    return retval;
 }
