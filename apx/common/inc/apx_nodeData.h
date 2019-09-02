@@ -34,7 +34,6 @@ struct apx_es_fileManager_tag;
 #else
 struct apx_fileManager_tag;
 struct apx_portDataMap_tag;
-struct apx_nodeProgramContainer_tag;
 
 #endif
 struct apx_node_tag;
@@ -94,7 +93,6 @@ typedef struct apx_nodeData_tag
    struct apx_connectionBase_tag *connection;
    struct apx_portConnectionTable_tag *requirePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
    struct apx_portConnectionTable_tag *providePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
-   struct apx_nodeProgramContainer_tag *portPrograms; //compiled byte code for packing and unpacking port data
 
 #endif
    struct apx_file2_tag *definitionFile;

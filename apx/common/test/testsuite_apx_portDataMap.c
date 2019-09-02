@@ -95,10 +95,10 @@ static void test_apx_portDataMap_createFromNodeWithOnlyRequirePorts(CuTest* tc)
    apx_portDataMap_create(&portDataMap, nodeData);
    CuAssertIntEquals(tc, 4, portDataMap.numRequirePorts);
    CuAssertIntEquals(tc, 0, portDataMap.numProvidePorts);
-   CuAssertPtrNotNull(tc, portDataMap.requirePortData);
-   CuAssertPtrNotNull(tc, portDataMap.requirePortDataAttributes);
-   CuAssertPtrEquals(tc, 0, portDataMap.providePortData);
-   CuAssertPtrEquals(tc, 0, portDataMap.providePortDataAttributes);
+   CuAssertPtrNotNull(tc, portDataMap.requirePortDataRef);
+   CuAssertPtrNotNull(tc, portDataMap.requirePortDataProps);
+   CuAssertPtrEquals(tc, 0, portDataMap.providePortDataRef);
+   CuAssertPtrEquals(tc, 0, portDataMap.providePortDataProps);
 
    portDataProps = apx_portDataMap_getRequirePortDataProps(&portDataMap, 0);
    CuAssertPtrNotNull(tc, portDataProps);
@@ -165,10 +165,10 @@ static void test_apx_portDataMap_createFromNodeWithOnlyProvidePorts(CuTest* tc)
    apx_portDataMap_create(&portDataMap, nodeData);
    CuAssertIntEquals(tc, 0, portDataMap.numRequirePorts);
    CuAssertIntEquals(tc, 4, portDataMap.numProvidePorts);
-   CuAssertPtrEquals(tc, 0, portDataMap.requirePortData);
-   CuAssertPtrEquals(tc, 0, portDataMap.requirePortDataAttributes);
-   CuAssertPtrNotNull(tc, portDataMap.providePortData);
-   CuAssertPtrNotNull(tc, portDataMap.providePortDataAttributes);
+   CuAssertPtrEquals(tc, 0, portDataMap.requirePortDataRef);
+   CuAssertPtrEquals(tc, 0, portDataMap.requirePortDataProps);
+   CuAssertPtrNotNull(tc, portDataMap.providePortDataRef);
+   CuAssertPtrNotNull(tc, portDataMap.providePortDataProps);
 
    portDataProps = apx_portDataMap_getProvidePortDataProps(&portDataMap, 0);
    CuAssertPtrNotNull(tc, portDataProps);

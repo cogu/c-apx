@@ -18,7 +18,6 @@
 #include "apx_parser.h"
 #include "apx_connectionBase.h"
 #include "apx_portConnectionTable.h"
-#include "apx_nodeProgramContainer.h"
 #include "apx_compiler.h"
 #endif
 #ifdef MEM_LEAK_CHECK
@@ -108,7 +107,6 @@ void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *defini
       self->connection = (apx_connectionBase_t*) 0;
       self->requirePortConnections = (apx_portConnectionTable_t*) 0;
       self->providePortConnections = (apx_portConnectionTable_t*) 0;
-      self->portPrograms = (apx_nodeProgramContainer_t*) 0;
 #endif
    }
 }
@@ -153,10 +151,6 @@ void apx_nodeData_destroy(apx_nodeData_t *self)
       {
          apx_portConnectionTable_delete(self->providePortConnections);
          self->providePortConnections = (apx_portConnectionTable_t*) 0;
-      }
-      if (self->portPrograms != 0)
-      {
-         apx_nodeProgramContainer_delete(self->portPrograms);
       }
 #endif
    }
@@ -1007,19 +1001,6 @@ bool apx_nodeData_isComplete(apx_nodeData_t *self)
       retval = false;
    }
    return retval;
-}
-
-struct apx_nodeProgramContainer_tag* apx_nodeData_initPortPrograms(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-      if (self->portPrograms == 0)
-      {
-         self->portPrograms = apx_nodeProgramContainer_new();
-      }
-      return self->portPrograms;
-   }
-   return (struct apx_nodeProgramContainer_tag*) 0;
 }
 
 #endif //!APX_EMBEDDED
