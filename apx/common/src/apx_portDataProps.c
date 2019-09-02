@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_portDataElement.c
+* \file      apx_portDataProps.c
 * \author    Conny Gustafsson
 * \date      2018-10-08
-* \brief     Description
+* \brief     Port data properties, a combination of apx_dataElement_t and apx_portAttributes_t
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include "apx_error.h"
-#include "apx_portDataElement.h"
+#include "apx_portDataProps.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -48,31 +48,31 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataElement_create(apx_portDataElement_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t elemSize)
+void apx_portDataProps_create(apx_portDataProps_t *self, apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t dataSize)
 {
    if (self != 0)
    {
       self->portType = portType;
       self->portId = portId;
       self->offset = offset;
-      self->elemSize = elemSize;
-      self->totalSize = elemSize;
+      self->dataSize = dataSize;
+      self->totalSize = dataSize;
       self->queLenType = APX_QUE_LEN_NONE;
       self->maxQueLen = 0;
    }
 }
 
-apx_portDataElement_t *apx_portDataElement_new(apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t elemSize)
+apx_portDataProps_t *apx_portDataProps_new(apx_portType_t portType, apx_portId_t portId, apx_offset_t offset, apx_size_t elemSize)
 {
-   apx_portDataElement_t *self = (apx_portDataElement_t*) malloc(sizeof(apx_portDataElement_t));
+   apx_portDataProps_t *self = (apx_portDataProps_t*) malloc(sizeof(apx_portDataProps_t));
    if(self != 0)
    {
-      apx_portDataElement_create(self, portType, portId, offset, elemSize);
+      apx_portDataProps_create(self, portType, portId, offset, elemSize);
    }
    return self;
 }
 
-void apx_portDataElement_delete(apx_portDataElement_t *self)
+void apx_portDataProps_delete(apx_portDataProps_t *self)
 {
    if (self != 0)
    {
@@ -80,12 +80,12 @@ void apx_portDataElement_delete(apx_portDataElement_t *self)
    }
 }
 
-void apx_portDataElement_vdelete(void *arg)
+void apx_portDataProps_vdelete(void *arg)
 {
-   apx_portDataElement_delete((apx_portDataElement_t*) arg);
+   apx_portDataProps_delete((apx_portDataProps_t*) arg);
 }
 
-bool apx_portDataElement_isPlainOldData(apx_portDataElement_t *self)
+bool apx_portDataProps_isPlainOldData(apx_portDataProps_t *self)
 {
    if ( (self != 0) && (!self->isDynamicArray) && (self->queLenType == APX_QUE_LEN_NONE) )
    {

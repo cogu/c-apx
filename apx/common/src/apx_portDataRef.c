@@ -50,7 +50,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeData_tag *nodeData, apx_uniquePortId_t portId, apx_portDataElement_t *portDataElement)
+void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeData_tag *nodeData, apx_uniquePortId_t portId, apx_portDataProps_t *portDataElement)
 {
    if (self != 0)
    {
@@ -60,7 +60,7 @@ void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeData_tag *no
    }
 }
 
-apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeData_tag *nodedata, apx_uniquePortId_t portId, apx_portDataElement_t *portDataElement)
+apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeData_tag *nodedata, apx_uniquePortId_t portId, apx_portDataProps_t *portDataElement)
 {
    apx_portDataRef_t *self = (apx_portDataRef_t*) malloc(sizeof(apx_portDataRef_t));
    if(self != 0)
