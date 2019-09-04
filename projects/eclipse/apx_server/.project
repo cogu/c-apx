@@ -45,6 +45,26 @@
 			<locationURI>PARENT-3-PROJECT_LOC/bstr/src</locationURI>
 		</link>
 		<link>
+			<name>cutil/inc</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/cutil/inc</location>
+		</link>
+		<link>
+			<name>cutil/src</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/cutil/src</location>
+		</link>
+		<link>
+			<name>dtl_json/inc</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/dtl_json/inc</location>
+		</link>
+		<link>
+			<name>dtl_json/src</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/dtl_json/src</location>
+		</link>
+		<link>
 			<name>dtl_type/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/inc</locationURI>
@@ -75,16 +95,6 @@
 			<locationURI>PARENT-3-PROJECT_LOC/remotefile/src</locationURI>
 		</link>
 		<link>
-			<name>util/inc</name>
-			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/util/inc</locationURI>
-		</link>
-		<link>
-			<name>util/src</name>
-			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/util/src</locationURI>
-		</link>
-		<link>
 			<name>apx/common/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/apx/common/inc</locationURI>
@@ -103,6 +113,16 @@
 			<name>apx/server/src</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/apx/server/src</locationURI>
+		</link>
+		<link>
+			<name>apx/server_extension/inc</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/inc</location>
+		</link>
+		<link>
+			<name>apx/server_extension/src</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/src</location>
 		</link>
 	</linkedResources>
 </projectDescription>
