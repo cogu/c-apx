@@ -154,5 +154,20 @@
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/apx/server/test</locationURI>
 		</link>
+		<link>
+			<name>apx/server_extension/inc</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/inc</location>
+		</link>
+		<link>
+			<name>apx/server_extension/src</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/src</location>
+		</link>
+		<link>
+			<name>apx/server_extension/test</name>
+			<type>2</type>
+			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/test</location>
+		</link>
 	</linkedResources>
 </projectDescription>
