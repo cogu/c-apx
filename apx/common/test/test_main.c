@@ -41,6 +41,9 @@ CuSuite* testsuite_apx_client_dynamic_nodes(void);
 CuSuite* testSuite_apx_serverSocketConnection(void);
 CuSuite* testSuite_apx_server(void);
 
+/** APX Server Extensions **/
+CuSuite* testsuite_apx_serverSocketExtension(void);
+
 /** APX Client **/
 CuSuite* testSuite_apx_client_socketConnection(void);
 CuSuite* testSuite_apx_client_testConnection(void);
@@ -81,6 +84,9 @@ void RunAllTests(void)
 // APX Server
    CuSuiteAddSuite(suite, testSuite_apx_serverSocketConnection());
    CuSuiteAddSuite(suite, testSuite_apx_server());
+
+// APX Server Extensions
+   CuSuiteAddSuite(suite, testsuite_apx_serverSocketExtension());
 
 // APX Client
    CuSuiteAddSuite(suite, testsuite_apx_client_dynamic_nodes());

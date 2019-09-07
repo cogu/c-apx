@@ -44,6 +44,7 @@
 									<listOptionValue builtIn="false" value="../../../../apx/common/inc"/>
 									<listOptionValue builtIn="false" value="../../../../apx/common/test"/>
 									<listOptionValue builtIn="false" value="../../../../apx/server/inc"/>
+									<listOptionValue builtIn="false" value="../../../../apx/server_extension/inc"/>
 									<listOptionValue builtIn="false" value="../../../../apx/client/inc"/>
 									<listOptionValue builtIn="false" value="../../../../apx/client/test"/>
 									<listOptionValue builtIn="false" value="../../../../remotefile/inc"/>

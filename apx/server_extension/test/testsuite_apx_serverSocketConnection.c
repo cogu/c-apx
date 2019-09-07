@@ -8,6 +8,7 @@
 #include "pack.h"
 #include "apx_serverSocketConnection.h"
 #include "apx_server.h"
+#include "apx_serverSocketExtension.h"
 #include "testsocket_spy.h"
 #include "apx_fileManager.h"
 #include "numheader.h"
@@ -118,8 +119,9 @@ static void test_apx_serverSocketConnection_sendAckAfterReceivingHeader(CuTest* 
    testsocket_spy_create();
    sock = testsocket_spy_client();
    apx_server_create(&server);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverSocketExtension_register(&server, NULL));
    apx_server_start(&server);
-   apx_server_acceptTestSocket(&server, sock);
+   apx_serverSocketExtension_acceptTestSocket(sock);
    testsocket_onConnect(sock);
    sendHeader(sock);
    SERVER_RUN(&server, sock);
@@ -135,8 +137,9 @@ static void test_apx_serverSocketConnection_sendFileOpenAfterPresentedApxDefinit
    testsocket_spy_create();
    sock = testsocket_spy_client();
    apx_server_create(&server);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverSocketExtension_register(&server, NULL));
    apx_server_start(&server);
-   apx_server_acceptTestSocket(&server, sock);
+   apx_serverSocketExtension_acceptTestSocket(sock);
    testsocket_onConnect(sock);
    sendHeader(sock);
    SERVER_RUN(&server, sock);
@@ -159,8 +162,9 @@ static void test_apx_serverSocketConnection_processApxDefinitionAfterWrite(CuTes
    testsocket_spy_create();
    sock = testsocket_spy_client();
    apx_server_create(&server);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverSocketExtension_register(&server, NULL));
    apx_server_start(&server);
-   apx_server_acceptTestSocket(&server, sock);
+   apx_serverSocketExtension_acceptTestSocket(sock);
    testsocket_onConnect(sock);
    sendHeader(sock);
    SERVER_RUN(&server, sock);

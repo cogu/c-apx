@@ -28,6 +28,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
+#include <malloc.h>
 #include "CuTest.h"
 #include "apx_server.h"
 #include "apx_test_nodes.h"
