@@ -14,6 +14,7 @@ SRCDIR = \
 	adt/src \
 	apx/common/src \
 	apx/server/src \
+	apx/server_extension/src \
 	msocket/src \
 	msocket/src \
 	remotefile/src \
@@ -89,8 +90,13 @@ SHARED_SOURCES = \
 SERVER_SOURCES = apx/server/src/apx_connectionManager.c \
     apx/server/src/apx_server.c \
 	apx/server/src/apx_serverConnectionBase.c \
+	apx/server/src/apx_serverExtension.c \
 
-SERVER_EXTENSION_SOURCES ?= apx/server/src/apx_serverSocketConnection.c
+SERVER_EXTENSION_SOURCES ?= apx/server/apx_serverSocketConnection.c \
+	apx_serverSocketExtension.c \
+	apx_socketServer.c \
+
+SERVER_EXTENSION_INCLUDES ?= -I apx/server_extension/inc
 
 SERVER_MAIN_SOURCE ?= apx/server/src/server_main.c
 
@@ -107,6 +113,7 @@ INCLUDES = \
 	-I dtl_type/inc \
 	-I msocket/inc \
 	-I remotefile/inc \
+	$(SERVER_EXTENSION_INCLUDES)
 
 EXECUTABLE = $(BUILDDIR)/apx_server
 CLIENTLIB = $(BUILDDIR)/libapxclient.a

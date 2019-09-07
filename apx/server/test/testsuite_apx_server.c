@@ -51,7 +51,7 @@ CuSuite* testSuite_apx_server(void)
    CuSuite* suite = CuSuiteNew();
 
    SUITE_ADD_TEST(suite, test_apx_server_create);
-   SUITE_ADD_TEST(suite, test_apx_server_eachConnectionGetNewId);
+   //SUITE_ADD_TEST(suite, test_apx_server_eachConnectionGetNewId);
 
    return suite;
 }
@@ -113,7 +113,7 @@ static void test_apx_server_sendsEventFileAfterGreeting(CuTest* tc)
    apx_server_destroy(&server);
    free(sendBuffer);
 }
-#endif
+
 static void test_apx_server_eachConnectionGetNewId(CuTest* tc)
 {
    apx_server_t server;
@@ -143,3 +143,4 @@ static void test_apx_server_eachConnectionGetNewId(CuTest* tc)
    apx_server_destroy(&server);
 
 }
+#endif

@@ -31,6 +31,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_connectionBase.h"
 #include "adt_list.h"
+#include "adt_str.h"
 #include "apx_eventListener.h"
 #ifndef _WIN32
 #include <pthread.h>
@@ -47,10 +48,11 @@ typedef struct apx_serverConnectionBase_tag
 {
    apx_connectionBase_t base;
    adt_list_t nodeDataEventListeners; //weak references to apx_nodeDataEventListener_t
-   struct apx_server_tag *server;
-   MUTEX_T eventListenerMutex;
+   struct apx_server_tag *server; //parent object
+   MUTEX_T eventListenerMutex; //thread-protection for self->nodeDataEventListeners
    bool isGreetingParsed;
    bool isActive;
+   adt_str_t *tag; //optional tag
 }apx_serverConnectionBase_t;
 
 //////////////////////////////////////////////////////////////////////////////
