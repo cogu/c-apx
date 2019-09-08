@@ -47,7 +47,6 @@ int m_runFlag = 1;
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-static uint16_t m_port;
 static apx_server_t m_server;
 static int32_t m_shutdownTimer;
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
@@ -61,6 +60,11 @@ int main(int argc, char **argv)
    WSADATA wsaData;
    int err;
 #endif
+   if (argc < 2u)
+   {
+      printUsage(argv[0]);
+      return 0;
+   }
    m_shutdownTimer = SHUTDOWN_TIMER_INIT;
    g_debug = 0;
    m_runFlag = 1;
@@ -128,5 +132,5 @@ void signal_handler(int signum)
 
 static void printUsage(char *name)
 {   
-   printf("%s <configFile>.json\n",name);
+   printf("Usage:\n%s configFile.json\n",name);
 }
