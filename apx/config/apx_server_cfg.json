@@ -1,0 +1,20 @@
+{
+   "server": {
+      "apx-cache-enabled": false,
+      "apx-cache-path": "",
+      "shutdown-timer": 0
+   },
+   "extensions": {
+      "socket": {
+         "extension-enabled": true,
+         "tcp-port": 5000,
+         "tcp-tag": "socket",
+         "unix-socket": "",
+         "unix-tag": "socket"
+	   },
+      "command": {
+         "extension-enabled": true,
+         "connection-tag": "socket"
+      }
+   }
+}

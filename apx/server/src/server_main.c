@@ -15,6 +15,7 @@
 #endif
 #include "apx_server.h"
 #include "apx_types.h"
+#include "dtl_json.h"
 
 #include "apx_eventListener.h"
 #include <stdint.h>
@@ -37,6 +38,7 @@
 static void signal_handler_setup(void);
 void signal_handler(int signum);
 static void printUsage(char *name);
+static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -60,15 +62,31 @@ int main(int argc, char **argv)
    WSADATA wsaData;
    int err;
 #endif
+   apx_error_t result;
+   dtl_hv_t *server_config = (dtl_hv_t*) 0;
+   m_shutdownTimer = SHUTDOWN_TIMER_INIT;
+   g_debug = 0;
+   m_runFlag = 1;
+
+
    if (argc < 2u)
    {
       printUsage(argv[0]);
       return 0;
    }
-   m_shutdownTimer = SHUTDOWN_TIMER_INIT;
-   g_debug = 0;
-   m_runFlag = 1;
-   printf("APX Server %s\n", SW_VERSION_STR);
+   printf("APX Server %s\n\n", SW_VERSION_STR);
+   result = load_config_file(argv[1], &server_config);
+   printf("Loading %s: ", argv[1]);
+   if (result != APX_NO_ERROR)
+   {
+      printf("Error %d\n", (int) result);
+      return 1;
+   }
+   else
+   {
+      printf("Success\n");
+   }
+
 #ifdef _WIN32
    wVersionRequested = MAKEWORD(2, 2);
    err = WSAStartup(wVersionRequested, &wsaData);
@@ -133,4 +151,36 @@ void signal_handler(int signum)
 static void printUsage(char *name)
 {   
    printf("Usage:\n%s configFile.json\n",name);
+}
+
+static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv)
+{
+   if ( (filename != 0) && (hv != 0) )
+   {
+      FILE *fh = fopen(filename, "r");
+      if (fh != 0)
+      {
+         dtl_dv_t *json_data = dtl_json_load(fh);
+         fclose(fh);
+         if (json_data != 0)
+         {
+            if (dtl_dv_type(json_data) == DTL_DV_HASH)
+            {
+               *hv = (dtl_hv_t*) json_data;
+            }
+            else
+            {
+               dtl_dec_ref(json_data);
+               return APX_DV_TYPE_ERROR;
+            }
+            return APX_NO_ERROR;
+         }
+         else
+         {
+            return APX_PARSE_ERROR;
+         }
+      }
+      return APX_FILE_NOT_FOUND_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
