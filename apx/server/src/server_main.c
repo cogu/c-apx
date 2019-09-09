@@ -2,7 +2,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#ifdef _MSC_VER
+#ifdef _WIN32
 #if CLEANUP_TEST
 #   define _CRTDBG_MAP_ALLOC
 #   include <stdlib.h>
@@ -39,6 +39,9 @@ static void signal_handler_setup(void);
 void signal_handler(int signum);
 static void printUsage(char *name);
 static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv);
+#ifdef _WIN32
+static void init_wsa(void);
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -57,17 +60,11 @@ static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
-#ifdef _WIN32
-   WORD wVersionRequested;
-   WSADATA wsaData;
-   int err;
-#endif
    apx_error_t result;
    dtl_hv_t *server_config = (dtl_hv_t*) 0;
    m_shutdownTimer = SHUTDOWN_TIMER_INIT;
    g_debug = 0;
    m_runFlag = 1;
-
 
    if (argc < 2u)
    {
@@ -86,12 +83,9 @@ int main(int argc, char **argv)
    {
       printf("Success\n");
    }
-
 #ifdef _WIN32
-   wVersionRequested = MAKEWORD(2, 2);
-   err = WSAStartup(wVersionRequested, &wsaData);
-   if (err != 0) {
-      /* Tell the user that we could not find a usable Winsock DLL*/
+   if (init_wsa() != 0)
+   {
       fprintf(stderr, "WSAStartup failed with error: %d\n", err);
       return 1;
    }
@@ -184,3 +178,16 @@ static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv)
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+#ifdef _WIN32
+static int init_wsa(void);
+{
+   WORD wVersionRequested;
+   WSADATA wsaData;
+   int err;
+   wVersionRequested = MAKEWORD(2, 2);
+   err = WSAStartup(wVersionRequested, &wsaData);
+   return err;
+}
+#endif
+
