@@ -14,7 +14,7 @@ SRCDIR = \
 	adt/src \
 	apx/common/src \
 	apx/server/src \
-	apx/server_extension/src \
+	apx/server_extension/socket/src \
 	msocket/src \
 	msocket/src \
 	remotefile/src \
@@ -92,11 +92,11 @@ SERVER_SOURCES = apx/server/src/apx_connectionManager.c \
 	apx/server/src/apx_serverConnectionBase.c \
 	apx/server/src/apx_serverExtension.c \
 
-SERVER_EXTENSION_SOURCES ?= apx/server/apx_serverSocketConnection.c \
-	apx_serverSocketExtension.c \
-	apx_socketServer.c \
+SERVER_EXTENSION_SOURCES ?= apx/server_extension/socket/apx_serverSocketConnection.c \
+	apx/server_extension/socket/apx_serverSocketExtension.c \
+	apx/server_extension/socket/apx_socketServer.c \
 
-SERVER_EXTENSION_INCLUDES ?= -I apx/server_extension/inc
+SERVER_EXTENSION_INCLUDES ?= -I apx/server_extension/socket/inc
 
 SERVER_MAIN_SOURCE ?= apx/server/src/server_main.c
 
