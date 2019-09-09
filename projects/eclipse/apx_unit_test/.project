@@ -27,7 +27,7 @@
 		<link>
 			<name>cutest</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/cutil/cutest</location>
+			<locationURI>PARENT-3-PROJECT_LOC/cutil/cutest</locationURI>
 		</link>
 		<link>
 			<name>adt/inc</name>
@@ -42,12 +42,12 @@
 		<link>
 			<name>apx/config</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/config</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/config</locationURI>
 		</link>
 		<link>
 			<name>autosar/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/autosar/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/autosar/inc</locationURI>
 		</link>
 		<link>
 			<name>bstr/inc</name>
@@ -62,22 +62,22 @@
 		<link>
 			<name>cutil/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/cutil/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/cutil/inc</locationURI>
 		</link>
 		<link>
 			<name>cutil/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/cutil/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/cutil/src</locationURI>
 		</link>
 		<link>
 			<name>dtl_json/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_json/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_json/inc</locationURI>
 		</link>
 		<link>
 			<name>dtl_json/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_json/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_json/src</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/inc</name>
@@ -162,17 +162,17 @@
 		<link>
 			<name>apx/server_extension/socket/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/socket/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_extension/socket/inc</locationURI>
 		</link>
 		<link>
 			<name>apx/server_extension/socket/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/socket/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_extension/socket/src</locationURI>
 		</link>
 		<link>
 			<name>apx/server_extension/socket/test</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/socket/test</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_extension/socket/test</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
