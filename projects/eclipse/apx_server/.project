@@ -25,6 +25,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>Makefile</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/Makefile</locationURI>
+		</link>
+		<link>
 			<name>adt/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/adt/inc</locationURI>
@@ -47,22 +52,22 @@
 		<link>
 			<name>cutil/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/cutil/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/cutil/inc</locationURI>
 		</link>
 		<link>
 			<name>cutil/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/cutil/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/cutil/src</locationURI>
 		</link>
 		<link>
 			<name>dtl_json/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_json/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_json/inc</locationURI>
 		</link>
 		<link>
 			<name>dtl_json/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_json/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_json/src</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/inc</name>
@@ -115,14 +120,24 @@
 			<locationURI>PARENT-3-PROJECT_LOC/apx/server/src</locationURI>
 		</link>
 		<link>
-			<name>apx/server_extension/inc</name>
+			<name>apx/server_extension/socket/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_extension/socket/inc</locationURI>
 		</link>
 		<link>
-			<name>apx/server_extension/src</name>
+			<name>apx/server_extension/socket/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/server_extension/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_extension/socket/src</locationURI>
+		</link>
+		<link>
+			<name>apx/server_extension/textlog/inc</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_extension/textlog/inc</locationURI>
+		</link>
+		<link>
+			<name>apx/server_extension/textlog/src</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_extension/textlog/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

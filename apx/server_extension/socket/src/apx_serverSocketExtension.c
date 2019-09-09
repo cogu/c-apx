@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_eventRecorderSrvTxt.h
+* \file      apx_serverSocketExtension.c
 * \author    Conny Gustafsson
-* \date      2018-08-07
+* \date      2019-09-04
 * \brief     Description
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -23,53 +23,74 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_EVENT_RECORDER_SRV_TXT_H
-#define APX_EVENT_RECORDER_SRV_TXT_H
-
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stdint.h>
-#include <stdio.h>
-#ifdef _WIN32
-# ifndef WIN32_LEAN_AND_MEAN
-# define WIN32_LEAN_AND_MEAN
-# endif
-# include <Windows.h>
-#else
-# include <pthread.h>
-# include <semaphore.h>
+#ifdef _MSC_VER
+#include <Windows.h>
 #endif
-#include "osmacro.h"
-#include "apx_eventListener.h"
+#include "apx_socketServer.h"
+#include "apx_server.h"
+#include "apx_serverExtension.h"
+#include "apx_serverSocketExtension.h"
+#ifdef MEM_LEAK_CHECK
+#include "CMemLeak.h"
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
-// PUBLIC CONSTANTS AND DATA TYPES
+// PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-// PUBLIC VARIABLES
-//////////////////////////////////////////////////////////////////////////////
-//forward declarations
-struct apx_server_tag;
 
-typedef struct apx_eventRecorderSrvTxt_t
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE VARIABLES
+//////////////////////////////////////////////////////////////////////////////
+static apx_socketServer_t *m_instance = (apx_socketServer_t*) 0; //singleton
+
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
+
+apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   char *fileName;
-   FILE *fp;
-   MUTEX_T mutex;
-}apx_eventRecorderSrvTxt_t;
+   if (m_instance == 0)
+   {
+      m_instance = apx_socketServer_new(apx_server);
+      if (m_instance == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+   }
+   return APX_NO_ERROR;
+}
+
+void apx_serverSocketExtension_shutdown(void)
+{
+   if (m_instance != 0)
+   {
+      apx_socketServer_stopAll(m_instance);
+      apx_socketServer_delete(m_instance);
+      m_instance = (apx_socketServer_t*) 0;
+   }
+}
+
+apx_error_t apx_serverSocketExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
+{
+   apx_serverExtension_t extension = {apx_serverSocketExtension_init, apx_serverSocketExtension_shutdown};
+   return apx_server_addExtension(apx_server, &extension, config);
+}
+
+#ifdef UNIT_TEST
+void apx_serverSocketExtension_acceptTestSocket(testsocket_t *sock)
+{
+   if (m_instance != 0)
+   {
+      apx_socketServer_acceptTestSocket(m_instance, sock);
+   }
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
-// PUBLIC FUNCTION PROTOTYPES
+// PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_eventRecorderSrvTxt_create(apx_eventRecorderSrvTxt_t *self);
-void apx_eventRecorderSrvTxt_destroy(apx_eventRecorderSrvTxt_t *self);
-apx_eventRecorderSrvTxt_t *apx_eventRecorderSrvTxt_new(void);
-void apx_eventRecorderSrvTxt_delete(apx_eventRecorderSrvTxt_t *self);
-void apx_eventRecorderSrvTxt_register(apx_eventRecorderSrvTxt_t *self, struct apx_server_tag *server);
-void apx_eventRecorderSrvTxt_open(apx_eventRecorderSrvTxt_t *self, const char *fileName);
-void apx_eventRecorderSrvTxt_close(apx_eventRecorderSrvTxt_t *self);
-
-
-#endif //APX_EVENT_RECORDER_SRV_TXT_H
