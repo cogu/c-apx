@@ -35,7 +35,7 @@
 #include "apx_dataSignature.h"
 #include "adt_ary.h"
 #include "adt_hash.h"
-#include "apx_dataType.h"
+#include "apx_datatype.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
