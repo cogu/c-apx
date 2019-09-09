@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "adt_ary.h"
 #include "adt_bytearray.h"
-#include "apx_dataType.h"
+#include "apx_datatype.h"
 #include "apx_port.h"
 #include "apx_attributeParser.h"
 #include "apx_error.h"
