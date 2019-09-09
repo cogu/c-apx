@@ -9,7 +9,7 @@
 #include "CuTest.h"
 #include "apx_port.h"
 #include "adt_ary.h"
-#include "apx_dataType.h"
+#include "apx_datatype.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
