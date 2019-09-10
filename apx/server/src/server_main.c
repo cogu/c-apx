@@ -27,7 +27,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #define SHUTDOWN_TIMER_WARN_THRESHOLD 10
 #if CLEANUP_TEST
-#define SHUTDOWN_TIMER_INIT 20     //number of seconds before server shutdown is triggered in a cleanup test
+#define SHUTDOWN_TIMER_INIT 10     //number of seconds before server shutdown is triggered in a cleanup test
 #else
 #define SHUTDOWN_TIMER_INIT 0
 #endif
@@ -91,6 +91,7 @@ int main(int argc, char **argv)
    }
 #endif
    signal_handler_setup();
+   apx_server_create(&m_server, APX_MAX_NUM_EVENTS);
    apx_server_start(&m_server);
    while(m_runFlag != 0)
    {

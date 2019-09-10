@@ -36,35 +36,55 @@ static void apx_server_shutdown_extensions(apx_server_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_server_create(apx_server_t *self)
+void apx_server_create(apx_server_t *self, uint16_t maxNumEvents)
 {
    if (self != 0)
    {
-      adt_list_create(&self->connectionEventListeners, apx_serverEventListener_vdelete);
+      adt_list_create(&self->serverEventListeners, apx_serverEventListener_vdelete);
       apx_routingTable_create(&self->routingTable);
       apx_connectionManager_create(&self->connectionManager);
       adt_list_create(&self->extensionManager, apx_serverExtension_vdelete);
+      apx_allocator_create(&self->allocator, maxNumEvents);
+      apx_eventLoop_create(&self->eventLoop);
+      self->isRunning = false;
    }
 }
 
 void apx_server_start(apx_server_t *self)
 {
-#ifndef UNIT_TEST
+
    if (self != 0)
    {
+#ifndef UNIT_TEST
       apx_connectionManager_start(&self->connectionManager);
-   }
+      apx_allocator_start(&self->allocator);
 #endif
+      self->isRunning = true;
+   }
+}
+
+void apx_server_stop(apx_server_t *self)
+{
+   if ( (self != 0) && (self->isRunning) )
+   {
+      apx_server_shutdown_extensions(self);
+#ifndef UNIT_TEST
+      apx_eventLoop_exit(&self->eventLoop);
+      apx_allocator_stop(&self->allocator);
+      apx_connectionManager_stop(&self->connectionManager);
+#endif
+      self->isRunning = false;
+   }
 }
 
 void apx_server_destroy(apx_server_t *self)
 {
    if (self != 0)
    {
-      apx_server_shutdown_extensions(self);
-      //close and delete all open server connections
-      adt_list_destroy(&self->connectionEventListeners);
-      apx_connectionManager_stop(&self->connectionManager);
+      apx_server_stop(self);
+      apx_eventLoop_destroy(&self->eventLoop);
+      apx_allocator_destroy(&self->allocator);
+      adt_list_destroy(&self->serverEventListeners);
       apx_connectionManager_destroy(&self->connectionManager);
       apx_routingTable_destroy(&self->routingTable);
       adt_list_destroy(&self->extensionManager);
@@ -80,7 +100,7 @@ void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListen
       if (handle != 0)
       {
          //TODO: Add multi-thread lock
-         adt_list_insert(&self->connectionEventListeners, handle);
+         adt_list_insert(&self->serverEventListeners, handle);
       }
       return handle;
    }
@@ -92,14 +112,13 @@ void apx_server_unregisterEventListener(apx_server_t *self, void *handle)
    if ( (self != 0) && (handle != 0))
    {
       //TODO: Add multi-thread lock
-      bool isFound = adt_list_remove(&self->connectionEventListeners, handle);
+      bool isFound = adt_list_remove(&self->serverEventListeners, handle);
       if (isFound == true)
       {
          apx_serverEventListener_vdelete(handle);
       }
    }
 }
-
 
 void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
 {
@@ -184,7 +203,7 @@ static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serve
 
 static void apx_server_triggerConnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
 {
-   adt_list_elem_t *iter = adt_list_iter_first(&self->connectionEventListeners);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
    while(iter != 0)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
@@ -198,7 +217,7 @@ static void apx_server_triggerConnectedEvent(apx_server_t *self, apx_serverConne
 
 static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
 {
-   adt_list_elem_t *iter = adt_list_iter_first(&self->connectionEventListeners);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
    while(iter != 0)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;

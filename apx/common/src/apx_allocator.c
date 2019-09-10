@@ -23,8 +23,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+#ifndef UNIT_TEST
 static int8_t apx_allocator_startThread(apx_allocator_t *self);
 static THREAD_PROTO(threadTask,arg);
+#endif
 static bool apx_allocator_processEvent(apx_allocator_t *self);
 
 
@@ -212,6 +214,7 @@ int32_t apx_allocator_numPendingMessages(apx_allocator_t *self)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+#ifndef UNIT_TEST
 static int8_t apx_allocator_startThread(apx_allocator_t *self)
 {
    if( self != 0){
@@ -255,8 +258,13 @@ static THREAD_PROTO(threadTask,arg)
          if (result == 0)
 #endif
          {
+            bool result;
             messages_processed++;
-            apx_allocator_processEvent(self);
+            result = apx_allocator_processEvent(self);
+            if (!result)
+            {
+               break;
+            }
          }
          else
          {
@@ -273,6 +281,7 @@ static THREAD_PROTO(threadTask,arg)
    }
    THREAD_RETURN(0);
 }
+#endif //UNIT_TEST
 
 static bool apx_allocator_processEvent(apx_allocator_t *self)
 {
@@ -294,6 +303,10 @@ static bool apx_allocator_processEvent(apx_allocator_t *self)
          {
             delayedFree = true;
          }
+      }
+      else
+      {
+         retval = false;
       }
    }
    else
