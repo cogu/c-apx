@@ -65,8 +65,9 @@ static void test_extension_init_shutdown(CuTest* tc)
    dtl_hv_t *extension_cfg;
    apx_serverExtension_t socketExtension = {apx_serverSocketExtension_init, apx_serverSocketExtension_shutdown};
    extension_cfg = dtl_hv_new();
-   apx_server_create(&apx_server);
+   apx_server_create(&apx_server, APX_MAX_NUM_EVENTS);
    apx_server_addExtension(&apx_server, &socketExtension, (dtl_dv_t*) extension_cfg);
+   apx_server_start(&apx_server);
    apx_server_destroy(&apx_server);
    dtl_dec_ref(extension_cfg);
 }
