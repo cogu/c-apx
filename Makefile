@@ -51,6 +51,7 @@ SHARED_SOURCES = \
 	apx/common/src/apx_fileManagerRemote.c \
 	apx/common/src/apx_fileManagerShared.c \
 	apx/common/src/apx_fileMap.c \
+	apx/common/src/apx_logEvent.c \
 	apx/common/src/apx_node.c \
 	apx/common/src/apx_nodeData.c \
 	apx/common/src/apx_nodeDataManager.c \

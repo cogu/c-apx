@@ -119,4 +119,15 @@ typedef int8_t apx_baseType_t;
 #define APX_NODE_DEFAULT_VERSION_MAJOR 1
 #define APX_NODE_DEFAULT_VERSION_MINOR 3
 
+#define APX_LOG_LEVEL_CRITICAL 0    //SYSLOG_LEVEL 2 (+2)
+#define APX_LOG_LEVEL_ERROR    1    //SYSLOG_LEVEL 3 (+2)
+#define APX_LOG_LEVEL_WARNING  2    //SYSLOG_LEVEL 4 (+2)
+#define APX_LOG_LEVEL_INFO     3    //SYSLOG_LEVEL 6 (+3)
+#define APX_LOG_LEVEL_DEBUG    4    //SYSLOG_LEVEL 7 (+3)
+#define APX_MAX_LOG_LEVEL      APX_LOG_LEVEL_DEBUG
+typedef uint8_t apx_logLevel_t;
+
+#define APX_LOG_LABEL_MAX_LEN 16
+
+
 #endif //APX_TYPES_H
