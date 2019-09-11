@@ -7,3 +7,4 @@
 *.VC.opendb
 CMemLeak.txt
 **/language.settings.xml
+massif.out.*
