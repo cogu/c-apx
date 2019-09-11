@@ -6,6 +6,8 @@
 #include "apx_logging.h"
 #include "apx_fileManager.h"
 #include "apx_eventListener.h"
+#include "apx_logEvent.h"
+#include <string.h>
 #include <assert.h>
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -23,6 +25,12 @@ static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serve
 static void apx_server_triggerConnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *connection);
 static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
 static void apx_server_shutdown_extensions(apx_server_t *self);
+static void apx_server_handleEvent(void *arg, apx_event_t *event);
+#ifndef UNIT_TEST
+static apx_error_t apx_server_startThread(apx_server_t *self);
+static apx_error_t apx_server_stopThread(apx_server_t *self);
+static THREAD_PROTO(threadTask,arg);
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -36,7 +44,7 @@ static void apx_server_shutdown_extensions(apx_server_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_server_create(apx_server_t *self, uint16_t maxNumEvents)
+void apx_server_create(apx_server_t *self)
 {
    if (self != 0)
    {
@@ -44,36 +52,47 @@ void apx_server_create(apx_server_t *self, uint16_t maxNumEvents)
       apx_routingTable_create(&self->routingTable);
       apx_connectionManager_create(&self->connectionManager);
       adt_list_create(&self->extensionManager, apx_serverExtension_vdelete);
-      apx_allocator_create(&self->allocator, maxNumEvents);
+      soa_init(&self->soa);
       apx_eventLoop_create(&self->eventLoop);
-      self->isRunning = false;
+      self->isWorkerThreadValid = false;
+      MUTEX_INIT(self->mutex);
+#ifdef _MSC_VER
+      self->threadId = 0u;
+#endif
    }
 }
 
 void apx_server_start(apx_server_t *self)
 {
 
-   if (self != 0)
+   if( self != 0 )
    {
 #ifndef UNIT_TEST
       apx_connectionManager_start(&self->connectionManager);
-      apx_allocator_start(&self->allocator);
+      if (self->isWorkerThreadValid == false)
+      {
+         apx_server_startThread(self);
+      }
 #endif
-      self->isRunning = true;
    }
 }
 
 void apx_server_stop(apx_server_t *self)
 {
-   if ( (self != 0) && (self->isRunning) )
+   if( self != 0)
    {
+
+#ifndef UNIT_TEST
+      apx_connectionManager_stop(&self->connectionManager);
+#endif
       apx_server_shutdown_extensions(self);
 #ifndef UNIT_TEST
       apx_eventLoop_exit(&self->eventLoop);
-      apx_allocator_stop(&self->allocator);
-      apx_connectionManager_stop(&self->connectionManager);
+      if (self->isWorkerThreadValid)
+      {
+         apx_server_stopThread(self);
+      }
 #endif
-      self->isRunning = false;
    }
 }
 
@@ -83,14 +102,14 @@ void apx_server_destroy(apx_server_t *self)
    {
       apx_server_stop(self);
       apx_eventLoop_destroy(&self->eventLoop);
-      apx_allocator_destroy(&self->allocator);
+      soa_destroy(&self->soa);
       adt_list_destroy(&self->serverEventListeners);
       apx_connectionManager_destroy(&self->connectionManager);
       apx_routingTable_destroy(&self->routingTable);
       adt_list_destroy(&self->extensionManager);
+      MUTEX_DESTROY(self->mutex);
    }
 }
-
 
 void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener)
 {
@@ -165,17 +184,52 @@ apx_error_t apx_server_addExtension(apx_server_t *self, apx_serverExtension_t *e
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-#ifdef UNIT_TEST
+void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg)
+{
+   if ( (self != 0) && (level <= APX_MAX_LOG_LEVEL) && (msg != 0) )
+   {
+      apx_event_t event;
+      char *labelStr = 0;
+      adt_str_t *msgStr = adt_str_new_cstr(msg);
 
+      if (msgStr == 0)
+      {
+         return;
+      }
+
+      if (label != 0)
+      {
+         size_t labelSize = strlen(label);
+         if (labelSize > APX_LOG_LABEL_MAX_LEN)
+         {
+            labelSize = APX_LOG_LABEL_MAX_LEN;
+         }
+         MUTEX_LOCK(self->mutex);
+         labelStr = soa_alloc(&self->soa, labelSize+1);
+         MUTEX_UNLOCK(self->mutex);
+         if (labelStr == 0)
+         {
+            adt_str_delete(msgStr);
+            return;
+         }
+         memcpy(labelStr, label, labelSize);
+         labelStr[labelSize] = 0;
+      }
+      memset(&event, 0, sizeof(event));
+      apx_logEvent_pack(&event, level, labelStr, msgStr);
+      apx_eventLoop_append(&self->eventLoop, &event);
+   }
+}
+
+#ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self)
 {
    if (self != 0)
    {
+      apx_eventLoop_runAll(&self->eventLoop, apx_server_handleEvent, (void*) self);
       apx_connectionManager_run(&self->connectionManager);
    }
 }
-
-
 
 apx_serverConnectionBase_t *apx_server_getLastConnection(apx_server_t *self)
 {
@@ -245,3 +299,104 @@ static void apx_server_shutdown_extensions(apx_server_t *self)
       }
    }
 }
+
+static void apx_server_handleEvent(void *arg, apx_event_t *event)
+{
+   apx_server_t *self = (apx_server_t*) arg;
+   if ( (self != 0) && (event != 0) )
+   {
+      apx_logLevel_t level;
+      size_t labelSize;
+      char *label;
+      adt_str_t *str;
+      const char *msg;
+      switch(event->evType)
+      {
+      case APX_EVENT_LOG_EVENT:
+         apx_logEvent_unpack(event, &level, &label, &str);
+         msg = adt_str_cstr(str);
+         if (label != 0)
+         {
+            labelSize = strlen(label);
+            printf("[%s] %s\n", label, msg);
+            MUTEX_LOCK(self->mutex);
+            soa_free(&self->soa, label, labelSize+1);
+            MUTEX_UNLOCK(self->mutex);
+         }
+         else
+         {
+            printf("%s\n", msg);
+         }
+         adt_str_delete(str);
+         break;
+      }
+   }
+}
+#ifndef UNIT_TEST
+static apx_error_t apx_server_startThread(apx_server_t *self)
+{
+   self->isWorkerThreadValid = true;
+#ifdef _MSC_VER
+   THREAD_CREATE(self->workerThread, threadTask, self, self->threadId);
+   if(self->workerThread == INVALID_HANDLE_VALUE)
+   {
+      self->workerThreadValid = false;
+      return APX_THREAD_CREATE_ERROR;
+   }
+#else
+   int rc = THREAD_CREATE(self->workerThread,threadTask,self);
+   if(rc != 0)
+   {
+      self->isWorkerThreadValid = false;
+      return APX_THREAD_CREATE_ERROR;
+   }
+#endif
+   return APX_NO_ERROR;
+}
+
+static apx_error_t apx_server_stopThread(apx_server_t *self)
+{
+   if (self->isWorkerThreadValid)
+   {
+#ifdef _MSC_VER
+      result = WaitForSingleObject(self->workerThread, 5000);
+      if (result == WAIT_TIMEOUT)
+      {
+         return APX_THREAD_JOIN_TIMEOUT_ERROR;
+      }
+      else if (result == WAIT_FAILED)
+      {
+         return APX_THREAD_JOIN_ERROR;
+      }
+      CloseHandle(self->workerThread);
+      self->workerThread = INVALID_HANDLE_VALUE;
+#else
+      if(pthread_equal(pthread_self(),self->workerThread) == 0)
+      {
+         void *status;
+         int s = pthread_join(self->workerThread, &status);
+         if (s != 0)
+         {
+            return APX_THREAD_JOIN_ERROR;
+         }
+      }
+      else
+      {
+         return APX_THREAD_JOIN_ERROR;
+      }
+#endif
+   self->isWorkerThreadValid = false;
+   }
+   return APX_NO_ERROR;
+}
+
+static THREAD_PROTO(threadTask,arg)
+{
+   apx_server_t *self = (apx_server_t*) arg;
+   if (self != 0)
+   {
+      apx_eventLoop_run(&self->eventLoop, apx_server_handleEvent, (void*) self);
+   }
+   THREAD_RETURN(0);
+}
+#endif

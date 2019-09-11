@@ -118,7 +118,7 @@ static void test_apx_serverSocketConnection_sendAckAfterReceivingHeader(CuTest* 
    testsocket_t *sock;
    testsocket_spy_create();
    sock = testsocket_spy_client();
-   apx_server_create(&server, APX_MAX_NUM_EVENTS);
+   apx_server_create(&server);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverSocketExtension_register(&server, NULL));
    apx_server_start(&server);
    apx_serverSocketExtension_acceptTestSocket(sock);
@@ -136,7 +136,7 @@ static void test_apx_serverSocketConnection_sendFileOpenAfterPresentedApxDefinit
    testsocket_t *sock;
    testsocket_spy_create();
    sock = testsocket_spy_client();
-   apx_server_create(&server, APX_MAX_NUM_EVENTS);
+   apx_server_create(&server);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverSocketExtension_register(&server, NULL));
    apx_server_start(&server);
    apx_serverSocketExtension_acceptTestSocket(sock);
@@ -161,7 +161,7 @@ static void test_apx_serverSocketConnection_processApxDefinitionAfterWrite(CuTes
    uint32_t dummy;
    testsocket_spy_create();
    sock = testsocket_spy_client();
-   apx_server_create(&server, APX_MAX_NUM_EVENTS);
+   apx_server_create(&server);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverSocketExtension_register(&server, NULL));
    apx_server_start(&server);
    apx_serverSocketExtension_acceptTestSocket(sock);

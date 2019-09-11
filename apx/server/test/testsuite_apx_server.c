@@ -62,7 +62,7 @@ CuSuite* testSuite_apx_server(void)
 static void test_apx_server_create(CuTest* tc)
 {
    apx_server_t server;
-   apx_server_create(&server, APX_MAX_NUM_EVENTS);
+   apx_server_create(&server);
    apx_server_destroy(&server);
 }
 

@@ -88,7 +88,7 @@ static void test_apx_port_routing_connect_nodes(CuTest* tc)
 
    pServer = &server;
 
-   apx_server_create(pServer, APX_MAX_NUM_EVENTS);
+   apx_server_create(pServer);
    routingTable = apx_server_getRoutingTable(pServer);
    connection1 = apx_serverTestConnection_new(pServer);
    connection2 = apx_serverTestConnection_new(pServer);
@@ -122,7 +122,7 @@ static void test_apx_port_routing_open_close_connection(CuTest* tc)
 
    pServer = &server;
 
-   apx_server_create(pServer, APX_MAX_NUM_EVENTS);
+   apx_server_create(pServer);
    routingTable = apx_server_getRoutingTable(pServer);
    connection1 = apx_serverTestConnection_new(pServer);
    connection2 = apx_serverTestConnection_new(pServer);

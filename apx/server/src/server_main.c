@@ -91,7 +91,7 @@ int main(int argc, char **argv)
    }
 #endif
    signal_handler_setup();
-   apx_server_create(&m_server, APX_MAX_NUM_EVENTS);
+   apx_server_create(&m_server);
    apx_server_start(&m_server);
    while(m_runFlag != 0)
    {
@@ -104,12 +104,16 @@ int main(int argc, char **argv)
          }
          if (m_shutdownTimer < SHUTDOWN_TIMER_WARN_THRESHOLD)
          {
-            printf("Shutdown in %ds\n", m_shutdownTimer);
+            char msg[20];
+            sprintf(msg, "Shutdown in %ds", m_shutdownTimer);
+            apx_server_logEvent(&m_server, APX_LOG_LEVEL_INFO, "main", msg);
+
          }
       }
    }
    printf("Server shutdown started\n");
    apx_server_destroy(&m_server);
+   dtl_dec_ref(server_config);
    printf("Server shutdown complete\n");
 //   apx_eventRecorderSrvTxt_delete(eventRecorderSrvTxt);
 #ifdef _WIN32
