@@ -5,7 +5,7 @@
       "shutdown-timer": 0,
       "max-num-events": 200
    },
-   "extensions": {
+   "extension": {
       "socket": {
          "extension-enabled": true,
          "tcp-port": 5000,
@@ -13,6 +13,12 @@
          "unix-socket": "",
          "unix-tag": "socket"
 	   },
+	  "textlog": {
+	     "extension-enabled": true,
+	     "file-enabled": true,
+	     "log-file": "",
+	     "syslog-enabled": false	     
+	  },
       "command": {
          "extension-enabled": true,
          "connection-tag": "socket"

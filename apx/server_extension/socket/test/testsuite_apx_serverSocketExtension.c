@@ -62,13 +62,11 @@ CuSuite* testsuite_apx_serverSocketExtension(void)
 static void test_extension_init_shutdown(CuTest* tc)
 {
    apx_server_t apx_server;
-   dtl_hv_t *extension_cfg;
-   apx_serverExtension_t socketExtension = {apx_serverSocketExtension_init, apx_serverSocketExtension_shutdown};
-   extension_cfg = dtl_hv_new();
+   dtl_hv_t *extension_cfg = NULL;
    apx_server_create(&apx_server);
-   apx_server_addExtension(&apx_server, &socketExtension, (dtl_dv_t*) extension_cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverSocketExtension_register(&apx_server, (dtl_dv_t*) extension_cfg));
    apx_server_start(&apx_server);
    apx_server_destroy(&apx_server);
-   dtl_dec_ref(extension_cfg);
+   //dtl_dec_ref(extension_cfg);
 }
 

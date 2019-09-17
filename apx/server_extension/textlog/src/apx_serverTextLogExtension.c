@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_serverSocketExtension.c
+* \file      apx_serverTextEventLogExtension.c
 * \author    Conny Gustafsson
-* \date      2019-09-04
-* \brief     APX socket server extension (TCP+UNIX)
+* \date      2019-09-08
+* \brief     Text log extension for APX server
 *
 * Copyright (c) 2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -26,58 +26,51 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#ifdef _MSC_VER
-#include <Windows.h>
-#endif
-#include "apx_serverSocketExtension.h"
-#include "apx_socketServer.h"
+#include "apx_serverTextLogExtension.h"
+#include "apx_serverTextLog.h"
 #include "apx_server.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
 
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE CONSTANTS AND DATA TYPES
+//////////////////////////////////////////////////////////////////////////////
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
-static void apx_serverSocketExtension_shutdown(void);
-static apx_error_t apx_serverSocketExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg);
+apx_error_t apx_serverTextLogExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
+void apx_serverTextLogExtension_shutdown(void);
+static apx_error_t apx_serverTextLogExtension_configure(apx_serverTextLog_t *instance, dtl_hv_t *cfg);
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-static apx_socketServer_t *m_instance = (apx_socketServer_t*) 0; //singleton
+apx_serverTextLog_t *m_instance = (apx_serverTextLog_t*) 0;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-apx_error_t apx_serverSocketExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
+apx_error_t apx_serverTextLogExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   apx_serverExtensionHandler_t handler = {apx_serverSocketExtension_init, apx_serverSocketExtension_shutdown};
+   apx_serverExtensionHandler_t handler = {apx_serverTextLogExtension_init, apx_serverTextLogExtension_shutdown};
    return apx_server_addExtension(apx_server, &handler, config);
 }
-
-#ifdef UNIT_TEST
-void apx_serverSocketExtension_acceptTestSocket(testsocket_t *sock)
-{
-   if (m_instance != 0)
-   {
-      apx_socketServer_acceptTestSocket(m_instance, sock);
-   }
-}
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-static apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
+apx_error_t apx_serverTextLogExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
    if (m_instance == 0)
    {
-      m_instance = apx_socketServer_new(apx_server);
+      printf("TEXT LOG EXTENSION INIT\n");
+      m_instance = apx_serverTextLog_new(apx_server);
       if (m_instance == 0)
       {
          return APX_MEM_ERROR;
@@ -86,7 +79,7 @@ static apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_ser
       {
          if (dtl_dv_type(config) == DTL_DV_HASH)
          {
-            return apx_serverSocketExtension_configure(m_instance, (dtl_hv_t*) config);
+            return apx_serverTextLogExtension_configure(m_instance, (dtl_hv_t*) config);
          }
          else
          {
@@ -97,17 +90,19 @@ static apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_ser
    return APX_NO_ERROR;
 }
 
-static void apx_serverSocketExtension_shutdown(void)
+void apx_serverTextLogExtension_shutdown(void)
 {
    if (m_instance != 0)
    {
-      apx_socketServer_stopAll(m_instance);
-      apx_socketServer_delete(m_instance);
-      m_instance = (apx_socketServer_t*) 0;
+      printf("TEXT LOG EXTENSION SHUTDOWN\n");
+      apx_serverTextLog_closeAll(m_instance);
+      apx_serverTextLog_delete(m_instance);
+      m_instance = (apx_serverTextLog_t*) 0;
    }
 }
 
-static apx_error_t apx_serverSocketExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg)
+static apx_error_t apx_serverTextLogExtension_configure(apx_serverTextLog_t *instance, dtl_hv_t *cfg)
 {
    return APX_NO_ERROR;
 }
+

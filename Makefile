@@ -14,7 +14,10 @@ SRCDIR = \
 	adt/src \
 	apx/common/src \
 	apx/server/src \
+	apx/extension_common/src \
 	apx/server_extension/socket/src \
+	apx/server_extension/textlog/src \
+	apx/server_main \
 	msocket/src \
 	msocket/src \
 	remotefile/src \
@@ -93,13 +96,19 @@ SERVER_SOURCES = apx/server/src/apx_connectionManager.c \
 	apx/server/src/apx_serverConnectionBase.c \
 	apx/server/src/apx_serverExtension.c \
 
-SERVER_EXTENSION_SOURCES ?= apx/server_extension/socket/apx_serverSocketConnection.c \
+SERVER_EXTENSION_SOURCES ?= apx/extension_common/src/apx_textLogBase.c \
+	apx/server_extension/socket/apx_serverSocketConnection.c \
 	apx/server_extension/socket/apx_serverSocketExtension.c \
 	apx/server_extension/socket/apx_socketServer.c \
+	apx/server_extension/textlog/apx_serverTextLog.c \
+	apx/server_extension/textlog/apx_serverTextLogExtension.c \
+	
 
-SERVER_EXTENSION_INCLUDES ?= -I apx/server_extension/socket/inc
+SERVER_EXTENSION_INCLUDES ?= -I apx/extension_common/inc \
+	-I apx/server_extension/socket/inc \
+	-I apx/server_extension/textlog/inc
 
-SERVER_MAIN_SOURCE ?= apx/server/src/server_main.c
+SERVER_MAIN_SOURCE ?= apx/server_main/server_main.c
 
 LIB_SOURCES = $(SHARED_SOURCES)
 

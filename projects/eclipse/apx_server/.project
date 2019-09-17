@@ -30,6 +30,11 @@
 			<locationURI>PARENT-3-PROJECT_LOC/Makefile</locationURI>
 		</link>
 		<link>
+			<name>build</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/build</locationURI>
+		</link>
+		<link>
 			<name>adt/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/adt/inc</locationURI>
@@ -38,6 +43,16 @@
 			<name>adt/src</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/adt/src</locationURI>
+		</link>
+		<link>
+			<name>apx/config</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/config</locationURI>
+		</link>
+		<link>
+			<name>apx/server_main</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_main</locationURI>
 		</link>
 		<link>
 			<name>bstr/inc</name>
@@ -108,6 +123,16 @@
 			<name>apx/common/src</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/apx/common/src</locationURI>
+		</link>
+		<link>
+			<name>apx/extension_common/inc</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/extension_common/inc</locationURI>
+		</link>
+		<link>
+			<name>apx/extension_common/src</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/extension_common/src</locationURI>
 		</link>
 		<link>
 			<name>apx/server/inc</name>
