@@ -8,6 +8,7 @@
 #include "apx_eventListener.h"
 #include "apx_logEvent.h"
 #include <string.h>
+#include <stdio.h> //DEBUG ONLY
 #include <assert.h>
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -24,7 +25,8 @@
 static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serverConnectionBase_t *newConnection);
 static void apx_server_triggerConnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *connection);
 static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
-static void apx_server_shutdown_extensions(apx_server_t *self);
+static void apx_server_initExtensions(apx_server_t *self);
+static void apx_server_shutdownExtensions(apx_server_t *self);
 static void apx_server_handleEvent(void *arg, apx_event_t *event);
 #ifndef UNIT_TEST
 static apx_error_t apx_server_startThread(apx_server_t *self);
@@ -67,6 +69,7 @@ void apx_server_start(apx_server_t *self)
 
    if( self != 0 )
    {
+      apx_server_initExtensions(self);
 #ifndef UNIT_TEST
       apx_connectionManager_start(&self->connectionManager);
       if (self->isWorkerThreadValid == false)
@@ -85,7 +88,7 @@ void apx_server_stop(apx_server_t *self)
 #ifndef UNIT_TEST
       apx_connectionManager_stop(&self->connectionManager);
 #endif
-      apx_server_shutdown_extensions(self);
+      apx_server_shutdownExtensions(self);
 #ifndef UNIT_TEST
       apx_eventLoop_exit(&self->eventLoop);
       if (self->isWorkerThreadValid)
@@ -165,19 +168,19 @@ apx_routingTable_t* apx_server_getRoutingTable(apx_server_t *self)
    return (apx_routingTable_t*) 0;
 }
 
-apx_error_t apx_server_addExtension(apx_server_t *self, apx_serverExtension_t *extension, dtl_dv_t *config)
+apx_error_t apx_server_addExtension(apx_server_t *self, apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
 {
-   if ( (self != 0) && (extension != 0) )
+   if ( (self != 0) && (handler != 0) )
    {
-      apx_serverExtension_t *clone = apx_serverExtension_clone(extension);
-      if (clone == 0)
+      apx_serverExtension_t *extension = apx_serverExtension_new(handler, config);
+      if (extension == 0)
       {
          return APX_MEM_ERROR;
       }
-      adt_list_insert(&self->extensionManager, (void*) clone);
-      if (clone->init != 0)
+      adt_list_insert(&self->extensionManager, (void*) extension);
+      if (config != 0)
       {
-         clone->init(self, config);
+         dtl_dv_inc_ref(config);
       }
       return APX_NO_ERROR;
    }
@@ -283,7 +286,7 @@ static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverCo
    }
 }
 
-static void apx_server_shutdown_extensions(apx_server_t *self)
+static void apx_server_initExtensions(apx_server_t *self)
 {
    if  (self != 0)
    {
@@ -291,9 +294,32 @@ static void apx_server_shutdown_extensions(apx_server_t *self)
       while(iter != 0)
       {
         apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
-        if (extension->shutdown != 0)
+        if (extension->handler.init != 0)
         {
-           extension->shutdown();
+           extension->handler.init(self, extension->config);
+           if (extension->config != 0)
+           {
+              dtl_dv_dec_ref(extension->config);
+              extension->config = (dtl_dv_t*) 0;
+           }
+        }
+        iter = adt_list_iter_next(iter);
+      }
+   }
+}
+
+
+static void apx_server_shutdownExtensions(apx_server_t *self)
+{
+   if  (self != 0)
+   {
+      adt_list_elem_t *iter = adt_list_iter_first(&self->extensionManager);
+      while(iter != 0)
+      {
+        apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
+        if (extension->handler.shutdown != 0)
+        {
+           extension->handler.shutdown();
         }
         iter = adt_list_iter_next(iter);
       }

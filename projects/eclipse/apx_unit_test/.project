@@ -45,6 +45,16 @@
 			<locationURI>PARENT-3-PROJECT_LOC/apx/config</locationURI>
 		</link>
 		<link>
+			<name>apx/extension_common</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/extension_common</locationURI>
+		</link>
+		<link>
+			<name>apx/server_main</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_main</locationURI>
+		</link>
+		<link>
 			<name>autosar/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/autosar/inc</locationURI>
@@ -158,6 +168,11 @@
 			<name>apx/server/test</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/apx/server/test</locationURI>
+		</link>
+		<link>
+			<name>apx/server_extension/textlog</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/server_extension/textlog</locationURI>
 		</link>
 		<link>
 			<name>apx/server_extension/socket/inc</name>

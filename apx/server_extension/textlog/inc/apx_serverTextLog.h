@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_serverExtension.h
+* \file      apx_serverTextLog.h
 * \author    Conny Gustafsson
-* \date      2019-09-05
-* \brief     APX Server Extension data structure
+* \date      2019-09-12
+* \brief     Server text log
 *
 * Copyright (c) 2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -23,42 +23,43 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_SERVER_EXTENTION_H
-#define APX_SERVER_EXTENTION_H
+#ifndef APX_SERVER_TEXT_LOG_H
+#define APX_SERVER_TEXT_LOG_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
-#include "dtl_type.h"
+#include "apx_textLogBase.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC VARIABLES
+//////////////////////////////////////////////////////////////////////////////
 //forward declarations
 struct apx_server_tag;
 
-typedef struct apx_serverExtensionHandler_tag
+typedef struct apx_serverTextLog_tag
 {
-   apx_error_t (*init)(struct apx_server_tag *apx_server, dtl_dv_t *config);
-   void (*shutdown)(void);
-} apx_serverExtensionHandler_t;
-
-typedef struct apx_serverExtension_tag
-{
-   apx_serverExtensionHandler_t handler;
-   dtl_dv_t *config;
-} apx_serverExtension_t;
-
+   apx_textLogBase_t base;
+   struct apx_server_tag *server;
+} apx_serverTextLog_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverExtension_create(apx_serverExtension_t *self, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
-void apx_serverExtension_destroy(apx_serverExtension_t *self);
-apx_serverExtension_t* apx_serverExtension_new(const apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
-void apx_serverExtension_delete(apx_serverExtension_t *self);
-void apx_serverExtension_vdelete(void *arg);
+void apx_serverTextLog_create(apx_serverTextLog_t *self, struct apx_server_tag *server);
+void apx_serverTextLog_destroy(apx_serverTextLog_t *self);
+void apx_serverTextLog_vdestroy(void *arg);
+apx_serverTextLog_t *apx_serverTextLog_new(struct apx_server_tag *server);
+void apx_serverTextLog_delete(apx_serverTextLog_t *self);
 
-#endif //APX_SERVER_EXTENTION_H
+void apx_serverTextLog_enableFile(apx_serverTextLog_t *self, const char *path);
+void apx_serverTextLog_enableStdOut(apx_serverTextLog_t *self);
+void apx_serverTextLog_enableSysLog(apx_serverTextLog_t *self, const char *label);
+void apx_serverTextLog_closeAll(apx_serverTextLog_t *self);
+
+
+#endif //APX_SERVER_TEXT_LOG_H

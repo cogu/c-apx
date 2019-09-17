@@ -48,20 +48,36 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-apx_serverExtension_t* apx_serverExtension_clone(apx_serverExtension_t *other)
+void apx_serverExtension_create(apx_serverExtension_t *self, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
+{
+   if ( (self != 0) && (handler != 0) )
+   {
+      memcpy(&self->handler, handler, sizeof(apx_serverExtensionHandler_t));
+      self->config = config;
+   }
+}
+
+void apx_serverExtension_destroy(apx_serverExtension_t *self)
+{
+
+}
+
+apx_serverExtension_t* apx_serverExtension_new(const apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
 {
    apx_serverExtension_t *self = (apx_serverExtension_t*) malloc(sizeof(apx_serverExtension_t));
    if (self != 0)
    {
-      memcpy(self, other, sizeof(apx_serverExtension_t));
+      apx_serverExtension_create(self, handler, config);
    }
    return self;
 }
+
 
 void apx_serverExtension_delete(apx_serverExtension_t *self)
 {
    if (self != 0)
    {
+      apx_serverExtension_destroy(self);
       free(self);
    }
 }

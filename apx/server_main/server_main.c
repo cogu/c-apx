@@ -13,15 +13,15 @@
 #include <unistd.h>
 #include <signal.h>
 #endif
-#include "apx_server.h"
-#include "apx_types.h"
-#include "dtl_json.h"
-
-#include "apx_eventListener.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "apx_server.h"
+#include "apx_types.h"
+#include "dtl_json.h"
+#include "extensions.h"
+#include "apx_eventListener.h"
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -39,6 +39,7 @@ static void signal_handler_setup(void);
 void signal_handler(int signum);
 static void printUsage(char *name);
 static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv);
+static apx_error_t register_extensions(apx_server_t *server, dtl_hv_t *config);
 #ifdef _WIN32
 static void init_wsa(void);
 #endif
@@ -62,6 +63,7 @@ int main(int argc, char **argv)
 {
    apx_error_t result;
    dtl_hv_t *server_config = (dtl_hv_t*) 0;
+
    m_shutdownTimer = SHUTDOWN_TIMER_INIT;
    g_debug = 0;
    m_runFlag = 1;
@@ -92,6 +94,15 @@ int main(int argc, char **argv)
 #endif
    signal_handler_setup();
    apx_server_create(&m_server);
+   if (server_config != 0)
+   {
+      dtl_dv_t *extension_config = (dtl_dv_t*) 0;
+      extension_config = dtl_hv_get_cstr(server_config, "extension");
+      if ( (extension_config != 0) && (dtl_dv_type(extension_config) == DTL_DV_HASH) )
+      {
+         register_extensions(&m_server, (dtl_hv_t*) extension_config);
+      }
+   }
    apx_server_start(&m_server);
    while(m_runFlag != 0)
    {
@@ -107,7 +118,6 @@ int main(int argc, char **argv)
             char msg[20];
             sprintf(msg, "Shutdown in %ds", m_shutdownTimer);
             apx_server_logEvent(&m_server, APX_LOG_LEVEL_INFO, "main", msg);
-
          }
       }
    }
@@ -115,7 +125,6 @@ int main(int argc, char **argv)
    apx_server_destroy(&m_server);
    dtl_dec_ref(server_config);
    printf("Server shutdown complete\n");
-//   apx_eventRecorderSrvTxt_delete(eventRecorderSrvTxt);
 #ifdef _WIN32
    WSACleanup();
 #endif
@@ -182,6 +191,22 @@ static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv)
       return APX_FILE_NOT_FOUND_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t register_extensions(apx_server_t *server, dtl_hv_t *config)
+{
+   apx_error_t result;
+   result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, "textlog"));
+   if (result != APX_NO_ERROR)
+   {
+      return result;
+   }
+   result = apx_serverSocketExtension_register(server, dtl_hv_get_cstr(config, "socket"));
+   if (result != APX_NO_ERROR)
+   {
+      return result;
+   }
+   return APX_NO_ERROR;
 }
 
 #ifdef _WIN32

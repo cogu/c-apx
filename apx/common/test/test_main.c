@@ -43,6 +43,7 @@ CuSuite* testSuite_apx_server(void);
 
 /** APX Server Extensions **/
 CuSuite* testsuite_apx_serverSocketExtension(void);
+CuSuite* testsuite_apx_serverTextLogExtension(void);
 
 /** APX Client **/
 CuSuite* testSuite_apx_client_socketConnection(void);
@@ -87,6 +88,7 @@ void RunAllTests(void)
 
 // APX Server Extensions
    CuSuiteAddSuite(suite, testsuite_apx_serverSocketExtension());
+   CuSuiteAddSuite(suite, testsuite_apx_serverTextLogExtension());
 
 // APX Client
    CuSuiteAddSuite(suite, testsuite_apx_client_dynamic_nodes());

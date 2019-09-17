@@ -67,9 +67,13 @@
                                     									
                                     <listOptionValue builtIn="false" value="../../../../apx/server_extension/socket/inc"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../../../../apx/server_extension/textlog/inc"/>
+                                    									
                                     <listOptionValue builtIn="false" value="../../../../apx/client/inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../apx/client/test"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../apx/extension_common/inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../remotefile/inc"/>
                                     									
@@ -145,7 +149,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="apx/server_main/server_main.c|adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
@@ -239,7 +243,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="apx/server_main/server_main.c|adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
