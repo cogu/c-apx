@@ -29,7 +29,14 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <pthread.h>
+#endif
 #include <stdio.h>
+#include <stdarg.h>
+#include "osmacro.h"
 #include "apx_types.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -48,6 +55,8 @@ typedef struct apx_textLogBase_tag
    bool syslogEnabled;
    char *syslogLabel;
    FILE *file; //this can point to stdout if configured
+   MUTEX_T mutex;
+   char lineEnding[2+1]; //"\n" or "\r\n"
 } apx_textLogBase_t;
 
 
@@ -62,5 +71,7 @@ void apx_textLogBase_enableSysLog(apx_textLogBase_t *self, const char *label);
 void apx_textLogBase_enableStdout(apx_textLogBase_t *self);
 void apx_textLogBase_enableFile(apx_textLogBase_t *self, const char *path);
 void apx_textLogBase_closeAll(apx_textLogBase_t *self);
+void apx_textLogBase_print(apx_textLogBase_t *self, const char *msg);
+void apx_textLogBase_printf(apx_textLogBase_t *self, const char *format, ...);
 
 #endif //APX_TEXT_LOG_BASE_H

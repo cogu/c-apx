@@ -6,22 +6,22 @@
       "max-num-events": 200
    },
    "extension": {
-      "socket": {
+      "socket-server": {
          "extension-enabled": true,
          "tcp-port": 5000,
-         "tcp-tag": "socket",
-         "unix-socket": "",
-         "unix-tag": "socket"
+         "tcp-tag": "tcp",
+         "unix-file": "",
+         "unix-tag": "unix"
 	   },
 	  "textlog": {
 	     "extension-enabled": true,
 	     "file-enabled": true,
-	     "log-file": "",
+	     "file-path": "",
 	     "syslog-enabled": false	     
 	  },
       "command": {
          "extension-enabled": true,
-         "connection-tag": "socket"
+         "connection-tag": "tcp"
       }
    }
 }

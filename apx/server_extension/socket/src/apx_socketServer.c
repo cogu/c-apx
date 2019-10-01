@@ -130,7 +130,20 @@ void apx_socketServer_delete(apx_socketServer_t *self)
 
 void apx_socketServer_startTcpServer(apx_socketServer_t *self, uint16_t tcpPort, const char *tag)
 {
-
+   if (self != 0)
+   {
+      char msg[80];
+      msocket_handler_t serverHandler;
+      self->tcpPort = tcpPort;
+      memset(&serverHandler,0,sizeof(serverHandler));
+      serverHandler.tcp_accept = apx_socketServer_tcpAccept;
+      msocket_server_create(&self->tcpServer, AF_INET, NULL);
+      msocket_server_disable_cleanup(&self->tcpServer); //we will use our own garbage collector
+      msocket_server_sethandler(&self->tcpServer, &serverHandler, self);
+      msocket_server_start(&self->tcpServer, NULL, 0, self->tcpPort);
+      sprintf(msg, "Listening on TCP port %d", self->tcpPort);
+      apx_server_logEvent(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
+   }
 }
 
 void apx_socketServer_startUnixServer(apx_socketServer_t *self, const char *filePath, const char *tag)
@@ -167,13 +180,6 @@ void apx_socketServer_acceptTestSocket(apx_socketServer_t *self, testsocket_t *s
 static void apx_socketServer_createSocketServers(apx_server_t *self, uint16_t tcpPort, const char *unixSocketPath)
 {
 #if 0 //TEMPORARILY DISABLED
-   msocket_handler_t serverHandler;
-   self->tcpPort = tcpPort;
-   memset(&serverHandler,0,sizeof(serverHandler));
-   serverHandler.tcp_accept = apx_server_accept;
-   msocket_server_create(&self->tcpServer, AF_INET, NULL);
-   msocket_server_disable_cleanup(&self->tcpServer); //we will use our own garbage collector
-   msocket_server_sethandler(&self->tcpServer, &serverHandler, self);
 # ifndef _MSC_VER
    msocket_server_create(&self->localServer, AF_LOCAL, NULL);
    msocket_server_disable_cleanup(&self->localServer);

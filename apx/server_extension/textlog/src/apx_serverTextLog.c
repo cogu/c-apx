@@ -56,9 +56,10 @@
 static void apx_serverTextLog_registerServerListener(apx_serverTextLog_t *self);
 static void apx_serverTextLog_registerNodeDataListener(apx_serverTextLog_t *self, apx_serverConnectionBase_t *connection);
 static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg);
-#if 0
+
 static void apx_serverTextLog_onConnected(void *arg, apx_serverConnectionBase_t *connection);
 static void apx_serverTextLog_onDisconnected(void *arg, apx_serverConnectionBase_t *connection);
+#if 0
 static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
 static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
 static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
@@ -77,6 +78,7 @@ void apx_serverTextLog_create(apx_serverTextLog_t *self, struct apx_server_tag *
    {
       apx_textLogBase_create(&self->base);
       self->server = server;
+      apx_serverTextLog_registerServerListener(self);
    }
 }
 
@@ -147,8 +149,9 @@ static void apx_serverTextLog_registerServerListener(apx_serverTextLog_t *self)
    apx_serverEventListener_t eventListener;
    memset(&eventListener, 0, sizeof(apx_serverEventListener_t));
    eventListener.arg = (void*) self;
-//   eventListener.serverConnected = apx_serverTextLog_onConnected;
-//   eventListener.serverDisconnected = apx_serverTextLog_onDisconnected;
+   eventListener.serverConnected = apx_serverTextLog_onConnected;
+   eventListener.serverDisconnected = apx_serverTextLog_onDisconnected;
+   eventListener.logEvent = apx_serverTextLog_onLogEvent;
    apx_server_registerEventListener(self->server, &eventListener);
 }
 
@@ -166,37 +169,34 @@ static void apx_serverTextLog_registerNodeDataListener(apx_serverTextLog_t *self
 
 static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg)
 {
-
+   apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
+   if ( (self != 0) && (label != 0) && (msg != 0) )
+   {
+      apx_textLogBase_printf(&self->base, "[%s] %s", label, msg);
+   }
 }
 
-#if 0
+
 static void apx_serverTextLog_onConnected(void *arg, apx_serverConnectionBase_t *connection)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (connection != 0) )
    {
-      if (apx_serverTextLog_isLogFileOpen(self) == true)
-      {
-         MUTEX_LOCK(self->mutex);
-         fprintf(self->fp, "[%u] Client connected\n", apx_serverConnectionBase_getConnectionId(connection));
-         fflush(self->fp);
-         MUTEX_UNLOCK(self->mutex);
-      }
-      apx_serverTextLog_registerNodeDataListener(self, connection);
+      apx_textLogBase_printf(&self->base, "[%u] Client connected", apx_serverConnectionBase_getConnectionId(connection));
+      //apx_serverTextLog_registerNodeDataListener(self, connection);
    }
 }
 
 static void apx_serverTextLog_onDisconnected(void *arg, apx_serverConnectionBase_t *connection)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (connection != 0) && (self->fp != 0) )
+   if ( (self != 0) && (connection != 0) )
    {
-      MUTEX_LOCK(self->mutex);
-      fprintf(self->fp, "[%u] Client disconnected\n", apx_serverConnectionBase_getConnectionId(connection));
-      fflush(self->fp);
-      MUTEX_UNLOCK(self->mutex);
+      apx_textLogBase_printf(&self->base, "[%u] Client disconnected", apx_serverConnectionBase_getConnectionId(connection));
+      //apx_serverTextLog_registerNodeDataListener(self, connection);
    }
 }
+#if 0
 
 static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
 {

@@ -49,15 +49,16 @@ typedef struct apx_serverExtension_tag
 {
    apx_serverExtensionHandler_t handler;
    dtl_dv_t *config;
+   char *name;
 } apx_serverExtension_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverExtension_create(apx_serverExtension_t *self, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
+void apx_serverExtension_create(apx_serverExtension_t *self, const char *name, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
 void apx_serverExtension_destroy(apx_serverExtension_t *self);
-apx_serverExtension_t* apx_serverExtension_new(const apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
+apx_serverExtension_t* apx_serverExtension_new(const char *name, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
 void apx_serverExtension_delete(apx_serverExtension_t *self);
 void apx_serverExtension_vdelete(void *arg);
 

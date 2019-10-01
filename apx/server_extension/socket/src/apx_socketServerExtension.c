@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_serverSocketExtension.c
+* \file      apx_socketServerExtension.c
 * \author    Conny Gustafsson
 * \date      2019-09-04
 * \brief     APX socket server extension (TCP+UNIX)
@@ -29,7 +29,7 @@
 #ifdef _MSC_VER
 #include <Windows.h>
 #endif
-#include "apx_serverSocketExtension.h"
+#include "apx_socketServerExtension.h"
 #include "apx_socketServer.h"
 #include "apx_server.h"
 #ifdef MEM_LEAK_CHECK
@@ -39,9 +39,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
-static void apx_serverSocketExtension_shutdown(void);
-static apx_error_t apx_serverSocketExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg);
+static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
+static void apx_socketServerExtension_shutdown(void);
+static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -53,14 +53,14 @@ static apx_socketServer_t *m_instance = (apx_socketServer_t*) 0; //singleton
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_serverSocketExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
+apx_error_t apx_socketServerExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   apx_serverExtensionHandler_t handler = {apx_serverSocketExtension_init, apx_serverSocketExtension_shutdown};
-   return apx_server_addExtension(apx_server, &handler, config);
+   apx_serverExtensionHandler_t handler = {apx_socketServerExtension_init, apx_socketServerExtension_shutdown};
+   return apx_server_addExtension(apx_server, "SOCKET", &handler, config);
 }
 
 #ifdef UNIT_TEST
-void apx_serverSocketExtension_acceptTestSocket(testsocket_t *sock)
+void apx_socketServerExtension_acceptTestSocket(testsocket_t *sock)
 {
    if (m_instance != 0)
    {
@@ -73,7 +73,7 @@ void apx_serverSocketExtension_acceptTestSocket(testsocket_t *sock)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
+static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
    if (m_instance == 0)
    {
@@ -86,7 +86,7 @@ static apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_ser
       {
          if (dtl_dv_type(config) == DTL_DV_HASH)
          {
-            return apx_serverSocketExtension_configure(m_instance, (dtl_hv_t*) config);
+            return apx_socketServerExtension_configure(m_instance, (dtl_hv_t*) config);
          }
          else
          {
@@ -97,7 +97,7 @@ static apx_error_t apx_serverSocketExtension_init(struct apx_server_tag *apx_ser
    return APX_NO_ERROR;
 }
 
-static void apx_serverSocketExtension_shutdown(void)
+static void apx_socketServerExtension_shutdown(void)
 {
    if (m_instance != 0)
    {
@@ -107,7 +107,29 @@ static void apx_serverSocketExtension_shutdown(void)
    }
 }
 
-static apx_error_t apx_serverSocketExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg)
+static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg)
 {
+   dtl_sv_t *svTcpPort;
+   dtl_sv_t *svUnixFile;
+   bool conversionOk;
+   svTcpPort = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-port");
+   svUnixFile = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-file");
+   if (svTcpPort != 0)
+   {
+      uint16_t tcpPort = (uint16_t) dtl_sv_to_u32(svTcpPort, &conversionOk);
+      if (conversionOk && (tcpPort>=TCP_USER_PORT_BEGIN) && (tcpPort <= TCP_USER_PORT_END) )
+      {
+         apx_socketServer_startTcpServer(m_instance, tcpPort, "");
+      }
+   }
+   if (svUnixFile != 0)
+   {
+      const char *unixFilePath = dtl_sv_to_cstr(svUnixFile);
+      if (strlen(unixFilePath) > 0)
+      {
+         apx_socketServer_startUnixServer(m_instance, unixFilePath, "");
+      }
+   }
    return APX_NO_ERROR;
 }
+

@@ -48,10 +48,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverExtension_create(apx_serverExtension_t *self, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
+void apx_serverExtension_create(apx_serverExtension_t *self, const char *name, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
 {
-   if ( (self != 0) && (handler != 0) )
+   if ( (self != 0) && (name != 0) && (handler != 0) )
    {
+      self->name = STRDUP(name);
       memcpy(&self->handler, handler, sizeof(apx_serverExtensionHandler_t));
       self->config = config;
    }
@@ -59,15 +60,21 @@ void apx_serverExtension_create(apx_serverExtension_t *self, const apx_serverExt
 
 void apx_serverExtension_destroy(apx_serverExtension_t *self)
 {
-
+   if (self != 0)
+   {
+      if (self->name != 0)
+      {
+         free(self->name);
+      }
+   }
 }
 
-apx_serverExtension_t* apx_serverExtension_new(const apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
+apx_serverExtension_t* apx_serverExtension_new(const char *name, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
 {
    apx_serverExtension_t *self = (apx_serverExtension_t*) malloc(sizeof(apx_serverExtension_t));
    if (self != 0)
    {
-      apx_serverExtension_create(self, handler, config);
+      apx_serverExtension_create(self, name, handler, config);
    }
    return self;
 }

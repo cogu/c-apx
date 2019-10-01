@@ -83,8 +83,25 @@ int main(int argc, char **argv)
    }
    else
    {
-      printf("Success\n");
+      printf("OK\n");
+      dtl_dv_t *tmp = dtl_hv_get_cstr(server_config, "server");
+      if ( (tmp != 0) && (dtl_dv_type(tmp) == DTL_DV_HASH) )
+      {
+         int32_t i32;
+         bool ok;
+         dtl_hv_t *serverCfg = (dtl_hv_t*) tmp;
+         dtl_sv_t *svShutdownTimer = (dtl_sv_t*) dtl_hv_get_cstr(serverCfg, "shutdown-timer");
+         if (svShutdownTimer != 0)
+         {
+            i32 = dtl_sv_to_i32(svShutdownTimer, &ok);
+            if (ok)
+            {
+               m_shutdownTimer = i32;
+            }
+         }
+      }
    }
+
 #ifdef _WIN32
    if (init_wsa() != 0)
    {
@@ -196,12 +213,12 @@ static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv)
 static apx_error_t register_extensions(apx_server_t *server, dtl_hv_t *config)
 {
    apx_error_t result;
-   result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, "textlog"));
+   result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, APX_SERVER_TEXTLOG_CFG_KEY));
    if (result != APX_NO_ERROR)
    {
       return result;
    }
-   result = apx_serverSocketExtension_register(server, dtl_hv_get_cstr(config, "socket"));
+   result = apx_socketServerExtension_register(server, dtl_hv_get_cstr(config, APX_SOCKET_SERVER_EXT_CFG_KEY));
    if (result != APX_NO_ERROR)
    {
       return result;

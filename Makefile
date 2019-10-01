@@ -98,7 +98,7 @@ SERVER_SOURCES = apx/server/src/apx_connectionManager.c \
 
 SERVER_EXTENSION_SOURCES ?= apx/extension_common/src/apx_textLogBase.c \
 	apx/server_extension/socket/apx_serverSocketConnection.c \
-	apx/server_extension/socket/apx_serverSocketExtension.c \
+	apx/server_extension/socket/apx_socketServerExtension.c \
 	apx/server_extension/socket/apx_socketServer.c \
 	apx/server_extension/textlog/apx_serverTextLog.c \
 	apx/server_extension/textlog/apx_serverTextLogExtension.c \

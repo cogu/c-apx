@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_serverSocketExtension.h
+* \file      apx_socketServerExtension.h
 * \author    Conny Gustafsson
 * \date      2019-09-04
 * \brief     APX socket server extension (TCP+UNIX)
@@ -37,14 +37,17 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+#define APX_SOCKET_SERVER_EXT_CFG_KEY "socket-server"
+#define TCP_USER_PORT_BEGIN 1024
+#define TCP_USER_PORT_END   49151
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_serverSocketExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
+apx_error_t apx_socketServerExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
 
 #ifdef UNIT_TEST
-void apx_serverSocketExtension_acceptTestSocket(testsocket_t *sock);
+void apx_socketServerExtension_acceptTestSocket(testsocket_t *sock);
 #endif
 
 #endif //APX_SERVER_SOCKET_EXTENSION_H
