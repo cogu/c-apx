@@ -26,6 +26,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include <string.h>
 #include "apx_textLogBase.h"
 #if !defined(_WIN32) && !defined(__CYGWIN__)
 #include <syslog.h>
@@ -66,6 +67,8 @@ void apx_textLogBase_create(apx_textLogBase_t *self)
       self->fileEnabled = false;
       self->syslogEnabled = false;
       self->syslogLabel = (char*) 0;
+      strcpy(self->lineEnding, "\n");
+      MUTEX_INIT(self->mutex);
    }
 }
 
@@ -78,6 +81,7 @@ void apx_textLogBase_destroy(apx_textLogBase_t *self)
          fflush(self->file);
          fclose(self->file);
       }
+      MUTEX_DESTROY(self->mutex);
    }
 }
 
@@ -138,6 +142,34 @@ void apx_textLogBase_closeAll(apx_textLogBase_t *self)
       }
    }
 }
+
+void apx_textLogBase_print(apx_textLogBase_t *self, const char *msg)
+{
+   if ( (self != 0) && (msg != 0))
+   {
+      MUTEX_LOCK(self->mutex);
+      if(self->fileEnabled)
+      {
+         fprintf(self->file, "%s%s", msg, self->lineEnding);
+      }
+      MUTEX_UNLOCK(self->mutex);
+   }
+}
+
+void apx_textLogBase_printf(apx_textLogBase_t *self, const char *format, ...)
+{
+   va_list args;
+   va_start (args, format);
+   MUTEX_LOCK(self->mutex);
+   if(self->fileEnabled)
+   {
+      vfprintf(self->file, format, args);
+      fprintf(self->file, "%s", self->lineEnding);
+   }
+   MUTEX_UNLOCK(self->mutex);
+   va_end (args);
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

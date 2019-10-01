@@ -17,7 +17,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-
+#define MAX_LOG_LEN 1024
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -25,6 +25,7 @@
 static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serverConnectionBase_t *newConnection);
 static void apx_server_triggerConnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *connection);
 static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
+static void apx_server_triggerLogEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
 static void apx_server_initExtensions(apx_server_t *self);
 static void apx_server_shutdownExtensions(apx_server_t *self);
 static void apx_server_handleEvent(void *arg, apx_event_t *event);
@@ -168,11 +169,11 @@ apx_routingTable_t* apx_server_getRoutingTable(apx_server_t *self)
    return (apx_routingTable_t*) 0;
 }
 
-apx_error_t apx_server_addExtension(apx_server_t *self, apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
+apx_error_t apx_server_addExtension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
 {
    if ( (self != 0) && (handler != 0) )
    {
-      apx_serverExtension_t *extension = apx_serverExtension_new(handler, config);
+      apx_serverExtension_t *extension = apx_serverExtension_new(name, handler, config);
       if (extension == 0)
       {
          return APX_MEM_ERROR;
@@ -286,6 +287,20 @@ static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverCo
    }
 }
 
+static void apx_server_triggerLogEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg)
+{
+   adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
+   while(iter != 0)
+   {
+      apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
+      if ( (listener != 0) && (listener->serverConnected != 0) )
+      {
+         listener->logEvent(listener->arg, level, label, msg);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+}
+
 static void apx_server_initExtensions(apx_server_t *self)
 {
    if  (self != 0)
@@ -293,17 +308,23 @@ static void apx_server_initExtensions(apx_server_t *self)
       adt_list_elem_t *iter = adt_list_iter_first(&self->extensionManager);
       while(iter != 0)
       {
-        apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
-        if (extension->handler.init != 0)
-        {
-           extension->handler.init(self, extension->config);
-           if (extension->config != 0)
-           {
-              dtl_dv_dec_ref(extension->config);
-              extension->config = (dtl_dv_t*) 0;
-           }
-        }
-        iter = adt_list_iter_next(iter);
+         apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
+         if (extension->handler.init != 0)
+         {
+            extension->handler.init(self, extension->config);
+            if (extension->config != 0)
+            {
+               dtl_dv_dec_ref(extension->config);
+               extension->config = (dtl_dv_t*) 0;
+            }
+            if (extension->name != 0)
+            {
+               char msg[MAX_LOG_LEN];
+               sprintf(msg, "Started extension %s", extension->name);
+               apx_server_logEvent(self, APX_LOG_LEVEL_INFO, "SERVER", msg);
+            }
+         }
+         iter = adt_list_iter_next(iter);
       }
    }
 }
@@ -344,7 +365,7 @@ static void apx_server_handleEvent(void *arg, apx_event_t *event)
          if (label != 0)
          {
             labelSize = strlen(label);
-            printf("[%s] %s\n", label, msg);
+            apx_server_triggerLogEvent(self, level, label, msg);
             MUTEX_LOCK(self->mutex);
             soa_free(&self->soa, label, labelSize+1);
             MUTEX_UNLOCK(self->mutex);

@@ -30,6 +30,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
+#include <apx_types.h>
 
 //forward declarations
 struct apx_file2_tag;
@@ -47,17 +48,19 @@ struct apx_portConnectionTable_tag;
 typedef struct apx_clientEventListener_tag
 {
    void *arg;
-   void (*clientConnected)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);            //phase 1 event
-   void (*clientDisconnected)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);         //phase 1 event
-   void (*nodeCompleted)(void *arg, struct apx_nodeData_tag *nodeData);                                  //phase 2 event
+   void (*clientConnected)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);            //type 1 event
+   void (*clientDisconnected)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);         //type 1 event
+   void (*nodeCompleted)(void *arg, struct apx_nodeData_tag *nodeData);                                  //type 2 event
+   void (*logEvent)(void *arg, apx_logLevel_t level, const char *label, const char *msg);                //type 2 event
 }apx_clientEventListener_t;
 
 typedef struct apx_serverEventListener_tag
 {
    void *arg;
-   void (*serverConnected)(void *arg, struct apx_serverConnectionBase_tag *connection);                  //phase 1 event
-   void (*serverDisconnected)(void *arg, struct apx_serverConnectionBase_tag *connection);               //phase 1 event
-   void (*nodeCompleted)(void *arg, struct apx_nodeData_tag *nodeData);                                  //phase 2 event
+   void (*serverConnected)(void *arg, struct apx_serverConnectionBase_tag *connection);                  //type 1 event
+   void (*serverDisconnected)(void *arg, struct apx_serverConnectionBase_tag *connection);               //type 1 event
+   void (*nodeCompleted)(void *arg, struct apx_nodeData_tag *nodeData);                                  //type 2 event
+   void (*logEvent)(void *arg, apx_logLevel_t level, const char *label, const char *msg);                //type 2 event
 }apx_serverEventListener_t;
 
 typedef void (apx_eventListener_fileManagerEventFunc_t)(void *arg, struct apx_fileManager_tag *fileManager);
@@ -65,13 +68,13 @@ typedef void (apx_eventListener_fileManagerFileEventFunc_t)(void *arg, struct ap
 typedef struct apx_fileManagerEventListener_tag
 {
    void *arg;
-   apx_eventListener_fileManagerEventFunc_t *managerStart;    //phase 2 event
-   apx_eventListener_fileManagerEventFunc_t *managerStop;     //phase 2 event
-   apx_eventListener_fileManagerEventFunc_t *headerComplete;  //phase 2 event
-   apx_eventListener_fileManagerFileEventFunc_t *fileCreate;  //phase 2 event
-   apx_eventListener_fileManagerFileEventFunc_t *fileRevoke;  //phase 2 event
-   apx_eventListener_fileManagerFileEventFunc_t *fileOpen;    //phase 2 event
-   apx_eventListener_fileManagerFileEventFunc_t *fileClose;   //phase 2 event
+   apx_eventListener_fileManagerEventFunc_t *managerStart;    //type 2 event
+   apx_eventListener_fileManagerEventFunc_t *managerStop;     //type 2 event
+   apx_eventListener_fileManagerEventFunc_t *headerComplete;  //type 2 event
+   apx_eventListener_fileManagerFileEventFunc_t *fileCreate;  //type 2 event
+   apx_eventListener_fileManagerFileEventFunc_t *fileRevoke;  //type 2 event
+   apx_eventListener_fileManagerFileEventFunc_t *fileOpen;    //type 2 event
+   apx_eventListener_fileManagerFileEventFunc_t *fileClose;   //type 2 event
 } apx_fileManagerEventListener_t;
 
 typedef void (apx_eventListener_nodeDataWriteFunc_t)(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
@@ -81,14 +84,14 @@ typedef void (apx_eventListener_nodeDataPortConnectFunc_t)(void *arg, struct apx
 typedef struct apx_nodeDataEventListener_tag
 {
    void *arg; //user argument
-   apx_eventListener_nodeDataWriteFunc_t *definitionDataWritten;          //phase 1 event
-   apx_eventListener_nodeDataWriteFunc_t *inPortDataWritten;              //phase 1 event
-   apx_eventListener_nodeDataWriteFunc_t *outPortDataWritten;             //phase 1 event
-   apx_eventListener_nodeDataFunc_t *nodeComplete;                        //phase 2 event
-   apx_eventListener_nodeDataPortConnectFunc_t *requirePortsConnected;    //phase 2 event
-   apx_eventListener_nodeDataPortConnectFunc_t *providePortsConnected;    //phase 2 event
-   apx_eventListener_nodeDataPortConnectFunc_t *requirePortsDisconnected; //phase 2 event
-   apx_eventListener_nodeDataPortConnectFunc_t *providePortsDisconnected; //phase 2 event
+   apx_eventListener_nodeDataWriteFunc_t *definitionDataWritten;          //type 1 event
+   apx_eventListener_nodeDataWriteFunc_t *inPortDataWritten;              //type 1 event
+   apx_eventListener_nodeDataWriteFunc_t *outPortDataWritten;             //type 1 event
+   apx_eventListener_nodeDataFunc_t *nodeComplete;                        //type 2 event
+   apx_eventListener_nodeDataPortConnectFunc_t *requirePortsConnected;    //type 2 event
+   apx_eventListener_nodeDataPortConnectFunc_t *providePortsConnected;    //type 2 event
+   apx_eventListener_nodeDataPortConnectFunc_t *requirePortsDisconnected; //type 2 event
+   apx_eventListener_nodeDataPortConnectFunc_t *providePortsDisconnected; //type 2 event
 } apx_nodeDataEventListener_t;
 
 
