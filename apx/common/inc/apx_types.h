@@ -127,6 +127,8 @@ typedef int8_t apx_baseType_t;
 #define APX_MAX_LOG_LEVEL      APX_LOG_LEVEL_DEBUG
 typedef uint8_t apx_logLevel_t;
 
+#define APX_MAX_LOG_LEN 1024
+
 #define APX_LOG_LABEL_MAX_LEN 16
 
 

@@ -46,7 +46,7 @@ struct apx_server_tag;
 typedef struct apx_socketServer_tag
 {
    uint16_t tcpPort; //TCP port for tcpServer
-   char *localServerFile; //path to socket file for unix domain sockets (used for localServer)
+   char *unixServerFile; //path to socket file for unix domain sockets (used for localServer)
    msocket_server_t tcpServer; //tcp server
    msocket_server_t unixServer; //unix domain socket server
    struct apx_server_tag *parent; //parent server

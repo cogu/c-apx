@@ -111,15 +111,24 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
 {
    dtl_sv_t *svTcpPort;
    dtl_sv_t *svUnixFile;
+   dtl_sv_t *svTcpTag;
+   dtl_sv_t *svUnixTag;
    bool conversionOk;
    svTcpPort = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-port");
    svUnixFile = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-file");
+   svTcpTag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-tag");
+   svUnixTag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-tag");
    if (svTcpPort != 0)
    {
       uint16_t tcpPort = (uint16_t) dtl_sv_to_u32(svTcpPort, &conversionOk);
       if (conversionOk && (tcpPort>=TCP_USER_PORT_BEGIN) && (tcpPort <= TCP_USER_PORT_END) )
       {
-         apx_socketServer_startTcpServer(m_instance, tcpPort, "");
+         const char *tag = "";
+         if (svTcpTag != 0)
+         {
+            tag = dtl_sv_to_cstr(svTcpTag);
+         }
+         apx_socketServer_startTcpServer(m_instance, tcpPort, tag);
       }
    }
    if (svUnixFile != 0)
@@ -127,7 +136,12 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
       const char *unixFilePath = dtl_sv_to_cstr(svUnixFile);
       if (strlen(unixFilePath) > 0)
       {
-         apx_socketServer_startUnixServer(m_instance, unixFilePath, "");
+         const char *tag = "";
+         if (svUnixTag != 0)
+         {
+            tag = dtl_sv_to_cstr(svUnixTag);
+         }
+         apx_socketServer_startUnixServer(m_instance, unixFilePath, tag);
       }
    }
    return APX_NO_ERROR;
