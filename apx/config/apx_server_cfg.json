@@ -10,7 +10,7 @@
          "extension-enabled": true,
          "tcp-port": 5000,
          "tcp-tag": "tcp",
-         "unix-file": "",
+         "unix-file": "/tmp/apx_server.socket",
          "unix-tag": "unix"
 	   },
 	  "textlog": {

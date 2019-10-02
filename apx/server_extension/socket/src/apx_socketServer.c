@@ -29,6 +29,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
+#include "apx_types.h"
 #include "apx_socketServer.h"
 #include "apx_server.h"
 #include "apx_serverSocketConnection.h"
@@ -59,15 +60,13 @@ struct msocket_server_tag;
 #define SOCKET_SET_HANDLER msocket_sethandler
 #endif
 
-#ifdef _MSC_VER
-#define STRDUP _strdup
-#else
-#define STRDUP strdup
-#endif
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void apx_socketServer_tcpAccept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock);
+#ifndef UNIT_TEST
+static void apx_socketServer_unixAccept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock);
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -82,7 +81,7 @@ void apx_socketServer_create(apx_socketServer_t *self, struct apx_server_tag *ap
    {
       self->parent = apx_server;
       self->tcpPort = 0u;
-      self->localServerFile = (char*) 0;
+      self->unixServerFile = (char*) 0;
       self->isTcpServerStarted = false;
       self->isUnixServerStarted = false;
       self->tcpConnectionTag = (char*) 0;
@@ -94,9 +93,9 @@ void apx_socketServer_destroy(apx_socketServer_t *self)
 {
    if (self != 0)
    {
-      if (self->localServerFile != 0)
+      if (self->unixServerFile != 0)
       {
-         free(self->localServerFile);
+         free(self->unixServerFile);
       }
       if (self->tcpConnectionTag != 0)
       {
@@ -135,35 +134,77 @@ void apx_socketServer_startTcpServer(apx_socketServer_t *self, uint16_t tcpPort,
       char msg[80];
       msocket_handler_t serverHandler;
       self->tcpPort = tcpPort;
+      if (tag != 0)
+      {
+         self->tcpConnectionTag = STRDUP(tag);
+      }
       memset(&serverHandler,0,sizeof(serverHandler));
+#ifndef UNIT_TEST
       serverHandler.tcp_accept = apx_socketServer_tcpAccept;
+#endif
       msocket_server_create(&self->tcpServer, AF_INET, NULL);
       msocket_server_disable_cleanup(&self->tcpServer); //we will use our own garbage collector
       msocket_server_sethandler(&self->tcpServer, &serverHandler, self);
       msocket_server_start(&self->tcpServer, NULL, 0, self->tcpPort);
-      sprintf(msg, "Listening on TCP port %d", self->tcpPort);
+      self->isTcpServerStarted = true;
+      sprintf(msg, "Listening on TCP port %d", (int) self->tcpPort);
       apx_server_logEvent(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
+
    }
 }
 
 void apx_socketServer_startUnixServer(apx_socketServer_t *self, const char *filePath, const char *tag)
 {
-
+   if ( (self != 0) && (filePath != 0))
+   {
+      char msg[APX_MAX_LOG_LEN];
+      msocket_handler_t serverHandler;
+      self->unixServerFile = STRDUP(filePath);
+      if (tag != 0)
+      {
+         self->unixConnectionTag = STRDUP(tag);
+      }
+      memset(&serverHandler,0,sizeof(serverHandler));
+#ifndef UNIT_TEST
+      serverHandler.tcp_accept = apx_socketServer_unixAccept;
+#endif
+      msocket_server_create(&self->unixServer, AF_LOCAL, NULL);
+      msocket_server_disable_cleanup(&self->unixServer); //we will use our own garbage collector
+      msocket_server_sethandler(&self->unixServer, &serverHandler, self);
+      msocket_server_unix_start(&self->unixServer, self->unixServerFile);
+      self->isUnixServerStarted = true;
+      sprintf(msg, "Listening on UNIX socket %s", self->unixServerFile);
+      apx_server_logEvent(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
+   }
 }
 
 void apx_socketServer_stopAll(apx_socketServer_t *self)
 {
-
+   if (self != 0)
+   {
+      apx_socketServer_stopTcpServer(self);
+      apx_socketServer_stopUnixServer(self);
+   }
 }
 
 void apx_socketServer_stopTcpServer(apx_socketServer_t *self)
 {
-
+   if ( (self != 0) && (self->isTcpServerStarted) )
+   {
+      msocket_server_destroy(&self->tcpServer);
+      self->isTcpServerStarted = false;
+   }
 }
 
 void apx_socketServer_stopUnixServer(apx_socketServer_t *self)
 {
-
+   if ( (self != 0) && (self->isUnixServerStarted) )
+   {
+#ifndef _MSC_VER
+      msocket_server_destroy(&self->unixServer);
+#endif
+      self->isUnixServerStarted = false;
+   }
 }
 
 #ifdef UNIT_TEST
@@ -177,36 +218,13 @@ void apx_socketServer_acceptTestSocket(apx_socketServer_t *self, testsocket_t *s
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void apx_socketServer_createSocketServers(apx_server_t *self, uint16_t tcpPort, const char *unixSocketPath)
-{
-#if 0 //TEMPORARILY DISABLED
-# ifndef _MSC_VER
-   msocket_server_create(&self->localServer, AF_LOCAL, NULL);
-   msocket_server_disable_cleanup(&self->localServer);
-   msocket_server_sethandler(&self->localServer, &serverHandler, self);
-# endif //_MSC_VER
-#endif
-}
-
-static void apx_socketServer_destroySocketServers(apx_socketServer_t *self)
-{
-#if 0  //TEMPORARILY DISABLED
-   //destroy the tcp server
-   msocket_server_destroy(&self->tcpServer);
-   //destroy the local socket server
-# ifndef _MSC_VER
-   msocket_server_destroy(&self->localServer);
-# endif
-#endif
-}
-
-
 static void apx_socketServer_tcpAccept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock)
 {
    apx_socketServer_t *self = (apx_socketServer_t*) arg;
    if (self != 0)
    {
       apx_serverSocketConnection_t *newConnection = apx_serverSocketConnection_new(sock, self->parent);
+      ///TODO: Add support for connection tag
       if (newConnection != 0)
       {
          apx_server_acceptConnection(self->parent, (apx_serverConnectionBase_t*) newConnection);
@@ -219,6 +237,24 @@ static void apx_socketServer_tcpAccept(void *arg, struct msocket_server_tag *srv
    }
 }
 
-
-
+#ifndef UNIT_TEST
+static void apx_socketServer_unixAccept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock)
+{
+   apx_socketServer_t *self = (apx_socketServer_t*) arg;
+   if (self != 0)
+   {
+      apx_serverSocketConnection_t *newConnection = apx_serverSocketConnection_new(sock, self->parent);
+      ///TODO: Add support for connection tag
+      if (newConnection != 0)
+      {
+         apx_server_acceptConnection(self->parent, (apx_serverConnectionBase_t*) newConnection);
+      }
+      else
+      {
+         ///TODO: cleanup socket object
+         assert(0);
+      }
+   }
+}
+#endif
 
