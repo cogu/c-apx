@@ -43,6 +43,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+static apx_error_t apx_vmReadState_push(apx_vmReadState_t *self, apx_vmVariant_t variantType);
+static apx_error_t apx_vmReadState_pop(apx_vmReadState_t *self, dtl_dv_t **dv);
+static apx_error_t apx_vmReadState_recordSelect_cstr(apx_vmReadState_t *self, const char *key);
+static void apx_vmReadState_setArrayInfo(apx_vmReadState_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -62,6 +66,7 @@ void apx_vmReadState_create(apx_vmReadState_t *self)
    self->maxArrayLen = 0u;
    self->dynLenType = APX_DYN_LEN_NONE;
    self->parent = (apx_vmReadState_t*) 0;
+   self->recordKey = (adt_str_t*) 0;
 }
 
 void apx_vmReadState_destroy(apx_vmReadState_t *self)
@@ -71,6 +76,10 @@ void apx_vmReadState_destroy(apx_vmReadState_t *self)
       if (self->value.dv != 0)
       {
          dtl_dv_dec_ref(self->value.dv);
+      }
+      if (self->recordKey != 0)
+      {
+         adt_str_delete(self->recordKey);
       }
    }
 }
@@ -303,8 +312,227 @@ apx_error_t apx_vmDeserializer_unpackFixedStr(apx_vmDeserializer_t *self, adt_st
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_vmDeserializer_push(apx_vmDeserializer_t *self, apx_vmVariant_t variantType)
+{
+   if ( self != 0 )
+   {
+      if (self->state != 0)
+      {
+         return apx_vmReadState_push(self->state, variantType);
+      }
+      return APX_NULL_PTR_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmDeserializer_pop(apx_vmDeserializer_t *self, dtl_dv_t **dv)
+{
+   if ( self != 0 )
+   {
+      if (self->state != 0)
+      {
+         return apx_vmReadState_pop(self->state, dv);
+      }
+      return APX_NULL_PTR_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmDeserializer_recordSelect_cstr(apx_vmDeserializer_t *self, const char *key)
+{
+   if ( self != 0 )
+   {
+      if (self->state != 0)
+      {
+         return apx_vmReadState_recordSelect_cstr(self->state, key);
+      }
+      return APX_NULL_PTR_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmDeserializer_unpackValueAsU8(apx_vmDeserializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType)
+{
+   if (self != 0)
+   {
+      const apx_size_t elemSize = UINT8_SIZE;
+      apx_vmReadState_t *state = self->state;
+      apx_error_t rc;
+      if (state != 0)
+      {
+         apx_vmReadState_setArrayInfo(state, arrayLen, dynLenType);
+         if ( (state->valueType == APX_VALUE_TYPE_SCALAR) && (state->maxArrayLen == 0u) )
+         {
+#if 0
+            bool valueOk = false;
+            uint8_t u8Value = (uint8_t) dtl_sv_to_u32(state->value.sv, &valueOk);
+            if (valueOk)
+            {
+               apx_error_t rc = apx_vmSerializer_packU8(self, u8Value);
+               if ( rc != APX_NO_ERROR )
+               {
+                  return rc;
+               }
+            }
+            else
+            {
+               return APX_VALUE_ERROR;
+            }
+            return apx_vmSerializer_pop(self);
+#endif
+            return APX_NOT_IMPLEMENTED_ERROR;
+         }
+         else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
+         {
+#if 0
+            state->arrayLen = dtl_av_length(state->value.av);
+            if ( ( (state->dynLenType != APX_DYN_LEN_NONE) && (state->arrayLen <= state->maxArrayLen) ) ||
+                 ( (state->dynLenType == APX_DYN_LEN_NONE) && (state->arrayLen == state->maxArrayLen) ) )
+            {
+               uint32_t i;
+               if (state->dynLenType != APX_DYN_LEN_NONE)
+               {
+                  apx_error_t rc;
+                  self->buf.adjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
+                  rc = apx_vmSerializer_packDynArrayHeader(self, state->dynLenType, state->arrayLen);
+                  if (rc != APX_NO_ERROR)
+                  {
+                     return rc;
+                  }
+               }
+               for(i=0; i < state->arrayLen; i++)
+               {
+                  const dtl_dv_t *childValue = dtl_av_value(self->state->value.av, i);
+                  if ( (childValue != 0) && (dtl_dv_type(childValue) == DTL_DV_SCALAR) )
+                  {
+                     bool valueOk = false;
+                     uint32_t u32Value = dtl_sv_to_u32((dtl_sv_t*) childValue, &valueOk);
+                     if (valueOk)
+                     {
+                        apx_error_t rc = apx_vmSerializer_packU8(self, (uint8_t) u32Value);
+                        if (rc != APX_NO_ERROR)
+                        {
+                           return rc;
+                        }
+                     }
+                     else
+                     {
+                        return APX_VALUE_ERROR;
+                     }
+                  }
+                  else
+                  {
+                     return APX_VALUE_ERROR;
+                  }
+               }
+               return apx_vmSerializer_pop(self);
+
+            }
+            else
+            {
+               return APX_LENGTH_ERROR;
+            }
+            #endif
+            return APX_NOT_IMPLEMENTED_ERROR;
+         }
+         else if ( state->valueType == APX_VALUE_TYPE_RECORD)
+         {
+            if ( (state->recordKey == 0) || (adt_str_length(state->recordKey) == 0) )
+            {
+               return APX_MISSING_KEY_ERROR;
+            }
+            else
+            {
+               uint8_t u8Value;
+               rc = apx_vmDeserializer_unpackU8(self, &u8Value);
+               if (rc == APX_NO_ERROR)
+               {
+                  dtl_sv_t *sv = dtl_sv_make_u32((uint32_t) u8Value);
+                  if (sv == 0)
+                  {
+                     return APX_MEM_ERROR;
+                  }
+                  dtl_hv_set_cstr(state->value.hv, adt_str_cstr(state->recordKey), (dtl_dv_t*) sv, false);
+                  adt_str_clear(state->recordKey);
+                  return APX_NO_ERROR;
+               }
+               else
+               {
+                  return rc;
+               }
+            }
+         }
+         else
+         {
+            return APX_DV_TYPE_ERROR;
+         }
+      }
+      return APX_NULL_PTR_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+
+}
+
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
+static apx_error_t apx_vmReadState_push(apx_vmReadState_t *self, apx_vmVariant_t variantType)
+{
+   if (variantType == APX_VARIANT_RECORD)
+   {
+      self->value.hv = dtl_hv_new();
+      if (self->value.hv == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+      self->recordKey = adt_str_new();
+      if (self->recordKey == 0)
+      {
+         dtl_hv_delete(self->value.hv);
+         return APX_MEM_ERROR;
+      }
+      self->valueType = APX_VALUE_TYPE_RECORD;
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
+static apx_error_t apx_vmReadState_pop(apx_vmReadState_t *self, dtl_dv_t **dv)
+{
+   if ( (self != 0) && (dv != 0) )
+   {
+      if (self->valueType != APX_VALUE_TYPE_NONE)
+      {
+         *dv = self->value.dv;
+         dtl_dv_inc_ref(self->value.dv);
+      }
+      else
+      {
+         *dv = (dtl_dv_t*) 0;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_vmReadState_recordSelect_cstr(apx_vmReadState_t *self, const char *key)
+{
+   if (self->recordKey != 0)
+   {
+      adt_error_t result = adt_str_set_cstr(self->recordKey, key);
+      if (result != ADT_NO_ERROR)
+      {
+         return (apx_error_t) result;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_NULL_PTR_ERROR;
+}
+
+static void apx_vmReadState_setArrayInfo(apx_vmReadState_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType)
+{
+   self->maxArrayLen = arrayLen;
+   self->dynLenType = dynLenType;
+}

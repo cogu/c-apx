@@ -49,8 +49,9 @@
 static void test_apx_vmDeserializer_unpackU8(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU16LE(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU32LE(CuTest* tc);
-static void test_apx_vmSerializer_unpackFixedStrAscii(CuTest* tc);
-static void test_apx_vmSerializer_unpackFixedStrUtf8(CuTest* tc);
+static void test_apx_vmDeserializer_unpackFixedStrAscii(CuTest* tc);
+static void test_apx_vmDeserializer_unpackFixedStrUtf8(CuTest* tc);
+static void test_apx_vmDeserializer_unpackRecordU8(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -67,8 +68,9 @@ CuSuite* testSuite_apx_vmDeserializer(void)
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU8);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU16LE);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU32LE);
-   SUITE_ADD_TEST(suite, test_apx_vmSerializer_unpackFixedStrAscii);
-   SUITE_ADD_TEST(suite, test_apx_vmSerializer_unpackFixedStrUtf8);
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackFixedStrAscii);
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackFixedStrUtf8);
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackRecordU8);
 
 
    return suite;
@@ -132,7 +134,7 @@ static void test_apx_vmDeserializer_unpackU32LE(CuTest* tc)
 }
 
 #define PACKED_DATA_SIZE 16
-static void test_apx_vmSerializer_unpackFixedStrAscii(CuTest* tc)
+static void test_apx_vmDeserializer_unpackFixedStrAscii(CuTest* tc)
 {
    uint8_t packedData[PACKED_DATA_SIZE] = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0u, 0u, 0u, 0u, 0u};
    const char *verificationString = "Hello World";
@@ -149,7 +151,7 @@ static void test_apx_vmSerializer_unpackFixedStrAscii(CuTest* tc)
    adt_str_delete(str);
 }
 
-static void test_apx_vmSerializer_unpackFixedStrUtf8(CuTest* tc)
+static void test_apx_vmDeserializer_unpackFixedStrUtf8(CuTest* tc)
 {
    uint8_t packedData[PACKED_DATA_SIZE] = {'K', 0303, 0266, 'p', 'e', 'n', 'h', 'a','m', 'n', 0u, 0u, 0u, 0u, 0u, 0u};
    const char *verificationString = "K\303\266penhamn"; //Köpenhamn
@@ -166,3 +168,43 @@ static void test_apx_vmSerializer_unpackFixedStrUtf8(CuTest* tc)
    adt_str_delete(str);
 }
 #undef PACKED_DATA_SIZE
+
+static void test_apx_vmDeserializer_unpackRecordU8(CuTest* tc)
+{
+   uint8_t packedData[UINT8_SIZE*3] = {0xff, 0x12, 0xaa};
+   const char *key1 = "Red";
+   const char *key2 = "Green";
+   const char *key3 = "Blue";
+   uint8_t verificationDataRed = 0xff;
+   uint8_t verificationDataGreen = 0x12;
+   uint8_t verificationDataBlue = 0xaa;
+   apx_vmDeserializer_t *sr = apx_vmDeserializer_new();
+   dtl_dv_t *dv = 0;
+   dtl_hv_t *hv;
+   dtl_sv_t *sv;
+
+   apx_vmDeserializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_push(sr, APX_VARIANT_RECORD));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_recordSelect_cstr(sr, key1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackValueAsU8(sr, 0, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_recordSelect_cstr(sr, key2));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackValueAsU8(sr, 0, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_recordSelect_cstr(sr, key3));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackValueAsU8(sr, 0, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_pop(sr, &dv));
+   CuAssertPtrNotNull(tc, dv);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(dv));
+   hv = (dtl_hv_t*) dv;
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, key1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, verificationDataRed, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, key2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, verificationDataGreen, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, key3);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, verificationDataBlue, dtl_sv_to_u32(sv, NULL));
+
+   apx_vmDeserializer_delete(sr);
+   dtl_dv_dec_ref(dv);
+}
