@@ -2,7 +2,7 @@
 * \file      apx_vmSerializer.h
 * \author    Conny Gustafsson
 * \date      2019-08-11
-* \brief     Class for serializing port values into byte arrays
+* \brief     APX port data serializer
 *
 * Copyright (c) 2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of

@@ -29,6 +29,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 #include "apx_types.h"
 #include "apx_socketServer.h"
 #include "apx_server.h"

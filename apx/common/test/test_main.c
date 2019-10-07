@@ -35,6 +35,7 @@ CuSuite* testSuite_apx_portTriggerList(void);
 CuSuite* testSuite_apx_routingTable(void);
 CuSuite* testSuite_apx_vm(void);
 CuSuite* testSuite_apx_vmSerializer(void);
+CuSuite* testSuite_apx_vmDeserializer(void);
 CuSuite* testsuite_apx_client_dynamic_nodes(void);
 
 /** APX Server **/
@@ -80,6 +81,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_portTriggerList());
    CuSuiteAddSuite(suite, testSuite_apx_routingTable());
    CuSuiteAddSuite(suite, testSuite_apx_vmSerializer());
+   CuSuiteAddSuite(suite, testSuite_apx_vmDeserializer());
    CuSuiteAddSuite(suite, testSuite_apx_vm());
 
 // APX Server
