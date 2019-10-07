@@ -2,7 +2,7 @@
 * \file      apx_vmSerializer.c
 * \author    Conny Gustafsson
 * \date      2019-08-11
-* \brief     Class for serializing port values into byte arrays
+* \brief     APX port data serializer
 *
 * Copyright (c) 2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -72,7 +72,7 @@ void apx_vmWriteState_create(apx_vmWriteState_t *self)
 
 void apx_vmWriteState_destroy(apx_vmWriteState_t *self)
 {
-   //nothing to do
+   //Nothing yet to clean up
 }
 
 apx_vmWriteState_t* apx_vmWriteState_new(void)
@@ -110,6 +110,7 @@ void apx_vmSerializer_create(apx_vmSerializer_t *self)
      self->buf.pBegin = (uint8_t*) 0;
      self->buf.pEnd = (uint8_t*) 0;
      self->buf.pNext = (uint8_t*) 0;
+     self->buf.adjustedNext = (uint8_t*) 0;
    }
 }
 
