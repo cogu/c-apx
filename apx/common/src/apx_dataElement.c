@@ -394,7 +394,10 @@ static uint8_t *apx_dataElement_pack_sv(apx_dataElement_t *self, uint8_t *pBegin
             return 0;
          }
          memcpy(pNext, cstr, len);
-         pNext[len] = 0;
+         if (len < self->arrayLen)
+         {
+            pNext[len] = '\0';
+         }
          pNext+=self->arrayLen;
          break;
       case APX_BASE_TYPE_RECORD:
