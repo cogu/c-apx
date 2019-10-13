@@ -131,5 +131,7 @@ typedef uint8_t apx_logLevel_t;
 
 #define APX_LOG_LABEL_MAX_LEN 16
 
+#define APX_INVALID_CONNECTION_ID 0xFFFFFFFF
+
 
 #endif //APX_TYPES_H

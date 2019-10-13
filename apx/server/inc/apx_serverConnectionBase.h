@@ -47,9 +47,7 @@ struct apx_server_tag;
 typedef struct apx_serverConnectionBase_tag
 {
    apx_connectionBase_t base;
-   adt_list_t nodeDataEventListeners; //weak references to apx_nodeDataEventListener_t
    struct apx_server_tag *server; //parent object
-   MUTEX_T eventListenerMutex; //thread-protection for self->nodeDataEventListeners
    bool isGreetingParsed;
    bool isActive;
    adt_str_t *tag; //optional tag

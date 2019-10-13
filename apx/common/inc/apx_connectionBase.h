@@ -50,6 +50,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
 struct apx_nodeData_tag;
+struct apx_portConnectionTable_tag;
 
 typedef struct apx_connectionBaseVTable_tag
 {
@@ -63,6 +64,8 @@ typedef struct apx_connectionBase_tag
    apx_fileManager_t fileManager;
    apx_nodeDataManager_t nodeDataManager;
    apx_eventLoop_t eventLoop;
+   adt_list_t nodeDataEventListeners; //weak references to apx_nodeDataEventListener_t
+   MUTEX_T eventListenerMutex; //thread-protection for nodeDataEventListeners
    uint32_t connectionId;
    uint8_t numHeaderLen; //0, 2 or 4
    apx_connectionBaseVTable_t vtable;
@@ -102,6 +105,17 @@ void apx_connectionBase_setConnectionId(apx_connectionBase_t *self, uint32_t con
 uint32_t apx_connectionBase_getConnectionId(apx_connectionBase_t *self);
 void apx_connectionBase_getTransmitHandler(apx_connectionBase_t *self, apx_transmitHandler_t *transmitHandler);
 uint16_t apx_connectionBase_getNumPendingEvents(apx_connectionBase_t *self);
+
+void* apx_connectionBase_registerNodeDataEventListener(apx_connectionBase_t *self, apx_nodeDataEventListener_t *listener);
+void apx_connectionBase_unregisterNodeDataEventListener(apx_connectionBase_t *self, void *handle);
+void apx_connectionBase_triggerDefinitionDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
+void apx_connectionBase_triggerInPortDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
+void apx_connectionBase_triggerOutPortDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
+
+void apx_connectionBase_triggerRequirePortsConnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
+void apx_connectionBase_triggerProvidePortsConnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
+void apx_connectionBase_triggerRequirePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
+void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
 
 #ifdef UNIT_TEST
 void apx_connectionBase_runAll(apx_connectionBase_t *self);
