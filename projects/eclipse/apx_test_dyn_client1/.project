@@ -27,92 +27,92 @@
 		<link>
 			<name>adt/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/adt/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/adt/inc</locationURI>
 		</link>
 		<link>
 			<name>adt/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/adt/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/adt/src</locationURI>
 		</link>
 		<link>
 			<name>bstr/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/bstr/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/bstr/inc</locationURI>
 		</link>
 		<link>
 			<name>bstr/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/bstr/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/bstr/src</locationURI>
 		</link>
 		<link>
 			<name>cutil/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/cutil/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/cutil/inc</locationURI>
 		</link>
 		<link>
 			<name>cutil/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/cutil/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/cutil/src</locationURI>
 		</link>
 		<link>
 			<name>dtl_json/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_json/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_json/inc</locationURI>
 		</link>
 		<link>
 			<name>dtl_json/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_json/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_json/src</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_type/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/inc</locationURI>
 		</link>
 		<link>
 			<name>dtl_type/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/dtl_type/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/dtl_type/src</locationURI>
 		</link>
 		<link>
 			<name>msocket/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/msocket/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/msocket/inc</locationURI>
 		</link>
 		<link>
 			<name>msocket/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/msocket/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/msocket/src</locationURI>
 		</link>
 		<link>
 			<name>remotefile/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/remotefile/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/remotefile/inc</locationURI>
 		</link>
 		<link>
 			<name>remotefile/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/remotefile/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/remotefile/src</locationURI>
 		</link>
 		<link>
 			<name>apx/client/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/client/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/client/inc</locationURI>
 		</link>
 		<link>
 			<name>apx/client/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/client/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/client/src</locationURI>
 		</link>
 		<link>
 			<name>apx/common/inc</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/common/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/common/inc</locationURI>
 		</link>
 		<link>
 			<name>apx/common/src</name>
 			<type>2</type>
-			<location>C:/Users/cogu/repo/c-apx/apx/common/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/common/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
