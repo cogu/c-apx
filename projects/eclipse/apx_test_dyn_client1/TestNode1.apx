@@ -1,0 +1,4 @@
+APX/1.2
+N"TestNode1"
+P"VehicleMode"C(0,15):=15
+P"WheelBasedVehicleSpeed"S:=65535
