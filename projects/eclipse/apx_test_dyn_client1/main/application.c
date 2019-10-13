@@ -72,6 +72,7 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
          return;
       }
       result = apx_client_connectTcp(m_client, tcp_addr, tcp_port);
+      //result = apx_client_connectUnix(m_client, "/tmp/apx_server.socket");
       if (result != APX_NO_ERROR)
       {
          printf("apx_client_connectTcp returned %d\n", (int) result);

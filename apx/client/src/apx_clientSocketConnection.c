@@ -197,7 +197,33 @@ apx_error_t apx_clientConnection_tcp_connect(apx_clientSocketConnection_t *self,
 
 apx_error_t apx_clientConnection_unix_connect(apx_clientSocketConnection_t *self, const char *socketPath)
 {
-   return APX_NOT_IMPLEMENTED_ERROR;
+   if (self != 0)
+   {
+      apx_error_t retval = APX_NO_ERROR;
+      msocket_t *socketObject = msocket_new(AF_LOCAL);
+      if (socketObject != 0)
+      {
+         int8_t result = 0;
+         apx_clientSocketConnection_registerSocketHandler(self, socketObject);
+         result = msocket_unix_connect(socketObject, socketPath);
+         if (result != 0)
+         {
+            msocket_delete(socketObject);
+            self->socketObject = (SOCKET_TYPE*) 0;
+            retval = APX_CONNECTION_ERROR;
+         }
+         else
+         {
+
+         }
+      }
+      else
+      {
+         retval = APX_MEM_ERROR;
+      }
+      return retval;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 #endif
