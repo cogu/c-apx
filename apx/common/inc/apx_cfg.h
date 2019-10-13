@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #ifndef APX_BUF_GROW_SIZE
-# define APX_BUF_GROW_SIZE 65536
+# define APX_BUF_GROW_SIZE 4096
 #endif
 
 #ifndef APX_MAX_NAME_LEN

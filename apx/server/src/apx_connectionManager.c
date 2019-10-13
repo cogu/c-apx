@@ -281,6 +281,7 @@ static void apx_connectionManager_cleanupTask_run(apx_connectionManager_t *self,
          {
             printf("[CONNECTION_MANAGER] Cleaning up %d\n", (int) baseConnection->base.connectionId);
             adt_list_erase(&self->inactiveConnections, iter);
+            apx_connectionBase_stop(&baseConnection->base);
             apx_connectionBase_delete(&baseConnection->base);
             printf("[CONNECTION_MANAGER] Cleanup complete\n");
          }

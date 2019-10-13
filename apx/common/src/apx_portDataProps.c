@@ -58,6 +58,7 @@ void apx_portDataProps_create(apx_portDataProps_t *self, apx_portType_t portType
       self->dataSize = dataSize;
       self->totalSize = dataSize;
       self->queLenType = APX_QUE_LEN_NONE;
+      self->isDynamicArray = false;
       self->maxQueLen = 0;
    }
 }
