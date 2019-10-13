@@ -76,8 +76,8 @@ const char *g_apx_test_node5 =
 const char *g_apx_test_node6 =
 "APX/1.3\n"
 "N\"TestNode6\"\n"
-"P\"DiagReq\"C[128]:D\n"
-"R\"DiagRsp\"C[128]:D\n";
+"P\"DiagReq\"b[128*]\n"
+"R\"DiagRsp\"b[128*]\n";
 
 
 

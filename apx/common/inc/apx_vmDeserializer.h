@@ -94,15 +94,22 @@ void apx_vmDeserializer_delete(apx_vmDeserializer_t *self);
 const uint8_t* apx_vmDeserializer_getReadPtr(apx_vmDeserializer_t *self);
 const uint8_t* apx_vmDeserializer_getAdjustedReadPtr(apx_vmDeserializer_t *self);
 apx_error_t apx_vmDeserializer_begin(apx_vmDeserializer_t *self, const uint8_t *pData, uint32_t dataLen);
-dtl_dv_t* apx_vmDeserializer_getValue(apx_vmDeserializer_t *self);
+dtl_dv_t* apx_vmDeserializer_getValue(apx_vmDeserializer_t *self, bool autoIncrementRef);
+
+//low-level API
 apx_error_t apx_vmDeserializer_unpackU8(apx_vmDeserializer_t *self, uint8_t *u8Value);
 apx_error_t apx_vmDeserializer_unpackU16(apx_vmDeserializer_t *self, uint16_t *u16Value);
 apx_error_t apx_vmDeserializer_unpackU32(apx_vmDeserializer_t *self, uint32_t *u32Value);
 apx_error_t apx_vmDeserializer_unpackFixedStr(apx_vmDeserializer_t *self, adt_str_t *str, int32_t readLen);
-apx_error_t apx_vmDeserializer_push(apx_vmDeserializer_t *self, apx_vmVariant_t variantType);
-apx_error_t apx_vmDeserializer_pop(apx_vmDeserializer_t *self, dtl_dv_t **dv);
-apx_error_t apx_vmDeserializer_recordSelect_cstr(apx_vmDeserializer_t *self, const char *key);
-apx_error_t apx_vmDeserializer_unpackValueAsU8(apx_vmDeserializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
+
+//high-level API
+apx_error_t apx_vmDeserializer_createRecordValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmDeserializer_setRecordKey_cstr(apx_vmDeserializer_t *self, const char *key);
+apx_error_t apx_vmDeserializer_unpackU8Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmDeserializer_unpackU16Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmDeserializer_unpackU32Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmDeserializer_unpackStrValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
+
 
 
 #endif //APX_VM_DESERIALIZER_H

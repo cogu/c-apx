@@ -1,0 +1,33 @@
+Intro
+=====
+
+Data signature: {"Name"a[32]"Id"L} #A record with key "Name" and value-type U8-ARRAY of length 32. Second key is "Id" with value-type of U32.
+
+Pack
+====
+
+Pack Instruction                                        Value position after executing instruction
+------------------------------------------------------------------------------------------------
+
+PACK(RECORD_VARIANT)                                    | hv
+RECORD_SELECT("Name")                                   | hv['Name']
+PACK(STR | ARRAY_FLAG)                                  | hv['Name']
+ARRAY(U8_VARIANT | FIXED_FLAG)                          | hv['Name']
+32                                                      | hv
+RECORD_SELECT("Id", LAST_ITEM_FLAG)                     | hv['Id']
+PACK(U32_VARIANT)                                       | hv
+
+
+Unpack
+=====
+
+Unpack Instruction                                Value-pattern after executing instruction  State after executing instruction 
+-------------------------------------------------+------------------------------------------+--------------------------------------
+                                                 | None                                     | {}
+UNPACK(RECORD_VARIANT)                           | {}                                       | [{variantType=Record, Key="", LastItem=False}]
+RECORD_SELECT("Name")                            | {}                                       | [{}, {variantType=Record, Key="Name", LastItem=False}]
+UNPACK(STR | ARRAY_FLAG)                         | {}                                       | [{variantType=STR}, {variantType=Record, Key="Name", LastItem=False}]
+ARRAY(U8_VARIANT | FIXED_FLAG)                   | {}                                       | [{variantType=STR}, {variantType=Record, Key="Name", LastItem=False}]
+32                                               | {"Name":STR[32]}                         | [{variantType=Record, Key="", LastItem=False}]
+RECORD_SELECT("Id", LAST_ITEM_FLAG)              | {"Name":STR[32]}                         | [{}, {Key="Id", variantType=Record, LastItem=True}]
+PACK(U32_VARIANT)                                | {"Name":STR[32],"Id":U32}                | [{variantType=Record, Key="", LastItem=False}] #Note: LastItem has no effect on top of value stack
