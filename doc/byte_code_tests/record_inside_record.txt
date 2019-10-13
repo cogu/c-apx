@@ -1,0 +1,15 @@
+Instruction                                             Data state after executing instruction
+------------------------------------------------------------------------------------------------
+
+PACK(RECORD_VARIANT)                                    | hv
+RECORD_SELECT("Regions")                                | hv.['Regions',POP=False]
+RECORD_SELECT("Red")                                    | hv.['Regions',POP=False]['Red']
+PACK_U16()                                              | hv.['Regions',POP=False]
+RECORD_SELECT("Yellow")                                 | hv.['Regions',POP=False]['Yellow']
+PACK_U16()                                              | hv.['Regions',POP=False]
+RECORD_SELECT("Green", LAST_FIELD_FLAG)                 | hv.['Regions',POP=True]['Green']
+PACK(RECORD_VARIANT)                                    | hv.['Regions',POP=True]['Green',POP=False]
+RECORD_SELECT("High")                                   | hv.['Regions',POP=True]['Green',POP=False]['High']
+PACK_U32()                                              | hv.['Regions',POP=True]['Green',POP=False]
+RECORD_SELECT("Low", LAST_FIELD_FLAG)                   | hv.['Regions',POP=True]['Green',POP=True]['Low']
+PACK_U32()                                              | hv

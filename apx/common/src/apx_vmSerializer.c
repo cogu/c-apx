@@ -110,7 +110,7 @@ void apx_vmSerializer_create(apx_vmSerializer_t *self)
      self->buf.pBegin = (uint8_t*) 0;
      self->buf.pEnd = (uint8_t*) 0;
      self->buf.pNext = (uint8_t*) 0;
-     self->buf.adjustedNext = (uint8_t*) 0;
+     self->buf.pAdjustedNext = (uint8_t*) 0;
    }
 }
 
@@ -158,7 +158,7 @@ uint8_t* apx_vmSerializer_getAdjustedWritePtr(apx_vmSerializer_t *self)
 {
    if ( (self != 0) && (self->state != 0))
    {
-      return self->buf.adjustedNext;
+      return self->buf.pAdjustedNext;
    }
    return (uint8_t*) 0;
 }
@@ -170,7 +170,7 @@ apx_error_t apx_vmSerializer_begin(apx_vmSerializer_t *self, uint8_t *pData, uin
       self->buf.pBegin = pData;
       self->buf.pEnd = pData+dataLen;
       self->buf.pNext = pData;
-      self->buf.adjustedNext = (uint8_t*) 0;
+      self->buf.pAdjustedNext = (uint8_t*) 0;
       self->hasValidWriteBuf = true;
       if (self->state != 0)
       {
@@ -373,7 +373,7 @@ apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t ar
                if (state->dynLenType != APX_DYN_LEN_NONE)
                {
                   apx_error_t rc;
-                  self->buf.adjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
+                  self->buf.pAdjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
                   rc = apx_vmSerializer_packDynArrayHeader(self, state->dynLenType, state->arrayLen);
                   if (rc != APX_NO_ERROR)
                   {
@@ -459,7 +459,7 @@ apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t a
                if (state->dynLenType != APX_DYN_LEN_NONE)
                {
                   apx_error_t rc;
-                  self->buf.adjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
+                  self->buf.pAdjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
                   rc = apx_vmSerializer_packDynArrayHeader(self, state->dynLenType, state->arrayLen);
                   if (rc != APX_NO_ERROR)
                   {

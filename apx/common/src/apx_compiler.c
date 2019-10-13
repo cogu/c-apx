@@ -122,6 +122,16 @@ apx_error_t apx_compiler_begin_packProgram(apx_compiler_t *self, adt_bytearray_t
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_compiler_begin_unpackProgram(apx_compiler_t *self, adt_bytearray_t *buffer)
+{
+   if ( (self != 0) && (buffer != 0) )
+   {
+      apx_compiler_begin(self, buffer);
+      return apx_compiler_encodeUnpackHeader(self, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0u);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 void apx_compiler_end(apx_compiler_t *self)
 {
    if ( (self != 0) && (self->program != 0))
@@ -370,6 +380,26 @@ apx_error_t apx_compiler_encodePackHeader(apx_compiler_t *self, uint8_t majorVer
       if (self->program != 0)
       {
          uint8_t instruction[APX_VM_HEADER_SIZE] = {APX_VM_MAGIC_NUMBER, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, APX_VM_HEADER_PACK_PROG, 0, 0, 0, 0};
+         packLE(&instruction[4], dataSize, UINT32_SIZE);
+         adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_VM_HEADER_SIZE);
+         self->hasHeader = true;
+         return APX_NO_ERROR;
+      }
+      else
+      {
+         return APX_MISSING_BUFFER_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_compiler_encodeUnpackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize)
+{
+   if (self != 0)
+   {
+      if (self->program != 0)
+      {
+         uint8_t instruction[APX_VM_HEADER_SIZE] = {APX_VM_MAGIC_NUMBER, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, APX_VM_HEADER_UNPACK_PROG, 0, 0, 0, 0};
          packLE(&instruction[4], dataSize, UINT32_SIZE);
          adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_VM_HEADER_SIZE);
          self->hasHeader = true;

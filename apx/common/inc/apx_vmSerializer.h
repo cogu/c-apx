@@ -60,7 +60,7 @@ typedef struct apx_vmWriteBuf_tag
    uint8_t *pBegin;
    uint8_t *pEnd;
    uint8_t *pNext;
-   uint8_t *adjustedNext;
+   uint8_t *pAdjustedNext;
 }apx_vmWriteBuf_t;
 
 typedef struct apx_vmSerializer_tag

@@ -1,0 +1,42 @@
+Introduction
+============
+
+Data signature: {"Regions"{"Red"S"Yellow"S"Green"}}[8] # Array of record, where each record contains another record.
+
+Pack
+====
+
+Pack Instruction                                        Value position after executing instruction
+------------------------------------------------------+-----------------------------------------
+
+PACK(RECORD_VARIANT | ARRAY_FLAG)                     | i=0, av[0]
+U8_FIXED_ARRAY
+8 (arrayLength)
+array_mark_i:                                         | hv = av[i]
+RECORD_SELECT("Regions", LAST_ITEM_FLAG)              | hv['Regions']
+RECORD_SELECT("Red")                                  | hv['Regions']['Red']
+PACK_U16()                                            | hv['Regions']
+RECORD_SELECT("Yellow")                               | hv['Regions']['Yellow']
+PACK_U16()                                            | hv['Regions']
+RECORD_SELECT("Green", LAST_ITEM_FLAG)                | hv['Regions']['Green']
+PACK_U16()                                            | hv                                        #Note: Outermost LAST_ITEM_FLAG has no effect
+ARRAY_NEXT                                            | i++, hv=av[i], goto array_mark_i
+
+Unpack
+=====
+
+Unpack Instruction                                Value-pattern after executing instruction                         State after executing instruction 
+-------------------------------------------------+-----------------------------------------------------------------+--------------------------------------
+                                                 | None                                                            | {}
+UNPACK(RECORD_VARIANT | ARRAY_FLAG)              | None                                                            | {variantType=RECORD}
+U8_FIXED_ARRAY
+8 (arrayLength)                                  | None                                                            | [ {variantType=RECORD, arrayLength=8, i=0} ]
+array_mark_i:                                    | {}                                                              | [ {variantType=RECORD}, {variantType=RECORD, arrayLength=8} ]
+RECORD_SELECT("Regions", LAST_ITEM_FLAG)         | {}                                                              | [ {}, {variantType=Record, Key="Regions", Lst=True}, {variantType=RECORD, arrayLength=8} ]
+RECORD_SELECT("Red")                             | [{},{}]                                                         | [ {}, {variantType=Record, Key="Red"}, {variantType=Record, Key="Regions", Lst=True}, {variantType=RECORD, arrayLength=8} ]
+UNPACK_U16()                                     | [{"Red":U16},{}]                                                | [ {variantType=Record, Key=""}, {variantType=Record, Key="Regions", Lst=True}, {variantType=RECORD, arrayLength=8} ]
+RECORD_SELECT("Yellow")                          | [{"Red":U16},{}]                                                | [ {}, {variantType=Record, Key="Yellow"}, {variantType=Record, Key="Regions", Lst=True}, {variantType=RECORD, arrayLength=8} ]
+UNPACK_U16()                                     | [{"Red":U16, "Yellow":U16},{}]                                  | [ {variantType=Record, Key=""}, {variantType=Record, Key="Regions", Lst=True}, {variantType=RECORD, arrayLength=8} ]
+RECORD_SELECT("Green", LAST_ITEM_FLAG)           | [{"Red":U16},{}]                                                | [ {}, {variantType=Record, Key="Green", Lst=True}, {variantType=Record, Key="Regions", Lst=True}, {variantType=RECORD, arrayLength=8} ]
+UNPACK_U16()                                     | [{"Regions":{"Red":U16, "Yellow":U16, "Green":U16}}]            | [ {variantType=RECORD, arrayLength=8} ]
+ARRAY_NEXT                                       | [{"Regions":{"Red":U16, "Yellow":U16, "Green":U16}}]            | [ {variantType=RECORD}, {variantType=RECORD, arrayLength=8, i++} ]

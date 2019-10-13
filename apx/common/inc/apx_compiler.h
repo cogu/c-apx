@@ -61,11 +61,13 @@ apx_compiler_t* apx_compiler_new(void);
 void apx_compiler_delete(apx_compiler_t *self);
 void apx_compiler_begin(apx_compiler_t *self, adt_bytearray_t *buffer);
 apx_error_t apx_compiler_begin_packProgram(apx_compiler_t *self, adt_bytearray_t *buffer);
+apx_error_t apx_compiler_begin_unpackProgram(apx_compiler_t *self, adt_bytearray_t *buffer);
 void apx_compiler_end(apx_compiler_t *self);
 
 
 apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement);
 apx_error_t apx_compiler_encodePackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
+apx_error_t apx_compiler_encodeUnpackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
 uint8_t apx_compiler_encodeInstruction(uint8_t opCode, uint8_t variant, uint8_t flags);
 
 
