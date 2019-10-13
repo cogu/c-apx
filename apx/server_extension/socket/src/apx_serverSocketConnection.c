@@ -264,6 +264,7 @@ static int32_t apx_serverSocketConnection_send(void *arg, int32_t offset, int32_
          //place header just before user data begin
          pBegin = sendBuffer+(self->base.base.numHeaderLen+offset-headerLen); //the part in the parenthesis is where the user data begins
          memcpy(pBegin, header, headerLen);
+         //printf("(%p) Sending %d+%d bytes\n", (void*)self, (int)headerLen, (int)msgLen);
 #if 0
          if (self->debugMode >= APX_DEBUG_4_HIGH)
          {
@@ -297,7 +298,7 @@ static int32_t apx_serverSocketConnection_send(void *arg, int32_t offset, int32_
 static int8_t apx_serverSocketConnection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
 {
    apx_serverSocketConnection_t *self = (apx_serverSocketConnection_t*) arg;
-   //printf("data %d\n", (int) dataLen);
+   //printf("Received %d bytes\n", (int) dataLen);
    return apx_serverConnectionBase_dataReceived(&self->base, dataBuf, dataLen, parseLen);
 }
 

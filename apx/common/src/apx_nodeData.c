@@ -93,7 +93,6 @@ void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *defini
       self->inPortDataStartOffset = APX_NODE_INVALID_OFFSET;
       self->outPortDataStartOffset = APX_NODE_INVALID_OFFSET;
       memset(&self->checksumData[0], 0, sizeof(self->checksumData));
-      apx_nodeData_setEventListener(self, (apx_nodeDataEventListener_t*) 0);
 #ifdef APX_EMBEDDED
       self->fileManager = (apx_es_fileManager_t*) 0;
 #else
@@ -211,15 +210,11 @@ bool apx_nodeData_isOutPortDataOpen(apx_nodeData_t *self)
 void apx_nodeData_setEventListener(apx_nodeData_t *self, apx_nodeDataEventListener_t *eventListener)
 
 {
-   if (self != 0)
+   if ( (self != 0) && (eventListener != 0) )
    {
-      if (eventListener == (apx_nodeDataEventListener_t*) 0)
+      if (self->connection != 0)
       {
-         memset(&self->eventListener, 0, sizeof(self->eventListener));
-      }
-      else
-      {
-         memcpy(&self->eventListener, eventListener, sizeof(self->eventListener));
+         apx_connectionBase_registerNodeDataEventListener(self->connection, eventListener);
       }
    }
 }
@@ -1005,6 +1000,15 @@ bool apx_nodeData_isComplete(apx_nodeData_t *self)
 
 #endif //!APX_EMBEDDED
 
+uint32_t apx_nodeData_getConnectionId(apx_nodeData_t *self)
+{
+   if ( (self != 0) && (self->connection != 0) )
+   {
+      return apx_connectionBase_getConnectionId(self->connection);
+   }
+   return APX_INVALID_CONNECTION_ID;
+}
+
 /**
  * Internal write function used by APX server
  */
@@ -1354,27 +1358,30 @@ static apx_error_t apx_nodeData_readOutPortDataFile(void *arg, struct apx_file2_
    return retval;
 }
 
+//Type 1 event
 static void apx_nodeData_triggerDefinitionDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len)
 {
-   if (self->eventListener.definitionDataWritten != 0)
+   if (self->connection != 0)
    {
-      self->eventListener.definitionDataWritten(self->eventListener.arg, self, offset, len);
+      apx_connectionBase_triggerDefinitionDataWritten(self->connection, self, offset, len);
    }
 }
 
+//Type 1 event
 static void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len)
 {
-   if (self->eventListener.inPortDataWritten != 0)
+   if (self->connection != 0)
    {
-      self->eventListener.inPortDataWritten(self->eventListener.arg, self, offset, len);
+      apx_connectionBase_triggerInPortDataWritten(self->connection, self, offset, len);
    }
 }
 
+//Type 1 event
 static void apx_nodeData_triggerOutPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len)
 {
-   if (self->eventListener.outPortDataWritten != 0)
+   if (self->connection != 0)
    {
-      self->eventListener.outPortDataWritten(self->eventListener.arg, self, offset, len);
+      apx_connectionBase_triggerOutPortDataWritten(self->connection, self, offset, len);
    }
 }
 

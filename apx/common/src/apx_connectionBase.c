@@ -94,6 +94,8 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       self->eventHandlerArg = (void*) 0;
       self->totalBytesReceived = 0u;
       self->totalBytesSent = 0u;
+      MUTEX_INIT(self->eventListenerMutex);
+      adt_list_create(&self->nodeDataEventListeners, apx_nodeDataEventListener_vdelete);
 
       apx_nodeDataManager_create(&self->nodeDataManager, mode);
 #ifdef _WIN32
@@ -125,6 +127,8 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self)
       apx_fileManager_destroy(&self->fileManager);
       apx_eventLoop_destroy(&self->eventLoop);
       apx_nodeDataManager_destroy(&self->nodeDataManager);
+      MUTEX_DESTROY(self->eventListenerMutex);
+      adt_list_destroy(&self->nodeDataEventListeners);
    }
 }
 
@@ -330,7 +334,7 @@ uint32_t apx_connectionBase_getConnectionId(apx_connectionBase_t *self)
    {
       return self->connectionId;
    }
-   return 0;
+   return APX_INVALID_CONNECTION_ID;
 }
 
 void apx_connectionBase_getTransmitHandler(apx_connectionBase_t *self, apx_transmitHandler_t *transmitHandler)
@@ -349,6 +353,163 @@ uint16_t apx_connectionBase_getNumPendingEvents(apx_connectionBase_t *self)
    }
    return 0;
 }
+
+void* apx_connectionBase_registerNodeDataEventListener(apx_connectionBase_t *self, apx_nodeDataEventListener_t *listener)
+{
+   if ( (self != 0) && (listener != 0))
+   {
+      void *handle = (void*) apx_nodeDataEventListener_clone(listener);
+      if (handle != 0)
+      {
+         MUTEX_LOCK(self->eventListenerMutex);
+         adt_list_insert(&self->nodeDataEventListeners, handle);
+         MUTEX_UNLOCK(self->eventListenerMutex);
+      }
+      return handle;
+   }
+   return (void*) 0;
+}
+
+void apx_connectionBase_unregisterNodeDataEventListener(apx_connectionBase_t *self, void *handle)
+{
+   if ( (self != 0) && (handle != 0))
+   {
+      MUTEX_LOCK(self->eventListenerMutex);
+      bool isFound = adt_list_remove(&self->nodeDataEventListeners, handle);
+      if (isFound == true)
+      {
+         apx_nodeDataEventListener_vdelete(handle);
+      }
+      MUTEX_UNLOCK(self->eventListenerMutex);
+   }
+}
+
+//Type 1 event
+void apx_connectionBase_triggerDefinitionDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
+{
+   adt_list_elem_t *iter;
+   MUTEX_LOCK(self->eventListenerMutex);
+   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   while (iter != 0)
+   {
+      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      if (eventListener->definitionDataWritten != 0)
+      {
+         eventListener->definitionDataWritten(eventListener->arg, nodeData, offset, len);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
+//Type 1 event
+void apx_connectionBase_triggerInPortDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
+{
+   adt_list_elem_t *iter;
+   MUTEX_LOCK(self->eventListenerMutex);
+   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   while (iter != 0)
+   {
+      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      if (eventListener->inPortDataWritten != 0)
+      {
+         eventListener->inPortDataWritten(eventListener->arg, nodeData, offset, len);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
+//Type 1 event
+void apx_connectionBase_triggerOutPortDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
+{
+   adt_list_elem_t *iter;
+   MUTEX_LOCK(self->eventListenerMutex);
+   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   while (iter != 0)
+   {
+      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      if (eventListener->outPortDataWritten != 0)
+      {
+         eventListener->outPortDataWritten(eventListener->arg, nodeData, offset, len);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
+//Type 2 event trigger
+void apx_connectionBase_triggerRequirePortsConnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable)
+{
+   adt_list_elem_t *iter;
+   MUTEX_LOCK(self->eventListenerMutex);
+   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   while (iter != 0)
+   {
+      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      if (eventListener->requirePortsConnected != 0)
+      {
+         eventListener->requirePortsConnected(eventListener->arg, nodeData, portConnectionTable);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
+//Type 2 event trigger
+void apx_connectionBase_triggerProvidePortsConnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable)
+{
+   adt_list_elem_t *iter;
+   MUTEX_LOCK(self->eventListenerMutex);
+   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   while (iter != 0)
+   {
+      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      if (eventListener->providePortsConnected != 0)
+      {
+         eventListener->providePortsConnected(eventListener->arg, nodeData, portConnectionTable);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
+//Type 2 event trigger
+void apx_connectionBase_triggerRequirePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable)
+{
+   adt_list_elem_t *iter;
+   MUTEX_LOCK(self->eventListenerMutex);
+   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   while (iter != 0)
+   {
+      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      if (eventListener->requirePortsDisconnected != 0)
+      {
+         eventListener->requirePortsDisconnected(eventListener->arg, nodeData, portConnectionTable);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
+//Type 2 event trigger
+void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable)
+{
+   adt_list_elem_t *iter;
+   MUTEX_LOCK(self->eventListenerMutex);
+   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   while (iter != 0)
+   {
+      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      if (eventListener->providePortsDisconnected != 0)
+      {
+         eventListener->providePortsDisconnected(eventListener->arg, nodeData, portConnectionTable);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
 
 
 
