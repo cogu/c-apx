@@ -130,20 +130,27 @@ void apx_nodeData_lockOutPortData(apx_nodeData_t *self);
 void apx_nodeData_unlockOutPortData(apx_nodeData_t *self);
 void apx_nodeData_lockInPortData(apx_nodeData_t *self);
 void apx_nodeData_unlockInPortData(apx_nodeData_t *self);
-apx_error_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
-apx_error_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
-apx_error_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 void apx_nodeData_setInPortDataFile(apx_nodeData_t *self, struct apx_file2_tag *file);
 void apx_nodeData_setOutPortDataFile(apx_nodeData_t *self, struct apx_file2_tag *file);
 void apx_nodeData_setDefinitionFile(apx_nodeData_t *self, struct apx_file2_tag *file);
 struct apx_file2_tag *apx_nodeData_getDefinitionFile(apx_nodeData_t *self);
 struct apx_file2_tag *apx_nodeData_getInPortDataFile(apx_nodeData_t *self);
 struct apx_file2_tag *apx_nodeData_getOutPortDataFile(apx_nodeData_t *self);
+
+//Old API
+void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, apx_offset_t offset, apx_size_t length); //DEPRECATED
+
+// Read/Write API
 apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataProps_tag *destDatProps, apx_nodeData_t *srcNodeData, struct apx_portDataProps_tag *srcDataProps);
 apx_error_t apx_nodeData_updatePortDataDirectById(apx_nodeData_t *destNodeData, apx_portId_t destPortId, apx_nodeData_t *srcNodeData, apx_portId_t srcPortId);
-void apx_nodeData_inPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len);
-void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, apx_offset_t offset, apx_size_t length); //DEPRECATED
-apx_error_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len, bool directWriteEnabled);
+apx_error_t apx_nodeData_updateOutPortData(apx_nodeData_t *self, const uint8_t *data, uint32_t offset, uint32_t len, bool directWriteEnabled);
+apx_error_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_readOutPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_readInPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+
 
 
 //Port Connection count API
@@ -154,7 +161,6 @@ void apx_nodeData_incProvidePortConnectionCount(apx_nodeData_t *self, apx_portId
 void apx_nodeData_decRequirePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
 void apx_nodeData_decProvidePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
 uint32_t apx_nodeData_getPortConnectionsTotal(apx_nodeData_t *self);
-
 
 #ifdef APX_EMBEDDED
 void apx_nodeData_setFileManager(apx_nodeData_t *self, struct apx_es_fileManager_tag *fileManager);
@@ -191,6 +197,7 @@ bool apx_nodeData_isComplete(apx_nodeData_t *self);
 uint32_t apx_nodeData_getConnectionId(apx_nodeData_t *self);
 
 #ifdef UNIT_TEST
+
 struct apx_file2_tag *apx_nodeData_newLocalDefinitionFile(apx_nodeData_t *self);
 struct apx_file2_tag *apx_nodeData_newLocalOutPortDataFile(apx_nodeData_t *self);
 struct apx_file2_tag *apx_nodeData_newLocalInPortDataFile(apx_nodeData_t *self);

@@ -240,7 +240,7 @@ bool apx_file2_isDataValid(apx_file2_t *self)
 
 void apx_file2_setDataValid(apx_file2_t *self)
 {
-   if (self != 0)
+   if ( (self != 0) && (!self->isDataValid) )
    {
       self->isDataValid = true;
    }

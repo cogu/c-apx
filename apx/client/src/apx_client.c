@@ -67,6 +67,7 @@ static void apx_client_triggerConnectedEventOnListeners(apx_client_t *self, apx_
 static void apx_client_triggerDisconnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection);
 static void apx_client_triggerNodeCompleteEvent(apx_client_t *self, apx_nodeData_t *nodeData);
 static apx_error_t apx_client_compilePortPrograms(apx_client_t *self, apx_nodeData_t *nodeData, apx_uniquePortId_t *errPortId);
+static void apx_client_updateBaseConnectionOnNodes(apx_client_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -183,6 +184,7 @@ apx_error_t apx_client_connectTcp(apx_client_t *self, const char *address, uint1
       if (socketConnection != 0)
       {
          self->connection = (apx_clientConnectionBase_t*)socketConnection;
+         apx_client_updateBaseConnectionOnNodes(self);
          return apx_clientConnection_tcp_connect(socketConnection, address, port);
       }
       else
@@ -202,6 +204,7 @@ apx_error_t apx_client_connectUnix(apx_client_t *self, const char *socketPath)
       if (socketConnection != 0)
       {
          self->connection = (apx_clientConnectionBase_t*)socketConnection;
+         apx_client_updateBaseConnectionOnNodes(self);
          return apx_clientConnection_unix_connect(socketConnection, socketPath);
       }
       else
@@ -525,4 +528,18 @@ static apx_error_t apx_client_compilePortPrograms(apx_client_t *self, apx_nodeDa
    }
    apx_compiler_destroy(&compiler);
    return retval;
+}
+
+static void apx_client_updateBaseConnectionOnNodes(apx_client_t *self)
+{
+   if (self->connection != 0)
+   {
+      int32_t i;
+      int32_t numNodeData = adt_ary_length(self->nodeDataList);
+      for (i=0; i<numNodeData; i++)
+      {
+         apx_nodeData_t *nodeData = (apx_nodeData_t*) adt_ary_value(self->nodeDataList, i);
+         apx_nodeData_setConnection(nodeData, &self->connection->base);
+      }
+   }
 }

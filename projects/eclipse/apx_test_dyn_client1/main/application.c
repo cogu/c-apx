@@ -30,7 +30,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "apx_eventListener.h"
+#include "apx_nodeData.h"
 #include "application.h"
+#include "pack.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -48,6 +50,9 @@ static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static apx_client_t *m_client = NULL;
+static apx_nodeData_t *m_nodeData = NULL;
+static const char *m_nodeName;
+static uint16_t m_wheelBasedVehicleSpeed;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -61,6 +66,8 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
    handlerTable.clientDisconnected = onClientDisconnected;
    handlerTable.logEvent = onLogEvent;
 
+   m_wheelBasedVehicleSpeed = 0u;
+
    m_client = apx_client_new();
    if (m_client != 0)
    {
@@ -71,6 +78,8 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
          printf("apx_client_createLocalNode_cstr returned %d\n", (int) result);
          return;
       }
+      m_nodeData = apx_client_getDynamicNode(m_client, 0);
+      m_nodeName = STRDUP(apx_nodeData_getName(m_nodeData));
       result = apx_client_connectTcp(m_client, tcp_addr, tcp_port);
       //result = apx_client_connectUnix(m_client, "/tmp/apx_server.socket");
       if (result != APX_NO_ERROR)
@@ -83,7 +92,17 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
 
 void application_run(void)
 {
+   if ( (strcmp(m_nodeName, "TestNode1")==0) )
+   {
+      uint8_t tmp[2];
+      m_wheelBasedVehicleSpeed++;
+      packLE(&tmp[0], m_wheelBasedVehicleSpeed, sizeof(m_wheelBasedVehicleSpeed));
+      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 1, sizeof(m_wheelBasedVehicleSpeed), false);
+   }
+   else if ( (strcmp(m_nodeName, "TestNode2")==0) )
+   {
 
+   }
 }
 
 
