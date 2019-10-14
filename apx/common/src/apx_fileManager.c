@@ -62,15 +62,18 @@ static void apx_fileManager_openFileRequest(void *arg, uint32_t address);
 static void apx_fileManager_processOpenFixedFile(apx_fileManager_t *self, apx_file2_t *localFile);
 static void apx_fileManager_sendFixedFile(apx_fileManager_t *self, const apx_file2_t *file);
 static void apx_fileManager_sendInvalidReadHandler(apx_fileManager_t *self, uint32_t address);
+static void apx_fileManager_registerEventHandlers(apx_fileManager_t *self);
 
-//these functions are called from (external) eventLoop thread
-static void apx_fileManagerEvent_onPreStart(apx_fileManager_t *self);
-static void apx_fileManagerEvent_onPostStop(apx_fileManager_t *self);
-static void apx_fileManagerEvent_onHeaderComplete(apx_fileManager_t *self);
-static void apx_fileManagerEvent_onFileCreated(apx_fileManager_t *self, apx_file2_t *file, const void *caller);
-static void apx_fileManagerEvent_onFileRevoked(apx_fileManager_t *self, apx_file2_t *file, const void *caller);
-static void apx_fileManagerEvent_onFileOpened(apx_fileManager_t *self, const apx_file2_t *file, const void *caller);
-static void apx_fileManagerEvent_onFileClosed(apx_fileManager_t *self, const apx_file2_t *file, const void *caller);
+//Event handlers using old API
+static void apx_fileManagerEvent_triggerPreStart(apx_fileManager_t *self);
+static void apx_fileManagerEvent_triggerPostStop(apx_fileManager_t *self);
+static void apx_fileManagerEvent_triggerHeaderComplete(apx_fileManager_t *self);
+static void apx_fileManagerEvent_triggerFileCreated(apx_fileManager_t *self, apx_file2_t *file, const void *caller);
+static void apx_fileManagerEvent_triggerFileRevoked(apx_fileManager_t *self, apx_file2_t *file, const void *caller);
+static void apx_fileManagerEvent_triggerFileOpened(apx_fileManager_t *self, const apx_file2_t *file, const void *caller);
+static void apx_fileManagerEvent_triggerFileClosed(apx_fileManager_t *self, const apx_file2_t *file, const void *caller);
+//Event handlers using new API
+static void apx_fileManager_onOutPortDataWriteEvent(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
 
 
 static bool workerThread_processMessage(apx_fileManager_t *self, apx_msg_t *msg);
@@ -80,6 +83,7 @@ static void workerThread_sendFileOpen(apx_fileManager_t *self, apx_msg_t *msg);
 static void workerThread_sendInvalidReadHandler(apx_fileManager_t *self, apx_msg_t *msg);
 static void workerThread_sendApxErrorCode(apx_fileManager_t *self, uint32_t errorCode);
 static void workerThread_readFile(apx_fileManager_t *self, apx_msg_t *msg);
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -126,6 +130,7 @@ apx_error_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode, struct
          self->workerThreadValid=false;
          self->headerSize = (uint8_t) sizeof(uint32_t);
          apx_fileManager_setTransmitHandler(self, 0);
+         apx_fileManager_registerEventHandlers(self);
       }
       else
       {
@@ -398,25 +403,25 @@ void apx_fileManager_eventHandler(apx_fileManager_t *self, struct apx_event_tag 
       switch(event->evType)
       {
       case APX_EVENT_FM_PRE_START:
-         apx_fileManagerEvent_onPreStart(self);
+         apx_fileManagerEvent_triggerPreStart(self);
          break;
       case APX_EVENT_FM_POST_STOP:
-         apx_fileManagerEvent_onPostStop(self);
+         apx_fileManagerEvent_triggerPostStop(self);
          break;
       case APX_EVENT_FM_HEADER_COMPLETE:
-         apx_fileManagerEvent_onHeaderComplete(self);
+         apx_fileManagerEvent_triggerHeaderComplete(self);
          break;
       case APX_EVENT_FM_FILE_CREATED:
-         apx_fileManagerEvent_onFileCreated(self, (apx_file2_t*) event->evData2, (const void*) event->evData3);
+         apx_fileManagerEvent_triggerFileCreated(self, (apx_file2_t*) event->evData2, (const void*) event->evData3);
          break;
       case APX_EVENT_FM_FILE_REVOKED:
-         apx_fileManagerEvent_onFileRevoked(self, (apx_file2_t*) event->evData2, (const void*) event->evData3);
+         apx_fileManagerEvent_triggerFileRevoked(self, (apx_file2_t*) event->evData2, (const void*) event->evData3);
          break;
       case APX_EVENT_FM_FILE_OPENED:
-         apx_fileManagerEvent_onFileOpened(self, (const apx_file2_t*) event->evData2, (const void*) event->evData3);
+         apx_fileManagerEvent_triggerFileOpened(self, (const apx_file2_t*) event->evData2, (const void*) event->evData3);
          break;
       case APX_EVENT_FM_FILE_CLOSED:
-         apx_fileManagerEvent_onFileClosed(self, (const apx_file2_t*) event->evData2, (const void*) event->evData3);
+         apx_fileManagerEvent_triggerFileClosed(self, (const apx_file2_t*) event->evData2, (const void*) event->evData3);
          break;
       }
    }
@@ -754,9 +759,21 @@ static void apx_fileManager_sendInvalidReadHandler(apx_fileManager_t *self, uint
 #endif
 }
 
+static void apx_fileManager_registerEventHandlers(apx_fileManager_t *self)
+{
+   if (self->parentConnection != 0)
+   {
+      apx_nodeDataEventListener_t handlerTable;
+      memset(&handlerTable, 0, sizeof(handlerTable));
+      handlerTable.outPortDataWritten = apx_fileManager_onOutPortDataWriteEvent;
+      handlerTable.arg = (void*) self;
+      apx_connectionBase_registerNodeDataEventListener(self->parentConnection, &handlerTable);
+   }
+}
+
 /*** Internal event playback ***/
 
-static void apx_fileManagerEvent_onPreStart(apx_fileManager_t *self)
+static void apx_fileManagerEvent_triggerPreStart(apx_fileManager_t *self)
 {
    if (self != 0)
    {
@@ -776,7 +793,7 @@ static void apx_fileManagerEvent_onPreStart(apx_fileManager_t *self)
    }
 }
 
-static void apx_fileManagerEvent_onPostStop(apx_fileManager_t *self)
+static void apx_fileManagerEvent_triggerPostStop(apx_fileManager_t *self)
 {
    if (self != 0)
    {
@@ -796,7 +813,7 @@ static void apx_fileManagerEvent_onPostStop(apx_fileManager_t *self)
    }
 }
 
-static void apx_fileManagerEvent_onHeaderComplete(apx_fileManager_t *self)
+static void apx_fileManagerEvent_triggerHeaderComplete(apx_fileManager_t *self)
 {
    if (self != 0)
    {
@@ -816,7 +833,7 @@ static void apx_fileManagerEvent_onHeaderComplete(apx_fileManager_t *self)
    }
 }
 
-static void apx_fileManagerEvent_onFileCreated(apx_fileManager_t *self, apx_file2_t *file, const void *caller)
+static void apx_fileManagerEvent_triggerFileCreated(apx_fileManager_t *self, apx_file2_t *file, const void *caller)
 {
    adt_list_elem_t *pIter;
    MUTEX_LOCK(self->eventListenerMutex);
@@ -834,7 +851,7 @@ static void apx_fileManagerEvent_onFileCreated(apx_fileManager_t *self, apx_file
    MUTEX_UNLOCK(self->eventListenerMutex);
 }
 
-static void apx_fileManagerEvent_onFileRevoked(apx_fileManager_t *self, apx_file2_t *file, const void *caller)
+static void apx_fileManagerEvent_triggerFileRevoked(apx_fileManager_t *self, apx_file2_t *file, const void *caller)
 {
    adt_list_elem_t *pIter;
    MUTEX_LOCK(self->eventListenerMutex);
@@ -852,7 +869,7 @@ static void apx_fileManagerEvent_onFileRevoked(apx_fileManager_t *self, apx_file
    MUTEX_UNLOCK(self->eventListenerMutex);
 }
 
-static void apx_fileManagerEvent_onFileOpened(apx_fileManager_t *self, const apx_file2_t *file, const void *caller)
+static void apx_fileManagerEvent_triggerFileOpened(apx_fileManager_t *self, const apx_file2_t *file, const void *caller)
 {
    adt_list_elem_t *pIter;
    MUTEX_LOCK(self->eventListenerMutex);
@@ -870,7 +887,7 @@ static void apx_fileManagerEvent_onFileOpened(apx_fileManager_t *self, const apx
    MUTEX_UNLOCK(self->eventListenerMutex);
 }
 
-static void apx_fileManagerEvent_onFileClosed(apx_fileManager_t *self, const apx_file2_t *file, const void *caller)
+static void apx_fileManagerEvent_triggerFileClosed(apx_fileManager_t *self, const apx_file2_t *file, const void *caller)
 {
    adt_list_elem_t *pIter;
    MUTEX_LOCK(self->eventListenerMutex);
@@ -888,6 +905,14 @@ static void apx_fileManagerEvent_onFileClosed(apx_fileManager_t *self, const apx
    MUTEX_UNLOCK(self->eventListenerMutex);
 }
 
+static void apx_fileManager_onOutPortDataWriteEvent(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
+{
+   apx_fileManager_t *self = (apx_fileManager_t*) arg;
+   if ( (self != 0) && (self->parentConnection != 0) )
+   {
+      printf("[%u] apx_fileManager_onOutPortDataWriteEvent (offset=%u, len=%u)\n", (unsigned int) apx_connectionBase_getConnectionId(self->parentConnection), (unsigned int) offset, (unsigned int) len);
+   }
+}
 
 /*** workerThread functions ***/
 #ifndef UNIT_TEST
