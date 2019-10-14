@@ -83,7 +83,7 @@ apx_error_t apx_client_create(apx_client_t *self)
 {
    if( self != 0 )
    {
-      self->eventListeners = adt_list_new((void (*)(void*)) 0);
+      self->eventListeners = adt_list_new(apx_clientEventListener_vdelete);
       if (self->eventListeners == 0)
       {
          return APX_MEM_ERROR;
@@ -324,12 +324,19 @@ apx_error_t apx_client_createLocalNode_cstr(apx_client_t *self, const char *apx_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener_tag *eventListener)
+void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener_tag *listener)
 {
-   if (self != 0)
+   if ( (self != 0) && (listener != 0))
    {
-      adt_list_insert_unique(self->eventListeners, eventListener);
+      void *handle = (void*) apx_clientEventListener_clone(listener);
+      if (handle != 0)
+      {
+         //TODO: add MUTEX protection
+         adt_list_insert(self->eventListeners, handle);
+      }
+      return handle;
    }
+   return (void*) 0;
 }
 
 //Client internal API

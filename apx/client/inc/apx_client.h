@@ -88,7 +88,7 @@ apx_error_t apx_client_connectUnix(apx_client_t *self, const char *socketPath);
 void apx_client_disconnect(apx_client_t *self);
 apx_error_t apx_client_attachLocalNode(apx_client_t *self, apx_nodeData_t *nodeData);
 apx_error_t apx_client_createLocalNode_cstr(apx_client_t *self, const char *apx_text);
-void apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener_tag *eventListener);
+void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener_tag *listener);
 int32_t apx_client_getNumAttachedNodes(apx_client_t *self);
 void apx_client_attachConnection(apx_client_t *self, apx_clientConnectionBase_t *connection);
 apx_clientConnectionBase_t *apx_client_getConnection(apx_client_t *self);

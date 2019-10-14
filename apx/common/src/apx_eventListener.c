@@ -48,6 +48,34 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+
+apx_clientEventListener_t *apx_clientEventListener_clone(apx_clientEventListener_t *other)
+{
+   if (other != 0)
+   {
+      apx_clientEventListener_t *self = (apx_clientEventListener_t*) malloc(sizeof(apx_clientEventListener_t));
+      if (self != 0)
+      {
+         *self = *other;
+      }
+      return self;
+   }
+   return (apx_clientEventListener_t*) 0;
+}
+
+void apx_clientEventListener_delete(apx_clientEventListener_t *self)
+{
+   if (self != 0)
+   {
+      free(self);
+   }
+}
+
+void apx_clientEventListener_vdelete(void *arg)
+{
+   apx_clientEventListener_delete((apx_clientEventListener_t*) arg);
+}
+
 apx_serverEventListener_t *apx_serverEventListener_clone(apx_serverEventListener_t *other)
 {
    if (other != 0)
