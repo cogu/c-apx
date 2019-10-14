@@ -103,6 +103,10 @@ typedef struct apx_nodeDataEventListener_tag
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
+apx_clientEventListener_t *apx_clientEventListener_clone(apx_clientEventListener_t *other);
+void apx_clientEventListener_delete(apx_clientEventListener_t *self);
+void apx_clientEventListener_vdelete(void *arg);
+
 apx_serverEventListener_t *apx_serverEventListener_clone(apx_serverEventListener_t *other);
 void apx_serverEventListener_delete(apx_serverEventListener_t *self);
 void apx_serverEventListener_vdelete(void *arg);
