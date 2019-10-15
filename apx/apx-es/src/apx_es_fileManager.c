@@ -683,7 +683,8 @@ static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *se
             {
                if ( msgLen <= sendAvail )
                {
-                  assert(headerLen == rmf_packHeader(&msgBuf[0], headerLen, address, false));
+                  int32_t packedHeaderLen = rmf_packHeader(&msgBuf[0], headerLen, address, false);
+                  assert(headerLen == packedHeaderLen);
                   memcpy(&msgBuf[headerLen], dataPtr, dataLen);
                }
                else
