@@ -725,7 +725,7 @@ static bool apx_nodeManager_setNoneDirtyInDataFromDefinition(apx_node_t *node, a
          if (nodeData->inPortDirtyFlags[offset] == 0)
          {
             apx_node_fillPortInitData(node, port, portData);
-            assert(packLen == adt_bytearray_length(portData));
+            assert(packLen == (int32_t)adt_bytearray_length(portData));
             memcpy(pNext, adt_bytearray_data(portData), packLen);
          }
          pNext += packLen;
@@ -758,7 +758,7 @@ static bool apx_nodeManager_createOutInitDataFromDefinition(apx_node_t *node, ap
          assert(port != 0);
          packLen = apx_port_getPackLen(port);
          apx_node_fillPortInitData(node, port, portData);
-         assert(packLen == adt_bytearray_length(portData));
+         assert(packLen == (int32_t)adt_bytearray_length(portData));
          memcpy(pNext, adt_bytearray_data(portData), packLen);
          pNext += packLen;
          assert(pNext <= pEnd);
