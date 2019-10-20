@@ -337,7 +337,6 @@ static void apx_clientSocketConnection_connected(void *arg, const char *addr, ui
 {
    (void) addr;
    (void) port;
-   printf("connected\n");
    apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) arg;
    apx_clientConnectionBase_onConnected(&self->base);
 }

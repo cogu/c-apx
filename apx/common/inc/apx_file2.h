@@ -57,7 +57,7 @@ typedef struct apx_file2_tag
    bool isRemoteFile;
    bool isOpen;
    bool isDataValid;
-   struct apx_nodeData_tag *nodeData;
+
    uint8_t fileType;
    rmf_fileInfo_t fileInfo;
    apx_file_handler_t handler;
@@ -94,6 +94,8 @@ void apx_file2_setHandler(apx_file2_t *self, const apx_file_handler_t *handler);
 bool apx_file2_isDataValid(apx_file2_t *self);
 void apx_file2_setDataValid(apx_file2_t *self);
 bool apx_file2_isOpen(apx_file2_t *self);
+bool apx_file2_isLocal(apx_file2_t *self);
+bool apx_file2_isRemote(apx_file2_t *self);
 
 
 #endif //APX_FILE2_H

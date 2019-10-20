@@ -157,6 +157,34 @@ void apx_nodeDataEventListener_vdelete(void *arg)
    apx_nodeDataEventListener_delete((apx_nodeDataEventListener_t *) arg);
 }
 
+apx_fileEventListener_t *apx_fileEventListener_clone(apx_fileEventListener_t *other)
+{
+   if (other != 0)
+   {
+      apx_fileEventListener_t *self = (apx_fileEventListener_t*) malloc(sizeof(apx_fileEventListener_t));
+      if (self != 0)
+      {
+         *self = *other;
+      }
+      return self;
+   }
+   return (apx_fileEventListener_t*) 0;
+}
+
+void apx_fileEventListener_delete(apx_fileEventListener_t *self)
+{
+   if (self != 0)
+   {
+      free(self);
+   }
+}
+
+void apx_fileEventListener_vdelete(void *arg)
+{
+   apx_fileEventListener_delete((apx_fileEventListener_t *) arg);
+}
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
