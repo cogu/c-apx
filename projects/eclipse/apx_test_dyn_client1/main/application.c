@@ -97,7 +97,7 @@ void application_run(void)
       uint8_t tmp[2];
       m_wheelBasedVehicleSpeed++;
       packLE(&tmp[0], m_wheelBasedVehicleSpeed, sizeof(m_wheelBasedVehicleSpeed));
-      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 1, sizeof(m_wheelBasedVehicleSpeed), false);
+      apx_nodeData_setOutPortData(m_nodeData, &tmp[0], 1, sizeof(m_wheelBasedVehicleSpeed), false);
    }
    else if ( (strcmp(m_nodeName, "TestNode2")==0) )
    {

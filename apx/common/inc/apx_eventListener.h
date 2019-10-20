@@ -95,6 +95,16 @@ typedef struct apx_nodeDataEventListener_tag
 } apx_nodeDataEventListener_t;
 
 
+typedef void (apx_eventListener_fileWriteNotifyFunc_t)(void *arg, struct apx_file2_tag *file, uint32_t offset, uint32_t len);
+
+typedef struct apx_fileEventListener_tag
+{
+   void *arg; //user argument
+   apx_eventListener_fileWriteNotifyFunc_t *writeNotify; //type 1 event
+} apx_fileEventListener_t;
+
+
+
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -118,6 +128,10 @@ void apx_fileManagerEventListener_vdelete(void *arg);
 apx_nodeDataEventListener_t *apx_nodeDataEventListener_clone(apx_nodeDataEventListener_t *other);
 void apx_nodeDataEventListener_delete(apx_nodeDataEventListener_t *self);
 void apx_nodeDataEventListener_vdelete(void *arg);
+
+apx_fileEventListener_t *apx_fileEventListener_clone(apx_fileEventListener_t *other);
+void apx_fileEventListener_delete(apx_fileEventListener_t *self);
+void apx_fileEventListener_vdelete(void *arg);
 
 
 #endif //APX_EVENT_LISTENER_H

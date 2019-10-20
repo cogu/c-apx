@@ -36,7 +36,7 @@ CuSuite* testSuite_apx_routingTable(void);
 CuSuite* testSuite_apx_vm(void);
 CuSuite* testSuite_apx_vmSerializer(void);
 CuSuite* testSuite_apx_vmDeserializer(void);
-CuSuite* testsuite_apx_client_dynamic_nodes(void);
+
 
 /** APX Server **/
 CuSuite* testSuite_apx_serverSocketConnection(void);
@@ -49,6 +49,7 @@ CuSuite* testsuite_apx_serverTextLogExtension(void);
 /** APX Client **/
 CuSuite* testSuite_apx_client_socketConnection(void);
 CuSuite* testSuite_apx_client_testConnection(void);
+CuSuite* testsuite_apx_dynamic_client(void);
 
 void RunAllTests(void)
 {
@@ -93,7 +94,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testsuite_apx_serverTextLogExtension());
 
 // APX Client
-   CuSuiteAddSuite(suite, testsuite_apx_client_dynamic_nodes());
+   CuSuiteAddSuite(suite, testsuite_apx_dynamic_client());
    CuSuiteAddSuite(suite, testSuite_apx_client_socketConnection());
    CuSuiteAddSuite(suite, testSuite_apx_client_testConnection());
 

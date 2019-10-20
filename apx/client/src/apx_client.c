@@ -430,6 +430,7 @@ void apx_client_attachConnection(apx_client_t *self, apx_clientConnectionBase_t 
       {
          connection->client = self;
       }
+      apx_client_updateBaseConnectionOnNodes(self);
    }
 }
 

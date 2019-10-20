@@ -40,13 +40,7 @@
 # define APX_MAX_NUM_EVENTS 1000
 #endif
 
-#ifndef APX_DYN_ARRAY_ENABLE
-# define APX_DYN_ARRAY_ENABLE 1
-#endif
 
-#ifndef APX_QUE_PORT_ENABLE
-# define APX_QUE_PORT_ENABLE 1
-#endif
 
 #ifndef APX_CONNECTION_COUNT_TYPE
 # define APX_CONNECTION_COUNT_TYPE uint16_t  //Using uint8_t or uint16_t is recommended
@@ -55,6 +49,6 @@
 
 #define APX_SERVER_MAX_CONCURRENT_CONNECTIONS 4000 //maximum number of connections the server will accept
 
-#define APX_SMALL_DATA_SIZE  0 //APX_SMALL_DATA_SIZE not supported yet in c-apx
+#define APX_SMALL_DATA_SIZE  8u
 
 #endif //APX_CFG_H

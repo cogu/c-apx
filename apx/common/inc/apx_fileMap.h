@@ -30,6 +30,7 @@ apx_file2_t *apx_fileMap_findByName(apx_fileMap_t *self, const char *name);
 int32_t apx_fileMap_length(const apx_fileMap_t *self);
 void apx_fileMap_clear_weak(apx_fileMap_t *self);
 adt_list_t *apx_fileMap_getList(apx_fileMap_t *self);
+bool apx_fileMap_exist(apx_fileMap_t *self, apx_file2_t *file);
 
 
 

@@ -14,10 +14,10 @@ typedef struct apx_msg_tag
    uint32_t msgType;
    uint32_t msgData1; //generic uint32 value
    uint32_t msgData2; //generic uint32 value
-   void *msgData3;    //generic void* pointer value
-#ifndef APX_EMBEDDED
-   void *msgData4;    //generic void* pointer value
-#endif
+   union msgData3_tag{
+      void *ptr;                         //generic void* pointer value
+      uint8_t data[APX_SMALL_DATA_SIZE]; //port data (when port data length is small)
+   } msgData3;
 } apx_msg_t;
 
 
@@ -28,16 +28,20 @@ typedef struct apx_msg_tag
 #define APX_MSG_SEND_FILEINFO              2 //msgData3=apx_file_t *file
 #define APX_MSG_SEND_FILE_OPEN             3 //msgData1=startAddress
 #define APX_MSG_SEND_FILE_CLOSE            4 //msgData1=startAddress
-#define APX_MSG_READ_FILE                  5 //msgData1=offset, msgData2=length, msgData3=apx_file_t *file
-#define APX_MSG_WRITE_FILE                 6 //msgData1=offset, msgData3=apx_file_t *file, msgData4=data
-#define APX_MSG_ERROR_CODE                 7 //msgData1=errorCode
-#define APX_MSG_ERROR_INVALID_CMD          8 //msgData1=commandId
-#define APX_MSG_ERROR_INVALID_WRITE        9 //msgData1=address, msgData2=length
-#define APX_MSG_ERROR_INVALID_READ_HANDLER 10 //msgData1=address
-#define APX_MSG_ERROR_FILE_ALREADY_EXISTS  11 //msgData1=address, msgData3=char* (name of file)
+#define APX_MSG_SEND_COMPLETE_FILE         5 //msgData1=startAddress, msgData2=length, msgData3.ptr=apx_file2_t *file
+#define APX_MSG_SEND_FILE_WRITE            6 //msgData1=startAddress, msgData2=length, msgData3.ptr=data (allocated through SOA, needs to be freed)
+#define APX_MSG_SEND_FILE_WRITE_DIRECT     7 //msgData1=startAddress, msgData2=length, msgData3.data=data (buffer memory)
+#define APX_MSG_SEND_ERROR_CODE            8 //msgData1=errorCode
 
 
+/*
+Errors:
+   RMF_APX_FILE_ALREADY_EXISTS_ERROR: msgData2=fileAddress, msgData3.ptr = STRDUPed file name (needs to be freed)
+   RMF_APX_INVALID_READ_HANDLER: msgData2=fileAddress
+   RMF_APX_INVALID_WRITE_ERROR: TBD
 
+
+*/
 
 
 

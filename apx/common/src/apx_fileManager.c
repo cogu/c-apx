@@ -62,7 +62,9 @@ static void apx_fileManager_openFileRequest(void *arg, uint32_t address);
 static void apx_fileManager_processOpenFixedFile(apx_fileManager_t *self, apx_file2_t *localFile);
 static void apx_fileManager_sendFixedFile(apx_fileManager_t *self, const apx_file2_t *file);
 static void apx_fileManager_sendInvalidReadHandler(apx_fileManager_t *self, uint32_t address);
+static void apx_fileManager_sendLocalFileDataDirect(apx_fileManager_t *self, uint32_t address, const uint8_t *data, uint32_t len);
 static void apx_fileManager_registerEventHandlers(apx_fileManager_t *self);
+
 
 //Event handlers using old API
 static void apx_fileManagerEvent_triggerPreStart(apx_fileManager_t *self);
@@ -72,17 +74,19 @@ static void apx_fileManagerEvent_triggerFileCreated(apx_fileManager_t *self, apx
 static void apx_fileManagerEvent_triggerFileRevoked(apx_fileManager_t *self, apx_file2_t *file, const void *caller);
 static void apx_fileManagerEvent_triggerFileOpened(apx_fileManager_t *self, const apx_file2_t *file, const void *caller);
 static void apx_fileManagerEvent_triggerFileClosed(apx_fileManager_t *self, const apx_file2_t *file, const void *caller);
+
+
 //Event handlers using new API
-static void apx_fileManager_onOutPortDataWriteEvent(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
+static void apx_fileManager_onFileWriteNotify(void *arg, apx_file2_t *file, uint32_t offset, uint32_t len);
 
 
 static bool workerThread_processMessage(apx_fileManager_t *self, apx_msg_t *msg);
 static void workerThread_sendAcknowledge(apx_fileManager_t *self);
 static void workerThread_sendFileInfo(apx_fileManager_t *self, apx_msg_t *msg);
 static void workerThread_sendFileOpen(apx_fileManager_t *self, apx_msg_t *msg);
-static void workerThread_sendInvalidReadHandler(apx_fileManager_t *self, apx_msg_t *msg);
-static void workerThread_sendApxErrorCode(apx_fileManager_t *self, uint32_t errorCode);
+static void workerThread_sendApxErrorMsg(apx_fileManager_t *self, apx_msg_t *msg);
 static void workerThread_readFile(apx_fileManager_t *self, apx_msg_t *msg);
+static void workerThread_sendFileWriteDirect(apx_fileManager_t *self, apx_msg_t *msg);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -352,9 +356,9 @@ void apx_fileManager_sendFileAlreadyExistsError(apx_fileManager_t *self, apx_fil
 {
    if (self != 0)
    {
-      apx_msg_t msg = {APX_MSG_ERROR_FILE_ALREADY_EXISTS, 0, 0, 0, 0};
-      msg.msgData1 = file->fileInfo.address;
-      msg.msgData3 = STRDUP(file->fileInfo.name);
+      apx_msg_t msg = {APX_MSG_SEND_ERROR_CODE, RMF_APX_FILE_ALREADY_EXISTS_ERROR, 0, {0}};
+      msg.msgData2 = file->fileInfo.address;
+      msg.msgData3.ptr = STRDUP(file->fileInfo.name);
       SPINLOCK_ENTER(self->lock);
       adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
@@ -384,7 +388,7 @@ void apx_fileManager_sendApxErrorCode(apx_fileManager_t *self, uint32_t errorCod
 {
    if ( (self != 0) && (errorCode > RMF_USER_ERROR_BEGIN) )
    {
-      apx_msg_t msg = {APX_MSG_ERROR_CODE, 0, 0, 0, 0};
+      apx_msg_t msg = {APX_MSG_SEND_ERROR_CODE, 0, 0, {0}};
       msg.msgData1 = errorCode;
       SPINLOCK_ENTER(self->lock);
       adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
@@ -602,7 +606,7 @@ static void apx_fileManager_stopWorkerThread(apx_fileManager_t *self)
    #ifdef _MSC_VER
          DWORD result;
    #endif
-         apx_msg_t msg = {APX_MSG_EXIT,0,0,0,0}; //{msgType, sender, msgData1, msgData2, msgData3}
+         apx_msg_t msg = {APX_MSG_EXIT,0,0,{0}}; //{msgType, sender, msgData1, msgData2, msgData3}
          SPINLOCK_ENTER(self->lock);
          adt_rbfh_insert(&self->messages,(const uint8_t*) &msg);
          SPINLOCK_LEAVE(self->lock);
@@ -642,7 +646,7 @@ static void apx_fileManager_stopWorkerThread(apx_fileManager_t *self)
 
 static void apx_fileManager_triggerSendAcknowledge(apx_fileManager_t *self)
 {
-   apx_msg_t msg = {APX_MSG_SEND_ACKNOWLEDGE, 0, 0, 0, 0};
+   apx_msg_t msg = {APX_MSG_SEND_ACKNOWLEDGE, 0, 0, {0}};
    SPINLOCK_ENTER(self->lock);
    adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
    SPINLOCK_LEAVE(self->lock);
@@ -665,8 +669,8 @@ static void apx_fileManager_sendFileInfoCbk(void *arg, const struct apx_file2_ta
    apx_fileManager_t *self = (apx_fileManager_t *) arg;
    if (self != 0)
    {
-      apx_msg_t msg = {APX_MSG_SEND_FILEINFO, 0, 0, 0, 0};
-      msg.msgData3 = (void*) &pFile->fileInfo;
+      apx_msg_t msg = {APX_MSG_SEND_FILEINFO, 0, 0, {0}};
+      msg.msgData3.ptr = (void*) &pFile->fileInfo;
       SPINLOCK_ENTER(self->lock);
       adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
@@ -684,7 +688,7 @@ static void apx_fileManager_sendFileOpen(void *arg, const apx_file2_t *file, voi
    apx_fileManager_t *self = (apx_fileManager_t *) arg;
    if ( (self != 0) && (file != 0) )
    {
-      apx_msg_t msg = {APX_MSG_SEND_FILE_OPEN, 0, 0, 0, 0};
+      apx_msg_t msg = {APX_MSG_SEND_FILE_OPEN, 0, 0, {0}};
       msg.msgData1 = file->fileInfo.address;
       SPINLOCK_ENTER(self->lock);
       adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
@@ -735,10 +739,10 @@ static void apx_fileManager_processOpenFixedFile(apx_fileManager_t *self, apx_fi
 
 static void apx_fileManager_sendFixedFile(apx_fileManager_t *self, const apx_file2_t *file)
 {
-   apx_msg_t msg = {APX_MSG_READ_FILE, 0, 0, 0, 0};
+   apx_msg_t msg = {APX_MSG_SEND_COMPLETE_FILE, 0, 0, {0}};
    msg.msgData1 = 0;
    msg.msgData2 = file->fileInfo.length;
-   msg.msgData3 = (void*) file;
+   msg.msgData3.ptr = (void*) file;
    SPINLOCK_ENTER(self->lock);
    adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
    SPINLOCK_LEAVE(self->lock);
@@ -749,8 +753,8 @@ static void apx_fileManager_sendFixedFile(apx_fileManager_t *self, const apx_fil
 
 static void apx_fileManager_sendInvalidReadHandler(apx_fileManager_t *self, uint32_t address)
 {
-   apx_msg_t msg = {APX_MSG_ERROR_INVALID_READ_HANDLER, 0, 0, 0, 0};
-   msg.msgData1 = address;
+   apx_msg_t msg = {APX_MSG_SEND_ERROR_CODE, RMF_APX_INVALID_READ_HANDLER_ERROR, 0, {0}};
+   msg.msgData2 = address;
    SPINLOCK_ENTER(self->lock);
    adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
    SPINLOCK_LEAVE(self->lock);
@@ -759,15 +763,32 @@ static void apx_fileManager_sendInvalidReadHandler(apx_fileManager_t *self, uint
 #endif
 }
 
+static void apx_fileManager_sendLocalFileDataDirect(apx_fileManager_t *self, uint32_t address, const uint8_t *data, uint32_t len)
+{
+   if (len <= APX_SMALL_DATA_SIZE)
+   {
+      apx_msg_t msg = {APX_MSG_SEND_FILE_WRITE_DIRECT, 0, 0, {0}};
+      msg.msgData1 = address;
+      msg.msgData2 = len;
+      memcpy(&msg.msgData3.data, data, len);
+      SPINLOCK_ENTER(self->lock);
+      adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
+      SPINLOCK_LEAVE(self->lock);
+   #ifndef UNIT_TEST
+      SEMAPHORE_POST(self->semaphore);
+   #endif
+   }
+}
+
 static void apx_fileManager_registerEventHandlers(apx_fileManager_t *self)
 {
    if (self->parentConnection != 0)
    {
-      apx_nodeDataEventListener_t handlerTable;
+      apx_fileEventListener_t handlerTable;
       memset(&handlerTable, 0, sizeof(handlerTable));
-      handlerTable.outPortDataWritten = apx_fileManager_onOutPortDataWriteEvent;
+      handlerTable.writeNotify = apx_fileManager_onFileWriteNotify;
       handlerTable.arg = (void*) self;
-      apx_connectionBase_registerNodeDataEventListener(self->parentConnection, &handlerTable);
+      apx_connectionBase_registerFileEventListener(self->parentConnection, &handlerTable);
    }
 }
 
@@ -905,12 +926,36 @@ static void apx_fileManagerEvent_triggerFileClosed(apx_fileManager_t *self, cons
    MUTEX_UNLOCK(self->eventListenerMutex);
 }
 
-static void apx_fileManager_onOutPortDataWriteEvent(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
+//Type 1 event
+static void apx_fileManager_onFileWriteNotify(void *arg, apx_file2_t *file, uint32_t offset, uint32_t len)
 {
    apx_fileManager_t *self = (apx_fileManager_t*) arg;
    if ( (self != 0) && (self->parentConnection != 0) )
    {
-      printf("[%u] apx_fileManager_onOutPortDataWriteEvent (offset=%u, len=%u)\n", (unsigned int) apx_connectionBase_getConnectionId(self->parentConnection), (unsigned int) offset, (unsigned int) len);
+      if (apx_file2_isLocal(file))
+      {
+         if (apx_file2_isOpen(file) && apx_file2_isDataValid(file) )
+         {
+            bool isAttached = apx_fileManagerLocal_isFileAttached(&self->local, file);
+            if (isAttached)
+            {
+               uint32_t startAddress = file->fileInfo.address + offset;
+               if (len <= APX_SMALL_DATA_SIZE)
+               {
+                  uint8_t data[APX_SMALL_DATA_SIZE];
+                  apx_error_t rc = apx_file2_read(file, &data[0], offset, len);
+                  if (rc == APX_NO_ERROR)
+                  {
+                     apx_fileManager_sendLocalFileDataDirect(self, startAddress, &data[0], len );
+                  }
+               }
+               else
+               {
+                  printf("[%u] apx_fileManager_onFileWriteNotify (address=%u, len=%u)\n", (unsigned int) apx_connectionBase_getConnectionId(self->parentConnection), (unsigned int) startAddress, (unsigned int) len);
+               }
+            }
+         }
+      }
    }
 }
 
@@ -991,26 +1036,22 @@ static bool workerThread_processMessage(apx_fileManager_t *self, apx_msg_t *msg)
       break;
    case APX_MSG_SEND_FILE_CLOSE:
       break;
-   case APX_MSG_READ_FILE:
+   case APX_MSG_SEND_COMPLETE_FILE:
       if (self->transmitHandler.send != 0)
       {
          workerThread_readFile(self, msg);
       }
       break;
-   case APX_MSG_ERROR_CODE:
+   case APX_MSG_SEND_FILE_WRITE_DIRECT:
       if (self->transmitHandler.send != 0)
       {
-         workerThread_sendApxErrorCode(self, msg->msgData1);
+         workerThread_sendFileWriteDirect(self, msg);
       }
       break;
-   case APX_MSG_ERROR_INVALID_CMD:
-      break;
-   case APX_MSG_ERROR_INVALID_WRITE:
-      break;
-   case APX_MSG_ERROR_INVALID_READ_HANDLER:
+   case APX_MSG_SEND_ERROR_CODE:
       if (self->transmitHandler.send != 0)
       {
-         workerThread_sendInvalidReadHandler(self, msg);
+         workerThread_sendApxErrorMsg(self, msg);
       }
       break;
    default:
@@ -1047,7 +1088,7 @@ static void workerThread_sendFileInfo(apx_fileManager_t *self, apx_msg_t *msg)
 {
    int32_t msgSize;
    uint8_t *msgBuf;
-   const rmf_fileInfo_t *fileInfo = (const rmf_fileInfo_t*) msg->msgData3;
+   const rmf_fileInfo_t *fileInfo = (const rmf_fileInfo_t*) msg->msgData3.ptr;
    assert(fileInfo != 0);
    msgSize = apx_fileManagerShared_calcFileInfoMsgSize(fileInfo);
    assert(self->transmitHandler.getSendBuffer != 0);
@@ -1087,6 +1128,7 @@ static void workerThread_sendFileOpen(apx_fileManager_t *self, apx_msg_t *msg)
    }
 }
 
+/*
 static void workerThread_sendInvalidReadHandler(apx_fileManager_t *self, apx_msg_t *msg)
 {
    int32_t msgSize = RMF_CMD_HEADER_LEN+RMF_ERROR_INVALID_READ_HANDLER_LEN;
@@ -1108,8 +1150,9 @@ static void workerThread_sendInvalidReadHandler(apx_fileManager_t *self, apx_msg
       }
    }
 }
+*/
 
-static void workerThread_sendApxErrorCode(apx_fileManager_t *self, uint32_t errorCode)
+static void workerThread_sendApxErrorMsg(apx_fileManager_t *self, apx_msg_t *msg)
 {
    int32_t msgSize = RMF_CMD_HEADER_LEN+RMF_ERROR_CODE_BASE_LEN;
    uint8_t *msgBuf;
@@ -1121,8 +1164,20 @@ static void workerThread_sendApxErrorCode(apx_fileManager_t *self, uint32_t erro
       int32_t result = rmf_packHeader(msgBuf, msgSize, RMF_CMD_START_ADDR, false);
       if (result > 0)
       {
+         uint32_t errorCode = msg->msgData1;
          msgBuf+=result;
          packLE(&msgBuf[0], errorCode, (uint8_t) sizeof(errorCode));
+         msgBuf+=sizeof(errorCode);
+         switch(errorCode)
+         {
+         case RMF_APX_FILE_ALREADY_EXISTS_ERROR:
+            packLE(&msgBuf[0], msg->msgData2, (uint8_t) sizeof(msg->msgData2));
+            //TODO: add file name
+            break;
+         case RMF_APX_INVALID_READ_HANDLER_ERROR:
+            packLE(&msgBuf[0], msg->msgData2, (uint8_t) sizeof(msg->msgData2));
+            break;
+         }
          if (result > 0)
          {
             self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
@@ -1135,7 +1190,7 @@ static void workerThread_readFile(apx_fileManager_t *self, apx_msg_t *msg)
 {
    uint32_t offset = msg->msgData1;
    uint32_t dataLen = msg->msgData2;
-   apx_file2_t *file = (apx_file2_t*) msg->msgData3;
+   apx_file2_t *file = (apx_file2_t*) msg->msgData3.ptr;
 
    if (file != 0)
    {
@@ -1160,6 +1215,31 @@ static void workerThread_readFile(apx_fileManager_t *self, apx_msg_t *msg)
             {
                APX_LOG_ERROR("APX File read error\n");
             }
+         }
+      }
+   }
+}
+
+static void workerThread_sendFileWriteDirect(apx_fileManager_t *self, apx_msg_t *msg)
+{
+   uint32_t address = msg->msgData1;
+   uint32_t dataLen = msg->msgData2;
+   const uint8_t *dataPtr =  &msg->msgData3.data[0];
+
+   if (dataLen != 0)
+   {
+      uint8_t *msgBuf;
+      int32_t msgLen;
+      int32_t bufLen = (address >= RMF_DATA_HIGH_MIN_ADDR)? RMF_HIGH_ADDRESS_SIZE : RMF_LOW_ADDRESS_SIZE;
+      bufLen+=dataLen;
+      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, bufLen);
+      if (msgBuf != 0)
+      {
+         msgLen = rmf_packHeader(msgBuf, bufLen, address, false);
+         if (msgLen > 0)
+         {
+            memcpy(&msgBuf[msgLen], dataPtr, dataLen);
+            self->transmitHandler.send(self->transmitHandler.arg, 0, bufLen);
          }
       }
    }

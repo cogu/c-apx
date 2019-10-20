@@ -183,6 +183,23 @@ void  apx_fileMap_clear_weak(apx_fileMap_t *self)
    }
 }
 
+bool apx_fileMap_exist(apx_fileMap_t *self, apx_file2_t *file)
+{
+   if (self != 0)
+   {
+      adt_list_elem_t *pIter = adt_list_iter_first(&self->fileList);
+      while(pIter != 0)
+      {
+         if (file == (apx_file2_t*) pIter->pItem)
+         {
+            return true;
+         }
+         pIter = adt_list_iter_next(pIter);
+      }
+   }
+   return false;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////

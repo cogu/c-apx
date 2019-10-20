@@ -96,6 +96,7 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       self->totalBytesSent = 0u;
       MUTEX_INIT(self->eventListenerMutex);
       adt_list_create(&self->nodeDataEventListeners, apx_nodeDataEventListener_vdelete);
+      adt_list_create(&self->fileEventListeners, apx_fileEventListener_vdelete);
 
       apx_nodeDataManager_create(&self->nodeDataManager, mode);
 #ifdef _WIN32
@@ -129,6 +130,7 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self)
       apx_nodeDataManager_destroy(&self->nodeDataManager);
       MUTEX_DESTROY(self->eventListenerMutex);
       adt_list_destroy(&self->nodeDataEventListeners);
+      adt_list_destroy(&self->fileEventListeners);
    }
 }
 
@@ -384,6 +386,22 @@ void apx_connectionBase_unregisterNodeDataEventListener(apx_connectionBase_t *se
    }
 }
 
+void* apx_connectionBase_registerFileEventListener(apx_connectionBase_t *self, apx_fileEventListener_t *listener)
+{
+   if ( (self != 0) && (listener != 0))
+   {
+      void *handle = (void*) apx_fileEventListener_clone(listener);
+      if (handle != 0)
+      {
+         MUTEX_LOCK(self->eventListenerMutex);
+         adt_list_insert(&self->fileEventListeners, handle);
+         MUTEX_UNLOCK(self->eventListenerMutex);
+      }
+      return handle;
+   }
+   return (void*) 0;
+}
+
 //Type 1 event
 void apx_connectionBase_triggerDefinitionDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
 {
@@ -504,6 +522,23 @@ void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *se
       if (eventListener->providePortsDisconnected != 0)
       {
          eventListener->providePortsDisconnected(eventListener->arg, nodeData, portConnectionTable);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
+void apx_connectionBase_triggerFileWriteEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, uint32_t offset, uint32_t len)
+{
+   adt_list_elem_t *iter;
+   MUTEX_LOCK(self->eventListenerMutex);
+   iter = adt_list_iter_first(&self->fileEventListeners);
+   while (iter != 0)
+   {
+      apx_fileEventListener_t *eventListener = (apx_fileEventListener_t*) iter->pItem;
+      if (eventListener->writeNotify != 0)
+      {
+         eventListener->writeNotify(eventListener->arg, file, offset, len);
       }
       iter = adt_list_iter_next(iter);
    }

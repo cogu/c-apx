@@ -51,6 +51,7 @@
 //forward declarations
 struct apx_nodeData_tag;
 struct apx_portConnectionTable_tag;
+struct apx_file2_tag;
 
 typedef struct apx_connectionBaseVTable_tag
 {
@@ -65,6 +66,7 @@ typedef struct apx_connectionBase_tag
    apx_nodeDataManager_t nodeDataManager;
    apx_eventLoop_t eventLoop;
    adt_list_t nodeDataEventListeners; //weak references to apx_nodeDataEventListener_t
+   adt_list_t fileEventListeners; //weak references to apx_fileEventListener_t
    MUTEX_T eventListenerMutex; //thread-protection for nodeDataEventListeners
    uint32_t connectionId;
    uint8_t numHeaderLen; //0, 2 or 4
@@ -116,6 +118,9 @@ void apx_connectionBase_triggerRequirePortsConnected(apx_connectionBase_t *self,
 void apx_connectionBase_triggerProvidePortsConnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
 void apx_connectionBase_triggerRequirePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
 void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
+
+void* apx_connectionBase_registerFileEventListener(apx_connectionBase_t *self, apx_fileEventListener_t *listener);
+void apx_connectionBase_triggerFileWriteEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, uint32_t offset, uint32_t len);
 
 #ifdef UNIT_TEST
 void apx_connectionBase_runAll(apx_connectionBase_t *self);
