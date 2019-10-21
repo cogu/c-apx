@@ -62,7 +62,9 @@ static void apx_serverConnectionBase_onFileOpen(void *arg, apx_fileManager_t *fi
 static void apx_serverConnectionBase_processNewApxFile(apx_serverConnectionBase_t *self, struct apx_file2_tag *file);
 static void apx_serverConnectionBase_processNewOutDataFile(apx_serverConnectionBase_t *self, struct apx_file2_tag *file);
 static void apx_serverConnectionBase_onDefinitionDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len);
+static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len);
 static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, apx_file2_t *definitionFile);
+static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -465,6 +467,7 @@ static void apx_serverConnectionBase_processNewApxFile(apx_serverConnectionBase_
             memset(&eventListener, 0, sizeof(eventListener));
             eventListener.arg = (void*) self;
             eventListener.definitionDataWritten = apx_serverConnectionBase_onDefinitionDataWritten;
+            eventListener.outPortDataWritten = apx_serverConnectionBase_onOutPortDataWritten;
             apx_nodeData_setConnection(nodeData, (apx_connectionBase_t*) self);
             apx_nodeData_setDefinitionFile(nodeData, file);
             apx_nodeData_setEventListener(nodeData, &eventListener);
@@ -560,7 +563,7 @@ static void apx_serverConnectionBase_onDefinitionDataWritten(void *arg, apx_node
    }
 }
 
-//Phase 2 event trigger
+//Type 2 event trigger
 static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, apx_file2_t *definitionFile)
 {
    apx_error_t retval = APX_NO_ERROR;
@@ -584,3 +587,51 @@ static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConne
    return retval;
 }
 
+//Type 1 event
+static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
+{
+   apx_serverConnectionBase_t *self = (apx_serverConnectionBase_t*) arg;
+   if (self != 0 && nodeData != 0)
+   {
+      apx_file2_t *file = apx_nodeData_getOutPortDataFile(nodeData);
+      if (file != 0)
+      {
+         if (apx_file2_isRemote(file))
+         {
+            apx_serverConnectionBase_routeDataFromProvidePort(self, nodeData, offset, len);
+         }
+      }
+   }
+}
+
+static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
+{
+   apx_portDataMap_t *portDataMap = apx_nodeData_getPortDataMap(nodeData);
+   if (portDataMap != 0)
+   {
+      apx_portId_t providePortId = apx_portDataMap_findProvidePortIdFromByteOffset(portDataMap, offset);
+      if (providePortId != -1)
+      {
+         int32_t i;
+         apx_portTriggerList_t *portTriggerList;
+         int32_t numConnections;
+         portTriggerList = apx_portDataMap_getPortTriggerList(portDataMap, providePortId);
+         numConnections = apx_portTriggerList_length(portTriggerList);
+         for(i = 0; i < numConnections; i++)
+         {
+            apx_portDataRef_t *portDataRef = apx_portTriggerList_get(portTriggerList, i);
+            if (portDataRef != 0)
+            {
+               const apx_portDataProps_t *props = portDataRef->portDataProps;
+               if (apx_portDataProps_isPlainOldData(props) && (props->offset > 0))
+               {
+                  uint8_t tmp[1] = {0xaa};
+                  printf("Forwarding to %s(offset=%d)\n", apx_nodeData_getName(portDataRef->nodeData), (int) props->offset);
+                  apx_file2_t *file = apx_nodeData_getInPortDataFile(portDataRef->nodeData);
+                  apx_file2_write(file, &tmp[0], props->offset, 1, false);
+               }
+            }
+         }
+      }
+   }
+}

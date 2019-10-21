@@ -51,8 +51,8 @@ static void apx_portDataMap_createProvidePortData(apx_portDataMap_t *self, apx_n
 static apx_size_t apx_portDataMap_createPortDataProps(apx_portDataProps_t *attr, apx_port_t *port, apx_portId_t portId, apx_size_t offset);
 static void apx_portDataMap_createPortTriggerList(apx_portDataMap_t *self);
 static void apx_portDataMap_destroyPortTriggerList(apx_portDataMap_t *self);
-static void apx_portDataMap_attachPortsToTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs);
-static void apx_portDataMap_detachPortsFromTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs);
+static void apx_portDataMap_attachPortsToTriggerList(apx_portDataMap_t *self, apx_portId_t providePortId, apx_portConnectionEntry_t *entry, int32_t numPortRefs);
+static void apx_portDataMap_detachPortsFromTriggerList(apx_portDataMap_t *self, apx_portId_t providePortId, apx_portConnectionEntry_t *entry, int32_t numPortRefs);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -253,11 +253,11 @@ void apx_portDataMap_updatePortTriggerList(apx_portDataMap_t *self, struct apx_p
                int32_t count = apx_portConnectionEntry_count(entry);
                if (count > 0)
                {
-                  apx_portDataMap_attachPortsToTriggerList(self, entry, count);
+                  apx_portDataMap_attachPortsToTriggerList(self, portId, entry, count);
                }
                else if (count < 0)
                {
-                  apx_portDataMap_detachPortsFromTriggerList(self, entry, (-count));
+                  apx_portDataMap_detachPortsFromTriggerList(self, portId, entry, (-count));
                }
                else
                {
@@ -269,11 +269,11 @@ void apx_portDataMap_updatePortTriggerList(apx_portDataMap_t *self, struct apx_p
    }
 }
 
-apx_portTriggerList_t *apx_portDataMap_getPortTriggerList(apx_portDataMap_t *self)
+apx_portTriggerList_t *apx_portDataMap_getPortTriggerList(apx_portDataMap_t *self, apx_portId_t providePortId)
 {
-   if (self != 0)
+   if ( (self != 0) && (providePortId >= 0) && (providePortId < self->numProvidePorts))
    {
-      return self->portTriggerList;
+      return &self->portTriggerList[providePortId];
    }
    return (apx_portTriggerList_t*) 0;
 }
@@ -369,6 +369,15 @@ apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_comp
       retval = APX_INVALID_ARGUMENT_ERROR;
    }
    return retval;
+}
+
+apx_portId_t apx_portDataMap_findProvidePortIdFromByteOffset(apx_portDataMap_t *self, int32_t offset)
+{
+   if ( (self != 0) && (offset >=0) && (self->providePortByteMap != 0))
+   {
+      return apx_bytePortMap_lookup(self->providePortByteMap, offset);
+   }
+   return (apx_portId_t) -1;
 }
 
 
@@ -538,22 +547,22 @@ static void apx_portDataMap_destroyPortTriggerList(apx_portDataMap_t *self)
    }
 }
 
-static void apx_portDataMap_attachPortsToTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs)
+static void apx_portDataMap_attachPortsToTriggerList(apx_portDataMap_t *self, apx_portId_t providePortId, apx_portConnectionEntry_t *entry, int32_t numPortRefs)
 {
    int32_t i;
    for(i=0; i < numPortRefs; i++)
    {
       apx_portDataRef_t *portDataRef = apx_portConnectionEntry_get(entry, i);
-      apx_portTriggerList_insert(self->portTriggerList, portDataRef);
+      apx_portTriggerList_insert(&self->portTriggerList[providePortId], portDataRef);
    }
 }
 
-static void apx_portDataMap_detachPortsFromTriggerList(apx_portDataMap_t *self, apx_portConnectionEntry_t *entry, int32_t numPortRefs)
+static void apx_portDataMap_detachPortsFromTriggerList(apx_portDataMap_t *self, apx_portId_t providePortId, apx_portConnectionEntry_t *entry, int32_t numPortRefs)
 {
    int32_t i;
    for(i=0; i < numPortRefs; i++)
    {
       apx_portDataRef_t *portDataRef = apx_portConnectionEntry_get(entry, i);
-      apx_portTriggerList_remove(self->portTriggerList, portDataRef);
+      apx_portTriggerList_remove(&self->portTriggerList[providePortId], portDataRef);
    }
 }

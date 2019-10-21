@@ -59,6 +59,9 @@ void apx_clientConnectionBase_defaultEventHandler(void *arg, apx_event_t *event)
 void apx_clientConnectionBase_close(apx_clientConnectionBase_t *self);
 uint32_t apx_clientConnectionBase_getTotalBytesReceived(apx_clientConnectionBase_t *self);
 uint32_t apx_clientConnectionBase_getTotalBytesSent(apx_clientConnectionBase_t *self);
+void* apx_clientConnectionBase_registerNodeDataEventListener(apx_clientConnectionBase_t *self, apx_nodeDataEventListener_t *listener);
+void apx_clientConnectionBase_unregisterNodeDataEventListener(apx_clientConnectionBase_t *self, void *handle);
+
 
 #ifdef UNIT_TEST
 void apx_clientConnectionBase_run(apx_clientConnectionBase_t *self);
