@@ -96,7 +96,7 @@ static void test_apx_bytePortMap_createInPortDataMap(CuTest* tc)
    {
       char msg[ERROR_SIZE];
       sprintf(msg, "i=%d",i);
-      CuAssertIntEquals_Msg(tc, msg, expected[i], bytePortMap.mapData[i]);
+      CuAssertIntEquals_Msg(tc, msg, expected[i], apx_bytePortMap_lookup(&bytePortMap, i));
    }
 
    apx_parser_destroy(&parser);
@@ -133,7 +133,7 @@ static void test_apx_bytePortMap_createOutPortDataMap(CuTest* tc)
    {
       char msg[ERROR_SIZE];
       sprintf(msg, "i=%d",i);
-      CuAssertIntEquals_Msg(tc, msg, expected[i], bytePortMap.mapData[i]);
+      CuAssertIntEquals_Msg(tc, msg, expected[i], apx_bytePortMap_lookup(&bytePortMap, i));
    }
 
    apx_parser_destroy(&parser);

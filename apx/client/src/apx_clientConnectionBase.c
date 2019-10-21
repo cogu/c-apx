@@ -243,6 +243,21 @@ uint32_t apx_clientConnectionBase_getTotalBytesSent(apx_clientConnectionBase_t *
    return 0;
 }
 
+void* apx_clientConnectionBase_registerNodeDataEventListener(apx_clientConnectionBase_t *self, apx_nodeDataEventListener_t *listener)
+{
+   if (self != 0)
+   {
+      return apx_connectionBase_registerNodeDataEventListener(&self->base, listener);
+   }
+   return (void*) 0;
+}
+
+void apx_clientConnectionBase_unregisterNodeDataEventListener(apx_clientConnectionBase_t *self, void *handle)
+{
+   apx_connectionBase_unregisterNodeDataEventListener(&self->base, handle);
+}
+
+
 
 #ifdef UNIT_TEST
 void apx_clientConnectionBase_run(apx_clientConnectionBase_t *self)

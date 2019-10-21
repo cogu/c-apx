@@ -169,8 +169,8 @@ static void test_apx_port_routing_open_close_connection(CuTest* tc)
    portDataMap5 = apx_nodeData_getPortDataMap(nodeData5);
    CuAssertPtrNotNull(tc, portDataMap1);
    CuAssertPtrNotNull(tc, portDataMap5);
-   portTriggerList1 = apx_portDataMap_getPortTriggerList(portDataMap1);
-   portTriggerList5 = apx_portDataMap_getPortTriggerList(portDataMap5);
+   portTriggerList1 = apx_portDataMap_getPortTriggerList(portDataMap1, 0);
+   portTriggerList5 = apx_portDataMap_getPortTriggerList(portDataMap5, 0);
    CuAssertPtrNotNull(tc, portTriggerList1);
    CuAssertPtrNotNull(tc, portTriggerList5);
    CuAssertIntEquals(tc, 2, apx_portTriggerList_length(portTriggerList1));

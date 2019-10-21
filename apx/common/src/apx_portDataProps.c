@@ -86,7 +86,7 @@ void apx_portDataProps_vdelete(void *arg)
    apx_portDataProps_delete((apx_portDataProps_t*) arg);
 }
 
-bool apx_portDataProps_isPlainOldData(apx_portDataProps_t *self)
+bool apx_portDataProps_isPlainOldData(const apx_portDataProps_t *self)
 {
    if ( (self != 0) && (!self->isDynamicArray) && (self->queLenType == APX_QUE_LEN_NONE) )
    {

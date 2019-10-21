@@ -1278,6 +1278,7 @@ static apx_error_t apx_nodeData_writeInPortDataFileInternal(void *arg, apx_file2
          {
             uint32_t totalWriteLength = offset + len - self->inPortDataStartOffset;
             apx_file2_setDataValid(file);
+            apx_nodeData_triggerFileWriteEvent(self, file, self->inPortDataStartOffset, totalWriteLength);
             apx_nodeData_triggerInPortDataWritten(self, self->inPortDataStartOffset, totalWriteLength);
          }
          self->inPortDataStartOffset = APX_NODE_INVALID_OFFSET;

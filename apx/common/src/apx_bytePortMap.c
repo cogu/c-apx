@@ -131,6 +131,10 @@ void apx_bytePortMap_delete(apx_bytePortMap_t *self)
 
 apx_portId_t apx_bytePortMap_lookup(apx_bytePortMap_t *self, int32_t offset)
 {
+   if ( (self != 0) && (offset >= 0) && (offset < self->mapLen) )
+   {
+      return self->mapData[offset];
+   }
    return -1;
 }
 

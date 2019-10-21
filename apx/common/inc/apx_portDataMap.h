@@ -79,8 +79,8 @@ apx_error_t apx_portDataMap_initProvidePortByteMap(apx_portDataMap_t *self, apx_
 apx_portDataRef_t *apx_portDataMap_getRequirePortDataRef(apx_portDataMap_t *self, apx_portId_t portId);
 apx_portDataRef_t *apx_portDataMap_getProvidePortDataRef(apx_portDataMap_t *self, apx_portId_t portId);
 void apx_portDataMap_updatePortTriggerList(apx_portDataMap_t *self, struct apx_portConnectionTable_tag *portConnectionTable);
-apx_portTriggerList_t *apx_portDataMap_getPortTriggerList(apx_portDataMap_t *self);
+apx_portTriggerList_t *apx_portDataMap_getPortTriggerList(apx_portDataMap_t *self, apx_portId_t providePortId);
 apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_compiler_t *compiler, apx_node_t *node, apx_uniquePortId_t *errPortId);
-
+apx_portId_t apx_portDataMap_findProvidePortIdFromByteOffset(apx_portDataMap_t *self, int32_t offset);
 
 #endif //APX_PORT_DATA_MAP_H
