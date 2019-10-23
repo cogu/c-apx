@@ -140,7 +140,7 @@ static void test_trigger_fileManager_outPortDataWriteEvent(CuTest* tc)
    CuAssertIntEquals(tc, 1, apx_clientTestConnection_getTransmitLogLen(connection));
    apx_clientTestConnection_clearTransmitLog(connection);
    packLE(&tmp[0], WheelBasedVehicleSpeedValue, sizeof(WheelBasedVehicleSpeedValue));
-   apx_nodeData_setOutPortData(nodeData, &tmp[0], WheelBasedVehicleSpeedOffset, sizeof(WheelBasedVehicleSpeedValue), false);
+   apx_nodeData_updateOutPortData(nodeData, &tmp[0], WheelBasedVehicleSpeedOffset, sizeof(WheelBasedVehicleSpeedValue), false);
    CuAssertIntEquals(tc, 0, apx_clientTestConnection_getTransmitLogLen(connection));
    apx_client_run(client);
    CuAssertIntEquals(tc, 1, apx_clientTestConnection_getTransmitLogLen(connection));

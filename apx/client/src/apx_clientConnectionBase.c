@@ -328,7 +328,7 @@ static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBas
          }
          else
          {
-            printf("processing %d bytes\n", msgLen);
+            //printf("processing %d bytes\n", msgLen);
             int32_t result = apx_fileManager_processMessage(&self->base.fileManager, pNext, msgLen);
             if (result != msgLen)
             {

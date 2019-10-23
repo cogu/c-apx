@@ -51,7 +51,6 @@ static apx_error_t apx_nodeData_readOutPortDataFileInternal(void *arg, struct ap
 static void apx_nodeData_triggerDefinitionDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len);
 static void apx_nodeData_triggerInPortDataWritten(apx_nodeData_t *self, uint32_t offset, uint32_t len);
 static void apx_nodeData_triggerOutPortDataWrittenEvent(apx_nodeData_t *self, uint32_t offset, uint32_t len);
-static void apx_nodeData_triggerFileWriteEvent(apx_nodeData_t *self, apx_file2_t* file, uint32_t offset, uint32_t len);
 static apx_error_t apx_nodeData_createRequirePortInitData(apx_nodeData_t *self);
 static apx_error_t apx_nodeData_createProvidePortInitData(apx_nodeData_t *self);
 
@@ -1007,8 +1006,37 @@ uint32_t apx_nodeData_getConnectionId(apx_nodeData_t *self)
 /**
  * Internal write function used by APX server
  */
-apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataProps_tag *destDatProps,
-      apx_nodeData_t *srcNodeData, struct apx_portDataProps_tag *srcDataProps)
+
+apx_error_t apx_nodeData_routePortData(apx_nodeData_t *destNodeData, const struct apx_portDataProps_tag *destDatProps, apx_nodeData_t *srcNodeData, const struct apx_portDataProps_tag *srcDataProps)
+{
+   if ( (destNodeData != 0) && (destDatProps != 0) && (srcNodeData != 0) && (srcDataProps != 0) && (destDatProps->dataSize == srcDataProps->dataSize) )
+   {
+      if (apx_portDataProps_isPlainOldData(destDatProps) )
+      {
+#ifndef APX_EMBEDDED
+         SPINLOCK_ENTER(destNodeData->inPortDataLock);
+         SPINLOCK_ENTER(srcNodeData->outPortDataLock);
+#endif
+         apx_fileManager_writeFixedFile(destNodeData->fileManager,
+               destNodeData->inPortDataFile,
+               &srcNodeData->outPortDataBuf[srcDataProps->offset],
+               destDatProps->offset,
+               srcDataProps->dataSize);
+
+#ifndef APX_EMBEDDED
+         SPINLOCK_LEAVE(srcNodeData->outPortDataLock);
+         SPINLOCK_LEAVE(destNodeData->inPortDataLock);
+#endif
+         return APX_NO_ERROR;
+      }
+      return APX_NOT_IMPLEMENTED_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+
+}
+
+apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, const struct apx_portDataProps_tag *destDatProps,
+      apx_nodeData_t *srcNodeData, const struct apx_portDataProps_tag *srcDataProps)
 {
    if ( (destNodeData != 0) && (destDatProps != 0) && (srcNodeData != 0) && (srcDataProps != 0) && (destDatProps->dataSize == srcDataProps->dataSize) )
    {
@@ -1056,13 +1084,29 @@ apx_error_t apx_nodeData_updatePortDataDirectById(apx_nodeData_t *destNodeData, 
 }
 
 //File write API
-apx_error_t apx_nodeData_setOutPortData(apx_nodeData_t *self, const uint8_t *data, uint32_t offset, uint32_t len, bool directWriteEnabled)
+apx_error_t apx_nodeData_updateOutPortData(apx_nodeData_t *self, const uint8_t *data, uint32_t offset, uint32_t len, bool directWriteEnabled)
 {
-   if (self != 0)
+   if ( self != 0)
    {
-      if (self->outPortDataFile != 0)
+      if ( (self->fileManager != 0) && (self->outPortDataFile != 0) )
       {
-         return apx_file2_write(self->outPortDataFile, data, offset, len, false);
+         apx_fileManager_writeFixedFile(self->fileManager, self->outPortDataFile, data, offset, len);
+      }
+      else
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_nodeData_updateInPortData(apx_nodeData_t *self, const uint8_t *data, uint32_t offset, uint32_t len)
+{
+   if ( self != 0)
+   {
+      if ( (self->fileManager != 0) && (self->inPortDataFile != 0) )
+      {
+         apx_fileManager_writeFixedFile(self->fileManager, self->inPortDataFile, data, offset, len);
       }
       else
       {
@@ -1278,7 +1322,6 @@ static apx_error_t apx_nodeData_writeInPortDataFileInternal(void *arg, apx_file2
          {
             uint32_t totalWriteLength = offset + len - self->inPortDataStartOffset;
             apx_file2_setDataValid(file);
-            apx_nodeData_triggerFileWriteEvent(self, file, self->inPortDataStartOffset, totalWriteLength);
             apx_nodeData_triggerInPortDataWritten(self, self->inPortDataStartOffset, totalWriteLength);
          }
          self->inPortDataStartOffset = APX_NODE_INVALID_OFFSET;
@@ -1308,7 +1351,6 @@ static apx_error_t apx_nodeData_writeOutPortDataFileInternal(void *arg, apx_file
          {
             uint32_t totalWriteLength = offset + len - self->outPortDataStartOffset;
             apx_file2_setDataValid(file);
-            apx_nodeData_triggerFileWriteEvent(self, file, self->outPortDataStartOffset, totalWriteLength);
             apx_nodeData_triggerOutPortDataWrittenEvent(self, self->outPortDataStartOffset, totalWriteLength);
          }
          self->outPortDataStartOffset = APX_NODE_INVALID_OFFSET;
@@ -1393,14 +1435,6 @@ static void apx_nodeData_triggerOutPortDataWrittenEvent(apx_nodeData_t *self, ui
    }
 }
 
-//Type 1 event
-static void apx_nodeData_triggerFileWriteEvent(apx_nodeData_t *self, apx_file2_t* file, uint32_t offset, uint32_t len)
-{
-   if (self->connection != 0)
-   {
-      apx_connectionBase_triggerFileWriteEvent(self->connection, file, offset, len);
-   }
-}
 
 static apx_error_t apx_nodeData_createRequirePortInitData(apx_nodeData_t *self)
 {

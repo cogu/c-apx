@@ -339,7 +339,7 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *n
             if ( (localPort != 0) && (remotePort) )
             {
 
-               apx_textLogBase_printf(&self->base, "[%d] %s.%s --> %s.%s",
+               apx_textLogBase_printf(&self->base, "[%d] %s.%s <-- %s.%s",
                        apx_connectionBase_getConnectionId(connection),
                        localNode->name,
                        localPort->name,

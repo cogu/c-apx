@@ -40,7 +40,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
 struct apx_file2_tag;
-struct apx_nodeData_tag;
+struct apx_fileManager_tag;
 
 typedef apx_error_t (apx_file_read_func)(void *arg, struct apx_file2_tag *file, uint8_t *dest, uint32_t offset, uint32_t len);
 typedef apx_error_t (apx_file_write_func)(void *arg, struct apx_file2_tag *file, const uint8_t *src, uint32_t offset, uint32_t len, bool more);
@@ -57,12 +57,12 @@ typedef struct apx_file2_tag
    bool isRemoteFile;
    bool isOpen;
    bool isDataValid;
-
    uint8_t fileType;
    rmf_fileInfo_t fileInfo;
    apx_file_handler_t handler;
    char *basename;
    char *extension;
+   struct apx_fileManager_tag *fileManager;
 }apx_file2_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -96,6 +96,8 @@ void apx_file2_setDataValid(apx_file2_t *self);
 bool apx_file2_isOpen(apx_file2_t *self);
 bool apx_file2_isLocal(apx_file2_t *self);
 bool apx_file2_isRemote(apx_file2_t *self);
+struct apx_fileManager_tag* apx_file2_getFileManager(apx_file2_t *self);
+void apx_file2_setFileManager(apx_file2_t *self, struct apx_fileManager_tag *fileManager);
 
 
 #endif //APX_FILE2_H

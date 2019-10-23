@@ -34,6 +34,7 @@
 #include "bstr.h"
 #include "apx_eventListener.h"
 #include "apx_nodeData.h"
+#include "apx_fileManager.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -68,7 +69,7 @@ int8_t apx_file2_create(apx_file2_t *self, bool isRemoteFile, const rmf_fileInfo
       self->isRemoteFile = isRemoteFile;
       self->isOpen = false;
       self->isDataValid = false;
-
+      self->fileManager = (apx_fileManager_t*) 0;
       self->fileType = APX_UNKNOWN_FILE;
 
       result = rmf_fileInfo_create(&self->fileInfo, fileInfo->name, fileInfo->address, fileInfo->length, fileInfo->fileType);
@@ -271,6 +272,23 @@ bool apx_file2_isRemote(apx_file2_t *self)
       return self->isRemoteFile;
    }
    return false;
+}
+
+struct apx_fileManager_tag* apx_file2_getFileManager(apx_file2_t *self)
+{
+   if (self != 0)
+   {
+      return self->fileManager;
+   }
+   return (apx_fileManager_t*) 0;
+}
+
+void apx_file2_setFileManager(apx_file2_t *self, struct apx_fileManager_tag *fileManager)
+{
+   if (self != 0)
+   {
+      self->fileManager = fileManager;
+   }
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -120,7 +120,6 @@ void apx_connectionBase_triggerRequirePortsDisconnected(apx_connectionBase_t *se
 void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
 
 void* apx_connectionBase_registerFileEventListener(apx_connectionBase_t *self, apx_fileEventListener_t *listener);
-void apx_connectionBase_triggerFileWriteEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, uint32_t offset, uint32_t len);
 
 #ifdef UNIT_TEST
 void apx_connectionBase_runAll(apx_connectionBase_t *self);
