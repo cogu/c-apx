@@ -141,9 +141,11 @@ struct apx_file2_tag *apx_nodeData_getOutPortDataFile(apx_nodeData_t *self);
 void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, apx_offset_t offset, apx_size_t length); //DEPRECATED
 
 // Read/Write API
-apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, struct apx_portDataProps_tag *destDatProps, apx_nodeData_t *srcNodeData, struct apx_portDataProps_tag *srcDataProps);
+apx_error_t apx_nodeData_routePortData(apx_nodeData_t *destNodeData, const struct apx_portDataProps_tag *destDatProps, apx_nodeData_t *srcNodeData, const struct apx_portDataProps_tag *srcDataProps);
+apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, const struct apx_portDataProps_tag *destDatProps, apx_nodeData_t *srcNodeData, const struct apx_portDataProps_tag *srcDataProps);
 apx_error_t apx_nodeData_updatePortDataDirectById(apx_nodeData_t *destNodeData, apx_portId_t destPortId, apx_nodeData_t *srcNodeData, apx_portId_t srcPortId);
-apx_error_t apx_nodeData_setOutPortData(apx_nodeData_t *self, const uint8_t *data, uint32_t offset, uint32_t len, bool directWriteEnabled);
+apx_error_t apx_nodeData_updateOutPortData(apx_nodeData_t *self, const uint8_t *data, uint32_t offset, uint32_t len, bool directWriteEnabled);
+apx_error_t apx_nodeData_updateInPortData(apx_nodeData_t *self, const uint8_t *data, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);

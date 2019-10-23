@@ -528,25 +528,6 @@ void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *se
    MUTEX_UNLOCK(self->eventListenerMutex);
 }
 
-void apx_connectionBase_triggerFileWriteEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, uint32_t offset, uint32_t len)
-{
-   adt_list_elem_t *iter;
-   MUTEX_LOCK(self->eventListenerMutex);
-   iter = adt_list_iter_first(&self->fileEventListeners);
-   while (iter != 0)
-   {
-      apx_fileEventListener_t *eventListener = (apx_fileEventListener_t*) iter->pItem;
-      if (eventListener->writeNotify != 0)
-      {
-         eventListener->writeNotify(eventListener->arg, file, offset, len);
-      }
-      iter = adt_list_iter_next(iter);
-   }
-   MUTEX_UNLOCK(self->eventListenerMutex);
-}
-
-
-
 
 #ifdef UNIT_TEST
 void apx_connectionBase_runAll(apx_connectionBase_t *self)

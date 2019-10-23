@@ -110,6 +110,9 @@ apx_file2_t *apx_fileManager_findRemoteFileByName(apx_fileManager_t *self, const
 void apx_fileManager_sendApxErrorCode(apx_fileManager_t *self, uint32_t errorCode);
 void apx_fileManager_eventHandler(apx_fileManager_t *self, struct apx_event_tag *event);
 
+/********** File Write API *********************/
+apx_error_t apx_fileManager_writeFixedFile(apx_fileManager_t *self, apx_file2_t *file, const uint8_t *data, uint32_t offset, uint32_t len);
+
 /*********** APX server internal API **************/
 void apx_fileManager_onRemoteCmdFileInfo(apx_fileManager_t *self, const struct rmf_fileInfo_tag* fileInfo);
 void apx_fileManager_onRemoteCmdFileOpen(apx_fileManager_t *self, uint32_t address);
@@ -123,6 +126,8 @@ void apx_fileManager_createFileCreatedEvent(apx_event_t *event, apx_fileManager_
 void apx_fileManager_createFileRevokedEvent(apx_event_t *event, apx_fileManager_t *fileManager, apx_file2_t *file, const void *caller);
 void apx_fileManager_createFileOpenedEvent(apx_event_t *event, apx_fileManager_t *fileManager, apx_file2_t *file, const void *caller);
 void apx_fileManager_createFileClosedEvent(apx_event_t *event, apx_fileManager_t *fileManager, apx_file2_t *file, const void *caller);
+
+
 
 
 #ifdef UNIT_TEST

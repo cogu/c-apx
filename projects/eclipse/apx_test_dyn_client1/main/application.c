@@ -45,14 +45,20 @@
 static void onClientConnected(void *arg, apx_clientConnectionBase_t *clientConnection);
 static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientConnection);
 static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg);
+static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static apx_client_t *m_client = NULL;
 static apx_nodeData_t *m_nodeData = NULL;
-static const char *m_nodeName;
 static uint16_t m_wheelBasedVehicleSpeed;
+static uint32_t m_stressCount;
+static bool m_isConnected;
+static bool m_hasPendingStressCmd;
+static bool m_isStressOngoing;
+static bool m_isTestNode1;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -67,6 +73,10 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
    handlerTable.logEvent = onLogEvent;
 
    m_wheelBasedVehicleSpeed = 0u;
+   m_stressCount = 0;
+   m_isConnected = false;
+   m_hasPendingStressCmd = true;
+   m_isStressOngoing = false;
 
    m_client = apx_client_new();
    if (m_client != 0)
@@ -79,29 +89,45 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
          return;
       }
       m_nodeData = apx_client_getDynamicNode(m_client, 0);
-      m_nodeName = STRDUP(apx_nodeData_getName(m_nodeData));
-      result = apx_client_connectTcp(m_client, tcp_addr, tcp_port);
-      //result = apx_client_connectUnix(m_client, "/tmp/apx_server.socket");
+      if ( (strcmp(apx_nodeData_getName(m_nodeData), "TestNode1")==0) )
+      {
+         m_isTestNode1 = true;
+      }
+      else
+      {
+         m_isTestNode1 = false;
+      }
+      //result = apx_client_connectTcp(m_client, tcp_addr, tcp_port);
+      result = apx_client_connectUnix(m_client, "/tmp/apx_server.socket");
       if (result != APX_NO_ERROR)
       {
          printf("apx_client_connectTcp returned %d\n", (int) result);
          return;
       }
+
    }
 }
 
 void application_run(void)
 {
-   if ( (strcmp(m_nodeName, "TestNode1")==0) )
+   if (m_isConnected)
    {
-      uint8_t tmp[2];
-      m_wheelBasedVehicleSpeed++;
-      packLE(&tmp[0], m_wheelBasedVehicleSpeed, sizeof(m_wheelBasedVehicleSpeed));
-      apx_nodeData_setOutPortData(m_nodeData, &tmp[0], 1, sizeof(m_wheelBasedVehicleSpeed), false);
-   }
-   else if ( (strcmp(m_nodeName, "TestNode2")==0) )
-   {
-
+      if (m_isTestNode1)
+      {
+         if (m_hasPendingStressCmd)
+         {
+            uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
+            m_hasPendingStressCmd = false;
+            m_isStressOngoing = true;
+            apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 3, UINT32_SIZE, false);
+            printf("Stress started\n");
+         }
+         else if (m_isStressOngoing)
+         {
+            printf("Stress completed, count=%d\n", m_stressCount);
+            m_isStressOngoing = false;
+         }
+      }
    }
 }
 
@@ -111,12 +137,18 @@ void application_run(void)
 //////////////////////////////////////////////////////////////////////////////
 static void onClientConnected(void *arg, apx_clientConnectionBase_t *clientConnection)
 {
-   printf("onClientConnected\n");
+   apx_nodeDataEventListener_t eventListener;
+   m_isConnected = true;
+   memset(&eventListener, 0, sizeof(eventListener));
+   eventListener.inPortDataWritten = inPortDataWrittenCbk;
+   apx_clientConnectionBase_registerNodeDataEventListener(clientConnection, &eventListener);
 }
 
 static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientConnection)
 {
-   printf("onClientDisconnected\n");
+   m_isConnected = false;
+   m_hasPendingStressCmd = true;
+   m_isStressOngoing = false;
 }
 
 static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg)
@@ -124,3 +156,22 @@ static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const
    printf("onLogEvent\n");
 }
 
+static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
+{
+   if ( m_isTestNode1 && m_isStressOngoing && (offset == 0) && (len == UINT32_SIZE))
+   {
+      m_stressCount++;
+      uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
+      apx_nodeData_readInPortData(m_nodeData, &tmp[0], offset, len);
+      packLE(&tmp[0], m_stressCount, UINT32_SIZE);
+      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 3, UINT32_SIZE, false);
+
+   }
+   else if( (offset == 3) && (len == UINT32_SIZE))
+   {
+      uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
+      apx_nodeData_readInPortData(m_nodeData, &tmp[0], offset, len);
+      (void) unpackLE(&tmp[0], UINT32_SIZE);
+      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 0, UINT32_SIZE, false);
+   }
+}

@@ -64,7 +64,7 @@ static void apx_serverConnectionBase_processNewOutDataFile(apx_serverConnectionB
 static void apx_serverConnectionBase_onDefinitionDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len);
 static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len);
 static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, apx_file2_t *definitionFile);
-static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len);
+static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *srcNodeData, uint32_t offset, uint32_t len);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -471,6 +471,7 @@ static void apx_serverConnectionBase_processNewApxFile(apx_serverConnectionBase_
             apx_nodeData_setConnection(nodeData, (apx_connectionBase_t*) self);
             apx_nodeData_setDefinitionFile(nodeData, file);
             apx_nodeData_setEventListener(nodeData, &eventListener);
+            apx_nodeData_setFileManager(nodeData, &self->base.fileManager);
             result = apx_nodeDataManager_attach(&self->base.nodeDataManager, nodeData);
             if (result == APX_NO_ERROR)
             {
@@ -604,31 +605,31 @@ static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeDat
    }
 }
 
-static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
+static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *srcNodeData, uint32_t offset, uint32_t len)
 {
-   apx_portDataMap_t *portDataMap = apx_nodeData_getPortDataMap(nodeData);
-   if (portDataMap != 0)
+   apx_portDataMap_t *srcPortDataMap = apx_nodeData_getPortDataMap(srcNodeData);
+   if (srcPortDataMap != 0)
    {
-      apx_portId_t providePortId = apx_portDataMap_findProvidePortIdFromByteOffset(portDataMap, offset);
+      apx_portId_t providePortId = apx_portDataMap_findProvidePortIdFromByteOffset(srcPortDataMap, offset);
       if (providePortId != -1)
       {
-         int32_t i;
+         const apx_portDataProps_t *srcPortDataProps;
          apx_portTriggerList_t *portTriggerList;
          int32_t numConnections;
-         portTriggerList = apx_portDataMap_getPortTriggerList(portDataMap, providePortId);
+         int32_t i;
+         srcPortDataProps = apx_portDataMap_getProvidePortDataProps(srcPortDataMap, providePortId);
+         portTriggerList = apx_portDataMap_getPortTriggerList(srcPortDataMap, providePortId);
          numConnections = apx_portTriggerList_length(portTriggerList);
          for(i = 0; i < numConnections; i++)
          {
             apx_portDataRef_t *portDataRef = apx_portTriggerList_get(portTriggerList, i);
             if (portDataRef != 0)
             {
-               const apx_portDataProps_t *props = portDataRef->portDataProps;
-               if (apx_portDataProps_isPlainOldData(props) && (props->offset > 0))
+               apx_nodeData_t *destNodeData = portDataRef->nodeData;
+               const apx_portDataProps_t *destPortDataProps = portDataRef->portDataProps;
+               if (apx_portDataProps_isPlainOldData(srcPortDataProps) )
                {
-                  uint8_t tmp[1] = {0xaa};
-                  printf("Forwarding to %s(offset=%d)\n", apx_nodeData_getName(portDataRef->nodeData), (int) props->offset);
-                  apx_file2_t *file = apx_nodeData_getInPortDataFile(portDataRef->nodeData);
-                  apx_file2_write(file, &tmp[0], props->offset, 1, false);
+                  apx_nodeData_routePortData(destNodeData, destPortDataProps, srcNodeData, srcPortDataProps);
                }
             }
          }

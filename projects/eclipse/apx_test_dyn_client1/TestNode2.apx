@@ -1,6 +1,6 @@
 APX/1.2
 N"TestNode2"
-P"Ping_rsp"L:=0xFFFFFFFF
+P"StressTest_rsp"L:=0xFFFFFFFF
 R"VehicleMode"C(0,15):=15
 R"WheelBasedVehicleSpeed"S:=65535
-R"Ping_rqst"L
+R"StressTest_rqst"L

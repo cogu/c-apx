@@ -15,9 +15,10 @@ typedef struct apx_msg_tag
    uint32_t msgData1; //generic uint32 value
    uint32_t msgData2; //generic uint32 value
    union msgData3_tag{
-      void *ptr;                         //generic void* pointer value
+      void *ptr;                         //generic pointer value
       uint8_t data[APX_SMALL_DATA_SIZE]; //port data (when port data length is small)
    } msgData3;
+   void *msgData4; //generic pointer value
 } apx_msg_t;
 
 
@@ -29,8 +30,8 @@ typedef struct apx_msg_tag
 #define APX_MSG_SEND_FILE_OPEN             3 //msgData1=startAddress
 #define APX_MSG_SEND_FILE_CLOSE            4 //msgData1=startAddress
 #define APX_MSG_SEND_COMPLETE_FILE         5 //msgData1=startAddress, msgData2=length, msgData3.ptr=apx_file2_t *file
-#define APX_MSG_SEND_FILE_WRITE            6 //msgData1=startAddress, msgData2=length, msgData3.ptr=data (allocated through SOA, needs to be freed)
-#define APX_MSG_SEND_FILE_WRITE_DIRECT     7 //msgData1=startAddress, msgData2=length, msgData3.data=data (buffer memory)
+#define APX_MSG_FILE_WRITE                 6 //msgData1=offset, msgData2=length, msgData3.ptr=data (allocated through SOA, needs to be freed), msgData4=apx_file2_t*
+#define APX_MSG_FILE_WRITE_DIRECT          7 //msgData1=offset, msgData2=length, msgData3.data=data (buffer memory), msgData4=apx_file2_t*
 #define APX_MSG_SEND_ERROR_CODE            8 //msgData1=errorCode
 
 
