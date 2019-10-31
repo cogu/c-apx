@@ -51,10 +51,12 @@ static void test_apx_vmDeserializer_unpackU16LE(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU32LE(CuTest* tc);
 static void test_apx_vmDeserializer_unpackFixedStrAscii(CuTest* tc);
 static void test_apx_vmDeserializer_unpackFixedStrUtf8(CuTest* tc);
+static void test_apx_vmDeserializer_unpackBytes(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU8Scalar(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU8Array(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU8Record(CuTest* tc);
-
+static void test_apx_vmDeserializer_unpackRecordStrU32(CuTest* tc);
+static void test_apx_vmDeserializer_unpackBytesValue(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -74,9 +76,9 @@ CuSuite* testSuite_apx_vmDeserializer(void)
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU8Scalar);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU8Array);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU8Record);
-
-
-
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackRecordStrU32);
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackBytes);
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackBytesValue);
 
    return suite;
 }
@@ -159,7 +161,7 @@ static void test_apx_vmDeserializer_unpackFixedStrAscii(CuTest* tc)
 static void test_apx_vmDeserializer_unpackFixedStrUtf8(CuTest* tc)
 {
    uint8_t packedData[PACKED_DATA_SIZE] = {'K', 0303, 0266, 'p', 'e', 'n', 'h', 'a','m', 'n', 0u, 0u, 0u, 0u, 0u, 0u};
-   const char *verificationString = "K\303\266penhamn"; //Köpenhamn
+   const char *verificationString = "K\303\266penhamn"; //KÃ¶penhamn
    adt_str_t *str = adt_str_new();
    apx_vmDeserializer_t *sr = apx_vmDeserializer_new();
    CuAssertPtrNotNull(tc, sr);
@@ -226,20 +228,20 @@ static void test_apx_vmDeserializer_unpackU8Record(CuTest* tc)
    uint8_t verificationDataRed = 0xff;
    uint8_t verificationDataGreen = 0x12;
    uint8_t verificationDataBlue = 0xaa;
-   apx_vmDeserializer_t *sr = apx_vmDeserializer_new();
+   apx_vmDeserializer_t *ds = apx_vmDeserializer_new();
    dtl_dv_t *dv = 0;
    dtl_hv_t *hv;
    dtl_sv_t *sv;
 
-   apx_vmDeserializer_begin(sr, &packedData[0], sizeof(packedData));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_createRecordValue(sr, 0u, APX_DYN_LEN_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(sr, keyRed));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(sr, 0, APX_DYN_LEN_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(sr, keyGreen));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(sr, 0, APX_DYN_LEN_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(sr, keyBlue));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(sr, 0, APX_DYN_LEN_NONE));
-   dv = apx_vmDeserializer_getValue(sr, false);
+   apx_vmDeserializer_begin(ds, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_createRecordValue(ds, 0u, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, keyRed));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(ds, 0, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, keyGreen));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(ds, 0, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, keyBlue));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(ds, 0, APX_DYN_LEN_NONE));
+   dv = apx_vmDeserializer_getValue(ds, false);
    CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(dv));
    hv = (dtl_hv_t*) dv;
    sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, keyRed);
@@ -251,7 +253,85 @@ static void test_apx_vmDeserializer_unpackU8Record(CuTest* tc)
    sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, keyBlue);
    CuAssertPtrNotNull(tc, sv);
    CuAssertUIntEquals(tc, verificationDataBlue, dtl_sv_to_u32(sv, NULL));
-   apx_vmDeserializer_delete(sr);
+   apx_vmDeserializer_delete(ds);
 }
 
+static void test_apx_vmDeserializer_unpackRecordStrU32(CuTest* tc)
+{
+   uint8_t packedData[12+UINT32_SIZE] = {'G', 'e', 'o', 'r', 'g', 'e', 0u, 0u, 0u, 0u, 0u, 0u, 0x78, 0x56, 0x34, 0x12};
+   const char *key1 = "Name";
+   const char *key2 = "Id";
+   const char *nameVerificationData = "George";
+   const uint32_t idVerificationData = 0x12345678;
 
+   apx_vmDeserializer_t *ds = apx_vmDeserializer_new();
+   dtl_dv_t *dv = 0;
+   dtl_hv_t *hv;
+   dtl_sv_t *sv;
+
+   apx_vmDeserializer_begin(ds, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_createRecordValue(ds, 0u, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, key1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackStrValue(ds, 12u, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, key2));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU32Value(ds, 0, APX_DYN_LEN_NONE));
+   CuAssertConstPtrEquals(tc, packedData+16, apx_vmDeserializer_getReadPtr(ds));
+   dv = apx_vmDeserializer_getValue(ds, false);
+   CuAssertPtrNotNull(tc, dv);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(dv));
+   hv = (dtl_hv_t*) dv;
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, key1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertStrEquals(tc, nameVerificationData, dtl_sv_to_cstr(sv));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, key2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, idVerificationData, dtl_sv_to_u32(sv, NULL));
+   apx_vmDeserializer_delete(ds);
+}
+
+static void test_apx_vmDeserializer_unpackBytes(CuTest* tc)
+{
+   uint8_t packedData[4] = {0x01, 0x02, 0x03, 0x04};
+   apx_vmDeserializer_t *ds = apx_vmDeserializer_new();
+   adt_bytes_t *bytes = 0;
+   const uint8_t *data;
+
+   apx_vmDeserializer_begin(ds, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackBytes(ds, &bytes, 4u));
+   CuAssertPtrNotNull(tc, bytes);
+   data = adt_bytes_data(bytes);
+   CuAssertUIntEquals(tc, packedData[0], data[0]);
+   CuAssertUIntEquals(tc, packedData[1], data[1]);
+   CuAssertUIntEquals(tc, packedData[2], data[2]);
+   CuAssertUIntEquals(tc, packedData[3], data[3]);
+   adt_bytes_delete(bytes);
+   apx_vmDeserializer_delete(ds);
+}
+
+static void test_apx_vmDeserializer_unpackBytesValue(CuTest* tc)
+{
+   dtl_dv_t *dv = 0;
+   dtl_sv_t *sv;
+   const adt_bytes_t *bytes = 0;
+   const uint8_t *data;
+   int i;
+   uint8_t packedData[8] = {0xaa, 0xbb, 0xcd, 0x92, 0x00, 0x18, 0x26, 0x08};
+   apx_vmDeserializer_t *ds = apx_vmDeserializer_new();
+
+   apx_vmDeserializer_begin(ds, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackBytesValue(ds, 8, APX_DYN_LEN_NONE));
+   CuAssertConstPtrEquals(tc, packedData+8, apx_vmDeserializer_getReadPtr(ds));
+   dv = apx_vmDeserializer_getValue(ds, false);
+   CuAssertPtrNotNull(tc, dv);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
+   sv = (dtl_sv_t*) dv;
+   CuAssertIntEquals(tc, DTL_SV_BYTES, dtl_sv_type(sv));
+   bytes = dtl_sv_get_bytes(sv);
+   CuAssertPtrNotNull(tc, bytes);
+   data = adt_bytes_data(bytes);
+   for(i=0; i < 8; i++)
+   {
+      CuAssertUIntEquals(tc, packedData[i], data[i]);
+   }
+   apx_vmDeserializer_delete(ds);
+}

@@ -124,7 +124,9 @@ void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConne
       apx_serverConnectionBase_setConnectionId(connection, connectionId);
       adt_list_insert_unique(&self->activeConnections, connection);
       SPINLOCK_LEAVE(self->lock);
+#if (APX_DEBUG_ENABLE)
       printf("[CONNECTION_MANAGER] New connection %d\n", (int) connectionId );
+#endif
    }
 }
 
@@ -270,7 +272,6 @@ static void apx_connectionManager_cleanupTask_run(apx_connectionManager_t *self,
       apx_serverConnectionBase_t *baseConnection = (apx_serverConnectionBase_t*) iter->pItem;
       if (baseConnection->isActive)
       {
-         //printf("[CONNECTION_MANAGER] Closing %d\n", (int) baseConnection->base.connectionId);
          apx_serverConnectionBase_close(baseConnection);
          apx_serverConnectionBase_detachNodes(baseConnection);
          baseConnection->isActive = false;
@@ -279,11 +280,15 @@ static void apx_connectionManager_cleanupTask_run(apx_connectionManager_t *self,
       {
          if ( (apx_serverConnectionBase_getTotalPortReferences(baseConnection) == 0u) && (apx_connectionBase_getNumPendingEvents(&baseConnection->base) == 0u))
          {
+#if (APX_DEBUG_ENABLE)
             printf("[CONNECTION_MANAGER] Cleaning up %d\n", (int) baseConnection->base.connectionId);
+#endif
             adt_list_erase(&self->inactiveConnections, iter);
             apx_connectionBase_stop(&baseConnection->base);
             apx_connectionBase_delete(&baseConnection->base);
+#if (APX_DEBUG_ENABLE)
             printf("[CONNECTION_MANAGER] Cleanup complete\n");
+#endif
          }
       }
       SPINLOCK_LEAVE(self->lock);

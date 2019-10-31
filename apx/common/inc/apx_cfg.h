@@ -35,6 +35,9 @@
 # define APX_MAX_NUM_MESSAGES 1000
 #endif
 
+#ifndef APX_DEBUG_ENABLE
+# define APX_DEBUG_ENABLE 0
+#endif
 
 #ifndef APX_MAX_NUM_EVENTS
 # define APX_MAX_NUM_EVENTS 1000
