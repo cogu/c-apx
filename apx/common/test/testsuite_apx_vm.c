@@ -95,7 +95,7 @@ static void test_apx_vm_parsePackHeader(CuTest* tc)
    compiler =  apx_compiler_new();
    CuAssertPtrNotNull(tc, compiler);
    apx_compiler_begin(compiler, program);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_encodePackHeader(compiler, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0x12345678));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_encodePackProgramHeader(compiler, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0x12345678));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_parsePackHeader(program, &majorVersion, &minorVersion, &progType, &dataSize));
    CuAssertUIntEquals(tc, APX_VM_MAJOR_VERSION, majorVersion);
    CuAssertUIntEquals(tc, APX_VM_MINOR_VERSION, minorVersion);

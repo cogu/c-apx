@@ -66,8 +66,10 @@ void apx_compiler_end(apx_compiler_t *self);
 
 
 apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement);
-apx_error_t apx_compiler_encodePackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
-apx_error_t apx_compiler_encodeUnpackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
+apx_error_t apx_compiler_compileUnpackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement);
+
+apx_error_t apx_compiler_encodePackProgramHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
+apx_error_t apx_compiler_encodeUnpackProgramHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
 uint8_t apx_compiler_encodeInstruction(uint8_t opCode, uint8_t variant, uint8_t flags);
 
 
