@@ -47,8 +47,10 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-static uint8_t apx_compiler_encodePackArrayInstruction(apx_compiler_t *self,  uint32_t arrayLen, bool isDynamic, uint8_t *packLen);
+static uint8_t apx_compiler_encodeArrayInstruction(apx_compiler_t *self,  uint32_t arrayLen, bool isDynamic, uint8_t *packLen);
 static uint8_t apx_compiler_encodeRecordSelectInstruction(bool isLastField);
+static apx_error_t apx_compiler_encodeProgramHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize, uint8_t programType);
+static apx_error_t apx_compiler_compileDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement, uint8_t opcode);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -117,7 +119,7 @@ apx_error_t apx_compiler_begin_packProgram(apx_compiler_t *self, adt_bytearray_t
    if ( (self != 0) && (buffer != 0) )
    {
       apx_compiler_begin(self, buffer);
-      return apx_compiler_encodePackHeader(self, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0u);
+      return apx_compiler_encodePackProgramHeader(self, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0u);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -127,7 +129,7 @@ apx_error_t apx_compiler_begin_unpackProgram(apx_compiler_t *self, adt_bytearray
    if ( (self != 0) && (buffer != 0) )
    {
       apx_compiler_begin(self, buffer);
-      return apx_compiler_encodeUnpackHeader(self, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0u);
+      return apx_compiler_encodeUnpackProgramHeader(self, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, 0u);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -147,13 +149,103 @@ void apx_compiler_end(apx_compiler_t *self)
 }
 
 
-
 apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement)
+{
+   return apx_compiler_compileDataElement(self, dataElement, APX_OPCODE_PACK);
+}
+
+
+apx_error_t apx_compiler_compileUnpackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement)
+{
+   return apx_compiler_compileDataElement(self, dataElement, APX_OPCODE_UNPACK);
+}
+
+
+uint8_t apx_compiler_encodeInstruction(uint8_t opcode, uint8_t variant, uint8_t flags)
+{
+   uint8_t result = (opcode & APX_INST_OPCODE_MASK) | ( (variant & APX_INST_VARIANT_MASK) << APX_INST_VARIANT_SHIFT);
+   if (flags != 0)
+   {
+      result |= (flags & APX_INST_FLAG_MASK) << APX_INST_FLAG_SHIFT;
+   }
+   return result;
+}
+
+
+apx_error_t apx_compiler_encodePackProgramHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize)
+{
+   return apx_compiler_encodeProgramHeader(self, majorVersion, minorVersion, dataSize, APX_VM_HEADER_PACK_PROG);
+}
+
+apx_error_t apx_compiler_encodeUnpackProgramHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize)
+{
+   return apx_compiler_encodeProgramHeader(self, majorVersion, minorVersion, dataSize, APX_VM_HEADER_UNPACK_PROG);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
+
+static uint8_t apx_compiler_encodeArrayInstruction(apx_compiler_t *self,  uint32_t arrayLen, bool isDynamic, uint8_t *packLen)
+{
+   const uint8_t opcode = APX_OPCODE_ARRAY;
+   uint8_t variant;
+   uint8_t flag = isDynamic? APX_DYN_ARRAY_FLAG : 0;
+   if (arrayLen <= UINT8_MAX)
+   {
+      variant = APX_VARIANT_U8;
+      *packLen = UINT8_SIZE;
+   }
+   else if (arrayLen <= UINT16_MAX)
+   {
+      variant = APX_VARIANT_U16;
+      *packLen = UINT16_SIZE;
+   }
+   else if (arrayLen <= UINT32_MAX)
+   {
+      variant = APX_VARIANT_U32;
+      *packLen = UINT32_SIZE;
+   }
+   else
+   {
+      return APX_OPCODE_INVALID;
+   }
+   return apx_compiler_encodeInstruction(opcode, variant, flag);
+}
+
+static uint8_t apx_compiler_encodeRecordSelectInstruction(bool isLastField)
+{
+   const uint8_t opcode = APX_OPCODE_DATA_CTRL;
+   const uint8_t variant = APX_VARIANT_RECORD_SELECT;
+   uint8_t flag = isLastField? APX_LAST_FIELD_FLAG : 0u;
+   return apx_compiler_encodeInstruction(opcode, variant, flag);
+}
+
+static apx_error_t apx_compiler_encodeProgramHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize, uint8_t programType)
+{
+   if (self != 0)
+   {
+      if (self->program != 0)
+      {
+         uint8_t instruction[APX_VM_HEADER_SIZE] = {APX_VM_MAGIC_NUMBER, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, programType, 0, 0, 0, 0};
+         packLE(&instruction[4], dataSize, UINT32_SIZE);
+         adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_VM_HEADER_SIZE);
+         self->hasHeader = true;
+         return APX_NO_ERROR;
+      }
+      else
+      {
+         return APX_MISSING_BUFFER_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_compiler_compileDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement, uint8_t opcode)
 {
    if ( (self != 0) && (dataElement != 0) )
    {
       apx_error_t retval = APX_NO_ERROR;
-      uint8_t opcode = APX_OPCODE_PACK;
       uint8_t variant = 0;
       uint8_t flags = 0;
       apx_size_t elemSize = 0u;
@@ -218,7 +310,7 @@ apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataEl
          adt_bytearray_push(self->program, instruction);
          if (arrayLen > 0u)
          {
-            instruction = apx_compiler_encodePackArrayInstruction(self, arrayLen, isDynamicArray, &arrayPackLen);
+            instruction = apx_compiler_encodeArrayInstruction(self, arrayLen, isDynamicArray, &arrayPackLen);
             if (instruction != APX_OPCODE_INVALID)
             {
                uint8_t tmp[UINT32_SIZE];
@@ -271,7 +363,7 @@ apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataEl
                   retval = APX_NAME_MISSING_ERROR;
                   break;
                }
-               retval = apx_compiler_compilePackDataElement(self, childElement);
+               retval = apx_compiler_compileDataElement(self, childElement, opcode);
                if (retval != APX_NO_ERROR)
                {
                   break;
@@ -312,142 +404,4 @@ apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataEl
       return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
-}
-
-#if 0
-apx_error_t apx_compiler_compileRequirePort(apx_compiler_t *self, apx_node_t *node, apx_portId_t portId, apx_program_t *program)
-{
-   if ( (self != 0) && (node != 0) && (program != 0) && (portId>=0) )
-   {
-      int32_t numPorts = apx_node_getNumRequirePorts(node);
-      if (portId >= numPorts)
-      {
-         return APX_INVALID_ARGUMENT_ERROR;
-      }
-      apx_compiler_appendPlaceHolderHeader(self, APX_HEADER_UNPACK_PROG);
-      self->program = program;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-apx_error_t apx_compiler_compileProvidePort(apx_compiler_t *self, apx_node_t *node, apx_portId_t portId, apx_program_t *program)
-{
-   if ( (self != 0) && (node != 0) && (program != 0) && (portId>=0) )
-   {
-      apx_error_t retval = APX_NO_ERROR;
-      apx_dataElement_t *dataElement;
-      apx_port_t *port;
-      int32_t numPorts = apx_node_getNumProvidePorts(node);
-      apx_compiler_setProgram(self, program);
-      if (portId >= numPorts)
-      {
-         retval = APX_INVALID_ARGUMENT_ERROR;
-      }
-      else
-      {
-         apx_compiler_appendPlaceHolderHeader(self, APX_HEADER_PACK_PROG);
-         port = apx_node_getProvidePort(node, portId);
-         if (port != 0)
-         {
-            dataElement = apx_dataSignature_getDerivedDataElement(&port->dataSignature);
-            if (dataElement != 0)
-            {
-               retval = apx_compiler_compilePackDataElement(self, dataElement);
-            }
-         }
-         return retval;
-      }
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-#endif
-
-uint8_t apx_compiler_encodeInstruction(uint8_t opcode, uint8_t variant, uint8_t flags)
-{
-   uint8_t result = (opcode & APX_INST_OPCODE_MASK) | ( (variant & APX_INST_VARIANT_MASK) << APX_INST_VARIANT_SHIFT);
-   if (flags != 0)
-   {
-      result |= (flags & APX_INST_FLAG_MASK) << APX_INST_FLAG_SHIFT;
-   }
-   return result;
-}
-
-
-apx_error_t apx_compiler_encodePackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize)
-{
-   if (self != 0)
-   {
-      if (self->program != 0)
-      {
-         uint8_t instruction[APX_VM_HEADER_SIZE] = {APX_VM_MAGIC_NUMBER, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, APX_VM_HEADER_PACK_PROG, 0, 0, 0, 0};
-         packLE(&instruction[4], dataSize, UINT32_SIZE);
-         adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_VM_HEADER_SIZE);
-         self->hasHeader = true;
-         return APX_NO_ERROR;
-      }
-      else
-      {
-         return APX_MISSING_BUFFER_ERROR;
-      }
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-apx_error_t apx_compiler_encodeUnpackHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize)
-{
-   if (self != 0)
-   {
-      if (self->program != 0)
-      {
-         uint8_t instruction[APX_VM_HEADER_SIZE] = {APX_VM_MAGIC_NUMBER, APX_VM_MAJOR_VERSION, APX_VM_MINOR_VERSION, APX_VM_HEADER_UNPACK_PROG, 0, 0, 0, 0};
-         packLE(&instruction[4], dataSize, UINT32_SIZE);
-         adt_bytearray_append(self->program, &instruction[0], (uint32_t) APX_VM_HEADER_SIZE);
-         self->hasHeader = true;
-         return APX_NO_ERROR;
-      }
-      else
-      {
-         return APX_MISSING_BUFFER_ERROR;
-      }
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTIONS
-//////////////////////////////////////////////////////////////////////////////
-
-static uint8_t apx_compiler_encodePackArrayInstruction(apx_compiler_t *self,  uint32_t arrayLen, bool isDynamic, uint8_t *packLen)
-{
-   const uint8_t opcode = APX_OPCODE_ARRAY;
-   uint8_t variant;
-   uint8_t flag = isDynamic? APX_DYN_ARRAY_FLAG : 0;
-   if (arrayLen <= UINT8_MAX)
-   {
-      variant = APX_VARIANT_U8;
-      *packLen = UINT8_SIZE;
-   }
-   else if (arrayLen <= UINT16_MAX)
-   {
-      variant = APX_VARIANT_U16;
-      *packLen = UINT16_SIZE;
-   }
-   else if (arrayLen <= UINT32_MAX)
-   {
-      variant = APX_VARIANT_U32;
-      *packLen = UINT32_SIZE;
-   }
-   else
-   {
-      return APX_OPCODE_INVALID;
-   }
-   return apx_compiler_encodeInstruction(opcode, variant, flag);
-}
-
-static uint8_t apx_compiler_encodeRecordSelectInstruction(bool isLastField)
-{
-   const uint8_t opcode = APX_OPCODE_DATA_CTRL;
-   const uint8_t variant = APX_VARIANT_RECORD_SELECT;
-   uint8_t flag = isLastField? APX_LAST_FIELD_FLAG : 0u;
-   return apx_compiler_encodeInstruction(opcode, variant, flag);
 }
