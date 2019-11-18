@@ -55,7 +55,9 @@ typedef struct apx_portDataMap_tag
    apx_bytePortMap_t *providePortByteMap; //used in server mode, maps byte offset back to provide port ID
    apx_portTriggerList_t *portTriggerList; //used in server mode, strong reference to apx_portTriggerList_t, length of array=numProvidePorts
    adt_bytes_t **requirePortPackPrograms; //Strong reference to adt_bytes_t*,length of array: numRequirePorts
-   adt_bytes_t **providePortPackPrograms; //Strong reference to adt_bytes_t*,length of array: numRequirePorts
+   adt_bytes_t **providePortPackPrograms; //Strong reference to adt_bytes_t*,length of array: numProvidePorts
+   adt_bytes_t **requirePortUnpackPrograms; //Strong reference to adt_bytes_t*,length of array: numRequirePorts
+   adt_bytes_t **providePortUnpackPrograms; //Strong reference to adt_bytes_t*,length of array: numProvidePorts
    int32_t numRequirePorts;
    int32_t numProvidePorts;
 }apx_portDataMap_t;
@@ -71,6 +73,8 @@ apx_error_t apx_portDataMap_create(apx_portDataMap_t *self, apx_nodeData_t *node
 void apx_portDataMap_destroy(apx_portDataMap_t *self);
 apx_portDataMap_t *apx_portDataMap_new(apx_nodeData_t *nodeData);
 void apx_portDataMap_delete(apx_portDataMap_t *self);
+int32_t apx_portDataMap_getNumRequirePorts(apx_portDataMap_t *self);
+int32_t apx_portDataMap_getNumProvidePorts(apx_portDataMap_t *self);
 apx_portDataProps_t *apx_portDataMap_getRequirePortDataProps(apx_portDataMap_t *self, apx_portId_t portId);
 apx_portDataProps_t *apx_portDataMap_getProvidePortDataProps(apx_portDataMap_t *self, apx_portId_t portId);
 apx_error_t apx_portDataMap_initPortTriggerList(apx_portDataMap_t *self);
@@ -80,7 +84,11 @@ apx_portDataRef_t *apx_portDataMap_getRequirePortDataRef(apx_portDataMap_t *self
 apx_portDataRef_t *apx_portDataMap_getProvidePortDataRef(apx_portDataMap_t *self, apx_portId_t portId);
 void apx_portDataMap_updatePortTriggerList(apx_portDataMap_t *self, struct apx_portConnectionTable_tag *portConnectionTable);
 apx_portTriggerList_t *apx_portDataMap_getPortTriggerList(apx_portDataMap_t *self, apx_portId_t providePortId);
-apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_compiler_t *compiler, apx_node_t *node, apx_uniquePortId_t *errPortId);
+apx_error_t apx_portDataMap_createPortPrograms(apx_portDataMap_t *self, apx_compiler_t *compiler, apx_node_t *node, apx_programType_t *errProgramType, apx_uniquePortId_t *errPortId);
 apx_portId_t apx_portDataMap_findProvidePortIdFromByteOffset(apx_portDataMap_t *self, int32_t offset);
+const adt_bytes_t* apx_portDataMap_getRequirePortPackProgram(apx_portDataMap_t *self, apx_portId_t portId);
+const adt_bytes_t* apx_portDataMap_getProvidePortPackProgram(apx_portDataMap_t *self, apx_portId_t portId);
+const adt_bytes_t* apx_portDataMap_getRequirePortUnpackProgram(apx_portDataMap_t *self, apx_portId_t portId);
+const adt_bytes_t* apx_portDataMap_getProvidePortUnpackProgram(apx_portDataMap_t *self, apx_portId_t portId);
 
 #endif //APX_PORT_DATA_MAP_H

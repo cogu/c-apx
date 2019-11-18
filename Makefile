@@ -73,6 +73,7 @@ SHARED_SOURCES = \
 	apx/common/src/apx_typeAttribute.c \
 	apx/common/src/apx_vm.c \
 	apx/common/src/apx_vmSerializer.c \
+	apx/common/src/apx_vmDeserializer.c \
 	bstr/src/bstr.c \
 	cutil/src/pack.c \
 	cutil/src/filestream.c \

@@ -66,7 +66,6 @@
 static void apx_client_triggerConnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection);
 static void apx_client_triggerDisconnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection);
 static void apx_client_triggerNodeCompleteEvent(apx_client_t *self, apx_nodeData_t *nodeData);
-static apx_error_t apx_client_compilePortPrograms(apx_client_t *self, apx_nodeData_t *nodeData, apx_uniquePortId_t *errPortId);
 static void apx_client_updateBaseConnectionOnNodes(apx_client_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -281,7 +280,6 @@ apx_error_t apx_client_createLocalNode_cstr(apx_client_t *self, const char *apx_
       }
       else
       {
-         nodeData->isDynamic = true;
          if (nodeData->portDataMap == 0)
          {
             result = apx_nodeData_createPortDataMap(nodeData, APX_CLIENT_MODE);
@@ -292,8 +290,9 @@ apx_error_t apx_client_createLocalNode_cstr(apx_client_t *self, const char *apx_
             }
             else
             {
+               apx_programType_t programType = APX_PACK_PROGRAM;
                apx_uniquePortId_t errPortId = 0;
-               result = apx_client_compilePortPrograms(self, nodeData, &errPortId);
+               result = apx_nodeData_compilePortPrograms(nodeData, &programType, &errPortId);
                if (result != APX_NO_ERROR)
                {
                   if (result == APX_MEM_ERROR)
@@ -303,8 +302,9 @@ apx_error_t apx_client_createLocalNode_cstr(apx_client_t *self, const char *apx_
                   else
                   {
                      int32_t portId = (int32_t) (errPortId & APX_PORT_ID_MASK);
-                     const char *portType = (errPortId & APX_PORT_ID_PROVIDE_PORT)? "P" : "R";
-                     fprintf(stderr, "%s.%s[%d]: Compile error %d\n", apx_nodeData_getName(nodeData), portType, (int) portId, (int) result);
+                     const char *portTypeStr = (errPortId & APX_PORT_ID_PROVIDE_PORT)? "P" : "R";
+                     const char *programTypeStr = (programType == APX_PACK_PROGRAM)? "PACK" : "UNPACK";
+                     fprintf(stderr, "%s.%s[%d]: Compile error (%s) %d\n", apx_nodeData_getName(nodeData), portTypeStr, (int) portId, programTypeStr, (int) result);
                   }
                   apx_nodeData_delete(nodeData);
                }
@@ -499,36 +499,6 @@ static void apx_client_triggerNodeCompleteEvent(apx_client_t *self, apx_nodeData
       }
       iter = adt_list_iter_next(iter);
    }
-}
-
-static apx_error_t apx_client_compilePortPrograms(apx_client_t *self, apx_nodeData_t *nodeData, apx_uniquePortId_t *errPortId)
-{
-   bool usePackPrograms = true;
-   bool useUnpackPrograms = false;
-   apx_error_t retval = APX_NO_ERROR;
-   apx_portDataMap_t *portDataMap;
-   apx_node_t *node;
-   apx_compiler_t compiler;
-   node = apx_nodeData_getNode(nodeData);
-   portDataMap = apx_nodeData_getPortDataMap(nodeData);
-
-
-   if ( (node == 0) || (portDataMap == 0) )
-   {
-      return APX_NULL_PTR_ERROR;
-   }
-   apx_compiler_create(&compiler);
-   if(usePackPrograms)
-   {
-      retval = apx_portDataMap_createPackPrograms(portDataMap, &compiler, node, errPortId);
-   }
-   if( (retval == APX_NO_ERROR) && (useUnpackPrograms) )
-   {
-      //retval = apx_portDataMap_createUnpackPrograms(portDataMap, &compiler, node, errPortId);
-      retval = APX_NO_ERROR;
-   }
-   apx_compiler_destroy(&compiler);
-   return retval;
 }
 
 static void apx_client_updateBaseConnectionOnNodes(apx_client_t *self)

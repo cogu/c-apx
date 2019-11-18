@@ -55,6 +55,7 @@ typedef struct apx_vmReadState_tag
    uint32_t maxArrayLen; //maximum array length of current object. This is only applicable for dynamic arrays
    apx_dynLenType_t dynLenType;
    adt_str_t *recordKey; //currently selected record key
+   bool isLastItem;
 } apx_vmReadState_t;
 
 typedef struct apx_vmReadBuf_tag
@@ -95,6 +96,8 @@ const uint8_t* apx_vmDeserializer_getReadPtr(apx_vmDeserializer_t *self);
 const uint8_t* apx_vmDeserializer_getAdjustedReadPtr(apx_vmDeserializer_t *self);
 apx_error_t apx_vmDeserializer_begin(apx_vmDeserializer_t *self, const uint8_t *pData, uint32_t dataLen);
 dtl_dv_t* apx_vmDeserializer_getValue(apx_vmDeserializer_t *self, bool autoIncrementRef);
+
+apx_size_t apx_vmDeserializer_getBytesRead(apx_vmDeserializer_t *self);
 
 //low-level API
 apx_error_t apx_vmDeserializer_unpackU8(apx_vmDeserializer_t *self, uint8_t *u8Value);

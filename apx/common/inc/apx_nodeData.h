@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "adt_bytes.h"
 #include "apx_types.h"
 #include "apx_error.h"
 #include "apx_eventListener.h"
@@ -184,6 +185,11 @@ struct apx_portDataMap_tag* apx_nodeData_getPortDataMap(apx_nodeData_t *self);
 void apx_nodeData_setPortDataMap(apx_nodeData_t *self, struct apx_portDataMap_tag *portDataMap);
 struct apx_portDataRef_tag *apx_nodeData_getRequirePortDataRef(apx_nodeData_t *self, apx_portId_t portId);
 struct apx_portDataRef_tag *apx_nodeData_getProvidePortDataRef(apx_nodeData_t *self, apx_portId_t portId);
+apx_error_t apx_nodeData_compilePortPrograms(apx_nodeData_t *self, apx_programType_t *errProgramType, apx_uniquePortId_t *errPortId);
+const adt_bytes_t *apx_nodeData_getRequirePortUnpackProgram(apx_nodeData_t *self, apx_portId_t portId);
+const adt_bytes_t *apx_nodeData_getRequirePortPackProgram(apx_nodeData_t *self, apx_portId_t portId);
+const adt_bytes_t *apx_nodeData_getProvidePortUnpackProgram(apx_nodeData_t *self, apx_portId_t portId);
+const adt_bytes_t *apx_nodeData_getProvidePortPackProgram(apx_nodeData_t *self, apx_portId_t portId);
 
 //APX Connection API
 void apx_nodeData_setConnection(apx_nodeData_t *self, struct apx_connectionBase_tag *connection);
