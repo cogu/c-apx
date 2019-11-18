@@ -40,10 +40,10 @@
 #define APX_VM_HEADER_SIZE 8u
 //byte 0: magic number 0x42 ('B'),
 //bytes 1-2: APX_BYTE_CODE_VERSION(uint16_le),
-//byte3: program_type,
-//bytes 4-7: dataSize (uint32_le)
+//byte3: program_type ('P' or 'U')
+//bytes 4-7: maxDataSize (uint32_le)
 #define APX_VM_HEADER_DATA_OFFSET 4
-#define APX_VM_MAGIC_NUMBER ((uint8_t) 'B')
+#define APX_VM_MAGIC_NUMBER              ((uint8_t) 'B')
 #define APX_VM_HEADER_PACK_PROG          ((uint8_t) 'P') //Pack program
 #define APX_VM_HEADER_UNPACK_PROG        ((uint8_t) 'U') //unpack program mode
 

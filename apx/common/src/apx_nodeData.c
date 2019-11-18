@@ -267,6 +267,7 @@ apx_nodeData_t *apx_nodeData_makeFromString(struct apx_parser_tag *parser, const
          {
             assert((nodeData->definitionDataBuf != 0) && (nodeData->definitionDataLen == definitionLen));
             memcpy(nodeData->definitionDataBuf, apx_text, definitionLen);
+            nodeData->isDynamic = true;
          }
          else
          {
@@ -881,6 +882,63 @@ struct apx_portDataRef_tag *apx_nodeData_getProvidePortDataRef(apx_nodeData_t *s
    }
    return (struct apx_portDataRef_tag*) 0;
 }
+
+apx_error_t apx_nodeData_compilePortPrograms(apx_nodeData_t *self, apx_programType_t *errProgramType, apx_uniquePortId_t *errPortId)
+{
+   apx_error_t retval = APX_NO_ERROR;
+   apx_portDataMap_t *portDataMap;
+   apx_node_t *node;
+   apx_compiler_t compiler;
+   node = apx_nodeData_getNode(self);
+   portDataMap = apx_nodeData_getPortDataMap(self);
+
+   if ( (node == 0) || (portDataMap == 0) )
+   {
+      return APX_NULL_PTR_ERROR;
+   }
+   apx_compiler_create(&compiler);
+   retval = apx_portDataMap_createPortPrograms(portDataMap, &compiler, node, errProgramType, errPortId);
+   apx_compiler_destroy(&compiler);
+   return retval;
+}
+
+const adt_bytes_t *apx_nodeData_getRequirePortUnpackProgram(apx_nodeData_t *self, apx_portId_t portId)
+{
+   if (self != 0)
+   {
+      return apx_portDataMap_getRequirePortUnpackProgram(self->portDataMap, portId);
+   }
+   return (const adt_bytes_t*) 0;
+}
+
+const adt_bytes_t *apx_nodeData_getRequirePortPackProgram(apx_nodeData_t *self, apx_portId_t portId)
+{
+   if (self != 0)
+   {
+      return apx_portDataMap_getRequirePortPackProgram(self->portDataMap, portId);
+   }
+   return (const adt_bytes_t*) 0;
+}
+
+const adt_bytes_t *apx_nodeData_getProvidePortUnpackProgram(apx_nodeData_t *self, apx_portId_t portId)
+{
+   if (self != 0)
+   {
+      return apx_portDataMap_getProvidePortUnpackProgram(self->portDataMap, portId);
+   }
+   return (const adt_bytes_t*) 0;
+}
+
+const adt_bytes_t *apx_nodeData_getProvidePortPackProgram(apx_nodeData_t *self, apx_portId_t portId)
+{
+   if (self != 0)
+   {
+      return apx_portDataMap_getProvidePortPackProgram(self->portDataMap, portId);
+   }
+   return (const adt_bytes_t*) 0;
+}
+
+
 
 
 const char *apx_nodeData_getName(apx_nodeData_t *self)

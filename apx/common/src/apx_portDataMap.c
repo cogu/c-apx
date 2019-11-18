@@ -119,6 +119,24 @@ void apx_portDataMap_destroy(apx_portDataMap_t *self)
             self->providePortPackPrograms[portId] = (adt_bytes_t*) 0;
          }
       }
+      if (self->requirePortUnpackPrograms)
+      {
+         int32_t portId;
+         for(portId = 0; portId < self->numRequirePorts; portId++)
+         {
+            adt_bytes_delete(self->requirePortUnpackPrograms[portId]);
+            self->requirePortUnpackPrograms[portId] = (adt_bytes_t*) 0;
+         }
+      }
+      if (self->providePortUnpackPrograms)
+      {
+         int32_t portId;
+         for(portId = 0; portId < self->numProvidePorts; portId++)
+         {
+            adt_bytes_delete(self->providePortUnpackPrograms[portId]);
+            self->providePortUnpackPrograms[portId] = (adt_bytes_t*) 0;
+         }
+      }
       apx_portDataMap_freeMemory(self);
    }
 }
@@ -146,6 +164,25 @@ void apx_portDataMap_delete(apx_portDataMap_t *self)
       free(self);
    }
 }
+
+int32_t apx_portDataMap_getNumRequirePorts(apx_portDataMap_t *self)
+{
+   if (self != 0)
+   {
+      return self->numRequirePorts;
+   }
+   return -1;
+}
+
+int32_t apx_portDataMap_getNumProvidePorts(apx_portDataMap_t *self)
+{
+   if (self != 0)
+   {
+      return self->numProvidePorts;
+   }
+   return -1;
+}
+
 
 apx_portDataProps_t *apx_portDataMap_getRequirePortDataProps(apx_portDataMap_t *self, apx_portId_t portId)
 {
@@ -278,17 +315,17 @@ apx_portTriggerList_t *apx_portDataMap_getPortTriggerList(apx_portDataMap_t *sel
    return (apx_portTriggerList_t*) 0;
 }
 
-apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_compiler_t *compiler, apx_node_t *node, apx_uniquePortId_t *errPortId)
+apx_error_t apx_portDataMap_createPortPrograms(apx_portDataMap_t *self, apx_compiler_t *compiler, apx_node_t *node, apx_programType_t *errProgramType, apx_uniquePortId_t *errPortId)
 {
    apx_error_t retval = APX_NO_ERROR;
-   if ( (self != 0) && (compiler != 0) && (node != 0) && (errPortId != 0) )
+   if ( (self != 0) && (compiler != 0) && (node != 0) && (errProgramType != 0) && (errPortId != 0) )
    {
       int32_t portIndex;
       adt_bytearray_t program;
       adt_bytearray_create(&program, APX_PROGRAM_GROW_SIZE);
       if (self->numRequirePorts > 0)
       {
-         if (self->requirePortPackPrograms == 0)
+         if ( (self->requirePortPackPrograms == 0) ||  (self->requirePortUnpackPrograms == 0))
          {
             return APX_NULL_PTR_ERROR;
          }
@@ -296,11 +333,13 @@ apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_comp
          {
             apx_dataElement_t *dataElement;
             apx_error_t compilationResult;
-            apx_port_t *port = apx_node_getRequirePort(node, portIndex);
+            apx_port_t *port;
+
+            *errProgramType = APX_PACK_PROGRAM;
+            port = apx_node_getRequirePort(node, portIndex);
             assert(port != 0);
             dataElement = apx_port_getDerivedDataElement(port);
             assert(dataElement != 0);
-
             adt_bytearray_clear(&program);
             apx_compiler_begin_packProgram(compiler, &program);
             compilationResult = apx_compiler_compilePackDataElement(compiler, dataElement);
@@ -320,13 +359,33 @@ apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_comp
                retval = compilationResult;
                break;
             }
+            *errProgramType = APX_UNPACK_PROGRAM;
+            adt_bytearray_clear(&program);
+            apx_compiler_begin_unpackProgram(compiler, &program);
+            compilationResult = apx_compiler_compileUnpackDataElement(compiler, dataElement);
+            if (compilationResult == APX_NO_ERROR)
+            {
+               adt_bytes_t *tmp;
+               tmp = adt_bytearray_bytes(&program);
+               if (tmp == 0)
+               {
+                  retval = APX_MEM_ERROR;
+                  break;
+               }
+               self->requirePortUnpackPrograms[portIndex] = tmp;
+            }
+            else
+            {
+               retval = compilationResult;
+               break;
+            }
             (*errPortId)++;
          }
       }
 
       if ( (retval == APX_NO_ERROR) && (self->numProvidePorts > 0) )
       {
-         if (self->providePortPackPrograms == 0)
+         if ( (self->providePortPackPrograms == 0) || (self->providePortUnpackPrograms == 0) )
          {
             return APX_NULL_PTR_ERROR;
          }
@@ -335,7 +394,9 @@ apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_comp
          {
             apx_dataElement_t *dataElement;
             apx_error_t compilationResult;
-            apx_port_t *port = apx_node_getProvidePort(node, portIndex);
+            apx_port_t *port;
+            *errProgramType = APX_PACK_PROGRAM;
+            port = apx_node_getProvidePort(node, portIndex);
             assert(port != 0);
             dataElement = apx_port_getDerivedDataElement(port);
             assert(dataElement != 0);
@@ -353,6 +414,26 @@ apx_error_t apx_portDataMap_createPackPrograms(apx_portDataMap_t *self, apx_comp
                   break;
                }
                self->providePortPackPrograms[portIndex] = tmp;
+            }
+            else
+            {
+               retval = compilationResult;
+               break;
+            }
+            *errProgramType = APX_UNPACK_PROGRAM;
+            adt_bytearray_clear(&program);
+            apx_compiler_begin_unpackProgram(compiler, &program);
+            compilationResult = apx_compiler_compileUnpackDataElement(compiler, dataElement);
+            if (compilationResult == APX_NO_ERROR)
+            {
+               adt_bytes_t *tmp;
+               tmp = adt_bytearray_bytes(&program);
+               if (tmp == 0)
+               {
+                  retval = APX_MEM_ERROR;
+                  break;
+               }
+               self->providePortUnpackPrograms[portIndex] = tmp;
             }
             else
             {
@@ -379,6 +460,43 @@ apx_portId_t apx_portDataMap_findProvidePortIdFromByteOffset(apx_portDataMap_t *
    }
    return (apx_portId_t) -1;
 }
+
+const adt_bytes_t* apx_portDataMap_getRequirePortPackProgram(apx_portDataMap_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId < self->numRequirePorts) && (self->requirePortPackPrograms != 0) )
+   {
+      return self->requirePortPackPrograms[portId];
+   }
+   return (const adt_bytes_t*) 0;
+}
+
+const adt_bytes_t* apx_portDataMap_getProvidePortPackProgram(apx_portDataMap_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId < self->numProvidePorts) && (self->requirePortPackPrograms != 0) )
+   {
+      return self->providePortPackPrograms[portId];
+   }
+   return (const adt_bytes_t*) 0;
+}
+
+const adt_bytes_t* apx_portDataMap_getRequirePortUnpackProgram(apx_portDataMap_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId < self->numRequirePorts) && (self->requirePortUnpackPrograms != 0) )
+   {
+      return self->requirePortUnpackPrograms[portId];
+   }
+   return (const adt_bytes_t*) 0;
+}
+
+const adt_bytes_t* apx_portDataMap_getProvidePortUnpackProgram(apx_portDataMap_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId < self->numProvidePorts) && (self->providePortUnpackPrograms != 0) )
+   {
+      return self->providePortUnpackPrograms[portId];
+   }
+   return (const adt_bytes_t*) 0;
+}
+
 
 
 
@@ -409,6 +527,13 @@ static apx_error_t apx_portDataMap_allocateMemory(apx_portDataMap_t *self, bool 
             return APX_MEM_ERROR;
          }
          memset(self->requirePortPackPrograms, 0, numBytes);
+
+         self->requirePortUnpackPrograms = (adt_bytes_t**) malloc(numBytes);
+         if (self->requirePortUnpackPrograms == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+         memset(self->requirePortUnpackPrograms, 0, numBytes);
       }
    }
    if (self->numProvidePorts > 0)
@@ -432,6 +557,13 @@ static apx_error_t apx_portDataMap_allocateMemory(apx_portDataMap_t *self, bool 
             return APX_MEM_ERROR;
          }
          memset(self->providePortPackPrograms, 0, numBytes);
+
+         self->providePortUnpackPrograms = (adt_bytes_t**) malloc(numBytes);
+         if (self->providePortUnpackPrograms == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+         memset(self->providePortUnpackPrograms, 0, numBytes);
       }
    }
    return APX_NO_ERROR;
@@ -468,6 +600,14 @@ static void apx_portDataMap_freeMemory(apx_portDataMap_t *self)
       if (self->providePortPackPrograms != 0)
       {
          free(self->providePortPackPrograms);
+      }
+      if (self->requirePortUnpackPrograms != 0)
+      {
+         free(self->requirePortUnpackPrograms);
+      }
+      if (self->providePortUnpackPrograms != 0)
+      {
+         free(self->providePortUnpackPrograms);
       }
    }
 }

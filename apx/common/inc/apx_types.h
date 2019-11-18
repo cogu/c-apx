@@ -21,6 +21,7 @@ typedef uint8_t apx_queLenType_t; //APX_QUE_LEN_NONE, APX_QUE_LEN_U8, APX_QUE_LE
 typedef APX_CONNECTION_COUNT_TYPE apx_connectionCount_t;
 typedef uint8_t apx_mode_t; //APX_NO_MODE, APX_CLIENT_MODE, APX_SERVER_MODE
 typedef uint16_t apx_eventId_t;
+typedef uint8_t apx_programType_t; //APX_PACK_PROGRAM, APX_UNPACK_PROGRAM
 
 
 typedef struct apx_dataWriteCmd_tag
@@ -98,6 +99,9 @@ typedef struct apx_dataWriteCmd_tag
 #define APX_BASE_TYPE_REF_NAME 11 //type name
 #define APX_BASE_TYPE_REF_PTR  12 //pointer to type (this is achieved only after derived has been called on data signature)
 typedef int8_t apx_baseType_t;
+
+#define APX_PACK_PROGRAM   ((apx_programType_t) 0)
+#define APX_UNPACK_PROGRAM ((apx_programType_t) 1)
 
 #define UINT8_SIZE   1u
 #define UINT16_SIZE  2u

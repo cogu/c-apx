@@ -41,11 +41,12 @@
 
 typedef struct apx_vmWriteState_tag
 {
-   union value_tag
+   union const_value_tag
    {
       const dtl_sv_t *sv;
       const dtl_av_t *av;
       const dtl_hv_t *hv;
+      const dtl_hv_t *dv;
    } value;
    struct apx_vmWriteState_tag *parent;
    apx_valueType_t valueType;
@@ -108,8 +109,9 @@ apx_error_t apx_vmSerializer_packBytes(apx_vmSerializer_t *self, const adt_bytes
 
 
 
-apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmSerializer_packValueAsU16(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 void apx_vmSerializer_adjustWritePtr(apx_vmSerializer_t *self);
 apx_error_t apx_vmSerializer_packValueAsFixedStr(apx_vmSerializer_t *self, int32_t writeLen, bool autoPopState);
 apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool autoPopState);

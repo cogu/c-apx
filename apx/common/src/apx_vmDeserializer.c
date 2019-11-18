@@ -67,6 +67,7 @@ void apx_vmReadState_create(apx_vmReadState_t *self)
    self->dynLenType = APX_DYN_LEN_NONE;
    self->parent = (apx_vmReadState_t*) 0;
    self->recordKey = (adt_str_t*) 0;
+   self->isLastItem = false;
 }
 
 void apx_vmReadState_destroy(apx_vmReadState_t *self)
@@ -212,6 +213,16 @@ dtl_dv_t* apx_vmDeserializer_getValue(apx_vmDeserializer_t *self, bool autoIncre
    }
    return (dtl_dv_t*) 0;
 
+}
+
+apx_size_t apx_vmDeserializer_getBytesRead(apx_vmDeserializer_t *self)
+{
+   apx_size_t retval = 0u;
+   if (self != 0)
+   {
+      retval = (apx_size_t) (self->buf.pNext-self->buf.pBegin);
+   }
+   return retval;
 }
 
 //Low-level API
