@@ -472,7 +472,7 @@ const adt_bytes_t* apx_portDataMap_getRequirePortPackProgram(apx_portDataMap_t *
 
 const adt_bytes_t* apx_portDataMap_getProvidePortPackProgram(apx_portDataMap_t *self, apx_portId_t portId)
 {
-   if ( (self != 0) && (portId < self->numProvidePorts) && (self->requirePortPackPrograms != 0) )
+   if ( (self != 0) && (portId < self->numProvidePorts) && (self->providePortPackPrograms != 0) )
    {
       return self->providePortPackPrograms[portId];
    }
