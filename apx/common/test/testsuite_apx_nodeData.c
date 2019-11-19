@@ -49,6 +49,11 @@ static void test_apx_nodeData_createProvidePortInitData(CuTest* tc);
 static void test_apx_nodeData_updatePortData(CuTest* tc);
 static void test_apx_create_dynamic_nodeData_with_requirePorts(CuTest* tc);
 static void test_apx_nodeData_dynamicReadU8Port(CuTest* tc);
+static void test_apx_nodeData_dynamicWriteU8Port(CuTest* tc);
+static void test_apx_nodeData_dynamicReadU16Port(CuTest* tc);
+static void test_apx_nodeData_dynamicWriteU16Port(CuTest* tc);
+static void test_apx_nodeData_dynamicReadU32Port(CuTest* tc);
+static void test_apx_nodeData_dynamicWriteU32Port(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -75,6 +80,11 @@ CuSuite* testSuite_apx_nodeData(void)
    SUITE_ADD_TEST(suite, test_apx_nodeData_updatePortData);
    SUITE_ADD_TEST(suite, test_apx_create_dynamic_nodeData_with_requirePorts);
    SUITE_ADD_TEST(suite, test_apx_nodeData_dynamicReadU8Port);
+   SUITE_ADD_TEST(suite, test_apx_nodeData_dynamicWriteU8Port);
+   SUITE_ADD_TEST(suite, test_apx_nodeData_dynamicReadU16Port);
+   SUITE_ADD_TEST(suite, test_apx_nodeData_dynamicWriteU16Port);
+   SUITE_ADD_TEST(suite, test_apx_nodeData_dynamicReadU32Port);
+   SUITE_ADD_TEST(suite, test_apx_nodeData_dynamicWriteU32Port);
 
    return suite;
 }
@@ -282,7 +292,7 @@ static void test_apx_nodeData_dynamicReadU8Port(CuTest* tc)
    const char *apx_text =
          "APX/1.2\n"
          "N\"TestNode\"\n"
-         "R\"FirstPort\"C:=255\n";
+         "R\"DataPort\"C\n";
    apx_vm_t *vm;
    apx_parser_t *parser = apx_parser_new();
    apx_nodeData_t *nodeData;
@@ -317,4 +327,217 @@ static void test_apx_nodeData_dynamicReadU8Port(CuTest* tc)
    }
    apx_nodeData_delete(nodeData);
    apx_vm_delete(vm);
+}
+
+static void test_apx_nodeData_dynamicWriteU8Port(CuTest* tc)
+{
+   const char *apx_text =
+         "APX/1.2\n"
+         "N\"TestNode\"\n"
+         "P\"DataPort\"C\n";
+   apx_vm_t *vm;
+   apx_parser_t *parser = apx_parser_new();
+   apx_nodeData_t *nodeData;
+   apx_error_t rc = APX_NO_ERROR;
+   apx_programType_t errProgramType = APX_PACK_PROGRAM;
+   apx_uniquePortId_t errPortId = 0;
+   const adt_bytes_t *program;
+   vm = apx_vm_new();
+   uint8_t valueToWrite[3] = {0x00, 0x12, 0xff};
+   uint8_t writeBuffer[UINT8_SIZE];
+   uint8_t expectedPacked[3] = {0x00, 0x12, 0xff};
+   dtl_sv_t *sv = dtl_sv_new();
+   int32_t i;
+   nodeData = apx_nodeData_makeFromString(parser, apx_text, &rc);
+   CuAssertPtrNotNull(tc, nodeData);
+   apx_parser_delete(parser);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData, APX_CLIENT_MODE) );
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_compilePortPrograms(nodeData, &errProgramType, &errPortId));
+   program = apx_nodeData_getProvidePortPackProgram(nodeData, (apx_portId_t) 0);
+   CuAssertPtrNotNull(tc, program);
+   apx_vm_selectProgram(vm, program);
+
+   for(i=0; i < 3; i++)
+   {
+      dtl_sv_set_u32(sv, valueToWrite[i]);
+      apx_vm_setWriteBuffer(vm, &writeBuffer[0], UINT8_SIZE);
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (const dtl_dv_t*) sv));
+      CuAssertUIntEquals(tc, expectedPacked[i], writeBuffer[0]);
+   }
+
+   apx_nodeData_delete(nodeData);
+   apx_vm_delete(vm);
+   dtl_dec_ref(sv);
+}
+
+static void test_apx_nodeData_dynamicReadU16Port(CuTest* tc)
+{
+   const char *apx_text =
+         "APX/1.2\n"
+         "N\"TestNode\"\n"
+         "R\"DataPort\"S\n";
+   apx_vm_t *vm;
+   apx_parser_t *parser = apx_parser_new();
+   apx_nodeData_t *nodeData;
+   apx_error_t rc = APX_NO_ERROR;
+   apx_programType_t errProgramType = APX_PACK_PROGRAM;
+   apx_uniquePortId_t errPortId = 0;
+   const adt_bytes_t *program;
+   vm = apx_vm_new();
+   uint16_t expectedValue[3] = {0x0000,  0x1234, 0xffff};
+   uint8_t packedData[3 * UINT16_SIZE] = {0x00, 0x00, 0x34, 0x12, 0xff, 0xff};
+   dtl_dv_t *dv = (dtl_dv_t*) 0;
+   dtl_sv_t *sv = (dtl_sv_t*) 0;
+   int32_t i;
+   nodeData = apx_nodeData_makeFromString(parser, apx_text, &rc);
+   CuAssertPtrNotNull(tc, nodeData);
+   apx_parser_delete(parser);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData, APX_CLIENT_MODE) );
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_compilePortPrograms(nodeData, &errProgramType, &errPortId));
+   program = apx_nodeData_getRequirePortUnpackProgram(nodeData, (apx_portId_t) 0);
+   CuAssertPtrNotNull(tc, program);
+   apx_vm_selectProgram(vm, program);
+
+   for(i=0; i < 3; i++)
+   {
+      apx_vm_setReadBuffer(vm, &packedData[i*UINT16_SIZE], UINT16_SIZE);
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_unpackValue(vm, &dv));
+      CuAssertPtrNotNull(tc, dv);
+      CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
+      sv = (dtl_sv_t*) dv;
+      CuAssertUIntEquals(tc, expectedValue[i], dtl_sv_to_u32(sv, NULL));
+      dtl_dec_ref(sv);
+   }
+
+   apx_nodeData_delete(nodeData);
+   apx_vm_delete(vm);
+}
+
+static void test_apx_nodeData_dynamicWriteU16Port(CuTest* tc)
+{
+   const char *apx_text =
+         "APX/1.2\n"
+         "N\"TestNode\"\n"
+         "P\"DataPort\"S\n";
+   apx_vm_t *vm;
+   apx_parser_t *parser = apx_parser_new();
+   apx_nodeData_t *nodeData;
+   apx_error_t rc = APX_NO_ERROR;
+   apx_programType_t errProgramType = APX_PACK_PROGRAM;
+   apx_uniquePortId_t errPortId = 0;
+   const adt_bytes_t *program;
+   vm = apx_vm_new();
+   uint16_t valueToWrite[3] = {0x0000, 0x1234, 0xffff};
+   uint8_t writeBuffer[UINT16_SIZE];
+   uint8_t expectedPacked[3*UINT16_SIZE] = {0x00, 0x00, 0x34, 0x12, 0xff, 0xff};
+   dtl_sv_t *sv = dtl_sv_new();
+   int32_t i;
+   nodeData = apx_nodeData_makeFromString(parser, apx_text, &rc);
+   CuAssertPtrNotNull(tc, nodeData);
+   apx_parser_delete(parser);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData, APX_CLIENT_MODE) );
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_compilePortPrograms(nodeData, &errProgramType, &errPortId));
+   program = apx_nodeData_getProvidePortPackProgram(nodeData, (apx_portId_t) 0);
+   CuAssertPtrNotNull(tc, program);
+   apx_vm_selectProgram(vm, program);
+
+   for(i=0; i < 3; i++)
+   {
+      dtl_sv_set_u32(sv, valueToWrite[i]);
+      apx_vm_setWriteBuffer(vm, &writeBuffer[0], UINT16_SIZE);
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (const dtl_dv_t*) sv));
+      CuAssertUIntEquals(tc, expectedPacked[i*UINT16_SIZE+0], writeBuffer[0]);
+      CuAssertUIntEquals(tc, expectedPacked[i*UINT16_SIZE+1], writeBuffer[1]);
+   }
+
+   apx_nodeData_delete(nodeData);
+   apx_vm_delete(vm);
+   dtl_dec_ref(sv);
+}
+
+static void test_apx_nodeData_dynamicReadU32Port(CuTest* tc)
+{
+   const char *apx_text =
+         "APX/1.2\n"
+         "N\"TestNode\"\n"
+         "R\"DataPort\"L\n";
+   apx_vm_t *vm;
+   apx_parser_t *parser = apx_parser_new();
+   apx_nodeData_t *nodeData;
+   apx_error_t rc = APX_NO_ERROR;
+   apx_programType_t errProgramType = APX_PACK_PROGRAM;
+   apx_uniquePortId_t errPortId = 0;
+   const adt_bytes_t *program;
+   vm = apx_vm_new();
+   uint32_t expectedValue[3] = {0x00000000,  0x12345678, 0xffffffff};
+   uint8_t packedData[3 * UINT32_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0xff, 0xff, 0xff, 0xff};
+   dtl_dv_t *dv = (dtl_dv_t*) 0;
+   dtl_sv_t *sv = (dtl_sv_t*) 0;
+   int32_t i;
+   nodeData = apx_nodeData_makeFromString(parser, apx_text, &rc);
+   CuAssertPtrNotNull(tc, nodeData);
+   apx_parser_delete(parser);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData, APX_CLIENT_MODE) );
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_compilePortPrograms(nodeData, &errProgramType, &errPortId));
+   program = apx_nodeData_getRequirePortUnpackProgram(nodeData, (apx_portId_t) 0);
+   CuAssertPtrNotNull(tc, program);
+   apx_vm_selectProgram(vm, program);
+
+   for(i=0; i < 3; i++)
+   {
+      apx_vm_setReadBuffer(vm, &packedData[i*UINT32_SIZE], UINT32_SIZE);
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_unpackValue(vm, &dv));
+      CuAssertPtrNotNull(tc, dv);
+      CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
+      sv = (dtl_sv_t*) dv;
+      CuAssertUIntEquals(tc, expectedValue[i], dtl_sv_to_u32(sv, NULL));
+      dtl_dec_ref(sv);
+   }
+
+   apx_nodeData_delete(nodeData);
+   apx_vm_delete(vm);
+}
+
+static void test_apx_nodeData_dynamicWriteU32Port(CuTest* tc)
+{
+   const char *apx_text =
+         "APX/1.2\n"
+         "N\"TestNode\"\n"
+         "P\"DataPort\"L\n";
+   apx_vm_t *vm;
+   apx_parser_t *parser = apx_parser_new();
+   apx_nodeData_t *nodeData;
+   apx_error_t rc = APX_NO_ERROR;
+   apx_programType_t errProgramType = APX_PACK_PROGRAM;
+   apx_uniquePortId_t errPortId = 0;
+   const adt_bytes_t *program;
+   vm = apx_vm_new();
+   uint32_t valueToWrite[3] = {0x00000000, 0x12345678, 0xffffffff};
+   uint8_t writeBuffer[UINT16_SIZE];
+   uint8_t expectedPacked[3*UINT32_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0xff, 0xff, 0xff, 0xff};
+   dtl_sv_t *sv = dtl_sv_new();
+   int32_t i;
+   nodeData = apx_nodeData_makeFromString(parser, apx_text, &rc);
+   CuAssertPtrNotNull(tc, nodeData);
+   apx_parser_delete(parser);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData, APX_CLIENT_MODE) );
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_compilePortPrograms(nodeData, &errProgramType, &errPortId));
+   program = apx_nodeData_getProvidePortPackProgram(nodeData, (apx_portId_t) 0);
+   CuAssertPtrNotNull(tc, program);
+   apx_vm_selectProgram(vm, program);
+
+   for(i=0; i < 3; i++)
+   {
+      dtl_sv_set_u32(sv, valueToWrite[i]);
+      apx_vm_setWriteBuffer(vm, &writeBuffer[0], UINT32_SIZE);
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (const dtl_dv_t*) sv));
+      CuAssertUIntEquals(tc, expectedPacked[i*UINT32_SIZE+0], writeBuffer[0]);
+      CuAssertUIntEquals(tc, expectedPacked[i*UINT32_SIZE+1], writeBuffer[1]);
+      CuAssertUIntEquals(tc, expectedPacked[i*UINT32_SIZE+2], writeBuffer[2]);
+      CuAssertUIntEquals(tc, expectedPacked[i*UINT32_SIZE+3], writeBuffer[3]);
+   }
+
+   apx_nodeData_delete(nodeData);
+   apx_vm_delete(vm);
+   dtl_dec_ref(sv);
 }
