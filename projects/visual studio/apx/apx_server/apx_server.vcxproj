@@ -91,7 +91,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>APX_DEBUG_ENABLE=0;SW_VERSION_LITERAL="0.2.5";_CRT_SECURE_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;_DEBUG;_CONSOLE;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);_WIN32_WINNT=0x0601;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>APX_DEBUG_ENABLE=0;SW_VERSION_LITERAL="0.2.6";_CRT_SECURE_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;_DEBUG;_CONSOLE;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);_WIN32_WINNT=0x0601;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
@@ -122,7 +122,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>SW_VERSION_LITERAL="0.2.5";_CRT_SECURE_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;_CONSOLE;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);_WIN32_WINNT=0x0601;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SW_VERSION_LITERAL="0.2.6";_CRT_SECURE_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;_CONSOLE;_MSC_PLATFORM_TOOLSET=$(PlatformToolsetVersion);_WIN32_WINNT=0x0601;WINVER=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
