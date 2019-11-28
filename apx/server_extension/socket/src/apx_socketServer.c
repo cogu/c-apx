@@ -224,7 +224,7 @@ static void apx_socketServer_tcpAccept(void *arg, struct msocket_server_tag *srv
    apx_socketServer_t *self = (apx_socketServer_t*) arg;
    if (self != 0)
    {
-      apx_serverSocketConnection_t *newConnection = apx_serverSocketConnection_new(sock, self->parent);
+      apx_serverSocketConnection_t *newConnection = apx_serverSocketConnection_new(sock);
       ///TODO: Add support for connection tag
       if (newConnection != 0)
       {

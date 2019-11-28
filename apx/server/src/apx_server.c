@@ -4,8 +4,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_server.h"
 #include "apx_logging.h"
-#include "apx_fileManager.h"
-#include "apx_eventListener.h"
+#include "apx_fileManager2.h"
+#include "apx_eventListener2.h"
 #include "apx_logEvent.h"
 #include <string.h>
 #include <stdio.h> //DEBUG ONLY
@@ -51,8 +51,8 @@ void apx_server_create(apx_server_t *self)
 {
    if (self != 0)
    {
-      adt_list_create(&self->serverEventListeners, apx_serverEventListener_vdelete);
-      apx_routingTable_create(&self->routingTable);
+      adt_list_create(&self->serverEventListeners, apx_serverEventListener2_vdelete);
+      //apx_routingTable_create(&self->routingTable);
       apx_connectionManager_create(&self->connectionManager);
       adt_list_create(&self->extensionManager, apx_serverExtension_vdelete);
       soa_init(&self->soa);
@@ -109,17 +109,17 @@ void apx_server_destroy(apx_server_t *self)
       soa_destroy(&self->soa);
       adt_list_destroy(&self->serverEventListeners);
       apx_connectionManager_destroy(&self->connectionManager);
-      apx_routingTable_destroy(&self->routingTable);
+      //apx_routingTable_destroy(&self->routingTable);
       adt_list_destroy(&self->extensionManager);
       MUTEX_DESTROY(self->mutex);
    }
 }
 
-void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener)
+void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener2_t *eventListener)
 {
    if ( (self != 0) && (eventListener != 0))
    {
-      void *handle = (void*) apx_serverEventListener_clone(eventListener);
+      void *handle = (void*) apx_serverEventListener2_clone(eventListener);
       if (handle != 0)
       {
          //TODO: Add multi-thread lock
@@ -138,7 +138,7 @@ void apx_server_unregisterEventListener(apx_server_t *self, void *handle)
       bool isFound = adt_list_remove(&self->serverEventListeners, handle);
       if (isFound == true)
       {
-         apx_serverEventListener_vdelete(handle);
+         apx_serverEventListener2_vdelete(handle);
       }
    }
 }
@@ -164,7 +164,7 @@ apx_routingTable_t* apx_server_getRoutingTable(apx_server_t *self)
 {
    if (self != 0)
    {
-      return &self->routingTable;
+      //return &self->routingTable;
    }
    return (apx_routingTable_t*) 0;
 }
@@ -254,6 +254,7 @@ static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serve
    if (apx_connectionManager_getNumConnections(&self->connectionManager) < APX_SERVER_MAX_CONCURRENT_CONNECTIONS)
    {
       apx_connectionManager_attach(&self->connectionManager, newConnection);
+      apx_serverConnectionBase_setServer(newConnection, self);
       apx_server_triggerConnectedEvent(self, newConnection);
       apx_connectionBase_start(&newConnection->base);
    }
@@ -264,11 +265,12 @@ static void apx_server_triggerConnectedEvent(apx_server_t *self, apx_serverConne
    adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
    while(iter != 0)
    {
-      apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
+/*      apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
       if ( (listener != 0) && (listener->serverConnected != 0) )
       {
          listener->serverConnected(listener->arg, serverConnection);
       }
+*/
       iter = adt_list_iter_next(iter);
    }
 }
@@ -278,11 +280,13 @@ static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverCo
    adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
    while(iter != 0)
    {
+/*
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
       if ( (listener != 0) && (listener->serverDisconnected != 0) )
       {
          listener->serverDisconnected(listener->arg, serverConnection);
       }
+*/
       iter = adt_list_iter_next(iter);
    }
 }
@@ -292,11 +296,13 @@ static void apx_server_triggerLogEvent(apx_server_t *self, apx_logLevel_t level,
    adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
    while(iter != 0)
    {
+/*
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
       if ( (listener != 0) && (listener->serverConnected != 0) )
       {
          listener->logEvent(listener->arg, level, label, msg);
       }
+*/
       iter = adt_list_iter_next(iter);
    }
 }

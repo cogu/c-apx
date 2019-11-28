@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_portDataRef.c
+* \file      apx_connectionEventSpy.c
 * \author    Conny Gustafsson
-* \date      2018-10-08
-* \brief     Description
+* \date      2018-08-21
+* \brief     Test spy for apx_fileManagerEventListener
 *
 * Copyright (c) 2018 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -26,14 +26,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <malloc.h>
 #include <string.h>
-#include "apx_error.h"
-#include "apx_portDataRef.h"
-#include "apx_portDataMap.h"
+#include <stdio.h>
+#include "apx_connectionEventSpy.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -50,52 +49,67 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeData_tag *nodeData, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps)
+void apx_connectionEventSpy_create(apx_connectionEventSpy_t *self)
 {
    if (self != 0)
    {
-      self->nodeData = nodeData;
-      self->portId = portId;
-      self->portDataProps = portDataProps;
+      self->headerAcceptedCount = 0;
+      self->fileCreateCount = 0;
+      self->lastConnection = (apx_connectionBase_t*) 0;
+      self->lastFileInfo = (apx_fileInfo_t*) 0;
    }
 }
 
-apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeData_tag *nodedata, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps)
-{
-   apx_portDataRef_t *self = (apx_portDataRef_t*) malloc(sizeof(apx_portDataRef_t));
-   if(self != 0)
-   {
-      apx_portDataRef_create(self, nodedata, portId, portDataProps);
-   }
-   return self;
-}
-
-void apx_portDataRef_delete(apx_portDataRef_t *self)
+void apx_connectionEventSpy_destroy(apx_connectionEventSpy_t *self)
 {
    if (self != 0)
    {
-      free(self);
+      if (self->lastFileInfo != 0)
+      {
+         apx_fileInfo_delete(self->lastFileInfo);
+      }
    }
 }
 
-void apx_portDataRef_vdelete(void *arg)
+void apx_connectionEventSpy_register(apx_connectionEventSpy_t *self, apx_connectionBase_t *connection)
 {
-   apx_portDataRef_delete((apx_portDataRef_t*) arg);
-}
-
-bool apx_portDataRef_isProvidePortRef(apx_portDataRef_t *self)
-{
-   return ( (self != 0) && ( (self->portId & APX_PORT_ID_PROVIDE_PORT) != 0u ) );
-}
-
-apx_portId_t apx_portDataRef_getPortId(apx_portDataRef_t *self)
-{
-   if (self != 0)
+   if ((self != 0) && (connection != 0) )
    {
-      return self->portId & APX_PORT_ID_MASK;
+      apx_connectionEventListener_t handler;
+      memset(&handler, 0, sizeof(handler));
+      handler.arg = (void*) self;
+      handler.headerAccepted2 = apx_connectionEventSpy_headerAccepted;
+      handler.fileCreate2 = apx_connectionEventSpy_fileCreate;
+      (void)apx_connectionBase_registerEventListener(connection, &handler);
    }
-   return -1;
 }
+
+void apx_connectionEventSpy_headerAccepted(void *arg, apx_connectionBase_t *connection)
+{
+   apx_connectionEventSpy_t *self = (apx_connectionEventSpy_t*) arg;
+   if ( (self != 0) && (connection != 0) )
+   {
+
+      self->headerAcceptedCount++;
+      self->lastConnection = connection;
+   }
+}
+
+void apx_connectionEventSpy_fileCreate(void *arg, apx_connectionBase_t *connection, const apx_fileInfo_t *fileInfo)
+{
+   apx_connectionEventSpy_t *self = (apx_connectionEventSpy_t*) arg;
+   if ( (self != 0) && (connection != 0) && (fileInfo != 0))
+   {
+      self->fileCreateCount++;
+      self->lastConnection = connection;
+      if (self->lastFileInfo != 0)
+      {
+         apx_fileInfo_delete(self->lastFileInfo);
+      }
+      self->lastFileInfo = apx_fileInfo_clone(fileInfo);
+   }
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

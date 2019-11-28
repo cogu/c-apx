@@ -91,7 +91,7 @@ void apx_node_setName(apx_node_t *self, const char *name){
    }
 }
 
-const char *apx_node_getName(apx_node_t *self)
+const char *apx_node_getName(const apx_node_t *self)
 {
    if (self != 0)
    {
@@ -219,6 +219,7 @@ apx_error_t apx_node_finalize(apx_node_t *self, int32_t *errorLine)
             }
          }
          providePortLen = adt_ary_length(&self->providePortList);
+         requirePortLen = adt_ary_length(&self->requirePortList);
          for(i=0;i<providePortLen;i++)
          {
             apx_error_t result;
@@ -230,10 +231,19 @@ apx_error_t apx_node_finalize(apx_node_t *self, int32_t *errorLine)
                retval = result;
                break;
             }
+            else
+            {
+               result = apx_port_calculateProperInitValue(port);
+               if (result != APX_NO_ERROR)
+               {
+                  if (errorLine != 0) *errorLine = port->lineNumber;
+                  retval = result;
+                  break;
+               }
+            }
          }
          if (retval == APX_NO_ERROR)
          {
-            requirePortLen = adt_ary_length(&self->requirePortList);
             for(i=0;i<requirePortLen;i++)
             {
                apx_error_t result;
@@ -245,16 +255,29 @@ apx_error_t apx_node_finalize(apx_node_t *self, int32_t *errorLine)
                   retval = result;
                   break;
                }
+               else
+               {
+                  result = apx_port_calculateProperInitValue(port);
+                  if (result != APX_NO_ERROR)
+                  {
+                     if (errorLine != 0) *errorLine = port->lineNumber;
+                     retval = result;
+                     break;
+                  }
+               }
             }
          }
          adt_hash_destroy(&typeMap);
-         self->isFinalized = true;
+         if (retval == APX_NO_ERROR)
+         {
+            self->isFinalized = true;
+         }
       }
    }
    return retval;
 }
 
-apx_port_t *apx_node_getRequirePort(const apx_node_t *self, int32_t portIndex)
+apx_port_t *apx_node_getRequirePort(const apx_node_t *self, apx_portId_t portIndex)
 {
    if (self != 0)
    {
@@ -263,7 +286,7 @@ apx_port_t *apx_node_getRequirePort(const apx_node_t *self, int32_t portIndex)
    return (apx_port_t*) 0;
 }
 
-apx_port_t *apx_node_getProvidePort(const apx_node_t *self, int32_t portIndex)
+apx_port_t *apx_node_getProvidePort(const apx_node_t *self, apx_portId_t portIndex)
 {
    if (self != 0)
    {
@@ -430,6 +453,24 @@ apx_error_t apx_node_getLastError(apx_node_t *self)
       return self->lastError;
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+adt_ary_t *apx_node_getRequirePortList(const apx_node_t *self)
+{
+   if (self != 0)
+   {
+      return (adt_ary_t*) &self->requirePortList;
+   }
+   return (adt_ary_t*) 0;
+}
+
+adt_ary_t *apx_node_getProvidePortList(const apx_node_t *self)
+{
+   if (self != 0)
+   {
+      return (adt_ary_t*) &self->providePortList;
+   }
+   return (adt_ary_t*) 0;
 }
 
 

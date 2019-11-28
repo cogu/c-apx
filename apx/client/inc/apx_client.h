@@ -33,7 +33,7 @@
 #include <stdbool.h>
 #include "apx_error.h"
 #include "apx_clientConnectionBase.h"
-#include "apx_nodeData.h"
+#include "apx_nodeInstance.h"
 
 
 
@@ -45,10 +45,22 @@
 struct adt_ary_tag;
 struct adt_list_tag;
 struct adt_hash_tag;
-struct apx_clientEventListener_tag;
-struct apx_fileManager_tag;
+struct apx_clientEventListener2_tag;
+struct apx_fileManager2_tag;
 struct apx_parser_tag;
-struct apx_nodeDataManager_tag;
+struct apx_nodeManager_tag;
+
+#ifndef APX_EMBEDDED
+# ifdef _WIN32
+#  ifndef WIN32_LEAN_AND_MEAN
+#   define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <Windows.h>
+# else
+#  include <pthread.h>
+# endif
+#include "osmacro.h"
+#endif
 
 #ifdef UNIT_TEST
 struct testsocket_tag;
@@ -57,10 +69,10 @@ struct testsocket_tag;
 typedef struct apx_client_tag
 {
    apx_clientConnectionBase_t *connection; //message connection
-   struct adt_hash_tag *nodeDataMap; //weak references to attached apx_nodeData_t objects. Hash key Key is the the node name.
-   struct adt_ary_tag *nodeDataList; //strong references to dynamically created apx_nodeData_t objects
    struct adt_list_tag *eventListeners; //weak references to apx_clientEventListener_t
    struct apx_parser_tag *parser;
+   struct apx_nodeManager_tag *nodeManager;
+   SPINLOCK_T lock;
 } apx_client_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -86,17 +98,22 @@ apx_error_t apx_client_connectUnix(apx_client_t *self, const char *socketPath);
 # endif
 #endif
 void apx_client_disconnect(apx_client_t *self);
-apx_error_t apx_client_attachLocalNode(apx_client_t *self, apx_nodeData_t *nodeData);
-apx_error_t apx_client_createLocalNode_cstr(apx_client_t *self, const char *apx_text);
-void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener_tag *listener);
+
+void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener2_tag *listener);
+void apx_client_unregisterEventListener(apx_client_t *self, void *handle);
+
 int32_t apx_client_getNumAttachedNodes(apx_client_t *self);
+int32_t apx_client_getNumEventListeners(apx_client_t *self);
 void apx_client_attachConnection(apx_client_t *self, apx_clientConnectionBase_t *connection);
 apx_clientConnectionBase_t *apx_client_getConnection(apx_client_t *self);
-apx_nodeData_t *apx_client_getDynamicNode(apx_client_t *self, int32_t index);
+
+apx_error_t apx_client_buildNode_cstr(apx_client_t *self, const char *definition_text);
+apx_nodeInstance_t *apx_client_getLastAttachedNode(apx_client_t *self);
+struct apx_fileManager2_tag *apx_client_getFileManager(apx_client_t *self);
+struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self);
 
 #ifdef UNIT_TEST
 void apx_client_run(apx_client_t *self);
 #endif
-
 
 #endif //APX_CLIENT_H

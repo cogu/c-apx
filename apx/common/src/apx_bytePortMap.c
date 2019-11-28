@@ -42,7 +42,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_bytePortMap_generate(apx_bytePortMap_t *self, adt_ary_t *portList, uint32_t numBytesInFile);
+static apx_error_t apx_bytePortMap_build(apx_bytePortMap_t *self, const apx_portDataProps_t *props, apx_portCount_t numPorts, apx_size_t mapLen);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -52,41 +52,22 @@ static apx_error_t apx_bytePortMap_generate(apx_bytePortMap_t *self, adt_ary_t *
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_bytePortMap_create(apx_bytePortMap_t *self, apx_node_t *node, apx_portType_t portType)
+apx_error_t apx_bytePortMap_create(apx_bytePortMap_t *self, const apx_portDataProps_t *props, apx_portCount_t numPorts)
 {
    apx_error_t retval = APX_INVALID_ARGUMENT_ERROR;
-   if ( (self != 0) && (node != 0) )
+   if ( (self != 0) && (props != 0) && (numPorts > 0))
    {
       retval = APX_NO_ERROR;
       self->mapData = (apx_portId_t*) 0;
       self->mapLen = 0;
-      if (portType == APX_REQUIRE_PORT)
+      apx_size_t mapLen = apx_portDataProps_sumDataSize(props, numPorts);
+      if (mapLen > 0)
       {
-         int32_t fileLen = apx_node_calcInPortDataLen(node);
-         if (fileLen > 0)
-         {
-            retval = apx_bytePortMap_generate(self, &node->requirePortList, (uint32_t) fileLen);
-         }
-         else
-         {
-            retval = APX_LENGTH_ERROR;
-         }
-      }
-      else if (portType == APX_PROVIDE_PORT)
-      {
-         int32_t fileLen = apx_node_calcOutPortDataLen(node);
-         if (fileLen > 0)
-         {
-            retval = apx_bytePortMap_generate(self, &node->providePortList, (uint32_t) fileLen);
-         }
-         else
-         {
-            retval = APX_LENGTH_ERROR;
-         }
+         retval = apx_bytePortMap_build(self, props, numPorts, mapLen);
       }
       else
       {
-         retval = APX_INVALID_ARGUMENT_ERROR;
+         retval = APX_LENGTH_ERROR;
       }
    }
    return retval;
@@ -100,12 +81,12 @@ void apx_bytePortMap_destroy(apx_bytePortMap_t *self)
    }
 }
 
-apx_bytePortMap_t *apx_bytePortMap_new(apx_node_t *node, apx_portType_t portType, apx_error_t *errorCode)
+apx_bytePortMap_t *apx_bytePortMap_new(const apx_portDataProps_t *props, apx_portCount_t numPorts, apx_error_t *errorCode)
 {
    apx_bytePortMap_t *self = (apx_bytePortMap_t*) malloc(sizeof(apx_bytePortMap_t));
    if (self != 0)
    {
-      apx_error_t result = apx_bytePortMap_create(self, node, portType);
+      apx_error_t result = apx_bytePortMap_create(self, props, numPorts);
       if (result != APX_NO_ERROR)
       {
          free(self);
@@ -129,7 +110,7 @@ void apx_bytePortMap_delete(apx_bytePortMap_t *self)
 }
 
 
-apx_portId_t apx_bytePortMap_lookup(apx_bytePortMap_t *self, int32_t offset)
+apx_portId_t apx_bytePortMap_lookup(const apx_bytePortMap_t *self, int32_t offset)
 {
    if ( (self != 0) && (offset >= 0) && (offset < self->mapLen) )
    {
@@ -138,7 +119,7 @@ apx_portId_t apx_bytePortMap_lookup(apx_bytePortMap_t *self, int32_t offset)
    return -1;
 }
 
-apx_size_t apx_bytePortMap_length(apx_bytePortMap_t *self)
+apx_size_t apx_bytePortMap_length(const apx_bytePortMap_t *self)
 {
    if (self != 0)
    {
@@ -151,35 +132,35 @@ apx_size_t apx_bytePortMap_length(apx_bytePortMap_t *self)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_bytePortMap_generate(apx_bytePortMap_t *self, adt_ary_t *portList, uint32_t numBytesInFile)
+
+static apx_error_t apx_bytePortMap_build(apx_bytePortMap_t *self, const apx_portDataProps_t *propsArray, apx_portCount_t numPorts, apx_size_t mapLen)
 {
-   int32_t portIndex;
-   int32_t numPorts = adt_ary_length(portList);
-   apx_portId_t *pNext;
-   apx_portId_t *pEnd;
-   self->mapData = (apx_portId_t*) malloc(numBytesInFile*sizeof(apx_portId_t));
-   if (self->mapData == 0)
+   if ( (self != 0) && (propsArray != 0) && (numPorts > 0) && (mapLen > 0u) )
    {
-      return APX_MEM_ERROR;
-   }
-   self->mapLen = numBytesInFile;
-   pNext = self->mapData;
-   pEnd = pNext + self->mapLen;
-   for (portIndex=0; portIndex < numPorts; portIndex++)
-   {
-      int32_t packLen;
-      int32_t i;
-      apx_port_t *port = (apx_port_t*) adt_ary_value(portList, portIndex);
-      packLen = apx_port_getPackLen(port);
-      for(i=0;i<packLen;i++)
+      apx_portId_t portId;
+      apx_portId_t *pNext;
+      apx_portId_t *pEnd;
+      self->mapData = (apx_portId_t*) malloc(mapLen*sizeof(apx_portId_t));
+      if (self->mapData == 0)
       {
-         pNext[i] = portIndex;
+         return APX_MEM_ERROR;
       }
-      pNext+=packLen;
-      assert(pNext<=pEnd);
+      self->mapLen = mapLen;
+      pNext = self->mapData;
+      pEnd = pNext + self->mapLen;
+      for (portId=0; portId < numPorts; portId++)
+      {
+         apx_size_t i;
+         apx_size_t packLen = propsArray[portId].dataSize;
+         for(i=0u; i < packLen; i++)
+         {
+            pNext[i] = portId;
+         }
+         pNext+=packLen;
+         assert(pNext<=pEnd);
+      }
+      assert(pNext==pEnd);
+      return APX_NO_ERROR;
    }
-   assert(pNext==pEnd);
-   return APX_NO_ERROR;
+   return APX_INVALID_ARGUMENT_ERROR;
 }
-
-

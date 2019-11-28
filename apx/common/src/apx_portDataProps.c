@@ -56,7 +56,6 @@ void apx_portDataProps_create(apx_portDataProps_t *self, apx_portType_t portType
       self->portId = portId;
       self->offset = offset;
       self->dataSize = dataSize;
-      self->totalSize = dataSize;
       self->queLenType = APX_QUE_LEN_NONE;
       self->isDynamicArray = false;
       self->maxQueLen = 0;
@@ -93,6 +92,20 @@ bool apx_portDataProps_isPlainOldData(const apx_portDataProps_t *self)
       return true;
    }
    return false;
+}
+
+apx_size_t apx_portDataProps_sumDataSize(const apx_portDataProps_t *propsArray, apx_portCount_t numPorts)
+{
+   apx_size_t sum = 0u;
+   if ( (propsArray != 0) && (numPorts > 0) )
+   {
+      apx_portId_t portId;
+      for (portId = 0; portId < numPorts; portId++)
+      {
+         sum+=propsArray[portId].dataSize;
+      }
+   }
+   return sum;
 }
 
 //////////////////////////////////////////////////////////////////////////////

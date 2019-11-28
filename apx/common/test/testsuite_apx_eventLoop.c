@@ -31,7 +31,7 @@
 #include <assert.h>
 #include "CuTest.h"
 #include "apx_eventLoop.h"
-#include "apx_fileManager.h"
+#include "apx_fileManager2.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -47,10 +47,11 @@
 static void test_apx_eventLoop_connected_event(CuTest* tc);
 static void test_apx_eventLoop_disconnected_event(CuTest* tc);
 
+/*
 static void mockHandlerReset(void);
-static void mock_onConnected(void *arg, struct apx_fileManager_tag *fileManager);
-static void mock_onDisconnected(void *arg, struct apx_fileManager_tag *fileManager);
-
+static void mock_onConnected(void *arg, struct apx_fileManager2_tag *fileManager);
+static void mock_onDisconnected(void *arg, struct apx_fileManager2_tag *fileManager);
+*/
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -108,19 +109,20 @@ static void test_apx_eventLoop_disconnected_event(CuTest* tc)
    apx_eventLoop_delete(loop);
 }
 
-
+/*
 static void mockHandlerReset(void)
 {
    m_onConnectedCount = 0;
    m_onDisconnectedCount = 0;
 }
 
-static void mock_onConnected(void *arg, struct apx_fileManager_tag *fileManager)
+static void mock_onConnected(void *arg, struct apx_fileManager2_tag *fileManager)
 {
    m_onConnectedCount++;
 }
 
-static void mock_onDisconnected(void *arg, struct apx_fileManager_tag *fileManager)
+static void mock_onDisconnected(void *arg, struct apx_fileManager2_tag *fileManager)
 {
    m_onDisconnectedCount++;
 }
+*/

@@ -121,7 +121,7 @@ apx_node_t *apx_parser_getNode(apx_parser_t *self, int32_t index)
    return 0;
 }
 
-int32_t apx_parser_getLastError(apx_parser_t *self)
+apx_error_t apx_parser_getLastError(apx_parser_t *self)
 {
    if (self != 0)
    {
@@ -194,6 +194,21 @@ apx_node_t *apx_parser_parseString(apx_parser_t *self, const char *data)
    apx_istream_create(&apx_istream,&apx_istream_handler);
    apx_istream_open(&apx_istream);
    apx_istream_write(&apx_istream, (const uint8_t*) data, dataLen);
+   apx_istream_close(&apx_istream);
+   apx_istream_destroy(&apx_istream);
+   return apx_parser_getNode(self,-1);
+}
+
+apx_node_t *apx_parser_parseBuffer(apx_parser_t *self, const uint8_t *buf, apx_size_t len)
+{
+   apx_istream_t apx_istream;
+   apx_istream_handler_t apx_istream_handler;
+
+   apx_parser_clearError(self);
+   apx_parser_init_istream_handler(self, &apx_istream_handler);
+   apx_istream_create(&apx_istream,&apx_istream_handler);
+   apx_istream_open(&apx_istream);
+   apx_istream_write(&apx_istream, buf, (uint32_t) len);
    apx_istream_close(&apx_istream);
    apx_istream_destroy(&apx_istream);
    return apx_parser_getNode(self,-1);

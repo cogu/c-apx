@@ -30,7 +30,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_client.h"
-#include "apx_nodeDataManager.h"
+//#include "apx_nodeDataManager.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -46,8 +46,8 @@
 //Client internal API (do not call as end-user)
 void apx_clientInternal_onConnect(apx_client_t *self, apx_clientConnectionBase_t *connection);
 void apx_clientInternal_onDisconnect(apx_client_t *self, apx_clientConnectionBase_t *connection);
-apx_error_t apx_clientInternal_attachLocalNodes(apx_client_t *self, apx_nodeDataManager_t *nodeDataManager);
-void apx_clientInternal_onNodeComplete(apx_client_t *self, apx_nodeData_t *nodeData);
+//apx_error_t apx_clientInternal_attachLocalNodes(apx_client_t *self, apx_nodeDataManager_t *nodeDataManager);
+//void apx_clientInternal_onNodeComplete(apx_client_t *self, apx_nodeData_t *nodeData);
 
 
 #endif //APX_CLIENT_INTERNAL_H

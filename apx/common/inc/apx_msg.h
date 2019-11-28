@@ -26,7 +26,7 @@ typedef struct apx_msg_tag
                                            //data used in apx_msg_t
 #define APX_MSG_EXIT                       0
 #define APX_MSG_SEND_ACKNOWLEDGE           1 //no extra info
-#define APX_MSG_SEND_FILEINFO              2 //msgData3=apx_file_t *file
+#define APX_MSG_SEND_FILEINFO              2 //msgData3=apx_fileInfo_t *fileInfo
 #define APX_MSG_SEND_FILE_OPEN             3 //msgData1=startAddress
 #define APX_MSG_SEND_FILE_CLOSE            4 //msgData1=startAddress
 #define APX_MSG_SEND_COMPLETE_FILE         5 //msgData1=startAddress, msgData2=length, msgData3.ptr=apx_file2_t *file

@@ -41,7 +41,7 @@ typedef struct apx_parser_tag
 {
    adt_ary_t nodeList;
    apx_node_t *currentNode;
-   int32_t lastErrorType;
+   apx_error_t lastErrorType;
    int32_t lastErrorLine;
    int16_t majorVersion;
    int16_t minorVersion;
@@ -56,13 +56,14 @@ apx_parser_t* apx_parser_new(void);
 void apx_parser_delete(apx_parser_t *self);
 int32_t apx_parser_getNumNodes(apx_parser_t *self);
 apx_node_t *apx_parser_getNode(apx_parser_t *self, int32_t index);
-int32_t apx_parser_getLastError(apx_parser_t *self);
+apx_error_t apx_parser_getLastError(apx_parser_t *self);
 int32_t apx_parser_getErrorLine(apx_parser_t *self);
 void apx_parser_clearNodes(apx_parser_t *self);
 #if defined(_WIN32) || defined(__GNUC__)
 apx_node_t *apx_parser_parseFile(apx_parser_t *self, const char *filename);
 #endif
 apx_node_t *apx_parser_parseString(apx_parser_t *self, const char *data);
+apx_node_t *apx_parser_parseBuffer(apx_parser_t *self, const uint8_t *buf, apx_size_t len);
 
 //event handlers
 void apx_parser_open(apx_parser_t *self);

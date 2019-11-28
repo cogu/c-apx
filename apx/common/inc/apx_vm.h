@@ -70,11 +70,13 @@ apx_error_t apx_vm_setWriteBuffer(apx_vm_t *self, uint8_t *buffer, uint32_t bufS
 apx_error_t apx_vm_setReadBuffer(apx_vm_t *self, const uint8_t *buffer, uint32_t bufSize);
 apx_error_t apx_vm_packValue(apx_vm_t *self, const dtl_dv_t *dv);
 apx_error_t apx_vm_unpackValue(apx_vm_t *self, dtl_dv_t **dv);
+apx_error_t apx_vm_writeNullValue(apx_vm_t *self);
 apx_size_t apx_vm_getBytesWritten(apx_vm_t *self);
 apx_size_t apx_vm_getBytesRead(apx_vm_t *self);
 
 //state-less functions
 apx_error_t apx_vm_decodeProgramHeader(const adt_bytes_t *program, uint8_t *majorVersion, uint8_t *minorVersion, uint8_t *progType, apx_size_t *maxDataSize);
+apx_error_t apx_vm_decodeProgramDataProps(const adt_bytes_t *program, apx_size_t *dataSize, uint8_t *dataFlags);
 apx_error_t apx_vm_decodeInstruction(uint8_t instruction, uint8_t *opcode, uint8_t *variant, uint8_t *flags);
 
 #endif //APX_VM_H

@@ -26,6 +26,10 @@
 #define RMF_CMD_END_ADDR ((uint32_t) 0x3FFFFFFF)
 #define RMF_CMD_HIGH_BIT ((uint32_t) 0x80000000)
 #define RMF_CMD_MORE_BIT ((uint32_t) 0x40000000)
+#define RMF_REMOTE_ADDRESS_BIT ((uint32_t) 0x80000000) //This is overlayed with RMF_CMD_HIGH_BIT
+#define RMF_ADDRESS_MASK          ((uint32_t) 0x3FFFFFFF) //A true remote address can at most be 30 bits long
+#define RMF_ADDRESS_MASK_INTERNAL ((uint32_t) 0x7FFFFFFF) //This is the address without the remote address bit
+#define RMF_INVALID_ADDRESS (uint32_t) (0x7FFFFFFF) //This is outside the valid address region of 30 bits
 
 #define RMF_DIGEST_SIZE          32u //32 bytes is suitable for storing a sha256 hash
 #define RMF_DIGEST_TYPE_NONE     0u
@@ -87,7 +91,7 @@
 #define RMF_GREETING_START "RMFP/1.0\n"
 #define RMF_NUMHEADER_FORMAT_HDR "NumHeader-Format:"
 
-#define RMF_INVALID_ADDRESS (uint32_t) (0xFFFFFFFF)
+
 
 /**
  * abstract rmf message class
@@ -147,7 +151,7 @@ int32_t rmf_deserialize_errorInvalidReadHandler(const uint8_t *buf, int32_t bufL
 
 /* rmf_fileInfo_t API */
 int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType);
-void rmf_fileInfo_destroy(rmf_fileInfo_t *info);
+void rmf_fileInfo_destroy(rmf_fileInfo_t *self);
 #ifndef APX_EMBEDDED
 rmf_fileInfo_t *rmf_fileInfo_new(const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType);
 void rmf_fileInfo_delete(rmf_fileInfo_t *info);

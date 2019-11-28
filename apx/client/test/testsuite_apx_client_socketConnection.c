@@ -9,7 +9,7 @@
 #include "apx_clientSocketConnection.h"
 #include "apx_client.h"
 #include "testsocket_spy.h"
-#include "apx_fileManager.h"
+#include "apx_fileManager2.h"
 #include "apx_test_nodes.h"
 #include "rmf.h"
 #ifdef MEM_LEAK_CHECK
@@ -77,11 +77,11 @@ static void test_apx_clientSocketConnection_create(CuTest* tc)
    testsocket_t *sock1, *sock2;
    sock1 = testsocket_new(); //apx_clientSocketConnection_t takes ownership of this object. No need to manually delete it
    sock2 = testsocket_new();
-   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock1, NULL));
+   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock1));
    CuAssertUIntEquals(tc, 0, conn.base.base.connectionId);
    CuAssertPtrEquals(tc, sock1, conn.socketObject);
    apx_clientSocketConnection_destroy(&conn);
-   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock2, NULL));
+   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock2));
    CuAssertUIntEquals(tc, 0, conn.base.base.connectionId);
    CuAssertPtrEquals(tc, sock2, conn.socketObject);
    apx_clientSocketConnection_destroy(&conn);
@@ -91,13 +91,13 @@ static void test_apx_clientSocketConnection_transmitHandlerSetup(CuTest* tc)
 {
    apx_clientSocketConnection_t *conn;
    testsocket_t *sock;
-   apx_fileManager_t *fileManager;
+   apx_fileManager2_t *fileManager;
    testsocket_spy_create();
    sock = testsocket_spy_client();
-   conn = apx_clientSocketConnection_new(sock, NULL);
+   conn = apx_clientSocketConnection_new(sock);
    CuAssertPtrNotNull(tc, conn);
    fileManager = &conn->base.base.fileManager;
-   CuAssertPtrNotNull(tc, fileManager->transmitHandler.send);
+   CuAssertPtrNotNull(tc, fileManager->worker.transmitHandler.send);
    apx_connectionBase_delete(&conn->base.base); //always delete using the base pointer
    testsocket_spy_destroy();
 }
@@ -147,7 +147,7 @@ static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge1(CuTest*
    testsocket_spy_create();
    client = apx_client_new();
    CuAssertIntEquals(tc, 0, apx_client_getNumAttachedNodes(client));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_createLocalNode_cstr(client, g_apx_test_node1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, g_apx_test_node1));
    CuAssertIntEquals(tc, 1, apx_client_getNumAttachedNodes(client));
    sock = testsocket_spy_server();
    CuAssertPtrNotNull(tc, sock);
@@ -193,8 +193,8 @@ static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge2(CuTest*
    testsocket_spy_create();
    client = apx_client_new();
    CuAssertIntEquals(tc, 0, apx_client_getNumAttachedNodes(client));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_createLocalNode_cstr(client, g_apx_test_node1));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_createLocalNode_cstr(client, g_apx_test_node2));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, g_apx_test_node1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, g_apx_test_node2));
    CuAssertIntEquals(tc, 2, apx_client_getNumAttachedNodes(client));
    sock = testsocket_spy_server();
    CuAssertPtrNotNull(tc, sock);

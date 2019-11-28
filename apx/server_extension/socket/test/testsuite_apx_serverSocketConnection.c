@@ -10,7 +10,7 @@
 #include "apx_server.h"
 #include "apx_socketServerExtension.h"
 #include "testsocket_spy.h"
-#include "apx_fileManager.h"
+#include "apx_fileManager2.h"
 #include "numheader.h"
 #ifdef _WIN32
 #include <Windows.h>
@@ -87,11 +87,11 @@ static void test_apx_serverSocketConnection_create(CuTest* tc)
    testsocket_t *sock1, *sock2;
    sock1 = testsocket_new(); //apx_serverSocketConnection_t takes ownership of this object. No need to manually delete it
    sock2 = testsocket_new();
-   CuAssertIntEquals(tc, 0, apx_serverSocketConnection_create(&conn, sock1, NULL));
+   CuAssertIntEquals(tc, 0, apx_serverSocketConnection_create(&conn, sock1));
    CuAssertUIntEquals(tc, 0, conn.base.base.connectionId);
    CuAssertPtrEquals(tc, sock1, conn.socketObject);
    apx_serverSocketConnection_destroy(&conn);
-   CuAssertIntEquals(tc, 0, apx_serverSocketConnection_create(&conn, sock2, NULL));
+   CuAssertIntEquals(tc, 0, apx_serverSocketConnection_create(&conn, sock2));
    CuAssertUIntEquals(tc, 0, conn.base.base.connectionId);
    CuAssertPtrEquals(tc, sock2, conn.socketObject);
    apx_serverSocketConnection_destroy(&conn);
@@ -101,13 +101,13 @@ static void test_apx_serverSocketConnection_transmitHandlerSetup(CuTest* tc)
 {
    apx_serverSocketConnection_t *conn;
    testsocket_t *sock;
-   apx_fileManager_t *fileManager;
+   apx_fileManager2_t *fileManager;
    testsocket_spy_create();
    sock = testsocket_spy_client();
-   conn = apx_serverSocketConnection_new(sock, NULL);
+   conn = apx_serverSocketConnection_new(sock);
    CuAssertPtrNotNull(tc, conn);
    fileManager = &conn->base.base.fileManager;
-   CuAssertPtrNotNull(tc, fileManager->transmitHandler.send);
+   CuAssertPtrNotNull(tc, fileManager->worker.transmitHandler.send);
    apx_serverSocketConnection_delete(conn);
    testsocket_spy_destroy();
 }
@@ -252,7 +252,7 @@ static void sendFileContent(CuTest* tc, testsocket_t *sock, uint32_t address)
    msgLen += rmf_packHeader(&bufData[1+msgLen], bufLen, address, false);
    memcpy(&bufData[1+msgLen], &m_TestNodeDefinition[0], dataLen);
    msgLen+=dataLen;
-   assert(msgLen <= NUMHEADER32_MAX_NUM_SHORT);
+   assert((uint32_t) msgLen <= NUMHEADER32_MAX_NUM_SHORT);
    bufData[0]=(uint8_t) msgLen;
    testsocket_clientSend(sock, &bufData[0], 1+msgLen);
 }

@@ -35,6 +35,7 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 struct apx_client_tag;
+struct apx_nodeInstance_tag;
 
 typedef struct apx_clientConnectionBase_tag
 {
@@ -46,23 +47,28 @@ typedef struct apx_clientConnectionBase_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_clientConnectionBase_create(apx_clientConnectionBase_t *self, struct apx_client_tag *server, apx_connectionBaseVTable_t *vtable);
+apx_error_t apx_clientConnectionBase_create(apx_clientConnectionBase_t *self, apx_connectionBaseVTable_t *vtable);
 void apx_clientConnectionBase_destroy(apx_clientConnectionBase_t *self);
 //This class has no delete functions as it is an abstract base class
 
-apx_fileManager_t *apx_clientConnectionBase_getFileManager(apx_clientConnectionBase_t *self);
-void apx_clientConnectionBase_onConnected(apx_clientConnectionBase_t *self);
-void apx_clientConnectionBase_onDisconnected(apx_clientConnectionBase_t *self);
+apx_fileManager2_t *apx_clientConnectionBase_getFileManager(apx_clientConnectionBase_t *self);
+void apx_clientConnectionBase_connectedCbk(apx_clientConnectionBase_t *self);
+void apx_clientConnectionBase_disconnectedCbk(apx_clientConnectionBase_t *self);
 int8_t apx_clientConnectionBase_onDataReceived(apx_clientConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 void apx_clientConnectionBase_start(apx_clientConnectionBase_t *self);
 void apx_clientConnectionBase_defaultEventHandler(void *arg, apx_event_t *event);
 void apx_clientConnectionBase_close(apx_clientConnectionBase_t *self);
 uint32_t apx_clientConnectionBase_getTotalBytesReceived(apx_clientConnectionBase_t *self);
 uint32_t apx_clientConnectionBase_getTotalBytesSent(apx_clientConnectionBase_t *self);
-void* apx_clientConnectionBase_registerNodeDataEventListener(apx_clientConnectionBase_t *self, apx_nodeDataEventListener_t *listener);
-void apx_clientConnectionBase_unregisterNodeDataEventListener(apx_clientConnectionBase_t *self, void *handle);
+void* apx_clientConnectionBase_registerEventListener(apx_clientConnectionBase_t *self, apx_connectionEventListener_t *listener);
+void apx_clientConnectionBase_unregisterEventListener(apx_clientConnectionBase_t *self, void *handle);
+void apx_clientConnectionBase_attachNodeInstance(apx_clientConnectionBase_t *self, struct apx_nodeInstance_tag *nodeInstance);
 
+// Internal API
+void apx_clientConnectionBaseInternal_headerAccepted(apx_clientConnectionBase_t *self);
+apx_error_t apx_clientConnectionBaseInternal_onFileOpenMsgReceived(apx_clientConnectionBase_t *self, const rmf_cmdOpenFile_t *openFileCmd);
 
+// Unit Test API
 #ifdef UNIT_TEST
 void apx_clientConnectionBase_run(apx_clientConnectionBase_t *self);
 #endif

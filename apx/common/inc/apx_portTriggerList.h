@@ -31,7 +31,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_ary.h"
 #include "apx_error.h"
-#include "apx_portDataRef.h"
+#include "apx_portDataRef2.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -40,7 +40,7 @@
 
 typedef struct apx_portTriggerList_tag
 {
-   adt_ary_t requirePortData; //weak references to apx_portDataRef_t
+   adt_ary_t requirePortData; //weak references to apx_portDataRef2_t
 }apx_portTriggerList_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -58,9 +58,9 @@ void apx_portTriggerList_destroy(apx_portTriggerList_t *self);
 apx_portTriggerList_t* apx_portTriggerList_new(void);
 void apx_portTriggerList_delete(apx_portTriggerList_t *self);
 
-apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portDataRef_t *portData);
-void apx_portTriggerList_remove(apx_portTriggerList_t *self, apx_portDataRef_t *portData);
+apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portDataRef2_t *portData);
+void apx_portTriggerList_remove(apx_portTriggerList_t *self, apx_portDataRef2_t *portData);
 int32_t apx_portTriggerList_length(apx_portTriggerList_t *self);
-apx_portDataRef_t *apx_portTriggerList_get(apx_portTriggerList_t *self, int32_t index);
+apx_portDataRef2_t *apx_portTriggerList_get(apx_portTriggerList_t *self, int32_t index);
 
 #endif //APX_PORT_TRIGGER_LIST_H

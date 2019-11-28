@@ -65,6 +65,8 @@ apx_error_t apx_port_resolveTypes(apx_port_t *self, struct adt_ary_tag *typeList
 apx_error_t apx_port_updateDerivedPortSignature(apx_port_t *self);
 const char *apx_port_getDerivedPortSignature(apx_port_t *self);
 apx_error_t apx_port_updatePackLen(apx_port_t *self);
+apx_error_t apx_port_calculateProperInitValue(apx_port_t *self);
+dtl_dv_t *apx_port_getProperInitValue(apx_port_t *self);
 
 apx_size_t apx_port_getPackLen(apx_port_t *self);
 void apx_port_setPortId(apx_port_t *self, apx_portId_t portId);

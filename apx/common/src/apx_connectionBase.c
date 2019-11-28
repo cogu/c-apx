@@ -27,8 +27,8 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_connectionBase.h"
-#include "apx_portDataRef.h"
-#include "apx_nodeData.h"
+#include "apx_portDataRef2.h"
+#include "apx_nodeData2.h"
 #include "apx_logging.h"
 #include "apx_portConnectionTable.h"
 #include <string.h>
@@ -48,9 +48,16 @@
 static apx_error_t apx_connectionBase_startWorkerThread(apx_connectionBase_t *self);
 static void apx_connectionBase_stopWorkerThread(apx_connectionBase_t *self);
 static void apx_connectionBase_stopWorkerThread(apx_connectionBase_t *self);
-static void apx_connectionBase_createNodeCompleteEvent(apx_event_t *event, apx_nodeData_t *nodeData);
-static void apx_connectionBase_handlePortConnectEvent(apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable, apx_portType_t portType);
-static void apx_connectionBase_handlePortDisconnectEvent(apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable, apx_portType_t portType);
+static apx_error_t apx_connectionBase_initTransmitHandler(apx_connectionBase_t *self);
+
+//Internal event emit API
+
+static void apx_connectionBase_emitFileCreatedEvent(apx_connectionBase_t *self, const apx_fileInfo_t *fileInfo);
+
+//static void apx_connectionBase_createNodeCompleteEvent(apx_event_t *event, apx_nodeData_t *nodeData);
+//static void apx_connectionBase_handlePortConnectEvent(apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable, apx_portType_t portType);
+//static void apx_connectionBase_handlePortDisconnectEvent(apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable, apx_portType_t portType);
+
 
 #ifndef UNIT_TEST
 static THREAD_PROTO(eventHandlerWorkThread,arg);
@@ -63,7 +70,7 @@ static THREAD_PROTO(eventHandlerWorkThread,arg);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, void (*destructor)(void *arg), void (*start)(void *arg), void (*close)(void *arg))
+void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, void (*destructor)(void *arg), void (*start)(void *arg), void (*close)(void *arg),  fillTransmitHandlerFunc *fillTransmitHandler)
 {
    if (self != 0)
    {
@@ -71,6 +78,7 @@ void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, void (*de
       self->destructor = destructor;
       self->start = start;
       self->close = close;
+      self->fillTransmitHandler = fillTransmitHandler;
    }
 }
 
@@ -79,7 +87,7 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
    if (self != 0)
    {
       adt_buf_err_t bufResult;
-      int8_t i8result;
+      apx_error_t rc;
       self->connectionId = 0;
       if (vtable != 0)
       {
@@ -94,11 +102,8 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       self->eventHandlerArg = (void*) 0;
       self->totalBytesReceived = 0u;
       self->totalBytesSent = 0u;
-      MUTEX_INIT(self->eventListenerMutex);
-      adt_list_create(&self->nodeDataEventListeners, apx_nodeDataEventListener_vdelete);
-      adt_list_create(&self->fileEventListeners, apx_fileEventListener_vdelete);
-
-      apx_nodeDataManager_create(&self->nodeDataManager, mode);
+      self->mode = mode;
+      apx_nodeManager_create(&self->nodeManager, mode, (bool) (mode==APX_CLIENT_MODE));
 #ifdef _WIN32
       self->workerThread = INVALID_HANDLE_VALUE;
 #else
@@ -108,15 +113,25 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       bufResult = apx_eventLoop_create(&self->eventLoop);
       if (bufResult != BUF_E_OK)
       {
-         apx_nodeDataManager_destroy(&self->nodeDataManager);
+         apx_nodeManager_destroy(&self->nodeManager);
          return APX_MEM_ERROR;
       }
-      i8result = apx_fileManager_create(&self->fileManager, mode, self);
-      if (i8result != 0)
+      rc = apx_fileManager2_create(&self->fileManager, mode, self);
+      if (rc != APX_NO_ERROR)
       {
-         apx_nodeDataManager_destroy(&self->nodeDataManager);
+         apx_nodeManager_destroy(&self->nodeManager);
+         apx_eventLoop_destroy(&self->eventLoop);
       }
-      return i8result;
+      rc = apx_connectionBase_initTransmitHandler(self);
+      if (rc != APX_NO_ERROR)
+      {
+         apx_fileManager2_destroy(&self->fileManager);
+         apx_nodeManager_destroy(&self->nodeManager);
+         apx_eventLoop_destroy(&self->eventLoop);
+      }
+      adt_list_create(&self->connectionEventListeners, apx_connectionEventListener_vdelete);
+      MUTEX_INIT(self->eventListenerMutex);
+      return rc;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -125,12 +140,11 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self)
 {
    if (self != 0)
    {
-      apx_fileManager_destroy(&self->fileManager);
+      apx_fileManager2_destroy(&self->fileManager);
       apx_eventLoop_destroy(&self->eventLoop);
-      apx_nodeDataManager_destroy(&self->nodeDataManager);
+      apx_nodeManager_destroy(&self->nodeManager);
       MUTEX_DESTROY(self->eventListenerMutex);
-      adt_list_destroy(&self->nodeDataEventListeners);
-      adt_list_destroy(&self->fileEventListeners);
+      adt_list_destroy(&self->connectionEventListeners);
    }
 }
 
@@ -151,13 +165,13 @@ void apx_connectionBase_vdelete(void *arg)
    apx_connectionBase_delete((apx_connectionBase_t*) arg);
 }
 
-apx_fileManager_t *apx_connectionBase_getFileManager(apx_connectionBase_t *self)
+apx_fileManager2_t *apx_connectionBase_getFileManager(apx_connectionBase_t *self)
 {
    if (self != 0)
    {
       return &self->fileManager;
    }
-   return (apx_fileManager_t*) 0;
+   return (apx_fileManager2_t*) 0;
 }
 
 void apx_connectionBase_setEventHandler(apx_connectionBase_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg)
@@ -197,12 +211,84 @@ void apx_connectionBase_close(apx_connectionBase_t *self)
    }
 }
 
+void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   if (self != 0 && nodeInstance != 0)
+   {
+      apx_fileInfo_t fileInfo;
+      apx_error_t rc;
+      int32_t numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
+      apx_nodeManager_attachNode(&self->nodeManager, nodeInstance);
+      apx_nodeInstance_setConnection(nodeInstance, self);
+      if (numProvidePorts > 0)
+      {
+         rc = apx_nodeInstance_createProvidePortDataFileInfo(nodeInstance, &fileInfo);
+         if (rc == APX_NO_ERROR)
+         {
+            apx_fileManager2_createLocalFile(&self->fileManager, &fileInfo);
+            apx_fileInfo_destroy(&fileInfo);
+         }
+      }
+      rc = apx_nodeInstance_createDefinitionFileInfo(nodeInstance, &fileInfo);
+      if (rc == APX_NO_ERROR)
+      {
+         apx_fileManager2_createLocalFile(&self->fileManager, &fileInfo);
+         apx_fileInfo_destroy(&fileInfo);
+      }
+   }
+}
+
+apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const uint8_t *msgBuf, int32_t msgLen)
+{
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/*** Internal Message API ***/
+
+apx_error_t apx_connectionBase_onFileInfoMsgReceived(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo)
+{
+   if ( (self != 0) && (remoteFileInfo != 0) )
+   {
+      apx_fileInfo_t fileInfo;
+      apx_error_t rc = apx_fileInfo_create_rmf(&fileInfo, remoteFileInfo, true);
+      if (rc == APX_NO_ERROR)
+      {
+         apx_file2_t *file = apx_fileManager2_createRemoteFile(&self->fileManager, &fileInfo);
+         if (file == 0)
+         {
+            apx_fileInfo_destroy(&fileInfo);
+            return APX_MEM_ERROR; ///TODO: Investigate if we can get the error state from the file manager.
+         }
+         apx_connectionBase_emitFileCreatedEvent(self, &fileInfo); ///TODO: Perhaps remove cloning of fileInfo here?
+         apx_fileInfo_destroy(&fileInfo);
+         return APX_NO_ERROR;
+      }
+      else
+      {
+         return rc;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+
+void apx_connectionBase_triggerRemoteFileHeaderCompleteEvent(apx_connectionBase_t *self)
+{
+   if (self != 0)
+   {
+      apx_event_t event;
+      apx_event_fillRemoteFileHeaderComplete(&event, self);
+      apx_eventLoop_append(&self->eventLoop, &event);
+   }
+}
+
+/*
 void apx_connectionBase_emitFileManagerPreStartEvent(apx_connectionBase_t *self)
 {
    if (self != 0)
    {
       apx_event_t event;
-      apx_fileManager_createPreStartEvent(&event, &self->fileManager);
+      apx_fileManager2_createPreStartEvent(&event, &self->fileManager);
       apx_eventLoop_append(&self->eventLoop, &event);
    }
 }
@@ -212,38 +298,20 @@ void apx_connectionBase_emitFileManagerPostStopEvent(apx_connectionBase_t *self)
    if (self != 0)
    {
       apx_event_t event;
-      apx_fileManager_createPostStopEvent(&event, &self->fileManager);
+      apx_fileManager2_createPostStopEvent(&event, &self->fileManager);
       apx_eventLoop_append(&self->eventLoop, &event);
    }
 }
-
-void apx_connectionBase_emitFileManagerHeaderCompleteEvent(apx_connectionBase_t *self)
-{
-   if (self != 0)
-   {
-      apx_event_t event;
-      apx_fileManager_createHeaderCompleteEvent(&event, &self->fileManager);
-      apx_eventLoop_append(&self->eventLoop, &event);
-   }
-}
-
-void apx_connectionBase_emitFileCreatedEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, const void *caller)
-{
-   if (self != 0)
-   {
-      apx_event_t event;
-      apx_fileManager_createFileCreatedEvent(&event, &self->fileManager, file, caller);
-      apx_eventLoop_append(&self->eventLoop, &event);
-   }
-}
+*/
 
 void apx_connectionBase_emitFileRevokedEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, const void *caller)
 {
    if (self != 0)
    {
-      apx_event_t event;
-      apx_fileManager_createFileRevokedEvent(&event, &self->fileManager, file, caller);
+/*      apx_event_t event;
+      apx_fileManager2_createFileRevokedEvent(&event, &self->fileManager, file, caller);
       apx_eventLoop_append(&self->eventLoop, &event);
+*/
    }
 }
 
@@ -251,9 +319,10 @@ void apx_connectionBase_emitFileOpenedEvent(apx_connectionBase_t *self, struct a
 {
    if (self != 0)
    {
-      apx_event_t event;
-      apx_fileManager_createFileOpenedEvent(&event, &self->fileManager, file, caller);
+/*      apx_event_t event;
+      apx_fileManager2_createFileOpenedEvent(&event, &self->fileManager, file, caller);
       apx_eventLoop_append(&self->eventLoop, &event);
+*/
    }
 }
 
@@ -269,28 +338,90 @@ void apx_connectionBase_emitNodeComplete(apx_connectionBase_t *self, struct apx_
 {
    if (self != 0)
    {
+/*
       apx_event_t event;
       apx_connectionBase_createNodeCompleteEvent(&event, nodeData);
       apx_eventLoop_append(&self->eventLoop, &event);
+*/
    }
 }
 
+void apx_connectionBase_emitHeaderAccepted(apx_connectionBase_t *self)
+{
+   apx_event_t event;
+   apx_event_createHeaderAccepted(&event, self);
+   apx_eventLoop_append(&self->eventLoop, &event);
+}
+
+void apx_connectionBase_emitRemoteFileWrittenType1(apx_connectionBase_t *self, struct apx_file2_tag *remoteFile, struct apx_file2_tag *file, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit)
+{
+   if (self != 0)
+   {
+
+   }
+}
+
+void apx_connectionBase_onHeaderAccepted(apx_connectionBase_t *self, apx_connectionBase_t *connection)
+{
+   if ( (self != 0) && (connection != 0) )
+   {
+      adt_list_elem_t *iter;
+      MUTEX_LOCK(self->eventListenerMutex);
+      iter = adt_list_iter_first(&self->connectionEventListeners);
+      while (iter != 0)
+      {
+         apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+
+         if (eventListener->headerAccepted2 != 0)
+         {
+            eventListener->headerAccepted2(eventListener->arg, connection);
+         }
+
+         iter = adt_list_iter_next(iter);
+      }
+      MUTEX_UNLOCK(self->eventListenerMutex);
+   }
+}
+
+void apx_connectionBase_onFileCreated(apx_connectionBase_t *self, apx_connectionBase_t *connection, struct apx_fileInfo_tag *fileInfo, void *caller)
+{
+   if ( (self != 0) && (connection != 0) )
+   {
+      adt_list_elem_t *iter;
+      MUTEX_LOCK(self->eventListenerMutex);
+      iter = adt_list_iter_first(&self->connectionEventListeners);
+      while (iter != 0)
+      {
+         if (iter->pItem != caller)
+         {
+            apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+            if (eventListener->fileCreate2 != 0)
+            {
+               eventListener->fileCreate2(eventListener->arg, connection, fileInfo);
+            }
+         }
+         iter = adt_list_iter_next(iter);
+      }
+      MUTEX_UNLOCK(self->eventListenerMutex);
+      if ( (self == connection) && (self->vtable.onFileCreated != 0) )
+      {
+         self->vtable.onFileCreated((void*) self, fileInfo);
+      }
+   }
+}
+
+
 void apx_connectionBase_defaultEventHandler(apx_connectionBase_t *self, apx_event_t *event)
 {
-   if ( (event->evFlags & APX_EVENT_FLAG_FILE_MANAGER_EVENT) != 0)
-   {
-      //Play this event through the event handler of the fileManager
-      apx_fileManager_t *fileManager = (apx_fileManager_t*) event->evData1;
-      apx_fileManager_eventHandler(fileManager, event);
-   }
-   else
+   if ( (self != 0) && (event != 0) )
    {
       apx_portConnectionTable_t *connectionTable;
-      apx_nodeData_t *nodeData;
+      apx_nodeData2_t *nodeData;
 
 
       switch(event->evType)
       {
+/*
       case APX_EVENT_REQUIRE_PORT_CONNECT:
          nodeData = (apx_nodeData_t*) event->evData1;
          connectionTable = (apx_portConnectionTable_t*) event->evData2;
@@ -315,18 +446,20 @@ void apx_connectionBase_defaultEventHandler(apx_connectionBase_t *self, apx_even
          apx_connectionBase_handlePortDisconnectEvent(nodeData, connectionTable, APX_PROVIDE_PORT);
          apx_portConnectionTable_delete((apx_portConnectionTable_t*) event->evData2);
          break;
+*/
       case APX_EVENT_NODE_COMPLETE:
          break;
       }
    }
 }
 
+
 void apx_connectionBase_setConnectionId(apx_connectionBase_t *self, uint32_t connectionId)
 {
    if (self != 0)
    {
       self->connectionId = connectionId;
-      fileManager_setID(&self->fileManager, connectionId);
+      apx_fileManager2_setConnectionId(&self->fileManager, connectionId);
    }
 }
 
@@ -343,7 +476,7 @@ void apx_connectionBase_getTransmitHandler(apx_connectionBase_t *self, apx_trans
 {
    if (self != 0)
    {
-      apx_fileManager_getTransmitHandler(&self->fileManager, transmitHandler);
+      apx_fileManager2_copyTransmitHandler(&self->fileManager, transmitHandler);
    }
 }
 
@@ -356,15 +489,15 @@ uint16_t apx_connectionBase_getNumPendingEvents(apx_connectionBase_t *self)
    return 0;
 }
 
-void* apx_connectionBase_registerNodeDataEventListener(apx_connectionBase_t *self, apx_nodeDataEventListener_t *listener)
+void* apx_connectionBase_registerEventListener(apx_connectionBase_t *self, apx_connectionEventListener_t *listener)
 {
    if ( (self != 0) && (listener != 0))
    {
-      void *handle = (void*) apx_nodeDataEventListener_clone(listener);
+      void *handle = (void*) apx_connectionEventListener_clone(listener);
       if (handle != 0)
       {
          MUTEX_LOCK(self->eventListenerMutex);
-         adt_list_insert(&self->nodeDataEventListeners, handle);
+         adt_list_insert(&self->connectionEventListeners, handle);
          MUTEX_UNLOCK(self->eventListenerMutex);
       }
       return handle;
@@ -372,49 +505,36 @@ void* apx_connectionBase_registerNodeDataEventListener(apx_connectionBase_t *sel
    return (void*) 0;
 }
 
-void apx_connectionBase_unregisterNodeDataEventListener(apx_connectionBase_t *self, void *handle)
+void apx_connectionBase_unregisterEventListener(apx_connectionBase_t *self, void *handle)
 {
    if ( (self != 0) && (handle != 0))
    {
       MUTEX_LOCK(self->eventListenerMutex);
-      bool isFound = adt_list_remove(&self->nodeDataEventListeners, handle);
+      bool isFound = adt_list_remove(&self->connectionEventListeners, handle);
       if (isFound == true)
       {
-         apx_nodeDataEventListener_vdelete(handle);
+         apx_connectionEventListener_vdelete(handle);
       }
       MUTEX_UNLOCK(self->eventListenerMutex);
    }
 }
 
-void* apx_connectionBase_registerFileEventListener(apx_connectionBase_t *self, apx_fileEventListener_t *listener)
-{
-   if ( (self != 0) && (listener != 0))
-   {
-      void *handle = (void*) apx_fileEventListener_clone(listener);
-      if (handle != 0)
-      {
-         MUTEX_LOCK(self->eventListenerMutex);
-         adt_list_insert(&self->fileEventListeners, handle);
-         MUTEX_UNLOCK(self->eventListenerMutex);
-      }
-      return handle;
-   }
-   return (void*) 0;
-}
 
-//Type 1 event
+
 void apx_connectionBase_triggerDefinitionDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
 {
    adt_list_elem_t *iter;
    MUTEX_LOCK(self->eventListenerMutex);
-   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   iter = adt_list_iter_first(&self->connectionEventListeners);
    while (iter != 0)
    {
-      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+      /*
       if (eventListener->definitionDataWritten != 0)
       {
          eventListener->definitionDataWritten(eventListener->arg, nodeData, offset, len);
       }
+      */
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->eventListenerMutex);
@@ -425,14 +545,16 @@ void apx_connectionBase_triggerInPortDataWritten(apx_connectionBase_t *self, str
 {
    adt_list_elem_t *iter;
    MUTEX_LOCK(self->eventListenerMutex);
-   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   iter = adt_list_iter_first(&self->connectionEventListeners);
    while (iter != 0)
    {
-      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+      /*
       if (eventListener->inPortDataWritten != 0)
       {
          eventListener->inPortDataWritten(eventListener->arg, nodeData, offset, len);
       }
+      */
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->eventListenerMutex);
@@ -443,14 +565,16 @@ void apx_connectionBase_triggerOutPortDataWritten(apx_connectionBase_t *self, st
 {
    adt_list_elem_t *iter;
    MUTEX_LOCK(self->eventListenerMutex);
-   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   iter = adt_list_iter_first(&self->connectionEventListeners);
    while (iter != 0)
    {
-      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+      /*
       if (eventListener->outPortDataWritten != 0)
       {
          eventListener->outPortDataWritten(eventListener->arg, nodeData, offset, len);
       }
+      */
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->eventListenerMutex);
@@ -461,14 +585,16 @@ void apx_connectionBase_triggerRequirePortsConnected(apx_connectionBase_t *self,
 {
    adt_list_elem_t *iter;
    MUTEX_LOCK(self->eventListenerMutex);
-   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   iter = adt_list_iter_first(&self->connectionEventListeners);
    while (iter != 0)
    {
-      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+      /*
       if (eventListener->requirePortsConnected != 0)
       {
          eventListener->requirePortsConnected(eventListener->arg, nodeData, portConnectionTable);
       }
+      */
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->eventListenerMutex);
@@ -479,14 +605,16 @@ void apx_connectionBase_triggerProvidePortsConnected(apx_connectionBase_t *self,
 {
    adt_list_elem_t *iter;
    MUTEX_LOCK(self->eventListenerMutex);
-   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   iter = adt_list_iter_first(&self->connectionEventListeners);
    while (iter != 0)
    {
-      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+      /*
       if (eventListener->providePortsConnected != 0)
       {
          eventListener->providePortsConnected(eventListener->arg, nodeData, portConnectionTable);
       }
+      */
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->eventListenerMutex);
@@ -497,14 +625,16 @@ void apx_connectionBase_triggerRequirePortsDisconnected(apx_connectionBase_t *se
 {
    adt_list_elem_t *iter;
    MUTEX_LOCK(self->eventListenerMutex);
-   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   iter = adt_list_iter_first(&self->connectionEventListeners);
    while (iter != 0)
    {
-      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+      /*
       if (eventListener->requirePortsDisconnected != 0)
       {
          eventListener->requirePortsDisconnected(eventListener->arg, nodeData, portConnectionTable);
       }
+      */
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->eventListenerMutex);
@@ -515,14 +645,16 @@ void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *se
 {
    adt_list_elem_t *iter;
    MUTEX_LOCK(self->eventListenerMutex);
-   iter = adt_list_iter_first(&self->nodeDataEventListeners);
+   iter = adt_list_iter_first(&self->connectionEventListeners);
    while (iter != 0)
    {
-      apx_nodeDataEventListener_t *eventListener = (apx_nodeDataEventListener_t*) iter->pItem;
+      apx_connectionEventListener_t *eventListener = (apx_connectionEventListener_t*) iter->pItem;
+      /*
       if (eventListener->providePortsDisconnected != 0)
       {
          eventListener->providePortsDisconnected(eventListener->arg, nodeData, portConnectionTable);
       }
+      */
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->eventListenerMutex);
@@ -605,6 +737,21 @@ static void apx_connectionBase_stopWorkerThread(apx_connectionBase_t *self)
    }
 }
 
+static apx_error_t apx_connectionBase_initTransmitHandler(apx_connectionBase_t *self)
+{
+   apx_transmitHandler_t handler;
+   if (self->vtable.fillTransmitHandler != 0)
+   {
+      apx_error_t rc = self->vtable.fillTransmitHandler((void*) self, &handler);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      apx_fileManager2_setTransmitHandler(&self->fileManager, &handler);
+   }
+   return APX_NO_ERROR;
+}
+/*
 static void apx_connectionBase_createNodeCompleteEvent(apx_event_t *event, apx_nodeData_t *nodeData)
 {
    memset(event, 0, APX_EVENT_SIZE);
@@ -682,6 +829,22 @@ static void apx_connectionBase_handlePortDisconnectEvent(apx_nodeData_t *nodeDat
       else
       {
          //DO NOTHING
+      }
+   }
+}
+*/
+
+static void apx_connectionBase_emitFileCreatedEvent(apx_connectionBase_t *self, const apx_fileInfo_t *fileInfo)
+{
+   if (self != 0)
+   {
+      apx_event_t event;
+      apx_fileInfo_t *fileInfo2;
+      fileInfo2 = apx_fileInfo_clone(fileInfo);
+      if (fileInfo2 != 0)
+      {
+         apx_event_fillFileCreatedEvent(&event, self, fileInfo2);
+         apx_eventLoop_append(&self->eventLoop, &event);
       }
    }
 }

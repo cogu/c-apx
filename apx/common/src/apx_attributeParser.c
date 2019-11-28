@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 DYN_STATIC const uint8_t* apx_attributeParser_parseSingleAttribute(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, apx_portAttributes_t *attr);
 DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, dtl_dv_t **ppInitValue);
-DYN_STATIC const uint8_t* apx_attributeParser_parseArrayLength(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, int32_t *pValue);
+DYN_STATIC const uint8_t* apx_attributeParser_parseArrayLength(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, uint32_t *pValue);
 static void setError(apx_attributeParser_t *self, apx_error_t errorCode);
 //static void clearError(apx_attributeParser_t *self);
 
@@ -68,13 +68,13 @@ void apx_attributeParser_setVersion(apx_attributeParser_t *self, int16_t majorVe
  */
 apx_error_t apx_attributeParser_parseObject(apx_attributeParser_t *self, apx_portAttributes_t *attributeObject)
 {
-   if ( (self != 0 ) && (attributeObject != 0) && (attributeObject->rawValue != 0) )
+   if ( (self != 0 ) && (attributeObject != 0) && (attributeObject->rawString != 0) )
    {
       const uint8_t *pBegin;
       const uint8_t *pEnd;
       const uint8_t *pResult;
-      pBegin = (const uint8_t*) attributeObject->rawValue;
-      pEnd = pBegin + strlen(attributeObject->rawValue);
+      pBegin = (const uint8_t*) attributeObject->rawString;
+      pEnd = pBegin + strlen(attributeObject->rawString);
       pResult = apx_attributeParser_parse(self, pBegin, pEnd, attributeObject);
       if ( pResult == pEnd)
       {
@@ -446,7 +446,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseInitValue(apx_attributeParser
    return 0;
 }
 
-DYN_STATIC const uint8_t* apx_attributeParser_parseArrayLength(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, int32_t *pValue)
+DYN_STATIC const uint8_t* apx_attributeParser_parseArrayLength(apx_attributeParser_t *self, const uint8_t *pBegin, const uint8_t *pEnd, uint32_t *pValue)
 {
    if ( (self != 0) && (pValue != 0) && (pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd) )
    {
@@ -468,8 +468,8 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseArrayLength(apx_attributePars
          //OK, now parse whatever is inside the brackets
          if (pNext < pResult)
          {
-            long value;
-            pResult = bstr_to_long(pNext, pResult, &value);
+            unsigned long value;
+            pResult = bstr_to_unsigned_long(pNext, pResult, 10u, &value);
             if ( (pResult == 0) || (pResult == pNext) )
             {
                self->lastError = APX_PARSE_ERROR;
@@ -479,7 +479,7 @@ DYN_STATIC const uint8_t* apx_attributeParser_parseArrayLength(apx_attributePars
             //check validity of queue length value
             if (value > 0)
             {
-               *pValue = (int32_t) value;
+               *pValue = (uint32_t) value;
             }
             else
             {

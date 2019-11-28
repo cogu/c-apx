@@ -106,6 +106,7 @@ apx_error_t apx_vmSerializer_packS16(apx_vmSerializer_t *self, int16_t s16Value)
 apx_error_t apx_vmSerializer_packS32(apx_vmSerializer_t *self, int32_t s32Value);
 apx_error_t apx_vmSerializer_packFixedStr(apx_vmSerializer_t *self, const adt_str_t *str, int32_t writeLen);
 apx_error_t apx_vmSerializer_packBytes(apx_vmSerializer_t *self, const adt_bytes_t *bytes);
+apx_error_t apx_vmSerializer_packNull(apx_vmSerializer_t *self, int32_t writeLen);
 
 
 

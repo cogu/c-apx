@@ -52,10 +52,10 @@ typedef struct apx_serverSocketConnection_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_serverSocketConnection_create(apx_serverSocketConnection_t *self, SOCKET_TYPE *socketObject, struct apx_server_tag *server);
+apx_error_t apx_serverSocketConnection_create(apx_serverSocketConnection_t *self, SOCKET_TYPE *socketObject);
 void apx_serverSocketConnection_destroy(apx_serverSocketConnection_t *self);
 void apx_serverSocketConnection_vdestroy(void *arg);
-apx_serverSocketConnection_t *apx_serverSocketConnection_new(SOCKET_TYPE *socketObject, struct apx_server_tag *server);
+apx_serverSocketConnection_t *apx_serverSocketConnection_new(SOCKET_TYPE *socketObject);
 void apx_serverSocketConnection_delete(apx_serverSocketConnection_t *self);
 void apx_serverSocketConnection_vdelete(void *arg);
 void apx_serverSocketConnection_start(apx_serverSocketConnection_t *self);

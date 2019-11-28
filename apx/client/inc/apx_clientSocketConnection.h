@@ -52,10 +52,10 @@ typedef struct apx_clientSocketConnection_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self, SOCKET_TYPE *socketObject, struct apx_client_tag *client);
+apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self, SOCKET_TYPE *socketObject);
 void apx_clientSocketConnection_destroy(apx_clientSocketConnection_t *self);
 void apx_clientSocketConnection_vdestroy(void *arg);
-apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE *socketObject, struct apx_client_tag *client);
+apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE *socketObject);
 
 #ifdef UNIT_TEST
 apx_error_t apx_clientSocketConnection_connect(apx_clientSocketConnection_t *self);

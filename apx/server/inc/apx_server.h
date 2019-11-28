@@ -12,7 +12,7 @@
 #endif
 #include "apx_serverExtension.h"
 #include "apx_routingTable.h"
-#include "apx_eventListener.h"
+#include "apx_eventListener2.h"
 #include "apx_connectionManager.h"
 #include "apx_eventLoop.h"
 #include "soa.h"
@@ -27,7 +27,7 @@
 typedef struct apx_server_tag
 {
    adt_list_t serverEventListeners; //weak references to apx_serverEventListener_t
-   apx_routingTable_t routingTable; //routing table for APX port connections
+   //apx_routingTable_t routingTable; //routing table for APX port connections
    apx_connectionManager_t connectionManager; //server connections
    adt_list_t extensionManager; //TODO: replace with extensionManager class
    THREAD_T workerThread; //local worker thread
@@ -52,7 +52,7 @@ void apx_server_create(apx_server_t *self);
 void apx_server_destroy(apx_server_t *self);
 void apx_server_start(apx_server_t *self);
 void apx_server_stop(apx_server_t *self);
-void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener);
+void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener2_t *eventListener);
 void apx_server_unregisterEventListener(apx_server_t *self, void *handle);
 void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
 void apx_server_closeConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);

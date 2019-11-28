@@ -51,7 +51,7 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_port_routing_connect_nodes(CuTest* tc);
-static void test_apx_port_routing_open_close_connection(CuTest* tc);
+//static void test_apx_port_routing_open_close_connection(CuTest* tc);
 
 static void attachTestNode1(apx_server_t *pServer, apx_serverTestConnection_t *pConnection);
 static void attachTestNode5(apx_server_t *pServer, apx_serverTestConnection_t *pConnection);
@@ -70,7 +70,7 @@ CuSuite* testSuite_apx_port_routing(void)
    CuSuite* suite = CuSuiteNew();
 
    SUITE_ADD_TEST(suite, test_apx_port_routing_connect_nodes);
-   SUITE_ADD_TEST(suite, test_apx_port_routing_open_close_connection);
+   //SUITE_ADD_TEST(suite, test_apx_port_routing_open_close_connection);
 
    return suite;
 }
@@ -104,7 +104,7 @@ static void test_apx_port_routing_connect_nodes(CuTest* tc)
 
    apx_server_destroy(pServer);
 }
-
+#if 0
 static void test_apx_port_routing_open_close_connection(CuTest* tc)
 {
    apx_server_t server, *pServer;
@@ -189,6 +189,7 @@ static void test_apx_port_routing_open_close_connection(CuTest* tc)
 
    apx_server_destroy(pServer);
 }
+#endif
 
 static void attachTestNode1(apx_server_t *pServer, apx_serverTestConnection_t *pConnection)
 {

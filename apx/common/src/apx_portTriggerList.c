@@ -83,7 +83,7 @@ void apx_portTriggerList_delete(apx_portTriggerList_t *self)
    }
 }
 
-apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portDataRef_t *portData)
+apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portDataRef2_t *portData)
 {
    if ( (self != 0) && (portData != 0) )
    {
@@ -105,7 +105,7 @@ apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portData
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_portTriggerList_remove(apx_portTriggerList_t *self, apx_portDataRef_t *portData)
+void apx_portTriggerList_remove(apx_portTriggerList_t *self, apx_portDataRef2_t *portData)
 {
    if ( (self != 0) && (portData != 0) )
    {
@@ -122,13 +122,13 @@ int32_t apx_portTriggerList_length(apx_portTriggerList_t *self)
    return -1;
 }
 
-apx_portDataRef_t *apx_portTriggerList_get(apx_portTriggerList_t *self, int32_t index)
+apx_portDataRef2_t *apx_portTriggerList_get(apx_portTriggerList_t *self, int32_t index)
 {
    if (self != 0)
    {
-      return (apx_portDataRef_t*) adt_ary_value(&self->requirePortData, index);
+      return (apx_portDataRef2_t*) adt_ary_value(&self->requirePortData, index);
    }
-   return (apx_portDataRef_t*) 0;
+   return (apx_portDataRef2_t*) 0;
 }
 
 

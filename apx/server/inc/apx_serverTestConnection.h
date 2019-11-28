@@ -32,9 +32,9 @@
 #include <stdbool.h>
 #include "apx_error.h"
 #include "apx_serverConnectionBase.h"
-#include "rmf.h"
 #include "adt_bytearray.h"
 #include "adt_ary.h"
+#include "apx_fileInfo.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -49,10 +49,10 @@ typedef struct apx_serverTestConnection_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_serverTestConnection_create(apx_serverTestConnection_t *self, struct apx_server_tag *server);
+apx_error_t apx_serverTestConnection_create(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_destroy(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_vdestroy(void *arg);
-apx_serverTestConnection_t *apx_serverTestConnection_new(struct apx_server_tag *server);
+apx_serverTestConnection_t *apx_serverTestConnection_new(void);
 void apx_serverTestConnection_delete(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_start(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_vstart(void *arg);
@@ -65,5 +65,7 @@ void apx_serverTestConnection_openRemoteFile(apx_serverTestConnection_t *self, u
 void apx_serverTestConnection_runEventLoop(apx_serverTestConnection_t *self);
 int32_t apx_serverTestConnection_getTransmitLogLen(apx_serverTestConnection_t *self);
 adt_bytearray_t *apx_serverTestConnection_getTransmitLogMsg(apx_serverTestConnection_t *self, int32_t index);
+
+apx_error_t apx_serverTestConnection_onFileInfoMsgReceived(apx_serverTestConnection_t *self, const rmf_fileInfo_t *remoteFileInfo);
 
 #endif //APX_SERVER_TEST_CONNECTION_H

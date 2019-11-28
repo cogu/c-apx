@@ -41,7 +41,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_serverTestConnection_registerTransmitHandler(apx_serverTestConnection_t *self);
+static apx_error_t apx_serverTestConnection_fillTransmitHandler(apx_serverTestConnection_t *self, apx_transmitHandler_t *handler);
+static apx_error_t apx_serverTestConnection_vfillTransmitHandler(void *arg, apx_transmitHandler_t *handler);
 static uint8_t *apx_serverTestConnection_getSendBuffer(void *arg, int32_t msgLen);
 static int32_t apx_serverTestConnection_send(void *arg, int32_t offset, int32_t msgLen);
 //////////////////////////////////////////////////////////////////////////////
@@ -51,24 +52,20 @@ static int32_t apx_serverTestConnection_send(void *arg, int32_t offset, int32_t 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_serverTestConnection_create(apx_serverTestConnection_t *self, struct apx_server_tag *server)
+apx_error_t apx_serverTestConnection_create(apx_serverTestConnection_t *self)
 {
    if (self != 0)
    {
       apx_connectionBaseVTable_t vtable;
       self->pendingMsg = (adt_bytearray_t*) 0;
-      apx_connectionBaseVTable_create(&vtable, apx_serverTestConnection_vdestroy, apx_serverTestConnection_vstart, apx_serverTestConnection_vclose);
-      apx_error_t result = apx_serverConnectionBase_create(&self->base, server, &vtable);
+      apx_connectionBaseVTable_create(&vtable, apx_serverTestConnection_vdestroy, apx_serverTestConnection_vstart, apx_serverTestConnection_vclose, apx_serverTestConnection_vfillTransmitHandler);
+      apx_error_t result = apx_serverConnectionBase_create(&self->base, &vtable);
       if (result == APX_NO_ERROR)
       {
          self->transmitLog = adt_ary_new(adt_bytearray_vdelete);
          if (self->transmitLog == 0)
          {
             result = APX_MEM_ERROR;
-         }
-         else
-         {
-            apx_serverTestConnection_registerTransmitHandler(self);
          }
       }
       return result;
@@ -97,12 +94,12 @@ void apx_serverTestConnection_vdestroy(void *arg)
    apx_serverTestConnection_destroy((apx_serverTestConnection_t*) arg);
 }
 
-apx_serverTestConnection_t *apx_serverTestConnection_new(struct apx_server_tag *server)
+apx_serverTestConnection_t *apx_serverTestConnection_new(void)
 {
    apx_serverTestConnection_t *self = (apx_serverTestConnection_t*) malloc(sizeof(apx_serverTestConnection_t));
    if (self != 0)
    {
-      apx_error_t result = apx_serverTestConnection_create(self, server);
+      apx_error_t result = apx_serverTestConnection_create(self);
       if (result != APX_NO_ERROR)
       {
          free(self);
@@ -145,12 +142,13 @@ void apx_serverTestConnection_vclose(void *arg)
 /**
  * Remote side has created a new remote file
  */
-void apx_serverTestConnection_createRemoteFile(apx_serverTestConnection_t *self, const rmf_fileInfo_t *fileInfo)
+apx_error_t apx_serverTestConnection_onFileInfoMsgReceived(apx_serverTestConnection_t *self, const rmf_fileInfo_t *remoteFileInfo)
 {
-   if ( (self != 0) && (fileInfo != 0) )
+   if ( (self != 0) && (remoteFileInfo != 0) )
    {
-      apx_fileManager_onRemoteCmdFileInfo(&self->base.base.fileManager, fileInfo);
+      return apx_serverConnectionBase_onFileInfoMsgReceived(&self->base, remoteFileInfo);
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 /**
@@ -160,7 +158,7 @@ void apx_serverTestConnection_writeRemoteData(apx_serverTestConnection_t *self, 
 {
    if ( (self != 0) && (dataBuf != 0) )
    {
-      apx_fileManager_onWriteRemoteData(&self->base.base.fileManager, address, dataBuf, dataLen, more);
+      //apx_fileManager2_onWriteRemoteData(&self->base.base.fileManager, address, dataBuf, dataLen, more);
    }
 }
 
@@ -168,7 +166,7 @@ void apx_serverTestConnection_openRemoteFile(apx_serverTestConnection_t *self, u
 {
    if (self != 0)
    {
-      apx_fileManager_onRemoteCmdFileOpen(&self->base.base.fileManager, address);
+      //apx_fileManager2_onRemoteCmdFileOpen(&self->base.base.fileManager, address);
    }
 }
 
@@ -177,7 +175,7 @@ void apx_serverTestConnection_runEventLoop(apx_serverTestConnection_t *self)
    if (self != 0)
    {
 #ifdef UNIT_TEST
-      apx_connectionBase_runAll(&self->base.base);
+      apx_serverConnectionBase_run(&self->base);
 #endif
    }
 }
@@ -204,14 +202,23 @@ adt_bytearray_t *apx_serverTestConnection_getTransmitLogMsg(apx_serverTestConnec
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_serverTestConnection_registerTransmitHandler(apx_serverTestConnection_t *self)
+
+static apx_error_t apx_serverTestConnection_fillTransmitHandler(apx_serverTestConnection_t *self, apx_transmitHandler_t *handler)
 {
-   apx_transmitHandler_t serverTransmitHandler;
-   serverTransmitHandler.arg = self;
-   serverTransmitHandler.send = apx_serverTestConnection_send;
-   serverTransmitHandler.getSendAvail = 0;
-   serverTransmitHandler.getSendBuffer = apx_serverTestConnection_getSendBuffer;
-   apx_fileManager_setTransmitHandler(&self->base.base.fileManager, &serverTransmitHandler);
+   if (self != 0 && handler != 0)
+   {
+      handler->arg = self;
+      handler->send = apx_serverTestConnection_send;
+      handler->getSendAvail = 0;
+      handler->getSendBuffer = apx_serverTestConnection_getSendBuffer;
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_serverTestConnection_vfillTransmitHandler(void *arg, apx_transmitHandler_t *handler)
+{
+   return apx_serverTestConnection_fillTransmitHandler((apx_serverTestConnection_t*) arg, handler);
 }
 
 static uint8_t *apx_serverTestConnection_getSendBuffer(void *arg, int32_t msgLen)
@@ -231,9 +238,9 @@ static uint8_t *apx_serverTestConnection_getSendBuffer(void *arg, int32_t msgLen
             return adt_bytearray_data(self->pendingMsg);
          }
       }
-      return 0;
+      return (uint8_t*) 0;
    }
-   return 0;
+   return (uint8_t*) 0;
 }
 
 static int32_t apx_serverTestConnection_send(void *arg, int32_t offset, int32_t msgLen)
@@ -250,6 +257,7 @@ static int32_t apx_serverTestConnection_send(void *arg, int32_t offset, int32_t 
             self->pendingMsg = 0;
          }
       }
+      return 0;
    }
    return -1;
 }

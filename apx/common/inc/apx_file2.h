@@ -29,21 +29,34 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stdint.h>
-#include <stdbool.h>
 #include "apx_types.h"
-#include "rmf.h"
 #include "apx_error.h"
+#include "apx_fileInfo.h"
+#include "apx_eventListener2.h"
+#include "adt_list.h"
+
+#ifndef APX_EMBEDDED
+# ifdef _WIN32
+#  ifndef WIN32_LEAN_AND_MEAN
+#   define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <Windows.h>
+# else
+#  include <pthread.h>
+# endif
+#include "osmacro.h"
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
 struct apx_file2_tag;
-struct apx_fileManager_tag;
+struct apx_fileManager2_tag;
 
-typedef apx_error_t (apx_file_read_func)(void *arg, struct apx_file2_tag *file, uint8_t *dest, uint32_t offset, uint32_t len);
-typedef apx_error_t (apx_file_write_func)(void *arg, struct apx_file2_tag *file, const uint8_t *src, uint32_t offset, uint32_t len, bool more);
+typedef apx_error_t (apx_file_read_func)(void *arg, struct apx_file2_tag *file, uint32_t offset, uint8_t *dest, uint32_t len);
+typedef apx_error_t (apx_file_write_func)(void *arg, struct apx_file2_tag *file, uint32_t offset, const uint8_t *src, uint32_t len, bool more);
 
 typedef struct apx_file_handler_tag
 {
@@ -54,31 +67,26 @@ typedef struct apx_file_handler_tag
 
 typedef struct apx_file2_tag
 {
-   bool isRemoteFile;
-   bool isOpen;
-   bool isDataValid;
-   uint8_t fileType;
-   rmf_fileInfo_t fileInfo;
+   bool isFileOpen;
+   apx_fileType_t fileType;
+   apx_fileInfo_t fileInfo;
    apx_file_handler_t handler;
-   char *basename;
-   char *extension;
-   struct apx_fileManager_tag *fileManager;
-}apx_file2_t;
-
-//////////////////////////////////////////////////////////////////////////////
-// GLOBAL VARIABLES
-//////////////////////////////////////////////////////////////////////////////
-
+   struct apx_fileManager2_tag *fileManager;
+   adt_list_t eventListeners; //strong references to apx_fileEventListener2_t
+   MUTEX_T lock;
+} apx_file2_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_file2_create(apx_file2_t *self, bool isRemoteFile, const rmf_fileInfo_t *fileInfo, const apx_file_handler_t *handler);
+apx_error_t apx_file2_create_rmf(apx_file2_t *self, bool isRemoteFile, const rmf_fileInfo_t *fileInfo, const apx_file_handler_t *handler);
+apx_error_t apx_file2_create(apx_file2_t *self, const apx_fileInfo_t *fileInfo);
 #ifndef APX_EMBEDDED
 void apx_file2_destroy(apx_file2_t *self);
-apx_file2_t *apx_file2_new(bool isRemoteFile, const rmf_fileInfo_t *fileInfo, const apx_file_handler_t *handler);
-# define apx_file2_newLocal(fileInfo, handler) apx_file2_new(false, fileInfo, handler);
-# define apx_file2_newRemote(fileInfo, handler) apx_file2_new(true, fileInfo, handler);
+apx_file2_t *apx_file2_new_rmf(bool isRemoteFile, const rmf_fileInfo_t *fileInfo, const apx_file_handler_t *handler);
+apx_file2_t *apx_file2_new(const apx_fileInfo_t *fileInfo);
+# define apx_file2_newLocal(fileInfo, handler) apx_file2_new_rmf(false, fileInfo, handler);
+# define apx_file2_newRemote(fileInfo, handler) apx_file2_new_rmf(true, fileInfo, handler);
 void apx_file2_delete(apx_file2_t *self);
 void apx_file2_vdelete(void *arg);
 #endif
@@ -86,19 +94,21 @@ const char *apx_file2_basename(const apx_file2_t *self);
 const char *apx_file2_extension(const apx_file2_t *self);
 void apx_file2_open(apx_file2_t *self);
 void apx_file2_close(apx_file2_t *self);
-apx_error_t apx_file2_read(apx_file2_t *self, uint8_t *pDest, uint32_t offset, uint32_t length);
-apx_error_t apx_file2_write(apx_file2_t *self, const uint8_t *pSrc, uint32_t offset, uint32_t length, bool more);
+apx_error_t apx_file2_read(apx_file2_t *self, uint32_t offset, uint8_t *data, uint32_t length);
+apx_error_t apx_file2_write(apx_file2_t *self, uint32_t offset, const uint8_t *data, uint32_t length, bool more);
 bool apx_file2_hasReadHandler(apx_file2_t *self);
 bool apx_file2_hasWriteHandler(apx_file2_t *self);
 void apx_file2_setHandler(apx_file2_t *self, const apx_file_handler_t *handler);
 bool apx_file2_isDataValid(apx_file2_t *self);
 void apx_file2_setDataValid(apx_file2_t *self);
 bool apx_file2_isOpen(apx_file2_t *self);
-bool apx_file2_isLocal(apx_file2_t *self);
-bool apx_file2_isRemote(apx_file2_t *self);
-struct apx_fileManager_tag* apx_file2_getFileManager(apx_file2_t *self);
-void apx_file2_setFileManager(apx_file2_t *self, struct apx_fileManager_tag *fileManager);
-
-
+bool apx_file2_isLocalFile(apx_file2_t *self);
+bool apx_file2_isRemoteFile(apx_file2_t *self);
+bool apx_file2_isReadOnly(apx_file2_t *self);
+struct apx_fileManager2_tag* apx_file2_getFileManager(apx_file2_t *self);
+void apx_file2_setFileManager(apx_file2_t *self, struct apx_fileManager2_tag *fileManager);
+void apx_file2_lock(apx_file2_t *self);
+void apx_file2_unlock(apx_file2_t *self);
+apx_fileType_t apx_file2_getApxFileType(const apx_file2_t *self);
 #endif //APX_FILE2_H
 

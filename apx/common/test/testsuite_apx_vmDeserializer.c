@@ -299,7 +299,7 @@ static void test_apx_vmDeserializer_unpackBytes(CuTest* tc)
    apx_vmDeserializer_begin(ds, &packedData[0], sizeof(packedData));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackBytes(ds, &bytes, 4u));
    CuAssertPtrNotNull(tc, bytes);
-   data = adt_bytes_data(bytes);
+   data = adt_bytes_constData(bytes);
    CuAssertUIntEquals(tc, packedData[0], data[0]);
    CuAssertUIntEquals(tc, packedData[1], data[1]);
    CuAssertUIntEquals(tc, packedData[2], data[2]);
@@ -328,7 +328,7 @@ static void test_apx_vmDeserializer_unpackBytesValue(CuTest* tc)
    CuAssertIntEquals(tc, DTL_SV_BYTES, dtl_sv_type(sv));
    bytes = dtl_sv_get_bytes(sv);
    CuAssertPtrNotNull(tc, bytes);
-   data = adt_bytes_data(bytes);
+   data = adt_bytes_constData(bytes);
    for(i=0; i < 8; i++)
    {
       CuAssertUIntEquals(tc, packedData[i], data[i]);

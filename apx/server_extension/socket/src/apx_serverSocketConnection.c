@@ -45,7 +45,7 @@
 #include "apx_serverSocketConnection.h"
 #include "apx_logging.h"
 #include "apx_transmitHandler.h"
-#include "apx_fileManager.h"
+#include "apx_fileManager2.h"
 #include "numheader.h"
 #include "bstr.h"
 #include "apx_server.h"
@@ -82,7 +82,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_serverSocketConnection_registerTransmitHandler(apx_serverSocketConnection_t *self);
+static apx_error_t apx_serverSocketConnection_fillTransmitHandler(apx_serverSocketConnection_t *self, apx_transmitHandler_t *handler);
+static apx_error_t apx_serverSocketConnection_vfillTransmitHandler(void *arg, apx_transmitHandler_t *handler);
 static uint8_t *apx_serverSocketConnection_getSendBuffer(void *arg, int32_t msgLen);
 static int32_t apx_serverSocketConnection_send(void *arg, int32_t offset, int32_t msgLen);
 static int8_t apx_serverSocketConnection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
@@ -95,18 +96,17 @@ static void apx_serverSocketConnection_disconnected(void *arg);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_serverSocketConnection_create(apx_serverSocketConnection_t *self, SOCKET_TYPE *socketObject, struct apx_server_tag *server)
+apx_error_t apx_serverSocketConnection_create(apx_serverSocketConnection_t *self, SOCKET_TYPE *socketObject)
 {
    if (self != 0)
    {
       apx_connectionBaseVTable_t vtable;
-      apx_connectionBaseVTable_create(&vtable, apx_serverSocketConnection_vdestroy, apx_serverSocketConnection_vstart, apx_serverSocketConnection_vclose);
-      apx_error_t result = apx_serverConnectionBase_create(&self->base, server, &vtable);
+      apx_connectionBaseVTable_create(&vtable, apx_serverSocketConnection_vdestroy, apx_serverSocketConnection_vstart, apx_serverSocketConnection_vclose, apx_serverSocketConnection_vfillTransmitHandler);
+      apx_error_t result = apx_serverConnectionBase_create(&self->base, &vtable);
       if (result != APX_NO_ERROR)
       {
          return result;
       }
-      apx_serverSocketConnection_registerTransmitHandler(self);
       adt_bytearray_create(&self->sendBuffer, SEND_BUFFER_GROW_SIZE);
       self->socketObject = socketObject;
       return APX_NO_ERROR;
@@ -129,12 +129,12 @@ void apx_serverSocketConnection_vdestroy(void *arg)
    apx_serverSocketConnection_destroy((apx_serverSocketConnection_t*) arg);
 }
 
-apx_serverSocketConnection_t *apx_serverSocketConnection_new(SOCKET_TYPE *socketObject, struct apx_server_tag *server)
+apx_serverSocketConnection_t *apx_serverSocketConnection_new(SOCKET_TYPE *socketObject)
 {
    apx_serverSocketConnection_t *self = (apx_serverSocketConnection_t*) malloc(sizeof(apx_serverSocketConnection_t));
    if (self != 0)
    {
-      int8_t result = apx_serverSocketConnection_create(self, socketObject, server);
+      int8_t result = apx_serverSocketConnection_create(self, socketObject);
       if (result != 0)
       {
          free(self);
@@ -194,15 +194,22 @@ void apx_serverSocketConnection_vclose(void *arg)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-static void apx_serverSocketConnection_registerTransmitHandler(apx_serverSocketConnection_t *self)
+static apx_error_t apx_serverSocketConnection_fillTransmitHandler(apx_serverSocketConnection_t *self, apx_transmitHandler_t *handler)
 {
-   apx_transmitHandler_t serverTransmitHandler;
-   serverTransmitHandler.arg = self;
-   serverTransmitHandler.send = apx_serverSocketConnection_send;
-   serverTransmitHandler.getSendAvail = 0;
-   serverTransmitHandler.getSendBuffer = apx_serverSocketConnection_getSendBuffer;
-   apx_fileManager_setTransmitHandler(&self->base.base.fileManager, &serverTransmitHandler);
+   if (self != 0 && handler != 0)
+   {
+      handler->arg = self;
+      handler->send = apx_serverSocketConnection_send;
+      handler->getSendAvail = 0;
+      handler->getSendBuffer = apx_serverSocketConnection_getSendBuffer;
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_serverSocketConnection_vfillTransmitHandler(void *arg, apx_transmitHandler_t *handler)
+{
+   return apx_serverSocketConnection_fillTransmitHandler( (apx_serverSocketConnection_t*) arg, handler);
 }
 
 static uint8_t *apx_serverSocketConnection_getSendBuffer(void *arg, int32_t msgLen)

@@ -39,7 +39,6 @@ typedef struct apx_portDataProps_tag
 {
    apx_portId_t portId;
    apx_size_t dataSize; //Size of the data portion on the port data
-   apx_size_t totalSize; //elementSize+queueHeaderSize
    apx_offset_t offset; //offset in file
    apx_portType_t portType; //Is this a provide or require port?
    apx_queLenType_t queLenType; //Is this a queued port?
@@ -56,5 +55,7 @@ void apx_portDataProps_delete(apx_portDataProps_t *self);
 void apx_portDataProps_vdelete(void *arg);
 
 bool apx_portDataProps_isPlainOldData(const apx_portDataProps_t *self);
+
+apx_size_t apx_portDataProps_sumDataSize(const apx_portDataProps_t *propsArray, apx_portCount_t numPorts);
 
 #endif //APX_PORT_DATA_ATTRIBUTES_H

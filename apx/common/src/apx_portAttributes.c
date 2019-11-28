@@ -3,7 +3,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include <stdio.h>
-#include <errno.h>
 #include <malloc.h>
 #include <assert.h>
 #ifdef MEM_LEAK_CHECK
@@ -34,7 +33,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_portAttributes_create(apx_portAttributes_t *self, const char *attributeString)
+apx_error_t apx_portAttributes_create(apx_portAttributes_t *self, const char *attributeString)
 {
    if (self != 0)
    {
@@ -42,56 +41,55 @@ int8_t apx_portAttributes_create(apx_portAttributes_t *self, const char *attribu
       self->isParameter = false;
       self->isQueued = false;
       self->isDynamic = false;
-      self->dynLen = -1;
-      self->queueLen = -1;
-      self->initValue = 0;
-      self->rawValue = 0;
+      self->dynLen = 0u;
+      self->queueLen = 0u;
+      self->initValue = (dtl_dv_t*) 0;
+      self->properInitValue = (dtl_dv_t*) 0;
+      self->rawString = 0;
       if (attributeString != 0)
       {
-         self->rawValue = STRDUP(attributeString);
-         if (self->rawValue == 0)
+         self->rawString = STRDUP(attributeString);
+         if (self->rawString == 0)
          {
-            errno = ENOMEM;
-            return -1;
+            return APX_MEM_ERROR;
          }
       }
-      return 0;
+      return APX_NO_ERROR;
    }
-   errno = EINVAL;
-   return -1;
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_portAttributes_destroy(apx_portAttributes_t *self)
 {
    if (self != 0)
    {
-      if (self->rawValue != 0)
+      if (self->rawString != 0)
       {
-         free(self->rawValue);
+         free(self->rawString);
       }
       if (self->initValue != 0)
       {
-         dtl_dv_delete(self->initValue);
+         dtl_dec_ref(self->initValue);
+      }
+      if (self->properInitValue != 0)
+      {
+         dtl_dec_ref(self->properInitValue);
       }
    }
 }
 
 apx_portAttributes_t* apx_portAttributes_new(const char *attr)
 {
-   apx_portAttributes_t *self = 0;
+   apx_portAttributes_t *self = (apx_portAttributes_t*) 0;
    self = (apx_portAttributes_t*) malloc(sizeof(apx_portAttributes_t));
    if (self != 0)
    {
-      int8_t result = apx_portAttributes_create(self, attr);
-      if (result < 0)
+      apx_error_t rc = apx_portAttributes_create(self, attr);
+      if (rc != APX_NO_ERROR)
       {
          free(self);
-         return (apx_portAttributes_t*) 0;
+         self = (apx_portAttributes_t*) 0;
       }
-   }
-   else
-   {
-      errno = ENOMEM;
    }
    return self;
 }
@@ -112,11 +110,28 @@ void apx_portAttributes_vdelete(void *arg)
 
 void apx_portAttributes_clearInitValue(apx_portAttributes_t *self)
 {
-   if ( (self != 0) && (self->initValue != 0) )
+   if ( (self != 0) )
    {
-      dtl_dv_delete(self->initValue);
-      self->initValue = 0;
+      if (self->initValue != 0)
+      {
+         dtl_dec_ref(self->initValue);
+         self->initValue = (dtl_dv_t*) 0;
+      }
+      if (self->properInitValue != 0)
+      {
+         dtl_dec_ref(self->properInitValue);
+         self->properInitValue = (dtl_dv_t*) 0;
+      }
    }
+}
+
+dtl_dv_t *apx_portAttributes_getProperInitValue(apx_portAttributes_t *self)
+{
+   if (self != 0)
+   {
+      return self->properInitValue;
+   }
+   return (dtl_dv_t *) 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////
