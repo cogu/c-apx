@@ -475,7 +475,7 @@ int8_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset
 {
    if ( (self != 0) && (self->fileManager != 0) && (self->outPortDataFile != 0) )
    {
-      if (self->outPortDataFile->isOpen == true)
+      if (self->outPortDataFile->isOpen)
       {
          int8_t result = apx_nodeData_processSmallData(self, offset, len, directWriteEnabled);
          if (result == APX_DATA_NOT_PROCESSED_ERROR)
@@ -483,6 +483,11 @@ int8_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset
             result = apx_nodeData_processLargeData(self, offset, len);
          }
          return result;
+      }
+      else
+      {
+         apx_nodeData_unlockOutPortData(self);
+         return APX_NO_ERROR;
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
