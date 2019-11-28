@@ -1,9 +1,10 @@
 /*****************************************************************************
-* \file      apx_fileManagerLocal.h
+* \file      apx_clientEventListenerSpy.h
 * \author    Conny Gustafsson
-* \date      2018-08-02
-* \brief     APX Filemanager local representation
+* \date      2020-01-30
+* \brief     spy for apx_clientEventListener_t
 *
+* Copyright (c) 2020 Conny Gustafsson
 * Copyright (c) 2018 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
@@ -23,49 +24,38 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_FILE_MANAGER_LOCAL_H
-#define APX_FILE_MANAGER_LOCAL_H
+#ifndef APX_CLIENT_EVENT_LISTENER_SPY_H
+#define APX_CLIENT_EVENT_LISTENER_SPY_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_fileManagerShared.h"
-#include "apx_fileMap.h"
-#ifdef _WIN32
-# ifndef WIN32_LEAN_AND_MEAN
-# define WIN32_LEAN_AND_MEAN
-# endif
-# include <Windows.h>
-#else
-# include <pthread.h>
-#endif
-#include "osmacro.h"
+#include "apx_types.h"
+#include "apx_eventListener2.h"
+#include "apx_client.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
-// CONSTANTS AND DATA TYPES
+// PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-
-typedef struct apx_fileManagerLocal_tag
+typedef struct apx_clientEventListenerSpy_tag
 {
-   apx_fileManagerShared_t *shared;
-   apx_fileMap_t localFileMap;
-   MUTEX_T mutex;
-} apx_fileManagerLocal_t;
+   uint32_t connectCount;
+   uint32_t disconnectCount;
+   uint32_t headerAcceptedCount;
+} apx_clientEventListenerSpy_t;
 
 //////////////////////////////////////////////////////////////////////////////
-// GLOBAL FUNCTION PROTOTYPES
+// PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_fileManagerLocal_create(apx_fileManagerLocal_t *self, apx_fileManagerShared_t *shared);
-void apx_fileManagerLocal_destroy(apx_fileManagerLocal_t *self);
-//void apx_fileManagerLocal_start(apx_fileManagerLocal_t *self);
-//void apx_fileManagerLocal_stop(apx_fileManagerLocal_t *self);
-void apx_fileManagerLocal_attachFile(apx_fileManagerLocal_t *self, apx_file2_t *localFile, void *caller);
-int32_t apx_fileManagerLocal_getNumFiles(apx_fileManagerLocal_t *self);
-int32_t apx_fileManagerLocal_serializeFileInfo(apx_fileManagerLocal_t *self, uint8_t *bufData, int32_t bufLen, uint8_t headerSize);
-void apx_fileManagerLocal_sendFileInfo(apx_fileManagerLocal_t *self);
-struct apx_file2_tag *apx_fileManagerLocal_find(apx_fileManagerLocal_t *self, uint32_t address);
-struct apx_file2_tag *apx_fileManagerLocal_findByName(apx_fileManagerLocal_t *self, const char *name);
-bool apx_fileManagerLocal_isFileAttached(apx_fileManagerLocal_t *self, apx_file2_t *localFile);
 
-#endif //APX_FILE_MANAGER_LOCAL_H
+void apx_clientEventListenerSpy_create(apx_clientEventListenerSpy_t *self);
+void apx_clientEventListenerSpy_destroy(apx_clientEventListenerSpy_t *self);
+apx_clientEventListenerSpy_t* apx_clientEventListenerSpy_new(void);
+void apx_clientEventListenerSpy_delete(apx_clientEventListenerSpy_t *self);
+void* apx_clientEventListenerSpy_register(apx_clientEventListenerSpy_t *self, apx_client_t *client);
+uint32_t apx_clientEventListenerSpy_getConnectCount(apx_clientEventListenerSpy_t *self);
+uint32_t apx_clientEventListenerSpy_getDisconnectCount(apx_clientEventListenerSpy_t *self);
+uint32_t apx_clientEventListenerSpy_getHeaderAccepted(apx_clientEventListenerSpy_t *self);
+
+#endif //APX_CLIENT_EVENT_LISTENER_SPY_H

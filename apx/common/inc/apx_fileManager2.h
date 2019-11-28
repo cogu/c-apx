@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_fileManagerEventListenerSpy.h
+* \file      apx_fileManager2.h
 * \author    Conny Gustafsson
-* \date      2018-08-21
-* \brief     Test spy for apx_fileManagerEventListener
+* \date      2020-01-22
+* \brief     New APX file manager
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -23,25 +23,32 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_FILEMANAGER_EVENT_LISTENER_SPY_H
-#define APX_FILEMANAGER_EVENT_LISTENER_SPY_H
+#ifndef APX_FILE_MANAGER2_H
+#define APX_FILE_MANAGER2_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_eventListener.h"
-#include "apx_fileManager.h"
+#include "apx_types.h"
+#include "apx_error.h"
 #include "apx_file2.h"
+#include "apx_fileManagerDefs.h"
+#include "apx_fileManagerShared2.h"
+#include "apx_fileManagerWorker.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_fileManagerEventListenerSpy_tag
+//forward declaration
+struct apx_connectionBase_tag;
+
+typedef struct apx_fileManager2_tag
 {
-   int32_t numfileCreateCalls;
-   apx_fileManager_t *lastFileManager;
-   const apx_file2_t *lastFile;
-}apx_fileManagerEventListenerSpy_t;
+   apx_fileManagerShared2_t shared;
+   apx_fileManagerWorker_t worker;
+   struct apx_connectionBase_tag *parentConnection;
+}apx_fileManager2_t;
+
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -49,9 +56,28 @@ typedef struct apx_fileManagerEventListenerSpy_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_fileManagerEventListenerSpy_create(apx_fileManagerEventListenerSpy_t *self);
+apx_error_t apx_fileManager2_create(apx_fileManager2_t *self, uint8_t mode, struct apx_connectionBase_tag *parentConnection);
+void apx_fileManager2_destroy(apx_fileManager2_t *self);
 
-void apx_fileManagerEventListenerSpy_fileCreate(void *arg, struct apx_fileManager_tag *fileManager, struct apx_file2_tag *file);
+void apx_fileManager2_start(apx_fileManager2_t *self);
+void apx_fileManager2_stop(apx_fileManager2_t *self);
 
 
-#endif //APX_FILEMANAGER_EVENT_LISTENER_SPY_H
+apx_file2_t* apx_fileManager2_findFileByAddress(apx_fileManager2_t *self, uint32_t address);
+void apx_fileManager2_setTransmitHandler(apx_fileManager2_t *self, apx_transmitHandler_t *handler);
+void apx_fileManager2_copyTransmitHandler(apx_fileManager2_t *self, apx_transmitHandler_t *handler);
+void apx_fileManager2_headerReceived(apx_fileManager2_t *self);
+void apx_fileManager2_headerAccepted(apx_fileManager2_t *self);
+apx_error_t apx_fileManager2_requestOpenFile(apx_fileManager2_t *self, uint32_t address);
+void apx_fileManager2_setConnectionId(apx_fileManager2_t *self, uint32_t connectionId);
+int32_t apx_fileManager2_getNumLocalFiles(apx_fileManager2_t *self);
+int32_t apx_fileManager2_getNumRemoteFiles(apx_fileManager2_t *self);
+apx_file2_t *apx_fileManager2_createLocalFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
+apx_file2_t *apx_fileManager2_createRemoteFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
+
+#ifdef UNIT_TEST
+bool apx_fileManager2_run(apx_fileManager2_t *self);
+int32_t apx_fileManager2_numPendingMessages(apx_fileManager2_t *self);
+#endif
+
+#endif //APX_FILE_MANAGER_H

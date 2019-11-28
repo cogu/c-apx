@@ -123,7 +123,7 @@ apx_error_t apx_vm_selectProgram(apx_vm_t *self, const adt_bytes_t *program)
       }
       if( (majorVersion == APX_VM_MAJOR_VERSION) && (minorVersion == APX_VM_MINOR_VERSION) )
       {
-         self->progBegin = adt_bytes_data(program);
+         self->progBegin = adt_bytes_constData(program);
          self->progEnd = self->progBegin+programLength;
       }
       else
@@ -222,6 +222,19 @@ apx_error_t apx_vm_unpackValue(apx_vm_t *self, dtl_dv_t **dv)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_vm_writeNullValue(apx_vm_t *self)
+{
+   if (self != 0)
+   {
+      if ( (self->progDataSize > 0) && (self->dynLenType == APX_DYN_LEN_NONE) )
+      {
+         return apx_vmSerializer_packNull(&self->serializer, self->progDataSize);
+      }
+      return APX_VALUE_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_size_t apx_vm_getBytesWritten(apx_vm_t *self)
 {
    apx_size_t retval = 0u;
@@ -249,7 +262,7 @@ apx_error_t apx_vm_decodeProgramHeader(const adt_bytes_t *program, uint8_t *majo
    {
       if (adt_bytes_length(program) >= APX_VM_HEADER_SIZE)
       {
-         const uint8_t *pNext = adt_bytes_data(program);
+         const uint8_t *pNext = adt_bytes_constData(program);
          if (*pNext++ != APX_VM_MAGIC_NUMBER)
          {
             return APX_UNEXPECTED_DATA_ERROR;
@@ -266,6 +279,15 @@ apx_error_t apx_vm_decodeProgramHeader(const adt_bytes_t *program, uint8_t *majo
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vm_decodeProgramDataProps(const adt_bytes_t *program, apx_size_t *dataSize, uint8_t *dataFlags)
+{
+   uint8_t majorVersion;
+   uint8_t minorVersion;
+   uint8_t progType;
+   (void) dataFlags;
+   return apx_vm_decodeProgramHeader(program, &majorVersion, &minorVersion, &progType, dataSize);
 }
 
 apx_error_t apx_vm_decodeInstruction(uint8_t instruction, uint8_t *opcode, uint8_t *variant, uint8_t *flags)

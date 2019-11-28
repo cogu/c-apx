@@ -101,7 +101,7 @@ uint8_t* apx_transmitHandlerSpy_getSendBuffer(void *arg, int32_t msgLen)
 int32_t apx_transmitHandlerSpy_send(void *arg, int32_t offset, int32_t msgLen)
 {
    apx_transmitHandlerSpy_t* self = (apx_transmitHandlerSpy_t*) arg;
-   if ( (self != 0) && (adt_bytearray_length(self->buf) >= msgLen) )
+   if ( (self != 0) && (adt_bytearray_length(self->buf) >= (uint32_t) msgLen) )
    {
       adt_ary_push(self->transmitted, self->buf);
       self->buf = 0;

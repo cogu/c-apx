@@ -7,8 +7,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "CuTest.h"
-#include "apx_fileMap.h"
-#include "apx_nodeData.h"
+#include "apx_fileManagerShared2.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -21,9 +20,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_fileMap_create(CuTest* tc);
+static void test_apx_fileMap_createLocalDefinitionFile(CuTest* tc);
+static void test_apx_fileMap_createRemoteDefinitionFile(CuTest* tc);
 static void test_apx_fileMap_autoInsert(CuTest* tc);
 static void test_apx_fileMap_manualInsert(CuTest* tc);
+static void test_apx_fileMap_makeFileInfoArray(CuTest* tc);
+
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -42,9 +44,11 @@ CuSuite* testSuite_apx_fileMap(void)
 {
    CuSuite* suite = CuSuiteNew();
 
-   SUITE_ADD_TEST(suite, test_apx_fileMap_create);
+   SUITE_ADD_TEST(suite, test_apx_fileMap_createLocalDefinitionFile);
+   SUITE_ADD_TEST(suite, test_apx_fileMap_createRemoteDefinitionFile);
    SUITE_ADD_TEST(suite, test_apx_fileMap_autoInsert);
    SUITE_ADD_TEST(suite, test_apx_fileMap_manualInsert);
+   SUITE_ADD_TEST(suite, test_apx_fileMap_makeFileInfoArray);
 
    return suite;
 }
@@ -53,22 +57,51 @@ CuSuite* testSuite_apx_fileMap(void)
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void test_apx_fileMap_create(CuTest* tc)
+static void test_apx_fileMap_createLocalDefinitionFile(CuTest* tc)
 {
-   apx_fileMap_t fileMap;
-   apx_fileMap_create(&fileMap);
-   apx_fileMap_destroy(&fileMap);
+   apx_fileManagerShared2_t shared;
+   apx_file2_t *file = NULL;
+   apx_fileInfo_t fileInfo;
+   apx_fileManagerShared2_create(&shared);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo, RMF_INVALID_ADDRESS, 5800, "MyNode.apx", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   file = apx_fileManagerShared2_createLocalFile(&shared, &fileInfo);
+   CuAssertPtrNotNull(tc, file);
+   CuAssertUIntEquals(tc, APX_ADDRESS_DEFINITION_START, file->fileInfo.address);
+   CuAssertIntEquals(tc, 0, apx_fileManagerShared2_getNumRemoteFiles(&shared));
+   CuAssertIntEquals(tc, 1, apx_fileManagerShared2_getNumLocalFiles(&shared));
+   apx_fileInfo_destroy(&fileInfo);
+   apx_fileManagerShared2_destroy(&shared);
 }
+
+static void test_apx_fileMap_createRemoteDefinitionFile(CuTest* tc)
+{
+   apx_fileManagerShared2_t shared;
+   apx_file2_t *file = NULL;
+   apx_fileInfo_t fileInfo;
+   apx_fileManagerShared2_create(&shared);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo, APX_ADDRESS_DEFINITION_START , 5800, "MyNode.apx", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   file = apx_fileManagerShared2_createRemoteFile(&shared, &fileInfo);
+   CuAssertPtrNotNull(tc, file);
+   CuAssertUIntEquals(tc, APX_ADDRESS_DEFINITION_START | RMF_REMOTE_ADDRESS_BIT, file->fileInfo.address);
+   CuAssertIntEquals(tc, 1, apx_fileManagerShared2_getNumRemoteFiles(&shared));
+   CuAssertIntEquals(tc, 0, apx_fileManagerShared2_getNumLocalFiles(&shared));
+   apx_fileInfo_destroy(&fileInfo);
+   apx_fileManagerShared2_destroy(&shared);
+}
+
 
 /**
  * test that the apx_fileMap automatically assigns addresses correctly when inserted
  */
 static void test_apx_fileMap_autoInsert(CuTest* tc)
 {
-   apx_fileMap_t fileMap;
-   apx_nodeData_t nodeData1;
-   apx_nodeData_t nodeData2;
-   apx_nodeData_t nodeData3;
+   apx_fileManagerShared2_t shared;
+   apx_fileInfo_t fileInfo1;
+   apx_fileInfo_t fileInfo2;
+   apx_fileInfo_t fileInfo3;
+   apx_fileInfo_t fileInfo4;
+   apx_fileInfo_t fileInfo5;
+   apx_fileInfo_t fileInfo6;
    apx_file2_t *file1;
    apx_file2_t *file2;
    apx_file2_t *file3;
@@ -84,73 +117,79 @@ static void test_apx_fileMap_autoInsert(CuTest* tc)
    adt_list_elem_t *iter;
    apx_file2_t *pFile;
 
-   apx_fileMap_create(&fileMap);
-   apx_nodeData_create(&nodeData1, "testnode1", def1, sizeof(def1) , 0, 0, 0, out1, 0, sizeof(out1));
-   apx_nodeData_create(&nodeData2, "testnode2", def2, sizeof(def2) , 0, 0, 0, out2, 0, sizeof(out2));
-   apx_nodeData_create(&nodeData3, "testnode3", def3, sizeof(def3) , 0, 0, 0, out3, 0, sizeof(out3));
-   file1 = apx_nodeData_newLocalOutPortDataFile(&nodeData1);
-   file2 = apx_nodeData_newLocalDefinitionFile(&nodeData1);
-   file3 = apx_nodeData_newLocalOutPortDataFile(&nodeData2);
-   file4 = apx_nodeData_newLocalDefinitionFile(&nodeData2);
-   file5 = apx_nodeData_newLocalOutPortDataFile(&nodeData3);
-   file6 = apx_nodeData_newLocalDefinitionFile(&nodeData3);
+   apx_fileManagerShared2_create(&shared);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo1, RMF_INVALID_ADDRESS, sizeof(out1), "TestNode1.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo2, RMF_INVALID_ADDRESS, sizeof(def1), "TestNode1.apx", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo3, RMF_INVALID_ADDRESS, sizeof(out2), "TestNode2.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo4, RMF_INVALID_ADDRESS, sizeof(def2), "TestNode2.apx", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo5, RMF_INVALID_ADDRESS, sizeof(out3), "TestNode3.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo6, RMF_INVALID_ADDRESS, sizeof(def3), "TestNode3.apx", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   file1 = apx_fileManagerShared2_createLocalFile(&shared, &fileInfo1);
+   file2 = apx_fileManagerShared2_createLocalFile(&shared, &fileInfo2);
+   file3 = apx_fileManagerShared2_createLocalFile(&shared, &fileInfo3);
+   file4 = apx_fileManagerShared2_createLocalFile(&shared, &fileInfo4);
+   file5 = apx_fileManagerShared2_createLocalFile(&shared, &fileInfo5);
+   file6 = apx_fileManagerShared2_createLocalFile(&shared, &fileInfo6);
    CuAssertPtrNotNull(tc, file1);
    CuAssertPtrNotNull(tc, file2);
    CuAssertPtrNotNull(tc, file3);
    CuAssertPtrNotNull(tc, file4);
    CuAssertPtrNotNull(tc, file5);
    CuAssertPtrNotNull(tc, file6);
-   apx_fileMap_insertFile(&fileMap, file2);
-   apx_fileMap_insertFile(&fileMap, file1);
-   apx_fileMap_insertFile(&fileMap, file4);
-   apx_fileMap_insertFile(&fileMap, file3);
-   apx_fileMap_insertFile(&fileMap, file6);
-   apx_fileMap_insertFile(&fileMap, file5);
-   iter = adt_list_iter_first(&fileMap.fileList);
+   iter = adt_list_iter_first(apx_fileMap_getList(&shared.localFileMap));
    pFile = (apx_file2_t*) iter->pItem;
    CuAssertPtrEquals(tc, iter->pItem, file1 );
-   CuAssertStrEquals(tc, "testnode1.out", pFile->fileInfo.name);
+   CuAssertStrEquals(tc, "TestNode1.out", pFile->fileInfo.name);
    CuAssertUIntEquals(tc, 0, pFile->fileInfo.address);
    iter = adt_list_iter_next(iter);
    pFile = (apx_file2_t*) iter->pItem;
-   CuAssertStrEquals(tc, "testnode2.out", pFile->fileInfo.name);
+   CuAssertStrEquals(tc, "TestNode2.out", pFile->fileInfo.name);
    CuAssertUIntEquals(tc, 1024, pFile->fileInfo.address);
    CuAssertPtrEquals(tc, iter->pItem, file3 );
    iter = adt_list_iter_next(iter);
    pFile = (apx_file2_t*) iter->pItem;
-   CuAssertStrEquals(tc, "testnode3.out", pFile->fileInfo.name);
+   CuAssertStrEquals(tc, "TestNode3.out", pFile->fileInfo.name);
    CuAssertUIntEquals(tc, 1024*3, pFile->fileInfo.address);
    CuAssertPtrEquals(tc, iter->pItem, file5 );
    iter = adt_list_iter_next(iter);
    pFile = (apx_file2_t*) iter->pItem;
-   CuAssertStrEquals(tc, "testnode1.apx", pFile->fileInfo.name);
+   CuAssertStrEquals(tc, "TestNode1.apx", pFile->fileInfo.name);
    CuAssertUIntEquals(tc, 64*1024*1024, pFile->fileInfo.address);
    CuAssertPtrEquals(tc, iter->pItem, file2 );
    iter = adt_list_iter_next(iter);
    pFile = (apx_file2_t*) iter->pItem;
-   CuAssertStrEquals(tc, "testnode2.apx", pFile->fileInfo.name);
+   CuAssertStrEquals(tc, "TestNode2.apx", pFile->fileInfo.name);
    CuAssertUIntEquals(tc, 65*1024*1024, pFile->fileInfo.address);
    CuAssertPtrEquals(tc, iter->pItem, file4 );
    iter = adt_list_iter_next(iter);
    pFile = (apx_file2_t*) iter->pItem;
-   CuAssertStrEquals(tc, "testnode3.apx", pFile->fileInfo.name);
+   CuAssertStrEquals(tc, "TestNode3.apx", pFile->fileInfo.name);
    CuAssertUIntEquals(tc, 66*1024*1024, pFile->fileInfo.address);
    CuAssertPtrEquals(tc, iter->pItem, file6 );
-   apx_fileMap_destroy(&fileMap);
-
+   apx_fileManagerShared2_destroy(&shared);
+   apx_fileInfo_destroy(&fileInfo1);
+   apx_fileInfo_destroy(&fileInfo2);
+   apx_fileInfo_destroy(&fileInfo3);
+   apx_fileInfo_destroy(&fileInfo4);
+   apx_fileInfo_destroy(&fileInfo5);
+   apx_fileInfo_destroy(&fileInfo6);
 }
+
 
 static void test_apx_fileMap_manualInsert(CuTest* tc)
 {
    apx_fileMap_t fileMap;
    apx_file2_t *file1;
    apx_file2_t *file2;
-   rmf_fileInfo_t info;
+   apx_fileInfo_t fileInfo1;
+   apx_fileInfo_t fileInfo2;
    adt_list_elem_t *iter;
    apx_file2_t *pFile;
 
-   rmf_fileInfo_create(&info, "file1.out", 10000, 10, RMF_FILE_TYPE_FIXED);
-   file1 = apx_file2_newLocal(&info, NULL);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo1, 10000, 10, "file1.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo2, 2000, 50, "file2.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+
+   file1 = apx_file2_new(&fileInfo1);
    apx_fileMap_create(&fileMap);
    apx_fileMap_insertFile(&fileMap, file1);
    iter = adt_list_iter_first(&fileMap.fileList);
@@ -160,8 +199,7 @@ static void test_apx_fileMap_manualInsert(CuTest* tc)
    iter = adt_list_iter_next(iter);
    CuAssertPtrEquals(tc, 0, iter);
 
-   rmf_fileInfo_create(&info, "file2.out", 2000, 50, RMF_FILE_TYPE_FIXED);
-   file2 = apx_file2_newLocal(&info, NULL);
+   file2 = apx_file2_new(&fileInfo2);
    apx_fileMap_insertFile(&fileMap, file2);
    iter = adt_list_iter_first(&fileMap.fileList);
    CuAssertPtrNotNull(tc, iter);
@@ -174,4 +212,39 @@ static void test_apx_fileMap_manualInsert(CuTest* tc)
    iter = adt_list_iter_next(iter);
    CuAssertPtrEquals(tc, 0, iter);
    apx_fileMap_destroy(&fileMap);
+   apx_fileInfo_destroy(&fileInfo1);
+   apx_fileInfo_destroy(&fileInfo2);
+
 }
+
+static void test_apx_fileMap_makeFileInfoArray(CuTest* tc)
+{
+   apx_fileInfo_t fileInfo1;
+   apx_fileInfo_t fileInfo2;
+   apx_fileMap_t fileMap;
+   apx_file2_t *file;
+   apx_fileInfo_t *fileInfo;
+
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo1, 1000, 10, "file1.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_fileInfo_create(&fileInfo2, 2000, 50, "file2.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+
+   apx_fileMap_create(&fileMap);
+
+   apx_fileMap_insertFile(&fileMap, apx_file2_new(&fileInfo1));
+   apx_fileMap_insertFile(&fileMap, apx_file2_new(&fileInfo2));
+
+   adt_ary_t *array = apx_fileMap_makeFileInfoArray(&fileMap);
+   CuAssertPtrNotNull(tc, array);
+   CuAssertIntEquals(tc, 2, adt_ary_length(array));
+   fileInfo = (apx_fileInfo_t*) adt_ary_value(array, 0);
+   CuAssertStrEquals(tc, "file1.out", fileInfo->name);
+   fileInfo = (apx_fileInfo_t*) adt_ary_value(array, 1);
+   CuAssertStrEquals(tc, "file2.out", fileInfo->name);
+
+   adt_ary_delete(array);
+   apx_fileInfo_destroy(&fileInfo1);
+   apx_fileInfo_destroy(&fileInfo2);
+   apx_fileMap_destroy(&fileMap);
+
+}
+

@@ -29,10 +29,10 @@
 #include <string.h>
 #include "apx_event.h"
 
-
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -71,6 +71,40 @@ void apx_event_create_clientDisconnected(apx_event_t *event, struct apx_clientCo
    memset(event, 0, APX_EVENT_SIZE);
    event->evType = APX_EVENT_CLIENT_DISCONNECTED;
    event->evData1 = (void*) connection;
+}
+
+void apx_event_fillRemoteFileHeaderComplete(apx_event_t *event, struct apx_connectionBase_tag *connection)
+{
+   if (event != 0)
+   {
+      memset(event, 0, APX_EVENT_SIZE);
+      event->evType = APX_EVENT_RMF_HEADER_ACCEPTED;
+      event->evData1 = (void*) connection;
+   }
+}
+
+void apx_event_fillFileCreatedEvent(apx_event_t *event, struct apx_connectionBase_tag *connection, struct apx_fileInfo_tag *fileInfo)
+{
+   if (event != 0)
+   {
+      if (event != 0)
+      {
+         memset(event, 0, APX_EVENT_SIZE);
+         event->evType = APX_EVENT_FILE_CREATED;
+         event->evData1 = (void*) connection;
+         event->evData2 = (void*) fileInfo;
+      }
+   }
+}
+
+void apx_event_createHeaderAccepted(apx_event_t *event, struct apx_connectionBase_tag *connection)
+{
+   if (event != 0)
+   {
+      memset(event, 0, APX_EVENT_SIZE);
+      event->evType = APX_EVENT_RMF_HEADER_ACCEPTED;
+      event->evData1 = (void*) connection;
+   }
 }
 
 //////////////////////////////////////////////////////////////////////////////

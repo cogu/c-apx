@@ -57,10 +57,10 @@ void apx_fileManagerSharedSpy_create(apx_fileManagerSharedSpy_t *self)
 {
    if (self != 0)
    {
-      self->numFileCreatedCalls = 0;
+      self->numRemoteFileCreatedCalls = 0;
       self->numSendFileInfoCalls = 0;
       self->numSendFileOpenCalls = 0;
-      self->numOpenFileRequestCalls = 0;
+      self->numfileOpenRequestCalls = 0;
    }
 }
 
@@ -92,12 +92,12 @@ void apx_fileManagerSharedSpy_delete(apx_fileManagerSharedSpy_t *self)
    }
 }
 
-void apx_fileManagerSharedSpy_fileCreated(void *arg, const struct apx_file2_tag *pFile, void *caller)
+void apx_fileManagerSharedSpy_remoteFileCreated(void *arg, apx_file2_t *pFile)
 {
    apx_fileManagerSharedSpy_t *self = (apx_fileManagerSharedSpy_t*) arg;
    if (self != 0)
    {
-      self->numFileCreatedCalls++;
+      self->numRemoteFileCreatedCalls++;
    }
 }
 
@@ -119,12 +119,12 @@ void apx_fileManagerSharedSpy_sendFileOpen(void *arg, const apx_file2_t *file, v
    }
 }
 
-void apx_fileManagerSharedSpy_openFileRequest(void *arg, uint32_t address)
+void apx_fileManagerSharedSpy_fileOpenRequested(void *arg, apx_file2_t *file)
 {
    apx_fileManagerSharedSpy_t *self = (apx_fileManagerSharedSpy_t*) arg;
    if (self != 0)
    {
-      self->numOpenFileRequestCalls++;
+      self->numfileOpenRequestCalls++;
    }
 }
 

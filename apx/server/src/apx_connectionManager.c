@@ -123,6 +123,7 @@ void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConne
       connectionId = apx_connectionManager_generateConnectionId(self);
       apx_serverConnectionBase_setConnectionId(connection, connectionId);
       adt_list_insert_unique(&self->activeConnections, connection);
+
       SPINLOCK_LEAVE(self->lock);
 #if (APX_DEBUG_ENABLE)
       printf("[CONNECTION_MANAGER] New connection %d\n", (int) connectionId );
@@ -227,6 +228,10 @@ static uint32_t apx_connectionManager_generateConnectionId(apx_connectionManager
          break;
       }
       self->nextConnectionId++;
+      if (self->nextConnectionId == APX_INVALID_CONNECTION_ID)
+      {
+         self->nextConnectionId++;
+      }
    }
    return self->nextConnectionId;
 }

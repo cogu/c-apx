@@ -38,6 +38,7 @@ typedef struct apx_event_tag
 {
    apx_eventId_t evType;
    uint16_t evFlags;
+   void *evCallback; //callback function
    void *evData1;    //generic void* pointer value
    void *evData2;    //generic void* pointer value
    void *evData3;    //generic void* pointer value
@@ -59,11 +60,11 @@ typedef struct apx_event_tag
 #define APX_EVENT_CLIENT_CONNECTED         3 //evData1: apx_clientConnectionBase_T *connection
 #define APX_EVENT_CLIENT_DISCONNECTED      4 //evData1: apx_clientConnectionBase_T *connection
 
-//APX file manager events
+//APX session events
 #define APX_EVENT_FM_PRE_START             5 //evData1: apx_fileManager_t *fileManager
 #define APX_EVENT_FM_POST_STOP             6 //evData1: apx_fileManager_t *fileManager
-#define APX_EVENT_FM_HEADER_COMPLETE       7 //evData1: apx_fileManager_t *fileManager
-#define APX_EVENT_FM_FILE_CREATED          8 //evData1: apx_fileManager_t *fileManager, evData2: apx_file2_t *file, evData3: const void *caller
+#define APX_EVENT_RMF_HEADER_ACCEPTED      7 //evData1: connectionBase_t *connection
+#define APX_EVENT_FILE_CREATED             8 //evData1: connectionBase_t *connection, evData2: apx_fileInfo_t *fileInfo, evData3: const void *caller
 #define APX_EVENT_FM_FILE_REVOKED          9 //evData1: apx_fileManager_t *fileManager, evData2: apx_file2_t *file, evData3: const void *caller
 #define APX_EVENT_FM_FILE_OPENED           10 //evData1: apx_fileManager_t *fileManager, evData2: apx_file2_t *file, evData3: const void *caller
 #define APX_EVENT_FM_FILE_CLOSED           11 //evData1: apx_fileManager_t *fileManager, evData2: apx_file2_t *file, evData3: const void *caller
@@ -87,12 +88,15 @@ typedef void (apx_eventHandlerFunc_t)(void *arg, apx_event_t *event);
 //forward declarations
 struct apx_serverConnectionBase_tag;
 struct apx_clientConnectionBase_tag;
+struct apx_connectionBase_tag;
+struct apx_fileInfo_tag;
 
 void apx_event_create_serverConnected(apx_event_t *event, struct apx_serverConnectionBase_tag *connection);
 void apx_event_create_serverDisconnected(apx_event_t *event, struct apx_serverConnectionBase_tag *connection);
 void apx_event_create_clientConnected(apx_event_t *event, struct apx_clientConnectionBase_tag *connection);
 void apx_event_create_clientDisconnected(apx_event_t *event, struct apx_clientConnectionBase_tag *connection);
-
-
+void apx_event_fillRemoteFileHeaderComplete(apx_event_t *event, struct apx_connectionBase_tag *connection);
+void apx_event_fillFileCreatedEvent(apx_event_t *event, struct apx_connectionBase_tag *connection, struct apx_fileInfo_tag *fileInfo);
+void apx_event_createHeaderAccepted(apx_event_t *event, struct apx_connectionBase_tag *connection);
 
 #endif //APX_EVENT_H

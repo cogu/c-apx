@@ -33,12 +33,9 @@
 #include "apx_clientConnectionBase.h"
 #include "bstr.h"
 #include "numheader.h"
-#include "apx_fileManager.h"
-#include "apx_eventListener.h"
 #include "apx_logging.h"
 #include "apx_file2.h"
 #include "rmf.h"
-#include "apx_portDataMap.h"
 #include "apx_routingTable.h"
 #include "apx_clientInternal.h"
 #ifdef MEM_LEAK_CHECK
@@ -55,11 +52,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager_t *fileManager, struct apx_file2_tag *file);
+static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager2_t *fileManager, struct apx_file2_tag *file);
 static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
-static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file2_tag *file);
+//static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file2_tag *file);
 static void apx_clientConnectionBase_sendGreeting(apx_clientConnectionBase_t *self);
-static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase_t *self);
+//static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -68,21 +65,12 @@ static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_clientConnectionBase_create(apx_clientConnectionBase_t *self, struct apx_client_tag *client, apx_connectionBaseVTable_t *vtable)
+apx_error_t apx_clientConnectionBase_create(apx_clientConnectionBase_t *self, apx_connectionBaseVTable_t *vtable)
 {
    if (self != 0)
    {
       apx_error_t errorCode = apx_connectionBase_create(&self->base, APX_CLIENT_MODE, vtable);
-      self->client = client;
       self->isAcknowledgeSeen = false;
-      if ( (errorCode == APX_NO_ERROR) && (self->client != 0))
-      {
-         errorCode = apx_clientInternal_attachLocalNodes(self->client, &self->base.nodeDataManager);
-         if (errorCode == APX_NO_ERROR)
-         {
-            apx_clientConnectionBase_registerLocalFiles(self);
-         }
-      }
       apx_connectionBase_setEventHandler(&self->base, apx_clientConnectionBase_defaultEventHandler, (void*) self);
       return errorCode;
    }
@@ -97,16 +85,16 @@ void apx_clientConnectionBase_destroy(apx_clientConnectionBase_t *self)
    }
 }
 
-apx_fileManager_t *apx_clientConnectionBase_getFileManager(apx_clientConnectionBase_t *self)
+apx_fileManager2_t *apx_clientConnectionBase_getFileManager(apx_clientConnectionBase_t *self)
 {
    if (self != 0)
    {
       return &self->base.fileManager;
    }
-   return (apx_fileManager_t*) 0;
+   return (apx_fileManager2_t*) 0;
 }
 
-void apx_clientConnectionBase_onConnected(apx_clientConnectionBase_t *self)
+void apx_clientConnectionBase_connectedCbk(apx_clientConnectionBase_t *self)
 {
    apx_event_t event;
    self->isAcknowledgeSeen = false;
@@ -115,7 +103,7 @@ void apx_clientConnectionBase_onConnected(apx_clientConnectionBase_t *self)
    apx_eventLoop_append(&self->base.eventLoop, &event);
 }
 
-void apx_clientConnectionBase_onDisconnected(apx_clientConnectionBase_t *self)
+void apx_clientConnectionBase_disconnectedCbk(apx_clientConnectionBase_t *self)
 {
    apx_event_t event;
    self->isAcknowledgeSeen = false;
@@ -167,12 +155,7 @@ void apx_clientConnectionBase_start(apx_clientConnectionBase_t *self)
 {
    if ( self != 0)
    {
-      apx_fileManagerEventListener_t listener;
-      memset(&listener, 0, sizeof(listener));
-      listener.fileCreate = apx_clientConnectionBase_onFileCreate;
-      listener.arg = (void*) self;
-      apx_fileManager_start(&self->base.fileManager);
-      apx_fileManager_registerEventListener(&self->base.fileManager, &listener);
+      apx_fileManager2_start(&self->base.fileManager);
    }
 }
 
@@ -181,9 +164,14 @@ void apx_clientConnectionBase_defaultEventHandler(void *arg, apx_event_t *event)
    apx_clientConnectionBase_t *self = (apx_clientConnectionBase_t*) arg;
    if (self != 0)
    {
-      apx_nodeData_t *nodeData;
+      apx_nodeData2_t *nodeData;
+      apx_connectionBase_t *baseConnection;
       switch(event->evType)
       {
+      case APX_EVENT_RMF_HEADER_ACCEPTED:
+         baseConnection = (apx_connectionBase_t*) event->evData1;
+         apx_connectionBase_onHeaderAccepted(&self->base, baseConnection);
+         break;
       case APX_EVENT_CLIENT_CONNECTED:
          apx_clientInternal_onConnect(self->client, self);
          break;
@@ -191,8 +179,8 @@ void apx_clientConnectionBase_defaultEventHandler(void *arg, apx_event_t *event)
          apx_clientInternal_onDisconnect(self->client, self);
          break;
       case APX_EVENT_NODE_COMPLETE:
-         nodeData = (apx_nodeData_t*) event->evData1;
-         apx_clientInternal_onNodeComplete(self->client, nodeData);
+//         nodeData = (apx_nodeData_t*) event->evData1;
+//         apx_clientInternal_onNodeComplete(self->client, nodeData);
          break;
       default:
          apx_connectionBase_defaultEventHandler(&self->base, event);
@@ -243,20 +231,51 @@ uint32_t apx_clientConnectionBase_getTotalBytesSent(apx_clientConnectionBase_t *
    return 0;
 }
 
-void* apx_clientConnectionBase_registerNodeDataEventListener(apx_clientConnectionBase_t *self, apx_nodeDataEventListener_t *listener)
+void* apx_clientConnectionBase_registerEventListener(apx_clientConnectionBase_t *self, apx_connectionEventListener_t *listener)
 {
    if (self != 0)
    {
-      return apx_connectionBase_registerNodeDataEventListener(&self->base, listener);
+      return apx_connectionBase_registerEventListener(&self->base, listener);
    }
    return (void*) 0;
 }
 
-void apx_clientConnectionBase_unregisterNodeDataEventListener(apx_clientConnectionBase_t *self, void *handle)
+void apx_clientConnectionBase_unregisterEventListener(apx_clientConnectionBase_t *self, void *handle)
 {
-   apx_connectionBase_unregisterNodeDataEventListener(&self->base, handle);
+   if (self != 0)
+   {
+      apx_connectionBase_unregisterEventListener(&self->base, handle);
+   }
 }
 
+void apx_clientConnectionBase_attachNodeInstance(apx_clientConnectionBase_t *self, struct apx_nodeInstance_tag *nodeInstance)
+{
+   if (self != 0)
+   {
+      apx_connectionBase_attachNodeInstance(&self->base, nodeInstance);
+   }
+}
+
+//Internal API
+
+void apx_clientConnectionBaseInternal_headerAccepted(apx_clientConnectionBase_t *self)
+{
+   if (self != 0)
+   {
+      self->isAcknowledgeSeen = true;
+      apx_fileManager2_headerAccepted(&self->base.fileManager);
+      apx_connectionBase_emitHeaderAccepted(&self->base);
+   }
+}
+
+apx_error_t apx_clientConnectionBaseInternal_onFileOpenMsgReceived(apx_clientConnectionBase_t *self, const rmf_cmdOpenFile_t *openFileCmd)
+{
+   if ( (self != 0) && (openFileCmd != 0))
+   {
+      return APX_NOT_IMPLEMENTED_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 
 #ifdef UNIT_TEST
@@ -265,22 +284,22 @@ void apx_clientConnectionBase_run(apx_clientConnectionBase_t *self)
    if (self != 0)
    {
       apx_connectionBase_runAll(&self->base);
-      apx_fileManager_run(&self->base.fileManager);
+      apx_fileManager2_run(&self->base.fileManager);
    }
 }
 #endif
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager_t *fileManager, struct apx_file2_tag *file)
+static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager2_t *fileManager, struct apx_file2_tag *file)
 {
    apx_clientConnectionBase_t *self = (apx_clientConnectionBase_t*) arg;
    printf("file created: %s\n", file->fileInfo.name);
    if (self != 0)
    {
-      if ( strcmp(apx_file2_extension(file), APX_INDATA_FILE_EXT) == 0)
+      if ( apx_fileInfo_nameEndsWith(&file->fileInfo, APX_INDATA_FILE_EXT) )
       {
-         apx_clientConnectionBase_processNewInPortDataFile(self,  file);
+         //apx_clientConnectionBase_processNewInPortDataFile(self,  file);
       }
    }
 }
@@ -321,18 +340,17 @@ static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBas
                     (pNext[6] == 0x00) &&
                     (pNext[7] == 0x00) )
                {
-                  self->isAcknowledgeSeen = true;
-                  apx_fileManager_onHeaderAccepted(&self->base.fileManager);
+                  apx_clientConnectionBaseInternal_headerAccepted(self);
                }
             }
          }
          else
          {
             //printf("processing %d bytes\n", msgLen);
-            int32_t result = apx_fileManager_processMessage(&self->base.fileManager, pNext, msgLen);
-            if (result != msgLen)
+            apx_error_t processResult = apx_connectionBase_processMessage(&self->base, pNext, msgLen);
+            if (processResult != APX_NO_ERROR)
             {
-               //TODO: do error handling here
+               ///TODO perform error handling
             }
          }
       }
@@ -347,18 +365,18 @@ static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBas
    }
    return APX_NO_ERROR;
 }
-
+/*
 static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file2_tag *inPortDataFile)
 {
    if (inPortDataFile->fileInfo.fileType == RMF_FILE_TYPE_FIXED)
    {
-      apx_nodeData_t *nodeData = apx_nodeDataManager_find(&self->base.nodeDataManager, apx_file2_basename(inPortDataFile));
+      apx_nodeData_t *nodeData = apx_nodeManager_find(&self->base.nodeManager, apx_file2_basename(inPortDataFile));
       if ( (nodeData != 0) && (nodeData->inPortDataBuf != 0))
       {
          if (inPortDataFile->fileInfo.length == nodeData->inPortDataLen)
          {
             apx_nodeData_setInPortDataFile(nodeData, inPortDataFile);
-            apx_fileManager_openRemoteFile(&self->base.fileManager, inPortDataFile->fileInfo.address, self);
+            apx_fileManager2_openRemoteFile(&self->base.fileManager, inPortDataFile->fileInfo.address, self);
             if (apx_nodeData_isComplete(nodeData))
             {
                apx_connectionBase_emitNodeComplete(&self->base, nodeData);
@@ -367,6 +385,7 @@ static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnecti
       }
    }
 }
+*/
 
 static void apx_clientConnectionBase_sendGreeting(apx_clientConnectionBase_t *self)
 {
@@ -395,20 +414,20 @@ static void apx_clientConnectionBase_sendGreeting(apx_clientConnectionBase_t *se
       }
    }
 }
-
+/*
 static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase_t *self)
 {
    adt_ary_t nodeNames;
    int32_t numNodes;
    int32_t i;
    adt_ary_create(&nodeNames, vfree);
-   numNodes = apx_nodeDataManager_keys(&self->base.nodeDataManager, &nodeNames);
+   numNodes = apx_nodeManager_keys(&self->base.nodeManager, &nodeNames);
 
    for(i=0;i<numNodes;i++)
    {
       apx_nodeData_t *nodeData;
       const char *nodeName = (const char*) adt_ary_value(&nodeNames, i);
-      nodeData = apx_nodeDataManager_find(&self->base.nodeDataManager, nodeName);
+      nodeData = apx_nodeManager_find(&self->base.nodeManager, nodeName);
       if (nodeData != 0)
       {
          if (nodeData->definitionDataBuf != 0)
@@ -417,19 +436,20 @@ static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase
             apx_file2_t *definitionFile = apx_nodeData_createLocalDefinitionFile(nodeData);
             if (definitionFile != 0)
             {
-               apx_fileManager_t *fileManager = &self->base.fileManager;
+               apx_fileManager2_t *fileManager = &self->base.fileManager;
                apx_nodeData_setFileManager(nodeData, fileManager);
-               apx_fileManager_attachLocalFile(fileManager, definitionFile, (void*) self);
+               apx_fileManager2_attachLocalFile(fileManager, definitionFile, (void*) self);
             }
             outDataFile  = apx_nodeData_createLocalOutPortDataFile(nodeData);
             if (outDataFile != 0)
             {
-               apx_fileManager_t *fileManager = &self->base.fileManager;
+               apx_fileManager2_t *fileManager = &self->base.fileManager;
                apx_nodeData_setFileManager(nodeData, fileManager);
-               apx_fileManager_attachLocalFile(fileManager, outDataFile, (void*) self);
+               apx_fileManager2_attachLocalFile(fileManager, outDataFile, (void*) self);
             }
          }
       }
    }
    adt_ary_destroy(&nodeNames);
 }
+*/

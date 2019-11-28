@@ -4,8 +4,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stdint.h>
-#include <stdbool.h>
+#include "apx_types.h"
+#include "apx_error.h"
 #include "dtl_type.h"
 
 
@@ -18,10 +18,11 @@ typedef struct apx_portAttributes_tag
    bool isParameter;
    bool isDynamic;
    bool isFinalized; //internal variable
-   int32_t queueLen;
-   int32_t dynLen;
-   char *rawValue; //raw attribute string
+   uint32_t queueLen;
+   uint32_t dynLen;
+   char *rawString; //raw attribute string
    dtl_dv_t *initValue;
+   dtl_dv_t *properInitValue;
 }apx_portAttributes_t;
 
 
@@ -29,12 +30,13 @@ typedef struct apx_portAttributes_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_portAttributes_create(apx_portAttributes_t *self, const char *attr);
+apx_error_t apx_portAttributes_create(apx_portAttributes_t *self, const char *attr);
 void apx_portAttributes_destroy(apx_portAttributes_t *self);
 apx_portAttributes_t* apx_portAttributes_new(const char *attr);
 void apx_portAttributes_delete(apx_portAttributes_t *self);
 void apx_portAttributes_vdelete(void *arg);
 void apx_portAttributes_clearInitValue(apx_portAttributes_t *self);
+dtl_dv_t *apx_portAttributes_getProperInitValue(apx_portAttributes_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES

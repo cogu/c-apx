@@ -42,7 +42,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientTestConnection_registerTransmitHandler(apx_clientTestConnection_t *self);
+static apx_error_t apx_clientTestConnection_fillTransmitHandler(apx_clientTestConnection_t *self, apx_transmitHandler_t *handler);
+static apx_error_t apx_clientTestConnection_vfillTransmitHandler(void *arg, apx_transmitHandler_t *handler);
 static uint8_t *apx_clientTestConnection_getSendBuffer(void *arg, int32_t msgLen);
 static int32_t apx_clientTestConnection_send(void *arg, int32_t offset, int32_t msgLen);
 
@@ -53,14 +54,14 @@ static int32_t apx_clientTestConnection_send(void *arg, int32_t offset, int32_t 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_clientTestConnection_create(apx_clientTestConnection_t *self, struct apx_client_tag *client)
+apx_error_t apx_clientTestConnection_create(apx_clientTestConnection_t *self)
 {
    if (self != 0)
    {
       apx_connectionBaseVTable_t vtable;
       self->pendingMsg = (adt_bytearray_t*) 0;
-      apx_connectionBaseVTable_create(&vtable, apx_clientTestConnection_vdestroy, apx_clientTestConnection_vstart, apx_clientTestConnection_vclose);
-      apx_error_t result = apx_clientConnectionBase_create(&self->base, client, &vtable);
+      apx_connectionBaseVTable_create(&vtable, apx_clientTestConnection_vdestroy, apx_clientTestConnection_vstart, apx_clientTestConnection_vclose, apx_clientTestConnection_vfillTransmitHandler);
+      apx_error_t result = apx_clientConnectionBase_create(&self->base, &vtable);
       if (result == APX_NO_ERROR)
       {
          self->transmitLog = adt_ary_new(adt_bytearray_vdelete);
@@ -70,11 +71,8 @@ apx_error_t apx_clientTestConnection_create(apx_clientTestConnection_t *self, st
          }
          else
          {
-            apx_clientTestConnection_registerTransmitHandler(self);
          }
       }
-      return result;
-
       return result;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -101,12 +99,12 @@ void apx_clientTestConnection_vdestroy(void *arg)
    apx_clientTestConnection_destroy((apx_clientTestConnection_t*) arg);
 }
 
-apx_clientTestConnection_t *apx_clientTestConnection_new(struct apx_client_tag *client)
+apx_clientTestConnection_t *apx_clientTestConnection_new(void)
 {
    apx_clientTestConnection_t *self = (apx_clientTestConnection_t*) malloc(sizeof(apx_clientTestConnection_t));
    if (self != 0)
    {
-      apx_error_t result = apx_clientTestConnection_create(self, client);
+      apx_error_t result = apx_clientTestConnection_create(self);
       if (result != APX_NO_ERROR)
       {
          free(self);
@@ -153,7 +151,7 @@ void apx_clientTestConnection_createRemoteFile(apx_clientTestConnection_t *self,
 {
    if ( (self != 0) && (fileInfo != 0) )
    {
-      apx_fileManager_onRemoteCmdFileInfo(&self->base.base.fileManager, fileInfo);
+      //apx_fileManager2_onRemoteCmdFileInfo(&self->base.base.fileManager, fileInfo);
    }
 }
 
@@ -164,7 +162,7 @@ void apx_clientTestConnection_writeRemoteData(apx_clientTestConnection_t *self, 
 {
    if ( (self != 0) && (dataBuf != 0) )
    {
-      apx_fileManager_onWriteRemoteData(&self->base.base.fileManager, address, dataBuf, dataLen, more);
+      //apx_fileManager2_onWriteRemoteData(&self->base.base.fileManager, address, dataBuf, dataLen, more);
    }
 }
 
@@ -172,7 +170,7 @@ void apx_clientTestConnection_openRemoteFile(apx_clientTestConnection_t *self, u
 {
    if (self != 0)
    {
-      apx_fileManager_onRemoteCmdFileOpen(&self->base.base.fileManager, address);
+      //apx_fileManager2_onRemoteCmdFileOpen(&self->base.base.fileManager, address);
    }
 }
 
@@ -190,7 +188,7 @@ void apx_clientTestConnection_connect(apx_clientTestConnection_t *self)
 {
    if (self != 0)
    {
-      apx_clientConnectionBase_onConnected(&self->base);
+      apx_clientConnectionBase_connectedCbk(&self->base);
    }
 }
 
@@ -198,7 +196,15 @@ void apx_clientTestConnection_disconnect(apx_clientTestConnection_t *self)
 {
    if (self != 0)
    {
-      apx_clientConnectionBase_onDisconnected(&self->base);
+      apx_clientConnectionBase_disconnectedCbk(&self->base);
+   }
+}
+
+void apx_clientTestConnection_headerAccepted(apx_clientTestConnection_t *self)
+{
+   if (self != 0)
+   {
+      apx_clientConnectionBaseInternal_headerAccepted(&self->base);
    }
 }
 
@@ -228,18 +234,35 @@ void apx_clientTestConnection_clearTransmitLog(apx_clientTestConnection_t *self)
    }
 }
 
+apx_error_t apx_clientTestConnection_onFileOpenMsgReceived(apx_clientTestConnection_t *self, const rmf_cmdOpenFile_t *openFileCmd)
+{
+   if (self != 0)
+   {
+      return apx_clientConnectionBaseInternal_onFileOpenMsgReceived(&self->base, openFileCmd);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientTestConnection_registerTransmitHandler(apx_clientTestConnection_t *self)
+static apx_error_t apx_clientTestConnection_fillTransmitHandler(apx_clientTestConnection_t *self, apx_transmitHandler_t *handler)
 {
-   apx_transmitHandler_t serverTransmitHandler;
-   serverTransmitHandler.arg = self;
-   serverTransmitHandler.send = apx_clientTestConnection_send;
-   serverTransmitHandler.getSendAvail = 0;
-   serverTransmitHandler.getSendBuffer = apx_clientTestConnection_getSendBuffer;
-   apx_fileManager_setTransmitHandler(&self->base.base.fileManager, &serverTransmitHandler);
+   if ( (self != 0) && (handler != 0) )
+   {
+      handler->arg = (void*) self;
+      handler->send = apx_clientTestConnection_send;
+      handler->getSendAvail = 0;
+      handler->getSendBuffer = apx_clientTestConnection_getSendBuffer;
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_clientTestConnection_vfillTransmitHandler(void *arg, apx_transmitHandler_t *handler)
+{
+   return apx_clientTestConnection_fillTransmitHandler((apx_clientTestConnection_t*) arg, handler);
 }
 
 static uint8_t *apx_clientTestConnection_getSendBuffer(void *arg, int32_t msgLen)

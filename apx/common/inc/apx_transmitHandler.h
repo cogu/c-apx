@@ -17,14 +17,16 @@
 typedef struct apx_transmitHandler_tag
 {
    void *arg; //user argument
-   //primary interface (used by embedded devices to send a single message)
+
+
+   //Old API (to be deleted)
    int32_t (*getSendAvail)(void *arg); //this is used to query the transmitHandler how many bytes that can be provided by getSendBuffer
    uint8_t* (*getSendBuffer)(void *arg, int32_t msgLen); //transmitHandler shall attempt to allocate a buffer of appropriate length
    int32_t (*send)(void *arg, int32_t offset, int32_t msgLen); //buffer is provided by transmit handler
 
-   //secondary interface (used when running in Linux/Windows, can send multiple messages in single block)
-   uint8_t* (*getSendBufferRaw)(void *arg, int32_t dataLen);
-   int32_t (*sendRaw)(void *arg, int32_t dataLen);
+   //New API
+   uint8_t* (*getMsgBuffer)(void *arg, int32_t *maxMsgLen, int32_t *sendAvail); //Returns a pointer to a message buffer, maxMsgLen is the maximum allowed message length, sendAvail is the number of bytes free in the underlying send buffer
+   int32_t (*sendMsg)(void *arg, int32_t offset, int32_t msgLen); //Sends one message. Returns number of bytes consumed from underlying send buffer. MsgBuffer is free to use again after this call.
 } apx_transmitHandler_t;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES

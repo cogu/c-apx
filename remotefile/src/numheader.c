@@ -140,7 +140,7 @@ int32_t numheader_encode32(uint8_t *buf, int32_t maxBufLen, uint32_t value)
    }
    else
    {
-      if(maxBufLen< (uint32_t) sizeof(uint32_t))
+      if(maxBufLen< (int32_t) sizeof(uint32_t))
       {
          return -1; //buffer to small
       }

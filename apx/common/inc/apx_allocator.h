@@ -4,12 +4,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stdint.h>
-#if defined(_MSC_PLATFORM_TOOLSET) && (_MSC_PLATFORM_TOOLSET<=110)
-#include "msc_bool.h"
-#else
-#include <stdbool.h>
-#endif
+#include "apx_types.h"
+#include "apx_error.h"
 
 #ifdef _MSC_VER
 #include <Windows.h>
@@ -60,7 +56,7 @@ typedef struct rbf_data_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages);
+apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages);
 void apx_allocator_destroy(apx_allocator_t *self);
 
 void apx_allocator_start(apx_allocator_t *self);

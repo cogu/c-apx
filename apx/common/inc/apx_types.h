@@ -14,6 +14,7 @@
 typedef int32_t apx_offset_t;
 typedef uint32_t apx_size_t; //use uint16_t  to send up to 64KB, use uint32_t for 4GB.
 typedef APX_PORT_ID_TYPE apx_portId_t; //int32_t is default. Use int16_t for smaller memory footprint
+typedef APX_PORT_ID_TYPE apx_portCount_t;
 typedef uint32_t apx_uniquePortId_t; //highest significant bit is 0 when it contains a require port ID and 1 when it contains a provide port ID
 typedef uint8_t apx_portType_t; //APX_REQUIRE_PORT, APX_PROVIDE_PORT
 typedef uint8_t apx_dynLenType_t; //APX_DYN_LEN_NONE, APX_DYN_LEN_U8, APX_DYN_LEN_U16, APX_DYN_LEN_U32
@@ -22,7 +23,7 @@ typedef APX_CONNECTION_COUNT_TYPE apx_connectionCount_t;
 typedef uint8_t apx_mode_t; //APX_NO_MODE, APX_CLIENT_MODE, APX_SERVER_MODE
 typedef uint16_t apx_eventId_t;
 typedef uint8_t apx_programType_t; //APX_PACK_PROGRAM, APX_UNPACK_PROGRAM
-
+typedef uint8_t apx_fileType_t;
 
 typedef struct apx_dataWriteCmd_tag
 {
@@ -44,12 +45,11 @@ typedef struct apx_dataWriteCmd_tag
 
 #define APX_DEBUG_INFO_MAX_LEN 20
 
-#define APX_UNKNOWN_FILE          0
-#define APX_OUTDATA_FILE          1
-#define APX_INDATA_FILE           2
-#define APX_DEFINITION_FILE       3
-#define APX_USER_DATA_FILE        4
-#define APX_EVENT_FILE            5
+#define APX_UNKNOWN_FILE          ((apx_fileType_t) 0u)
+#define APX_OUTDATA_FILE          ((apx_fileType_t) 1u)
+#define APX_INDATA_FILE           ((apx_fileType_t) 2u)
+#define APX_DEFINITION_FILE       ((apx_fileType_t) 3u)
+#define APX_USER_DATA_FILE        ((apx_fileType_t) 4u)
 
 #define APX_MAX_FILE_EXT_LEN      4 //'.xxx'
 #define APX_OUTDATA_FILE_EXT      ".out"
@@ -100,8 +100,8 @@ typedef struct apx_dataWriteCmd_tag
 #define APX_BASE_TYPE_REF_PTR  12 //pointer to type (this is achieved only after derived has been called on data signature)
 typedef int8_t apx_baseType_t;
 
-#define APX_PACK_PROGRAM   ((apx_programType_t) 0)
-#define APX_UNPACK_PROGRAM ((apx_programType_t) 1)
+#define APX_UNPACK_PROGRAM   ((apx_programType_t) 0)
+#define APX_PACK_PROGRAM     ((apx_programType_t) 1)
 
 #define UINT8_SIZE   1u
 #define UINT16_SIZE  2u
@@ -136,6 +136,10 @@ typedef uint8_t apx_logLevel_t;
 #define APX_LOG_LABEL_MAX_LEN 16
 
 #define APX_INVALID_CONNECTION_ID 0xFFFFFFFF
+
+#define APX_ADDRESS_PORT_DATA_BOUNDARY   0x400 //1KB, this must be a power of 2
+#define APX_ADDRESS_DEFINITION_BOUNDARY  0x100000u //1MB, this must be a power of 2
+#define APX_ADDRESS_DEFINITION_START     0x4000000 //64MB, this must be a power of 2
 
 
 #endif //APX_TYPES_H

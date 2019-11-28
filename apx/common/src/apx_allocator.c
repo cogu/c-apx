@@ -42,7 +42,7 @@ static bool apx_allocator_processEvent(apx_allocator_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-int8_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
+apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
 {
    if (self != 0)
    {
@@ -52,7 +52,7 @@ int8_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
       bufResult = adt_rbfh_createEx(&self->messages, (uint8_t) elemSize, ADT_RBFSH_MIN_NUM_ELEMS_DEFAULT, maxPendingMessages);
       if (bufResult != BUF_E_OK)
       {
-         return -1;
+         return APX_MEM_ERROR;
       }
 
 #ifdef _WIN32
@@ -67,9 +67,9 @@ int8_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
 #endif
       self->isRunning = false;
       soa_init(&self->soa);
-      return 0;
+      return APX_NO_ERROR;
    }
-   return -1;
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_allocator_destroy(apx_allocator_t *self)

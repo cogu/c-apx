@@ -30,7 +30,7 @@
 #include "CuTest.h"
 #include <stdio.h>
 #include "apx_portConnectionEntry.h"
-#include "apx_nodeData.h"
+#include "apx_nodeData2.h"
 #include "apx_parser.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

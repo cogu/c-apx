@@ -73,6 +73,7 @@ void apx_vmWriteState_create(apx_vmWriteState_t *self)
 void apx_vmWriteState_destroy(apx_vmWriteState_t *self)
 {
    //Nothing yet to clean up
+   (void) self;
 }
 
 apx_vmWriteState_t* apx_vmWriteState_new(void)
@@ -320,7 +321,7 @@ apx_error_t apx_vmSerializer_packBytes(apx_vmSerializer_t *self, const adt_bytes
          uint32_t bytesNeeded = adt_bytes_length(bytes);
          if (self->buf.pNext+bytesNeeded <= self->buf.pEnd)
          {
-            memcpy(self->buf.pNext, adt_bytes_data(bytes), bytesNeeded);
+            memcpy(self->buf.pNext, adt_bytes_constData(bytes), bytesNeeded);
             self->buf.pNext+=bytesNeeded;
             return APX_NO_ERROR;
          }
@@ -597,7 +598,7 @@ apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t a
 
 void apx_vmSerializer_adjustWritePtr(apx_vmSerializer_t *self)
 {
-
+   (void) self;
 }
 
 
@@ -652,6 +653,28 @@ apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool aut
          return APX_DV_TYPE_ERROR;
       }
       return APX_NULL_PTR_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmSerializer_packNull(apx_vmSerializer_t *self, int32_t writeLen)
+{
+   if ( (self != 0) && (writeLen > 0) )
+   {
+      if (self->hasValidWriteBuf)
+      {
+         if (self->buf.pNext+writeLen <= self->buf.pEnd)
+         {
+            memset(self->buf.pNext, 0, writeLen);
+            self->buf.pNext+=writeLen;
+            return APX_NO_ERROR;
+         }
+         else
+         {
+            return APX_BUFFER_BOUNDARY_ERROR;
+         }
+      }
+      return APX_MISSING_BUFFER_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

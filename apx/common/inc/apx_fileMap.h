@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
 #include "adt_list.h"
+#include "adt_ary.h"
 #include "apx_file2.h"
-
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -15,7 +15,8 @@
 typedef struct apx_fileMap_tag
 {
    adt_list_t fileList; //list of apx_file_t automatically sorted by address
-}apx_fileMap_t;
+   apx_file2_t *lastFile; //Last accessed file (for caching repeated access requests)
+} apx_fileMap_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -31,6 +32,7 @@ int32_t apx_fileMap_length(const apx_fileMap_t *self);
 void apx_fileMap_clear_weak(apx_fileMap_t *self);
 adt_list_t *apx_fileMap_getList(apx_fileMap_t *self);
 bool apx_fileMap_exist(apx_fileMap_t *self, apx_file2_t *file);
+adt_ary_t *apx_fileMap_makeFileInfoArray(apx_fileMap_t *self);
 
 
 

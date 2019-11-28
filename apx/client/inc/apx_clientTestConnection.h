@@ -53,10 +53,10 @@ typedef struct apx_clientTestConnection_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_clientTestConnection_create(apx_clientTestConnection_t *self, struct apx_client_tag *client);
+apx_error_t apx_clientTestConnection_create(apx_clientTestConnection_t *self);
 void apx_clientTestConnection_destroy(apx_clientTestConnection_t *self);
 void apx_clientTestConnection_vdestroy(void *arg);
-apx_clientTestConnection_t *apx_clientTestConnection_new(struct apx_client_tag *client);
+apx_clientTestConnection_t *apx_clientTestConnection_new(void);
 void apx_clientTestConnection_delete(apx_clientTestConnection_t *self);
 void apx_clientTestConnection_start(apx_clientTestConnection_t *self);
 void apx_clientTestConnection_vstart(void *arg);
@@ -69,9 +69,12 @@ void apx_clientTestConnection_openRemoteFile(apx_clientTestConnection_t *self, u
 void apx_clientTestConnection_runEventLoop(apx_clientTestConnection_t *self);
 void apx_clientTestConnection_connect(apx_clientTestConnection_t *self);
 void apx_clientTestConnection_disconnect(apx_clientTestConnection_t *self);
+void apx_clientTestConnection_headerAccepted(apx_clientTestConnection_t *self);
 int32_t apx_clientTestConnection_getTransmitLogLen(apx_clientTestConnection_t *self);
 adt_bytearray_t *apx_clientTestConnection_getTransmitLogMsg(apx_clientTestConnection_t *self, int32_t index);
 void apx_clientTestConnection_clearTransmitLog(apx_clientTestConnection_t *self);
+
+apx_error_t apx_clientTestConnection_onFileOpenMsgReceived(apx_clientTestConnection_t *self, const rmf_cmdOpenFile_t *openFileCmd);
 
 
 #endif //APX_CLIENT_TEST_CONNECTION_H

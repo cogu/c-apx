@@ -73,36 +73,44 @@ CuSuite* testSuite_apx_file2(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_file2_create_local(CuTest* tc)
 {
-   apx_file2_t file1;
-   rmf_fileInfo_t info1;
-   rmf_fileInfo_create(&info1, "test.apx", 0, 100, RMF_FILE_TYPE_FIXED);
+   apx_file2_t file;
+   apx_fileInfo_t info;
+   apx_fileInfo_create(&info, APX_ADDRESS_DEFINITION_START, 100, "test.apx", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
 
-   apx_file2_create(&file1, false, &info1, NULL);
+   apx_file2_create(&file, &info);
 
-   CuAssertTrue(tc, file1.isOpen==false);
-   CuAssertTrue(tc, file1.isRemoteFile==false);
-   CuAssertStrEquals(tc, "test.apx", file1.fileInfo.name);
-   CuAssertIntEquals(tc, 100, file1.fileInfo.length);
-   CuAssertUIntEquals(tc, RMF_FILE_TYPE_FIXED, file1.fileInfo.fileType);
-   CuAssertPtrEquals(tc, 0, file1.handler.arg);
-   CuAssertPtrEquals(tc, 0, file1.handler.read);
-   CuAssertPtrEquals(tc, 0, file1.handler.write);
-   apx_file2_destroy(&file1);
+   CuAssertTrue(tc, apx_file2_isOpen(&file)==false);
+   CuAssertTrue(tc, apx_file2_isRemoteFile(&file)==false);
+   CuAssertStrEquals(tc, "test.apx", file.fileInfo.name);
+   CuAssertIntEquals(tc, 100, file.fileInfo.length);
+   CuAssertUIntEquals(tc, RMF_FILE_TYPE_FIXED, file.fileInfo.fileType);
+   CuAssertIntEquals(tc, APX_DEFINITION_FILE, apx_file2_getApxFileType(&file));
+   CuAssertPtrEquals(tc, 0, file.handler.arg);
+   CuAssertPtrEquals(tc, 0, file.handler.read);
+   CuAssertPtrEquals(tc, 0, file.handler.write);
+   apx_file2_destroy(&file);
+   apx_fileInfo_destroy(&info);
 }
 
 static void test_apx_file2_create_remote(CuTest* tc)
 {
-   apx_file2_t file1;
-   rmf_fileInfo_t info1;
-   rmf_fileInfo_create(&info1, "test.apx", 0, 100, RMF_FILE_TYPE_FIXED);
+   apx_file2_t file;
+   apx_fileInfo_t info;
+   apx_fileInfo_create(&info, APX_ADDRESS_DEFINITION_START | RMF_REMOTE_ADDRESS_BIT, 100, "test.apx", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
 
-   apx_file2_create(&file1, true, &info1, NULL);
+   apx_file2_create(&file, &info);
 
-   CuAssertTrue(tc, file1.isOpen==false);
-   CuAssertTrue(tc, file1.isRemoteFile==true);
-   CuAssertStrEquals(tc, "test", apx_file2_basename(&file1));
-   CuAssertStrEquals(tc, ".apx", apx_file2_extension(&file1));
-   apx_file2_destroy(&file1);
+   CuAssertTrue(tc, apx_file2_isOpen(&file)==false);
+   CuAssertTrue(tc, apx_file2_isRemoteFile(&file)==true);
+   CuAssertStrEquals(tc, "test.apx", file.fileInfo.name);
+   CuAssertIntEquals(tc, 100, file.fileInfo.length);
+   CuAssertUIntEquals(tc, RMF_FILE_TYPE_FIXED, file.fileInfo.fileType);
+   CuAssertIntEquals(tc, APX_DEFINITION_FILE, apx_file2_getApxFileType(&file));
+   CuAssertPtrEquals(tc, 0, file.handler.arg);
+   CuAssertPtrEquals(tc, 0, file.handler.read);
+   CuAssertPtrEquals(tc, 0, file.handler.write);
+   apx_file2_destroy(&file);
+   apx_fileInfo_destroy(&info);
 }
 
 static void test_apx_file2_newLocal(CuTest* tc)
@@ -113,7 +121,9 @@ static void test_apx_file2_newLocal(CuTest* tc)
 
    file1 = apx_file2_newLocal(&info1, NULL);
 
-   CuAssertTrue(tc, file1->isRemoteFile==false);
+   CuAssertTrue(tc, apx_file2_isOpen(file1)==false);
+   CuAssertTrue(tc, apx_file2_isRemoteFile(file1)==false);
+
 
    apx_file2_delete(file1);
 }
@@ -126,7 +136,8 @@ static void test_apx_file2_newRemote(CuTest* tc)
 
    file1 = apx_file2_newRemote(&info1, NULL);
 
-   CuAssertTrue(tc, file1->isRemoteFile==true);
+   CuAssertTrue(tc, apx_file2_isOpen(file1)==false);
+   CuAssertTrue(tc, apx_file2_isRemoteFile(file1)==true);
 
    apx_file2_delete(file1);
 }
