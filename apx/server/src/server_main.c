@@ -24,6 +24,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static int parse_args(int argc, char **argv);
 static void printUsage(char *name);
+static void main_signal_handler(int signum);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -33,9 +34,9 @@ int8_t g_debug; // Global so apx_logging can use it from everywhere
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
+static int8_t m_running = 1;
 static uint16_t m_port;
 static apx_server_t m_server;
-static int32_t m_count;
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
@@ -47,7 +48,6 @@ int main(int argc, char **argv)
    WSADATA wsaData;
    int err;
 #endif
-   m_count = 0;
    g_debug = 0;
    m_port = DEFAULT_PORT;
    printf("APX Server %s\n", SW_VERSION_STR);
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
       return 0;
    }
    APX_LOG_INFO("Listening on port %d\n", (int)m_port);
-#ifdef _WIN32   
+#ifdef _WIN32
    wVersionRequested = MAKEWORD(2, 2);
    err = WSAStartup(wVersionRequested, &wsaData);
    if (err != 0) {
@@ -77,13 +77,22 @@ int main(int argc, char **argv)
    apx_server_create(&m_server,m_port);
    apx_server_setDebugMode(&m_server, g_debug);
    apx_server_start(&m_server);
+
+   signal(SIGINT, main_signal_handler);
+   signal(SIGTERM, main_signal_handler);
    for(;;)
    {
-      SLEEP(5000); //main thread is sleeping while child threads do all the work
-/*    if (++m_count==20) //this counter is used during testing to verify that all resources are properly cleaned up
+      //main thread is sleeping while child threads do all the work
+#ifdef _WIN32
+      SLEEP(5000);
+      if(m_running == 0)
       {
          break;
-      }*/
+      }
+#else
+      pause();
+      break;
+#endif
    }
    APX_LOG_INFO("destroying server\n");
    apx_server_destroy(&m_server);
@@ -97,6 +106,12 @@ int main(int argc, char **argv)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+static void main_signal_handler(int signum)
+{
+   APX_LOG_INFO("signal caught %d\n", signum);
+   m_running = 0;
+}
+
 static int parse_args(int argc, char **argv)
 {
    int i;

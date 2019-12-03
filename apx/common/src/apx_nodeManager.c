@@ -218,6 +218,7 @@ void apx_nodeManager_remoteFileWritten(apx_nodeManager_t *self, struct apx_fileM
       if (remoteFile->fileType == APX_DEFINITION_FILE)
       {
          MUTEX_LOCK(self->lock);
+         // TODO check if any of the nodes in the definition are allready known by the nodemanager and if so kick them out
          apx_nodeManager_createNode(self, remoteFile->nodeData->definitionDataBuf, remoteFile->nodeData->definitionDataLen, fileManager);
          MUTEX_UNLOCK(self->lock);
       }
