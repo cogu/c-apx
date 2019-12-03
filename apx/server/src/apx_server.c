@@ -45,7 +45,7 @@ void apx_server_create(apx_server_t *self, uint16_t tcpPort)
       memset(&serverHandler,0,sizeof(serverHandler));
       msocket_server_create(&self->tcpServer,AF_INET, apx_serverConnection_vdelete);
 #ifndef _MSC_VER
-      msocket_server_create(&self->localServer,AF_LOCAL, apx_serverConnection_vdelete);
+      //msocket_server_create(&self->localServer,AF_LOCAL, apx_serverConnection_vdelete);
 #endif
       serverHandler.tcp_accept = apx_server_accept;
       msocket_server_sethandler(&self->tcpServer,&serverHandler,self);
@@ -82,7 +82,7 @@ void apx_server_destroy(apx_server_t *self)
       msocket_server_destroy(&self->tcpServer);
 #ifndef _MSC_VER
       //destroy the local socket server
-      msocket_server_destroy(&self->localServer);
+      //msocket_server_destroy(&self->localServer);
 #endif
       apx_nodeManager_destroy(&self->nodeManager);
       apx_router_destroy(&self->router);
@@ -110,6 +110,7 @@ void apx_server_setDebugMode(apx_server_t *self, int8_t debugMode)
  */
 static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket)
 {
+   (void) srv;
    apx_server_t *self = (apx_server_t*) arg;
    if (self != 0)
    {
@@ -187,7 +188,7 @@ static void apx_server_disconnected(void *arg)
             break;
 #ifndef _MSC_VER
          case AF_LOCAL:
-            msocket_server_cleanup_connection(&connection->server->localServer,arg);
+            //msocket_server_cleanup_connection(&connection->server->localServer,arg);
             break;
 #endif
          default:
