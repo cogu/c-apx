@@ -69,12 +69,19 @@ void apx_server_destroy(apx_server_t *self)
 {
    if (self != 0)
    {
+      //refuse new connections
+      if (self->tcpServer.acceptSocket != 0)
+      {
+         msocket_close(self->tcpServer.acceptSocket);
+      }
       //close and delete all open server connections
+      MUTEX_LOCK(self->mutex);
       adt_list_destroy(&self->connections);
+      MUTEX_UNLOCK(self->mutex);
       //destroy the tcp server
       msocket_server_destroy(&self->tcpServer);
-      //destroy the local socket server
 #ifndef _MSC_VER
+      //destroy the local socket server
       msocket_server_destroy(&self->localServer);
 #endif
       apx_nodeManager_destroy(&self->nodeManager);
@@ -98,6 +105,9 @@ void apx_server_setDebugMode(apx_server_t *self, int8_t debugMode)
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
+/**
+ * called by msocket accept thread when a new connection is made to the msocket
+ */
 static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket)
 {
    apx_server_t *self = (apx_server_t*) arg;
@@ -110,7 +120,8 @@ static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket
          msocket_handler_t handlerTable;
 
          //add it to our list of connections. The linked list is used to keep track of all open connections
-         adt_list_insert(&self->connections,newConnection);
+         MUTEX_LOCK(self->mutex);
+         adt_list_insert(&self->connections, newConnection);
 
          //attach our (single) instance of the nodeManager with the connection
          //apx_serverConnection_attachNodeManager()
@@ -135,8 +146,10 @@ static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket
          }
          //now that the handler is setup, start the internal listening thread in the msocket
          msocket_start_io(msocket);
-         //trigger the new connection to send the greeting message (in case there is any to be sent)
+         //attach the filemanager to our nodemanager and trigger the new connection to send
+         // the greeting message (in case there is any to be sent)
          apx_serverConnection_start(newConnection);
+         MUTEX_UNLOCK(self->mutex);
       }
       else
       {
@@ -156,7 +169,7 @@ static int8_t apx_server_data(void *arg, const uint8_t *dataBuf, uint32_t dataLe
  */
 static void apx_server_disconnected(void *arg)
 {
-   apx_serverConnection_t *connection;   
+   apx_serverConnection_t *connection;
    connection = (apx_serverConnection_t*) arg;
    if (connection != 0)
    {
