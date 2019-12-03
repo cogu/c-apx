@@ -186,17 +186,19 @@ void apx_fileManager_stop(apx_fileManager_t *self)
       SPINLOCK_ENTER(self->lock);
       rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
+      SPINLOCK_ENTER(self->sendLock); // Block new work from arriving
       SEMAPHORE_POST(self->semaphore);
+      self->workerThreadValid = false;
 #ifdef _MSC_VER
       result = WaitForSingleObject(self->workerThread, 5000);
       if (result == WAIT_TIMEOUT)
       {
-         APX_LOG_ERROR("[APX_FILE_MANAGER] timeout while joining workerThread");         
+         APX_LOG_ERROR("[APX_FILE_MANAGER] timeout while joining workerThread");
       }
       else if (result == WAIT_FAILED)
       {
          DWORD lastError = GetLastError();
-         APX_LOG_ERROR("[APX_FILE_MANAGER]  joining workerThread failed with %d", (int)lastError);         
+         APX_LOG_ERROR("[APX_FILE_MANAGER] joining workerThread failed with %d", (int)lastError);
       }
       CloseHandle(self->workerThread);
       self->workerThread = INVALID_HANDLE_VALUE;
@@ -215,6 +217,7 @@ void apx_fileManager_stop(apx_fileManager_t *self)
          APX_LOG_ERROR("[APX_FILE_MANAGER] pthread_join attempted on pthread_self()\n");
       }
 #endif
+      SPINLOCK_LEAVE(self->sendLock);
    }
 }
 

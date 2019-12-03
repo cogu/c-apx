@@ -67,6 +67,11 @@ void apx_clientConnection_destroy(apx_clientConnection_t *self)
          msocket_delete(self->msocket);
       }
 
+      if (self->client != 0)
+      {
+         apx_nodeManager_detachFileManager(&self->client->nodeManager, &self->fileManager);
+      }
+      apx_fileManager_stop(&self->fileManager);
       apx_fileManager_destroy(&self->fileManager);
       adt_bytearray_destroy(&self->sendBuffer);
    }
