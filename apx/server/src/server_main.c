@@ -10,6 +10,7 @@
 #include "apx_server.h"
 #include "apx_types.h"
 #include "apx_logging.h"
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
