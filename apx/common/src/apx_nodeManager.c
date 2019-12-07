@@ -240,6 +240,7 @@ void apx_nodeManager_remoteFileWritten(apx_nodeManager_t *self, struct apx_fileM
             while (offset < endOffset)
             {
                apx_dataTriggerFunction_t *triggerFunction;
+               MUTEX_LOCK(self->lock);
                triggerFunction = apx_nodeInfo_getTriggerFunction(nodeInfo, offset);
                if (triggerFunction != 0)
                {
@@ -251,6 +252,7 @@ void apx_nodeManager_remoteFileWritten(apx_nodeManager_t *self, struct apx_fileM
                   //fprintf(stderr, "APX_NODE_MANAGER(%s)] no trigger function found for file %s at offset %d\n", apx_fileManager_modeString(fileManager), remoteFile->fileInfo.name, offset);               
                   offset++;
                }
+               MUTEX_UNLOCK(self->lock);
             }
          }
       }
