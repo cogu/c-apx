@@ -575,7 +575,6 @@ static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *se
             {
                // Mark the remote file as open
                apx_file_open((apx_file_t*) self->pendingMsg.msgData3.ptr);
-               retval = msgLen;
                if (dataLen != rmf_serialize_cmdOpenFile(&msgBuf[headerLen], dataLen, &cmdOpenFile))
                {
                   apx_es_fileManager_setError(self, APX_PACK_ERROR);
@@ -642,14 +641,10 @@ static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *se
             apx_file_open(file);
             if (msgLen <= sendAvail)
             {
-               if ( (headerLen == rmf_packHeader(&msgBuf[0], headerLen, address, false)) &&
-                    (0 == apx_file_read(file, &msgBuf[headerLen], 0, dataLen)) )
+               if ( (headerLen != rmf_packHeader(&msgBuf[0], headerLen, address, false)) ||
+                    (0 != apx_file_read(file, &msgBuf[headerLen], 0, dataLen) ) )
                {
-                  retval = msgLen;
-               }
-               else
-               {
-                  retval = -1;
+                  msgLen = -1;
                }
             }
             else if ( (msgLen >= APX_ES_FILE_WRITE_FRAGMENTATION_THRESHOLD) && (APX_ES_FILE_WRITE_FRAGMENTATION_THRESHOLD <= sendAvail) )
@@ -657,7 +652,6 @@ static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *se
                assert(sendAvail >= (int32_t) RMF_MIN_MSG_LEN);
                apx_es_initFragmentedFileWrite(self, file, 0, address, dataLen);
                msgLen = apx_es_createFileWriteMsg(self, sendAvail);
-               retval = msgLen;
             }
             else
             {
