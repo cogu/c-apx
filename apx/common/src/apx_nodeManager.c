@@ -365,6 +365,7 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
 
       adt_ary_create(&toBeDeleted, NULL);
       adt_ary_create(&deletedNodeData, NULL);
+      MUTEX_LOCK(self->lock);
       adt_list_remove(&self->fileManagerList, fileManager);
       adt_hash_iter_init(&self->nodeInfoMap);
       do
@@ -425,7 +426,6 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
                   }
                   if (found == false)
                   {
-                     MUTEX_LOCK(self->lock);
                      ppVal = adt_hash_get(&self->remoteNodeDataMap, file->nodeData->name, 0);
                      if (ppVal != 0)
                      {
@@ -436,12 +436,12 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
 //                        apx_nodeManager_removeNodeInfo(self, nodeInfo);
 //                        apx_nodeInfo_delete(nodeInfo);
                      }
-                     MUTEX_UNLOCK(self->lock);
                   }
                }
             }
          }while(iter != 0);
       }
+      MUTEX_UNLOCK(self->lock);
       adt_ary_destroy(&toBeDeleted);
       adt_ary_destroy(&deletedNodeData);
    }
