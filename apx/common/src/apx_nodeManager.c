@@ -655,16 +655,23 @@ static void apx_nodeManager_executePortTriggerFunction(const apx_dataTriggerFunc
                for(i=0;i<end;i++)
                {
                   apx_dataWriteInfo_t *writeInfo = (apx_dataWriteInfo_t*) adt_ary_value(&triggerFunction->writeInfoList, i);
-                  apx_nodeInfo_t *targetNodeInfo = writeInfo->requesterNodeInfo;
-                  if( targetNodeInfo->nodeData != 0)
+                  apx_nodeData_t *targetNodeData = writeInfo->requesterNodeInfo->nodeData;
+                  if( targetNodeData != 0)
                   {
-                     apx_nodeData_t *targetNodeData = targetNodeInfo->nodeData;
                      if( (targetNodeData->inPortDataFile != 0) && (targetNodeData->fileManager != 0) )
                      {
                         apx_fileManager_triggerFileWriteCmdEvent(targetNodeData->fileManager, targetNodeData->inPortDataFile, dataBuf, writeInfo->destOffset, triggerFunction->dataLength);
                      }
+                     else
+                     {
+                        APX_LOG_ERROR("[APX_FILE_MANAGER] trigger function failed to write to %s in file", targetNodeData->name);
+                     }
                   }
                }
+            }
+            else
+            {
+                APX_LOG_ERROR("[APX_FILE_MANAGER] trigger function failed to read from %s out data", file->nodeData->name);
             }
             free(dataBuf);
          }
