@@ -187,8 +187,11 @@ void apx_nodeInfo_connectPort(apx_nodeInfo_t *providerNodeInfo, int32_t provider
          //set dirty flag on provide port in order to trigger recalculation of data triggers
 
          //set event flag on require port (for later processing)
+         if (providerNodeInfo->providePortFlags[providerPortIndex] == 0)
+         {
+            providerNodeInfo->pendingProvidePortFlags++;
+         }
          providerNodeInfo->providePortFlags[providerPortIndex] |= APX_PORT_EVENT_CONNECTED;
-         providerNodeInfo->pendingProvidePortFlags++;
 
          //set event flag on require port (for later processing)
          requesterNodeInfo->requirePortFlags[requesterPortIndex] |= APX_PORT_EVENT_CONNECTED;
@@ -234,8 +237,11 @@ void apx_nodeInfo_disconnectProvidePort(apx_nodeInfo_t *providerNodeInfo, int32_
          //Now delete the detached object, the virtual destructor will take care of freeing memory for the internal objects in the list
          adt_ary_delete(connectionList);
          //finally set the disconnected event for later processing where we will need to update data trigger tables
+         if (providerNodeInfo->providePortFlags[providerPortIndex] == 0)
+         {
+            providerNodeInfo->pendingProvidePortFlags++;
+         }
          providerNodeInfo->providePortFlags[providerPortIndex] |= APX_PORT_EVENT_DISCONNECTED;
-         providerNodeInfo->pendingProvidePortFlags++;
       }
    }
 }
@@ -270,10 +276,13 @@ void apx_nodeInfo_disconnectRequirePort(apx_nodeInfo_t *requesterNodeInfo, int32
             apx_portref_delete(requireConnector);
             apx_portref_destroy(&provideConnector);
             //set event flags for later processing when we will update the data trigger tables
-            requesterNodeInfo->requirePortFlags[requesterPortIndex] |= APX_PORT_EVENT_DISCONNECTED;
-            providerNodeInfo->providePortFlags[providerPortIndex] |= APX_PORT_EVENT_DISCONNECTED;
-            providerNodeInfo->pendingProvidePortFlags++;
             requesterNodeInfo->pendingRequirePortFlags++;
+            requesterNodeInfo->requirePortFlags[requesterPortIndex] |= APX_PORT_EVENT_DISCONNECTED;
+            if (providerNodeInfo->providePortFlags[providerPortIndex] == 0)
+            {
+               providerNodeInfo->pendingProvidePortFlags++;
+            }
+            providerNodeInfo->providePortFlags[providerPortIndex] |= APX_PORT_EVENT_DISCONNECTED;
          }
          else
          {
