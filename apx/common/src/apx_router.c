@@ -325,6 +325,7 @@ static bool apx_router_createDefaultPortConnector(const apx_router_t *self, apx_
       if (ptr == 0)
       {
          //no entry, this is a weird situation
+         APX_LOG_WARNING("[APX_ROUTER] Failed to complete port connection");
       }
       else
       {
@@ -338,12 +339,16 @@ static bool apx_router_createDefaultPortConnector(const apx_router_t *self, apx_
             numProvidePorts = adt_ary_length(&portMapEntry->providePorts);
             if (numProvidePorts > 0)
             {
-               //OK, there is at least one provider for this signal.
                //The default rule is to connect to the last of the available providers (index = numProvidePorts-1)
                apx_portref_t *portref = apx_routerPortMapEntry_getProvidePortById(portMapEntry,numProvidePorts-1);
                if ( (portref != 0) && (portref->node != 0) && (portref->port != 0) )
                {
                   apx_nodeInfo_t *providerNodeInfo = portref->node->nodeInfo;
+
+                  if (numProvidePorts > 1)
+                  {
+                     APX_LOG_DEBUG("[APX_ROUTER] Multiple provide ports available for %s. Picking %s", port->name, portref->node->name);
+                  }
 
                   if (providerNodeInfo != 0)
                   {
