@@ -344,15 +344,6 @@ void apx_nodeManager_attachFileManager(apx_nodeManager_t *self, struct apx_fileM
  */
 void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager)
 {
-   if (fileManager->debugInfo != 0)
-   {
-      APX_LOG_INFO("[APX_NODE_MANAGER] (%p) Detaching file manager", fileManager->debugInfo);
-   }
-   else
-   {
-      APX_LOG_INFO("[APX_NODE_MANAGER] %s", "Detaching file manager");
-   }
-
    if ( (self != 0) && (fileManager != 0) )
    {
       void **ppVal;
@@ -362,6 +353,15 @@ void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileM
       uint32_t keyLen;
       adt_ary_t toBeDeleted; //list of nodeInfo_t that we need to remove from nodeInfoMap due to the removal of the file manager
       adt_ary_t deletedNodeData; //list of deleted nodeData_t, used to prevent duplicate deletions
+
+      if (fileManager->debugInfo != 0)
+      {
+         APX_LOG_INFO("[APX_NODE_MANAGER] (%p) Detaching file manager", fileManager->debugInfo);
+      }
+      else
+      {
+         APX_LOG_INFO("[APX_NODE_MANAGER] %s", "Detaching file manager");
+      }
 
       adt_ary_create(&toBeDeleted, NULL);
       adt_ary_create(&deletedNodeData, NULL);
