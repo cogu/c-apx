@@ -12,6 +12,12 @@
 #include "apx_portDataMap.h"
 #include "apx_dataTrigger.h"
 #include "apx_nodeData.h"
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <pthread.h>
+#endif
+#include "osmacro.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -34,6 +40,7 @@ typedef struct apx_nodeInfo_tag
    uint8_t *providePortFlags; //internal flags for provide ports (used for dirty flags when port are connected/disconnected) (one byte per port)
    uint32_t pendingRequirePortFlags; //number of modified requirePortFlags since last check (this is an optimization to reduce some linear search time)
    uint32_t pendingProvidePortFlags; //number of modified providePortFlags since last check (this is an optimization to reduce some linear search time)
+   MUTEX_T outDataTriggerTableLock;
    apx_dataTriggerTable_t outDataTriggerTable; //trigger table routines
    struct apx_nodeData_tag *nodeData; //weak pointer to associated nodeData
 } apx_nodeInfo_t;
