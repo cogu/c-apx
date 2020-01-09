@@ -102,6 +102,7 @@ void apx_nodeInfo_create(apx_nodeInfo_t *self, apx_node_t *node)
       {
          APX_LOG_ERROR("[APX_NODE_INFO] (%d) : malloc failed\n", (int) __LINE__);
       }
+      MUTEX_INIT(self->outDataTriggerTableLock);
       apx_dataTriggerTable_create(&self->outDataTriggerTable,self,0,0);
       self->nodeData = (apx_nodeData_t*) 0; //default NULL
    }
@@ -116,7 +117,10 @@ void apx_nodeInfo_destroy(apx_nodeInfo_t *self)
       adt_ary_destroy(&self->provideConnectors);
       apx_portDataMap_destroy(&self->inDataMap);
       apx_portDataMap_destroy(&self->outDataMap);
+      MUTEX_LOCK(self->outDataTriggerTableLock);
       apx_dataTriggerTable_destroy(&self->outDataTriggerTable);
+      MUTEX_UNLOCK(self->outDataTriggerTableLock);
+      MUTEX_DESTROY(self->outDataTriggerTableLock);
       if (self->requirePortFlags != 0)
       {
          free(self->requirePortFlags);

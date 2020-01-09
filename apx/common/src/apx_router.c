@@ -471,8 +471,10 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
       int32_t numProvidePorts = adt_ary_length(&nodeInfo->node->providePortList);
       adt_str_t *str = adt_str_new();
 
+      MUTEX_LOCK(nodeInfo->outDataTriggerTableLock);
       for(i=0;i<numProvidePorts;i++)
       {
+
          if (nodeInfo->providePortFlags[i] != 0)
          {
             if (debugMode == APX_DEBUG_2_LOW)
@@ -526,6 +528,7 @@ static void apx_router_postProcessNode(apx_nodeInfo_t *nodeInfo, int8_t debugMod
             }
          }
       }
+      MUTEX_UNLOCK(nodeInfo->outDataTriggerTableLock);
       adt_str_delete(str);
       //clear flags
       memset(nodeInfo->providePortFlags,0,numProvidePorts);
