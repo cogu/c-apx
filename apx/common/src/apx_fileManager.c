@@ -450,19 +450,35 @@ void apx_fileManager_triggerFileWriteCmdEvent(apx_fileManager_t *self, apx_file_
       msg.msgData1 = (uint32_t) offset;
       msg.msgData2 = (uint32_t) length;
       msg.msgData3.ptr = file; //sent from node in nodeDataPtr
-      dataCopy = apx_allocator_alloc(&self->allocator,length);
+      dataCopy = apx_allocator_alloc(&self->allocator, length);
       if (dataCopy == 0)
       {
          APX_LOG_ERROR("[APX_REMOTE_FILE] apx_allocator out of memory while attempting to allocate %d bytes", (int)length);
       }
       else
       {
+         uint8_t fileWriteCmdEventResult;
          memcpy(dataCopy, data, length);
          msg.msgData4 = dataCopy;
          SPINLOCK_ENTER(self->lock);
-         rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
+         fileWriteCmdEventResult = rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
          SPINLOCK_LEAVE(self->lock);
-         SEMAPHORE_POST(self->semaphore);
+         if (fileWriteCmdEventResult != E_BUF_OK)
+         {
+            apx_allocator_free(&self->allocator, dataCopy, length);
+            if (fileWriteCmdEventResult == E_BUF_OVERFLOW)
+            {
+               APX_LOG_WARNING("[APX_REMOTE_FILE] ringbuffer full. FileWriteCmdEvent lost");
+            }
+            else
+            {
+               APX_LOG_WARNING("[APX_REMOTE_FILE] ringbuffer error. FileWriteCmdEvent lost");
+            }
+         }
+         else
+         {
+            SEMAPHORE_POST(self->semaphore);
+         }
       }
    }
 }
