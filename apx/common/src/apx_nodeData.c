@@ -359,6 +359,23 @@ void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, apx_offset_t offset, a
    }
 }
 
+void apx_nodeData_writeInPortDefaultDataIfNotDirty(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
+{
+#ifndef APX_EMBEDDED
+   SPINLOCK_ENTER(self->inPortDataLock);
+#endif
+   assert( (offset+len) <= self->inPortDataLen); //not attempted write outside bounds
+   assert(self->inPortDirtyFlags != 0);
+
+   if (self->inPortDirtyFlags[offset] == 0)
+   {
+      memcpy(&self->inPortDataBuf[offset], src, len);
+   }
+#ifndef APX_EMBEDDED
+   SPINLOCK_LEAVE(self->inPortDataLock);
+#endif
+}
+
 int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
 {
    int8_t retval = 0;
@@ -372,6 +389,11 @@ int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, ui
    else
    {
       memcpy(&self->inPortDataBuf[offset], src, len);
+      if (self->inPortDirtyFlags != 0)
+      {
+         // Flag that in data has been written (And might differ from default value)
+         memset(&self->inPortDirtyFlags[offset], 1, len);
+      }
    }
 #ifndef APX_EMBEDDED
    SPINLOCK_LEAVE(self->inPortDataLock);

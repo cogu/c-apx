@@ -33,6 +33,7 @@
 #if defined(_MSC_VER) && (_MSC_VER<=1800)
 #define snprintf _snprintf
 #endif
+#define STACK_DATA_BUF_SIZE 256
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -644,7 +645,17 @@ static void apx_nodeManager_executePortTriggerFunction(const apx_dataTriggerFunc
    {
       if (file->fileType == APX_OUTDATA_FILE)
       {
-         uint8_t *dataBuf = (uint8_t*) malloc(triggerFunction->dataLength);
+         uint8_t stackDataBuf[STACK_DATA_BUF_SIZE];
+         uint8_t *dataBuf = stackDataBuf;
+         bool dataBufMalloced = triggerFunction->dataLength > STACK_DATA_BUF_SIZE;
+         if (dataBufMalloced)
+         {
+            dataBuf = (uint8_t*) malloc(triggerFunction->dataLength);
+            if (dataBuf == NULL)
+            {
+               APX_LOG_ERROR("[APX_FILE_MANAGER] trigger function failed to allocate temporary buffer");
+            }
+         }
          if (dataBuf != 0)
          {
             int8_t result = apx_nodeData_readOutPortData(file->nodeData, dataBuf, triggerFunction->srcOffset, triggerFunction->dataLength);
@@ -664,16 +675,19 @@ static void apx_nodeManager_executePortTriggerFunction(const apx_dataTriggerFunc
                      }
                      else
                      {
-                        APX_LOG_ERROR("[APX_FILE_MANAGER] trigger function failed to write to %s in file", targetNodeData->name);
+                        // Requester has not yet opened its file (thus not registered)
                      }
                   }
                }
             }
             else
             {
-                APX_LOG_ERROR("[APX_FILE_MANAGER] trigger function failed to read from %s out data", file->nodeData->name);
+               APX_LOG_ERROR("[APX_FILE_MANAGER] trigger function failed to read from %s out data", file->nodeData->name);
             }
-            free(dataBuf);
+            if (dataBufMalloced)
+            {
+               free(dataBuf);
+            }
          }
       }
    }
@@ -739,7 +753,7 @@ static bool apx_nodeManager_setNoneDirtyInDataFromDefinition(apx_node_t *node, a
          {
             apx_node_fillPortInitData(node, port, portData);
             assert(packLen == (int32_t)adt_bytearray_length(portData));
-            memcpy(pNext, adt_bytearray_data(portData), packLen);
+            apx_nodeData_writeInPortDefaultDataIfNotDirty(nodeData, adt_bytearray_data(portData), offset, packLen);
          }
          pNext += packLen;
          offset += packLen;
