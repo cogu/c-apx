@@ -471,6 +471,8 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
       int32_t numRequirePorts;
       int32_t requirePortIndex;
       apx_nodeData_t *requireNodeData = self->nodeData;
+      uint8_t *provideData = malloc(requireNodeData->inPortDataLen);
+      assert(provideData != NULL);
 
       numRequirePorts = apx_nodeInfo_getNumRequirePorts(self);
       for (requirePortIndex=0;requirePortIndex<numRequirePorts;requirePortIndex++)
@@ -480,9 +482,9 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
          if (portref != 0)
          {
             apx_nodeInfo_t *provideNodeInfo = portref->node->nodeInfo;
-            const apx_nodeData_t *provideNodeData;
+            apx_nodeData_t *provideNodeData;
             int32_t providePortIndex;
-            
+
             providePortIndex = portref->port->portIndex;
             assert( (provideNodeInfo != 0) && (providePortIndex>=0) );
             provideNodeData = provideNodeInfo->nodeData;
@@ -505,17 +507,15 @@ void apx_nodeInfo_copyInitDataFromProvideConnectors(apx_nodeInfo_t *self)
                   }
                   else
                   {
-                     memcpy(&requireNodeData->inPortDataBuf[requirePortEntry->offset], &provideNodeData->outPortDataBuf[providePortEntry->offset], providePortEntry->length);
-                     if (requireNodeData->inPortDirtyFlags != 0)
-                     {
-                        // Flag that in init data has been copied from a provider (And might differ from default value)
-                        requireNodeData->inPortDirtyFlags[requirePortEntry->offset] = 1;
-                     }
+                     // Perform atomic read and write
+                     apx_nodeData_readOutPortData(provideNodeData, provideData, providePortEntry->offset, providePortEntry->length);
+                     apx_nodeData_writeInPortData(requireNodeData, provideData, requirePortEntry->offset, requirePortEntry->length);
                   }
                }
             }
          }
       }
+      free(provideData);
    }
 }
 

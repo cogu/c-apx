@@ -124,6 +124,7 @@ void apx_nodeData_unlockInPortData(apx_nodeData_t *self);
 //DEPRECATED INTERFACE (Regenerate your APX node using latest py-apx code generator)
 void apx_nodeData_outPortDataNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len);
 
+void apx_nodeData_writeInPortDefaultDataIfNotDirty(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 int8_t apx_nodeData_writeOutPortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 int8_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);

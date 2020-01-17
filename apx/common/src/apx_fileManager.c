@@ -944,15 +944,12 @@ static void apx_fileManager_processOpenFile(apx_fileManager_t *self, const rmf_c
       SPINLOCK_LEAVE(self->lock);
       if (localFile != 0)
       {
-         int32_t bytesToSend = localFile->fileInfo.length;
          if (self->debugInfo != (void*) 0)
          {
             APX_LOG_DEBUG("[APX_FILE_MANAGER] (%p) Client opened %s", self->debugInfo, localFile->fileInfo.name);
          }
-         apx_fileManager_triggerFileUpdatedEvent(self, localFile, 0, bytesToSend);
          if (localFile->nodeData != 0)
          {
-            apx_file_open(localFile);
             if ( localFile->fileType == APX_OUTDATA_FILE )
             {
                apx_nodeData_setOutPortDataFile(localFile->nodeData, localFile);
@@ -964,6 +961,8 @@ static void apx_fileManager_processOpenFile(apx_fileManager_t *self, const rmf_c
                apx_nodeData_setFileManager(localFile->nodeData, self);
             }
          }
+         apx_file_open(localFile); // Open file before sending the full file to secure no updates are missed
+         apx_fileManager_triggerFileUpdatedEvent(self, localFile, 0, localFile->fileInfo.length);
       }
    }
 }
