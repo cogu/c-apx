@@ -672,7 +672,7 @@ static void apx_fileManager_fileWriteCmdHandler(apx_fileManager_t *self, apx_fil
          }
          else
          {
-            int8_t result;            
+            int8_t result;
             result = apx_nodeData_writeInPortData(file->nodeData, data, offset, len);
             if (result != 0)
             {
@@ -950,6 +950,7 @@ static void apx_fileManager_processOpenFile(apx_fileManager_t *self, const rmf_c
          }
          if (localFile->nodeData != 0)
          {
+            apx_file_open(localFile); // Open file before sending the full file to secure no updates are missed
             if ( localFile->fileType == APX_OUTDATA_FILE )
             {
                apx_nodeData_setOutPortDataFile(localFile->nodeData, localFile);
@@ -958,10 +959,21 @@ static void apx_fileManager_processOpenFile(apx_fileManager_t *self, const rmf_c
             else if ( localFile->fileType == APX_INDATA_FILE)
             {
                apx_nodeData_setInPortDataFile(localFile->nodeData, localFile);
+
+               // Before allowing RMF_MSG_FILE_WRITE related to the new InDataFile
+               // in the ringbuffer; build the initial file content.
+               //
+               // Note that there is a risk that queued RMF_MSG_FILE_WRITE may once allowed
+               // result in one write without change (the queued value could have been read
+               // from the require port already by apx_nodeManager_populateInDataFile)
+               SPINLOCK_ENTER(self->lock);
                apx_nodeData_setFileManager(localFile->nodeData, self);
+
+               // After opening up for notifications from providers build the initial in file
+               apx_nodeManager_populateInDataFile(self->nodeManager, localFile->nodeData);
+               SPINLOCK_LEAVE(self->lock);
             }
          }
-         apx_file_open(localFile); // Open file before sending the full file to secure no updates are missed
          apx_fileManager_triggerFileUpdatedEvent(self, localFile, 0, localFile->fileInfo.length);
       }
    }

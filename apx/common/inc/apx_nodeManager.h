@@ -59,5 +59,6 @@ void apx_nodeManager_attachLocalNode(apx_nodeManager_t *self, apx_nodeData_t *no
 void apx_nodeManager_attachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager);
 void apx_nodeManager_detachFileManager(apx_nodeManager_t *self, struct apx_fileManager_tag *fileManager);
 void apx_nodeManager_setDebugMode(apx_nodeManager_t *self, int8_t debugMode);
+void apx_nodeManager_populateInDataFile(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
 
 #endif //APX_NODE_MANAGER_H

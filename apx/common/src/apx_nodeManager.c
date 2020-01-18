@@ -456,6 +456,34 @@ void apx_nodeManager_setDebugMode(apx_nodeManager_t *self, int8_t debugMode)
    }
 }
 
+void apx_nodeManager_populateInDataFile(apx_nodeManager_t *self, apx_nodeData_t *nodeData)
+{
+   if ((self != 0) && (nodeData != 0) && (nodeData->nodeInfo != 0))
+   {
+       // For all connected require ports copy data from the provide port into our newly create inDataFile buffer
+       MUTEX_LOCK(self->lock); // Secure no connection changes are made while copying
+       apx_nodeInfo_copyInitDataFromProvideConnectors(nodeData->nodeInfo);
+       MUTEX_UNLOCK(self->lock);
+       // For any require port that did not get data from a provider - get the in init data from own definition instead
+       apx_node_t *apxNode = apx_nodeInfo_getNode(nodeData->nodeInfo);
+       if (apxNode != 0)
+       {
+          if (!apx_nodeManager_setNoneDirtyInDataFromDefinition(apxNode, nodeData))
+          {
+             APX_LOG_ERROR("[APX_NODE_MANAGER] Failed to create init data for node %s", apx_node_getName(apxNode));
+          }
+       }
+       else
+       {
+          APX_LOG_ERROR("[APX_NODE_MANAGER] Failed to create init data for since node missing");
+       }
+   }
+   else
+   {
+      APX_LOG_ERROR("[APX_NODE_MANAGER] Failed to populate init data");
+   }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -587,13 +615,6 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
             }
             if (inDataFile != 0)
             {
-               // For all connected require ports copy data from the provide port into our newly create inDataFile buffer
-               apx_nodeInfo_copyInitDataFromProvideConnectors(nodeInfo);
-               // For any require port that did not get data from a provider - get the in init data from the definition instead
-               if (!apx_nodeManager_setNoneDirtyInDataFromDefinition(apxNode, nodeData))
-               {
-                  APX_LOG_ERROR("[APX_NODE_MANAGER] Failed to create init data for node %s", apx_node_getName(apxNode));
-               }
                apx_fileManager_attachLocalPortDataFile(fileManager, inDataFile);
                APX_LOG_INFO("[APX_NODE_MANAGER]%s Server created file %s[%d,%d]", debugInfoStr, fileName, inDataFile->fileInfo.address, inDataFile->fileInfo.length);
             }
