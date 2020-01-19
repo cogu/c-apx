@@ -265,17 +265,13 @@ int8_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint
 int8_t apx_nodeData_readOutPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
 {
    assert((offset+len) <= self->outPortDataLen);
-#ifndef APX_EMBEDDED
-   SPINLOCK_ENTER(self->outPortDataLock);
-#endif
+   apx_nodeData_lockOutPortData(self);
    memcpy(dest, &self->outPortDataBuf[offset], len);
    if (self->outPortDirtyFlags != 0)
    {
       memset(&self->outPortDirtyFlags[offset], 0, len);
    }
-#ifndef APX_EMBEDDED
-   SPINLOCK_LEAVE(self->outPortDataLock);
-#endif
+   apx_nodeData_unlockOutPortData(self);
    return 0;
 }
 
