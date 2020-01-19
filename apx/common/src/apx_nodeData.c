@@ -52,7 +52,7 @@ static int8_t apx_nodeData_processLargeData(apx_nodeData_t *self, apx_offset_t o
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *definitionBuf, uint32_t definitionDataLen, uint8_t *inPortDataBuf, uint8_t *inPortDirtyFlags, uint32_t inPortDataLen, uint8_t *outPortDataBuf, uint8_t *outPortDirtyFlags, uint32_t outPortDataLen)
+void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *definitionBuf, uint32_t definitionDataLen, uint8_t *inPortDataBuf, uint8_t *inPortSyncedFlags, uint32_t inPortDataLen, uint8_t *outPortDataBuf, uint8_t *outPortDirtyFlags, uint32_t outPortDataLen)
 {
    if (self != 0)
    {
@@ -63,7 +63,7 @@ void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *defini
       self->definitionDataLen = definitionDataLen;
       self->inPortDataBuf = inPortDataBuf;
       self->inPortDataLen = inPortDataLen;
-      self->inPortDirtyFlags = inPortDirtyFlags;
+      self->inPortSyncedFlags = inPortSyncedFlags;
       self->outPortDataBuf = outPortDataBuf;
       self->outPortDataLen = outPortDataLen;
       self->outPortDirtyFlags = outPortDirtyFlags;
@@ -112,9 +112,9 @@ void apx_nodeData_destroy(apx_nodeData_t *self)
          {
             free(self->definitionDataBuf);
          }
-         if ( self->inPortDirtyFlags != 0)
+         if ( self->inPortSyncedFlags != 0)
          {
-            free(self->inPortDirtyFlags);
+            free(self->inPortSyncedFlags);
          }
          if ( self->outPortDirtyFlags != 0)
          {
@@ -288,10 +288,6 @@ int8_t apx_nodeData_readInPortData(apx_nodeData_t *self, uint8_t *dest, uint32_t
       SPINLOCK_ENTER(self->inPortDataLock);
 #endif
       memcpy(dest, &self->inPortDataBuf[offset], len);
-      if (self->inPortDirtyFlags != 0)
-      {
-         memset(&self->inPortDirtyFlags[offset], 0, len);
-      }
 #ifndef APX_EMBEDDED
       SPINLOCK_LEAVE(self->inPortDataLock);
 #endif
@@ -365,9 +361,9 @@ void apx_nodeData_writeInPortDefaultDataIfNotDirty(apx_nodeData_t *self, const u
    SPINLOCK_ENTER(self->inPortDataLock);
 #endif
    assert( (offset+len) <= self->inPortDataLen); //not attempted write outside bounds
-   assert(self->inPortDirtyFlags != 0);
+   assert(self->inPortSyncedFlags != 0);
 
-   if (self->inPortDirtyFlags[offset] == 0)
+   if (self->inPortSyncedFlags[offset] == 0)
    {
       memcpy(&self->inPortDataBuf[offset], src, len);
    }
@@ -389,10 +385,10 @@ int8_t apx_nodeData_writeInPortData(apx_nodeData_t *self, const uint8_t *src, ui
    else
    {
       memcpy(&self->inPortDataBuf[offset], src, len);
-      if (self->inPortDirtyFlags != 0)
+      if (self->inPortSyncedFlags != 0)
       {
          // Flag that in data has been written (And might differ from default value)
-         memset(&self->inPortDirtyFlags[offset], 1, len);
+         memset(&self->inPortSyncedFlags[offset], 1, len);
       }
    }
 #ifndef APX_EMBEDDED

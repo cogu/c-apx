@@ -598,9 +598,9 @@ static void apx_nodeManager_createNode(apx_nodeManager_t *self, const uint8_t *d
 
                nodeData->inPortDataBuf = (uint8_t*) malloc(inPortDataLen);
                assert(nodeData->inPortDataBuf);
-               nodeData->inPortDirtyFlags = (uint8_t*) malloc(inPortDataLen);
-               assert(nodeData->inPortDirtyFlags);
-               memset(nodeData->inPortDirtyFlags, 0, inPortDataLen);
+               nodeData->inPortSyncedFlags = (uint8_t*) malloc(inPortDataLen);
+               assert(nodeData->inPortSyncedFlags);
+               memset(nodeData->inPortSyncedFlags, 0, inPortDataLen);
                nodeData->inPortDataLen = inPortDataLen;
                inDataFile = apx_file_newLocalInPortDataFile(nodeData);
                if (inDataFile == 0)
@@ -770,7 +770,7 @@ static bool apx_nodeManager_setNoneDirtyInDataFromDefinition(apx_node_t *node, a
          assert(port != 0);
          packLen = apx_port_getPackLen(port);
          // Only get init data from own definition if no provider is connected
-         if (nodeData->inPortDirtyFlags[offset] == 0)
+         if (nodeData->inPortSyncedFlags[offset] == 0)
          {
             apx_node_fillPortInitData(node, port, portData);
             assert(packLen == (int32_t)adt_bytearray_length(portData));
