@@ -63,7 +63,7 @@ typedef struct apx_nodeData_tag
    uint32_t outPortDataLen;
    uint8_t *definitionDataBuf;
    uint32_t definitionDataLen;
-   uint8_t *inPortDirtyFlags;
+   uint8_t *inPortSyncedFlags;
    uint8_t *outPortDirtyFlags;
    apx_nodeDataHandlerTable_t handlerTable;
 #ifdef APX_EMBEDDED
@@ -104,7 +104,7 @@ typedef struct ApxWriteBuf16_Tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *definitionBuf, uint32_t definitionDataLen,  uint8_t *inPortDataBuf, uint8_t *inPortDirtyFlags, uint32_t inPortDataLen, uint8_t *outPortDataBuf, uint8_t *outPortDirtyFlags, uint32_t outPortDataLen);
+void apx_nodeData_create(apx_nodeData_t *self, const char *name, uint8_t *definitionBuf, uint32_t definitionDataLen,  uint8_t *inPortDataBuf, uint8_t *inPortSyncedFlags, uint32_t inPortDataLen, uint8_t *outPortDataBuf, uint8_t *outPortDirtyFlags, uint32_t outPortDataLen);
 void apx_nodeData_destroy(apx_nodeData_t *self);
 apx_nodeData_t *apx_nodeData_newRemote(const char *name, bool isWeakRef);
 void apx_nodeData_delete(apx_nodeData_t *self);
