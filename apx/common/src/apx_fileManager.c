@@ -98,9 +98,10 @@ int8_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode)
          apx_fileManager_setTransmitHandler(self, 0);
          apx_allocator_start(&self->allocator);
 
-         self->curFileStartAddress = 0;
-         self->curFileEndAddress = 0;
-         self->curFile = 0;
+         self->curFile.fileStartAddress = 0;
+         self->curFile.fileEndAddress = 0;
+         self->curFile.ongoingWriteStartAddr = RMF_INVALID_ADDRESS;
+         self->curFile.file = 0;
          self->nodeManager = (apx_nodeManager_t*) 0;
          self->isConnected = false;
          return 0;
@@ -841,34 +842,50 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
 {
    if (self != 0)
    {
-      if ( (self->curFile != 0) && ((address < self->curFileStartAddress) || (address >= self->curFileEndAddress)) )
+      apx_fileManager_fileOperation_t* curFile = &self->curFile;
+      if ( (curFile->file != 0) && ((address < curFile->fileStartAddress) || (address >= curFile->fileEndAddress)) )
       {
+         if (curFile->ongoingWriteStartAddr != RMF_INVALID_ADDRESS)
+         {
+            APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] Unfinalized write to %08X",apx_fileManager_modeString(self), (int) curFile->ongoingWriteStartAddr);
+         }
          //invalidate cached file if address is outside range
-         self->curFile = 0;
+         curFile->file = 0;
+         curFile->ongoingWriteStartAddr = RMF_INVALID_ADDRESS;
       }
 
-      if ( self->curFile == 0)
+      if ( curFile->file == 0)
       {
-         self->curFile = apx_fileMap_findByAddress(&self->remoteFileMap,address);
-         if (self->curFile == 0)
+         curFile->file = apx_fileMap_findByAddress(&self->remoteFileMap, address);
+         if (curFile->file == 0)
          {
             APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] invalid write attempted at address %08X, len=%d",apx_fileManager_modeString(self), (int) address, (int) dataLen);
          }
          else
          {
-            self->curFileStartAddress = self->curFile->fileInfo.address;
-            self->curFileEndAddress = self->curFileStartAddress+self->curFile->fileInfo.length;
+            curFile->fileStartAddress = curFile->file->fileInfo.address;
+            curFile->fileEndAddress = curFile->fileStartAddress + curFile->file->fileInfo.length;
+            if (more_bit)
+            {
+               curFile->ongoingWriteStartAddr = address;
+            }
          }
       }
 
+      apx_file_t *remoteFile = curFile->file;
+
       //this section is valid for both cases where the file was cached and where it was non-cached
-      if (self->curFile != 0)
+      if (remoteFile != 0)
       {
-         apx_file_t *remoteFile = self->curFile;
-         assert(address >= self->curFileStartAddress);
-         if (address+dataLen > self->curFileEndAddress)
+         assert(address >= curFile->fileStartAddress);
+         if (address+dataLen > curFile->fileEndAddress)
          {
             APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] write outside file bounds attempted at address 0x%08X", apx_fileManager_modeString(self), (int) address);
+            if (curFile->ongoingWriteStartAddr != RMF_INVALID_ADDRESS)
+            {
+               APX_LOG_ERROR("[APX_FILE_MANAGER(%s)] Interrupted ongoing write started at address 0x%08X", apx_fileManager_modeString(self), (int) curFile->ongoingWriteStartAddr);
+               curFile->ongoingWriteStartAddr = RMF_INVALID_ADDRESS;
+            }
          }
          else
          {
@@ -910,15 +927,24 @@ static void apx_fileManager_parseDataMsg(apx_fileManager_t *self, uint32_t addre
                }
                if (result == 0)
                {
-                  if ((more_bit == false) && (self->nodeManager != 0) )
+                  if ((more_bit == false) && (self->nodeManager != 0))
                   {
-                     apx_nodeManager_remoteFileWritten(self->nodeManager, self, remoteFile, offset, dataLen);
+                     uint32_t startOffset = offset;
+                     int32_t totalDataLen = dataLen;
+                     if (curFile->ongoingWriteStartAddr != RMF_INVALID_ADDRESS)
+                     {
+                        startOffset = curFile->ongoingWriteStartAddr - remoteFile->fileInfo.address;
+                        totalDataLen = (address - curFile->ongoingWriteStartAddr) + dataLen;
+                        // Mark ongoing write as finalized
+                        curFile->ongoingWriteStartAddr = RMF_INVALID_ADDRESS;
+                     }
+                     apx_nodeManager_remoteFileWritten(self->nodeManager, self, remoteFile, startOffset, totalDataLen);
                   }
                }
             }
             else
             {
-               APX_LOG_ERROR("[APX_FILE_MANAGER] write to file %s detected but no nodeData has been assigned to it", self->curFile->fileInfo.name);
+               APX_LOG_ERROR("[APX_FILE_MANAGER] write to file %s detected but no nodeData has been assigned to it", remoteFile->fileInfo.name);
             }
          }
       }

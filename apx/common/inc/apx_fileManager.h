@@ -41,7 +41,13 @@ struct apx_nodeManager_tag;
 #define APX_FILEMANAGER_SERVER_MODE 1
 
 
-
+typedef struct apx_fileManager_fileOperation_tag
+{
+   uint32_t fileStartAddress; //cached start address of last accessed file
+   uint32_t fileEndAddress; //cached end address of of last accessed file
+   uint32_t ongoingWriteStartAddr; // Address where more bit write started at
+   apx_file_t *file; //weak pointer to last accessed file
+}apx_fileManager_fileOperation_t;
 
 typedef struct apx_fileManager_tag
 {
@@ -64,9 +70,7 @@ typedef struct apx_fileManager_tag
    uint8_t mode; //this could be either APX_FILEMANAGER_CLIENT_MODE or APX_FILEMANAGER_SERVER_MODE
    apx_transmitHandler_t transmitHandler;
 
-   uint32_t curFileStartAddress; //cached start address of last accessed file
-   uint32_t curFileEndAddress; //cached end address of of last accessed file
-   apx_file_t *curFile; //weak pointer to last accessed file
+   apx_fileManager_fileOperation_t curFile;
 
    struct apx_nodeManager_tag *nodeManager; //weak pointer to attached nodeManager
    bool isConnected;
