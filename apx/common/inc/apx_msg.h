@@ -29,9 +29,9 @@ typedef struct apx_msg_tag
 #define APX_MSG_SEND_FILEINFO              2 //msgData3=apx_fileInfo_t *fileInfo
 #define APX_MSG_SEND_FILE_OPEN             3 //msgData1=startAddress
 #define APX_MSG_SEND_FILE_CLOSE            4 //msgData1=startAddress
-#define APX_MSG_SEND_COMPLETE_FILE         5 //msgData1=startAddress, msgData2=length, msgData3.ptr=apx_file2_t *file
-#define APX_MSG_FILE_WRITE                 6 //msgData1=offset, msgData2=length, msgData3.ptr=data (allocated through SOA, needs to be freed), msgData4=apx_file2_t*
-#define APX_MSG_FILE_WRITE_DIRECT          7 //msgData1=offset, msgData2=length, msgData3.data=data (buffer memory), msgData4=apx_file2_t*
+#define APX_MSG_SEND_FILE_CONST_DATA       5 //msgData1=address, msgData2=length, msgData3.ptr= apx_file_read_const_data_func
+#define APX_MSG_SEND_FILE_DATA             6 //msgData1=address, msgData2=length, msgData3.ptr=data (allocated through SOA, needs to be freed)
+#define APX_MSG_SEND_FILE_DATA_DIRECT      7 //msgData1=address, msgData2=length, msgData3.data=data (buffer memory)
 #define APX_MSG_SEND_ERROR_CODE            8 //msgData1=errorCode
 
 

@@ -74,6 +74,8 @@ int32_t apx_fileManager2_getNumLocalFiles(apx_fileManager2_t *self);
 int32_t apx_fileManager2_getNumRemoteFiles(apx_fileManager2_t *self);
 apx_file2_t *apx_fileManager2_createLocalFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
 apx_file2_t *apx_fileManager2_createRemoteFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
+apx_error_t apx_fileManager2_onFileOpenNotify(apx_fileManager2_t *self, uint32_t address);
+apx_error_t apx_fileManager2_writeConstData(apx_fileManager2_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg);
 
 #ifdef UNIT_TEST
 bool apx_fileManager2_run(apx_fileManager2_t *self);

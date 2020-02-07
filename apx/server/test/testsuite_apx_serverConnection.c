@@ -144,7 +144,7 @@ static void test_serverInitializesFileHandlerWhenDefinitionFileIsSeen(CuTest* tc
    CuAssertPtrNotNull(tc, nodeInstance);
    definitionFile = apx_fileManager2_findFileByAddress(&connection.base.base.fileManager, fileInfo.address | RMF_REMOTE_ADDRESS_BIT);
    CuAssertPtrNotNull(tc, definitionFile);
-   CuAssertPtrEquals(tc, nodeInstance, definitionFile->handler.arg);
+   CuAssertPtrEquals(tc, nodeInstance, definitionFile->notificationHandler.arg);
 
    apx_serverTestConnection_destroy(&connection);
    apx_connectionEventSpy_destroy(&spy);

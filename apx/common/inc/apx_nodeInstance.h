@@ -88,7 +88,7 @@ apx_error_t apx_nodeInstance_buildNodeInfo(apx_nodeInstance_t *self, apx_program
 apx_nodeInfo_t *apx_nodeInstane_getNodeInfo(apx_nodeInstance_t *self);
 void apx_nodeInstance_setConnection(apx_nodeInstance_t *self, struct apx_connectionBase_tag *connection);
 struct apx_connectionBase_tag* apx_nodeInstance_getConnection(apx_nodeInstance_t *self);
-void apx_nodeInstance_initDefinitionFileHandler(apx_nodeInstance_t *self, apx_file2_t *file, bool readonly);
+void apx_nodeInstance_registerDefinitionFileHandler(apx_nodeInstance_t *self, apx_file2_t *file);
 const char *apx_nodeInstance_getName(apx_nodeInstance_t *self);
 void apx_nodeInstance_cleanParseTree(apx_nodeInstance_t *self);
 apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self);

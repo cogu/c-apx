@@ -138,6 +138,7 @@ typedef struct rmf_fileInfo_tag
 int32_t rmf_packHeader(uint8_t *dataBuf, int32_t bufLen, uint32_t address, bool more_bit);
 int32_t rmf_packHeaderBeforeData(uint8_t *dataBuf, int32_t bufLen, uint32_t address, bool more_bit);
 int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg);
+uint32_t rmf_unpackAddress(const uint8_t *buf, int32_t bufLen);
 int32_t rmf_serialize_cmdFileInfo(uint8_t *buf, int32_t bufLen, const rmf_fileInfo_t *fileInfo);
 int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_fileInfo_t *fileInfo);
 int32_t rmf_serialize_cmdOpenFile(uint8_t *buf, int32_t bufLen, rmf_cmdOpenFile_t *cmdOpenFile);

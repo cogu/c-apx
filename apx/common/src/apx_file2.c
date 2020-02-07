@@ -48,6 +48,8 @@
 //////////////////////////////////////////////////////////////////////////////
 
 static void apx_file2_calcFileType(apx_file2_t *self);
+static void apx_file2_lock(apx_file2_t *self);
+static void apx_file2_unlock(apx_file2_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -60,15 +62,16 @@ static void apx_file2_calcFileType(apx_file2_t *self);
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_file2_create_rmf(apx_file2_t *self, bool isRemoteFile, const rmf_fileInfo_t *rmfInfo, const apx_file_handler_t *handler)
+apx_error_t apx_file2_create_rmf(apx_file2_t *self, bool isRemoteFile, const rmf_fileInfo_t *rmfInfo)
 {
    if (self != 0)
    {
       apx_error_t retval = APX_NO_ERROR;
       self->isFileOpen = false;
+      self->hasFirstWrite = false;
       self->fileManager = (apx_fileManager2_t*) 0;
-      self->fileType = APX_UNKNOWN_FILE;
-      memset(&self->handler, 0, sizeof(apx_file_handler_t));
+      self->fileType = APX_UNKNOWN_FILE_TYPE;
+      memset(&self->notificationHandler, 0, sizeof(apx_fileNotificationHandler_t));
 
       adt_list_create(&self->eventListeners, apx_fileEventListener_vdelete);
       retval = apx_fileInfo_create_rmf(&self->fileInfo, rmfInfo, isRemoteFile);
@@ -91,8 +94,8 @@ apx_error_t apx_file2_create(apx_file2_t *self, const apx_fileInfo_t *fileInfo)
       apx_error_t retval = APX_NO_ERROR;
       self->isFileOpen = false;
       self->fileManager = (apx_fileManager2_t*) 0;
-      self->fileType = APX_UNKNOWN_FILE;
-      memset(&self->handler, 0, sizeof(apx_file_handler_t));
+      self->fileType = APX_UNKNOWN_FILE_TYPE;
+      memset(&self->notificationHandler, 0, sizeof(apx_fileNotificationHandler_t));
 
       adt_list_create(&self->eventListeners, apx_fileEventListener_vdelete);
       retval = apx_fileInfo_assign(&self->fileInfo, fileInfo);
@@ -120,12 +123,12 @@ void apx_file2_destroy(apx_file2_t *self)
    }
 }
 
-apx_file2_t *apx_file2_new_rmf(bool isRemoteFile, const rmf_fileInfo_t *fileInfo, const apx_file_handler_t *handler)
+apx_file2_t *apx_file2_new_rmf(bool isRemoteFile, const rmf_fileInfo_t *fileInfo)
 {
    apx_file2_t *self = (apx_file2_t*) malloc(sizeof(apx_file2_t));
    if (self != 0)
    {
-      int8_t result = apx_file2_create_rmf(self, isRemoteFile, fileInfo, handler);
+      int8_t result = apx_file2_create_rmf(self, isRemoteFile, fileInfo);
       if (result != 0)
       {
          free(self);
@@ -188,73 +191,40 @@ void apx_file2_close(apx_file2_t *self)
    }
 }
 
-apx_error_t apx_file2_read(apx_file2_t *self, uint32_t offset, uint8_t *data, uint32_t length)
-{
-   if (self != 0)
-   {
-      if ( apx_file2_hasReadHandler(self) != false )
-      {
-         return self->handler.read(self->handler.arg, self, offset, data, length);
-      }
-      else
-      {
-         return APX_UNSUPPORTED_ERROR;
-      }
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
 
-apx_error_t apx_file2_write(apx_file2_t *self, uint32_t offset, const uint8_t *data, uint32_t length, bool more)
-{
-   if (self != 0)
-   {
-      if ( apx_file2_hasWriteHandler(self) != false )
-      {
-         return self->handler.write(self->handler.arg, self, offset, data, length, more);
-      }
-      else
-      {
-         return APX_UNSUPPORTED_ERROR;
-      }
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-bool apx_file2_hasReadHandler(apx_file2_t *self)
-{
-   if ( (self !=0) && (self->handler.read != 0) )
-   {
-      return true;
-   }
-   return false;
-}
-
-bool apx_file2_hasWriteHandler(apx_file2_t *self)
-{
-   if ( (self !=0) && (self->handler.write != 0) )
-   {
-      return true;
-   }
-   return false;
-}
-
-void apx_file2_setHandler(apx_file2_t *self, const apx_file_handler_t *handler)
+void apx_file2_setNotificationHandler(apx_file2_t *self, const apx_fileNotificationHandler_t *handler)
 {
    if (self != 0)
    {
       apx_file2_lock(self);
       if (handler == 0)
       {
-         memset(&self->handler, 0, sizeof(apx_file_handler_t));
+         memset(&self->notificationHandler, 0, sizeof(apx_fileNotificationHandler_t));
       }
       else
       {
-         memcpy(&self->handler, handler, sizeof(apx_file_handler_t));
+         memcpy(&self->notificationHandler, handler, sizeof(apx_fileNotificationHandler_t));
       }
       apx_file2_unlock(self);
    }
 }
 
+bool apx_file2_hasFirstWrite(apx_file2_t *self)
+{
+   if (self != 0)
+   {
+      return self->hasFirstWrite;
+   }
+   return false;
+}
+
+void apx_file2_setFirstWrite(apx_file2_t *self)
+{
+   if (self != 0)
+   {
+      self->hasFirstWrite = true;
+   }
+}
 
 bool apx_file2_isOpen(apx_file2_t *self)
 {
@@ -291,19 +261,6 @@ bool apx_file2_isRemoteFile(apx_file2_t *self)
    return false;
 }
 
-bool apx_file2_isReadOnly(apx_file2_t *self)
-{
-   if (self != 0)
-   {
-      bool retval;
-      apx_file2_lock(self);
-      retval = (self->handler.write != 0)? false : true;
-      apx_file2_unlock(self);
-      return retval;
-   }
-   return false;
-}
-
 struct apx_fileManager2_tag* apx_file2_getFileManager(apx_file2_t *self)
 {
    if (self != 0)
@@ -321,29 +278,6 @@ void apx_file2_setFileManager(apx_file2_t *self, struct apx_fileManager2_tag *fi
    }
 }
 
-void apx_file2_lock(apx_file2_t *self)
-{
-#ifndef APX_EMBEDDED
-   if(self != 0)
-   {
-      MUTEX_LOCK(self->lock);
-   }
-#else
-   (void) self;
-#endif
-}
-
-void apx_file2_unlock(apx_file2_t *self)
-{
-#ifndef APX_EMBEDDED
-   if(self != 0)
-   {
-      MUTEX_UNLOCK(self->lock);
-   }
-#else
-   (void) self;
-#endif
-}
 
 void* apx_file2_registerEventListener(apx_file2_t *self, apx_fileEventListener2_t *handlerTable)
 {
@@ -373,8 +307,40 @@ apx_fileType_t apx_file2_getApxFileType(const apx_file2_t *self)
    {
       return self->fileType;
    }
-   return APX_UNKNOWN_FILE;
+   return APX_UNKNOWN_FILE_TYPE;
 }
+
+apx_error_t apx_file2_fileOpenNotify(apx_file2_t *self)
+{
+   if (self != 0)
+   {
+      if (self->notificationHandler.openNotify != 0)
+      {
+         return self->notificationHandler.openNotify(self->notificationHandler.arg, self);
+      }
+      return APX_INVALID_OPEN_HANDLER_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+uint32_t apx_file2_getStartAddress(const apx_file2_t *self)
+{
+   if (self != 0)
+   {
+      return self->fileInfo.address & RMF_ADDRESS_MASK_INTERNAL;
+   }
+   return 0u;
+}
+
+apx_size_t apx_file2_getFileSize(const apx_file2_t *self)
+{
+   if (self != 0)
+   {
+      return self->fileInfo.length;
+   }
+   return 0u;
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -385,18 +351,43 @@ static void apx_file2_calcFileType(apx_file2_t *self)
 {
    if (apx_fileInfo_nameEndsWith(&self->fileInfo, APX_OUTDATA_FILE_EXT))
    {
-      self->fileType = APX_OUTDATA_FILE;
+      self->fileType = APX_OUTDATA_FILE_TYPE;
    }
    else if (apx_fileInfo_nameEndsWith(&self->fileInfo, APX_INDATA_FILE_EXT))
    {
-      self->fileType = APX_INDATA_FILE;
+      self->fileType = APX_INDATA_FILE_TYPE;
    }
    else if (apx_fileInfo_nameEndsWith(&self->fileInfo, APX_DEFINITION_FILE_EXT))
    {
-      self->fileType = APX_DEFINITION_FILE;
+      self->fileType = APX_DEFINITION_FILE_TYPE;
    }
    else
    {
-      self->fileType = APX_UNKNOWN_FILE;
+      self->fileType = APX_UNKNOWN_FILE_TYPE;
    }
 }
+
+static void apx_file2_lock(apx_file2_t *self)
+{
+#ifndef APX_EMBEDDED
+   if(self != 0)
+   {
+      MUTEX_LOCK(self->lock);
+   }
+#else
+   (void) self;
+#endif
+}
+
+static void apx_file2_unlock(apx_file2_t *self)
+{
+#ifndef APX_EMBEDDED
+   if(self != 0)
+   {
+      MUTEX_UNLOCK(self->lock);
+   }
+#else
+   (void) self;
+#endif
+}
+

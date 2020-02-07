@@ -127,8 +127,6 @@ uint32_t apx_connectionBase_getConnectionId(apx_connectionBase_t *self);
 void apx_connectionBase_getTransmitHandler(apx_connectionBase_t *self, apx_transmitHandler_t *transmitHandler);
 uint16_t apx_connectionBase_getNumPendingEvents(apx_connectionBase_t *self);
 
-
-
 /*** Event triggering API ***/
 
 void* apx_connectionBase_registerEventListener(apx_connectionBase_t *self, apx_connectionEventListener_t *listener);
@@ -148,6 +146,10 @@ void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *se
 
 void apx_connectionBase_onFileCreated(apx_connectionBase_t *self, apx_connectionBase_t *connection, struct apx_fileInfo_tag *fileInfo, void *caller);
 void apx_connectionBase_onHeaderAccepted(apx_connectionBase_t *self, apx_connectionBase_t *connection);
+
+/*** Internal callback API ***/
+
+apx_error_t apx_connectionBaseInternal_onFileOpenNotify(apx_connectionBase_t *self, uint32_t address);
 
 #ifdef UNIT_TEST
 void apx_connectionBase_runAll(apx_connectionBase_t *self);
