@@ -9,7 +9,6 @@
 #include "CuTest.h"
 #include "apx_server.h"
 #include "apx_serverSocketConnection.h"
-#include "apx_eventFile.h"
 #include "rmf.h"
 #ifdef _WIN32
 #include <Windows.h>
