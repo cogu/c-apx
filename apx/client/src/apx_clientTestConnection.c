@@ -299,6 +299,7 @@ static int32_t apx_clientTestConnection_send(void *arg, int32_t offset, int32_t 
          {
             adt_ary_push(self->transmitLog, self->pendingMsg);
             self->pendingMsg = 0;
+            return msgLen;
          }
       }
    }

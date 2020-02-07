@@ -144,6 +144,36 @@ int32_t rmf_unpackMsg(const uint8_t *buf, int32_t bufLen, rmf_msg_t *msg)
    return -1;
 }
 
+uint32_t rmf_unpackAddress(const uint8_t *buf, int32_t bufLen)
+{
+   if ((buf != 0) && (bufLen > 0) )
+   {
+      int32_t addressLen;
+      uint32_t addressMask;
+      uint32_t retval;
+      uint8_t c = (uint8_t) *buf;
+      bool high_bit = (c & HIGH_BIT_MASK) ? true : false;
+      if (high_bit)
+      {
+         addressLen = (int32_t) sizeof(uint32_t);
+         addressMask = (uint32_t) ADDRESS_MASK_HIGH;
+      }
+      else
+      {
+         addressLen = (int32_t) sizeof(uint16_t);
+         addressMask = (uint32_t) ADDRESS_MASK_LOW;
+      }
+      if (bufLen < addressLen)
+      {
+         return RMF_INVALID_ADDRESS; //not enough bytes
+      }
+      retval = unpackBE(buf, (uint8_t) addressLen);
+      retval &= addressMask;
+      return retval;
+   }
+   return RMF_INVALID_ADDRESS;
+}
+
 
 /**
  * On failure: returns 0 if buffer is too small, -1 on any other error

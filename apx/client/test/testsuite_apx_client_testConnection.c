@@ -27,6 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
+#include "pack.h"
 #include "apx_client.h"
 #include "apx_clientTestConnection.h"
 #include "apx_clientEventListenerSpy.h"
@@ -56,6 +57,7 @@ static void test_connectAndDisconnectEvents(CuTest* tc);
 static void test_transmitHandlerInitializedOnConnectionAttach(CuTest* tc);
 static void test_localNodesShallBeAttachedToConnectionNodeManager(CuTest* tc);
 static void test_localNodesShallBeAttachedToConnectionFileManager(CuTest* tc);
+static void test_fileOpenNotifyHandlerIsRegisteredWhenNodesAreConnectedToFileManager(CuTest* tc);
 static void test_headerSentOnConnect(CuTest* tc);
 static void test_headerAcceptedEventTriggered(CuTest* tc);
 static void test_localFileInfoShallBeSentAfterHeaderAcknowledge(CuTest* tc);
@@ -79,10 +81,11 @@ CuSuite* testSuite_apx_client_testConnection(void)
    SUITE_ADD_TEST(suite, test_transmitHandlerInitializedOnConnectionAttach);
    SUITE_ADD_TEST(suite, test_localNodesShallBeAttachedToConnectionNodeManager);
    SUITE_ADD_TEST(suite, test_localNodesShallBeAttachedToConnectionFileManager);
+   SUITE_ADD_TEST(suite, test_fileOpenNotifyHandlerIsRegisteredWhenNodesAreConnectedToFileManager);
    SUITE_ADD_TEST(suite, test_headerSentOnConnect);
    SUITE_ADD_TEST(suite, test_headerAcceptedEventTriggered);
    SUITE_ADD_TEST(suite, test_localFileInfoShallBeSentAfterHeaderAcknowledge);
-   //SUITE_ADD_TEST(suite, test_definitionFileIsSentWhenServerSendsFileOpenRequest);
+   SUITE_ADD_TEST(suite, test_definitionFileIsSentWhenServerSendsFileOpenRequest);
 
    return suite;
 }
@@ -162,6 +165,19 @@ static void test_localNodesShallBeAttachedToConnectionFileManager(CuTest* tc)
    apx_fileManager2_t *fileManager = apx_client_getFileManager(client);
    CuAssertIntEquals(tc, 4, apx_fileManager2_getNumLocalFiles(fileManager));
    apx_client_delete(client);
+}
+
+static void test_fileOpenNotifyHandlerIsRegisteredWhenNodesAreConnectedToFileManager(CuTest* tc)
+{
+   apx_client_t *client = apx_client_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition2));
+   apx_clientTestConnection_t *connection = apx_clientTestConnection_new();
+   apx_client_attachConnection(client, &connection->base);
+   apx_fileManager2_t *fileManager = apx_client_getFileManager(client);
+   CuAssertIntEquals(tc, 4, apx_fileManager2_getNumLocalFiles(fileManager));
+   apx_client_delete(client);
+
 }
 
 static void test_headerSentOnConnect(CuTest* tc)
@@ -273,10 +289,10 @@ static void test_definitionFileIsSentWhenServerSendsFileOpenRequest(CuTest* tc)
 {
    apx_clientTestConnection_t *connection;
    apx_client_t *client;
-   adt_bytearray_t *msg;
-   const uint8_t *data;
+   const uint8_t *msgData;
    rmf_cmdOpenFile_t fileOpenCmd;
-   int32_t dataLen;
+   uint32_t msgSize;
+   uint32_t expectedDataLen;
 
    client = apx_client_new();
    CuAssertPtrNotNull(tc, client);
@@ -287,10 +303,22 @@ static void test_definitionFileIsSentWhenServerSendsFileOpenRequest(CuTest* tc)
    apx_client_attachConnection(client, (apx_clientConnectionBase_t*) connection);
 
    apx_clientTestConnection_connect(connection);
+   apx_clientTestConnection_clearTransmitLog(connection);
    //We know the definition file is located at address defined by APX_ADDRESS_DEFINITION_START. Let's just open the file from server side.
 
-   fileOpenCmd.address = 0u;
+   fileOpenCmd.address = APX_ADDRESS_DEFINITION_START;
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_clientTestConnection_onFileOpenMsgReceived(connection, &fileOpenCmd));
+   CuAssertIntEquals(tc, 0, apx_clientTestConnection_getTransmitLogLen(connection));
+   apx_client_run(client);
+   CuAssertIntEquals(tc, 1, apx_clientTestConnection_getTransmitLogLen(connection));
+   adt_bytearray_t *transmittedMsg = apx_clientTestConnection_getTransmitLogMsg(connection, 0);
+   CuAssertPtrNotNull(tc, transmittedMsg);
+   msgData = (const uint8_t*) adt_bytearray_data(transmittedMsg);
+   msgSize = adt_bytearray_length(transmittedMsg);
+   expectedDataLen = (uint32_t) strlen(m_apx_definition1);
+   CuAssertUIntEquals(tc, RMF_HIGH_ADDRESS_SIZE+expectedDataLen, msgSize);
+   CuAssertUIntEquals(tc, APX_ADDRESS_DEFINITION_START, rmf_unpackAddress(msgData, RMF_HIGH_ADDRESS_SIZE));
+   CuAssertIntEquals(tc, 0, memcmp(&msgData[RMF_HIGH_ADDRESS_SIZE], m_apx_definition1, expectedDataLen));
 
    apx_client_delete(client);
 }

@@ -44,13 +44,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_nodeInstance_writeDefinitionFileHandler(void *arg, apx_file2_t *file, uint32_t offset, const uint8_t *src, uint32_t len, bool more);
-static apx_error_t apx_nodeInstance_readDefinitionFileHandler(void *arg, struct apx_file2_tag *file, uint32_t offset, uint8_t *dest, uint32_t len);
-static apx_error_t apx_nodeInstance_writeProvidePortDataFileHandler(void *arg, apx_file2_t *file, uint32_t offset, const uint8_t *src, uint32_t len, bool more);
-static apx_error_t apx_nodeInstance_readProvidePortDataFileHandler(void *arg, struct apx_file2_tag *file, uint32_t offset, uint8_t *dest, uint32_t len);
-static apx_error_t apx_nodeInstance_writeRequirePortDataFileHandler(void *arg, apx_file2_t *file, uint32_t offset, const uint8_t *src, uint32_t len, bool more);
-static apx_error_t apx_nodeInstance_readRequirePortDataFileHandler(void *arg, struct apx_file2_tag *file, uint32_t offset, uint8_t *dest, uint32_t len);
+static apx_error_t apx_nodeInstance_definitionFileWriteNotify(void *arg, apx_file2_t *file, uint32_t offset, const uint8_t *src, uint32_t len);
+static apx_error_t apx_nodeInstance_definitionFileOpenNotify(void *arg, struct apx_file2_tag *file);
+static apx_error_t apx_nodeInstance_definitionFileReadData(void *arg, apx_file2_t*file, uint32_t offset, uint8_t *dest, uint32_t len);
 static apx_error_t apx_nodeInstance_createFileInfo(apx_nodeInstance_t *self, const char *fileExtension, uint32_t fileSize, apx_fileInfo_t *fileInfo);
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -278,15 +276,21 @@ apx_nodeInfo_t *apx_nodeInstane_getNodeInfo(apx_nodeInstance_t *self)
    return (apx_nodeInfo_t*) 0;
 }
 
-void apx_nodeInstance_initDefinitionFileHandler(apx_nodeInstance_t *self, apx_file2_t *file, bool readonly)
+void apx_nodeInstance_registerDefinitionFileHandler(apx_nodeInstance_t *self, apx_file2_t *file)
 {
-   if (self != 0)
+   if ( (self != 0) && (file != 0) )
    {
-      apx_file_handler_t handler;
+      apx_fileNotificationHandler_t handler = {0, 0, 0};
       handler.arg = (void*) self;
-      handler.read = apx_nodeInstance_readDefinitionFileHandler;
-      handler.write = readonly? (apx_file_write_func*) 0 : apx_nodeInstance_writeDefinitionFileHandler;
-      apx_file2_setHandler(file, &handler);
+      if (apx_file2_isRemoteFile(file))
+      {
+         handler.writeNotify = apx_nodeInstance_definitionFileWriteNotify;
+      }
+      else
+      {
+         handler.openNotify = apx_nodeInstance_definitionFileOpenNotify;
+      }
+      apx_file2_setNotificationHandler(file, &handler);
       self->definitionFile = file;
    }
 }
@@ -437,7 +441,8 @@ apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static apx_error_t apx_nodeInstance_writeDefinitionFileHandler(void *arg, apx_file2_t *file, uint32_t offset, const uint8_t *src, uint32_t len, bool more)
+
+static apx_error_t apx_nodeInstance_definitionFileWriteNotify(void *arg, apx_file2_t *file, uint32_t offset, const uint8_t *src, uint32_t len)
 {
    (void) file;
    apx_nodeInstance_t *self = (apx_nodeInstance_t*) arg;
@@ -448,16 +453,42 @@ static apx_error_t apx_nodeInstance_writeDefinitionFileHandler(void *arg, apx_fi
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t apx_nodeInstance_readDefinitionFileHandler(void *arg, struct apx_file2_tag *file, uint32_t offset, uint8_t *dest, uint32_t len)
+#include <stdio.h>
+
+static apx_error_t apx_nodeInstance_definitionFileOpenNotify(void *arg, struct apx_file2_tag *file)
 {
-   (void) file;
+   apx_nodeInstance_t *self;
+   self = (apx_nodeInstance_t*) arg;
+   if (self != 0)
+   {
+      if (self->definitionFile == 0)
+      {
+         self->definitionFile = file;
+      }
+      assert(file->fileManager != 0);
+      return apx_fileManager2_writeConstData(apx_file2_getFileManager(file), apx_file2_getStartAddress(file), apx_file2_getFileSize(file), apx_nodeInstance_definitionFileReadData, (void*) self);
+   }
+   return APX_NO_ERROR;
+}
+
+static apx_error_t apx_nodeInstance_definitionFileReadData(void *arg, apx_file2_t*file, uint32_t offset, uint8_t *dest, uint32_t len)
+{
    apx_nodeInstance_t *self = (apx_nodeInstance_t*) arg;
    if (self != 0)
    {
-      return apx_nodeData2_readDefinitionData(self->nodeData, dest, offset, len);
+      apx_nodeData2_t *nodeData = apx_nodeInstance_getNodeData(self);
+      if (nodeData != 0)
+      {
+         return apx_nodeData2_readDefinitionData(nodeData, dest, offset, len);
+      }
+      else
+      {
+         return APX_NULL_PTR_ERROR;
+      }
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
 
 static apx_error_t apx_nodeInstance_createFileInfo(apx_nodeInstance_t *self, const char *fileExtension, uint32_t fileSize, apx_fileInfo_t *fileInfo)
 {

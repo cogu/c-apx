@@ -576,7 +576,7 @@ static apx_error_t apx_serverConnectionBase_processNewDefinitionFile(apx_serverC
                      apx_file2_t *remoteFile = apx_fileManager2_findFileByAddress(&self->base.fileManager, fileInfo->address);
                      if (remoteFile != 0)
                      {
-                        apx_nodeInstance_initDefinitionFileHandler(nodeInstance, remoteFile, false);
+                        apx_nodeInstance_registerDefinitionFileHandler(nodeInstance, remoteFile);
                         retval = apx_fileManager2_requestOpenFile(&self->base.fileManager, fileInfo->address);
                      }
                      else

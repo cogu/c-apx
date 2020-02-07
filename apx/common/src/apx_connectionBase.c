@@ -216,7 +216,7 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
    if (self != 0 && nodeInstance != 0)
    {
       apx_fileInfo_t fileInfo;
-      apx_error_t rc;
+      apx_error_t rc = APX_NO_ERROR;
       int32_t numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
       apx_nodeManager_attachNode(&self->nodeManager, nodeInstance);
       apx_nodeInstance_setConnection(nodeInstance, self);
@@ -225,15 +225,23 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
          rc = apx_nodeInstance_createProvidePortDataFileInfo(nodeInstance, &fileInfo);
          if (rc == APX_NO_ERROR)
          {
-            apx_fileManager2_createLocalFile(&self->fileManager, &fileInfo);
+            apx_file2_t *localFile = apx_fileManager2_createLocalFile(&self->fileManager, &fileInfo);
             apx_fileInfo_destroy(&fileInfo);
+            if (localFile != 0)
+            {
+               ///TODO: apx_nodeInstance_registerOutPorrtDataFileHandler(nodeInstance, localFile);
+            }
          }
       }
       rc = apx_nodeInstance_createDefinitionFileInfo(nodeInstance, &fileInfo);
       if (rc == APX_NO_ERROR)
       {
-         apx_fileManager2_createLocalFile(&self->fileManager, &fileInfo);
+         apx_file2_t *localFile = apx_fileManager2_createLocalFile(&self->fileManager, &fileInfo);
          apx_fileInfo_destroy(&fileInfo);
+         if (localFile != 0)
+         {
+            apx_nodeInstance_registerDefinitionFileHandler(nodeInstance, localFile);
+         }
       }
    }
 }
@@ -658,6 +666,17 @@ void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *se
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->eventListenerMutex);
+}
+
+/*** Internal callback API ***/
+
+apx_error_t apx_connectionBaseInternal_onFileOpenNotify(apx_connectionBase_t *self, uint32_t address)
+{
+   if (self != 0 )
+   {
+      return apx_fileManager2_onFileOpenNotify(&self->fileManager, address);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 

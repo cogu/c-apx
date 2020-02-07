@@ -69,14 +69,14 @@ int8_t apx_fileMap_insertFile(apx_fileMap_t *self, apx_file2_t *pFile)
          //attempt to automatically assign an address to the new file
          switch(pFile->fileType)
          {
-         case APX_UNKNOWN_FILE:
+         case APX_UNKNOWN_FILE_TYPE:
             return -1;
-         case APX_OUTDATA_FILE: //intentional fall-trough
-         case APX_INDATA_FILE:
+         case APX_OUTDATA_FILE_TYPE: //intentional fall-trough
+         case APX_INDATA_FILE_TYPE:
             return apx_fileMap_autoInsertFile(self, pFile, PORT_DATA_START, DEFINITION_START, PORT_DATA_BOUNDARY);
-         case APX_DEFINITION_FILE:
+         case APX_DEFINITION_FILE_TYPE:
             return apx_fileMap_autoInsertFile(self, pFile, DEFINITION_START, USER_DATA_START, DEFINITION_BOUNDARY);
-         case APX_USER_DATA_FILE:
+         case APX_CUSTOM_FILE_TYPE_BEGIN:
             return apx_fileMap_autoInsertFile(self, pFile, USER_DATA_START, USER_DATA_END, USER_DATA_BOUNDARY);
          }
       }

@@ -272,7 +272,7 @@ apx_error_t apx_clientConnectionBaseInternal_onFileOpenMsgReceived(apx_clientCon
 {
    if ( (self != 0) && (openFileCmd != 0))
    {
-      return APX_NOT_IMPLEMENTED_ERROR;
+      return apx_connectionBaseInternal_onFileOpenNotify(self, openFileCmd->address);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

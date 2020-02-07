@@ -182,7 +182,12 @@ apx_file2_t *apx_fileManager2_createLocalFile(apx_fileManager2_t *self, const ap
 {
    if (self != 0)
    {
-      return apx_fileManagerShared2_createLocalFile(&self->shared, fileInfo);
+      apx_file2_t *file = apx_fileManagerShared2_createLocalFile(&self->shared, fileInfo);
+      if (file != 0)
+      {
+         apx_file2_setFileManager(file, self);
+      }
+      return file;
    }
    return (apx_file2_t*) 0;
 }
@@ -191,11 +196,38 @@ apx_file2_t *apx_fileManager2_createRemoteFile(apx_fileManager2_t *self, const a
 {
    if (self != 0)
    {
-      return apx_fileManagerShared2_createRemoteFile(&self->shared, fileInfo);
+      apx_file2_t *file = apx_fileManagerShared2_createRemoteFile(&self->shared, fileInfo);
+      if (file != 0)
+      {
+         apx_file2_setFileManager(file, self);
+      }
+      return file;
    }
    return (apx_file2_t*) 0;
 }
 
+apx_error_t apx_fileManager2_onFileOpenNotify(apx_fileManager2_t *self, uint32_t address)
+{
+   if (self != 0)
+   {
+      apx_file2_t *file = apx_fileManager2_findFileByAddress(self, address & RMF_ADDRESS_MASK_INTERNAL);
+      if (file != 0)
+      {
+         apx_file2_open(file);
+         return apx_file2_fileOpenNotify(file);
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_fileManager2_writeConstData(apx_fileManager2_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg)
+{
+   if (self != 0)
+   {
+      return apx_fileManagerWorker_sendConstData(&self->worker, address, len, readFunc, arg);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 #ifdef UNIT_TEST
 bool apx_fileManager2_run(apx_fileManager2_t *self)
