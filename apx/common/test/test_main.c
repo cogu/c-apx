@@ -20,6 +20,7 @@ CuSuite* testSuite_apx_eventLoop(void);
 CuSuite* testSuite_apx_file2(void);
 CuSuite* testSuite_apx_fileManagerShared(void);
 CuSuite* testSuite_apx_fileManagerWorker(void);
+CuSuite* testSuite_apx_fileManagerReceiver(void);
 CuSuite* testSuite_apx_fileManager(void);
 CuSuite* testSuite_apx_fileMap(void);
 CuSuite* testSuite_apx_node(void);
@@ -82,10 +83,10 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_file2());
    CuSuiteAddSuite(suite, testSuite_apx_fileMap());
    //File Manager
-   CuSuiteAddSuite(suite, testSuite_apx_fileManager());
    CuSuiteAddSuite(suite, testSuite_apx_fileManagerShared());
    CuSuiteAddSuite(suite, testSuite_apx_fileManagerWorker());
-
+   CuSuiteAddSuite(suite, testSuite_apx_fileManagerReceiver());
+   CuSuiteAddSuite(suite, testSuite_apx_fileManager());
 
 
    // APX Server
