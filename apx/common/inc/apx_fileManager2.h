@@ -76,14 +76,15 @@ apx_error_t apx_fileManager2_requestOpenFile(apx_fileManager2_t *self, uint32_t 
 void apx_fileManager2_setConnectionId(apx_fileManager2_t *self, uint32_t connectionId);
 int32_t apx_fileManager2_getNumLocalFiles(apx_fileManager2_t *self);
 int32_t apx_fileManager2_getNumRemoteFiles(apx_fileManager2_t *self);
-apx_file2_t *apx_fileManager2_createLocalFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
-apx_file2_t *apx_fileManager2_createRemoteFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
 
-//Remote actions
+//Actions triggered by remote side
+apx_error_t apx_fileManager2_messageReceived(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen);
 apx_error_t apx_fileManager2_onFileOpenNotify(apx_fileManager2_t *self, uint32_t address);
+apx_file2_t *apx_fileManager2_onFileInfoNotify(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
 
-//Local actions
+//Actions triggered on local side
 apx_error_t apx_fileManager2_writeConstData(apx_fileManager2_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg);
+apx_file2_t *apx_fileManager2_createLocalFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
 
 #ifdef UNIT_TEST
 bool apx_fileManager2_run(apx_fileManager2_t *self);

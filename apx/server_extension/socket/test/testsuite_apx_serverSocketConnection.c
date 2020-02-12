@@ -37,9 +37,9 @@
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_serverSocketConnection_create(CuTest* tc);
 static void test_apx_serverSocketConnection_transmitHandlerSetup(CuTest* tc);
-static void test_apx_serverSocketConnection_sendAckAfterReceivingHeader(CuTest* tc);
-static void test_apx_serverSocketConnection_sendFileOpenAfterPresentedApxDefinition(CuTest *tc);
-static void test_apx_serverSocketConnection_processApxDefinitionAfterWrite(CuTest *tc);
+static void test_apx_serverSocketConnection_serverSendsAckAfterAcceptingHeaderFromClient(CuTest* tc);
+static void test_apx_serverSocketConnection_serverOpensFileAfterApxFileInfoReceived(CuTest *tc);
+static void test_apx_serverSocketConnection_serverProcessesApxDefinitionAfterWrite(CuTest *tc);
 static void sendHeader(testsocket_t *sock);
 static void sendFileInfoNoCheckSum(CuTest* tc, testsocket_t *sock, const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType);
 static void verifyAcknowledge(CuTest* tc, testsocket_t *sock);
@@ -72,9 +72,9 @@ CuSuite* testSuite_apx_serverSocketConnection(void)
    CuSuite* suite = CuSuiteNew();
    SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_create);
    SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_transmitHandlerSetup);
-   SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_sendAckAfterReceivingHeader);
-   SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_sendFileOpenAfterPresentedApxDefinition);
-   SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_processApxDefinitionAfterWrite);
+   SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_serverSendsAckAfterAcceptingHeaderFromClient);
+   SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_serverOpensFileAfterApxFileInfoReceived);
+   SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_serverProcessesApxDefinitionAfterWrite);
    return suite;
 }
 
@@ -84,16 +84,11 @@ CuSuite* testSuite_apx_serverSocketConnection(void)
 static void test_apx_serverSocketConnection_create(CuTest* tc)
 {
    apx_serverSocketConnection_t conn;
-   testsocket_t *sock1, *sock2;
+   testsocket_t *sock1;
    sock1 = testsocket_new(); //apx_serverSocketConnection_t takes ownership of this object. No need to manually delete it
-   sock2 = testsocket_new();
    CuAssertIntEquals(tc, 0, apx_serverSocketConnection_create(&conn, sock1));
    CuAssertUIntEquals(tc, 0, conn.base.base.connectionId);
    CuAssertPtrEquals(tc, sock1, conn.socketObject);
-   apx_serverSocketConnection_destroy(&conn);
-   CuAssertIntEquals(tc, 0, apx_serverSocketConnection_create(&conn, sock2));
-   CuAssertUIntEquals(tc, 0, conn.base.base.connectionId);
-   CuAssertPtrEquals(tc, sock2, conn.socketObject);
    apx_serverSocketConnection_destroy(&conn);
 }
 
@@ -107,12 +102,14 @@ static void test_apx_serverSocketConnection_transmitHandlerSetup(CuTest* tc)
    conn = apx_serverSocketConnection_new(sock);
    CuAssertPtrNotNull(tc, conn);
    fileManager = &conn->base.base.fileManager;
+   CuAssertPtrNotNull(tc, fileManager->worker.transmitHandler.arg);
    CuAssertPtrNotNull(tc, fileManager->worker.transmitHandler.send);
+   CuAssertPtrNotNull(tc, fileManager->worker.transmitHandler.getSendBuffer);
    apx_serverSocketConnection_delete(conn);
    testsocket_spy_destroy();
 }
 
-static void test_apx_serverSocketConnection_sendAckAfterReceivingHeader(CuTest* tc)
+static void test_apx_serverSocketConnection_serverSendsAckAfterAcceptingHeaderFromClient(CuTest* tc)
 {
    apx_server_t server;
    testsocket_t *sock;
@@ -130,7 +127,7 @@ static void test_apx_serverSocketConnection_sendAckAfterReceivingHeader(CuTest* 
    testsocket_spy_destroy();
 }
 
-static void test_apx_serverSocketConnection_sendFileOpenAfterPresentedApxDefinition(CuTest *tc)
+static void test_apx_serverSocketConnection_serverOpensFileAfterApxFileInfoReceived(CuTest *tc)
 {
    apx_server_t server;
    testsocket_t *sock;
@@ -144,20 +141,20 @@ static void test_apx_serverSocketConnection_sendFileOpenAfterPresentedApxDefinit
    sendHeader(sock);
    SERVER_RUN(&server, sock);
    verifyAcknowledge(tc, sock);
-   sendFileInfoNoCheckSum(tc, sock, "TestNode.apx", 0x10000, (uint32_t) strlen(m_TestNodeDefinition), RMF_FILE_TYPE_FIXED);
+   sendFileInfoNoCheckSum(tc, sock, "TestNode.apx", APX_ADDRESS_DEFINITION_START, (uint32_t) strlen(m_TestNodeDefinition), RMF_FILE_TYPE_FIXED);
    SERVER_RUN(&server, sock);
-   verifyFileOpenRequest(tc, sock, 0x10000);
+   verifyFileOpenRequest(tc, sock, APX_ADDRESS_DEFINITION_START);
    apx_server_destroy(&server);
    testsocket_spy_destroy();
 }
 
-static void test_apx_serverSocketConnection_processApxDefinitionAfterWrite(CuTest *tc)
+static void test_apx_serverSocketConnection_serverProcessesApxDefinitionAfterWrite(CuTest *tc)
 {
    apx_server_t server;
    testsocket_t *sock;
-   const uint8_t expectedInPortDataMsg[NUMHEADER32_SHORT_SIZE+RMF_LOW_ADDRESS_SIZE+2] = {4, 0, 0, 0xFF, 0xFF};
-   uint32_t definitionAddress = 0x10000;
-   uint32_t inDataFileAddress = 0x0;
+   //const uint8_t expectedInPortDataMsg[NUMHEADER32_SHORT_SIZE+RMF_LOW_ADDRESS_SIZE+2] = {4, 0, 0, 0xFF, 0xFF};
+   uint32_t definitionAddress = APX_ADDRESS_DEFINITION_START;
+   //uint32_t inDataFileAddress = 0x0;
    uint32_t dummy;
    testsocket_spy_create();
    sock = testsocket_spy_client();
@@ -173,12 +170,14 @@ static void test_apx_serverSocketConnection_processApxDefinitionAfterWrite(CuTes
    SERVER_RUN(&server, sock);
    verifyFileOpenRequest(tc, sock, definitionAddress);
    CuAssertPtrEquals(tc, NULL, (void*) testsocket_spy_getReceivedData(&dummy));
-   sendFileContent(tc, sock, 0x10000);
+   sendFileContent(tc, sock, definitionAddress);
    SERVER_RUN(&server, sock);
+/*
    verifyFileInfoResponse(tc, "TestNode.in", inDataFileAddress, 2);
    sendFileOpenRequest(tc, sock, inDataFileAddress);
    SERVER_RUN(&server, sock);
    verifyFileWrite(tc, sock, inDataFileAddress, &expectedInPortDataMsg[0], (uint32_t) sizeof(expectedInPortDataMsg));
+*/
    apx_server_destroy(&server);
    testsocket_spy_destroy();
 }

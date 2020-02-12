@@ -126,7 +126,7 @@ bool apx_fileManagerReceiver_isOngoing(apx_fileManagerReceiver_t *self)
    return false;
 }
 
-apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, uint32_t address, uint8_t *data, uint8_t size, bool moreBit)
+apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, uint8_t size, bool moreBit)
 {
    if ( (self != 0) && (data != 0) && (address < RMF_INVALID_ADDRESS) )
    {

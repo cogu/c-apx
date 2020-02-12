@@ -98,7 +98,7 @@ static void apx_serverSocketConnection_disconnected(void *arg);
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_serverSocketConnection_create(apx_serverSocketConnection_t *self, SOCKET_TYPE *socketObject)
 {
-   if (self != 0)
+   if ( (self != 0) && (socketObject != 0) )
    {
       apx_connectionBaseVTable_t vtable;
       apx_connectionBaseVTable_create(&vtable, apx_serverSocketConnection_vdestroy, apx_serverSocketConnection_vstart, apx_serverSocketConnection_vclose, apx_serverSocketConnection_vfillTransmitHandler);
@@ -131,17 +131,21 @@ void apx_serverSocketConnection_vdestroy(void *arg)
 
 apx_serverSocketConnection_t *apx_serverSocketConnection_new(SOCKET_TYPE *socketObject)
 {
-   apx_serverSocketConnection_t *self = (apx_serverSocketConnection_t*) malloc(sizeof(apx_serverSocketConnection_t));
-   if (self != 0)
+   if (socketObject != 0)
    {
-      int8_t result = apx_serverSocketConnection_create(self, socketObject);
-      if (result != 0)
+      apx_serverSocketConnection_t *self = (apx_serverSocketConnection_t*) malloc(sizeof(apx_serverSocketConnection_t));
+      if (self != 0)
       {
-         free(self);
-         self = (apx_serverSocketConnection_t*) 0;
+         int8_t result = apx_serverSocketConnection_create(self, socketObject);
+         if (result != 0)
+         {
+            free(self);
+            self = (apx_serverSocketConnection_t*) 0;
+         }
       }
+      return self;
    }
-   return self;
+   return (apx_serverSocketConnection_t*) 0;
 }
 
 void apx_serverSocketConnection_delete(apx_serverSocketConnection_t *self)
@@ -305,7 +309,7 @@ static int32_t apx_serverSocketConnection_send(void *arg, int32_t offset, int32_
 static int8_t apx_serverSocketConnection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
 {
    apx_serverSocketConnection_t *self = (apx_serverSocketConnection_t*) arg;
-   //printf("Received %d bytes\n", (int) dataLen);
+   //printf("[SERVER_SOCKET_CONNECTION] Received %d bytes\n", (int) dataLen);
    return apx_serverConnectionBase_dataReceived(&self->base, dataBuf, dataLen, parseLen);
 }
 

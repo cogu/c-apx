@@ -310,19 +310,6 @@ apx_fileType_t apx_file2_getApxFileType(const apx_file2_t *self)
    return APX_UNKNOWN_FILE_TYPE;
 }
 
-apx_error_t apx_file2_fileOpenNotify(apx_file2_t *self)
-{
-   if (self != 0)
-   {
-      if (self->notificationHandler.openNotify != 0)
-      {
-         return self->notificationHandler.openNotify(self->notificationHandler.arg, self);
-      }
-      return APX_INVALID_OPEN_HANDLER_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
 uint32_t apx_file2_getStartAddress(const apx_file2_t *self)
 {
    if (self != 0)
@@ -341,6 +328,31 @@ apx_size_t apx_file2_getFileSize(const apx_file2_t *self)
    return 0u;
 }
 
+apx_error_t apx_file2_fileOpenNotify(apx_file2_t *self)
+{
+   if (self != 0)
+   {
+      if (self->notificationHandler.openNotify != 0)
+      {
+         return self->notificationHandler.openNotify(self->notificationHandler.arg, self);
+      }
+      return APX_INVALID_OPEN_HANDLER_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file2_fileWriteNotify(apx_file2_t *self, uint32_t offset, const uint8_t *src, uint32_t len)
+{
+   if (self != 0)
+   {
+      if (self->notificationHandler.writeNotify != 0)
+      {
+         return self->notificationHandler.writeNotify(self->notificationHandler.arg, self, offset, src, len);
+      }
+      return APX_INVALID_WRITE_HANDLER_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////

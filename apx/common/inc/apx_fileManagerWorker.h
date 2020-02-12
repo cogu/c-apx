@@ -60,7 +60,7 @@ typedef struct apx_fileManagerWorker_tag
    adt_rbfh_t messages; //pending actions
    bool workerThreadValid; //Differences in Linux and Windows doesn't make it obvious if workerThread is valid without this flag
    apx_transmitHandler_t transmitHandler;
-   //int8_t headerSize; //Are we are running in 16-bit or 32-bit numheader mode?
+   int8_t numHeaderSize; //Number of bits used in numHeader (16 or 32)
    apx_mode_t mode; //server or client mode?
 #ifdef _WIN32
    unsigned int threadId;
@@ -76,13 +76,16 @@ typedef struct apx_fileManagerWorker_tag
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared2_t *shared, apx_mode_t mode);
 void apx_fileManagerWorker_destroy(apx_fileManagerWorker_t *self);
+
+//Direct API
 void apx_fileManagerWorker_setTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler);
 void apx_fileManagerWorker_copyTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler);
-apx_error_t apx_fileManagerWorker_processMessage(apx_fileManagerWorker_t *self, const uint8_t *msgBuf, int32_t msgLen);
+void apx_fileManagerWorker_setNumHeaderSize(apx_fileManagerWorker_t *self, uint8_t bits);
 
 //Message API
 void apx_fileManagerWorker_sendFileInfoMsg(apx_fileManagerWorker_t *self, apx_fileInfo_t *fileInfo);
 void apx_fileManagerWorker_sendFileOpenMsg(apx_fileManagerWorker_t *self, uint32_t address);
+apx_error_t apx_fileManagerWorker_sendHeaderAckMsg(apx_fileManagerWorker_t *self);
 apx_error_t apx_fileManagerWorker_sendConstData(apx_fileManagerWorker_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg);
 
 //UNIT TEST API

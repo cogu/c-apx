@@ -2,7 +2,6 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
-#include <errno.h>
 #ifndef APX_EMBEDDED
 #include <malloc.h>
 #include <assert.h>
@@ -220,8 +219,8 @@ int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_file
       char *pStrNext;
       char *pStrEnd;
       uint32_t totalLen;
-      uint32_t baseSize = (uint32_t) RMF_CMD_FILE_INFO_BASE_SIZE;
-      uint32_t cmdType;
+      uint32_t baseSize = (uint32_t) (RMF_CMD_FILE_INFO_BASE_SIZE-RMF_CMD_TYPE_LEN);
+
       pEnd = buf+bufLen;
       pStrNext = &fileInfo->name[0];
       pStrEnd = pStrNext+RMF_MAX_FILE_NAME; //it is intentional that we do not include the null terminator in this length
@@ -231,11 +230,6 @@ int32_t rmf_deserialize_cmdFileInfo(const uint8_t *buf, int32_t bufLen, rmf_file
          return 0; //buffer too small
       }
       pNext=buf;
-      cmdType = unpackLE(pNext, (uint8_t) sizeof(uint32_t)); pNext+=sizeof(uint32_t);
-      if (cmdType != RMF_CMD_FILE_INFO)
-      {
-         return -1; //invalid header start
-      }
       fileInfo->address = unpackLE(pNext, (uint8_t) sizeof(uint32_t)); pNext+=sizeof(uint32_t);
       fileInfo->length = unpackLE(pNext,  (uint8_t) sizeof(uint32_t)); pNext+=sizeof(uint32_t);
       fileInfo->fileType = (uint16_t) unpackLE(pNext,  (uint8_t) sizeof(uint16_t)); pNext+=sizeof(uint16_t);
@@ -294,20 +288,13 @@ int32_t rmf_deserialize_cmdOpenFile(const uint8_t *buf, int32_t bufLen, rmf_cmdO
    if ( (buf != 0) && (cmdOpenFile !=0) )
    {
       const uint8_t *p = buf;
-      uint32_t totalLen = sizeof(uint32_t)*2u;
-      uint32_t cmdType;
+      uint32_t totalLen = RMF_CMD_ADDRESS_LEN;
+
       if ((uint32_t) bufLen < totalLen )
       {
          return 0; //buffer too small
       }
-      cmdType = unpackLE(p, (uint8_t) sizeof(uint32_t));
-      p+=sizeof(uint32_t);
-      cmdOpenFile->address = unpackLE(p, (uint8_t) sizeof(uint32_t));
-      if(cmdType != RMF_CMD_FILE_OPEN)
-      {
-         //this is not the right deserializer
-         return -1;
-      }
+      cmdOpenFile->address = unpackLE(p, (uint8_t) RMF_CMD_ADDRESS_LEN);
       return totalLen;
    }
    return -1;
@@ -345,21 +332,14 @@ int32_t rmf_deserialize_cmdCloseFile(const uint8_t *buf, int32_t bufLen, rmf_cmd
    if ( (buf != 0) && (cmdCloseFile !=0) )
    {
       const uint8_t *p;
-      uint32_t totalLen = sizeof(uint32_t)*2u;
-      uint32_t cmdType;
+      uint32_t totalLen = RMF_CMD_ADDRESS_LEN;
+
       if ((uint32_t)bufLen < totalLen )
       {
          return 0; //buffer too small
       }
       p=buf;
-      cmdType = unpackLE(p, (uint8_t) sizeof(uint32_t));
-      p+=sizeof(uint32_t);
-      cmdCloseFile->address = unpackLE(p, (uint8_t) sizeof(uint32_t));
-      if(cmdType != RMF_CMD_FILE_CLOSE)
-      {
-         //this is not the right deserializer
-         return -1;
-      }
+      cmdCloseFile->address = unpackLE(p, (uint8_t) RMF_CMD_ADDRESS_LEN);
       return totalLen;
    }
    return -1;
@@ -373,7 +353,6 @@ int32_t rmf_deserialize_cmdType(const uint8_t *buf, int32_t bufLen, uint32_t *cm
    int32_t unpackLen = sizeof(uint32_t);
    if ( (buf == 0) || (cmdType == 0))
    {
-      errno=EINVAL;
       return -1;
    }
    if (bufLen < unpackLen)
@@ -383,51 +362,6 @@ int32_t rmf_deserialize_cmdType(const uint8_t *buf, int32_t bufLen, uint32_t *cm
    *cmdType = unpackLE(buf, (uint8_t) unpackLen);
    return unpackLen;
 }
-
-int32_t rmf_serialize_errorInvalidReadHandler(uint8_t *buf, int32_t bufLen, uint32_t address)
-{
-   if ( (buf != 0) && (address < RMF_DATA_HIGH_MAX_ADDR) )
-   {
-      uint8_t *p = buf;
-      const uint32_t totalLen = RMF_ERROR_INVALID_READ_HANDLER_LEN;
-
-      if ((uint32_t) bufLen < totalLen )
-      {
-         return 0; //buffer too small
-      }
-      packLE(p, RMF_ERROR_INVALID_READ_HANDLER, (uint8_t) RMF_CMD_TYPE_LEN);
-      p+=RMF_CMD_TYPE_LEN;
-      packLE(p, address, (uint8_t) RMF_CMD_ADDRESS_LEN);
-      return totalLen;
-   }
-   return -1;
-}
-
-int32_t rmf_deserialize_errorInvalidReadHandler(const uint8_t *buf, int32_t bufLen, uint32_t *address)
-{
-   if ( (buf != 0) && (address !=0) )
-   {
-      const uint8_t *p;
-      const uint32_t totalLen = RMF_ERROR_INVALID_READ_HANDLER_LEN;
-      uint32_t cmdType;
-      if ((uint32_t)bufLen < totalLen )
-      {
-         return 0; //buffer too small
-      }
-      p=buf;
-      cmdType = unpackLE(p, (uint8_t) RMF_CMD_TYPE_LEN);
-      p+=sizeof(uint32_t);
-      *address = unpackLE(p, (uint8_t) RMF_CMD_ADDRESS_LEN);
-      if(cmdType != RMF_ERROR_INVALID_READ_HANDLER)
-      {
-         //this is not the right deserializer
-         return -1;
-      }
-      return totalLen;
-   }
-   return -1;
-}
-
 
 
 int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType)
@@ -447,7 +381,6 @@ int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t star
       memset(&self->digestData, 0, RMF_DIGEST_SIZE);
       return 0;
    }
-   errno = EINVAL;
    return -1;
 }
 void rmf_fileInfo_destroy(rmf_fileInfo_t *self)
@@ -468,10 +401,6 @@ rmf_fileInfo_t *rmf_fileInfo_new(const char *name, uint32_t startAddress, uint32
          free(self);
          self=0;
       }
-   }
-   else
-   {
-      errno = ENOMEM;
    }
    return self;
 }
@@ -501,7 +430,6 @@ int8_t rmf_fileInfo_setDigestData(rmf_fileInfo_t *info, uint16_t digestType, con
       memcpy(info->digestData, digestData, RMF_DIGEST_SIZE);
       return 0;
    }
-   errno = EINVAL;
    return -1;
 }
 

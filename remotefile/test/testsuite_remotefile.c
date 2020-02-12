@@ -78,7 +78,7 @@ static void test_rmf_cmdFileInfo_serialize(CuTest* tc)
    p+=RMF_DIGEST_SIZE;
    CuAssertStrEquals(tc,&cmdFileInfo.name[0],(char*) p);
 
-   result = rmf_deserialize_cmdFileInfo(buf,result,&cmdFileInfo2);
+   CuAssertIntEquals(tc, RMF_CMD_FILE_INFO_BASE_SIZE-RMF_CMD_TYPE_LEN+strlen("test.data")+1, rmf_deserialize_cmdFileInfo(buf+RMF_CMD_TYPE_LEN,result-RMF_CMD_TYPE_LEN,&cmdFileInfo2));
    CuAssertUIntEquals(tc,cmdFileInfo.address,cmdFileInfo2.address);
    CuAssertUIntEquals(tc,cmdFileInfo.length,cmdFileInfo2.length);
    CuAssertUIntEquals(tc,cmdFileInfo.fileType,cmdFileInfo2.fileType);
@@ -105,7 +105,8 @@ static void test_rmf_cmdOpenFile_serialize(CuTest* tc)
    p=buf;
    CuAssertUIntEquals(tc,RMF_CMD_FILE_OPEN,unpackLE(p,4)); p+=4;
    CuAssertUIntEquals(tc,cmdOpenFile.address,unpackLE(p,4)); p+=4;
-   result = rmf_deserialize_cmdOpenFile(buf,result,&cmdOpenFile2);
+   result = rmf_deserialize_cmdOpenFile(buf+RMF_CMD_TYPE_LEN,result-RMF_CMD_TYPE_LEN,&cmdOpenFile2);
+   CuAssertIntEquals(tc, RMF_CMD_ADDRESS_LEN, result);
    CuAssertUIntEquals(tc, cmdOpenFile.address, cmdOpenFile2.address);
 }
 
@@ -124,6 +125,7 @@ static void test_rmf_cmdCloseFile_serialize(CuTest* tc)
    p=buf;
    CuAssertUIntEquals(tc,RMF_CMD_FILE_CLOSE,unpackLE(p,4)); p+=4;
    CuAssertUIntEquals(tc,cmd.address,unpackLE(p,4)); p+=4;
-   result = rmf_deserialize_cmdCloseFile(buf,result,&cmd2);
+   result = rmf_deserialize_cmdCloseFile(buf + RMF_CMD_TYPE_LEN, result - RMF_CMD_TYPE_LEN, &cmd2);
+   CuAssertIntEquals(tc, RMF_CMD_ADDRESS_LEN, result);
    CuAssertUIntEquals(tc, cmd.address, cmd2.address);
 }

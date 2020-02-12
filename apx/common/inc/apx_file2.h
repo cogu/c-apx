@@ -114,6 +114,7 @@ uint32_t apx_file2_getStartAddress(const apx_file2_t *self);
 apx_size_t apx_file2_getFileSize(const apx_file2_t *self);
 
 apx_error_t apx_file2_fileOpenNotify(apx_file2_t *self);
+apx_error_t apx_file2_fileWriteNotify(apx_file2_t *self, uint32_t offset, const uint8_t *src, uint32_t len);
 
 #endif //APX_FILE2_H
 

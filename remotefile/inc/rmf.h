@@ -38,8 +38,7 @@
 
 #define RMF_LOW_ADDRESS_SIZE 2u
 #define RMF_HIGH_ADDRESS_SIZE 4u
-#define RMF_MAX_HEADER_SIZE RMF_HIGH_ADDRESS_SIZE
-#define RMF_CMD_HEADER_LEN         4u
+#define RMF_MAX_HEADER_SIZE        RMF_HIGH_ADDRESS_SIZE
 #define RMF_CMD_TYPE_LEN           4u
 #define RMF_CMD_ADDRESS_LEN        4u
 #define RMF_CMD_FILE_INFO_BASE_SIZE (RMF_CMD_TYPE_LEN+RMF_CMD_ADDRESS_LEN+4+2+2+RMF_DIGEST_SIZE) //48 bytes total
@@ -147,8 +146,6 @@ int32_t rmf_serialize_cmdCloseFile(uint8_t *buf, int32_t bufLen, rmf_cmdCloseFil
 int32_t rmf_deserialize_cmdCloseFile(const uint8_t *buf, int32_t bufLen, rmf_cmdCloseFile_t *cmdCloseFile);
 int32_t rmf_deserialize_cmdType(const uint8_t *buf, int32_t bufLen, uint32_t *cmdType);
 int32_t rmf_serialize_acknowledge(uint8_t *buf, int32_t bufLen);
-int32_t rmf_serialize_errorInvalidReadHandler(uint8_t *buf, int32_t bufLen, uint32_t address);
-int32_t rmf_deserialize_errorInvalidReadHandler(const uint8_t *buf, int32_t bufLen, uint32_t *address);
 
 /* rmf_fileInfo_t API */
 int8_t rmf_fileInfo_create(rmf_fileInfo_t *self, const char *name, uint32_t startAddress, uint32_t length, uint16_t fileType);
