@@ -272,7 +272,7 @@ apx_error_t apx_clientConnectionBaseInternal_onFileOpenMsgReceived(apx_clientCon
 {
    if ( (self != 0) && (openFileCmd != 0))
    {
-      return apx_connectionBaseInternal_onFileOpenNotify(self, openFileCmd->address);
+      return apx_connectionBaseInternal_onFileOpenNotify(&self->base, openFileCmd->address);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -316,7 +316,7 @@ static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBas
    if (pResult>pNext)
    {
       uint32_t headerLen = (uint32_t) (pResult-pNext);
-      if (msgLen > APX_MAX_MESSAGE_SIZE)
+      if (msgLen > APX_MAX_FILE_SIZE)
       {
          return APX_MSG_TOO_LARGE_ERROR;
       }
