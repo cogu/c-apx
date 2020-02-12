@@ -220,7 +220,7 @@ static void test_fileOpenRequestIsSentWhenDefinitionFileIsSeen(CuTest* tc)
    apx_serverTestConnection_runEventLoop(&connection);
    CuAssertIntEquals(tc, 1, apx_serverTestConnection_getTransmitLogLen(&connection));
    transmittedMsg = apx_serverTestConnection_getTransmitLogMsg(&connection, 0);
-   msgLen = RMF_HIGH_ADDRESS_SIZE+RMF_CMD_HEADER_LEN+UINT32_SIZE;
+   msgLen = RMF_HIGH_ADDRESS_SIZE+RMF_CMD_TYPE_LEN+UINT32_SIZE;
    CuAssertIntEquals(tc, msgLen, adt_bytearray_length(transmittedMsg));
    expectedMsg = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
    adt_bytearray_resize(expectedMsg, msgLen);

@@ -27,6 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
+#include <assert.h>
 #include <stdio.h> //DEBUG only
 #include "apx_connectionBase.h"
 #include "apx_portDataRef2.h"
@@ -44,6 +45,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+static apx_error_t apx_fileManager2_processCmdMsg(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen);
+static apx_error_t apx_fileManager2_processDataMsg(apx_fileManager2_t *self, uint32_t address, const uint8_t *msgBuf, int32_t msgLen);
+apx_error_t apx_fileManager2_processFileInfoMsg(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen);
+apx_error_t apx_fileManager2_processFileOpenMsg(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -55,10 +60,28 @@ apx_error_t apx_fileManager2_create(apx_fileManager2_t *self, uint8_t mode, stru
 {
    if (self != 0)
    {
-      apx_fileManagerShared2_create(&self->shared);
-      apx_fileManagerWorker_create(&self->worker, &self->shared, mode);
+      apx_error_t result;
       self->parentConnection = parentConnection;
-      return APX_NO_ERROR;
+      apx_fileManagerReceiver_create(&self->receiver);
+      result = apx_fileManagerReceiver_reserve(&self->receiver, RMF_MAX_CMD_BUF_SIZE); //reserve minimum of 1KB in the receive buffer
+      if (result == APX_NO_ERROR)
+      {
+         result = apx_fileManagerShared2_create(&self->shared);
+         if (result == APX_NO_ERROR)
+         {
+            result = apx_fileManagerWorker_create(&self->worker, &self->shared, mode);
+            if (result != APX_NO_ERROR)
+            {
+               apx_fileManagerShared2_destroy(&self->shared);
+               apx_fileManagerReceiver_destroy(&self->receiver);
+            }
+         }
+         else
+         {
+            apx_fileManagerReceiver_destroy(&self->receiver);
+         }
+      }
+      return result;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -69,6 +92,7 @@ void apx_fileManager2_destroy(apx_fileManager2_t *self)
    {
       apx_fileManagerWorker_destroy(&self->worker);
       apx_fileManagerShared2_destroy(&self->shared);
+      apx_fileManagerReceiver_destroy(&self->receiver);
    }
 }
 
@@ -112,7 +136,9 @@ void apx_fileManager2_copyTransmitHandler(apx_fileManager2_t *self, apx_transmit
  */
 void apx_fileManager2_headerReceived(apx_fileManager2_t *self)
 {
-
+   ///TODO: actually retrieve the NumHeader size from the parsed header data
+   apx_fileManagerWorker_setNumHeaderSize(&self->worker, 32u);
+   apx_fileManagerWorker_sendHeaderAckMsg(&self->worker);
 }
 
 /**
@@ -191,7 +217,7 @@ apx_file2_t *apx_fileManager2_createLocalFile(apx_fileManager2_t *self, const ap
    return (apx_file2_t*) 0;
 }
 
-apx_file2_t *apx_fileManager2_createRemoteFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo)
+apx_file2_t *apx_fileManager2_onFileInfoNotify(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo)
 {
    if (self != 0)
    {
@@ -203,6 +229,50 @@ apx_file2_t *apx_fileManager2_createRemoteFile(apx_fileManager2_t *self, const a
       return file;
    }
    return (apx_file2_t*) 0;
+}
+
+apx_error_t apx_fileManager2_messageReceived(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen)
+{
+   if ( (self != 0) && (msgBuf != 0) && (msgLen > 0) )
+   {
+      rmf_msg_t msg;
+      int32_t result = rmf_unpackMsg(msgBuf, msgLen, &msg);
+      if (result > 0)
+      {
+         apx_error_t retval = apx_fileManagerReceiver_write(&self->receiver, msg.address, msg.data, msg.dataLen, msg.more_bit);
+         if (retval == APX_NO_ERROR)
+         {
+            apx_fileManagerReception_t completeMsg;
+            result = apx_fileManagerReceiver_checkComplete(&self->receiver, &completeMsg);
+            if (result == APX_NO_ERROR)
+            {
+               if (completeMsg.startAddress == RMF_CMD_START_ADDR)
+               {
+                  retval = apx_fileManager2_processCmdMsg(self, completeMsg.msgBuf, completeMsg.msgSize);
+               }
+               else if (msg.address < RMF_CMD_START_ADDR)
+               {
+                  retval = apx_fileManager2_processDataMsg(self, completeMsg.startAddress, completeMsg.msgBuf, completeMsg.msgSize);
+               }
+               else
+               {
+                  retval = APX_INVALID_ADDRESS_ERROR;
+               }
+            }
+         }
+         return result;
+      }
+      else if (result < 0)
+      {
+         assert(0); //This should actually never happen
+         return APX_VALUE_ERROR;
+      }
+      else
+      {
+         return APX_DATA_NOT_PROCESSED_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 apx_error_t apx_fileManager2_onFileOpenNotify(apx_fileManager2_t *self, uint32_t address)
@@ -251,4 +321,92 @@ int32_t apx_fileManager2_numPendingMessages(apx_fileManager2_t *self)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
+static apx_error_t apx_fileManager2_processCmdMsg(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen)
+{
+   assert(self != 0);
+   uint32_t cmdType;
+   int32_t result;
+   result = rmf_deserialize_cmdType(msgBuf, msgLen, &cmdType);
+   if (result > 0)
+   {
+      apx_error_t retval = APX_NO_ERROR;
+      msgBuf+=RMF_CMD_TYPE_LEN;
+      msgLen-=RMF_CMD_TYPE_LEN;
+      switch(cmdType)
+      {
+      case RMF_CMD_FILE_INFO:
+         retval = apx_fileManager2_processFileInfoMsg(self, msgBuf, msgLen);
+      break;
+      case RMF_CMD_FILE_OPEN:
+         retval = apx_fileManager2_processFileOpenMsg(self, msgBuf, msgLen);
+      break;
+      case RMF_CMD_HEARTBEAT_RQST:
+         ///TODO: implement
+         break;
+      case RMF_CMD_HEARTBEAT_RSP:
+         ///TODO: implement
+         break;
+      case RMF_CMD_PING_RQST:
+         ///TODO: implement
+         break;
+      case RMF_CMD_PING_RSP:
+         ///TODO: implement
+         break;
+
+      default:
+         printf("[APX_FILE_MANAGER] not implemented cmdType: %d\n", cmdType);
+      }
+      return retval;
+   }
+   //If we end up here it means that the message has been received complete but it actually
+   //contains so few bytes in it we cannot determine what type of command we are dealing with.
+   return APX_INVALID_MSG_ERROR;
+}
+
+
+static apx_error_t apx_fileManager2_processDataMsg(apx_fileManager2_t *self, uint32_t address, const uint8_t *msgBuf, int32_t msgLen)
+{
+   assert(self != 0);
+   apx_file2_t *file = apx_fileManager2_findFileByAddress(self, (address | RMF_REMOTE_ADDRESS_BIT) );
+   if (file != 0)
+   {
+      if (apx_file2_isOpen(file))
+      {
+         uint32_t offset = apx_file2_getStartAddress(file) - address;
+         return apx_file2_fileWriteNotify(file, offset, msgBuf, msgLen);
+      }
+   }
+   return APX_INVALID_ADDRESS_ERROR;
+}
+
+apx_error_t apx_fileManager2_processFileInfoMsg(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen)
+{
+   rmf_fileInfo_t cmdFileInfo;
+   int32_t result = rmf_deserialize_cmdFileInfo(msgBuf, msgLen, &cmdFileInfo);
+   if (result > 0)
+   {
+      assert(self->parentConnection != 0);
+      return apx_connectionBase_onFileInfoMsgReceived(self->parentConnection, &cmdFileInfo);
+   }
+   else
+   {
+      return APX_INVALID_MSG_ERROR;
+   }
+   return APX_NO_ERROR;
+}
+
+apx_error_t apx_fileManager2_processFileOpenMsg(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen)
+{
+   rmf_cmdOpenFile_t cmdOpenFile;
+   int32_t result = rmf_deserialize_cmdOpenFile(msgBuf, msgLen, &cmdOpenFile);
+   if (result > 0)
+   {
+      apx_fileManager2_onFileOpenNotify(self, cmdOpenFile.address);
+   }
+   else
+   {
+      return APX_INVALID_MSG_ERROR;
+   }
+   return APX_NO_ERROR;
+}
 

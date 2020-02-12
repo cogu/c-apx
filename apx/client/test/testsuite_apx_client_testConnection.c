@@ -232,6 +232,7 @@ static void test_localFileInfoShallBeSentAfterHeaderAcknowledge(CuTest* tc)
    const uint8_t *data;
    rmf_fileInfo_t fileInfo;
    int32_t dataLen;
+   uint32_t cmdType;
 
    client = apx_client_new();
    CuAssertPtrNotNull(tc, client);
@@ -250,35 +251,55 @@ static void test_localFileInfoShallBeSentAfterHeaderAcknowledge(CuTest* tc)
    apx_client_run(client);
    CuAssertIntEquals(tc, 4, apx_clientTestConnection_getTransmitLogLen(connection));
 
+   cmdType = 0u;
    msg = apx_clientTestConnection_getTransmitLogMsg(connection, 0);
-   dataLen = RMF_CMD_FILE_INFO_BASE_SIZE+ ((int) strlen("TestNode1.out")) + 1;
+   dataLen = RMF_CMD_FILE_INFO_BASE_SIZE + ((int) strlen("TestNode1.out")) + 1;
    CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE + dataLen, adt_bytearray_length(msg));
-   data = adt_bytearray_data(msg);
-   CuAssertIntEquals(tc, dataLen, rmf_deserialize_cmdFileInfo(data + RMF_HIGH_ADDRESS_SIZE, dataLen, &fileInfo));
+   data = adt_bytearray_data(msg) + RMF_HIGH_ADDRESS_SIZE;
+   CuAssertIntEquals(tc, RMF_CMD_TYPE_LEN, rmf_deserialize_cmdType(data, RMF_CMD_TYPE_LEN, &cmdType));
+   CuAssertUIntEquals(tc, RMF_CMD_FILE_INFO, cmdType);
+   data+=RMF_CMD_TYPE_LEN;
+   dataLen-=RMF_CMD_TYPE_LEN;
+   CuAssertIntEquals(tc, dataLen , rmf_deserialize_cmdFileInfo(data, dataLen, &fileInfo));
    CuAssertUIntEquals(tc, 0, fileInfo.address);
    CuAssertStrEquals(tc, "TestNode1.out", &fileInfo.name[0]);
 
+   cmdType = 0u;
    msg = apx_clientTestConnection_getTransmitLogMsg(connection, 1);
-   dataLen = RMF_CMD_FILE_INFO_BASE_SIZE+ ((int) strlen("TestNode2.out")) + 1;
+   dataLen = RMF_CMD_FILE_INFO_BASE_SIZE + ((int) strlen("TestNode2.out")) + 1;
    CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE + dataLen, adt_bytearray_length(msg));
-   data = adt_bytearray_data(msg);
-   CuAssertIntEquals(tc, dataLen, rmf_deserialize_cmdFileInfo(data + RMF_HIGH_ADDRESS_SIZE, dataLen, &fileInfo));
+   data = adt_bytearray_data(msg) + RMF_HIGH_ADDRESS_SIZE;
+   CuAssertIntEquals(tc, RMF_CMD_TYPE_LEN, rmf_deserialize_cmdType(data, RMF_CMD_TYPE_LEN, &cmdType));
+   CuAssertUIntEquals(tc, RMF_CMD_FILE_INFO, cmdType);
+   data+=RMF_CMD_TYPE_LEN;
+   dataLen-=RMF_CMD_TYPE_LEN;
+   CuAssertIntEquals(tc, dataLen , rmf_deserialize_cmdFileInfo(data, dataLen, &fileInfo));
    CuAssertUIntEquals(tc, APX_ADDRESS_PORT_DATA_BOUNDARY, fileInfo.address);
    CuAssertStrEquals(tc, "TestNode2.out", &fileInfo.name[0]);
 
+   cmdType = 0u;
    msg = apx_clientTestConnection_getTransmitLogMsg(connection, 2);
-   dataLen = RMF_CMD_FILE_INFO_BASE_SIZE+ ((int) strlen("TestNode1.apx")) + 1;
+   dataLen = RMF_CMD_FILE_INFO_BASE_SIZE + ((int) strlen("TestNode1.apx")) + 1;
    CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE + dataLen, adt_bytearray_length(msg));
-   data = adt_bytearray_data(msg);
-   CuAssertIntEquals(tc, dataLen, rmf_deserialize_cmdFileInfo(data + RMF_HIGH_ADDRESS_SIZE, dataLen, &fileInfo));
+   data = adt_bytearray_data(msg) + RMF_HIGH_ADDRESS_SIZE;
+   CuAssertIntEquals(tc, RMF_CMD_TYPE_LEN, rmf_deserialize_cmdType(data, RMF_CMD_TYPE_LEN, &cmdType));
+   CuAssertUIntEquals(tc, RMF_CMD_FILE_INFO, cmdType);
+   data+=RMF_CMD_TYPE_LEN;
+   dataLen-=RMF_CMD_TYPE_LEN;
+   CuAssertIntEquals(tc, dataLen , rmf_deserialize_cmdFileInfo(data, dataLen, &fileInfo));
    CuAssertUIntEquals(tc, APX_ADDRESS_DEFINITION_START, fileInfo.address);
    CuAssertStrEquals(tc, "TestNode1.apx", &fileInfo.name[0]);
 
+   cmdType = 0u;
    msg = apx_clientTestConnection_getTransmitLogMsg(connection, 3);
-   dataLen = RMF_CMD_FILE_INFO_BASE_SIZE+ ((int) strlen("TestNode2.apx")) + 1;
+   dataLen = RMF_CMD_FILE_INFO_BASE_SIZE + ((int) strlen("TestNode2.apx")) + 1;
    CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE + dataLen, adt_bytearray_length(msg));
-   data = adt_bytearray_data(msg);
-   CuAssertIntEquals(tc, dataLen, rmf_deserialize_cmdFileInfo(data + RMF_HIGH_ADDRESS_SIZE, dataLen, &fileInfo));
+   data = adt_bytearray_data(msg) + RMF_HIGH_ADDRESS_SIZE;
+   CuAssertIntEquals(tc, RMF_CMD_TYPE_LEN, rmf_deserialize_cmdType(data, RMF_CMD_TYPE_LEN, &cmdType));
+   CuAssertUIntEquals(tc, RMF_CMD_FILE_INFO, cmdType);
+   data+=RMF_CMD_TYPE_LEN;
+   dataLen-=RMF_CMD_TYPE_LEN;
+   CuAssertIntEquals(tc, dataLen , rmf_deserialize_cmdFileInfo(data, dataLen, &fileInfo));
    CuAssertUIntEquals(tc, APX_ADDRESS_DEFINITION_START + APX_ADDRESS_DEFINITION_BOUNDARY, fileInfo.address);
    CuAssertStrEquals(tc, "TestNode2.apx", &fileInfo.name[0]);
 

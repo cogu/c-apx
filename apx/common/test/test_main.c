@@ -112,9 +112,10 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_vmSerializer());
    CuSuiteAddSuite(suite, testSuite_apx_vmDeserializer());
 
-
+*/
 // APX Server
    CuSuiteAddSuite(suite, testSuite_apx_serverSocketConnection());
+/*
    CuSuiteAddSuite(suite, testSuite_apx_server());
 
 // APX Server Extensions
@@ -126,6 +127,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_client_socketConnection());
 
 */
+
 // RemoteFile
    CuSuiteAddSuite(suite, testSuite_remotefile());
 

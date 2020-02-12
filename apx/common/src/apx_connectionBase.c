@@ -248,6 +248,10 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
 
 apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const uint8_t *msgBuf, int32_t msgLen)
 {
+   if (self != 0)
+   {
+      return apx_fileManager2_messageReceived(&self->fileManager, msgBuf, msgLen);
+   }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
@@ -261,7 +265,7 @@ apx_error_t apx_connectionBase_onFileInfoMsgReceived(apx_connectionBase_t *self,
       apx_error_t rc = apx_fileInfo_create_rmf(&fileInfo, remoteFileInfo, true);
       if (rc == APX_NO_ERROR)
       {
-         apx_file2_t *file = apx_fileManager2_createRemoteFile(&self->fileManager, &fileInfo);
+         apx_file2_t *file = apx_fileManager2_onFileInfoNotify(&self->fileManager, &fileInfo);
          if (file == 0)
          {
             apx_fileInfo_destroy(&fileInfo);

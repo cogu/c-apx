@@ -61,7 +61,7 @@ void apx_fileManagerReceiver_destroy(apx_fileManagerReceiver_t *self);
 void apx_fileManagerReceiver_reset(apx_fileManagerReceiver_t *self);
 apx_error_t apx_fileManagerReceiver_reserve(apx_fileManagerReceiver_t *self, apx_size_t size);
 bool apx_fileManagerReceiver_isOngoing(apx_fileManagerReceiver_t *self);
-apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, uint32_t address, uint8_t *data, uint8_t size, bool moreBit);
+apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, uint8_t size, bool moreBit);
 uint32_t apx_fileManagerReceiver_getAddress(apx_fileManagerReceiver_t *self);
 apx_size_t apx_fileManagerReceiver_getSize(apx_fileManagerReceiver_t *self, apx_size_t *size);
 apx_error_t apx_fileManagerReceiver_checkComplete(apx_fileManagerReceiver_t *self, apx_fileManagerReception_t *reception);

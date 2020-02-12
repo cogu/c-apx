@@ -28,6 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include <assert.h>
+#include <stdio.h> //DEBUG ONLY
 #include "apx_nodeInstance.h"
 #include "apx_connectionBase.h"
 #include "rmf.h"
@@ -448,6 +449,7 @@ static apx_error_t apx_nodeInstance_definitionFileWriteNotify(void *arg, apx_fil
    apx_nodeInstance_t *self = (apx_nodeInstance_t*) arg;
    if (self != 0)
    {
+      printf("definitionFileWriteNotify(%d, %d)\n", (int) offset, (int) len);
       return apx_nodeData2_writeDefinitionData(self->nodeData, src, offset, len);
    }
    return APX_INVALID_ARGUMENT_ERROR;
