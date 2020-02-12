@@ -35,6 +35,8 @@
 #include "apx_fileManagerDefs.h"
 #include "apx_fileManagerShared2.h"
 #include "apx_fileManagerWorker.h"
+#include "apx_fileManagerReceiver.h"
+#include "adt_bytearray.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -42,10 +44,12 @@
 //forward declaration
 struct apx_connectionBase_tag;
 
+
 typedef struct apx_fileManager2_tag
 {
    apx_fileManagerShared2_t shared;
    apx_fileManagerWorker_t worker;
+   apx_fileManagerReceiver_t receiver;
    struct apx_connectionBase_tag *parentConnection;
 }apx_fileManager2_t;
 
@@ -74,7 +78,11 @@ int32_t apx_fileManager2_getNumLocalFiles(apx_fileManager2_t *self);
 int32_t apx_fileManager2_getNumRemoteFiles(apx_fileManager2_t *self);
 apx_file2_t *apx_fileManager2_createLocalFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
 apx_file2_t *apx_fileManager2_createRemoteFile(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo);
+
+//Remote actions
 apx_error_t apx_fileManager2_onFileOpenNotify(apx_fileManager2_t *self, uint32_t address);
+
+//Local actions
 apx_error_t apx_fileManager2_writeConstData(apx_fileManager2_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg);
 
 #ifdef UNIT_TEST
