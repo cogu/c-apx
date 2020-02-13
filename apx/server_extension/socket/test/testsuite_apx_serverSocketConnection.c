@@ -45,9 +45,6 @@ static void sendFileInfoNoCheckSum(CuTest* tc, testsocket_t *sock, const char *n
 static void verifyAcknowledge(CuTest* tc, testsocket_t *sock);
 static void verifyFileOpenRequest(CuTest* tc, testsocket_t *sock, uint32_t address);
 static void sendFileContent(CuTest* tc, testsocket_t *sock, uint32_t address);
-static void verifyFileInfoResponse(CuTest* tc, const char *name, uint32_t fileAddress, uint32_t fileLen);
-static void sendFileOpenRequest(CuTest* tc, testsocket_t *sock, uint32_t address);
-static void verifyFileWrite(CuTest *tc, testsocket_t *sock, uint32_t startAddress, const uint8_t *writeData, uint32_t writeLen);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -170,14 +167,15 @@ static void test_apx_serverSocketConnection_serverProcessesApxDefinitionAfterWri
    SERVER_RUN(&server, sock);
    verifyFileOpenRequest(tc, sock, definitionAddress);
    CuAssertPtrEquals(tc, NULL, (void*) testsocket_spy_getReceivedData(&dummy));
+   apx_serverConnectionBase_t *connection = apx_server_getLastConnection(&server);
+   CuAssertPtrNotNull(tc, connection);
+   apx_nodeInstance_t *nodeInstance = apx_nodeManager_find(&connection->base.nodeManager, "TestNode");
+   CuAssertPtrNotNull(tc, nodeInstance);
+   CuAssertPtrEquals(tc, NULL, apx_nodeInstance_getNodeInfo(nodeInstance));
    sendFileContent(tc, sock, definitionAddress);
    SERVER_RUN(&server, sock);
-/*
-   verifyFileInfoResponse(tc, "TestNode.in", inDataFileAddress, 2);
-   sendFileOpenRequest(tc, sock, inDataFileAddress);
-   SERVER_RUN(&server, sock);
-   verifyFileWrite(tc, sock, inDataFileAddress, &expectedInPortDataMsg[0], (uint32_t) sizeof(expectedInPortDataMsg));
-*/
+   CuAssertPtrNotNull(tc, apx_nodeInstance_getNodeInfo(nodeInstance));
+
    apx_server_destroy(&server);
    testsocket_spy_destroy();
 }
@@ -254,59 +252,4 @@ static void sendFileContent(CuTest* tc, testsocket_t *sock, uint32_t address)
    assert((uint32_t) msgLen <= NUMHEADER32_MAX_NUM_SHORT);
    bufData[0]=(uint8_t) msgLen;
    testsocket_clientSend(sock, &bufData[0], 1+msgLen);
-}
-
-static void verifyFileInfoResponse(CuTest* tc, const char *name, uint32_t fileAddress, uint32_t fileLen)
-{
-   int32_t i;
-   const uint8_t *data;
-   uint32_t dataLen;
-   uint32_t expectedSize = 1+RMF_HIGH_ADDRESS_SIZE+RMF_CMD_FILE_INFO_BASE_SIZE+strlen(name)+1;
-   uint8_t expected[65] = {64, 0xBF, 0xFF, 0xFC, 0x00, RMF_CMD_FILE_INFO, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   'T','e','s', 't', 'N', 'o', 'd', 'e', '.', 'i', 'n'};
-   packLE(&expected[9], fileAddress, 4);
-   packLE(&expected[13], fileLen, 4);
-   data = testsocket_spy_getReceivedData(&dataLen);
-   CuAssertPtrNotNull(tc, data);
-   CuAssertUIntEquals(tc, expectedSize, dataLen);
-
-   for(i=0;i<(int32_t) sizeof(expected);i++)
-   {
-      char msg[ERROR_MSG_SIZE];
-      sprintf(msg, "i=%d",i);
-      CuAssertIntEquals_Msg(tc, msg, expected[i], data[i]);
-   }
-
-   testsocket_spy_clearReceivedData();
-}
-
-static void sendFileOpenRequest(CuTest* tc, testsocket_t *sock, uint32_t address)
-{
-   rmf_cmdOpenFile_t cmd;
-   int32_t msgLen = 0;
-   uint8_t buf[RMF_MAX_CMD_BUF_SIZE];
-   cmd.address = address;
-   msgLen += rmf_packHeader(&buf[1+msgLen], sizeof(buf)-msgLen, RMF_CMD_START_ADDR, false);
-   msgLen += rmf_serialize_cmdOpenFile(&buf[1+msgLen], sizeof(buf)-msgLen, &cmd);
-   CuAssertIntEquals(tc, 12, msgLen);
-   buf[0]=(uint8_t) msgLen;
-   testsocket_clientSend(sock, &buf[0], 1+msgLen);
-
-}
-
-static void verifyFileWrite(CuTest *tc, testsocket_t *sock, uint32_t startAddress, const uint8_t *writeData, uint32_t writeLen)
-{
-   uint32_t receiveLen;
-   int32_t i;
-   const uint8_t *data;
-   data = testsocket_spy_getReceivedData(&receiveLen);
-   CuAssertUIntEquals(tc, writeLen, receiveLen);
-   for(i=0; i < (int32_t) writeLen;i++)
-   {
-      char msg[ERROR_MSG_SIZE];
-      sprintf(msg, "i=%d",i);
-      CuAssertIntEquals_Msg(tc, msg, writeData[i], data[i]);
-   }
-   testsocket_spy_clearReceivedData();
 }
