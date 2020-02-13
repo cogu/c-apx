@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+#include <assert.h>
+#include "numheader.h"
 #include "CuTest.h"
 #include "apx_server.h"
 #include "apx_serverTestConnection.h"
@@ -57,7 +59,8 @@ static void test_nodeInstanceIsCreatedWhenDefinitionFileIsSeen(CuTest* tc);
 static void test_serverInitializesFileHandlerWhenDefinitionFileIsSeen(CuTest* tc);
 static void test_serverInitializesNodeDataBufferWhenDefinitionFileIsSeen(CuTest* tc);
 static void test_fileOpenRequestIsSentWhenDefinitionFileIsSeen(CuTest* tc);
-static void test_clientWritesDefinitionDataAfterDefinitionFileHasBeenOpened(CuTest* tc);
+static void test_serverProcessesDefinitionAfterClientWritesDefinitionData(CuTest* tc);
+static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -76,7 +79,8 @@ CuSuite* testSuite_apx_serverConnection(void)
    SUITE_ADD_TEST(suite, test_serverInitializesFileHandlerWhenDefinitionFileIsSeen);
    SUITE_ADD_TEST(suite, test_serverInitializesNodeDataBufferWhenDefinitionFileIsSeen);
    SUITE_ADD_TEST(suite, test_fileOpenRequestIsSentWhenDefinitionFileIsSeen);
-   //SUITE_ADD_TEST(suite, test_clientWritesDefinitionDataAfterDefinitionFileHasBeenOpened);
+   SUITE_ADD_TEST(suite, test_serverProcessesDefinitionAfterClientWritesDefinitionData);
+   SUITE_ADD_TEST(suite, test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition);
 
    return suite;
 }
@@ -233,10 +237,11 @@ static void test_fileOpenRequestIsSentWhenDefinitionFileIsSeen(CuTest* tc)
    apx_serverTestConnection_destroy(&connection);
 }
 
-static void test_clientWritesDefinitionDataAfterDefinitionFileHasBeenOpened(CuTest* tc)
+static void test_serverProcessesDefinitionAfterClientWritesDefinitionData(CuTest* tc)
 {
    apx_serverTestConnection_t connection;
    rmf_fileInfo_t fileInfo;
+   uint8_t *data;
 
    apx_size_t definitionLen = strlen(m_apx_definition1);
    apx_serverTestConnection_create(&connection);
@@ -249,8 +254,45 @@ static void test_clientWritesDefinitionDataAfterDefinitionFileHasBeenOpened(CuTe
    //File is now open (as verified by previous test case)
 
    //Client writes data
-   apx_serverTestConnection_writeRemoteData(&connection, APX_ADDRESS_DEFINITION_START, (const uint8_t*) m_apx_definition1, definitionLen, false);
-   apx_serverTestConnection_destroy(&connection);
+   data = (uint8_t*) malloc(RMF_HIGH_ADDRESS_SIZE+definitionLen);
+   assert(data != 0);
+   CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE, rmf_packHeader(&data[0], RMF_HIGH_ADDRESS_SIZE, APX_ADDRESS_DEFINITION_START, false));
+   memcpy(&data[RMF_HIGH_ADDRESS_SIZE], &m_apx_definition1[0], definitionLen);
+   apx_nodeInstance_t *nodeInstance = apx_nodeManager_find(&connection.base.base.nodeManager, "TestNode");
+   CuAssertPtrNotNull(tc, nodeInstance);
+   CuAssertPtrEquals(tc, NULL, apx_nodeInstance_getNodeInfo(nodeInstance));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(&connection, data, RMF_HIGH_ADDRESS_SIZE+definitionLen));
+   CuAssertPtrNotNull(tc, apx_nodeInstance_getNodeInfo(nodeInstance));
 
+   apx_serverTestConnection_destroy(&connection);
+   free(data);
+}
+
+static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTest* tc)
+{
+   apx_serverTestConnection_t connection;
+   rmf_fileInfo_t fileInfo;
+   uint8_t *data;
+
+   apx_size_t definitionLen = strlen(m_apx_definition1);
+   apx_serverTestConnection_create(&connection);
+   rmf_fileInfo_create(&fileInfo, "TestNode.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
+   apx_serverTestConnection_onFileInfoMsgReceived(&connection, &fileInfo);
+   apx_serverTestConnection_runEventLoop(&connection);
+   data = (uint8_t*) malloc(RMF_HIGH_ADDRESS_SIZE+definitionLen);
+   assert(data != 0);
+   CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE, rmf_packHeader(&data[0], RMF_HIGH_ADDRESS_SIZE, APX_ADDRESS_DEFINITION_START, false));
+   memcpy(&data[RMF_HIGH_ADDRESS_SIZE], &m_apx_definition1[0], definitionLen);
+   apx_nodeInstance_t *nodeInstance = apx_nodeManager_find(&connection.base.base.nodeManager, "TestNode");
+   CuAssertPtrNotNull(tc, nodeInstance);
+   apx_nodeData2_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
+   CuAssertPtrNotNull(tc, nodeData);
+   CuAssertUIntEquals(tc, 0u, apx_nodeData2_getProvidePortDataLen(nodeData));
+   CuAssertPtrEquals(tc, NULL, apx_nodeInstance_getNodeInfo(nodeInstance));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(&connection, data, RMF_HIGH_ADDRESS_SIZE+definitionLen));
+   CuAssertUIntEquals(tc, UINT16_SIZE, apx_nodeData2_getProvidePortDataLen(nodeData));
+
+   apx_serverTestConnection_destroy(&connection);
+   free(data);
 }
 

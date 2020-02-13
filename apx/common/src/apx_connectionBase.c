@@ -272,7 +272,13 @@ apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const 
             apx_fileInfo_destroy(&fileInfo);
             return APX_MEM_ERROR; ///TODO: Investigate if we can get the error state from the file manager.
          }
-         apx_connectionBase_emitFileCreatedEvent(self, &fileInfo); ///TODO: Perhaps remove cloning of fileInfo here?
+         if ( self->vtable.fileInfoNotify != 0 )
+         {
+            //In server case: Start preparing new nodeInstance or a new file belonging to a nodeInstance
+            //In client case: Start preparing for a new file belonging to a nodeInstance
+            self->vtable.fileInfoNotify((void*) self, &fileInfo);
+         }
+         apx_connectionBase_emitFileCreatedEvent(self, &fileInfo); ///TODO: Perhaps remove cloning of fileInfo inside call?
          apx_fileInfo_destroy(&fileInfo);
          return APX_NO_ERROR;
       }
@@ -461,10 +467,6 @@ void apx_connectionBase_onFileCreated(apx_connectionBase_t *self, apx_connection
          iter = adt_list_iter_next(iter);
       }
       MUTEX_UNLOCK(self->eventListenerMutex);
-      if ( (self == connection) && (self->vtable.onFileCreated != 0) )
-      {
-         self->vtable.onFileCreated((void*) self, fileInfo);
-      }
    }
 }
 

@@ -217,6 +217,14 @@ adt_bytearray_t *apx_serverTestConnection_getTransmitLogMsg(apx_serverTestConnec
    return (adt_bytearray_t*) 0;
 }
 
+apx_error_t apx_serverTestConnection_onSerializedMsgReceived(apx_serverTestConnection_t *self, const uint8_t *msgBuf, int32_t msgLen)
+{
+   if (self != 0)
+   {
+      return apx_connectionBase_processMessage(&self->base.base, msgBuf, msgLen);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

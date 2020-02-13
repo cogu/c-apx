@@ -56,7 +56,7 @@ struct apx_fileInfo_tag;
 struct apx_transmitHandler_tag;
 
 
-typedef void (apx_onFileCreatedFunc)(void *arg, const struct apx_fileInfo_tag *fileInfo);
+typedef void (apx_fileInfoNotifyFunc)(void *arg, const struct apx_fileInfo_tag *fileInfo);
 typedef apx_error_t (apx_fillTransmitHandlerFunc)(void *arg, struct apx_transmitHandler_tag *handler);
 typedef void (apx_nodeFileWriteNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
@@ -65,7 +65,7 @@ typedef struct apx_connectionBaseVTable_tag
    apx_voidPtrFunc *destructor;
    apx_voidPtrFunc *start;
    apx_voidPtrFunc *close;
-   apx_onFileCreatedFunc *onFileCreated;
+   apx_fileInfoNotifyFunc *fileInfoNotify;
    apx_nodeFileWriteNotifyFunc *nodeFileWriteNotify;
    apx_fillTransmitHandlerFunc *fillTransmitHandler;
 } apx_connectionBaseVTable_t;

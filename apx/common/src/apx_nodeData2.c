@@ -408,7 +408,7 @@ apx_size_t apx_nodeData2_getProvidePortDataLen(apx_nodeData2_t *self)
 {
    if (self != 0)
    {
-      return self->requirePortDataLen;
+      return self->providePortDataLen;
    }
    return (apx_size_t) 0u;
 }
