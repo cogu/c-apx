@@ -146,7 +146,7 @@ apx_error_t apx_serverTestConnection_onFileInfoMsgReceived(apx_serverTestConnect
 {
    if ( (self != 0) && (remoteFileInfo != 0) )
    {
-      return apx_serverConnectionBase_onFileInfoMsgReceived(&self->base, remoteFileInfo);
+      return apx_serverConnectionBase_fileInfoNotify(&self->base, remoteFileInfo);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

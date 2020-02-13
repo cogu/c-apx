@@ -64,9 +64,9 @@ void* apx_clientConnectionBase_registerEventListener(apx_clientConnectionBase_t 
 void apx_clientConnectionBase_unregisterEventListener(apx_clientConnectionBase_t *self, void *handle);
 void apx_clientConnectionBase_attachNodeInstance(apx_clientConnectionBase_t *self, struct apx_nodeInstance_tag *nodeInstance);
 
-// Internal API
+// Internal Callback API
 void apx_clientConnectionBaseInternal_headerAccepted(apx_clientConnectionBase_t *self);
-apx_error_t apx_clientConnectionBaseInternal_onFileOpenMsgReceived(apx_clientConnectionBase_t *self, const rmf_cmdOpenFile_t *openFileCmd);
+apx_error_t apx_clientConnectionBase_fileOpenNotify(apx_clientConnectionBase_t *self, const rmf_cmdOpenFile_t *openFileCmd);
 
 // Unit Test API
 #ifdef UNIT_TEST
