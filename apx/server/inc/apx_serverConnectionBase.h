@@ -4,7 +4,7 @@
 * \date      2018-09-26
 * \brief     Description
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -80,7 +80,7 @@ void apx_serverConnectionBase_unregisterEventListener(apx_serverConnectionBase_t
 
 void apx_serverConnectionBase_onRemoteFileHeaderReceived(apx_serverConnectionBase_t *self);
 apx_error_t apx_serverConnectionBase_fileInfoNotify(apx_serverConnectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
-
+void apx_serverConnectionBase_nodeFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
 
 

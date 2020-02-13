@@ -70,7 +70,7 @@ static THREAD_PROTO(eventHandlerWorkThread,arg);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_voidPtrFunc *destructor, apx_voidPtrFunc *start, apx_voidPtrFunc *close, apx_fillTransmitHandlerFunc *fillTransmitHandler)
+void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_voidPtrFunc *destructor, apx_voidPtrFunc *start, apx_voidPtrFunc *close, apx_nodeFileWriteNotifyFunc *nodeFileWriteNotify, apx_fillTransmitHandlerFunc *fillTransmitHandler)
 {
    if (self != 0)
    {
@@ -78,6 +78,7 @@ void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_voidP
       self->destructor = destructor;
       self->start = start;
       self->close = close;
+      self->nodeFileWriteNotify = nodeFileWriteNotify;
       self->fillTransmitHandler = fillTransmitHandler;
    }
 }
@@ -301,6 +302,28 @@ apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_f
 {
    if ( (self != 0) && (file != 0) && (data != 0) )
    {
+      apx_error_t retval = apx_file2_fileWriteNotify(file, offset, data, len);
+      if (retval == APX_NO_ERROR)
+      {
+         ///TODO: trigger generic event listeners here?
+      }
+      return retval;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_connectionBase_nodeFileWriteNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   if ( (self != 0) && (nodeInstance != 0) && (data != 0) )
+   {
+      if (self->vtable.nodeFileWriteNotify != 0)
+      {
+         self->vtable.nodeFileWriteNotify((void*) self, nodeInstance, fileType, offset, data, len);
+      }
+      else
+      {
+         printf("No callback\n");
+      }
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;

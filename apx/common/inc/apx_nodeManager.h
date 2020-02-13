@@ -70,6 +70,7 @@ apx_error_t apx_nodeManager_attachNode(apx_nodeManager_t *self, apx_nodeInstance
 
 /********** Server mode API  ************/
 apx_nodeInstance_t *apx_nodeManager_createNode(apx_nodeManager_t *self, const char *nodeName);
+apx_error_t apx_nodeManager_parseDefinition(apx_nodeManager_t *self, apx_nodeInstance_t *nodeInstance);
 
 /********** Utility functions  ************/
 apx_nodeInstance_t *apx_nodeManager_find(apx_nodeManager_t *self, const char *name);

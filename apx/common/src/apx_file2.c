@@ -4,7 +4,7 @@
 * \date      2018-08-30
 * \brief     Improved version of apx_file
 *
-* Copyright (c) 2018-2019 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -345,6 +345,12 @@ apx_error_t apx_file2_fileWriteNotify(apx_file2_t *self, uint32_t offset, const 
 {
    if (self != 0)
    {
+      apx_file2_lock(self);
+      if (!self->hasFirstWrite)
+      {
+         self->hasFirstWrite = true;
+      }
+      apx_file2_unlock(self);
       if (self->notificationHandler.writeNotify != 0)
       {
          return self->notificationHandler.writeNotify(self->notificationHandler.arg, self, offset, src, len);

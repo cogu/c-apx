@@ -4,7 +4,7 @@
 * \date      2018-09-26
 * \brief     Server socket connection. Inherits from apx_serverConnectionBase_t (which in turn uses base class apx_connectionBase_t)
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -62,6 +62,9 @@ void apx_serverSocketConnection_start(apx_serverSocketConnection_t *self);
 void apx_serverSocketConnection_vstart(void *arg);
 void apx_serverSocketConnection_close(apx_serverSocketConnection_t *self);
 void apx_serverSocketConnection_vclose(void *arg);
+void apx_serverSocketConnection_nodeFileWriteNotify(apx_serverSocketConnection_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+void apx_serverSocketConnection_vnodeFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+
 
 #undef SOCKET_TYPE
 #endif //APX_SERVER_SOCKET_CONNECTION_H

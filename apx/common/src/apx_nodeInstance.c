@@ -449,8 +449,13 @@ static apx_error_t apx_nodeInstance_definitionFileWriteNotify(void *arg, apx_fil
    apx_nodeInstance_t *self = (apx_nodeInstance_t*) arg;
    if (self != 0)
    {
-      printf("definitionFileWriteNotify(%d, %d)\n", (int) offset, (int) len);
-      return apx_nodeData2_writeDefinitionData(self->nodeData, src, offset, len);
+      apx_error_t retval;
+      //printf("definitionFileWriteNotify(%d, %d)\n", (int) offset, (int) len);
+      retval = apx_nodeData2_writeDefinitionData(self->nodeData, src, offset, len);
+      if ( (self->connection != 0) && (retval == APX_NO_ERROR) )
+      {
+         retval = apx_connectionBase_nodeFileWriteNotify(self->connection, self, APX_DEFINITION_FILE_TYPE, offset, src, len);
+      }
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
