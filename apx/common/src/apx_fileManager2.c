@@ -217,7 +217,7 @@ apx_file2_t *apx_fileManager2_createLocalFile(apx_fileManager2_t *self, const ap
    return (apx_file2_t*) 0;
 }
 
-apx_file2_t *apx_fileManager2_onFileInfoNotify(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo)
+apx_file2_t *apx_fileManager2_fileInfoNotify(apx_fileManager2_t *self, const apx_fileInfo_t *fileInfo)
 {
    if (self != 0)
    {
@@ -275,19 +275,7 @@ apx_error_t apx_fileManager2_messageReceived(apx_fileManager2_t *self, const uin
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager2_onFileOpenNotify(apx_fileManager2_t *self, uint32_t address)
-{
-   if (self != 0)
-   {
-      apx_file2_t *file = apx_fileManager2_findFileByAddress(self, address & RMF_ADDRESS_MASK_INTERNAL);
-      if (file != 0)
-      {
-         apx_file2_open(file);
-         return apx_file2_fileOpenNotify(file);
-      }
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
+
 
 apx_error_t apx_fileManager2_writeConstData(apx_fileManager2_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg)
 {
@@ -367,16 +355,20 @@ static apx_error_t apx_fileManager2_processCmdMsg(apx_fileManager2_t *self, cons
 static apx_error_t apx_fileManager2_processDataMsg(apx_fileManager2_t *self, uint32_t address, const uint8_t *msgBuf, int32_t msgLen)
 {
    assert(self != 0);
-   apx_file2_t *file = apx_fileManager2_findFileByAddress(self, (address | RMF_REMOTE_ADDRESS_BIT) );
-   if (file != 0)
+   if (self->parentConnection != 0)
    {
-      if (apx_file2_isOpen(file))
+      apx_file2_t *file = apx_fileManager2_findFileByAddress(self, (address | RMF_REMOTE_ADDRESS_BIT) );
+      if (file != 0)
       {
-         uint32_t offset = apx_file2_getStartAddress(file) - address;
-         return apx_file2_fileWriteNotify(file, offset, msgBuf, msgLen);
+         if (apx_file2_isOpen(file))
+         {
+            uint32_t offset = apx_file2_getStartAddress(file) - address;
+            return apx_connectionBase_fileWriteNotify(self->parentConnection, file, offset, msgBuf, msgLen);
+         }
       }
+      return APX_INVALID_ADDRESS_ERROR;
    }
-   return APX_INVALID_ADDRESS_ERROR;
+   return APX_NULL_PTR_ERROR;
 }
 
 apx_error_t apx_fileManager2_processFileInfoMsg(apx_fileManager2_t *self, const uint8_t *msgBuf, int32_t msgLen)
@@ -386,7 +378,7 @@ apx_error_t apx_fileManager2_processFileInfoMsg(apx_fileManager2_t *self, const 
    if (result > 0)
    {
       assert(self->parentConnection != 0);
-      return apx_connectionBase_onFileInfoMsgReceived(self->parentConnection, &cmdFileInfo);
+      return apx_connectionBase_fileInfoNotify(self->parentConnection, &cmdFileInfo);
    }
    else
    {
@@ -401,7 +393,14 @@ apx_error_t apx_fileManager2_processFileOpenMsg(apx_fileManager2_t *self, const 
    int32_t result = rmf_deserialize_cmdOpenFile(msgBuf, msgLen, &cmdOpenFile);
    if (result > 0)
    {
-      apx_fileManager2_onFileOpenNotify(self, cmdOpenFile.address);
+      if (self->parentConnection != 0)
+      {
+         return apx_connectionBase_fileOpenNotify(self->parentConnection, cmdOpenFile.address);
+      }
+      else
+      {
+         return APX_NULL_PTR_ERROR;
+      }
    }
    else
    {

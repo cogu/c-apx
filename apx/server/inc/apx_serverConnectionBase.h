@@ -79,7 +79,7 @@ void apx_serverConnectionBase_unregisterEventListener(apx_serverConnectionBase_t
 /*** Internal API (used only internally and by test classes) ***/
 
 void apx_serverConnectionBase_onRemoteFileHeaderReceived(apx_serverConnectionBase_t *self);
-apx_error_t apx_serverConnectionBase_onFileInfoMsgReceived(apx_serverConnectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
+apx_error_t apx_serverConnectionBase_fileInfoNotify(apx_serverConnectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
 
 
 

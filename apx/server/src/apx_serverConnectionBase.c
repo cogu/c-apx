@@ -324,11 +324,11 @@ void apx_serverConnectionBase_onRemoteFileHeaderReceived(apx_serverConnectionBas
    apx_connectionBase_emitHeaderAccepted(&self->base);
 }
 
-apx_error_t apx_serverConnectionBase_onFileInfoMsgReceived(apx_serverConnectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo)
+apx_error_t apx_serverConnectionBase_fileInfoNotify(apx_serverConnectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo)
 {
    if ( (self != 0) && (remoteFileInfo != 0))
    {
-      return apx_connectionBase_onFileInfoMsgReceived(&self->base, remoteFileInfo);
+      return apx_connectionBase_fileInfoNotify(&self->base, remoteFileInfo);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

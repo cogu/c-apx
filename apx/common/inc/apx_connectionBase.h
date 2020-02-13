@@ -55,15 +55,19 @@ struct apx_file2_tag;
 struct apx_fileInfo_tag;
 struct apx_transmitHandler_tag;
 
-typedef apx_error_t (fillTransmitHandlerFunc)(void *arg, struct apx_transmitHandler_tag *handler);
+
+typedef void (apx_onFileCreatedFunc)(void *arg, const struct apx_fileInfo_tag *fileInfo);
+typedef apx_error_t (apx_fillTransmitHandlerFunc)(void *arg, struct apx_transmitHandler_tag *handler);
+typedef void (apx_nodeFileWriteNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
 typedef struct apx_connectionBaseVTable_tag
 {
-   void (*destructor)(void *arg);
-   void (*start)(void *arg);
-   void (*close)(void *arg);
-   void (*onFileCreated)(void *arg, const struct apx_fileInfo_tag *fileInfo);
-   fillTransmitHandlerFunc *fillTransmitHandler;
+   apx_voidPtrFunc *destructor;
+   apx_voidPtrFunc *start;
+   apx_voidPtrFunc *close;
+   apx_onFileCreatedFunc *onFileCreated;
+   apx_nodeFileWriteNotifyFunc *nodeFileWriteNotify;
+   apx_fillTransmitHandlerFunc *fillTransmitHandler;
 } apx_connectionBaseVTable_t;
 
 typedef struct apx_connectionBase_tag
@@ -90,7 +94,7 @@ typedef struct apx_connectionBase_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, void (*destructor)(void *arg), void (*start)(void *arg), void (*close)(void *arg), fillTransmitHandlerFunc *fillTransmitHandler);
+void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_voidPtrFunc *destructor, apx_voidPtrFunc *start, apx_voidPtrFunc *close, apx_fillTransmitHandlerFunc *fillTransmitHandler);
 apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mode, apx_connectionBaseVTable_t *vtable);
 void apx_connectionBase_destroy(apx_connectionBase_t *self);
 void apx_connectionBase_delete(apx_connectionBase_t *self);
@@ -103,9 +107,12 @@ void apx_connectionBase_close(apx_connectionBase_t *self);
 void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance);
 apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const uint8_t *msgBuf, int32_t msgLen);
 
-/*** Internal Message API ***/
 
-apx_error_t apx_connectionBase_onFileInfoMsgReceived(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
+/*** Internal Callback API ***/
+
+apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
+apx_error_t apx_connectionBase_fileOpenNotify(apx_connectionBase_t *self, uint32_t address);
+apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file2_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
 
 /*** Event triggering API ***/
 
@@ -146,10 +153,6 @@ void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *se
 
 void apx_connectionBase_onFileCreated(apx_connectionBase_t *self, apx_connectionBase_t *connection, struct apx_fileInfo_tag *fileInfo, void *caller);
 void apx_connectionBase_onHeaderAccepted(apx_connectionBase_t *self, apx_connectionBase_t *connection);
-
-/*** Internal callback API ***/
-
-apx_error_t apx_connectionBaseInternal_onFileOpenNotify(apx_connectionBase_t *self, uint32_t address);
 
 #ifdef UNIT_TEST
 void apx_connectionBase_runAll(apx_connectionBase_t *self);

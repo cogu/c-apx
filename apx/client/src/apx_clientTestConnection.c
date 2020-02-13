@@ -238,7 +238,7 @@ apx_error_t apx_clientTestConnection_onFileOpenMsgReceived(apx_clientTestConnect
 {
    if (self != 0)
    {
-      return apx_clientConnectionBaseInternal_onFileOpenMsgReceived(&self->base, openFileCmd);
+      return apx_clientConnectionBase_fileOpenNotify(&self->base, openFileCmd);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

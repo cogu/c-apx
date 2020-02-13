@@ -164,7 +164,6 @@ void apx_clientConnectionBase_defaultEventHandler(void *arg, apx_event_t *event)
    apx_clientConnectionBase_t *self = (apx_clientConnectionBase_t*) arg;
    if (self != 0)
    {
-      apx_nodeData2_t *nodeData;
       apx_connectionBase_t *baseConnection;
       switch(event->evType)
       {
@@ -268,11 +267,11 @@ void apx_clientConnectionBaseInternal_headerAccepted(apx_clientConnectionBase_t 
    }
 }
 
-apx_error_t apx_clientConnectionBaseInternal_onFileOpenMsgReceived(apx_clientConnectionBase_t *self, const rmf_cmdOpenFile_t *openFileCmd)
+apx_error_t apx_clientConnectionBase_fileOpenNotify(apx_clientConnectionBase_t *self, const rmf_cmdOpenFile_t *openFileCmd)
 {
    if ( (self != 0) && (openFileCmd != 0))
    {
-      return apx_connectionBaseInternal_onFileOpenNotify(&self->base, openFileCmd->address);
+      return apx_connectionBase_fileOpenNotify(&self->base, openFileCmd->address);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

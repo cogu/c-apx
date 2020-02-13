@@ -11,6 +11,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+
+typedef void (apx_voidPtrFunc)(void *arg);
+
 typedef int32_t apx_offset_t;
 typedef uint32_t apx_size_t; //use uint16_t  to send up to 64KB, use uint32_t for 4GB.
 typedef APX_PORT_ID_TYPE apx_portId_t; //int32_t is default. Use int16_t for smaller memory footprint

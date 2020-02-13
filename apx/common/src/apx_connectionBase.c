@@ -70,7 +70,7 @@ static THREAD_PROTO(eventHandlerWorkThread,arg);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, void (*destructor)(void *arg), void (*start)(void *arg), void (*close)(void *arg),  fillTransmitHandlerFunc *fillTransmitHandler)
+void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_voidPtrFunc *destructor, apx_voidPtrFunc *start, apx_voidPtrFunc *close, apx_fillTransmitHandlerFunc *fillTransmitHandler)
 {
    if (self != 0)
    {
@@ -255,9 +255,9 @@ apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-/*** Internal Message API ***/
+/*** Internal Callback API ***/
 
-apx_error_t apx_connectionBase_onFileInfoMsgReceived(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo)
+apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo)
 {
    if ( (self != 0) && (remoteFileInfo != 0) )
    {
@@ -265,7 +265,7 @@ apx_error_t apx_connectionBase_onFileInfoMsgReceived(apx_connectionBase_t *self,
       apx_error_t rc = apx_fileInfo_create_rmf(&fileInfo, remoteFileInfo, true);
       if (rc == APX_NO_ERROR)
       {
-         apx_file2_t *file = apx_fileManager2_onFileInfoNotify(&self->fileManager, &fileInfo);
+         apx_file2_t *file = apx_fileManager2_fileInfoNotify(&self->fileManager, &fileInfo);
          if (file == 0)
          {
             apx_fileInfo_destroy(&fileInfo);
@@ -283,7 +283,30 @@ apx_error_t apx_connectionBase_onFileInfoMsgReceived(apx_connectionBase_t *self,
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_connectionBase_fileOpenNotify(apx_connectionBase_t *self, uint32_t address)
+{
+   if (self != 0 )
+   {
+      apx_file2_t *file = apx_fileManager2_findFileByAddress(&self->fileManager, address & RMF_ADDRESS_MASK_INTERNAL);
+      if (file != 0)
+      {
+         apx_file2_open(file);
+         return apx_file2_fileOpenNotify(file);
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
+apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file2_t *file, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   if ( (self != 0) && (file != 0) && (data != 0) )
+   {
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/*** Event triggering API ***/
 void apx_connectionBase_triggerRemoteFileHeaderCompleteEvent(apx_connectionBase_t *self)
 {
    if (self != 0)
@@ -674,14 +697,7 @@ void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *se
 
 /*** Internal callback API ***/
 
-apx_error_t apx_connectionBaseInternal_onFileOpenNotify(apx_connectionBase_t *self, uint32_t address)
-{
-   if (self != 0 )
-   {
-      return apx_fileManager2_onFileOpenNotify(&self->fileManager, address);
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
+
 
 
 #ifdef UNIT_TEST
