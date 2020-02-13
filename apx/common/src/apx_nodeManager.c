@@ -4,7 +4,7 @@
 * \date      2019-12-29
 * \brief     Manager for apx_nodeInstance objects
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -127,6 +127,15 @@ apx_nodeInstance_t *apx_nodeManager_createNode(apx_nodeManager_t *self, const ch
       return nodeInstance;
    }
    return (apx_nodeInstance_t*) 0;
+}
+
+apx_error_t apx_nodeManager_parseDefinition(apx_nodeManager_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      return apx_nodeInstance_parseDefinition(nodeInstance, &self->parser);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 /********** Utility functions  ************/

@@ -94,7 +94,7 @@ typedef struct apx_connectionBase_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_voidPtrFunc *destructor, apx_voidPtrFunc *start, apx_voidPtrFunc *close, apx_fillTransmitHandlerFunc *fillTransmitHandler);
+void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_voidPtrFunc *destructor, apx_voidPtrFunc *start, apx_voidPtrFunc *close, apx_nodeFileWriteNotifyFunc *nodeFileWriteNotify, apx_fillTransmitHandlerFunc *fillTransmitHandler);
 apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mode, apx_connectionBaseVTable_t *vtable);
 void apx_connectionBase_destroy(apx_connectionBase_t *self);
 void apx_connectionBase_delete(apx_connectionBase_t *self);
@@ -113,6 +113,7 @@ apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const 
 apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
 apx_error_t apx_connectionBase_fileOpenNotify(apx_connectionBase_t *self, uint32_t address);
 apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file2_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
+apx_error_t apx_connectionBase_nodeFileWriteNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
 /*** Event triggering API ***/
 
