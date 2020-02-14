@@ -27,8 +27,8 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_connectionBase.h"
-#include "apx_portDataRef2.h"
-#include "apx_nodeData2.h"
+#include "apx_portDataRef.h"
+#include "apx_nodeData.h"
 #include "apx_logging.h"
 #include "apx_portConnectionTable.h"
 #include <string.h>

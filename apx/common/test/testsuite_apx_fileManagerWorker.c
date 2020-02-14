@@ -12,7 +12,7 @@
 #include "apx_fileManagerSharedSpy.h"
 #include "apx_fileMap.h"
 #include "rmf.h"
-#include "apx_file2.h"
+#include "apx_file.h"
 #include "adt_bytearray.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

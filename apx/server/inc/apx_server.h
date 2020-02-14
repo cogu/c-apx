@@ -12,7 +12,7 @@
 #endif
 #include "apx_serverExtension.h"
 #include "apx_routingTable.h"
-#include "apx_eventListener2.h"
+#include "apx_eventListener.h"
 #include "apx_connectionManager.h"
 #include "apx_eventLoop.h"
 #include "soa.h"

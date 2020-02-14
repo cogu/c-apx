@@ -31,7 +31,7 @@
 #include <assert.h>
 #include "CuTest.h"
 #include "apx_eventLoop.h"
-#include "apx_fileManager2.h"
+#include "apx_fileManager.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

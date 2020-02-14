@@ -5,7 +5,6 @@
 * \brief     spy for apx_clientEventListener_t
 *
 * Copyright (c) 2020 Conny Gustafsson
-* Copyright (c) 2018 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -31,7 +30,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_types.h"
-#include "apx_eventListener2.h"
+#include "apx_eventListener.h"
 #include "apx_client.h"
 
 
