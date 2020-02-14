@@ -63,6 +63,7 @@ typedef struct apx_nodeInstance_tag
 //   apx_portConnectionTable_t *requirePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
 //   apx_portConnectionTable_t *providePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
    apx_mode_t mode;
+   apx_nodeState_t state;
 } apx_nodeInstance_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -96,6 +97,8 @@ int32_t apx_nodeInstance_getNumProvidePorts(apx_nodeInstance_t *self);
 int32_t apx_nodeInstance_getNumRequirePorts(apx_nodeInstance_t *self);
 apx_error_t apx_nodeInstance_createProvidePortDataFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
 apx_error_t apx_nodeInstance_createDefinitionFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
+void apx_nodeInstance_setState(apx_nodeInstance_t *self, apx_nodeState_t state);
+apx_nodeState_t apx_nodeInstance_getState(apx_nodeInstance_t *self);
 
 /********** Data API  ************/
 apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, uint32_t len);

@@ -50,22 +50,22 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeInstance_tag *node, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps)
+void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeInstance_tag *nodeInstance, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps)
 {
    if (self != 0)
    {
-      self->node = node;
+      self->nodeInstance = nodeInstance;
       self->portId = portId;
       self->portDataProps = portDataProps;
    }
 }
 
-apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeInstance_tag *node, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps)
+apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeInstance_tag *nodeInstance, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps)
 {
    apx_portDataRef_t *self = (apx_portDataRef_t*) malloc(sizeof(apx_portDataRef_t));
    if(self != 0)
    {
-      apx_portDataRef_create(self, node, portId, portDataProps);
+      apx_portDataRef_create(self, nodeInstance, portId, portDataProps);
    }
    return self;
 }

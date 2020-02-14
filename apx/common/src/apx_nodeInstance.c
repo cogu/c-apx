@@ -65,6 +65,7 @@ void apx_nodeInstance_create(apx_nodeInstance_t *self, apx_mode_t mode)
    {
       memset(self, 0, sizeof(apx_nodeInstance_t));
       self->mode = mode;
+      self->state = APX_NODE_STATE_STAGING;
    }
 }
 
@@ -437,6 +438,24 @@ apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self)
    }
    return (apx_nodeInfo_t*) 0;
 }
+
+void apx_nodeInstance_setState(apx_nodeInstance_t *self, apx_nodeState_t state)
+{
+   if (self != 0)
+   {
+      self->state = state;
+   }
+}
+
+apx_nodeState_t apx_nodeInstance_getState(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      return self->state;
+   }
+   return APX_NODE_STATE_INVALID;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

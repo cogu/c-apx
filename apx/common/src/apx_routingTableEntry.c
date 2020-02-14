@@ -120,7 +120,7 @@ void apx_routingTableEntry_attachPortDataRef(apx_routingTableEntry_t *self, apx_
          apx_routingTableEntry_insertRequirePortData(self, portDataRef);
          if (provider != (apx_portDataRef_t*) 0)
          {
-            apx_nodeData_updatePortDataDirect(portDataRef->nodeData, portDataRef->portDataProps, provider->nodeData, provider->portDataProps);
+            apx_nodeData_updatePortDataDirect(portDataRef->nodeInstance, portDataRef->portDataProps, provider->nodeInstance, provider->portDataProps);
          }
          apx_routingTableEntry_updateProvidePortConnections(self, portDataRef, apx_portConnectionTable_connect);
       }
@@ -219,12 +219,12 @@ static void apx_routingTableEntry_updateRequirePortConnections(apx_routingTableE
    {
       apx_portConnectionTable_t *providePortConnections;
       adt_list_elem_t *iter;
-      providePortConnections = apx_nodeData_getProvidePortConnections(providePortRef->nodeData);
+      providePortConnections = apx_nodeData_getProvidePortConnections(providePortRef->nodeInstance);
       for(iter = adt_list_iter_first(&self->requirePortRef); iter != 0; iter = adt_list_iter_next(iter))
       {
          apx_portConnectionTable_t *requirePortConnections;
          apx_portDataRef_t *requirePortRef = (apx_portDataRef_t*) iter->pItem;
-         requirePortConnections = apx_nodeData_getRequirePortConnections(requirePortRef->nodeData);
+         requirePortConnections = apx_nodeData_getRequirePortConnections(requirePortRef->nodeInstance);
          if ( (providePortConnections != 0) && (requirePortConnections != 0) )
          {
             actionFunction(providePortConnections, providePortRef, requirePortRef);
@@ -243,12 +243,12 @@ static void apx_routingTableEntry_updateProvidePortConnections(apx_routingTableE
    {
       adt_list_elem_t *iter;
       apx_portConnectionTable_t *requirePortConnections;
-      requirePortConnections = apx_nodeData_getRequirePortConnections(requirePortRef->nodeData);
+      requirePortConnections = apx_nodeData_getRequirePortConnections(requirePortRef->nodeInstance);
       for(iter = adt_list_iter_first(&self->providePortRef); iter != 0; iter = adt_list_iter_next(iter))
       {
          apx_portConnectionTable_t *providePortConnections;
          apx_portDataRef_t *providePortRef = (apx_portDataRef_t*) iter->pItem;
-         providePortConnections = apx_nodeData_getProvidePortConnections(providePortRef->nodeData);
+         providePortConnections = apx_nodeData_getProvidePortConnections(providePortRef->nodeInstance);
          if ( (providePortConnections != 0) && (requirePortConnections != 0) )
          {
             actionFunction(providePortConnections, providePortRef, requirePortRef);
