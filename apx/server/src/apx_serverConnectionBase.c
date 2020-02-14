@@ -65,6 +65,7 @@ static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConne
 static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *srcNodeData, uint32_t offset, uint32_t len);
 static void apx_serverConnectionBase_definitionFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, uint32_t len);
 static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance);
+static apx_error_t apx_serverConnectionBase_openOutPortDataFileIfExists(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -538,7 +539,13 @@ static void apx_serverConnectionBase_definitionFileWriteNotify(apx_serverConnect
       ///TODO: send error code back to client
       return;
    }
-
+   rc = apx_serverConnectionBase_openOutPortDataFileIfExists(self, nodeInstance);
+   if (rc != APX_NO_ERROR)
+   {
+      printf("Opening OutPortData file failed (%d)\n", (int) rc);
+      ///TODO: send error code back to client
+      return;
+   }
 }
 
 static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance)
@@ -567,6 +574,46 @@ static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverCon
    return retval;
 }
 
+static apx_error_t apx_serverConnectionBase_openOutPortDataFileIfExists(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   apx_error_t retval = APX_NO_ERROR;
+   apx_nodeInfo_t *nodeInfo;
+   apx_nodeData_t *nodeData;
+   apx_size_t providePortDataLen;
+   char fileNameBuf[RMF_MAX_FILE_NAME+1];
+   const char *nodeName;
+   assert(self != 0);
+   assert(nodeInstance != 0);
+   nodeInfo = apx_nodeInstance_getNodeInfo(nodeInstance);
+   assert(nodeInfo != 0);
+   nodeData = apx_nodeInstance_getNodeData(nodeInstance);
+   assert(nodeInfo != 0);
+   providePortDataLen = apx_nodeData_getProvidePortDataLen(nodeData);
+   nodeName = apx_nodeInfo_getName(nodeInfo);
+   assert(nodeName);
+   if (strlen(nodeName)+APX_MAX_FILE_EXT_LEN > RMF_MAX_FILE_NAME)
+   {
+      return APX_NAME_TOO_LONG_ERROR;
+   }
+   strcpy(&fileNameBuf[0], nodeName);
+   strcat(&fileNameBuf[0], APX_OUTDATA_FILE_EXT);
+   if (providePortDataLen > 0)
+   {
+      apx_file_t *file;
+      printf("Searching for file: \"%s\"\n", &fileNameBuf[0]);
+      file = apx_fileManager_findRemoteFileByName(&self->base.fileManager, &fileNameBuf[0]);
+      if (file != 0)
+      {
+         retval = apx_fileManager_requestOpenFile(&self->base.fileManager, apx_file_getStartAddress(file) | RMF_REMOTE_ADDRESS_BIT);
+      }
+      else
+      {
+         printf("File not found: \"%s\"\n", &fileNameBuf[0]);
+      }
+   }
+   return retval;
+}
+
 
 
 static void apx_serverConnectionBase_processNewOutPortDataFile(apx_serverConnectionBase_t *self, const apx_fileInfo_t *fileInfo)
@@ -585,30 +632,7 @@ static void apx_serverConnectionBase_processNewOutPortDataFile(apx_serverConnect
 }
 
 
-//Type 2 event trigger
-static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, apx_file_t *definitionFile)
-{
-   apx_error_t retval = APX_NO_ERROR;
-/*
-   rmf_fileInfo_t info;
-   apx_file2_t *inPortDataFile;
-   char fileName[RMF_MAX_FILE_NAME+1];
-   uint32_t inPortDataLen = apx_nodeData_getInPortDataLen(nodeData);
-   apx_fileInfo_copyBaseName(&definitionFile->fileInfo, fileName, (uint32_t) sizeof(fileName));
-   strcat(fileName, APX_INDATA_FILE_EXT);
-   rmf_fileInfo_create(&info, fileName, RMF_INVALID_ADDRESS, inPortDataLen, RMF_FILE_TYPE_FIXED);
-   inPortDataFile = apx_file2_newLocal(&info, NULL);
-   if (inPortDataFile != 0)
-   {
-      apx_nodeData_setInPortDataFile(nodeData, inPortDataFile);
-   }
-   else
-   {
-      retval = APX_MEM_ERROR;
-   }
-*/
-   return retval;
-}
+
 
 //Type 1 event
 static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)

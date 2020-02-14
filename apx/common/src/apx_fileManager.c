@@ -115,6 +115,15 @@ apx_file_t* apx_fileManager_findFileByAddress(apx_fileManager_t *self, uint32_t 
    return (apx_file_t*) 0;
 }
 
+apx_file_t* apx_fileManager_findRemoteFileByName(apx_fileManager_t *self, const char *name)
+{
+   if (self != 0)
+   {
+      return apx_fileManagerShared_findRemoteFileByName(&self->shared, name);
+   }
+   return (apx_file_t*) 0;
+}
+
 void apx_fileManager_setTransmitHandler(apx_fileManager_t *self, apx_transmitHandler_t *handler)
 {
    if (self != 0)
@@ -163,7 +172,7 @@ void apx_fileManager_headerAccepted(apx_fileManager_t *self)
 
 apx_error_t apx_fileManager_requestOpenFile(apx_fileManager_t *self, uint32_t address)
 {
-   if (self != 0 && address != RMF_INVALID_ADDRESS)
+   if ( (self != 0) && ( (address & RMF_ADDRESS_MASK_INTERNAL) != RMF_INVALID_ADDRESS))
    {
       apx_file_t *file = apx_fileManagerShared_findFileByAddress(&self->shared, address);
       if (file != 0)
@@ -171,8 +180,14 @@ apx_error_t apx_fileManager_requestOpenFile(apx_fileManager_t *self, uint32_t ad
          if (apx_file_isRemoteFile(file) )
          {
             apx_fileManagerWorker_sendFileOpenMsg(&self->worker, address);
+            return APX_NO_ERROR;
+         }
+         else
+         {
+            return APX_NOT_IMPLEMENTED_ERROR;
          }
       }
+      return APX_FILE_NOT_FOUND_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
