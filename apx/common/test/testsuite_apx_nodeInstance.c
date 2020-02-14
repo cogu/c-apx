@@ -74,7 +74,7 @@ static void test_apx_nodeInstance_manuallyCreateClientNodeUsingAPI(CuTest *tc)
          "N\"TestNode\"\n"
          "R\"TestPort\"C:=255\n";
 
-   apx_nodeData2_t *nodeData;
+   apx_nodeData_t *nodeData;
    apx_nodeInstance_t *inst;
    apx_node_t *node;
    apx_programType_t errProgramType;
@@ -87,9 +87,9 @@ static void test_apx_nodeInstance_manuallyCreateClientNodeUsingAPI(CuTest *tc)
    CuAssertPtrNotNull(tc, inst);
    nodeData = apx_nodeInstance_getNodeData(inst);
    CuAssertPtrNotNull(tc, nodeData);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData2_createDefinitionBuffer(nodeData, apx_len ));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createDefinitionBuffer(nodeData, apx_len ));
    CuAssertUIntEquals(tc, (apx_size_t) strlen(apx_text), nodeData->definitionDataLen);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData2_writeDefinitionData(nodeData, (const uint8_t*) apx_text, 0u, apx_len));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_writeDefinitionData(nodeData, (const uint8_t*) apx_text, 0u, apx_len));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_parseDefinition(inst, parser));
    node = apx_nodeInstance_getParseTree(inst);
    CuAssertPtrNotNull(tc, node);

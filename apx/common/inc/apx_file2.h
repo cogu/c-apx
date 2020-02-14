@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_file2.h
+* \file      apx_file.h
 * \author    Conny Gustafsson
 * \date      2018-08-30
 * \brief     Improved version of apx_file
@@ -23,8 +23,8 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_FILE2_H
-#define APX_FILE2_H
+#ifndef APX_FILE_H
+#define APX_FILE_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
@@ -52,12 +52,12 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
-struct apx_file2_tag;
-struct apx_fileManager2_tag;
+struct apx_file_tag;
+struct apx_fileManager_tag;
 
-typedef apx_error_t (apx_file_open_notify_func)(void *arg, struct apx_file2_tag *file);
-typedef apx_error_t (apx_file_write_notify_func)(void *arg, struct apx_file2_tag *file, uint32_t offset, const uint8_t *src, uint32_t len);
-typedef apx_error_t (apx_file_read_const_data_func)(void *arg, struct apx_file2_tag *file, uint32_t offset, uint8_t *dest, uint32_t len);
+typedef apx_error_t (apx_file_open_notify_func)(void *arg, struct apx_file_tag *file);
+typedef apx_error_t (apx_file_write_notify_func)(void *arg, struct apx_file_tag *file, uint32_t offset, const uint8_t *src, uint32_t len);
+typedef apx_error_t (apx_file_read_const_data_func)(void *arg, struct apx_file_tag *file, uint32_t offset, uint8_t *dest, uint32_t len);
 
 typedef struct apx_fileNotificationHandler_tag
 {
@@ -66,7 +66,7 @@ typedef struct apx_fileNotificationHandler_tag
    apx_file_write_notify_func *writeNotify; //Notifies file owner that his file has just been written to (use with remote files)
 } apx_fileNotificationHandler_t;
 
-typedef struct apx_file2_tag
+typedef struct apx_file_tag
 {
    bool isFileOpen;
    bool hasFirstWrite;
@@ -74,47 +74,47 @@ typedef struct apx_file2_tag
    apx_fileType_t fileType;
    apx_fileInfo_t fileInfo;
    apx_fileNotificationHandler_t notificationHandler;
-   struct apx_fileManager2_tag *fileManager;
+   struct apx_fileManager_tag *fileManager;
    adt_list_t eventListeners; //strong references to apx_fileEventListener2_t
    MUTEX_T lock;
-} apx_file2_t;
+} apx_file_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_file2_create_rmf(apx_file2_t *self, bool isRemoteFile, const rmf_fileInfo_t *fileInfo);
-apx_error_t apx_file2_create(apx_file2_t *self, const apx_fileInfo_t *fileInfo);
+apx_error_t apx_file_create_rmf(apx_file_t *self, bool isRemoteFile, const rmf_fileInfo_t *fileInfo);
+apx_error_t apx_file_create(apx_file_t *self, const apx_fileInfo_t *fileInfo);
 #ifndef APX_EMBEDDED
-void apx_file2_destroy(apx_file2_t *self);
-apx_file2_t *apx_file2_new_rmf(bool isRemoteFile, const rmf_fileInfo_t *fileInfo);
-apx_file2_t *apx_file2_new(const apx_fileInfo_t *fileInfo);
-# define apx_file2_newLocal(fileInfo) apx_file2_new_rmf(false, fileInfo);
-# define apx_file2_newRemote(fileInfo) apx_file2_new_rmf(true, fileInfo);
-void apx_file2_delete(apx_file2_t *self);
-void apx_file2_vdelete(void *arg);
+void apx_file_destroy(apx_file_t *self);
+apx_file_t *apx_file_new_rmf(bool isRemoteFile, const rmf_fileInfo_t *fileInfo);
+apx_file_t *apx_file_new(const apx_fileInfo_t *fileInfo);
+# define apx_file_newLocal(fileInfo) apx_file_new_rmf(false, fileInfo);
+# define apx_file_newRemote(fileInfo) apx_file_new_rmf(true, fileInfo);
+void apx_file_delete(apx_file_t *self);
+void apx_file_vdelete(void *arg);
 #endif
-const char *apx_file2_basename(const apx_file2_t *self);
-const char *apx_file2_extension(const apx_file2_t *self);
-void apx_file2_open(apx_file2_t *self);
-void apx_file2_close(apx_file2_t *self);
-void apx_file2_setNotificationHandler(apx_file2_t *self, const apx_fileNotificationHandler_t *handler);
-bool apx_file2_hasFirstWrite(apx_file2_t *self);
-void apx_file2_setFirstWrite(apx_file2_t *self);
-bool apx_file2_isOpen(apx_file2_t *self);
-bool apx_file2_isLocalFile(apx_file2_t *self);
-bool apx_file2_isRemoteFile(apx_file2_t *self);
+const char *apx_file_basename(const apx_file_t *self);
+const char *apx_file_extension(const apx_file_t *self);
+void apx_file_open(apx_file_t *self);
+void apx_file_close(apx_file_t *self);
+void apx_file_setNotificationHandler(apx_file_t *self, const apx_fileNotificationHandler_t *handler);
+bool apx_file_hasFirstWrite(apx_file_t *self);
+void apx_file_setFirstWrite(apx_file_t *self);
+bool apx_file_isOpen(apx_file_t *self);
+bool apx_file_isLocalFile(apx_file_t *self);
+bool apx_file_isRemoteFile(apx_file_t *self);
 
-struct apx_fileManager2_tag* apx_file2_getFileManager(apx_file2_t *self);
-void apx_file2_setFileManager(apx_file2_t *self, struct apx_fileManager2_tag *fileManager);
-apx_fileType_t apx_file2_getApxFileType(const apx_file2_t *self);
-void apx_file2_setApxFileType(const apx_file2_t *self, apx_fileType_t);
-uint16_t apx_file2_getRmfFileType(const apx_file2_t *self);
+struct apx_fileManager_tag* apx_file_getFileManager(apx_file_t *self);
+void apx_file_setFileManager(apx_file_t *self, struct apx_fileManager_tag *fileManager);
+apx_fileType_t apx_file_getApxFileType(const apx_file_t *self);
+void apx_file_setApxFileType(const apx_file_t *self, apx_fileType_t);
+uint16_t apx_file_getRmfFileType(const apx_file_t *self);
 
-uint32_t apx_file2_getStartAddress(const apx_file2_t *self);
-apx_size_t apx_file2_getFileSize(const apx_file2_t *self);
+uint32_t apx_file_getStartAddress(const apx_file_t *self);
+apx_size_t apx_file_getFileSize(const apx_file_t *self);
 
-apx_error_t apx_file2_fileOpenNotify(apx_file2_t *self);
-apx_error_t apx_file2_fileWriteNotify(apx_file2_t *self, uint32_t offset, const uint8_t *src, uint32_t len);
+apx_error_t apx_file_fileOpenNotify(apx_file_t *self);
+apx_error_t apx_file_fileWriteNotify(apx_file_t *self, uint32_t offset, const uint8_t *src, uint32_t len);
 
-#endif //APX_FILE2_H
+#endif //APX_FILE_H
 

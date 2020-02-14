@@ -29,8 +29,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static int8_t apx_fileMap_autoInsertFile(apx_fileMap_t *self, apx_file2_t *pFile, uint32_t start_address, uint32_t end_address, uint32_t address_boundary);
-static int8_t apx_fileMap_insertFileInternal(apx_fileMap_t *self, apx_file2_t *pFile);
+static int8_t apx_fileMap_autoInsertFile(apx_fileMap_t *self, apx_file_t *pFile, uint32_t start_address, uint32_t end_address, uint32_t address_boundary);
+static int8_t apx_fileMap_insertFileInternal(apx_fileMap_t *self, apx_file_t *pFile);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -48,8 +48,8 @@ void apx_fileMap_create(apx_fileMap_t *self)
 {
    if (self != 0)
    {
-      adt_list_create(&self->fileList, apx_file2_vdelete);
-      self->lastFile = (apx_file2_t*) 0;
+      adt_list_create(&self->fileList, apx_file_vdelete);
+      self->lastFile = (apx_file_t*) 0;
    }
 }
 void apx_fileMap_destroy(apx_fileMap_t *self)
@@ -60,7 +60,7 @@ void apx_fileMap_destroy(apx_fileMap_t *self)
    }
 }
 
-int8_t apx_fileMap_insertFile(apx_fileMap_t *self, apx_file2_t *pFile)
+int8_t apx_fileMap_insertFile(apx_fileMap_t *self, apx_file_t *pFile)
 {
    if ( (self != 0) && (pFile != 0) )
    {
@@ -93,21 +93,21 @@ int8_t apx_fileMap_insertFile(apx_fileMap_t *self, apx_file2_t *pFile)
 /**
  * removes pFile from self->fileList
  */
-int8_t apx_fileMap_removeFile(apx_fileMap_t *self, apx_file2_t *pFile)
+int8_t apx_fileMap_removeFile(apx_fileMap_t *self, apx_file_t *pFile)
 {
    if ( (self != 0) && (pFile != 0) )
    {
       //TODO: fix adt_list_remove so that it returns success/failure
-      self->lastFile = (apx_file2_t*) 0;
+      self->lastFile = (apx_file_t*) 0;
       adt_list_remove(&self->fileList, pFile);
       return 0;
    }
    return -1;
 }
 
-apx_file2_t *apx_fileMap_findByAddress(apx_fileMap_t *self, uint32_t address)
+apx_file_t *apx_fileMap_findByAddress(apx_fileMap_t *self, uint32_t address)
 {
-   apx_file2_t *retval=0;
+   apx_file_t *retval=0;
    if (self != 0)
    {
       if (self->lastFile != 0)
@@ -128,7 +128,7 @@ apx_file2_t *apx_fileMap_findByAddress(apx_fileMap_t *self, uint32_t address)
          {
             uint32_t startAddress;
             uint32_t endAddress;
-            apx_file2_t *pFile = (apx_file2_t*) pIter->pItem;
+            apx_file_t *pFile = (apx_file_t*) pIter->pItem;
             assert(pFile != 0);
             startAddress = pFile->fileInfo.address & RMF_ADDRESS_MASK_INTERNAL;
             endAddress = startAddress + pFile->fileInfo.length;
@@ -148,15 +148,15 @@ apx_file2_t *apx_fileMap_findByAddress(apx_fileMap_t *self, uint32_t address)
    return retval;
 }
 
-apx_file2_t *apx_fileMap_findByName(apx_fileMap_t *self, const char *name)
+apx_file_t *apx_fileMap_findByName(apx_fileMap_t *self, const char *name)
 {
-   apx_file2_t *retval=0;
+   apx_file_t *retval=0;
    if (self != 0)
    {
       adt_list_elem_t *pIter = adt_list_iter_first(&self->fileList);
       while(pIter != 0)
       {
-         apx_file2_t *pFile = (apx_file2_t*) pIter->pItem;
+         apx_file_t *pFile = (apx_file_t*) pIter->pItem;
          assert(pFile != 0);
          if ( (strcmp(pFile->fileInfo.name, name)==0) )
          {
@@ -201,14 +201,14 @@ void  apx_fileMap_clear_weak(apx_fileMap_t *self)
    }
 }
 
-bool apx_fileMap_exist(apx_fileMap_t *self, apx_file2_t *file)
+bool apx_fileMap_exist(apx_fileMap_t *self, apx_file_t *file)
 {
    if (self != 0)
    {
       adt_list_elem_t *pIter = adt_list_iter_first(&self->fileList);
       while(pIter != 0)
       {
-         if (file == (apx_file2_t*) pIter->pItem)
+         if (file == (apx_file_t*) pIter->pItem)
          {
             return true;
          }
@@ -229,7 +229,7 @@ adt_ary_t *apx_fileMap_makeFileInfoArray(apx_fileMap_t *self)
          while(pIter != 0)
          {
             apx_fileInfo_t *fileInfo;
-            apx_file2_t *file = (apx_file2_t*) pIter->pItem;
+            apx_file_t *file = (apx_file_t*) pIter->pItem;
             fileInfo = apx_fileInfo_clone(&file->fileInfo);
             if (fileInfo == 0)
             {
@@ -253,7 +253,7 @@ adt_ary_t *apx_fileMap_makeFileInfoArray(apx_fileMap_t *self)
 /**
  * attempts to find the the last file in the range start_address..end_address and then inserts pFile after it
  */
-static int8_t apx_fileMap_autoInsertFile(apx_fileMap_t *self, apx_file2_t *pFile, uint32_t start_address, uint32_t end_address, uint32_t address_boundary)
+static int8_t apx_fileMap_autoInsertFile(apx_fileMap_t *self, apx_file_t *pFile, uint32_t start_address, uint32_t end_address, uint32_t address_boundary)
 {
    if (adt_list_is_empty(&self->fileList))
    {
@@ -267,8 +267,8 @@ static int8_t apx_fileMap_autoInsertFile(apx_fileMap_t *self, apx_file2_t *pFile
       pIter = adt_list_iter_first(&self->fileList);
       while(pIter != 0)
       {
-         apx_file2_t *pOther;
-         pOther = (apx_file2_t*) pIter->pItem;
+         apx_file_t *pOther;
+         pOther = (apx_file_t*) pIter->pItem;
          assert(pOther != 0);
 
          if( pOther->fileInfo.addressWithoutFlags >= end_address)
@@ -289,7 +289,7 @@ static int8_t apx_fileMap_autoInsertFile(apx_fileMap_t *self, apx_file2_t *pFile
       {
          uint32_t other_end_address;
          uint32_t other_start_address;
-         apx_file2_t *pOther = (apx_file2_t*) pFound->pItem;
+         apx_file_t *pOther = (apx_file_t*) pFound->pItem;
          assert(pOther != 0);
          other_start_address=pOther->fileInfo.addressWithoutFlags;
          other_end_address=other_start_address + pOther->fileInfo.length;
@@ -319,21 +319,21 @@ static int8_t apx_fileMap_autoInsertFile(apx_fileMap_t *self, apx_file2_t *pFile
    return apx_fileMap_insertFileInternal(self, pFile);
 }
 
-static int8_t apx_fileMap_insertFileInternal(apx_fileMap_t *self, apx_file2_t *pFile)
+static int8_t apx_fileMap_insertFileInternal(apx_fileMap_t *self, apx_file_t *pFile)
 {
-   self->lastFile = (apx_file2_t*) 0;
+   self->lastFile = (apx_file_t*) 0;
    if (adt_list_is_empty(&self->fileList))
    {
       adt_list_insert(&self->fileList, pFile);
    }
    else
    {
-      apx_file2_t *pLast=0;
-      apx_file2_t *pCurrent=0;
+      apx_file_t *pLast=0;
+      apx_file_t *pCurrent=0;
       adt_list_elem_t *pIter = adt_list_iter_first(&self->fileList);
       while(pIter != 0)
       {
-         pCurrent = (apx_file2_t*) pIter->pItem;
+         pCurrent = (apx_file_t*) pIter->pItem;
          assert(pCurrent != 0);
          if( pCurrent->fileInfo.addressWithoutFlags > pFile->fileInfo.addressWithoutFlags)
          {
@@ -348,7 +348,7 @@ static int8_t apx_fileMap_insertFileInternal(apx_fileMap_t *self, apx_file2_t *p
          uint32_t start_address;
          uint32_t end_address;
          assert(pCurrent != 0);
-         assert( ((apx_file2_t*) pIter->pItem) == pCurrent);
+         assert( ((apx_file_t*) pIter->pItem) == pCurrent);
          if (pLast != 0)
          {
             //check if there is room to fit this file between pLast and pFile

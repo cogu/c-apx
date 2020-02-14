@@ -26,7 +26,7 @@ typedef struct fileManagerRemoteSpy_tag
 {
    int32_t fileCreatedByRemoteCalls;
    void *arg;
-   apx_file2_t file;
+   apx_file_t file;
 }fileManagerRemoteSpy_t;
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -66,25 +66,25 @@ CuSuite* testSuite_apx_fileManagerWorker(void)
 static void test_apx_fileManagerWorker_create(CuTest* tc)
 {
    apx_fileManagerWorker_t remote;
-   apx_fileManagerShared2_t shared;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerShared2_create(&shared));
+   apx_fileManagerShared_t shared;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerShared_create(&shared));
    apx_fileManagerWorker_create(&remote, &shared, APX_SERVER_MODE);
    apx_fileManagerWorker_destroy(&remote);
-   apx_fileManagerShared2_destroy(&shared);
+   apx_fileManagerShared_destroy(&shared);
 }
 
 /*
 static void test_apx_fileManagerWorker_processFileInfo(CuTest* tc)
 {
    apx_fileManagerWorker_t remote;
-   apx_fileManagerShared2_t shared;
+   apx_fileManagerShared_t shared;
    apx_fileManagerSharedSpy_t *spy;
    uint8_t buffer[100];
    rmf_fileInfo_t info;
    int32_t msgLen;
    spy = apx_fileManagerSharedSpy_new();
    CuAssertPtrNotNull(tc, spy);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerShared2_create(&shared));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerShared_create(&shared));
    apx_fileManagerWorker_create(&remote, &shared, APX_SERVER_MODE);
 
    shared.remoteFileCreated = apx_fileManagerSharedSpy_remoteFileCreated;
@@ -95,20 +95,20 @@ static void test_apx_fileManagerWorker_processFileInfo(CuTest* tc)
    msgLen += rmf_serialize_cmdFileInfo(&buffer[msgLen], sizeof(buffer)-msgLen, &info);
 
    CuAssertIntEquals(tc, 0, spy->numRemoteFileCreatedCalls);
-   CuAssertIntEquals(tc, 0, apx_fileManagerShared2_getNumRemoteFiles(&shared));
+   CuAssertIntEquals(tc, 0, apx_fileManagerShared_getNumRemoteFiles(&shared));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerWorker_processMessage(&remote, &buffer[0], msgLen));
    CuAssertIntEquals(tc, 1, spy->numRemoteFileCreatedCalls);
-   CuAssertIntEquals(tc, 1, apx_fileManagerShared2_getNumRemoteFiles(&shared));
+   CuAssertIntEquals(tc, 1, apx_fileManagerShared_getNumRemoteFiles(&shared));
 
    apx_fileManagerWorker_destroy(&remote);
-   apx_fileManagerShared2_destroy(&shared);
+   apx_fileManagerShared_destroy(&shared);
    apx_fileManagerSharedSpy_delete(spy);
 }
 
 static void test_apx_fileManagerWorker_processFileOpenRequest(CuTest* tc)
 {
    apx_fileManagerWorker_t remote;
-   apx_fileManagerShared2_t shared;
+   apx_fileManagerShared_t shared;
    apx_fileManagerSharedSpy_t *spy;
    uint8_t buffer[100];
    rmf_cmdOpenFile_t cmd;
@@ -116,10 +116,10 @@ static void test_apx_fileManagerWorker_processFileOpenRequest(CuTest* tc)
    apx_fileInfo_t fileInfo;
    spy = apx_fileManagerSharedSpy_new();
    CuAssertPtrNotNull(tc, spy);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerShared2_create(&shared));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerShared_create(&shared));
    apx_fileManagerWorker_create(&remote, &shared, APX_SERVER_MODE);
    apx_fileInfo_create(&fileInfo, RMF_INVALID_ADDRESS, 860, "TestNode1.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, (const uint8_t*) 0);
-   apx_fileManagerShared2_createLocalFile(&shared, &fileInfo);
+   apx_fileManagerShared_createLocalFile(&shared, &fileInfo);
    apx_fileInfo_destroy(&fileInfo);
    shared.fileOpenRequested = apx_fileManagerSharedSpy_fileOpenRequested;
    shared.arg = spy;
@@ -127,7 +127,7 @@ static void test_apx_fileManagerWorker_processFileOpenRequest(CuTest* tc)
    msgLen = rmf_packHeader(&buffer[0], sizeof(buffer), RMF_CMD_START_ADDR, false);
    msgLen += rmf_serialize_cmdOpenFile(&buffer[msgLen], sizeof(buffer)-msgLen, &cmd);
 
-   CuAssertIntEquals(tc, 1, apx_fileManagerShared2_getNumLocalFiles(&shared));
+   CuAssertIntEquals(tc, 1, apx_fileManagerShared_getNumLocalFiles(&shared));
 
    CuAssertIntEquals(tc, 0, spy->numfileOpenRequestCalls);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerWorker_processMessage(&remote, &buffer[0], msgLen));
@@ -135,7 +135,7 @@ static void test_apx_fileManagerWorker_processFileOpenRequest(CuTest* tc)
 
 
    apx_fileManagerWorker_destroy(&remote);
-   apx_fileManagerShared2_destroy(&shared);
+   apx_fileManagerShared_destroy(&shared);
    apx_fileManagerSharedSpy_delete(spy);
 }
 */
@@ -143,7 +143,7 @@ static void test_apx_fileManagerWorker_processFileOpenRequest(CuTest* tc)
 /*
 static void test_apx_fileManagerWorker_serializeFileInfo(CuTest *tc)
 {
-   apx_nodeData2_t *nodeData;
+   apx_nodeData_t *nodeData;
    apx_file2_t *definitionFile;
    apx_file2_t *outDataFile;
    adt_bytearray_t bytearray;

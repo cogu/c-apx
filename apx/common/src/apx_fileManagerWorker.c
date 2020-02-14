@@ -71,7 +71,7 @@ static apx_error_t apx_fileManagerWorker_processRingBufErrorCode(adt_buf_err_t e
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared2_t *shared, apx_mode_t mode)
+apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared_t *shared, apx_mode_t mode)
 {
    if (self != 0)
    {
@@ -386,7 +386,7 @@ static THREAD_PROTO(workerThread,arg)
 static bool workerThread_processMessage(apx_fileManagerWorker_t *self, apx_msg_t *msg)
 {
    bool retval = true;
-   uint32_t connectionId = apx_fileManagerShared2_getConnectionId(self->shared);
+   uint32_t connectionId = apx_fileManagerShared_getConnectionId(self->shared);
    if (self->transmitHandler.send != 0)
    {
       apx_error_t rc;
@@ -452,12 +452,12 @@ static void workerThread_sendFileOpen(apx_fileManagerWorker_t *self, apx_msg_t *
 {
    const int32_t msgSize = RMF_CMD_ADDRESS_LEN+RMF_CMD_FILE_OPEN_LEN;
    uint8_t *msgBuf;
-   apx_file2_t *file;
+   apx_file_t *file;
    uint32_t address = msg->msgData1;
-   file = apx_fileManagerShared2_findFileByAddress(self->shared, address);
+   file = apx_fileManagerShared_findFileByAddress(self->shared, address);
    if (file != 0)
    {
-      apx_file2_open(file);
+      apx_file_open(file);
       assert(self->transmitHandler.getSendBuffer != 0);
       assert(self->transmitHandler.send != 0);
       msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
@@ -486,26 +486,26 @@ static apx_error_t workerThread_sendFileConstData(apx_fileManagerWorker_t *self,
       int32_t headerSize;
       int32_t msgSize;
       uint8_t *msgBuf;
-      apx_file2_t *file;
+      apx_file_t *file;
       uint32_t startAddress;
       uint32_t address = msg->msgData1;
       uint32_t dataSize = msg->msgData2;
       void *arg = msg->msgData4;
       apx_file_read_const_data_func *readFunc = msg->msgData3.ptr;
       uint32_t offset;
-      file = apx_fileManagerShared2_findFileByAddress(self->shared, address & RMF_ADDRESS_MASK_INTERNAL);
+      file = apx_fileManagerShared_findFileByAddress(self->shared, address & RMF_ADDRESS_MASK_INTERNAL);
       if (file == 0)
       {
          return APX_FILE_NOT_FOUND_ERROR;
       }
-      if (apx_file2_isOpen(file) == false)
+      if (apx_file_isOpen(file) == false)
       {
          return APX_FILE_NOT_OPEN_ERROR;
       }
-      startAddress =  apx_file2_getStartAddress(file);
+      startAddress =  apx_file_getStartAddress(file);
       assert(address >= startAddress);
       offset = address - startAddress;
-      assert(offset+dataSize <= apx_file2_getFileSize(file));
+      assert(offset+dataSize <= apx_file_getFileSize(file));
       assert(self->transmitHandler.getSendBuffer != 0);
       assert(self->transmitHandler.send != 0);
       assert(readFunc != 0);

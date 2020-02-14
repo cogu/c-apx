@@ -135,7 +135,7 @@ static void test_transmitHandlerInitializedOnConnectionAttach(CuTest* tc)
    CuAssertPtrNotNull(tc, connection);
 
    apx_client_attachConnection(client, (apx_clientConnectionBase_t*) connection);
-   apx_fileManager2_t *fileManager = apx_client_getFileManager(client);
+   apx_fileManager_t *fileManager = apx_client_getFileManager(client);
    CuAssertPtrNotNull(tc, fileManager);
    apx_fileManagerWorker_copyTransmitHandler(&fileManager->worker, &transmitHandler);
    CuAssertPtrEquals(tc, connection, transmitHandler.arg);
@@ -162,8 +162,8 @@ static void test_localNodesShallBeAttachedToConnectionFileManager(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition2));
    apx_clientTestConnection_t *connection = apx_clientTestConnection_new();
    apx_client_attachConnection(client, &connection->base);
-   apx_fileManager2_t *fileManager = apx_client_getFileManager(client);
-   CuAssertIntEquals(tc, 4, apx_fileManager2_getNumLocalFiles(fileManager));
+   apx_fileManager_t *fileManager = apx_client_getFileManager(client);
+   CuAssertIntEquals(tc, 4, apx_fileManager_getNumLocalFiles(fileManager));
    apx_client_delete(client);
 }
 
@@ -174,8 +174,8 @@ static void test_fileOpenNotifyHandlerIsRegisteredWhenNodesAreConnectedToFileMan
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition2));
    apx_clientTestConnection_t *connection = apx_clientTestConnection_new();
    apx_client_attachConnection(client, &connection->base);
-   apx_fileManager2_t *fileManager = apx_client_getFileManager(client);
-   CuAssertIntEquals(tc, 4, apx_fileManager2_getNumLocalFiles(fileManager));
+   apx_fileManager_t *fileManager = apx_client_getFileManager(client);
+   CuAssertIntEquals(tc, 4, apx_fileManager_getNumLocalFiles(fileManager));
    apx_client_delete(client);
 
 }

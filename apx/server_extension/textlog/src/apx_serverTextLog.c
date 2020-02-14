@@ -59,13 +59,13 @@ static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const 
 
 static void apx_serverTextLog_onConnected(void *arg, apx_serverConnectionBase_t *connection);
 static void apx_serverTextLog_onDisconnected(void *arg, apx_serverConnectionBase_t *connection);
-static void apx_serverTextLog_onDefinitionDataWritten(void *arg, struct apx_nodeData2_tag *nodeData, uint32_t offset, uint32_t len);
-static void apx_serverTextLog_onOutPortDataWritten(void *arg, struct apx_nodeData2_tag *nodeData, uint32_t offset, uint32_t len);
-static void apx_serverTextLog_onNodeDataComplete(void *arg, struct apx_nodeData2_tag *nodeData);
-static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData2_t *nodeData, apx_portConnectionTable_t *connectionTable);
-static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData2_t *nodeData, apx_portConnectionTable_t *connectionTable);
-static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData2_t *nodeData, apx_portConnectionTable_t *connectionTable);
-static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData2_t *nodeData, apx_portConnectionTable_t *connectionTable);
+static void apx_serverTextLog_onDefinitionDataWritten(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
+static void apx_serverTextLog_onOutPortDataWritten(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
+static void apx_serverTextLog_onNodeDataComplete(void *arg, struct apx_nodeData_tag *nodeData);
+static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
+static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
+static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
+static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -148,8 +148,8 @@ void apx_serverTextLog_closeAll(apx_serverTextLog_t *self)
 //////////////////////////////////////////////////////////////////////////////
 static void apx_serverTextLog_registerServerListener(apx_serverTextLog_t *self)
 {
-   apx_serverEventListener2_t eventListener;
-   memset(&eventListener, 0, sizeof(apx_serverEventListener2_t));
+   apx_serverEventListener_t eventListener;
+   memset(&eventListener, 0, sizeof(apx_serverEventListener_t));
    eventListener.arg = (void*) self;
    eventListener.serverConnect2 = apx_serverTextLog_onConnected;
    eventListener.serverDisconnect2 = apx_serverTextLog_onDisconnected;
@@ -203,55 +203,55 @@ static void apx_serverTextLog_onDisconnected(void *arg, apx_serverConnectionBase
    }
 }
 
-static void apx_serverTextLog_onDefinitionDataWritten(void *arg, apx_nodeData2_t *nodeData, uint32_t offset, uint32_t len)
+static void apx_serverTextLog_onDefinitionDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) )
    {
       apx_textLogBase_printf(&self->base, "[%u] %s: Definition data written (%u, %u)",
-            apx_nodeData2_getConnectionId(nodeData),
-            apx_nodeData2_getName(nodeData),
+            apx_nodeData_getConnectionId(nodeData),
+            apx_nodeData_getName(nodeData),
             (unsigned int) offset,
             (unsigned int) len);
    }
 }
 
-static void apx_serverTextLog_onOutPortDataWritten(void *arg, apx_nodeData2_t *nodeData, uint32_t offset, uint32_t len)
+static void apx_serverTextLog_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) )
    {
       apx_textLogBase_printf(&self->base, "[%u] %s: Outport data written (%u, %u)",
-            apx_nodeData2_getConnectionId(nodeData),
-            apx_nodeData2_getName(nodeData),
+            apx_nodeData_getConnectionId(nodeData),
+            apx_nodeData_getName(nodeData),
             (unsigned int) offset,
             (unsigned int) len);
    }
 }
 
-static void apx_serverTextLog_onNodeDataComplete(void *arg, apx_nodeData2_t *nodeData)
+static void apx_serverTextLog_onNodeDataComplete(void *arg, apx_nodeData_t *nodeData)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) )
    {
       apx_textLogBase_printf(&self->base, "[%u] %s: Node Complete",
-            apx_nodeData2_getConnectionId(nodeData),
-            apx_nodeData2_getName(nodeData));
+            apx_nodeData_getConnectionId(nodeData),
+            apx_nodeData_getName(nodeData));
    }
 }
 
 
-static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData2_t *nodeData, apx_portConnectionTable_t *connectionTable)
+static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) && (connectionTable != 0))
    {
 #if 0
       int32_t localPortId;
-      apx_node_t *localNode = apx_nodeData2_getNode(nodeData);
+      apx_node_t *localNode = apx_nodeData_getNode(nodeData);
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
       {
-         apx_connectionBase_t* connection = apx_nodeData2_getConnection(nodeData);
+         apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
          apx_portDataRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
@@ -260,7 +260,7 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData2_t *
             int32_t remotePortId;
             apx_port_t *localPort;
             apx_port_t *remotePort;
-            apx_node_t *remoteNode = apx_nodeData2_getNode(portref->nodeData);
+            apx_node_t *remoteNode = apx_nodeData_getNode(portref->nodeData);
             remotePortId = apx_portDataRef_getPortId(portref);
             localPort = apx_node_getProvidePort(localNode, localPortId);
             remotePort = apx_node_getRequirePort(remoteNode, remotePortId);
@@ -280,17 +280,17 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData2_t *
    }
 }
 
-static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData2_t *nodeData, apx_portConnectionTable_t *connectionTable)
+static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) && (connectionTable != 0) )
    {
 #if 0
       int32_t localPortId;
-      apx_node_t *localNode = apx_nodeData2_getNode(nodeData);
+      apx_node_t *localNode = apx_nodeData_getNode(nodeData);
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
       {
-         apx_connectionBase_t* connection = apx_nodeData2_getConnection(nodeData);
+         apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
          apx_portDataRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
@@ -299,7 +299,7 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData2_
             int32_t remotePortId;
             apx_port_t *localPort;
             apx_port_t *remotePort;
-            apx_node_t *remoteNode = apx_nodeData2_getNode(portref->nodeData);
+            apx_node_t *remoteNode = apx_nodeData_getNode(portref->nodeData);
             remotePortId = apx_portDataRef_getPortId(portref);
             localPort = apx_node_getProvidePort(localNode, localPortId);
             remotePort = apx_node_getRequirePort(remoteNode, remotePortId);
@@ -318,17 +318,17 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData2_
    }
 }
 
-static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData2_t *nodeData, apx_portConnectionTable_t *connectionTable)
+static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) && (connectionTable != 0))
    {
 #if 0
       int32_t localPortId;
-      apx_node_t *localNode = apx_nodeData2_getNode(nodeData);
+      apx_node_t *localNode = apx_nodeData_getNode(nodeData);
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
       {
-         apx_connectionBase_t* connection = apx_nodeData2_getConnection(nodeData);
+         apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
          apx_portDataRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
@@ -337,7 +337,7 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData2_t *
             int32_t remotePortId;
             apx_port_t *localPort;
             apx_port_t *remotePort;
-            apx_node_t *remoteNode = apx_nodeData2_getNode(portref->nodeData);
+            apx_node_t *remoteNode = apx_nodeData_getNode(portref->nodeData);
             remotePortId = apx_portDataRef_getPortId(portref);
             localPort = apx_node_getRequirePort(localNode, localPortId);
             remotePort = apx_node_getProvidePort(remoteNode, remotePortId);
@@ -357,17 +357,17 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData2_t *
    }
 }
 
-static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData2_t *nodeData, apx_portConnectionTable_t *connectionTable)
+static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) && (connectionTable != 0) )
    {
 #if 0
       int32_t localPortId;
-      apx_node_t *localNode = apx_nodeData2_getNode(nodeData);
+      apx_node_t *localNode = apx_nodeData_getNode(nodeData);
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
       {
-         apx_connectionBase_t* connection = apx_nodeData2_getConnection(nodeData);
+         apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
          apx_portDataRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
@@ -376,7 +376,7 @@ static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData2_
             int32_t remotePortId;
             apx_port_t *localPort;
             apx_port_t *remotePort;
-            apx_node_t *remoteNode = apx_nodeData2_getNode(portref->nodeData);
+            apx_node_t *remoteNode = apx_nodeData_getNode(portref->nodeData);
             remotePortId = apx_portDataRef_getPortId(portref);
             localPort = apx_node_getRequirePort(localNode, localPortId);
             remotePort = apx_node_getProvidePort(remoteNode, remotePortId);

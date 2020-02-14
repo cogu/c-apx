@@ -49,8 +49,8 @@ static void test_apx_eventLoop_disconnected_event(CuTest* tc);
 
 /*
 static void mockHandlerReset(void);
-static void mock_onConnected(void *arg, struct apx_fileManager2_tag *fileManager);
-static void mock_onDisconnected(void *arg, struct apx_fileManager2_tag *fileManager);
+static void mock_onConnected(void *arg, struct apx_fileManager_tag *fileManager);
+static void mock_onDisconnected(void *arg, struct apx_fileManager_tag *fileManager);
 */
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -116,12 +116,12 @@ static void mockHandlerReset(void)
    m_onDisconnectedCount = 0;
 }
 
-static void mock_onConnected(void *arg, struct apx_fileManager2_tag *fileManager)
+static void mock_onConnected(void *arg, struct apx_fileManager_tag *fileManager)
 {
    m_onConnectedCount++;
 }
 
-static void mock_onDisconnected(void *arg, struct apx_fileManager2_tag *fileManager)
+static void mock_onDisconnected(void *arg, struct apx_fileManager_tag *fileManager)
 {
    m_onDisconnectedCount++;
 }

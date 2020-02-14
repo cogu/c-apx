@@ -52,7 +52,7 @@
 
 typedef struct apx_fileManagerWorker_tag
 {
-   apx_fileManagerShared2_t *shared; //weak reference (do not delete on destruction)
+   apx_fileManagerShared_t *shared; //weak reference (do not delete on destruction)
    MUTEX_T mutex; //for locking variables in this object
    SPINLOCK_T lock; //used exclusively by workerThread message queue
    THREAD_T workerThread; //local transmit thread
@@ -74,7 +74,7 @@ typedef struct apx_fileManagerWorker_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared2_t *shared, apx_mode_t mode);
+apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared_t *shared, apx_mode_t mode);
 void apx_fileManagerWorker_destroy(apx_fileManagerWorker_t *self);
 
 //Direct API

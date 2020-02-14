@@ -43,7 +43,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_nodeData2_writeDefinitionBuffer(CuTest *tc);
+static void test_apx_nodeData_writeDefinitionBuffer(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -56,7 +56,7 @@ CuSuite* testSuite_apx_nodeData2(void)
 {
    CuSuite* suite = CuSuiteNew();
 
-   SUITE_ADD_TEST(suite, test_apx_nodeData2_writeDefinitionBuffer);
+   SUITE_ADD_TEST(suite, test_apx_nodeData_writeDefinitionBuffer);
 
    return suite;
 }
@@ -64,21 +64,21 @@ CuSuite* testSuite_apx_nodeData2(void)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_nodeData2_writeDefinitionBuffer(CuTest *tc)
+static void test_apx_nodeData_writeDefinitionBuffer(CuTest *tc)
 {
    const char *apx_text = "APX/1.2\n"
          "N\"TestNode\"\n"
          "R\"TestPort\"C:=255\n";
 
-   apx_nodeData2_t *nodeData;
+   apx_nodeData_t *nodeData;
    apx_size_t apx_len = (apx_size_t) strlen(apx_text);
 
-   nodeData =  apx_nodeData2_new();
+   nodeData =  apx_nodeData_new();
    CuAssertPtrNotNull(tc, nodeData);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData2_createDefinitionBuffer(nodeData, apx_len ));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createDefinitionBuffer(nodeData, apx_len ));
    CuAssertUIntEquals(tc, (apx_size_t) strlen(apx_text), nodeData->definitionDataLen);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData2_writeDefinitionData(nodeData, (const uint8_t*) apx_text, 0u, apx_len));
-   apx_nodeData2_delete(nodeData);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_writeDefinitionData(nodeData, (const uint8_t*) apx_text, 0u, apx_len));
+   apx_nodeData_delete(nodeData);
 
 }
 

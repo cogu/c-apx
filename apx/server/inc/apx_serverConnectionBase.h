@@ -60,7 +60,7 @@ apx_error_t apx_serverConnectionBase_create(apx_serverConnectionBase_t *self, ap
 void apx_serverConnectionBase_destroy(apx_serverConnectionBase_t *self);
 //This class has no delete functions as it is an abstract base class
 
-apx_fileManager2_t *apx_serverConnectionBase_getFileManager(apx_serverConnectionBase_t *self);
+apx_fileManager_t *apx_serverConnectionBase_getFileManager(apx_serverConnectionBase_t *self);
 int8_t apx_serverConnectionBase_dataReceived(apx_serverConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 void apx_serverConnectionBase_start(apx_serverConnectionBase_t *self);
 void apx_serverConnectionBase_defaultEventHandler(void *arg, apx_event_t *event);

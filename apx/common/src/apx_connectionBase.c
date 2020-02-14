@@ -4,7 +4,7 @@
 * \date      2018-12-09
 * \brief     Base class for all connections (client and server)
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -117,7 +117,7 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
          apx_nodeManager_destroy(&self->nodeManager);
          return APX_MEM_ERROR;
       }
-      rc = apx_fileManager2_create(&self->fileManager, mode, self);
+      rc = apx_fileManager_create(&self->fileManager, mode, self);
       if (rc != APX_NO_ERROR)
       {
          apx_nodeManager_destroy(&self->nodeManager);
@@ -126,7 +126,7 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       rc = apx_connectionBase_initTransmitHandler(self);
       if (rc != APX_NO_ERROR)
       {
-         apx_fileManager2_destroy(&self->fileManager);
+         apx_fileManager_destroy(&self->fileManager);
          apx_nodeManager_destroy(&self->nodeManager);
          apx_eventLoop_destroy(&self->eventLoop);
       }
@@ -141,7 +141,7 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self)
 {
    if (self != 0)
    {
-      apx_fileManager2_destroy(&self->fileManager);
+      apx_fileManager_destroy(&self->fileManager);
       apx_eventLoop_destroy(&self->eventLoop);
       apx_nodeManager_destroy(&self->nodeManager);
       MUTEX_DESTROY(self->eventListenerMutex);
@@ -166,13 +166,13 @@ void apx_connectionBase_vdelete(void *arg)
    apx_connectionBase_delete((apx_connectionBase_t*) arg);
 }
 
-apx_fileManager2_t *apx_connectionBase_getFileManager(apx_connectionBase_t *self)
+apx_fileManager_t *apx_connectionBase_getFileManager(apx_connectionBase_t *self)
 {
    if (self != 0)
    {
       return &self->fileManager;
    }
-   return (apx_fileManager2_t*) 0;
+   return (apx_fileManager_t*) 0;
 }
 
 void apx_connectionBase_setEventHandler(apx_connectionBase_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg)
@@ -226,7 +226,7 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
          rc = apx_nodeInstance_createProvidePortDataFileInfo(nodeInstance, &fileInfo);
          if (rc == APX_NO_ERROR)
          {
-            apx_file2_t *localFile = apx_fileManager2_createLocalFile(&self->fileManager, &fileInfo);
+            apx_file_t *localFile = apx_fileManager_createLocalFile(&self->fileManager, &fileInfo);
             apx_fileInfo_destroy(&fileInfo);
             if (localFile != 0)
             {
@@ -237,7 +237,7 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
       rc = apx_nodeInstance_createDefinitionFileInfo(nodeInstance, &fileInfo);
       if (rc == APX_NO_ERROR)
       {
-         apx_file2_t *localFile = apx_fileManager2_createLocalFile(&self->fileManager, &fileInfo);
+         apx_file_t *localFile = apx_fileManager_createLocalFile(&self->fileManager, &fileInfo);
          apx_fileInfo_destroy(&fileInfo);
          if (localFile != 0)
          {
@@ -251,7 +251,7 @@ apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const 
 {
    if (self != 0)
    {
-      return apx_fileManager2_messageReceived(&self->fileManager, msgBuf, msgLen);
+      return apx_fileManager_messageReceived(&self->fileManager, msgBuf, msgLen);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -266,7 +266,7 @@ apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const 
       apx_error_t rc = apx_fileInfo_create_rmf(&fileInfo, remoteFileInfo, true);
       if (rc == APX_NO_ERROR)
       {
-         apx_file2_t *file = apx_fileManager2_fileInfoNotify(&self->fileManager, &fileInfo);
+         apx_file_t *file = apx_fileManager_fileInfoNotify(&self->fileManager, &fileInfo);
          if (file == 0)
          {
             apx_fileInfo_destroy(&fileInfo);
@@ -294,21 +294,21 @@ apx_error_t apx_connectionBase_fileOpenNotify(apx_connectionBase_t *self, uint32
 {
    if (self != 0 )
    {
-      apx_file2_t *file = apx_fileManager2_findFileByAddress(&self->fileManager, address & RMF_ADDRESS_MASK_INTERNAL);
+      apx_file_t *file = apx_fileManager_findFileByAddress(&self->fileManager, address & RMF_ADDRESS_MASK_INTERNAL);
       if (file != 0)
       {
-         apx_file2_open(file);
-         return apx_file2_fileOpenNotify(file);
+         apx_file_open(file);
+         return apx_file_fileOpenNotify(file);
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file2_t *file, uint32_t offset, const uint8_t *data, uint32_t len)
+apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len)
 {
    if ( (self != 0) && (file != 0) && (data != 0) )
    {
-      apx_error_t retval = apx_file2_fileWriteNotify(file, offset, data, len);
+      apx_error_t retval = apx_file_fileWriteNotify(file, offset, data, len);
       if (retval == APX_NO_ERROR)
       {
          ///TODO: trigger generic event listeners here?
@@ -352,7 +352,7 @@ void apx_connectionBase_emitFileManagerPreStartEvent(apx_connectionBase_t *self)
    if (self != 0)
    {
       apx_event_t event;
-      apx_fileManager2_createPreStartEvent(&event, &self->fileManager);
+      apx_fileManager_createPreStartEvent(&event, &self->fileManager);
       apx_eventLoop_append(&self->eventLoop, &event);
    }
 }
@@ -362,29 +362,29 @@ void apx_connectionBase_emitFileManagerPostStopEvent(apx_connectionBase_t *self)
    if (self != 0)
    {
       apx_event_t event;
-      apx_fileManager2_createPostStopEvent(&event, &self->fileManager);
+      apx_fileManager_createPostStopEvent(&event, &self->fileManager);
       apx_eventLoop_append(&self->eventLoop, &event);
    }
 }
 */
 
-void apx_connectionBase_emitFileRevokedEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, const void *caller)
+void apx_connectionBase_emitFileRevokedEvent(apx_connectionBase_t *self, struct apx_file_tag *file, const void *caller)
 {
    if (self != 0)
    {
 /*      apx_event_t event;
-      apx_fileManager2_createFileRevokedEvent(&event, &self->fileManager, file, caller);
+      apx_fileManager_createFileRevokedEvent(&event, &self->fileManager, file, caller);
       apx_eventLoop_append(&self->eventLoop, &event);
 */
    }
 }
 
-void apx_connectionBase_emitFileOpenedEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, const void *caller)
+void apx_connectionBase_emitFileOpenedEvent(apx_connectionBase_t *self, struct apx_file_tag *file, const void *caller)
 {
    if (self != 0)
    {
 /*      apx_event_t event;
-      apx_fileManager2_createFileOpenedEvent(&event, &self->fileManager, file, caller);
+      apx_fileManager_createFileOpenedEvent(&event, &self->fileManager, file, caller);
       apx_eventLoop_append(&self->eventLoop, &event);
 */
    }
@@ -417,7 +417,7 @@ void apx_connectionBase_emitHeaderAccepted(apx_connectionBase_t *self)
    apx_eventLoop_append(&self->eventLoop, &event);
 }
 
-void apx_connectionBase_emitRemoteFileWrittenType1(apx_connectionBase_t *self, struct apx_file2_tag *remoteFile, struct apx_file2_tag *file, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit)
+void apx_connectionBase_emitRemoteFileWrittenType1(apx_connectionBase_t *self, struct apx_file_tag *remoteFile, struct apx_file_tag *file, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit)
 {
    if (self != 0)
    {
@@ -476,7 +476,7 @@ void apx_connectionBase_defaultEventHandler(apx_connectionBase_t *self, apx_even
    if ( (self != 0) && (event != 0) )
    {
       apx_portConnectionTable_t *connectionTable;
-      apx_nodeData2_t *nodeData;
+      apx_nodeData_t *nodeData;
 
 
       switch(event->evType)
@@ -519,7 +519,7 @@ void apx_connectionBase_setConnectionId(apx_connectionBase_t *self, uint32_t con
    if (self != 0)
    {
       self->connectionId = connectionId;
-      apx_fileManager2_setConnectionId(&self->fileManager, connectionId);
+      apx_fileManager_setConnectionId(&self->fileManager, connectionId);
    }
 }
 
@@ -536,7 +536,7 @@ void apx_connectionBase_getTransmitHandler(apx_connectionBase_t *self, apx_trans
 {
    if (self != 0)
    {
-      apx_fileManager2_copyTransmitHandler(&self->fileManager, transmitHandler);
+      apx_fileManager_copyTransmitHandler(&self->fileManager, transmitHandler);
    }
 }
 
@@ -811,7 +811,7 @@ static apx_error_t apx_connectionBase_initTransmitHandler(apx_connectionBase_t *
       {
          return rc;
       }
-      apx_fileManager2_setTransmitHandler(&self->fileManager, &handler);
+      apx_fileManager_setTransmitHandler(&self->fileManager, &handler);
    }
    return APX_NO_ERROR;
 }

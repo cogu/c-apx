@@ -92,7 +92,7 @@ void* apx_clientEventListenerSpy_register(apx_clientEventListenerSpy_t *self, ap
 {
    if ( (self != 0) && (client != 0) )
    {
-      apx_clientEventListener2_t handler;
+      apx_clientEventListener_t handler;
       handler.arg = (void*) self;
       handler.clientConnect2 = apx_clientEventListenerSpy_onConnect;
       handler.clientDisconnect2 = apx_clientEventListenerSpy_onDisconnect;

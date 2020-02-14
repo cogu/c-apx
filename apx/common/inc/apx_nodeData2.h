@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_nodeData2.h
+* \file      apx_nodeData.h
 * \author    Conny Gustafsson
 * \date      2019-12-02
 * \brief     Container for data in an APX node that changes over time (port values, port connection count etc.)
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -23,8 +23,8 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_NODE_DATA2_H
-#define APX_NODE_DATA2_H
+#ifndef APX_NODE_DATA_H
+#define APX_NODE_DATA_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
@@ -47,7 +47,7 @@
 //forward declarations
 struct apx_nodeInstance_tag;
 
-typedef struct apx_nodeData2Buffers_tag
+typedef struct apx_nodeDataBuffers_tag
 {
    uint8_t *definitionDataBuf;
    uint8_t *requirePortPortDataBuf;
@@ -61,9 +61,9 @@ typedef struct apx_nodeData2Buffers_tag
    apx_portCount_t numProvidePorts;
    uint8_t definitionChecksumType;
    uint8_t definitionChecksumData[APX_CHECKSUMLEN_SHA256];
-} apx_nodeData2Buffers_t;
+} apx_nodeDataBuffers_t;
 
-typedef struct apx_nodeData2_tag
+typedef struct apx_nodeData_tag
 {
    bool isWeakref; //when true all pointers in this object is owned by some other part of the program. if false then all pointers are created/freed by this class.
    uint8_t definitionChecksumType;
@@ -86,70 +86,70 @@ typedef struct apx_nodeData2_tag
    SPINLOCK_T internalLock;
 #endif
    struct apx_nodeInstance_tag *parent; //pointer to parent nodeInstance (weak reference)
-} apx_nodeData2_t;
+} apx_nodeData_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
 ////////////////// Constructor/Destructor //////////////////
-void apx_nodeData2_create(apx_nodeData2_t *self, apx_nodeData2Buffers_t *buffers);
-void apx_nodeData2_destroy(apx_nodeData2_t *self);
+void apx_nodeData_create(apx_nodeData_t *self, apx_nodeDataBuffers_t *buffers);
+void apx_nodeData_destroy(apx_nodeData_t *self);
 #ifndef APX_EMBEDDED
-apx_nodeData2_t *apx_nodeData2_new(void);
-void apx_nodeData2_delete(apx_nodeData2_t *self);
-void apx_nodeData2_vdelete(void *arg);
+apx_nodeData_t *apx_nodeData_new(void);
+void apx_nodeData_delete(apx_nodeData_t *self);
+void apx_nodeData_vdelete(void *arg);
 #endif
 
 ////////////////// Data Buffer API //////////////////
 #ifndef APX_EMBEDDED
-apx_error_t apx_nodeData2_createDefinitionBuffer(apx_nodeData2_t *self, apx_size_t bufferLen);
+apx_error_t apx_nodeData_createDefinitionBuffer(apx_nodeData_t *self, apx_size_t bufferLen);
 #endif
-void apx_nodeData2_lockDefinitionData(apx_nodeData2_t *self);
-void apx_nodeData2_unlockDefinitionData(apx_nodeData2_t *self);
-const uint8_t *apx_nodeData2_getDefinitionDataBuf(apx_nodeData2_t *self);
-apx_size_t apx_nodeData2_getDefinitionDataLen(apx_nodeData2_t *self);
-uint8_t apx_nodeData2_getDefinitionChecksumType(apx_nodeData2_t *self);
-const uint8_t* apx_nodeData2_getDefinitionChecksumData(apx_nodeData2_t *self);
-apx_error_t apx_nodeData2_writeDefinitionData(apx_nodeData2_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
-apx_error_t apx_nodeData2_readDefinitionData(apx_nodeData2_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
-apx_error_t apx_nodeData2_setDefinitionChecksumData(apx_nodeData2_t *self, uint8_t checksumType, uint8_t *checksumData);
+void apx_nodeData_lockDefinitionData(apx_nodeData_t *self);
+void apx_nodeData_unlockDefinitionData(apx_nodeData_t *self);
+const uint8_t *apx_nodeData_getDefinitionDataBuf(apx_nodeData_t *self);
+apx_size_t apx_nodeData_getDefinitionDataLen(apx_nodeData_t *self);
+uint8_t apx_nodeData_getDefinitionChecksumType(apx_nodeData_t *self);
+const uint8_t* apx_nodeData_getDefinitionChecksumData(apx_nodeData_t *self);
+apx_error_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_setDefinitionChecksumData(apx_nodeData_t *self, uint8_t checksumType, uint8_t *checksumData);
 
 #ifndef APX_EMBEDDED
-apx_error_t apx_nodeData2_createRequirePortBuffer(apx_nodeData2_t *self, apx_size_t bufferLen);
+apx_error_t apx_nodeData_createRequirePortBuffer(apx_nodeData_t *self, apx_size_t bufferLen);
 #endif
-apx_size_t apx_nodeData2_getRequirePortDataLen(apx_nodeData2_t *self);
-apx_error_t apx_nodeData2_writeRequirePortData(apx_nodeData2_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
-apx_error_t apx_nodeData2_readRequirePortData(apx_nodeData2_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+apx_size_t apx_nodeData_getRequirePortDataLen(apx_nodeData_t *self);
+apx_error_t apx_nodeData_writeRequirePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_readRequirePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
 
 
 #ifndef APX_EMBEDDED
-apx_error_t apx_nodeData2_createProvidePortBuffer(apx_nodeData2_t *self, apx_size_t bufferLen);
+apx_error_t apx_nodeData_createProvidePortBuffer(apx_nodeData_t *self, apx_size_t bufferLen);
 #endif
-apx_size_t apx_nodeData2_getProvidePortDataLen(apx_nodeData2_t *self);
-apx_error_t apx_nodeData2_writeProvidePortData(apx_nodeData2_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
-apx_error_t apx_nodeData2_readProvidePortData(apx_nodeData2_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+apx_size_t apx_nodeData_getProvidePortDataLen(apx_nodeData_t *self);
+apx_error_t apx_nodeData_writeProvidePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_readProvidePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
 
 ////////////////// NodeInstance (parent) API //////////////////
-void apx_nodeData2_setNodeInstance(apx_nodeData2_t *self, struct apx_nodeInstance_tag *node);
-struct apx_nodeInstance_tag *apx_nodeData2_getNodeInstance(apx_nodeData2_t *self);
+void apx_nodeData_setNodeInstance(apx_nodeData_t *self, struct apx_nodeInstance_tag *node);
+struct apx_nodeInstance_tag *apx_nodeData_getNodeInstance(apx_nodeData_t *self);
 
 ////////////////// Port Connection Count API //////////////////
 #ifndef APX_EMBEDDED
-apx_error_t apx_nodeData2_createRequirePortConnectionCountBuffer(apx_nodeData2_t *self, apx_portCount_t numRequirePorts);
-apx_error_t apx_nodeData2_createProvidePortConnectionCountBuffer(apx_nodeData2_t *self, apx_portCount_t numProvidePorts);
+apx_error_t apx_nodeData_createRequirePortConnectionCountBuffer(apx_nodeData_t *self, apx_portCount_t numRequirePorts);
+apx_error_t apx_nodeData_createProvidePortConnectionCountBuffer(apx_nodeData_t *self, apx_portCount_t numProvidePorts);
 #endif
-apx_connectionCount_t apx_nodeData2_getRequirePortConnectionCount(apx_nodeData2_t *self, apx_portId_t portId);
-apx_connectionCount_t apx_nodeData2_getProvidePortConnectionCount(apx_nodeData2_t *self, apx_portId_t portId);
-void apx_nodeData2_incRequirePortConnectionCount(apx_nodeData2_t *self, apx_portId_t portId);
-void apx_nodeData2_incProvidePortConnectionCount(apx_nodeData2_t *self, apx_portId_t portId);
-void apx_nodeData2_decRequirePortConnectionCount(apx_nodeData2_t *self, apx_portId_t portId);
-void apx_nodeData2_decProvidePortConnectionCount(apx_nodeData2_t *self, apx_portId_t portId);
-uint32_t apx_nodeData2_getPortConnectionsTotal(apx_nodeData2_t *self);
+apx_connectionCount_t apx_nodeData_getRequirePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
+apx_connectionCount_t apx_nodeData_getProvidePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
+void apx_nodeData_incRequirePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
+void apx_nodeData_incProvidePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
+void apx_nodeData_decRequirePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
+void apx_nodeData_decProvidePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId);
+uint32_t apx_nodeData_getPortConnectionsTotal(apx_nodeData_t *self);
 
 ////////////////// Utility Functions //////////////////
-const char *apx_nodeData2_getName(apx_nodeData2_t *self);
-bool apx_nodeData2_isComplete(apx_nodeData2_t *self);
-uint32_t apx_nodeData2_getConnectionId(apx_nodeData2_t *self);
+const char *apx_nodeData_getName(apx_nodeData_t *self);
+bool apx_nodeData_isComplete(apx_nodeData_t *self);
+uint32_t apx_nodeData_getConnectionId(apx_nodeData_t *self);
 
 #endif //APX_NODE_DATA2_H

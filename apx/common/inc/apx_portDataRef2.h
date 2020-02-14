@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portDataRef2.h
+* \file      apx_portDataRef.h
 * \author    Conny Gustafsson
 * \date      2019-12-02
 * \brief     Collects all useful information about a specific port into a single container
@@ -23,8 +23,8 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_PORT_DATA_REF2_H
-#define APX_PORT_DATA_REF2_H
+#ifndef APX_PORT_DATA_REF_H
+#define APX_PORT_DATA_REF_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
@@ -40,12 +40,12 @@
 //////////////////////////////////////////////////////////////////////////////
 struct apx_nodeInstance_tag;
 
-typedef struct apx_portDataRef2_tag
+typedef struct apx_portDataRef_tag
 {
    struct apx_nodeInstance_tag *node; //weak reference to parent nodeInstance
    apx_portDataProps_t *portDataProps; //weak reference to port data properties
    apx_uniquePortId_t portId; //This is a provide-port ID if APX_PORT_ID_PROVIDE_PORT is set, otherwise it's a require-port ID.
-}apx_portDataRef2_t;
+}apx_portDataRef_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -54,11 +54,11 @@ typedef struct apx_portDataRef2_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataRef2_create(apx_portDataRef2_t *self, struct apx_nodeInstance_tag *node, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps);
-apx_portDataRef2_t *apx_portDataRef2_new(struct apx_nodeInstance_tag *node, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps);
-void apx_portDataRef2_delete(apx_portDataRef2_t *self);
-void apx_portDataRef2_vdelete(void *arg);
-bool apx_portDataRef2_isProvidePortRef(apx_portDataRef2_t *self);
-apx_portId_t apx_portDataRef2_getPortId(apx_portDataRef2_t *self);
+void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeInstance_tag *node, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps);
+apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeInstance_tag *node, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps);
+void apx_portDataRef_delete(apx_portDataRef_t *self);
+void apx_portDataRef_vdelete(void *arg);
+bool apx_portDataRef_isProvidePortRef(apx_portDataRef_t *self);
+apx_portId_t apx_portDataRef_getPortId(apx_portDataRef_t *self);
 
-#endif //APX_PORT_DATA_REF2_H
+#endif //APX_PORT_DATA_REF_H

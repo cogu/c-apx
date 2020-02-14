@@ -54,9 +54,9 @@ void apx_fileManagerSharedSpy_create(apx_fileManagerSharedSpy_t *self);
 void apx_fileManagerSharedSpy_destroy(apx_fileManagerSharedSpy_t *self);
 apx_fileManagerSharedSpy_t *apx_fileManagerSharedSpy_new(void);
 void apx_fileManagerSharedSpy_delete(apx_fileManagerSharedSpy_t *self);
-void apx_fileManagerSharedSpy_remoteFileCreated(void *arg, apx_file2_t *file);
-void apx_fileManagerSharedSpy_sendFileInfo(void *arg, const struct apx_file2_tag *pFile);
-void apx_fileManagerSharedSpy_sendFileOpen(void *arg, const apx_file2_t *file, void *caller);
-void apx_fileManagerSharedSpy_fileOpenRequested(void *arg, apx_file2_t *file);
+void apx_fileManagerSharedSpy_remoteFileCreated(void *arg, apx_file_t *file);
+void apx_fileManagerSharedSpy_sendFileInfo(void *arg, const struct apx_file_tag *pFile);
+void apx_fileManagerSharedSpy_sendFileOpen(void *arg, const apx_file_t *file, void *caller);
+void apx_fileManagerSharedSpy_fileOpenRequested(void *arg, apx_file_t *file);
 
 #endif //APX_FILE_MANAGER_SHARED_SPY_H

@@ -51,7 +51,7 @@ void apx_server_create(apx_server_t *self)
 {
    if (self != 0)
    {
-      adt_list_create(&self->serverEventListeners, apx_serverEventListener2_vdelete);
+      adt_list_create(&self->serverEventListeners, apx_serverEventListener_vdelete);
       //apx_routingTable_create(&self->routingTable);
       apx_connectionManager_create(&self->connectionManager);
       adt_list_create(&self->extensionManager, apx_serverExtension_vdelete);
@@ -115,11 +115,11 @@ void apx_server_destroy(apx_server_t *self)
    }
 }
 
-void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener2_t *eventListener)
+void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener)
 {
    if ( (self != 0) && (eventListener != 0))
    {
-      void *handle = (void*) apx_serverEventListener2_clone(eventListener);
+      void *handle = (void*) apx_serverEventListener_clone(eventListener);
       if (handle != 0)
       {
          //TODO: Add multi-thread lock
@@ -138,7 +138,7 @@ void apx_server_unregisterEventListener(apx_server_t *self, void *handle)
       bool isFound = adt_list_remove(&self->serverEventListeners, handle);
       if (isFound == true)
       {
-         apx_serverEventListener2_vdelete(handle);
+         apx_serverEventListener_vdelete(handle);
       }
    }
 }

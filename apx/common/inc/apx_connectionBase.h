@@ -51,7 +51,7 @@
 //forward declarations
 struct apx_nodeData_tag;
 struct apx_portConnectionTable_tag;
-struct apx_file2_tag;
+struct apx_file_tag;
 struct apx_fileInfo_tag;
 struct apx_transmitHandler_tag;
 
@@ -72,7 +72,7 @@ typedef struct apx_connectionBaseVTable_tag
 
 typedef struct apx_connectionBase_tag
 {
-   apx_fileManager2_t fileManager;
+   apx_fileManager_t fileManager;
    apx_nodeManager_t nodeManager;
    apx_eventLoop_t eventLoop;
    adt_list_t connectionEventListeners; //weak references to apx_connectionEventListener_t
@@ -99,7 +99,7 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
 void apx_connectionBase_destroy(apx_connectionBase_t *self);
 void apx_connectionBase_delete(apx_connectionBase_t *self);
 void apx_connectionBase_vdelete(void *arg);
-apx_fileManager2_t *apx_connectionBase_getFileManager(apx_connectionBase_t *self);
+apx_fileManager_t *apx_connectionBase_getFileManager(apx_connectionBase_t *self);
 void apx_connectionBase_setEventHandler(apx_connectionBase_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);
 void apx_connectionBase_start(apx_connectionBase_t *self);
 void apx_connectionBase_stop(apx_connectionBase_t *self);
@@ -112,7 +112,7 @@ apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const 
 
 apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
 apx_error_t apx_connectionBase_fileOpenNotify(apx_connectionBase_t *self, uint32_t address);
-apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file2_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
+apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
 apx_error_t apx_connectionBase_nodeFileWriteNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
 /*** Event triggering API ***/
@@ -121,11 +121,11 @@ void apx_connectionBase_triggerRemoteFileHeaderCompleteEvent(apx_connectionBase_
 
 //void apx_connectionBase_emitFileManagerPreStartEvent(apx_connectionBase_t *self);
 //void apx_connectionBase_emitFileManagerPostStopEvent(apx_connectionBase_t *self);
-//void apx_connectionBase_emitFileCreatedEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, const void *caller);
+//void apx_connectionBase_emitFileCreatedEvent(apx_connectionBase_t *self, struct apx_file_tag *file, const void *caller);
 
-void apx_connectionBase_emitFileRevokedEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, const void *caller);
-void apx_connectionBase_emitFileOpenedEvent(apx_connectionBase_t *self, struct apx_file2_tag *file, const void *caller);
-void apx_connectionBase_emitRemoteFileWrittenType1(apx_connectionBase_t *self, struct apx_file2_tag *remoteFile, struct apx_file2_tag *file, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit);
+void apx_connectionBase_emitFileRevokedEvent(apx_connectionBase_t *self, struct apx_file_tag *file, const void *caller);
+void apx_connectionBase_emitFileOpenedEvent(apx_connectionBase_t *self, struct apx_file_tag *file, const void *caller);
+void apx_connectionBase_emitRemoteFileWrittenType1(apx_connectionBase_t *self, struct apx_file_tag *remoteFile, struct apx_file_tag *file, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit);
 void apx_connectionBase_emitNodeComplete(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData);
 void apx_connectionBase_emitHeaderAccepted(apx_connectionBase_t *self);
 void apx_connectionBase_emitGenericEvent(apx_connectionBase_t *self, apx_event_t *event);

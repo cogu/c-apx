@@ -42,7 +42,7 @@ struct apx_serverEventRecorder_tag;
 struct apx_serverEventPlayer_tag;
 struct apx_clientEventRecorder_tag;
 struct apx_clientEventPlayer_tag;
-struct apx_file2_tag;
+struct apx_file_tag;
 
 typedef struct apx_serverEventContainer_tag
 {

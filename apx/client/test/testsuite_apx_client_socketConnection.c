@@ -91,7 +91,7 @@ static void test_apx_clientSocketConnection_transmitHandlerSetup(CuTest* tc)
 {
    apx_clientSocketConnection_t *conn;
    testsocket_t *sock;
-   apx_fileManager2_t *fileManager;
+   apx_fileManager_t *fileManager;
    testsocket_spy_create();
    sock = testsocket_spy_client();
    conn = apx_clientSocketConnection_new(sock);
