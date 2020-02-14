@@ -31,7 +31,7 @@
 #include <string.h>
 #include "apx_clientEventListenerSpy.h"
 #include "apx_clientConnectionBase.h"
-#include "apx_eventListener2.h"
+#include "apx_eventListener.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

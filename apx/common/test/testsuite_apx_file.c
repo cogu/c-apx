@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "CuTest.h"
-#include "apx_file2.h"
+#include "apx_file.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

@@ -30,11 +30,11 @@
 #include <string.h>
 #include <errno.h>
 #include "apx_error.h"
-#include "apx_file2.h"
+#include "apx_file.h"
 #include "bstr.h"
-#include "apx_eventListener2.h"
-#include "apx_nodeData2.h"
-#include "apx_fileManager2.h"
+#include "apx_eventListener.h"
+#include "apx_nodeData.h"
+#include "apx_fileManager.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

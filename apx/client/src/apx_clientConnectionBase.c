@@ -34,7 +34,7 @@
 #include "bstr.h"
 #include "numheader.h"
 #include "apx_logging.h"
-#include "apx_file2.h"
+#include "apx_file.h"
 #include "rmf.h"
 #include "apx_routingTable.h"
 #include "apx_clientInternal.h"

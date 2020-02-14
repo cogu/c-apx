@@ -33,7 +33,7 @@
 #include "apx_allocator.h"
 #include "apx_fileMap.h"
 #include "apx_fileManagerDefs.h"
-#include "apx_file2.h"
+#include "apx_file.h"
 #include "apx_fileInfo.h"
 #include "apx_error.h"
 #include "rmf.h"

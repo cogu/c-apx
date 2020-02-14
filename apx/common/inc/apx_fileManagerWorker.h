@@ -30,10 +30,10 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_fileManagerDefs.h"
-#include "apx_fileManagerShared2.h"
+#include "apx_fileManagerShared.h"
 #include "apx_transmitHandler.h"
 #include "apx_error.h"
-#include "apx_file2.h"
+#include "apx_file.h"
 #include "apx_event.h"
 #include "apx_msg.h"
 #ifndef ADT_RBFS_ENABLE

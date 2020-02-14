@@ -9,7 +9,7 @@
 #include "apx_clientSocketConnection.h"
 #include "apx_client.h"
 #include "testsocket_spy.h"
-#include "apx_fileManager2.h"
+#include "apx_fileManager.h"
 #include "apx_test_nodes.h"
 #include "rmf.h"
 #ifdef MEM_LEAK_CHECK

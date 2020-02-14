@@ -29,7 +29,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <assert.h>
-#include "apx_nodeData2.h"
+#include "apx_nodeData.h"
 #include "apx_nodeInstance.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

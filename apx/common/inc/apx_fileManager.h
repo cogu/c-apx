@@ -31,9 +31,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_types.h"
 #include "apx_error.h"
-#include "apx_file2.h"
+#include "apx_file.h"
 #include "apx_fileManagerDefs.h"
-#include "apx_fileManagerShared2.h"
+#include "apx_fileManagerShared.h"
 #include "apx_fileManagerWorker.h"
 #include "apx_fileManagerReceiver.h"
 #include "adt_bytearray.h"
