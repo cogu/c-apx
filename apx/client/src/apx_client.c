@@ -4,7 +4,7 @@
 * \date      2017-02-20
 * \brief     APX client class
 *
-* Copyright (c) 2017-2018 Conny Gustafsson
+* Copyright (c) 2017-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -81,7 +81,7 @@ apx_error_t apx_client_create(apx_client_t *self)
 {
    if( self != 0 )
    {
-      self->eventListeners = adt_list_new(apx_clientEventListener2_vdelete);
+      self->eventListeners = adt_list_new(apx_clientEventListener_vdelete);
       if (self->eventListeners == 0)
       {
          return APX_MEM_ERROR;
@@ -222,11 +222,11 @@ void apx_client_disconnect(apx_client_t *self)
 }
 
 
-void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener2_tag *listener)
+void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener_tag *listener)
 {
    if ( (self != 0) && (listener != 0))
    {
-      void *handle = (void*) apx_clientEventListener2_clone(listener);
+      void *handle = (void*) apx_clientEventListener_clone(listener);
       if (handle != 0)
       {
          SPINLOCK_ENTER(self->lock);
@@ -249,7 +249,7 @@ void apx_client_unregisterEventListener(apx_client_t *self, void *handle)
       SPINLOCK_LEAVE(self->lock);
       if (deleteSuccess)
       {
-         apx_clientEventListener2_vdelete(handle);
+         apx_clientEventListener_vdelete(handle);
       }
    }
 }
@@ -320,13 +320,13 @@ apx_nodeInstance_t *apx_client_getLastAttachedNode(apx_client_t *self)
    return (apx_nodeInstance_t*) 0;
 }
 
-struct apx_fileManager2_tag *apx_client_getFileManager(apx_client_t *self)
+struct apx_fileManager_tag *apx_client_getFileManager(apx_client_t *self)
 {
    if (self != 0 && self->connection != 0)
    {
       return &self->connection->base.fileManager;
    }
-   return (apx_fileManager2_t*) 0;
+   return (apx_fileManager_t*) 0;
 }
 
 struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self)
@@ -395,7 +395,7 @@ static void apx_client_triggerConnectedEventOnListeners(apx_client_t *self, apx_
    adt_list_elem_t *iter = adt_list_iter_first(self->eventListeners);
    while(iter != 0)
    {
-      apx_clientEventListener2_t *listener = (apx_clientEventListener2_t*) iter->pItem;
+      apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
       if ( (listener != 0) && (listener->clientConnect2 != 0))
       {
          listener->clientConnect2(listener->arg, connection);
@@ -409,7 +409,7 @@ static void apx_client_triggerDisconnectedEventOnListeners(apx_client_t *self, a
    adt_list_elem_t *iter = adt_list_iter_first(self->eventListeners);
    while(iter != 0)
    {
-      apx_clientEventListener2_t *listener = (apx_clientEventListener2_t*) iter->pItem;
+      apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
       if ( (listener != 0) && (listener->clientDisconnect2 != 0))
       {
          listener->clientDisconnect2(listener->arg, connection);

@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_eventListener2.c
+* \file      apx_eventListener.c
 * \author    Conny Gustafsson
 * \date      2020-01-03
-* \brief     New event listener
+* \brief     Event listener API
 *
 * Copyright (c) 2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -49,47 +49,47 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_clientEventListener2_t *apx_clientEventListener2_clone(apx_clientEventListener2_t *other)
+apx_clientEventListener_t *apx_clientEventListener_clone(apx_clientEventListener_t *other)
 {
    if (other != 0)
    {
-      apx_clientEventListener2_t *self = (apx_clientEventListener2_t*) malloc(sizeof(apx_clientEventListener2_t));
+      apx_clientEventListener_t *self = (apx_clientEventListener_t*) malloc(sizeof(apx_clientEventListener_t));
       if (self != 0)
       {
          *self = *other;
       }
       return self;
    }
-   return (apx_clientEventListener2_t*) 0;
+   return (apx_clientEventListener_t*) 0;
 }
 
-void apx_clientEventListener2_delete(apx_clientEventListener2_t *self)
+void apx_clientEventListener_delete(apx_clientEventListener_t *self)
 {
    if (self != 0)
    {
       free(self);
    }
 }
-void apx_clientEventListener2_vdelete(void *arg)
+void apx_clientEventListener_vdelete(void *arg)
 {
-   apx_clientEventListener2_delete((apx_clientEventListener2_t*) arg);
+   apx_clientEventListener_delete((apx_clientEventListener_t*) arg);
 }
 
-apx_serverEventListener2_t *apx_serverEventListener2_clone(apx_serverEventListener2_t *other)
+apx_serverEventListener_t *apx_serverEventListener_clone(apx_serverEventListener_t *other)
 {
    if (other != 0)
    {
-      apx_serverEventListener2_t *self = (apx_serverEventListener2_t*) malloc(sizeof(apx_serverEventListener2_t));
+      apx_serverEventListener_t *self = (apx_serverEventListener_t*) malloc(sizeof(apx_serverEventListener_t));
       if (self != 0)
       {
          *self = *other;
       }
       return self;
    }
-   return (apx_serverEventListener2_t*) 0;
+   return (apx_serverEventListener_t*) 0;
 }
 
-void apx_serverEventListener2_delete(apx_serverEventListener2_t *self)
+void apx_serverEventListener_delete(apx_serverEventListener_t *self)
 {
    if (self != 0)
    {
@@ -97,9 +97,9 @@ void apx_serverEventListener2_delete(apx_serverEventListener2_t *self)
    }
 }
 
-void apx_serverEventListener2_vdelete(void *arg)
+void apx_serverEventListener_vdelete(void *arg)
 {
-   apx_serverEventListener2_delete((apx_serverEventListener2_t*) arg);
+   apx_serverEventListener_delete((apx_serverEventListener_t*) arg);
 }
 
 

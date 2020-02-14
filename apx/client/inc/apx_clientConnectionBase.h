@@ -4,7 +4,7 @@
 * \date      2018-12-31
 * \brief     Base class for client connections
 *
-* Copyright (c) 2018-2019 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -51,7 +51,7 @@ apx_error_t apx_clientConnectionBase_create(apx_clientConnectionBase_t *self, ap
 void apx_clientConnectionBase_destroy(apx_clientConnectionBase_t *self);
 //This class has no delete functions as it is an abstract base class
 
-apx_fileManager2_t *apx_clientConnectionBase_getFileManager(apx_clientConnectionBase_t *self);
+apx_fileManager_t *apx_clientConnectionBase_getFileManager(apx_clientConnectionBase_t *self);
 void apx_clientConnectionBase_connectedCbk(apx_clientConnectionBase_t *self);
 void apx_clientConnectionBase_disconnectedCbk(apx_clientConnectionBase_t *self);
 int8_t apx_clientConnectionBase_onDataReceived(apx_clientConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);

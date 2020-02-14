@@ -52,9 +52,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager2_t *fileManager, struct apx_file2_tag *file);
+static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager_t *fileManager, struct apx_file_tag *file);
 static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
-//static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file2_tag *file);
+//static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file_tag *file);
 static void apx_clientConnectionBase_sendGreeting(apx_clientConnectionBase_t *self);
 //static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase_t *self);
 
@@ -85,13 +85,13 @@ void apx_clientConnectionBase_destroy(apx_clientConnectionBase_t *self)
    }
 }
 
-apx_fileManager2_t *apx_clientConnectionBase_getFileManager(apx_clientConnectionBase_t *self)
+apx_fileManager_t *apx_clientConnectionBase_getFileManager(apx_clientConnectionBase_t *self)
 {
    if (self != 0)
    {
       return &self->base.fileManager;
    }
-   return (apx_fileManager2_t*) 0;
+   return (apx_fileManager_t*) 0;
 }
 
 void apx_clientConnectionBase_connectedCbk(apx_clientConnectionBase_t *self)
@@ -155,7 +155,7 @@ void apx_clientConnectionBase_start(apx_clientConnectionBase_t *self)
 {
    if ( self != 0)
    {
-      apx_fileManager2_start(&self->base.fileManager);
+      apx_fileManager_start(&self->base.fileManager);
    }
 }
 
@@ -262,7 +262,7 @@ void apx_clientConnectionBaseInternal_headerAccepted(apx_clientConnectionBase_t 
    if (self != 0)
    {
       self->isAcknowledgeSeen = true;
-      apx_fileManager2_headerAccepted(&self->base.fileManager);
+      apx_fileManager_headerAccepted(&self->base.fileManager);
       apx_connectionBase_emitHeaderAccepted(&self->base);
    }
 }
@@ -283,14 +283,14 @@ void apx_clientConnectionBase_run(apx_clientConnectionBase_t *self)
    if (self != 0)
    {
       apx_connectionBase_runAll(&self->base);
-      apx_fileManager2_run(&self->base.fileManager);
+      apx_fileManager_run(&self->base.fileManager);
    }
 }
 #endif
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager2_t *fileManager, struct apx_file2_tag *file)
+static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager_t *fileManager, struct apx_file_tag *file)
 {
    apx_clientConnectionBase_t *self = (apx_clientConnectionBase_t*) arg;
    printf("file created: %s\n", file->fileInfo.name);
@@ -365,17 +365,17 @@ static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBas
    return APX_NO_ERROR;
 }
 /*
-static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file2_tag *inPortDataFile)
+static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file_tag *inPortDataFile)
 {
    if (inPortDataFile->fileInfo.fileType == RMF_FILE_TYPE_FIXED)
    {
-      apx_nodeData_t *nodeData = apx_nodeManager_find(&self->base.nodeManager, apx_file2_basename(inPortDataFile));
+      apx_nodeData_t *nodeData = apx_nodeManager_find(&self->base.nodeManager, apx_file_basename(inPortDataFile));
       if ( (nodeData != 0) && (nodeData->inPortDataBuf != 0))
       {
          if (inPortDataFile->fileInfo.length == nodeData->inPortDataLen)
          {
             apx_nodeData_setInPortDataFile(nodeData, inPortDataFile);
-            apx_fileManager2_openRemoteFile(&self->base.fileManager, inPortDataFile->fileInfo.address, self);
+            apx_fileManager_openRemoteFile(&self->base.fileManager, inPortDataFile->fileInfo.address, self);
             if (apx_nodeData_isComplete(nodeData))
             {
                apx_connectionBase_emitNodeComplete(&self->base, nodeData);
@@ -431,20 +431,20 @@ static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase
       {
          if (nodeData->definitionDataBuf != 0)
          {
-            apx_file2_t *outDataFile;
-            apx_file2_t *definitionFile = apx_nodeData_createLocalDefinitionFile(nodeData);
+            apx_file_t *outDataFile;
+            apx_file_t *definitionFile = apx_nodeData_createLocalDefinitionFile(nodeData);
             if (definitionFile != 0)
             {
-               apx_fileManager2_t *fileManager = &self->base.fileManager;
+               apx_fileManager_t *fileManager = &self->base.fileManager;
                apx_nodeData_setFileManager(nodeData, fileManager);
-               apx_fileManager2_attachLocalFile(fileManager, definitionFile, (void*) self);
+               apx_fileManager_attachLocalFile(fileManager, definitionFile, (void*) self);
             }
             outDataFile  = apx_nodeData_createLocalOutPortDataFile(nodeData);
             if (outDataFile != 0)
             {
-               apx_fileManager2_t *fileManager = &self->base.fileManager;
+               apx_fileManager_t *fileManager = &self->base.fileManager;
                apx_nodeData_setFileManager(nodeData, fileManager);
-               apx_fileManager2_attachLocalFile(fileManager, outDataFile, (void*) self);
+               apx_fileManager_attachLocalFile(fileManager, outDataFile, (void*) self);
             }
          }
       }

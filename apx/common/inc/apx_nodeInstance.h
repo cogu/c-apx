@@ -52,14 +52,14 @@ typedef struct apx_nodeInstance_tag
 {
    apx_node_t *parseTree; //Temporary parse tree of APX definition file (strong reference)
    apx_nodeInfo_t *nodeInfo; //All static information about an APX node (strong reference)
-   apx_nodeData2_t *nodeData; //All dynamic data in a node, things that change during runtime (strong reference)
-   apx_portDataRef2_t *requirePortDataRef; //strong references to apx_portDataRef2_t, length of array: info->numRequirePorts
-   apx_portDataRef2_t *providePortDataRef; //strong references to apx_portDataRef2_t, length of array: info->numProvidePorts
+   apx_nodeData_t *nodeData; //All dynamic data in a node, things that change during runtime (strong reference)
+   apx_portDataRef_t *requirePortDataRef; //strong references to apx_portDataRef_t, length of array: info->numRequirePorts
+   apx_portDataRef_t *providePortDataRef; //strong references to apx_portDataRef_t, length of array: info->numProvidePorts
    apx_portTriggerList_t *portTriggerList; //used in server mode, strong reference to apx_portTriggerList_t, length of array: info->numProvidePorts
    struct apx_connectionBase_tag *connection; //Weak reference
-   apx_file2_t *definitionFile;
-   apx_file2_t *providePortDataFile;
-   apx_file2_t *requirePortDataFile;
+   apx_file_t *definitionFile;
+   apx_file_t *providePortDataFile;
+   apx_file_t *requirePortDataFile;
 //   apx_portConnectionTable_t *requirePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
 //   apx_portConnectionTable_t *providePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
    apx_mode_t mode;
@@ -74,8 +74,8 @@ apx_nodeInstance_t *apx_nodeInstance_new(apx_mode_t mode);
 void apx_nodeInstance_delete(apx_nodeInstance_t *self);
 void apx_nodeInstance_vdelete(void *arg);
 
-apx_nodeData2_t* apx_nodeInstance_createNodeData(apx_nodeInstance_t *self);
-apx_nodeData2_t* apx_nodeInstance_getNodeData(apx_nodeInstance_t *self);
+apx_nodeData_t* apx_nodeInstance_createNodeData(apx_nodeInstance_t *self);
+apx_nodeData_t* apx_nodeInstance_getNodeData(apx_nodeInstance_t *self);
 
 
 apx_error_t apx_nodeInstance_updatePortDataDirect(apx_nodeInstance_t *destNode, apx_portDataProps_t *destDataProps, apx_nodeInstance_t *srcNode, apx_portDataProps_t *srcDataProps);
@@ -88,7 +88,7 @@ apx_error_t apx_nodeInstance_buildNodeInfo(apx_nodeInstance_t *self, apx_program
 apx_nodeInfo_t *apx_nodeInstane_getNodeInfo(apx_nodeInstance_t *self);
 void apx_nodeInstance_setConnection(apx_nodeInstance_t *self, struct apx_connectionBase_tag *connection);
 struct apx_connectionBase_tag* apx_nodeInstance_getConnection(apx_nodeInstance_t *self);
-void apx_nodeInstance_registerDefinitionFileHandler(apx_nodeInstance_t *self, apx_file2_t *file);
+void apx_nodeInstance_registerDefinitionFileHandler(apx_nodeInstance_t *self, apx_file_t *file);
 const char *apx_nodeInstance_getName(apx_nodeInstance_t *self);
 void apx_nodeInstance_cleanParseTree(apx_nodeInstance_t *self);
 apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self);

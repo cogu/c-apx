@@ -45,8 +45,8 @@
 struct adt_ary_tag;
 struct adt_list_tag;
 struct adt_hash_tag;
-struct apx_clientEventListener2_tag;
-struct apx_fileManager2_tag;
+struct apx_clientEventListener_tag;
+struct apx_fileManager_tag;
 struct apx_parser_tag;
 struct apx_nodeManager_tag;
 
@@ -99,7 +99,7 @@ apx_error_t apx_client_connectUnix(apx_client_t *self, const char *socketPath);
 #endif
 void apx_client_disconnect(apx_client_t *self);
 
-void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener2_tag *listener);
+void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener_tag *listener);
 void apx_client_unregisterEventListener(apx_client_t *self, void *handle);
 
 int32_t apx_client_getNumAttachedNodes(apx_client_t *self);
@@ -109,7 +109,7 @@ apx_clientConnectionBase_t *apx_client_getConnection(apx_client_t *self);
 
 apx_error_t apx_client_buildNode_cstr(apx_client_t *self, const char *definition_text);
 apx_nodeInstance_t *apx_client_getLastAttachedNode(apx_client_t *self);
-struct apx_fileManager2_tag *apx_client_getFileManager(apx_client_t *self);
+struct apx_fileManager_tag *apx_client_getFileManager(apx_client_t *self);
 struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self);
 
 #ifdef UNIT_TEST

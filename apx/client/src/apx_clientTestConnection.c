@@ -156,7 +156,7 @@ void apx_clientTestConnection_createRemoteFile(apx_clientTestConnection_t *self,
 {
    if ( (self != 0) && (fileInfo != 0) )
    {
-      //apx_fileManager2_onRemoteCmdFileInfo(&self->base.base.fileManager, fileInfo);
+      //apx_fileManager_onRemoteCmdFileInfo(&self->base.base.fileManager, fileInfo);
    }
 }
 
@@ -167,7 +167,7 @@ void apx_clientTestConnection_writeRemoteData(apx_clientTestConnection_t *self, 
 {
    if ( (self != 0) && (dataBuf != 0) )
    {
-      //apx_fileManager2_onWriteRemoteData(&self->base.base.fileManager, address, dataBuf, dataLen, more);
+      //apx_fileManager_onWriteRemoteData(&self->base.base.fileManager, address, dataBuf, dataLen, more);
    }
 }
 
@@ -175,7 +175,7 @@ void apx_clientTestConnection_openRemoteFile(apx_clientTestConnection_t *self, u
 {
    if (self != 0)
    {
-      //apx_fileManager2_onRemoteCmdFileOpen(&self->base.base.fileManager, address);
+      //apx_fileManager_onRemoteCmdFileOpen(&self->base.base.fileManager, address);
    }
 }
 

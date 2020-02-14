@@ -52,7 +52,7 @@ void apx_server_create(apx_server_t *self);
 void apx_server_destroy(apx_server_t *self);
 void apx_server_start(apx_server_t *self);
 void apx_server_stop(apx_server_t *self);
-void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener2_t *eventListener);
+void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener);
 void apx_server_unregisterEventListener(apx_server_t *self, void *handle);
 void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
 void apx_server_closeConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);

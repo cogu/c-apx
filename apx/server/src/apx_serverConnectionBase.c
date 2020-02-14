@@ -58,11 +58,11 @@
 static void apx_serverConnectionBase_parseGreeting(apx_serverConnectionBase_t *self, const uint8_t *msgBuf, int32_t msgLen);
 static uint8_t apx_serverConnectionBase_parseMessage(apx_serverConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 static void apx_serverConnectionBase_fileInfoNotifyImpl(void *arg, const apx_fileInfo_t *fileInfo);
-static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData2_t *nodeData, uint32_t offset, uint32_t len);
+static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len);
 static apx_error_t apx_serverConnectionBase_processNewDefinitionFile(apx_serverConnectionBase_t *self, const apx_fileInfo_t *fileInfo);
 static void apx_serverConnectionBase_processNewOutPortDataFile(apx_serverConnectionBase_t *self, const apx_fileInfo_t *fileInfo);
-static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData2_t *nodeData, apx_file2_t *definitionFile);
-static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData2_t *srcNodeData, uint32_t offset, uint32_t len);
+static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, apx_file_t *definitionFile);
+static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *srcNodeData, uint32_t offset, uint32_t len);
 static void apx_serverConnectionBase_definitionFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, uint32_t len);
 static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance);
 
@@ -101,13 +101,13 @@ void apx_serverConnectionBase_destroy(apx_serverConnectionBase_t *self)
    }
 }
 
-apx_fileManager2_t *apx_serverConnectionBase_getFileManager(apx_serverConnectionBase_t *self)
+apx_fileManager_t *apx_serverConnectionBase_getFileManager(apx_serverConnectionBase_t *self)
 {
    if (self != 0)
    {
       return &self->base.fileManager;
    }
-   return (apx_fileManager2_t*) 0;
+   return (apx_fileManager_t*) 0;
 }
 
 int8_t apx_serverConnectionBase_dataReceived(apx_serverConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
@@ -154,7 +154,7 @@ void apx_serverConnectionBase_start(apx_serverConnectionBase_t *self)
 {
    if ( self != 0)
    {
-      apx_fileManager2_start(&self->base.fileManager);
+      apx_fileManager_start(&self->base.fileManager);
    }
 }
 
@@ -163,7 +163,7 @@ void apx_serverConnectionBase_defaultEventHandler(void *arg, apx_event_t *event)
    apx_serverConnectionBase_t *self = (apx_serverConnectionBase_t*) arg;
    if (self != 0)
    {
-      apx_nodeData2_t *nodeData;
+      apx_nodeData_t *nodeData;
       apx_portConnectionTable_t *portConnectionTable;
       //apx_portDataMap_t *portDataMap;
       apx_connectionBase_t *baseConnection;
@@ -188,26 +188,26 @@ void apx_serverConnectionBase_defaultEventHandler(void *arg, apx_event_t *event)
          break;
 /*
       case APX_EVENT_REQUIRE_PORT_CONNECT:
-         nodeData = (apx_nodeData2_t*) event->evData1;
+         nodeData = (apx_nodeData_t*) event->evData1;
          portConnectionTable = (apx_portConnectionTable_t*) event->evData2;
          apx_connectionBase_triggerRequirePortsConnected(&self->base, nodeData, portConnectionTable);
          break;
       case APX_EVENT_PROVIDE_PORT_CONNECT:
-         nodeData = (apx_nodeData2_t*) event->evData1;
+         nodeData = (apx_nodeData_t*) event->evData1;
          portConnectionTable = (apx_portConnectionTable_t*) event->evData2;
-         portDataMap = apx_nodeData2_getPortDataMap(nodeData);
+         portDataMap = apx_nodeData_getPortDataMap(nodeData);
          apx_portDataMap_updatePortTriggerList(portDataMap, portConnectionTable);
          apx_connectionBase_triggerProvidePortsConnected(&self->base, nodeData, portConnectionTable);
          break;
       case APX_EVENT_REQUIRE_PORT_DISCONNECT:
-         nodeData = (apx_nodeData2_t*) event->evData1;
+         nodeData = (apx_nodeData_t*) event->evData1;
          portConnectionTable = (apx_portConnectionTable_t*) event->evData2;
          apx_connectionBase_triggerRequirePortsDisconnected(&self->base, nodeData, portConnectionTable);
          break;
       case APX_EVENT_PROVIDE_PORT_DISCONNECT:
-         nodeData = (apx_nodeData2_t*) event->evData1;
+         nodeData = (apx_nodeData_t*) event->evData1;
          portConnectionTable = (apx_portConnectionTable_t*) event->evData2;
-         portDataMap = apx_nodeData2_getPortDataMap(nodeData);
+         portDataMap = apx_nodeData_getPortDataMap(nodeData);
          apx_portDataMap_updatePortTriggerList(portDataMap, portConnectionTable);
          apx_connectionBase_triggerProvidePortsDisconnected(&self->base, nodeData, portConnectionTable);
          break;
@@ -268,7 +268,7 @@ void apx_serverConnectionBase_detachNodes(apx_serverConnectionBase_t *self)
             numNodes = apx_nodeManager_values(&self->base.nodeManager, nodeDataList);
             for(i=0;i<numNodes;i++)
             {
-               apx_nodeData2_t *nodeData = (apx_nodeData2_t*) adt_ary_value(nodeDataList, i);
+               apx_nodeData_t *nodeData = (apx_nodeData_t*) adt_ary_value(nodeDataList, i);
                apx_routingTable_detachNodeData(routingTable, nodeData);
             }
             adt_ary_delete(nodeDataList);
@@ -290,8 +290,8 @@ uint32_t apx_serverConnectionBase_getTotalPortReferences(apx_serverConnectionBas
       numNodes = apx_nodeManager_values(&self->base.nodeManager, nodeDataList);
       for(i=0; i<numNodes; i++)
       {
-         apx_nodeData2_t *nodeData = (apx_nodeData2_t*) adt_ary_value(nodeDataList, i);
-         tortReferences+= apx_nodeData2_getPortConnectionsTotal(nodeData);
+         apx_nodeData_t *nodeData = (apx_nodeData_t*) adt_ary_value(nodeDataList, i);
+         tortReferences+= apx_nodeData_getPortConnectionsTotal(nodeData);
       }
       adt_ary_delete(nodeDataList);
       return tortReferences;
@@ -319,7 +319,7 @@ void apx_serverConnectionBase_unregisterEventListener(apx_serverConnectionBase_t
 void apx_serverConnectionBase_onRemoteFileHeaderReceived(apx_serverConnectionBase_t *self)
 {
    self->isGreetingParsed = true;
-   apx_fileManager2_headerReceived(&self->base.fileManager);
+   apx_fileManager_headerReceived(&self->base.fileManager);
    apx_connectionBase_emitHeaderAccepted(&self->base);
 }
 
@@ -351,7 +351,7 @@ void apx_serverConnectionBase_run(apx_serverConnectionBase_t *self)
    if (self != 0)
    {
       apx_connectionBase_runAll(&self->base);
-      apx_fileManager2_run(&self->base.fileManager);
+      apx_fileManager_run(&self->base.fileManager);
    }
 }
 #endif
@@ -475,14 +475,14 @@ static apx_error_t apx_serverConnectionBase_processNewDefinitionFile(apx_serverC
          if (apx_nodeManager_find(&self->base.nodeManager, nodeName) != 0)
          {
             printf("APX node already exits: %s", nodeName);
-            //apx_fileManager2_sendFileAlreadyExistsError(&self->base.fileManager, file);
+            //apx_fileManager_sendFileAlreadyExistsError(&self->base.fileManager, file);
          }
          else
          {
             apx_nodeInstance_t *nodeInstance = apx_nodeManager_createNode(&self->base.nodeManager, nodeName);
             if (nodeInstance != 0)
             {
-               apx_nodeData2_t *nodeData;
+               apx_nodeData_t *nodeData;
                apx_nodeInstance_setConnection(nodeInstance, &self->base);
                nodeData = apx_nodeInstance_getNodeData(nodeInstance);
                if (nodeData != 0)
@@ -490,11 +490,11 @@ static apx_error_t apx_serverConnectionBase_processNewDefinitionFile(apx_serverC
                   retval = apx_nodeInstance_createDefinitionBuffer(nodeInstance, fileInfo->length);
                   if (retval == APX_NO_ERROR)
                   {
-                     apx_file2_t *remoteFile = apx_fileManager2_findFileByAddress(&self->base.fileManager, fileInfo->address);
+                     apx_file_t *remoteFile = apx_fileManager_findFileByAddress(&self->base.fileManager, fileInfo->address);
                      if (remoteFile != 0)
                      {
                         apx_nodeInstance_registerDefinitionFileHandler(nodeInstance, remoteFile);
-                        retval = apx_fileManager2_requestOpenFile(&self->base.fileManager, fileInfo->address);
+                        retval = apx_fileManager_requestOpenFile(&self->base.fileManager, fileInfo->address);
                      }
                      else
                      {
@@ -545,7 +545,7 @@ static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverCon
 {
    apx_error_t retval = APX_NO_ERROR;
    apx_nodeInfo_t *nodeInfo;
-   apx_nodeData2_t *nodeData;
+   apx_nodeData_t *nodeData;
    apx_size_t requirePortDataLen;
    apx_size_t providePortDataLen;
    assert(self != 0);
@@ -558,11 +558,11 @@ static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverCon
    providePortDataLen = apx_nodeInfo_calcProvidePortDataLen(nodeInfo);
    if (providePortDataLen > 0u)
    {
-      retval = apx_nodeData2_createProvidePortBuffer(nodeData, providePortDataLen);
+      retval = apx_nodeData_createProvidePortBuffer(nodeData, providePortDataLen);
    }
    if ( (retval == APX_NO_ERROR) && (requirePortDataLen > 0u))
    {
-      retval = apx_nodeData2_createRequirePortBuffer(nodeData, requirePortDataLen);
+      retval = apx_nodeData_createRequirePortBuffer(nodeData, requirePortDataLen);
    }
    return retval;
 }
@@ -575,7 +575,7 @@ static void apx_serverConnectionBase_processNewOutPortDataFile(apx_serverConnect
    if (file->fileInfo.fileType == RMF_FILE_TYPE_FIXED)
    {
 
-      apx_nodeData2_t *nodeData = apx_nodeManager_find(&self->base.nodeManager, apx_file2_basename(file));
+      apx_nodeData_t *nodeData = apx_nodeManager_find(&self->base.nodeManager, apx_file2_basename(file));
       if ( (nodeData != 0) && (nodeData->outPortDataBuf != 0))
       {
          printf("requesting opening of .out file\n");
@@ -586,21 +586,21 @@ static void apx_serverConnectionBase_processNewOutPortDataFile(apx_serverConnect
 
 
 //Type 2 event trigger
-static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData2_t *nodeData, apx_file2_t *definitionFile)
+static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, apx_file_t *definitionFile)
 {
    apx_error_t retval = APX_NO_ERROR;
 /*
    rmf_fileInfo_t info;
    apx_file2_t *inPortDataFile;
    char fileName[RMF_MAX_FILE_NAME+1];
-   uint32_t inPortDataLen = apx_nodeData2_getInPortDataLen(nodeData);
+   uint32_t inPortDataLen = apx_nodeData_getInPortDataLen(nodeData);
    apx_fileInfo_copyBaseName(&definitionFile->fileInfo, fileName, (uint32_t) sizeof(fileName));
    strcat(fileName, APX_INDATA_FILE_EXT);
    rmf_fileInfo_create(&info, fileName, RMF_INVALID_ADDRESS, inPortDataLen, RMF_FILE_TYPE_FIXED);
    inPortDataFile = apx_file2_newLocal(&info, NULL);
    if (inPortDataFile != 0)
    {
-      apx_nodeData2_setInPortDataFile(nodeData, inPortDataFile);
+      apx_nodeData_setInPortDataFile(nodeData, inPortDataFile);
    }
    else
    {
@@ -611,13 +611,13 @@ static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConne
 }
 
 //Type 1 event
-static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData2_t *nodeData, uint32_t offset, uint32_t len)
+static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
 {
 /*
    apx_serverConnectionBase_t *self = (apx_serverConnectionBase_t*) arg;
    if (self != 0 && nodeData != 0)
    {
-      apx_file2_t *file = apx_nodeData2_getOutPortDataFile(nodeData);
+      apx_file2_t *file = apx_nodeData_getOutPortDataFile(nodeData);
       if (file != 0)
       {
          if (apx_file2_isRemoteFile(file))
@@ -629,10 +629,10 @@ static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeDat
 */
 }
 
-static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData2_t *srcNodeData, uint32_t offset, uint32_t len)
+static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *srcNodeData, uint32_t offset, uint32_t len)
 {
 /*
-   apx_portDataMap_t *srcPortDataMap = apx_nodeData2_getPortDataMap(srcNodeData);
+   apx_portDataMap_t *srcPortDataMap = apx_nodeData_getPortDataMap(srcNodeData);
    if (srcPortDataMap != 0)
    {
       apx_portId_t providePortId = apx_portDataMap_findProvidePortIdFromByteOffset(srcPortDataMap, offset);
@@ -650,11 +650,11 @@ static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnecti
             apx_portDataRef_t *portDataRef = apx_portTriggerList_get(portTriggerList, i);
             if (portDataRef != 0)
             {
-               apx_nodeData2_t *destNodeData = portDataRef->nodeData;
+               apx_nodeData_t *destNodeData = portDataRef->nodeData;
                const apx_portDataProps_t *destPortDataProps = portDataRef->portDataProps;
                if (apx_portDataProps_isPlainOldData(srcPortDataProps) )
                {
-                  apx_nodeData2_routePortData(destNodeData, destPortDataProps, srcNodeData, srcPortDataProps);
+                  apx_nodeData_routePortData(destNodeData, destPortDataProps, srcNodeData, srcPortDataProps);
                }
             }
          }

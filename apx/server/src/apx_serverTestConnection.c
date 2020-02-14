@@ -177,7 +177,7 @@ void apx_serverTestConnection_writeRemoteData(apx_serverTestConnection_t *self, 
 {
    if ( (self != 0) && (dataBuf != 0) )
    {
-      //apx_fileManager2_onWriteRemoteData(&self->base.base.fileManager, address, dataBuf, dataLen, more);
+      //apx_fileManager_onWriteRemoteData(&self->base.base.fileManager, address, dataBuf, dataLen, more);
    }
 }
 
@@ -185,7 +185,7 @@ void apx_serverTestConnection_openRemoteFile(apx_serverTestConnection_t *self, u
 {
    if (self != 0)
    {
-      //apx_fileManager2_onRemoteCmdFileOpen(&self->base.base.fileManager, address);
+      //apx_fileManager_onRemoteCmdFileOpen(&self->base.base.fileManager, address);
    }
 }
 

@@ -34,12 +34,12 @@ static void test_apx_fileManager_openRemoteFile_processRequest_fixedFileNoReadHa
 static void test_apx_fileManager_openRemoteFile_processRequest_apxDefinitionFile(CuTest* tc);
 
 //helper functions
-static void attachSpyAsTransmitHandler(apx_fileManager2_t *manager, apx_transmitHandlerSpy_t *spy);
-static void attachApxClientFiles(CuTest* tc, apx_fileManager2_t *manager, uint32_t definitionFileAddress);
-static void receiveFileOpenRequest(CuTest *tc, apx_fileManager2_t *manager, uint32_t fileAddress);
-static void verifyInvalidReadHandler(CuTest *tc, apx_fileManager2_t *manager, apx_transmitHandlerSpy_t *spy, uint32_t fileAddress);
-static apx_error_t readDefinitionData(void* arg, apx_file2_t *file, uint32_t offset, uint8_t *dest, uint32_t len);
-static void verifyWriteDefinitionFile(CuTest *tc, apx_fileManager2_t *manager, apx_transmitHandlerSpy_t *spy, uint32_t fileAddress);
+static void attachSpyAsTransmitHandler(apx_fileManager_t *manager, apx_transmitHandlerSpy_t *spy);
+static void attachApxClientFiles(CuTest* tc, apx_fileManager_t *manager, uint32_t definitionFileAddress);
+static void receiveFileOpenRequest(CuTest *tc, apx_fileManager_t *manager, uint32_t fileAddress);
+static void verifyInvalidReadHandler(CuTest *tc, apx_fileManager_t *manager, apx_transmitHandlerSpy_t *spy, uint32_t fileAddress);
+static apx_error_t readDefinitionData(void* arg, apx_file_t *file, uint32_t offset, uint8_t *dest, uint32_t len);
+static void verifyWriteDefinitionFile(CuTest *tc, apx_fileManager_t *manager, apx_transmitHandlerSpy_t *spy, uint32_t fileAddress);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -83,7 +83,7 @@ static void test_apx_fileManager_attachLocalFiles(CuTest* tc)
    apx_file2_t *outDataFile;
    apx_connectionEventSpy_t spy;
    apx_serverTestConnection_t connection;
-   apx_fileManager2_t *manager;
+   apx_fileManager_t *manager;
 
    apx_serverTestConnection_create(&connection, NULL);
    apx_connectionEventSpy_create(&spy);
@@ -116,7 +116,7 @@ static void test_apx_fileManager_createRemoteFile(CuTest* tc)
    rmf_fileInfo_t info;
    int32_t msgLen;
    apx_connectionEventSpy_t spy;
-   apx_fileManager2_t *manager;
+   apx_fileManager_t *manager;
    apx_serverTestConnection_t connection;
 
    apx_serverTestConnection_create(&connection);
@@ -127,10 +127,10 @@ static void test_apx_fileManager_createRemoteFile(CuTest* tc)
    rmf_fileInfo_create(&info, "test.apx", APX_ADDRESS_DEFINITION_START, 100, RMF_FILE_TYPE_FIXED);
    msgLen = rmf_packHeader(&buffer[0], sizeof(buffer), RMF_CMD_START_ADDR, false);
    msgLen += rmf_serialize_cmdFileInfo(&buffer[msgLen], sizeof(buffer)-msgLen, &info);
-   CuAssertIntEquals(tc, msgLen, apx_fileManager2_processMessage(manager, &buffer[0], msgLen));
+   CuAssertIntEquals(tc, msgLen, apx_fileManager_processMessage(manager, &buffer[0], msgLen));
    apx_serverTestConnection_runEventLoop(&connection);
    CuAssertIntEquals(tc, 1, spy.fileCreateCount);
-   apx_file2_t *file = apx_fileManager2_findFileByAddress(manager, spy.lastFileInfo->address);
+   apx_file2_t *file = apx_fileManager_findFileByAddress(manager, spy.lastFileInfo->address);
    CuAssertPtrNotNull(tc, file);
    CuAssertTrue(tc, apx_file2_isRemoteFile(file));
    CuAssertTrue(tc, apx_file2_isOpen(file));
@@ -143,7 +143,7 @@ static void test_apx_fileManager_createRemoteFile(CuTest* tc)
 
 static void test_apx_fileManager_openRemoteFile_sendMessage(CuTest* tc)
 {
-   apx_fileManager2_t *manager;
+   apx_fileManager_t *manager;
    apx_serverTestConnection_t connection;
 
    uint8_t buffer[100];
@@ -195,7 +195,7 @@ static void test_apx_fileManager_openRemoteFile_sendMessage(CuTest* tc)
 /*
 static void test_apx_fileManager_openRemoteFile_setOpenFlag(CuTest* tc)
 {
-   apx_fileManager2_t *manager;
+   apx_fileManager_t *manager;
    apx_serverTestConnection_t connection;
 
    uint8_t buffer[100];
@@ -222,7 +222,7 @@ static void test_apx_fileManager_openRemoteFile_setOpenFlag(CuTest* tc)
 static void test_apx_fileManager_openRemoteFile_processRequest_fixedFileNoReadHandler(CuTest* tc)
 {
 
-   apx_fileManager2_t *manager;
+   apx_fileManager_t *manager;
    apx_serverTestConnection_t connection;
 
    apx_transmitHandlerSpy_t spy;
@@ -247,7 +247,7 @@ static void test_apx_fileManager_openRemoteFile_processRequest_fixedFileNoReadHa
 
 static void test_apx_fileManager_openRemoteFile_processRequest_apxDefinitionFile(CuTest* tc)
 {
-   apx_fileManager2_t *manager;
+   apx_fileManager_t *manager;
    apx_serverTestConnection_t connection;
 
    apx_transmitHandlerSpy_t spy;
@@ -288,7 +288,7 @@ static void test_apx_fileManager_openRemoteFile_processRequest_apxDefinitionFile
 
 //helper functions
 
-static void attachSpyAsTransmitHandler(apx_fileManager2_t *manager, apx_transmitHandlerSpy_t *spy)
+static void attachSpyAsTransmitHandler(apx_fileManager_t *manager, apx_transmitHandlerSpy_t *spy)
 {
    apx_transmitHandler_t handler;
    memset(&handler, 0, sizeof(handler));
@@ -298,7 +298,7 @@ static void attachSpyAsTransmitHandler(apx_fileManager2_t *manager, apx_transmit
    apx_fileManager_setTransmitHandler(manager, &handler);
 }
 
-static void attachApxClientFiles(CuTest* tc, apx_fileManager2_t *manager, uint32_t definitionFileAddress)
+static void attachApxClientFiles(CuTest* tc, apx_fileManager_t *manager, uint32_t definitionFileAddress)
 {
    rmf_fileInfo_t info;
    apx_file2_t *localFile;
@@ -309,7 +309,7 @@ static void attachApxClientFiles(CuTest* tc, apx_fileManager2_t *manager, uint32
    apx_fileManager_attachLocalFile(manager, localFile, NULL);
 }
 
-static void receiveFileOpenRequest(CuTest *tc, apx_fileManager2_t *manager, uint32_t fileAddress)
+static void receiveFileOpenRequest(CuTest *tc, apx_fileManager_t *manager, uint32_t fileAddress)
 {
    uint8_t requestBuffer[100];
    int32_t msgLen;
@@ -321,7 +321,7 @@ static void receiveFileOpenRequest(CuTest *tc, apx_fileManager2_t *manager, uint
    CuAssertIntEquals(tc, msgLen, apx_fileManager_processMessage(manager, &requestBuffer[0], msgLen));
 }
 
-static void verifyInvalidReadHandler(CuTest *tc, apx_fileManager2_t *manager, apx_transmitHandlerSpy_t *spy, uint32_t fileAddress)
+static void verifyInvalidReadHandler(CuTest *tc, apx_fileManager_t *manager, apx_transmitHandlerSpy_t *spy, uint32_t fileAddress)
 {
    adt_bytearray_t *array;
    int32_t msgLen;
@@ -352,7 +352,7 @@ static apx_error_t readDefinitionData(void* arg, apx_file2_t *file, uint32_t off
    return -1;
 }
 
-static void verifyWriteDefinitionFile(CuTest *tc, apx_fileManager2_t *manager, apx_transmitHandlerSpy_t *spy, uint32_t fileAddress)
+static void verifyWriteDefinitionFile(CuTest *tc, apx_fileManager_t *manager, apx_transmitHandlerSpy_t *spy, uint32_t fileAddress)
 {
    adt_bytearray_t *array;
    int32_t msgLen;

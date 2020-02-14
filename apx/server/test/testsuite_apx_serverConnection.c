@@ -135,7 +135,7 @@ static void test_serverInitializesFileHandlerWhenDefinitionFileIsSeen(CuTest* tc
    apx_connectionEventSpy_t spy;
    rmf_fileInfo_t fileInfo;
    apx_nodeInstance_t *nodeInstance = NULL;
-   apx_file2_t *definitionFile;
+   apx_file_t *definitionFile;
    apx_size_t definitionLen = strlen(m_apx_definition1);
    apx_serverTestConnection_create(&connection);
    apx_connectionEventSpy_create(&spy);
@@ -146,7 +146,7 @@ static void test_serverInitializesFileHandlerWhenDefinitionFileIsSeen(CuTest* tc
    apx_serverTestConnection_runEventLoop(&connection);
    nodeInstance = apx_nodeManager_getLastAttached(&connection.base.base.nodeManager);
    CuAssertPtrNotNull(tc, nodeInstance);
-   definitionFile = apx_fileManager2_findFileByAddress(&connection.base.base.fileManager, fileInfo.address | RMF_REMOTE_ADDRESS_BIT);
+   definitionFile = apx_fileManager_findFileByAddress(&connection.base.base.fileManager, fileInfo.address | RMF_REMOTE_ADDRESS_BIT);
    CuAssertPtrNotNull(tc, definitionFile);
    CuAssertPtrEquals(tc, nodeInstance, definitionFile->notificationHandler.arg);
 
@@ -160,7 +160,7 @@ static void test_nodeInstanceIsCreatedWhenDefinitionFileIsSeen(CuTest* tc)
    apx_connectionEventSpy_t spy;
    rmf_fileInfo_t fileInfo;
    apx_nodeInstance_t *nodeInstance = NULL;
-   apx_nodeData2_t *nodeData;
+   apx_nodeData_t *nodeData;
    apx_size_t definitionLen = strlen(m_apx_definition1);
    apx_serverTestConnection_create(&connection);
    apx_connectionEventSpy_create(&spy);
@@ -173,7 +173,7 @@ static void test_nodeInstanceIsCreatedWhenDefinitionFileIsSeen(CuTest* tc)
    CuAssertPtrNotNull(tc, nodeInstance);
    nodeData = apx_nodeInstance_getNodeData(nodeInstance);
    CuAssertPtrNotNull(tc, nodeData);
-   CuAssertUIntEquals(tc, definitionLen, apx_nodeData2_getDefinitionDataLen(nodeData));
+   CuAssertUIntEquals(tc, definitionLen, apx_nodeData_getDefinitionDataLen(nodeData));
    apx_serverTestConnection_destroy(&connection);
    apx_connectionEventSpy_destroy(&spy);
 }
@@ -184,7 +184,7 @@ static void test_serverInitializesNodeDataBufferWhenDefinitionFileIsSeen(CuTest*
    apx_connectionEventSpy_t spy;
    rmf_fileInfo_t fileInfo;
    apx_nodeInstance_t *nodeInstance = NULL;
-   apx_nodeData2_t *nodeData;
+   apx_nodeData_t *nodeData;
    apx_size_t definitionLen = strlen(m_apx_definition1);
    apx_serverTestConnection_create(&connection);
    apx_connectionEventSpy_create(&spy);
@@ -197,8 +197,8 @@ static void test_serverInitializesNodeDataBufferWhenDefinitionFileIsSeen(CuTest*
    CuAssertPtrNotNull(tc, nodeInstance);
    nodeData = apx_nodeInstance_getNodeData(nodeInstance);
    CuAssertPtrNotNull(tc, nodeData);
-   CuAssertPtrNotNull(tc, apx_nodeData2_getDefinitionDataBuf(nodeData));
-   CuAssertUIntEquals(tc, strlen(m_apx_definition1), apx_nodeData2_getDefinitionDataLen(nodeData));
+   CuAssertPtrNotNull(tc, apx_nodeData_getDefinitionDataBuf(nodeData));
+   CuAssertUIntEquals(tc, strlen(m_apx_definition1), apx_nodeData_getDefinitionDataLen(nodeData));
 
    apx_serverTestConnection_destroy(&connection);
    apx_connectionEventSpy_destroy(&spy);
@@ -285,12 +285,12 @@ static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTes
    memcpy(&data[RMF_HIGH_ADDRESS_SIZE], &m_apx_definition1[0], definitionLen);
    apx_nodeInstance_t *nodeInstance = apx_nodeManager_find(&connection.base.base.nodeManager, "TestNode");
    CuAssertPtrNotNull(tc, nodeInstance);
-   apx_nodeData2_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
+   apx_nodeData_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
    CuAssertPtrNotNull(tc, nodeData);
-   CuAssertUIntEquals(tc, 0u, apx_nodeData2_getProvidePortDataLen(nodeData));
+   CuAssertUIntEquals(tc, 0u, apx_nodeData_getProvidePortDataLen(nodeData));
    CuAssertPtrEquals(tc, NULL, apx_nodeInstance_getNodeInfo(nodeInstance));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(&connection, data, RMF_HIGH_ADDRESS_SIZE+definitionLen));
-   CuAssertUIntEquals(tc, UINT16_SIZE, apx_nodeData2_getProvidePortDataLen(nodeData));
+   CuAssertUIntEquals(tc, UINT16_SIZE, apx_nodeData_getProvidePortDataLen(nodeData));
 
    apx_serverTestConnection_destroy(&connection);
    free(data);

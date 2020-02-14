@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileManagerShared2.c
+* \file      apx_fileManagerShared.c
 * \author    Conny Gustafsson
 * \date      2020-01-23
 * \brief     APX Filemanager shared data
@@ -48,7 +48,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileManagerShared2_create(apx_fileManagerShared2_t *self)
+apx_error_t apx_fileManagerShared_create(apx_fileManagerShared_t *self)
 {
    if (self != 0)
    {
@@ -57,9 +57,9 @@ apx_error_t apx_fileManagerShared2_create(apx_fileManagerShared2_t *self)
       {
          self->connectionId = APX_INVALID_CONNECTION_ID;
          self->arg = (void*) 0;
-         self->remoteFileCreated = (void (*)(void *arg, apx_file2_t* file)) 0;
-         self->fileOpenRequested = (void (*)(void *arg, apx_file2_t* file)) 0;
-         self->remoteFileWritten = (void (*)(void *arg, apx_file2_t *remoteFile, uint32_t offset, const uint8_t *msgData, uint32_t msgLen, bool moreBit)) 0;
+         self->remoteFileCreated = (void (*)(void *arg, apx_file_t* file)) 0;
+         self->fileOpenRequested = (void (*)(void *arg, apx_file_t* file)) 0;
+         self->remoteFileWritten = (void (*)(void *arg, apx_file_t *remoteFile, uint32_t offset, const uint8_t *msgData, uint32_t msgLen, bool moreBit)) 0;
          SPINLOCK_INIT(self->lock);
          apx_fileMap_create(&self->localFileMap);
          apx_fileMap_create(&self->remoteFileMap);
@@ -70,7 +70,7 @@ apx_error_t apx_fileManagerShared2_create(apx_fileManagerShared2_t *self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_fileManagerShared2_destroy(apx_fileManagerShared2_t *self)
+void apx_fileManagerShared_destroy(apx_fileManagerShared_t *self)
 {
    if (self != 0)
    {
@@ -82,7 +82,7 @@ void apx_fileManagerShared2_destroy(apx_fileManagerShared2_t *self)
    }
 }
 
-uint8_t *apx_fileManagerShared2_alloc(apx_fileManagerShared2_t *self, size_t size)
+uint8_t *apx_fileManagerShared_alloc(apx_fileManagerShared_t *self, size_t size)
 {
    if (self != 0)
    {
@@ -91,7 +91,7 @@ uint8_t *apx_fileManagerShared2_alloc(apx_fileManagerShared2_t *self, size_t siz
    return (uint8_t*) 0;
 }
 
-void apx_fileManagerShared2_free(apx_fileManagerShared2_t *self, uint8_t *ptr, size_t size)
+void apx_fileManagerShared_free(apx_fileManagerShared_t *self, uint8_t *ptr, size_t size)
 {
    if (self != 0)
    {
@@ -103,11 +103,11 @@ void apx_fileManagerShared2_free(apx_fileManagerShared2_t *self, uint8_t *ptr, s
  * Creates a local file and automatically assigns it an address in the local file map.
  * The address set in the fileInfo_t struct is assumed to be RMF_INVALID_ADDRESS
  */
-apx_file2_t *apx_fileManagerShared2_createLocalFile(apx_fileManagerShared2_t *self, const apx_fileInfo_t *fileInfo)
+apx_file_t *apx_fileManagerShared_createLocalFile(apx_fileManagerShared_t *self, const apx_fileInfo_t *fileInfo)
 {
    if ( (self != 0) && (fileInfo != 0) )
    {
-      apx_file2_t *localFile = apx_file2_new(fileInfo);
+      apx_file_t *localFile = apx_file_new(fileInfo);
       if (localFile != 0)
       {
          localFile->fileInfo.address = RMF_INVALID_ADDRESS;
@@ -117,14 +117,14 @@ apx_file2_t *apx_fileManagerShared2_createLocalFile(apx_fileManagerShared2_t *se
       }
       return localFile;
    }
-   return (apx_file2_t*) 0;
+   return (apx_file_t*) 0;
 }
 
-apx_file2_t *apx_fileManagerShared2_createRemoteFile(apx_fileManagerShared2_t *self, const apx_fileInfo_t *fileInfo)
+apx_file_t *apx_fileManagerShared_createRemoteFile(apx_fileManagerShared_t *self, const apx_fileInfo_t *fileInfo)
 {
    if ( (self != 0) && (fileInfo != 0) )
    {
-      apx_file2_t *remoteFile = apx_file2_new(fileInfo);
+      apx_file_t *remoteFile = apx_file_new(fileInfo);
       if (remoteFile != 0)
       {
          remoteFile->fileInfo.address|=RMF_REMOTE_ADDRESS_BIT;
@@ -134,10 +134,10 @@ apx_file2_t *apx_fileManagerShared2_createRemoteFile(apx_fileManagerShared2_t *s
       }
       return remoteFile;
    }
-   return (apx_file2_t*) 0;
+   return (apx_file_t*) 0;
 }
 
-int32_t apx_fileManagerShared2_getNumLocalFiles(apx_fileManagerShared2_t *self)
+int32_t apx_fileManagerShared_getNumLocalFiles(apx_fileManagerShared_t *self)
 {
    if (self != 0)
    {
@@ -150,7 +150,7 @@ int32_t apx_fileManagerShared2_getNumLocalFiles(apx_fileManagerShared2_t *self)
    return -1;
 }
 
-int32_t apx_fileManagerShared2_getNumRemoteFiles(apx_fileManagerShared2_t *self)
+int32_t apx_fileManagerShared_getNumRemoteFiles(apx_fileManagerShared_t *self)
 {
    if (self != 0)
    {
@@ -163,37 +163,37 @@ int32_t apx_fileManagerShared2_getNumRemoteFiles(apx_fileManagerShared2_t *self)
    return -1;
 }
 
-apx_file2_t *apx_fileManagerShared2_findLocalFileByName(apx_fileManagerShared2_t *self, const char *name)
+apx_file_t *apx_fileManagerShared_findLocalFileByName(apx_fileManagerShared_t *self, const char *name)
 {
    if ( (self != 0) && (name != 0) )
    {
-      apx_file2_t *localFile;
+      apx_file_t *localFile;
       SPINLOCK_ENTER(self->lock);
       localFile = apx_fileMap_findByName(&self->localFileMap, name);
       SPINLOCK_LEAVE(self->lock);
       return localFile;
    }
-   return (apx_file2_t*) 0;
+   return (apx_file_t*) 0;
 }
 
-apx_file2_t *apx_fileManagerShared2_findRemoteFileByName(apx_fileManagerShared2_t *self, const char *name)
+apx_file_t *apx_fileManagerShared_findRemoteFileByName(apx_fileManagerShared_t *self, const char *name)
 {
    if ( (self != 0) && (name != 0) )
    {
-      apx_file2_t *localFile;
+      apx_file_t *localFile;
       SPINLOCK_ENTER(self->lock);
       localFile = apx_fileMap_findByName(&self->remoteFileMap, name);
       SPINLOCK_LEAVE(self->lock);
       return localFile;
    }
-   return (apx_file2_t*) 0;
+   return (apx_file_t*) 0;
 }
 
-apx_file2_t *apx_fileManagerShared2_findFileByAddress(apx_fileManagerShared2_t *self, uint32_t address)
+apx_file_t *apx_fileManagerShared_findFileByAddress(apx_fileManagerShared_t *self, uint32_t address)
 {
    if ( (self != 0) && (address != RMF_INVALID_ADDRESS))
    {
-      apx_file2_t *file;
+      apx_file_t *file;
       uint32_t addressWithoutFlags = address & RMF_ADDRESS_MASK_INTERNAL;
       SPINLOCK_ENTER(self->lock);
       if ( (address & RMF_REMOTE_ADDRESS_BIT) != 0u)
@@ -207,11 +207,11 @@ apx_file2_t *apx_fileManagerShared2_findFileByAddress(apx_fileManagerShared2_t *
       SPINLOCK_LEAVE(self->lock);
       return file;
    }
-   return (apx_file2_t*) 0;
+   return (apx_file_t*) 0;
 }
 
 
-void apx_fileManagerShared2_setConnectionId(apx_fileManagerShared2_t *self, uint32_t connectionId)
+void apx_fileManagerShared_setConnectionId(apx_fileManagerShared_t *self, uint32_t connectionId)
 {
    if (self != 0)
    {
@@ -219,7 +219,7 @@ void apx_fileManagerShared2_setConnectionId(apx_fileManagerShared2_t *self, uint
    }
 }
 
-uint32_t apx_fileManagerShared2_getConnectionId(const apx_fileManagerShared2_t *self)
+uint32_t apx_fileManagerShared_getConnectionId(const apx_fileManagerShared_t *self)
 {
    if (self != 0)
    {
@@ -228,7 +228,7 @@ uint32_t apx_fileManagerShared2_getConnectionId(const apx_fileManagerShared2_t *
    return APX_INVALID_CONNECTION_ID;
 }
 
-adt_ary_t *apx_fileManagerShared2_getLocalFileList(apx_fileManagerShared2_t *self)
+adt_ary_t *apx_fileManagerShared_getLocalFileList(apx_fileManagerShared_t *self)
 {
    if (self != 0)
    {

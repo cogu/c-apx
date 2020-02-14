@@ -214,15 +214,15 @@ apx_error_t apx_nodeManager_buildNode_cstr(apx_nodeManager_t *self, const char *
             apx_programType_t errProgramType;
             apx_uniquePortId_t errPortId;
             apx_error_t rc;
-            apx_nodeData2_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
+            apx_nodeData_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
 
-            rc = apx_nodeData2_createDefinitionBuffer(nodeData, definition_len );
+            rc = apx_nodeData_createDefinitionBuffer(nodeData, definition_len );
             if (rc != APX_NO_ERROR)
             {
                apx_nodeInstance_delete(nodeInstance);
                return rc;
             }
-            rc = apx_nodeData2_writeDefinitionData(nodeData, (const uint8_t*) definition_text, 0u, definition_len);
+            rc = apx_nodeData_writeDefinitionData(nodeData, (const uint8_t*) definition_text, 0u, definition_len);
             if (rc != APX_NO_ERROR)
             {
                apx_nodeInstance_delete(nodeInstance);
