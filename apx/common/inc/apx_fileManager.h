@@ -68,6 +68,7 @@ void apx_fileManager_stop(apx_fileManager_t *self);
 
 
 apx_file_t* apx_fileManager_findFileByAddress(apx_fileManager_t *self, uint32_t address);
+apx_file_t* apx_fileManager_findRemoteFileByName(apx_fileManager_t *self, const char *name);
 void apx_fileManager_setTransmitHandler(apx_fileManager_t *self, apx_transmitHandler_t *handler);
 void apx_fileManager_copyTransmitHandler(apx_fileManager_t *self, apx_transmitHandler_t *handler);
 void apx_fileManager_headerReceived(apx_fileManager_t *self);
