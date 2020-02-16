@@ -76,6 +76,8 @@ typedef struct apx_fileManagerWorker_tag
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared_t *shared, apx_mode_t mode);
 void apx_fileManagerWorker_destroy(apx_fileManagerWorker_t *self);
+apx_error_t apx_fileManagerWorker_start(apx_fileManagerWorker_t *self);
+void apx_fileManagerWorker_stop(apx_fileManagerWorker_t *self);
 
 //Direct API
 void apx_fileManagerWorker_setTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler);

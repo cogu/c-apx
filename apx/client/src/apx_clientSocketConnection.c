@@ -296,6 +296,9 @@ static uint8_t *apx_clientSocketConnection_getSendBuffer(void *arg, int32_t msgL
    return 0;
 }
 
+/**
+ * Returns the number transmitted (msgLen) or less. On error it returns -1;
+ */
 static int32_t apx_clientSocketConnection_send(void *arg, int32_t offset, int32_t msgLen)
 {
    apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) arg;
@@ -336,7 +339,7 @@ static int32_t apx_clientSocketConnection_send(void *arg, int32_t offset, int32_
          {
             self->base.base.totalBytesSent+=msgLen+headerLen;
          }
-         return 0;
+         return msgLen;
       }
       else
       {
@@ -348,9 +351,13 @@ static int32_t apx_clientSocketConnection_send(void *arg, int32_t offset, int32_
 
 static void apx_clientSocketConnection_connected(void *arg, const char *addr, uint16_t port)
 {
+   apx_clientSocketConnection_t *self;
    (void) addr;
    (void) port;
-   apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) arg;
+#if APX_DEBUG_ENABLE
+   printf("[CLIENT-SOCKET] Connected\n");
+#endif
+   self = (apx_clientSocketConnection_t*) arg;
    apx_clientConnectionBase_connectedCbk(&self->base);
 }
 
@@ -358,12 +365,18 @@ static void apx_clientSocketConnection_connected(void *arg, const char *addr, ui
 static int8_t apx_clientSocketConnection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
 {
    apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) arg;
+#if APX_DEBUG_ENABLE
+   printf("[CLIENT-SOCKET] Received %d bytes\n", (int) dataLen);
+#endif
    return apx_clientConnectionBase_onDataReceived(&self->base, dataBuf, dataLen, parseLen);
 }
 
 static void apx_clientSocketConnection_disconnected(void *arg)
 {
    apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) arg;
+#if APX_DEBUG_ENABLE
+   printf("[CLIENT-SOCKET] Disconnected\n");
+#endif
    apx_clientConnectionBase_disconnectedCbk(&self->base);
 }
 

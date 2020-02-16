@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "apx_eventListener.h"
 #include "apx_nodeData.h"
 #include "application.h"
@@ -59,12 +60,12 @@ static uint32_t m_stressCount;
 static bool m_isConnected;
 static bool m_hasPendingStressCmd;
 static bool m_isStressOngoing;
-static bool m_isTestNode1;
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void application_init(const char *apx_definition, const char *tcp_addr, uint16_t tcp_port)
+void application_init(const char *apx_definition, const char *unix_socket_path)
 {
    apx_clientEventListener_t handlerTable;
    apx_error_t result;
@@ -90,16 +91,15 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
          return;
       }
       m_nodeInstance = apx_client_getLastAttachedNode(m_client);
-      if ( (strcmp(apx_nodeInstance_getName(m_nodeInstance), "TestNode1")==0) )
+      assert(m_nodeInstance != 0);
+      apx_nodeData_t *nodeData = apx_nodeInstance_getNodeData(m_nodeInstance);
+      if (nodeData != 0)
       {
-         m_isTestNode1 = true;
+         uint8_t data[UINT16_SIZE];
+         packLE(&data[0], 0x1234, UINT16_SIZE);
+         apx_nodeData_writeProvidePortData(nodeData, &data[0], 1, UINT16_SIZE);
       }
-      else
-      {
-         m_isTestNode1 = false;
-      }
-      //result = apx_client_connectTcp(m_client, tcp_addr, tcp_port);
-      result = apx_client_connectUnix(m_client, "/tmp/apx_server.socket");
+      result = apx_client_connectUnix(m_client, unix_socket_path);
       if (result != APX_NO_ERROR)
       {
          printf("apx_client_connectTcp returned %d\n", (int) result);
@@ -147,6 +147,7 @@ static void onClientConnected(void *arg, apx_clientConnectionBase_t *clientConne
    eventListener.inPortDataWritten = inPortDataWrittenCbk;
    apx_clientConnectionBase_registerNodeDataEventListener(clientConnection, &eventListener);
 */
+   printf("Client connected to server\n");
 }
 
 static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientConnection)
@@ -154,6 +155,7 @@ static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientCo
    m_isConnected = false;
    m_hasPendingStressCmd = true;
    m_isStressOngoing = false;
+   printf("Client disconnected from server\n");
 }
 /*
 static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg)

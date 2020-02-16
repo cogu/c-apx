@@ -175,11 +175,10 @@ apx_error_t apx_client_connectTcp(apx_client_t *self, const char *address, uint1
 {
    if (self != 0)
    {
-      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0, self);
+      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0);
       if (socketConnection != 0)
       {
-         self->connection = (apx_clientConnectionBase_t*)socketConnection;
-         apx_client_updateBaseConnectionOnNodes(self);
+         apx_client_attachConnection(self, socketConnection);
          return apx_clientConnection_tcp_connect(socketConnection, address, port);
       }
       else
@@ -195,11 +194,10 @@ apx_error_t apx_client_connectUnix(apx_client_t *self, const char *socketPath)
 {
    if (self != 0)
    {
-      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0, self);
+      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0);
       if (socketConnection != 0)
       {
-         self->connection = (apx_clientConnectionBase_t*)socketConnection;
-         apx_client_updateBaseConnectionOnNodes(self);
+         apx_client_attachConnection(self, socketConnection);
          return apx_clientConnection_unix_connect(socketConnection, socketPath);
       }
       else
