@@ -121,7 +121,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="apx/server/src/apx_testServer.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="apx/common/src/apx_routingTableEntry.c|apx/common/src/apx_routingTable.c|apx/common/src/apx_portConnectionTable.c|apx/common/src/apx_portConnectionEntry.c|apx/server/src/apx_testServer.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
@@ -141,7 +141,7 @@
                 				
                 <extensions>
                     					
-                    <extension id="org.eclipse.cdt.core.Cygwin_PE" point="org.eclipse.cdt.core.BinaryParser"/>
+                    <extension id="org.eclipse.cdt.core.Cygwin_PE64" point="org.eclipse.cdt.core.BinaryParser"/>
                     					
                     <extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
                     					
@@ -215,7 +215,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="apx/server/src/apx_testServer.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="apx/common/src/apx_routingTableEntry.c|apx/common/src/apx_routingTable.c|apx/common/src/apx_portConnectionTable.c|apx/common/src/apx_portConnectionEntry.c|apx/server/src/apx_testServer.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				

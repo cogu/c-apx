@@ -251,6 +251,10 @@ void apx_clientConnectionBase_attachNodeInstance(apx_clientConnectionBase_t *sel
 {
    if (self != 0)
    {
+#if APX_DEBUG_ENABLE
+      assert(apx_nodeInstance_getName(nodeInstance) != 0);
+      printf("[CLIENT-CONNECTION] Attaching %s\n", apx_nodeInstance_getName(nodeInstance));
+#endif
       apx_connectionBase_attachNodeInstance(&self->base, nodeInstance);
    }
 }
@@ -261,6 +265,9 @@ void apx_clientConnectionBaseInternal_headerAccepted(apx_clientConnectionBase_t 
 {
    if (self != 0)
    {
+#if APX_DEBUG_ENABLE
+      printf("CLIENT-CONNECTION] Header accepted\n");
+#endif
       self->isAcknowledgeSeen = true;
       apx_fileManager_headerAccepted(&self->base.fileManager);
       apx_connectionBase_emitHeaderAccepted(&self->base);
@@ -349,7 +356,7 @@ static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBas
             apx_error_t processResult = apx_connectionBase_processMessage(&self->base, pNext, msgLen);
             if (processResult != APX_NO_ERROR)
             {
-               ///TODO perform error handling
+               printf("[CLIENT-CONNECTION] Processing message failed with: %d\n", (int) processResult);
             }
          }
       }

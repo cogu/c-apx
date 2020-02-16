@@ -148,8 +148,9 @@ void apx_socketServer_startTcpServer(apx_socketServer_t *self, uint16_t tcpPort,
       msocket_server_sethandler(&self->tcpServer, &serverHandler, self);
       msocket_server_start(&self->tcpServer, NULL, 0, self->tcpPort);
       self->isTcpServerStarted = true;
-      sprintf(msg, "Listening on TCP port %d", (int) self->tcpPort);
-      apx_server_logEvent(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
+      printf("Listening on TCP port %d\n", (int) self->tcpPort);
+      //sprintf(msg, "Listening on TCP port %d", (int) self->tcpPort);
+      //apx_server_logEvent(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
 
    }
 }
@@ -174,8 +175,9 @@ void apx_socketServer_startUnixServer(apx_socketServer_t *self, const char *file
       msocket_server_sethandler(&self->unixServer, &serverHandler, self);
       msocket_server_unix_start(&self->unixServer, self->unixServerFile);
       self->isUnixServerStarted = true;
-      sprintf(msg, "Listening on UNIX socket %s", self->unixServerFile);
-      apx_server_logEvent(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
+      printf("Listening on UNIX socket %s\n", self->unixServerFile);
+//      sprintf(msg, "Listening on UNIX socket %s", self->unixServerFile);
+//      apx_server_logEvent(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
    }
 }
 
@@ -222,6 +224,9 @@ void apx_socketServer_acceptTestSocket(apx_socketServer_t *self, testsocket_t *s
 static void apx_socketServer_tcpAccept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock)
 {
    apx_socketServer_t *self = (apx_socketServer_t*) arg;
+#if APX_DEBUG_ENABLE
+   printf("[SOCKET-SERVER] New TCP connection\n");
+#endif
    if (self != 0)
    {
       apx_serverSocketConnection_t *newConnection = apx_serverSocketConnection_new(sock);
@@ -242,9 +247,12 @@ static void apx_socketServer_tcpAccept(void *arg, struct msocket_server_tag *srv
 static void apx_socketServer_unixAccept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock)
 {
    apx_socketServer_t *self = (apx_socketServer_t*) arg;
+#if APX_DEBUG_ENABLE
+   printf("[SOCKET-SERVER] New UNIX connection\n");
+#endif
    if (self != 0)
    {
-      apx_serverSocketConnection_t *newConnection = apx_serverSocketConnection_new(sock, self->parent);
+      apx_serverSocketConnection_t *newConnection = apx_serverSocketConnection_new(sock);
       ///TODO: Add support for connection tag
       if (newConnection != 0)
       {

@@ -328,13 +328,18 @@ static int32_t apx_serverSocketConnection_send(void *arg, int32_t offset, int32_
 static int8_t apx_serverSocketConnection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
 {
    apx_serverSocketConnection_t *self = (apx_serverSocketConnection_t*) arg;
-   //printf("[SERVER_SOCKET_CONNECTION] Received %d bytes\n", (int) dataLen);
+#if APX_DEBUG_ENABLE
+   printf("[SERVER-SOCKET] Received %d bytes\n", (int) dataLen);
+#endif
    return apx_serverConnectionBase_dataReceived(&self->base, dataBuf, dataLen, parseLen);
 }
 
 static void apx_serverSocketConnection_disconnected(void *arg)
 {
    apx_serverSocketConnection_t *self = (apx_serverSocketConnection_t*) arg;
+#if APX_DEBUG_ENABLE
+   printf("[SERVER-SOCKET] Client disconnected\n");
+#endif
    if (self != 0)
    {
       apx_server_closeConnection(self->base.server, &self->base);

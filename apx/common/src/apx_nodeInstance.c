@@ -49,6 +49,8 @@ static apx_error_t apx_nodeInstance_definitionFileWriteNotify(void *arg, apx_fil
 static apx_error_t apx_nodeInstance_definitionFileOpenNotify(void *arg, struct apx_file_tag *file);
 static apx_error_t apx_nodeInstance_definitionFileReadData(void *arg, apx_file_t*file, uint32_t offset, uint8_t *dest, uint32_t len);
 static apx_error_t apx_nodeInstance_createFileInfo(apx_nodeInstance_t *self, const char *fileExtension, uint32_t fileSize, apx_fileInfo_t *fileInfo);
+static apx_error_t apx_nodeInstance_providePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len);
+static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, struct apx_file_tag *file);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -297,6 +299,25 @@ void apx_nodeInstance_registerDefinitionFileHandler(apx_nodeInstance_t *self, ap
    }
 }
 
+void apx_nodeInstance_registerProvidePortFileHandler(apx_nodeInstance_t *self, apx_file_t *file)
+{
+   if ( (self != 0) && (file != 0) )
+   {
+      apx_fileNotificationHandler_t handler = {0, 0, 0};
+      handler.arg = (void*) self;
+      if (apx_file_isRemoteFile(file))
+      {
+         handler.writeNotify = apx_nodeInstance_providePortDataFileWriteNotify;
+      }
+      else
+      {
+         handler.openNotify = apx_nodeInstance_providePortDataFileOpenNotify;
+      }
+      apx_file_setNotificationHandler(file, &handler);
+      self->providePortDataFile = file;
+   }
+}
+
 const char *apx_nodeInstance_getName(apx_nodeInstance_t *self)
 {
    if ( (self != 0) && (self->nodeInfo != 0) )
@@ -469,12 +490,15 @@ static apx_error_t apx_nodeInstance_definitionFileWriteNotify(void *arg, apx_fil
    if (self != 0)
    {
       apx_error_t retval;
+#if APX_DEBUG_ENABLE
       //printf("definitionFileWriteNotify(%d, %d)\n", (int) offset, (int) len);
+#endif
       retval = apx_nodeData_writeDefinitionData(self->nodeData, src, offset, len);
       if ( (self->connection != 0) && (retval == APX_NO_ERROR) )
       {
          retval = apx_connectionBase_nodeFileWriteNotify(self->connection, self, APX_DEFINITION_FILE_TYPE, offset, src, len);
       }
+      return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -536,4 +560,15 @@ static apx_error_t apx_nodeInstance_createFileInfo(apx_nodeInstance_t *self, con
       return apx_fileInfo_create(fileInfo, RMF_INVALID_ADDRESS, fileSize, fileName, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, (const uint8_t*) 0);
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_nodeInstance_providePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len)
+{
+   return APX_NOT_IMPLEMENTED_ERROR;
+}
+
+static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, struct apx_file_tag *file)
+{
+   printf("Taking snapshot of providePortData\n");
+   return APX_NOT_IMPLEMENTED_ERROR;
 }

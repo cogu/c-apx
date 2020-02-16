@@ -53,8 +53,9 @@
 static int32_t apx_fileManagerWorker_calcFileInfoMsgSize(const struct apx_fileInfo_tag *fileInfo);
 static int32_t apx_fileManagerWorker_serializeFileInfo(uint8_t *bufData, int32_t bufLen, const apx_fileInfo_t *fileInfo);
 #ifndef UNIT_TEST
-static apx_error_t apx_fileManager_starThread(apx_fileManager_t *self);
-static void apx_fileManager_stopThread(apx_fileManager_t *self);
+static apx_error_t apx_fileManagerWorker_starThread(apx_fileManagerWorker_t *self);
+
+static void apx_fileManagerWorker_stopThread(apx_fileManagerWorker_t *self);
 static THREAD_PROTO(workerThread,arg);
 #endif
 static bool workerThread_processMessage(apx_fileManagerWorker_t *self, apx_msg_t *msg);
@@ -117,6 +118,30 @@ void apx_fileManagerWorker_destroy(apx_fileManagerWorker_t *self)
       adt_rbfh_destroy(&self->messages);
    }
 }
+
+apx_error_t apx_fileManagerWorker_start(apx_fileManagerWorker_t *self)
+{
+   if (self != 0)
+   {
+#ifndef UNIT_TEST
+      return apx_fileManagerWorker_starThread(self);
+#else
+      return APX_NO_ERROR;
+#endif
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+void apx_fileManagerWorker_stop(apx_fileManagerWorker_t *self)
+{
+   if (self != 0)
+   {
+#ifndef UNIT_TEST
+      apx_fileManagerWorker_stopThread(self);
+#endif
+   }
+}
+
 
 
 
@@ -310,7 +335,7 @@ static int32_t apx_fileManagerWorker_serializeFileInfo(uint8_t *bufData, int32_t
 
 
 #ifndef UNIT_TEST
-static int8_t apx_fileManagerWorker_startThread(apx_fileManagerWorker_t *self)
+static apx_error_t apx_fileManagerWorker_starThread(apx_fileManagerWorker_t *self)
 {
    if( self->workerThreadValid == false ){
       self->workerThreadValid = true;
@@ -327,9 +352,8 @@ static int8_t apx_fileManagerWorker_startThread(apx_fileManagerWorker_t *self)
          return -1;
       }
 #endif
-      return 0;
+      return APX_NO_ERROR;
    }
-   errno = EINVAL;
    return -1;
 }
 
@@ -365,12 +389,12 @@ static void apx_fileManagerWorker_stopThread(apx_fileManagerWorker_t *self)
             int s = pthread_join(self->workerThread, &status);
             if (s != 0)
             {
-               APX_LOG_ERROR("[APX_FILE_MANAGER] pthread_join error %d\n", s);
+               printf("[APX_FILE_MANAGER] pthread_join error %d\n", s);
             }
          }
          else
          {
-            APX_LOG_ERROR("[APX_FILE_MANAGER] pthread_join attempted on pthread_self()\n");
+            printf("[APX_FILE_MANAGER] pthread_join attempted on pthread_self()\n");
          }
    #endif
    self->workerThreadValid = false;
@@ -379,7 +403,45 @@ static void apx_fileManagerWorker_stopThread(apx_fileManagerWorker_t *self)
 
 static THREAD_PROTO(workerThread,arg)
 {
+   if(arg!=0)
+   {
+      apx_msg_t msg;
+      apx_fileManagerWorker_t *self;
+      uint32_t messages_processed=0;
+      bool isRunning=true;
 
+      self = (apx_fileManagerWorker_t*) arg;
+
+      while(isRunning == true)
+      {
+         //printf("[%u] Waiting for semaphore\n", fmid);
+#ifdef _MSC_VER
+         DWORD result = WaitForSingleObject(self->semaphore, INFINITE);
+         if (result == WAIT_OBJECT_0)
+#else
+
+         int result = sem_wait(&self->semaphore);
+         if (result == 0)
+#endif
+         {
+            //printf("[%u] Semaphore wait success\n", fmid);
+            SPINLOCK_ENTER(self->lock);
+            adt_rbfh_remove(&self->messages,(uint8_t*) &msg);
+            SPINLOCK_LEAVE(self->lock);
+            if (!workerThread_processMessage(self, &msg))
+            {
+               isRunning = false;
+            }
+            messages_processed++;
+         }
+         else
+         {
+            printf("Failed to wait for semaphore\n");
+         }
+      }
+      //printf("[%u]: messages_processed: %u\n",fmid, messages_processed);
+   }
+   THREAD_RETURN(0);
 }
 #endif //UNIT_TEST
 
@@ -410,7 +472,7 @@ static bool workerThread_processMessage(apx_fileManagerWorker_t *self, apx_msg_t
          rc = workerThread_sendFileConstData(self, msg);
          if (rc != APX_NO_ERROR)
          {
-            printf("[WORKER] ERROR %d\n", (int) rc);
+            printf("[WORKER] workerThread_sendFileConstData failed with error: %d\n", (int) rc);
          }
          break;
       case APX_MSG_SEND_FILE_DATA:
@@ -522,6 +584,9 @@ static apx_error_t workerThread_sendFileConstData(apx_fileManagerWorker_t *self,
             if (rc == APX_NO_ERROR)
             {
                result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
+#if APX_DEBUG_ENABLE
+               printf("[WORKER] Bytes transmitted: %d\n", result);
+#endif
                if (result != msgSize)
                {
                   return APX_TRANSMIT_ERROR;

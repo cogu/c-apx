@@ -1,7 +1,7 @@
 include config.inc
 CC ?= gcc
 
-CFLAGS += -Wall -O0 -g -DSW_VERSION_LITERAL=$(VERSION) -DADT_RBFH_ENABLE=1 -DPLATFORM_BYTE_ORDER=0
+CFLAGS += -Wall -O0 -g -DSW_VERSION_LITERAL=$(VERSION) -DADT_RBFH_ENABLE=1 -DPLATFORM_BYTE_ORDER=0 -D APX_DEBUG_ENABLE=1
 
 LDFLAGS += -pthread
 
@@ -48,27 +48,25 @@ SHARED_SOURCES = \
 	apx/common/src/apx_event.c \
 	apx/common/src/apx_eventListener.c \
 	apx/common/src/apx_eventLoop.c \
-	apx/common/src/apx_file2.c \
+	apx/common/src/apx_file.c \
+	apx/common/src/apx_fileInfo.c \
 	apx/common/src/apx_fileManager.c \
-	apx/common/src/apx_fileManagerLocal.c \
-	apx/common/src/apx_fileManagerRemote.c \
+	apx/common/src/apx_fileManagerReceiver.c \
 	apx/common/src/apx_fileManagerShared.c \
+	apx/common/src/apx_fileManagerWorker.c \
 	apx/common/src/apx_fileMap.c \
 	apx/common/src/apx_logEvent.c \
 	apx/common/src/apx_node.c \
 	apx/common/src/apx_nodeData.c \
-	apx/common/src/apx_nodeDataManager.c \
+	apx/common/src/apx_nodeInfo.c \
+	apx/common/src/apx_nodeInstance.c \
+	apx/common/src/apx_nodeManager.c \
 	apx/common/src/apx_parser.c \
 	apx/common/src/apx_port.c \
 	apx/common/src/apx_portAttributes.c \
-	apx/common/src/apx_portConnectionEntry.c \
-	apx/common/src/apx_portConnectionTable.c \
-	apx/common/src/apx_portDataMap.c \
 	apx/common/src/apx_portDataProps.c \
 	apx/common/src/apx_portDataRef.c \
 	apx/common/src/apx_portTriggerList.c \
-	apx/common/src/apx_routingTable.c \
-	apx/common/src/apx_routingTableEntry.c \
 	apx/common/src/apx_stream.c \
 	apx/common/src/apx_typeAttribute.c \
 	apx/common/src/apx_vm.c \

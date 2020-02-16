@@ -341,6 +341,10 @@ void apx_serverConnectionBase_nodeFileWriteNotify(apx_serverConnectionBase_t *se
       {
          apx_serverConnectionBase_definitionFileWriteNotify(self, nodeInstance, offset, len);
       }
+      else
+      {
+         printf("Printing raw file\n");
+      }
    }
 }
 
@@ -600,15 +604,16 @@ static apx_error_t apx_serverConnectionBase_openOutPortDataFileIfExists(apx_serv
    if (providePortDataLen > 0)
    {
       apx_file_t *file;
-      printf("Searching for file: \"%s\"\n", &fileNameBuf[0]);
+      printf("Searching for file: \"%s\"...", &fileNameBuf[0]);
       file = apx_fileManager_findRemoteFileByName(&self->base.fileManager, &fileNameBuf[0]);
       if (file != 0)
       {
+         printf("OK\n");
          retval = apx_fileManager_requestOpenFile(&self->base.fileManager, apx_file_getStartAddress(file) | RMF_REMOTE_ADDRESS_BIT);
       }
       else
       {
-         printf("File not found: \"%s\"\n", &fileNameBuf[0]);
+         printf("Not Found\n");
       }
    }
    return retval;

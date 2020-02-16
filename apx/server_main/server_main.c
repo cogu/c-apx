@@ -213,11 +213,12 @@ static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv)
 static apx_error_t register_extensions(apx_server_t *server, dtl_hv_t *config)
 {
    apx_error_t result;
-   result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, APX_SERVER_TEXTLOG_CFG_KEY));
+ /*  result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, APX_SERVER_TEXTLOG_CFG_KEY));
    if (result != APX_NO_ERROR)
    {
       return result;
    }
+*/
    result = apx_socketServerExtension_register(server, dtl_hv_get_cstr(config, APX_SOCKET_SERVER_EXT_CFG_KEY));
    if (result != APX_NO_ERROR)
    {

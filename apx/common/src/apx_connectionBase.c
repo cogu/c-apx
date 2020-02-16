@@ -189,6 +189,7 @@ void apx_connectionBase_start(apx_connectionBase_t *self)
    if ( self != 0 )
    {
       apx_connectionBase_startWorkerThread(self);
+      apx_fileManager_start(&self->fileManager);
       if ( self->vtable.start != 0 )
       {
          self->vtable.start((void*) self);
@@ -200,6 +201,7 @@ void apx_connectionBase_stop(apx_connectionBase_t *self)
 {
    if ( self != 0 )
    {
+      apx_fileManager_stop(&self->fileManager);
       apx_connectionBase_stopWorkerThread(self);
    }
 }
@@ -230,7 +232,7 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
             apx_fileInfo_destroy(&fileInfo);
             if (localFile != 0)
             {
-               ///TODO: apx_nodeInstance_registerOutPorrtDataFileHandler(nodeInstance, localFile);
+               apx_nodeInstance_registerProvidePortFileHandler(nodeInstance, localFile);
             }
          }
       }
@@ -822,6 +824,7 @@ static void apx_connectionBase_createNodeCompleteEvent(apx_event_t *event, apx_n
    event->evType = APX_EVENT_NODE_COMPLETE;
    event->evData1 = (void*) nodeData;
 }
+*/
 
 #ifndef UNIT_TEST
 static THREAD_PROTO(eventHandlerWorkThread,arg)
@@ -835,6 +838,7 @@ static THREAD_PROTO(eventHandlerWorkThread,arg)
 }
 #endif
 
+/*
 static void apx_connectionBase_handlePortConnectEvent(apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable, apx_portType_t portType)
 {
    int32_t portId;

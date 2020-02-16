@@ -98,12 +98,18 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
 
 void apx_fileManager_start(apx_fileManager_t *self)
 {
-
+   if (self != 0)
+   {
+      apx_fileManagerWorker_start(&self->worker);
+   }
 }
 
 void apx_fileManager_stop(apx_fileManager_t *self)
 {
-
+   if (self != 0)
+   {
+      apx_fileManagerWorker_stop(&self->worker);
+   }
 }
 
 apx_file_t* apx_fileManager_findFileByAddress(apx_fileManager_t *self, uint32_t address)
@@ -275,7 +281,7 @@ apx_error_t apx_fileManager_messageReceived(apx_fileManager_t *self, const uint8
                }
             }
          }
-         return result;
+         return retval;
       }
       else if (result < 0)
       {

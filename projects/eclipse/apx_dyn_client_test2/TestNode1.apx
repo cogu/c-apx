@@ -1,0 +1,6 @@
+APX/1.2
+N"TestNode1"
+P"VehicleMode"C(0,15):=15
+P"WheelBasedVehicleSpeed"S:=65535
+P"StressTest_rqst"L
+R"StressTest_rsp"L
