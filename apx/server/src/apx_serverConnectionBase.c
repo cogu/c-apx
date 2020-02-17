@@ -554,28 +554,8 @@ static void apx_serverConnectionBase_definitionFileWriteNotify(apx_serverConnect
 
 static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance)
 {
-   apx_error_t retval = APX_NO_ERROR;
-   apx_nodeInfo_t *nodeInfo;
-   apx_nodeData_t *nodeData;
-   apx_size_t requirePortDataLen;
-   apx_size_t providePortDataLen;
-   assert(self != 0);
-   assert(nodeInstance != 0);
-   nodeInfo = apx_nodeInstance_getNodeInfo(nodeInstance);
-   assert(nodeInfo != 0);
-   nodeData = apx_nodeInstance_getNodeData(nodeInstance);
-   assert(nodeInfo != 0);
-   requirePortDataLen = apx_nodeInfo_calcRequirePortDataLen(nodeInfo);
-   providePortDataLen = apx_nodeInfo_calcProvidePortDataLen(nodeInfo);
-   if (providePortDataLen > 0u)
-   {
-      retval = apx_nodeData_createProvidePortBuffer(nodeData, providePortDataLen);
-   }
-   if ( (retval == APX_NO_ERROR) && (requirePortDataLen > 0u))
-   {
-      retval = apx_nodeData_createRequirePortBuffer(nodeData, requirePortDataLen);
-   }
-   return retval;
+   (void) self;
+   return apx_nodeInstance_createPortDataBuffers(nodeInstance);
 }
 
 static apx_error_t apx_serverConnectionBase_openOutPortDataFileIfExists(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance)

@@ -63,6 +63,7 @@ static void workerThread_sendFileInfo(apx_fileManagerWorker_t *self, apx_msg_t *
 static void workerThread_sendFileOpen(apx_fileManagerWorker_t *self, apx_msg_t *msg);
 static void workerThread_sendAcknowledge(apx_fileManagerWorker_t *self);
 static apx_error_t workerThread_sendFileConstData(apx_fileManagerWorker_t *self, apx_msg_t *msg);
+static apx_error_t workerThread_sendFileDynData(apx_fileManagerWorker_t *self, apx_msg_t *msg);
 static apx_error_t apx_fileManagerWorker_processRingBufErrorCode(adt_buf_err_t errorCode);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -232,6 +233,33 @@ apx_error_t apx_fileManagerWorker_sendConstData(apx_fileManagerWorker_t *self, u
    #ifndef UNIT_TEST
       SEMAPHORE_POST(self->semaphore);
    #endif
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_fileManagerWorker_sendDynamicData(apx_fileManagerWorker_t *self, uint32_t address, uint32_t len, uint8_t *data)
+{
+   if ( (self != 0) && (data != 0) )
+   {
+      adt_buf_err_t result;
+      apx_msg_t msg = {APX_MSG_SEND_FILE_DYN_DATA, 0, 0, {0}, 0};
+      msg.msgData1 = address;
+      msg.msgData2 = len;
+      msg.msgData3.ptr = data;
+      SPINLOCK_ENTER(self->lock);
+      result = adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
+      SPINLOCK_LEAVE(self->lock);
+      if (result == BUF_E_OK)
+      {
+#ifndef UNIT_TEST
+         SEMAPHORE_POST(self->semaphore);
+#endif
+      }
+      else
+      {
+         return apx_fileManagerWorker_processRingBufErrorCode(result);
+      }
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -475,7 +503,12 @@ static bool workerThread_processMessage(apx_fileManagerWorker_t *self, apx_msg_t
             printf("[WORKER] workerThread_sendFileConstData failed with error: %d\n", (int) rc);
          }
          break;
-      case APX_MSG_SEND_FILE_DATA:
+      case APX_MSG_SEND_FILE_DYN_DATA:
+         rc = workerThread_sendFileDynData(self, msg);
+         if (rc != APX_NO_ERROR)
+         {
+            printf("[WORKER] workerThread_sendFileDyntData failed with error: %d\n", (int) rc);
+         }
          break;
       case APX_MSG_SEND_FILE_DATA_DIRECT:
          break;
@@ -595,6 +628,46 @@ static apx_error_t workerThread_sendFileConstData(apx_fileManagerWorker_t *self,
             else
             {
                return rc;
+            }
+         }
+      }
+      else
+      {
+         return APX_MISSING_BUFFER_ERROR;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t workerThread_sendFileDynData(apx_fileManagerWorker_t *self, apx_msg_t *msg)
+{
+   if ( (self != 0) && (msg != 0) )
+   {
+      int32_t headerSize;
+      int32_t msgSize;
+      uint8_t *msgBuf;
+      uint32_t address = msg->msgData1;
+      uint32_t dataSize = msg->msgData2;
+      uint8_t *dataPtr = (uint8_t*) msg->msgData3.ptr;
+      headerSize = (address <= RMF_DATA_LOW_MAX_ADDR)? RMF_LOW_ADDRESS_SIZE : RMF_HIGH_ADDRESS_SIZE;
+      msgSize = headerSize + dataSize;
+      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
+      if (msgBuf != 0)
+      {
+         int32_t result = rmf_packHeader(msgBuf, msgSize, address, false);
+         if (result == headerSize)
+         {
+            memcpy(&msgBuf[headerSize], dataPtr, dataSize);
+            assert(self->shared != 0);
+            apx_fileManagerShared_freeAllocatedMemory(self->shared, dataPtr, dataSize);
+            result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
+#if APX_DEBUG_ENABLE
+            printf("[WORKER] Bytes transmitted: %d\n", result);
+#endif
+            if (result != msgSize)
+            {
+               return APX_TRANSMIT_ERROR;
             }
          }
       }

@@ -246,8 +246,13 @@ apx_error_t apx_nodeManager_buildNode_cstr(apx_nodeManager_t *self, const char *
                apx_nodeInstance_delete(nodeInstance);
                return APX_NAME_MISSING_ERROR;
             }
-
             apx_nodeInstance_cleanParseTree(nodeInstance);
+            rc = apx_nodeInstance_createPortDataBuffers(nodeInstance);
+            if (rc != APX_NO_ERROR)
+            {
+               apx_nodeInstance_delete(nodeInstance);
+               return rc;
+            }
             return APX_NO_ERROR;
          }
       }

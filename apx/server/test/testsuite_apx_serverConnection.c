@@ -347,4 +347,7 @@ static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTes
    rmf_serialize_cmdOpenFile(expectedData+RMF_HIGH_ADDRESS_SIZE, msgLen-RMF_HIGH_ADDRESS_SIZE, &fileOpenCmd);
    CuAssertTrue(tc, adt_bytearray_equals(transmittedMsg, expectedMsg));
 
+   adt_bytearray_delete(expectedMsg);
+   apx_serverTestConnection_destroy(&connection);
+   free(data);
 }

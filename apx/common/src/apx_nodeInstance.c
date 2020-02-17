@@ -213,6 +213,64 @@ apx_error_t apx_nodeInstance_createDefinitionBuffer(apx_nodeInstance_t *self, ap
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_nodeInstance_createPortDataBuffers(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      apx_error_t retval = APX_NO_ERROR;
+      apx_nodeInfo_t *nodeInfo;
+      apx_nodeData_t *nodeData;
+      apx_size_t requirePortDataLen;
+      apx_size_t providePortDataLen;
+      assert(self != 0);
+      nodeInfo = apx_nodeInstance_getNodeInfo(self);
+      nodeData = apx_nodeInstance_getNodeData(self);
+      if(nodeInfo == 0 || nodeData == 0)
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+      requirePortDataLen = apx_nodeInfo_calcRequirePortDataLen(nodeInfo);
+      providePortDataLen = apx_nodeInfo_calcProvidePortDataLen(nodeInfo);
+      if (providePortDataLen > 0u)
+      {
+         retval = apx_nodeData_createProvidePortBuffer(nodeData, providePortDataLen);
+         if (retval == APX_NO_ERROR)
+         {
+            apx_size_t initDataSize = apx_nodeInfo_getProvidePortInitDataSize(nodeInfo);
+            if (initDataSize == providePortDataLen)
+            {
+               const uint8_t *initData = apx_nodeInfo_getProvidePortInitDataPtr(nodeInfo);
+               assert(initData != 0);
+               apx_nodeData_writeProvidePortData(nodeData, initData, 0, initDataSize);
+            }
+            else
+            {
+               return APX_LENGTH_ERROR;
+            }
+         }
+      }
+      if ( (retval == APX_NO_ERROR) && (requirePortDataLen > 0u))
+      {
+         retval = apx_nodeData_createRequirePortBuffer(nodeData, requirePortDataLen);
+         if (retval == APX_NO_ERROR)
+         {
+            apx_size_t initDataSize = apx_nodeInfo_getRequirePortInitDataSize(nodeInfo);
+            if (initDataSize == requirePortDataLen)
+            {
+               const uint8_t *initData = apx_nodeInfo_getRequirePortInitDataPtr(nodeInfo);
+               assert(initData != 0);
+               apx_nodeData_writeRequirePortData(nodeData, initData, 0, initDataSize);
+            }
+            else
+            {
+               return APX_LENGTH_ERROR;
+            }
+         }
+      }
+      return retval;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 
 
@@ -567,8 +625,57 @@ static apx_error_t apx_nodeInstance_providePortDataFileWriteNotify(void *arg, ap
    return APX_NOT_IMPLEMENTED_ERROR;
 }
 
+/**
+ * Takes a snapshot of the providePortData buffer and sends it away to the file manager
+ */
 static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, struct apx_file_tag *file)
 {
-   printf("Taking snapshot of providePortData\n");
-   return APX_NOT_IMPLEMENTED_ERROR;
+   apx_nodeInstance_t *self = (apx_nodeInstance_t*) arg;
+   if ( (self != 0) && (file != 0) )
+   {
+      uint8_t *dataBuf;
+      size_t bufSize;
+      apx_size_t fileSize;
+      uint32_t fileStartAddress;
+      apx_error_t rc;
+      apx_fileManager_t *fileManager = apx_file_getFileManager(file);
+      assert(fileManager != 0);
+      assert(self->nodeData != 0);
+      assert(self->providePortDataFile != 0);
+      if (self->connection == 0)
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+      bufSize = (size_t) apx_nodeData_getProvidePortDataLen(self->nodeData);
+      fileSize = apx_file_getFileSize(file);
+      fileStartAddress = apx_file_getStartAddress(file);
+      assert(fileSize > 0);
+      if (fileSize != bufSize)
+      {
+         if (bufSize == 0u)
+         {
+            return APX_MISSING_BUFFER_ERROR;
+         }
+         else
+         {
+            return APX_LENGTH_ERROR;
+         }
+      }
+      if (fileSize > APX_MAX_FILE_SIZE)
+      {
+         return APX_FILE_TOO_LARGE_ERROR;
+      }
+      dataBuf = apx_connectionBase_alloc(self->connection, bufSize);
+      if (dataBuf == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+      rc = apx_nodeData_readProvidePortData(self->nodeData, dataBuf, 0u, bufSize);
+      if (rc != APX_NO_ERROR)
+      {
+         apx_connectionBase_free(self->connection, dataBuf, bufSize);
+      }
+      return apx_fileManager_writeDynamicData(fileManager, fileStartAddress, fileSize, dataBuf);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }

@@ -89,6 +89,7 @@ void apx_fileManagerWorker_sendFileInfoMsg(apx_fileManagerWorker_t *self, apx_fi
 void apx_fileManagerWorker_sendFileOpenMsg(apx_fileManagerWorker_t *self, uint32_t address);
 apx_error_t apx_fileManagerWorker_sendHeaderAckMsg(apx_fileManagerWorker_t *self);
 apx_error_t apx_fileManagerWorker_sendConstData(apx_fileManagerWorker_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg);
+apx_error_t apx_fileManagerWorker_sendDynamicData(apx_fileManagerWorker_t *self, uint32_t address, uint32_t len, uint8_t *data);
 
 //UNIT TEST API
 #ifdef UNIT_TEST

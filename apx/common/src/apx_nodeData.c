@@ -332,7 +332,7 @@ apx_size_t apx_nodeData_getRequirePortDataLen(apx_nodeData_t *self)
    return (apx_size_t) 0u;
 }
 
-apx_error_t apx_nodeData_writeRequirePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
+apx_error_t apx_nodeData_writeRequirePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, apx_size_t len)
 {
    apx_error_t retval = APX_NO_ERROR;
    if (self != 0)
@@ -359,7 +359,7 @@ apx_error_t apx_nodeData_writeRequirePortData(apx_nodeData_t *self, const uint8_
    return retval;
 }
 
-apx_error_t apx_nodeData_readRequirePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
+apx_error_t apx_nodeData_readRequirePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, apx_size_t len)
 {
    apx_error_t retval = APX_NO_ERROR;
    if( (self != 0) && (dest != 0) )
@@ -413,7 +413,7 @@ apx_size_t apx_nodeData_getProvidePortDataLen(apx_nodeData_t *self)
    return (apx_size_t) 0u;
 }
 
-apx_error_t apx_nodeData_writeProvidePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
+apx_error_t apx_nodeData_writeProvidePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, apx_size_t len)
 {
    apx_error_t retval = APX_NO_ERROR;
    if (self != 0)
@@ -440,7 +440,7 @@ apx_error_t apx_nodeData_writeProvidePortData(apx_nodeData_t *self, const uint8_
    return retval;
 }
 
-apx_error_t apx_nodeData_readProvidePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
+apx_error_t apx_nodeData_readProvidePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, apx_size_t len)
 {
    apx_error_t retval = APX_NO_ERROR;
    if( (self != 0) && (dest != 0) )

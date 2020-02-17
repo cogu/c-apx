@@ -27,6 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
+#include <stdio.h>
 #include "pack.h"
 #include "apx_client.h"
 #include "apx_clientTestConnection.h"
@@ -62,6 +63,7 @@ static void test_headerSentOnConnect(CuTest* tc);
 static void test_headerAcceptedEventTriggered(CuTest* tc);
 static void test_localFileInfoShallBeSentAfterHeaderAcknowledge(CuTest* tc);
 static void test_definitionFileIsSentWhenServerSendsFileOpenRequest(CuTest* tc);
+static void test_providePortDataFileIsSentWhenServerSendsFileOpenRequest(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -86,6 +88,8 @@ CuSuite* testSuite_apx_client_testConnection(void)
    SUITE_ADD_TEST(suite, test_headerAcceptedEventTriggered);
    SUITE_ADD_TEST(suite, test_localFileInfoShallBeSentAfterHeaderAcknowledge);
    SUITE_ADD_TEST(suite, test_definitionFileIsSentWhenServerSendsFileOpenRequest);
+   SUITE_ADD_TEST(suite, test_providePortDataFileIsSentWhenServerSendsFileOpenRequest);
+
 
    return suite;
 }
@@ -340,6 +344,45 @@ static void test_definitionFileIsSentWhenServerSendsFileOpenRequest(CuTest* tc)
    CuAssertUIntEquals(tc, RMF_HIGH_ADDRESS_SIZE+expectedDataLen, msgSize);
    CuAssertUIntEquals(tc, APX_ADDRESS_DEFINITION_START, rmf_unpackAddress(msgData, RMF_HIGH_ADDRESS_SIZE));
    CuAssertIntEquals(tc, 0, memcmp(&msgData[RMF_HIGH_ADDRESS_SIZE], m_apx_definition1, expectedDataLen));
+
+   apx_client_delete(client);
+}
+
+static void test_providePortDataFileIsSentWhenServerSendsFileOpenRequest(CuTest* tc)
+{
+   apx_clientTestConnection_t *connection;
+   apx_client_t *client;
+   const uint8_t *msgData;
+   rmf_cmdOpenFile_t fileOpenCmd;
+   uint32_t msgSize;
+   uint32_t expectedDataLen;
+
+   client = apx_client_new();
+   CuAssertPtrNotNull(tc, client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition1));
+   connection = apx_clientTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   apx_client_attachConnection(client, (apx_clientConnectionBase_t*) connection);
+
+   apx_clientTestConnection_connect(connection);
+   apx_clientTestConnection_clearTransmitLog(connection);
+
+   //We know the .out-file is located at address 0, let's just open it.
+   fileOpenCmd.address = 0u;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_clientTestConnection_onFileOpenMsgReceived(connection, &fileOpenCmd));
+   CuAssertIntEquals(tc, 0, apx_clientTestConnection_getTransmitLogLen(connection));
+   apx_client_run(client);
+   CuAssertIntEquals(tc, 1, apx_clientTestConnection_getTransmitLogLen(connection));
+   adt_bytearray_t *transmittedMsg = apx_clientTestConnection_getTransmitLogMsg(connection, 0);
+   CuAssertPtrNotNull(tc, transmittedMsg);
+   msgData = (const uint8_t*) adt_bytearray_data(transmittedMsg);
+   msgSize = adt_bytearray_length(transmittedMsg);
+   expectedDataLen = (uint32_t) UINT16_SIZE;
+   CuAssertUIntEquals(tc, RMF_LOW_ADDRESS_SIZE+expectedDataLen, msgSize);
+   CuAssertUIntEquals(tc, 0u, rmf_unpackAddress(msgData, RMF_LOW_ADDRESS_SIZE));
+   CuAssertUIntEquals(tc, 0xFF, msgData[2] );
+   CuAssertUIntEquals(tc, 0xFF, msgData[3] );
 
    apx_client_delete(client);
 }

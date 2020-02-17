@@ -119,16 +119,16 @@ apx_error_t apx_nodeData_setDefinitionChecksumData(apx_nodeData_t *self, uint8_t
 apx_error_t apx_nodeData_createRequirePortBuffer(apx_nodeData_t *self, apx_size_t bufferLen);
 #endif
 apx_size_t apx_nodeData_getRequirePortDataLen(apx_nodeData_t *self);
-apx_error_t apx_nodeData_writeRequirePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
-apx_error_t apx_nodeData_readRequirePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_writeRequirePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
+apx_error_t apx_nodeData_readRequirePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, apx_size_t len);
 
 
 #ifndef APX_EMBEDDED
 apx_error_t apx_nodeData_createProvidePortBuffer(apx_nodeData_t *self, apx_size_t bufferLen);
 #endif
 apx_size_t apx_nodeData_getProvidePortDataLen(apx_nodeData_t *self);
-apx_error_t apx_nodeData_writeProvidePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
-apx_error_t apx_nodeData_readProvidePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeData_writeProvidePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
+apx_error_t apx_nodeData_readProvidePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, apx_size_t len);
 
 ////////////////// NodeInstance (parent) API //////////////////
 void apx_nodeData_setNodeInstance(apx_nodeData_t *self, struct apx_nodeInstance_tag *node);
