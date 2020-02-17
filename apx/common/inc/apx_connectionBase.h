@@ -34,6 +34,7 @@
 #include "apx_fileManager.h"
 #include "apx_nodeManager.h"
 #include "apx_eventLoop.h"
+#include "apx_allocator.h"
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN
@@ -75,6 +76,7 @@ typedef struct apx_connectionBase_tag
    apx_fileManager_t fileManager;
    apx_nodeManager_t nodeManager;
    apx_eventLoop_t eventLoop;
+   apx_allocator_t allocator;
    adt_list_t connectionEventListeners; //weak references to apx_connectionEventListener_t
    //adt_list_t fileEventListeners; //weak references to apx_fileEventListener_t
    MUTEX_T eventListenerMutex; //thread-protection for nodeDataEventListeners
@@ -106,6 +108,8 @@ void apx_connectionBase_stop(apx_connectionBase_t *self);
 void apx_connectionBase_close(apx_connectionBase_t *self);
 void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance);
 apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const uint8_t *msgBuf, int32_t msgLen);
+uint8_t *apx_connectionBase_alloc(apx_connectionBase_t *self, size_t size);
+void apx_connectionBase_free(apx_connectionBase_t *self, uint8_t *ptr, size_t size);
 
 
 /*** Internal Callback API ***/

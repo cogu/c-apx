@@ -30,7 +30,6 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_types.h"
-#include "apx_allocator.h"
 #include "apx_fileMap.h"
 #include "apx_fileManagerDefs.h"
 #include "apx_file.h"
@@ -54,17 +53,16 @@
 struct apx_file_tag;
 struct rmf_fileInfo_tag;
 
+typedef void (apx_allocatorFreeFunc)(void *arg, uint8_t *data, uint32_t len);
+
 typedef struct apx_fileManagerShared_tag
 {
    void *arg;
-   apx_allocator_t allocator;
    apx_fileMap_t localFileMap;
    apx_fileMap_t remoteFileMap;
    uint32_t connectionId;
    SPINLOCK_T lock;
-   void (*remoteFileCreated)(void *arg, apx_file_t *remoteFile);
-   void (*fileOpenRequested)(void *arg, apx_file_t *localFile);
-   void (*remoteFileWritten)(void *arg, apx_file_t *remoteFile, uint32_t offset, const uint8_t *msgData, uint32_t msgLen, bool moreBit);
+   apx_allocatorFreeFunc *freeAllocatedMemory;
 } apx_fileManagerShared_t;
 
 
@@ -73,8 +71,6 @@ typedef struct apx_fileManagerShared_tag
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_fileManagerShared_create(apx_fileManagerShared_t *self);
 void apx_fileManagerShared_destroy(apx_fileManagerShared_t *self);
-uint8_t *apx_fileManagerShared_alloc(apx_fileManagerShared_t *self, size_t size);
-void apx_fileManagerShared_free(apx_fileManagerShared_t *self, uint8_t *ptr, size_t size);
 apx_file_t *apx_fileManagerShared_createLocalFile(apx_fileManagerShared_t *self, const apx_fileInfo_t *fileInfo);
 apx_file_t *apx_fileManagerShared_createRemoteFile(apx_fileManagerShared_t *self, const apx_fileInfo_t *fileInfo);
 int32_t apx_fileManagerShared_getNumLocalFiles(apx_fileManagerShared_t *self);
@@ -85,6 +81,6 @@ apx_file_t *apx_fileManagerShared_findFileByAddress(apx_fileManagerShared_t *sel
 void apx_fileManagerShared_setConnectionId(apx_fileManagerShared_t *self, uint32_t connectionId);
 uint32_t apx_fileManagerShared_getConnectionId(const apx_fileManagerShared_t *self);
 adt_ary_t *apx_fileManagerShared_getLocalFileList(apx_fileManagerShared_t *self);
-
+void apx_fileManagerShared_freeAllocatedMemory(apx_fileManagerShared_t *self, uint8_t *data, uint32_t len);
 
 #endif //APX_FILE_MANAGER_SHARED_H

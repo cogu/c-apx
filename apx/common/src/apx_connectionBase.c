@@ -104,6 +104,11 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       self->totalBytesReceived = 0u;
       self->totalBytesSent = 0u;
       self->mode = mode;
+      rc = apx_allocator_create(&self->allocator, APX_MAX_NUM_MESSAGES);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
       apx_nodeManager_create(&self->nodeManager, mode, (bool) (mode==APX_CLIENT_MODE));
 #ifdef _WIN32
       self->workerThread = INVALID_HANDLE_VALUE;
@@ -114,24 +119,30 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       bufResult = apx_eventLoop_create(&self->eventLoop);
       if (bufResult != BUF_E_OK)
       {
+         apx_allocator_destroy(&self->allocator);
          apx_nodeManager_destroy(&self->nodeManager);
          return APX_MEM_ERROR;
       }
       rc = apx_fileManager_create(&self->fileManager, mode, self);
       if (rc != APX_NO_ERROR)
       {
+         apx_allocator_destroy(&self->allocator);
          apx_nodeManager_destroy(&self->nodeManager);
          apx_eventLoop_destroy(&self->eventLoop);
+         return rc;
       }
       rc = apx_connectionBase_initTransmitHandler(self);
       if (rc != APX_NO_ERROR)
       {
-         apx_fileManager_destroy(&self->fileManager);
+         apx_allocator_destroy(&self->allocator);
          apx_nodeManager_destroy(&self->nodeManager);
+         apx_fileManager_destroy(&self->fileManager);
          apx_eventLoop_destroy(&self->eventLoop);
+         return rc;
       }
       adt_list_create(&self->connectionEventListeners, apx_connectionEventListener_vdelete);
       MUTEX_INIT(self->eventListenerMutex);
+      apx_allocator_start(&self->allocator);
       return rc;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -146,6 +157,8 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self)
       apx_nodeManager_destroy(&self->nodeManager);
       MUTEX_DESTROY(self->eventListenerMutex);
       adt_list_destroy(&self->connectionEventListeners);
+      apx_allocator_stop(&self->allocator);
+      apx_allocator_destroy(&self->allocator);
    }
 }
 
@@ -257,6 +270,24 @@ apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const 
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+uint8_t *apx_connectionBase_alloc(apx_connectionBase_t *self, size_t size)
+{
+   if (self != 0)
+   {
+      return apx_allocator_alloc(&self->allocator, size);
+   }
+   return (uint8_t*) 0;
+}
+
+void apx_connectionBase_free(apx_connectionBase_t *self, uint8_t *ptr, size_t size)
+{
+   if (self != 0)
+   {
+      apx_allocator_free(&self->allocator, ptr, size);
+   }
+}
+
 
 /*** Internal Callback API ***/
 

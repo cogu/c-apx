@@ -84,6 +84,7 @@ apx_error_t apx_nodeInstance_updatePortDataDirectById(apx_nodeInstance_t *destNo
 apx_error_t apx_nodeInstance_parseDefinition(apx_nodeInstance_t *self, apx_parser_t *parser);
 apx_node_t *apx_nodeInstance_getParseTree(apx_nodeInstance_t *self);
 apx_error_t apx_nodeInstance_createDefinitionBuffer(apx_nodeInstance_t *self, apx_size_t bufferLen);
+apx_error_t apx_nodeInstance_createPortDataBuffers(apx_nodeInstance_t *self);
 
 apx_error_t apx_nodeInstance_buildNodeInfo(apx_nodeInstance_t *self, apx_programType_t *errProgramType, apx_uniquePortId_t *errPortId);
 apx_nodeInfo_t *apx_nodeInstane_getNodeInfo(apx_nodeInstance_t *self);

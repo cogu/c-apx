@@ -27,6 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
+#include <stdio.h> //DEBUG ONLY
 #include "apx_fileManagerShared.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -52,20 +53,13 @@ apx_error_t apx_fileManagerShared_create(apx_fileManagerShared_t *self)
 {
    if (self != 0)
    {
-      apx_error_t result = apx_allocator_create(&self->allocator, APX_MAX_NUM_MESSAGES);
-      if (result == 0)
-      {
-         self->connectionId = APX_INVALID_CONNECTION_ID;
-         self->arg = (void*) 0;
-         self->remoteFileCreated = (void (*)(void *arg, apx_file_t* file)) 0;
-         self->fileOpenRequested = (void (*)(void *arg, apx_file_t* file)) 0;
-         self->remoteFileWritten = (void (*)(void *arg, apx_file_t *remoteFile, uint32_t offset, const uint8_t *msgData, uint32_t msgLen, bool moreBit)) 0;
-         SPINLOCK_INIT(self->lock);
-         apx_fileMap_create(&self->localFileMap);
-         apx_fileMap_create(&self->remoteFileMap);
-         apx_allocator_start(&self->allocator);
-      }
-      return result;
+      self->connectionId = APX_INVALID_CONNECTION_ID;
+      self->arg = (void*) 0;
+      self->freeAllocatedMemory = (apx_allocatorFreeFunc*) 0;
+      SPINLOCK_INIT(self->lock);
+      apx_fileMap_create(&self->localFileMap);
+      apx_fileMap_create(&self->remoteFileMap);
+      return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -74,30 +68,12 @@ void apx_fileManagerShared_destroy(apx_fileManagerShared_t *self)
 {
    if (self != 0)
    {
-      apx_allocator_stop(&self->allocator);
-      apx_allocator_destroy(&self->allocator);
       apx_fileMap_destroy(&self->localFileMap);
       apx_fileMap_destroy(&self->remoteFileMap);
       SPINLOCK_DESTROY(self->lock);
    }
 }
 
-uint8_t *apx_fileManagerShared_alloc(apx_fileManagerShared_t *self, size_t size)
-{
-   if (self != 0)
-   {
-      return apx_allocator_alloc(&self->allocator, size);
-   }
-   return (uint8_t*) 0;
-}
-
-void apx_fileManagerShared_free(apx_fileManagerShared_t *self, uint8_t *ptr, size_t size)
-{
-   if (self != 0)
-   {
-      apx_allocator_free(&self->allocator, ptr, size);
-   }
-}
 
 /**
  * Creates a local file and automatically assigns it an address in the local file map.
@@ -239,6 +215,18 @@ adt_ary_t *apx_fileManagerShared_getLocalFileList(apx_fileManagerShared_t *self)
       return array;
    }
    return (adt_ary_t*) 0;
+}
+
+void apx_fileManagerShared_freeAllocatedMemory(apx_fileManagerShared_t *self, uint8_t *data, uint32_t len)
+{
+   if (self != 0)
+   {
+      if (self->freeAllocatedMemory != 0)
+      {
+         printf("Freeing %d bytes\n", (int) len);
+         self->freeAllocatedMemory(self->arg, data, len);
+      }
+   }
 }
 
 

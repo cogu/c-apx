@@ -47,8 +47,9 @@
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t apx_fileManager_processCmdMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
 static apx_error_t apx_fileManager_processDataMsg(apx_fileManager_t *self, uint32_t address, const uint8_t *msgBuf, int32_t msgLen);
-apx_error_t apx_fileManager_processFileInfoMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
-apx_error_t apx_fileManager_processFileOpenMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
+static apx_error_t apx_fileManager_processFileInfoMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
+static apx_error_t apx_fileManager_processFileOpenMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
+static void apx_fileManager_freeAllocatedMemory(void *arg, uint8_t *ptr, uint32_t size);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -69,6 +70,8 @@ apx_error_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode, struct
          result = apx_fileManagerShared_create(&self->shared);
          if (result == APX_NO_ERROR)
          {
+            self->shared.arg = (void*) self;
+            self->shared.freeAllocatedMemory = apx_fileManager_freeAllocatedMemory;
             result = apx_fileManagerWorker_create(&self->worker, &self->shared, mode);
             if (result != APX_NO_ERROR)
             {
@@ -307,6 +310,19 @@ apx_error_t apx_fileManager_writeConstData(apx_fileManager_t *self, uint32_t add
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_fileManager_writeDynamicData(apx_fileManager_t *self, uint32_t address, apx_size_t len, uint8_t *data)
+{
+   if ( (self != 0) && (data != 0) && (len <= APX_MAX_FILE_SIZE) )
+   {
+      if (address >= RMF_CMD_START_ADDR)
+      {
+         return APX_INVALID_ADDRESS_ERROR;
+      }
+      return apx_fileManagerWorker_sendDynamicData(&self->worker, address, len, data);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t *self)
 {
@@ -392,7 +408,7 @@ static apx_error_t apx_fileManager_processDataMsg(apx_fileManager_t *self, uint3
    return APX_NULL_PTR_ERROR;
 }
 
-apx_error_t apx_fileManager_processFileInfoMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen)
+static apx_error_t apx_fileManager_processFileInfoMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen)
 {
    rmf_fileInfo_t cmdFileInfo;
    int32_t result = rmf_deserialize_cmdFileInfo(msgBuf, msgLen, &cmdFileInfo);
@@ -408,7 +424,7 @@ apx_error_t apx_fileManager_processFileInfoMsg(apx_fileManager_t *self, const ui
    return APX_NO_ERROR;
 }
 
-apx_error_t apx_fileManager_processFileOpenMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen)
+static apx_error_t apx_fileManager_processFileOpenMsg(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen)
 {
    rmf_cmdOpenFile_t cmdOpenFile;
    int32_t result = rmf_deserialize_cmdOpenFile(msgBuf, msgLen, &cmdOpenFile);
@@ -428,5 +444,14 @@ apx_error_t apx_fileManager_processFileOpenMsg(apx_fileManager_t *self, const ui
       return APX_INVALID_MSG_ERROR;
    }
    return APX_NO_ERROR;
+}
+
+static void apx_fileManager_freeAllocatedMemory(void *arg, uint8_t *ptr, uint32_t size)
+{
+   apx_fileManager_t *self = (apx_fileManager_t*) arg;
+   if ( (self != 0) && (self->parentConnection != 0) )
+   {
+      apx_connectionBase_free(self->parentConnection, ptr, (size_t) size);
+   }
 }
 

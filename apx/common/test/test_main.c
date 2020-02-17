@@ -39,6 +39,7 @@ CuSuite* testSuite_apx_vm(void);
 CuSuite* testSuite_apx_vmSerializer(void);
 CuSuite* testSuite_apx_vmDeserializer(void);
 CuSuite* testSuite_apx_nodeInfo(void);
+CuSuite* testSuite_apx_connectionBase(void);
 
 /** APX Server **/
 CuSuite* testSuite_apx_serverSocketConnection(void);
@@ -79,6 +80,8 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testsuite_apx_port());
    CuSuiteAddSuite(suite, testSuite_apx_vm());
    CuSuiteAddSuite(suite, testSuite_apx_nodeManager());
+   CuSuiteAddSuite(suite, testSuite_apx_connectionBase());
+
 
    CuSuiteAddSuite(suite, testSuite_apx_file2());
    CuSuiteAddSuite(suite, testSuite_apx_fileMap());
@@ -98,15 +101,9 @@ void RunAllTests(void)
 
    /*
 
-   CuSuiteAddSuite(suite, testSuite_apx_fileManagerLocal());
-   CuSuiteAddSuite(suite, testSuite_apx_fileManagerRemote());
-
-
-
-
    CuSuiteAddSuite(suite, testSuite_apx_portConnectionEntry());
    CuSuiteAddSuite(suite, testSuite_apx_portConnectionTable());
-//   CuSuiteAddSuite(suite, testSuite_apx_portDataMap());
+   CuSuiteAddSuite(suite, testSuite_apx_portDataMap());
    CuSuiteAddSuite(suite, testSuite_apx_portTriggerList());
    CuSuiteAddSuite(suite, testSuite_apx_routingTable());
    CuSuiteAddSuite(suite, testSuite_apx_vmSerializer());
