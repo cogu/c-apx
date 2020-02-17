@@ -38,6 +38,7 @@
 #include "apx_connectionEventSpy.h"
 #include "apx_transmitHandlerSpy.h"
 #include "apx_nodeManager.h"
+#include "pack.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -62,6 +63,7 @@ static void test_fileOpenRequestIsSentWhenDefinitionFileIsSeen(CuTest* tc);
 static void test_serverProcessesDefinitionAfterClientWritesDefinitionData(CuTest* tc);
 static void test_serverCreatesOutPortDataBuffersAfterProcessingNodeDefinition(CuTest* tc);
 static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTest* tc);
+static void test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -83,6 +85,7 @@ CuSuite* testSuite_apx_serverConnection(void)
    SUITE_ADD_TEST(suite, test_serverProcessesDefinitionAfterClientWritesDefinitionData);
    SUITE_ADD_TEST(suite, test_serverCreatesOutPortDataBuffersAfterProcessingNodeDefinition);
    SUITE_ADD_TEST(suite, test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition);
+   SUITE_ADD_TEST(suite, test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt);
 
    return suite;
 }
@@ -350,4 +353,42 @@ static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTes
    adt_bytearray_delete(expectedMsg);
    apx_serverTestConnection_destroy(&connection);
    free(data);
+}
+
+static void test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt(CuTest* tc)
+{
+   apx_serverTestConnection_t connection;
+   rmf_fileInfo_t fileInfo;
+   uint8_t *buffer;
+   uint8_t providePortData[UINT16_SIZE];
+
+   apx_size_t definitionLen = strlen(m_apx_definition1);
+   apx_serverTestConnection_create(&connection);
+   rmf_fileInfo_create(&fileInfo, "TestNode.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
+   apx_serverTestConnection_onFileInfoMsgReceived(&connection, &fileInfo);
+   rmf_fileInfo_create(&fileInfo, "TestNode.out", 0u, UINT16_SIZE, RMF_FILE_TYPE_FIXED);
+   apx_serverTestConnection_onFileInfoMsgReceived(&connection, &fileInfo);
+   apx_serverTestConnection_runEventLoop(&connection);
+   buffer = (uint8_t*) malloc(RMF_HIGH_ADDRESS_SIZE+definitionLen);
+   assert(buffer != 0);
+   CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_HIGH_ADDRESS_SIZE, APX_ADDRESS_DEFINITION_START, false));
+   memcpy(&buffer[RMF_HIGH_ADDRESS_SIZE], &m_apx_definition1[0], definitionLen);
+   apx_nodeInstance_t *nodeInstance = apx_nodeManager_find(&connection.base.base.nodeManager, "TestNode");
+   CuAssertPtrNotNull(tc, nodeInstance);
+   apx_nodeData_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
+   CuAssertPtrNotNull(tc, nodeData);
+   CuAssertUIntEquals(tc, 0u, apx_nodeData_getProvidePortDataLen(nodeData));
+   CuAssertPtrEquals(tc, NULL, apx_nodeInstance_getNodeInfo(nodeInstance));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(&connection, buffer, RMF_HIGH_ADDRESS_SIZE+definitionLen));
+   apx_serverTestConnection_runEventLoop(&connection);
+   CuAssertIntEquals(tc, 2, apx_serverTestConnection_getTransmitLogLen(&connection));
+   packLE(&providePortData[0], 0x1234, UINT16_SIZE);
+
+   //send TestNode.out contents
+   CuAssertIntEquals(tc, RMF_LOW_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_LOW_ADDRESS_SIZE, 0u, false));
+   memcpy(&buffer[RMF_LOW_ADDRESS_SIZE], &providePortData[0], UINT16_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(&connection, buffer, RMF_LOW_ADDRESS_SIZE+UINT16_SIZE));
+
+   apx_serverTestConnection_destroy(&connection);
+   free(buffer);
 }

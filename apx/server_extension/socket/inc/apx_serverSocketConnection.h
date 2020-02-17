@@ -62,8 +62,6 @@ void apx_serverSocketConnection_start(apx_serverSocketConnection_t *self);
 void apx_serverSocketConnection_vstart(void *arg);
 void apx_serverSocketConnection_close(apx_serverSocketConnection_t *self);
 void apx_serverSocketConnection_vclose(void *arg);
-void apx_serverSocketConnection_nodeFileWriteNotify(apx_serverSocketConnection_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
-void apx_serverSocketConnection_vnodeFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
 
 #undef SOCKET_TYPE

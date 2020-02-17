@@ -58,8 +58,6 @@ void apx_serverTestConnection_start(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_vstart(void *arg);
 void apx_serverTestConnection_close(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_vclose(void *arg);
-void apx_serverTestConnection_nodeFileWriteNotify(apx_serverTestConnection_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
-void apx_serverTestConnection_vnodeFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
 void apx_serverTestConnection_createRemoteFile(apx_serverTestConnection_t *self, const rmf_fileInfo_t *fileInfo);
 void apx_serverTestConnection_writeRemoteData(apx_serverTestConnection_t *self, uint32_t address, const uint8_t* dataBuf, uint32_t dataLen, bool more);
