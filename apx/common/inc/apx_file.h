@@ -112,6 +112,7 @@ uint16_t apx_file_getRmfFileType(const apx_file_t *self);
 
 uint32_t apx_file_getStartAddress(const apx_file_t *self);
 apx_size_t apx_file_getFileSize(const apx_file_t *self);
+const char *apx_file_getName(const apx_file_t *self);
 
 apx_error_t apx_file_fileOpenNotify(apx_file_t *self);
 apx_error_t apx_file_fileWriteNotify(apx_file_t *self, uint32_t offset, const uint8_t *src, uint32_t len);

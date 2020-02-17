@@ -114,10 +114,14 @@ void apx_connectionBase_free(apx_connectionBase_t *self, uint8_t *ptr, size_t si
 
 /*** Internal Callback API ***/
 
+//Callbacks triggered due to events happening remotely
 apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
 apx_error_t apx_connectionBase_fileOpenNotify(apx_connectionBase_t *self, uint32_t address);
 apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
 apx_error_t apx_connectionBase_nodeInstanceFileWriteNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+
+//Callbacks triggered due to events happening locally
+apx_error_t apx_connectionBase_updateProvidePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
 
 /*** Event triggering API ***/
 

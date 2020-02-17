@@ -310,6 +310,9 @@ apx_error_t apx_fileManager_writeConstData(apx_fileManager_t *self, uint32_t add
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+/**
+ * The variable data must have been previously allocated through the apx_allocator_alloc function using the allocator in parent connection
+ */
 apx_error_t apx_fileManager_writeDynamicData(apx_fileManager_t *self, uint32_t address, apx_size_t len, uint8_t *data)
 {
    if ( (self != 0) && (data != 0) && (len <= APX_MAX_FILE_SIZE) )
@@ -399,7 +402,11 @@ static apx_error_t apx_fileManager_processDataMsg(apx_fileManager_t *self, uint3
       {
          if (apx_file_isOpen(file))
          {
-            uint32_t offset = apx_file_getStartAddress(file) - address;
+            uint32_t offset;
+            uint32_t startAddress = apx_file_getStartAddress(file) & RMF_ADDRESS_MASK_INTERNAL;
+            assert(address >= startAddress);
+            assert(address < startAddress+apx_file_getFileSize(file));
+            offset = address - startAddress;
             return apx_connectionBase_fileWriteNotify(self->parentConnection, file, offset, msgBuf, msgLen);
          }
       }

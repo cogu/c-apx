@@ -574,7 +574,7 @@ static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serve
    {
    case APX_NODE_STATE_STAGING:
       //In staging mode we are free to write as much data as we want without constraints
-      printf("[SERVER-CONNECTION-BASE] Write %s.out(%d,%d): ", apx_nodeInstance_getName(nodeInstance), (int) offset, (int) len);
+      printf("[%u] Write %s.out(%d,%d): ", (unsigned int) apx_connectionBase_getConnectionId(&self->base), apx_nodeInstance_getName(nodeInstance), (int) offset, (int) len);
       apx_print_hex_bytes(10, data, len);
       return apx_nodeData_writeProvidePortData(nodeData, data, offset, len);
    case APX_NODE_STATE_CONNECTED:

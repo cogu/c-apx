@@ -26,13 +26,15 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include <string.h>
+#include <assert.h>
+#include <stdio.h> //DEBUG only
+
 #include "apx_connectionBase.h"
 #include "apx_portDataRef.h"
 #include "apx_nodeData.h"
 #include "apx_logging.h"
 #include "apx_portConnectionTable.h"
-#include <string.h>
-#include <stdio.h> //DEBUG only
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -289,7 +291,11 @@ void apx_connectionBase_free(apx_connectionBase_t *self, uint8_t *ptr, size_t si
 
 
 /*** Internal Callback API ***/
+//Callbacks triggered due to events happening remotely
 
+/**
+ * New fileInfo has been received
+ */
 apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo)
 {
    if ( (self != 0) && (remoteFileInfo != 0) )
@@ -340,6 +346,9 @@ apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_f
 {
    if ( (self != 0) && (file != 0) && (data != 0) )
    {
+#if APX_DEBUG_ENABLE
+      //printf("[CONNECTION-BASE] fileWriteNotify %s(%u, %u)\n", apx_file_getName(file), offset, len);
+#endif
       apx_error_t retval = apx_file_fileWriteNotify(file, offset, data, len);
       if (retval == APX_NO_ERROR)
       {
@@ -369,6 +378,44 @@ apx_error_t apx_connectionBase_nodeInstanceFileWriteNotify(apx_connectionBase_t 
          printf("No callback\n");
       }
       return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+//Callbacks triggered due to events happening locally
+apx_error_t apx_connectionBase_updateProvidePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   if (self != 0)
+   {
+      if (self->mode == APX_CLIENT_MODE)
+      {
+         bool isFileOpen;
+         assert(file != 0);
+         isFileOpen = apx_file_isOpen(file);
+         if (isFileOpen)
+         {
+            uint8_t *dataBuf;
+            uint32_t address;
+            uint32_t startAddress = apx_file_getStartAddress(file);
+            address = startAddress + offset;
+            dataBuf = apx_allocator_alloc(&self->allocator, len);
+            if (dataBuf == 0)
+            {
+               return APX_MEM_ERROR;
+            }
+            memcpy(dataBuf, data, len);
+            return apx_fileManager_writeDynamicData(&self->fileManager, address, len, dataBuf);
+         }
+         else
+         {
+            //We have a connection by file has not yet been opened on remote side
+         }
+         return APX_NO_ERROR;
+      }
+      else
+      {
+         return APX_NOT_IMPLEMENTED_ERROR;
+      }
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
