@@ -69,6 +69,7 @@ SHARED_SOURCES = \
 	apx/common/src/apx_portTriggerList.c \
 	apx/common/src/apx_stream.c \
 	apx/common/src/apx_typeAttribute.c \
+	apx/common/src/apx_util.c \
 	apx/common/src/apx_vm.c \
 	apx/common/src/apx_vmSerializer.c \
 	apx/common/src/apx_vmDeserializer.c \

@@ -62,7 +62,6 @@ apx_error_t apx_serverTestConnection_create(apx_serverTestConnection_t *self)
             apx_serverTestConnection_vdestroy,
             apx_serverTestConnection_vstart,
             apx_serverTestConnection_vclose,
-            apx_serverTestConnection_vnodeFileWriteNotify,
             apx_serverTestConnection_vfillTransmitHandler);
       apx_error_t result = apx_serverConnectionBase_create(&self->base, &vtable);
       if (result == APX_NO_ERROR)
@@ -141,19 +140,6 @@ void apx_serverTestConnection_close(apx_serverTestConnection_t *self)
 void apx_serverTestConnection_vclose(void *arg)
 {
    apx_serverTestConnection_close((apx_serverTestConnection_t*) arg);
-}
-
-void apx_serverTestConnection_nodeFileWriteNotify(apx_serverTestConnection_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
-{
-   if (self != 0)
-   {
-      apx_serverConnectionBase_nodeFileWriteNotify(&self->base, nodeInstance, fileType, offset, data, len);
-   }
-}
-
-void apx_serverTestConnection_vnodeFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
-{
-   apx_serverTestConnection_nodeFileWriteNotify((apx_serverTestConnection_t*) arg, nodeInstance, fileType, offset, data, len);
 }
 
 

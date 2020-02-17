@@ -146,10 +146,10 @@ typedef uint8_t apx_logLevel_t;
 #define APX_ADDRESS_DEFINITION_START     0x4000000 //64MB, this must be a power of 2
 
 typedef uint8_t apx_nodeState_t;
-#define APX_NODE_STATE_STAGING  ((apx_nodeState_t) 0u)
-#define APX_NODE_STATE_RUNNING  ((apx_nodeState_t) 1u)
-#define APX_NODE_STATE_CLEANUP  ((apx_nodeState_t) 2u)
-#define APX_NODE_STATE_INVALID  ((apx_nodeState_t) 3u)
+#define APX_NODE_STATE_STAGING    ((apx_nodeState_t) 0u)
+#define APX_NODE_STATE_CONNECTED  ((apx_nodeState_t) 1u)
+#define APX_NODE_STATE_CLEANUP    ((apx_nodeState_t) 2u)
+#define APX_NODE_STATE_INVALID    ((apx_nodeState_t) 3u)
 
 
 #endif //APX_TYPES_H

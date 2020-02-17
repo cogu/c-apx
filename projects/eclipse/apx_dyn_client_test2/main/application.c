@@ -96,7 +96,7 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
       if (nodeData != 0)
       {
          uint8_t data[UINT16_SIZE];
-         packLE(&data[0], 0x1234, UINT16_SIZE);
+         packLE(&data[0], 0xCCBB, UINT16_SIZE);
          apx_nodeData_writeProvidePortData(nodeData, &data[0], 1, UINT16_SIZE);
       }
       result = apx_client_connectUnix(m_client, unix_socket_path);

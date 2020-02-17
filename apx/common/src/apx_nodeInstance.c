@@ -551,10 +551,11 @@ static apx_error_t apx_nodeInstance_definitionFileWriteNotify(void *arg, apx_fil
 #if APX_DEBUG_ENABLE
       //printf("definitionFileWriteNotify(%d, %d)\n", (int) offset, (int) len);
 #endif
+      //It's OK for definition data to be written directly by the node instance before notification
       retval = apx_nodeData_writeDefinitionData(self->nodeData, src, offset, len);
       if ( (self->connection != 0) && (retval == APX_NO_ERROR) )
       {
-         retval = apx_connectionBase_nodeFileWriteNotify(self->connection, self, APX_DEFINITION_FILE_TYPE, offset, src, len);
+         retval = apx_connectionBase_nodeInstanceFileWriteNotify(self->connection, self, APX_DEFINITION_FILE_TYPE, offset, src, len);
       }
       return retval;
    }
@@ -622,7 +623,21 @@ static apx_error_t apx_nodeInstance_createFileInfo(apx_nodeInstance_t *self, con
 
 static apx_error_t apx_nodeInstance_providePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len)
 {
-   return APX_NOT_IMPLEMENTED_ERROR;
+   apx_nodeInstance_t *self = (apx_nodeInstance_t*) arg;
+   if ( (self != 0) && (file != 0) )
+   {
+      if (self->connection != 0)
+      {
+         //It's not OK for nodeInstance to manipulate it's own data without acquiring a global lock (either owned by server or client).
+         //Forward this notification to parent connection to take correct action. The connection must write the data using the apx_nodeData API later.
+         return apx_connectionBase_nodeInstanceFileWriteNotify(self->connection, self, apx_file_getApxFileType(file), offset, src, len);
+      }
+      else
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 /**

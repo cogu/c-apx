@@ -80,7 +80,8 @@ void apx_serverConnectionBase_unregisterEventListener(apx_serverConnectionBase_t
 
 void apx_serverConnectionBase_onRemoteFileHeaderReceived(apx_serverConnectionBase_t *self);
 apx_error_t apx_serverConnectionBase_fileInfoNotify(apx_serverConnectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
-void apx_serverConnectionBase_nodeFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+void apx_serverConnectionBase_nodeInstanceFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+void apx_serverConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
 
 

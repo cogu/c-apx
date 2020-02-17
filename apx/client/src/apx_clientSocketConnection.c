@@ -109,7 +109,6 @@ apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self
             apx_clientSocketConnection_vdestroy,
             apx_clientSocketConnection_vstart,
             apx_clientSocketConnection_vclose,
-            (apx_nodeFileWriteNotifyFunc*) 0,
             apx_clientSocketConnection_vfillTransmitHandler);
       apx_error_t result = apx_clientConnectionBase_create(&self->base, &vtable);
       if (result != APX_NO_ERROR)

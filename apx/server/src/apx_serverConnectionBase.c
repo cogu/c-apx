@@ -42,6 +42,7 @@
 #include "apx_server.h"
 #include "apx_routingTable.h"
 #include "apx_portConnectionTable.h"
+#include "apx_util.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -58,12 +59,11 @@
 static void apx_serverConnectionBase_parseGreeting(apx_serverConnectionBase_t *self, const uint8_t *msgBuf, int32_t msgLen);
 static uint8_t apx_serverConnectionBase_parseMessage(apx_serverConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 static void apx_serverConnectionBase_fileInfoNotifyImpl(void *arg, const apx_fileInfo_t *fileInfo);
-static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len);
 static apx_error_t apx_serverConnectionBase_processNewDefinitionFile(apx_serverConnectionBase_t *self, const apx_fileInfo_t *fileInfo);
 static void apx_serverConnectionBase_processNewOutPortDataFile(apx_serverConnectionBase_t *self, const apx_fileInfo_t *fileInfo);
-static apx_error_t apx_serverConnectionBase_createInPortDataFile(apx_serverConnectionBase_t *self, apx_nodeData_t *nodeData, apx_file_t *definitionFile);
 static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *srcNodeData, uint32_t offset, uint32_t len);
-static void apx_serverConnectionBase_definitionFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, uint32_t len);
+static void apx_serverConnectionBase_definitionDataWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, uint32_t len);
+static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len);
 static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance);
 static apx_error_t apx_serverConnectionBase_openOutPortDataFileIfExists(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance);
 
@@ -83,6 +83,7 @@ apx_error_t apx_serverConnectionBase_create(apx_serverConnectionBase_t *self, ap
 
       //init non-overridable virtual functions
       vtable->fileInfoNotify = apx_serverConnectionBase_fileInfoNotifyImpl;
+      vtable->nodeFileWriteNotify = apx_serverConnectionBase_vnodeInstanceFileWriteNotify;
 
       result = apx_connectionBase_create(&self->base, APX_SERVER_MODE, vtable);
       self->server = (apx_server_t*) 0;
@@ -333,19 +334,32 @@ apx_error_t apx_serverConnectionBase_fileInfoNotify(apx_serverConnectionBase_t *
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_serverConnectionBase_nodeFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
+void apx_serverConnectionBase_nodeInstanceFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
 {
    if ( (self != 0) && (nodeInstance != 0) && (data != 0) )
    {
       if (fileType == APX_DEFINITION_FILE_TYPE)
       {
-         apx_serverConnectionBase_definitionFileWriteNotify(self, nodeInstance, offset, len);
+         apx_serverConnectionBase_definitionDataWriteNotify(self, nodeInstance, offset, len);
+      }
+      else if (fileType == APX_OUTDATA_FILE_TYPE)
+      {
+         apx_error_t rc = apx_serverConnectionBase_providePortDataWriteNotify(self, nodeInstance, offset, data, len);
+         if (rc != APX_NO_ERROR)
+         {
+            printf("[SERVER-CONNECTION-BASE] providePortDataWriteNotify failed with error %d\n", rc);
+         }
       }
       else
       {
-         printf("Printing raw file\n");
+         printf("[SERVER-CONNECTION-BASE] NOT IMPLEMENTED\n");
       }
    }
+}
+
+void apx_serverConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   apx_serverConnectionBase_nodeInstanceFileWriteNotify((apx_serverConnectionBase_t*) arg, nodeInstance, fileType, offset, data, len);
 }
 
 /*** UNIT TEST API ***/
@@ -515,8 +529,7 @@ static apx_error_t apx_serverConnectionBase_processNewDefinitionFile(apx_serverC
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
-
-static void apx_serverConnectionBase_definitionFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, uint32_t len)
+static void apx_serverConnectionBase_definitionDataWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, uint32_t len)
 {
    apx_programType_t errProgramType;
    apx_uniquePortId_t errPortId;
@@ -550,6 +563,30 @@ static void apx_serverConnectionBase_definitionFileWriteNotify(apx_serverConnect
       ///TODO: send error code back to client
       return;
    }
+}
+
+static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   apx_nodeState_t nodeState = apx_nodeInstance_getState(nodeInstance);
+   apx_nodeData_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
+   assert(nodeData != 0);
+   switch(nodeState)
+   {
+   case APX_NODE_STATE_STAGING:
+      //In staging mode we are free to write as much data as we want without constraints
+      printf("[SERVER-CONNECTION-BASE] Write %s.out(%d,%d): ", apx_nodeInstance_getName(nodeInstance), (int) offset, (int) len);
+      apx_print_hex_bytes(10, data, len);
+      return apx_nodeData_writeProvidePortData(nodeData, data, offset, len);
+   case APX_NODE_STATE_CONNECTED:
+      return APX_NOT_IMPLEMENTED_ERROR;
+   case APX_NODE_STATE_CLEANUP:
+      //Ignore all writes
+      break;
+   case APX_NODE_STATE_INVALID:
+      //Ignore all writes
+      break;
+   }
+   return APX_NO_ERROR;
 }
 
 static apx_error_t apx_serverConnectionBase_preparePortDataBuffers(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance)
@@ -589,6 +626,7 @@ static apx_error_t apx_serverConnectionBase_openOutPortDataFileIfExists(apx_serv
       if (file != 0)
       {
          printf("OK\n");
+         apx_nodeInstance_registerProvidePortFileHandler(nodeInstance, file);
          retval = apx_fileManager_requestOpenFile(&self->base.fileManager, apx_file_getStartAddress(file) | RMF_REMOTE_ADDRESS_BIT);
       }
       else
@@ -603,40 +641,9 @@ static apx_error_t apx_serverConnectionBase_openOutPortDataFileIfExists(apx_serv
 
 static void apx_serverConnectionBase_processNewOutPortDataFile(apx_serverConnectionBase_t *self, const apx_fileInfo_t *fileInfo)
 {
-/*
-   if (file->fileInfo.fileType == RMF_FILE_TYPE_FIXED)
-   {
-
-      apx_nodeData_t *nodeData = apx_nodeManager_find(&self->base.nodeManager, apx_file2_basename(file));
-      if ( (nodeData != 0) && (nodeData->outPortDataBuf != 0))
-      {
-         printf("requesting opening of .out file\n");
-      }
-   }
-   */
+   printf("[SOCKET-SERVER-BASE](%d) NOT IMPLEMENTED\n", __LINE__);
 }
 
-
-
-
-//Type 1 event
-static void apx_serverConnectionBase_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
-{
-/*
-   apx_serverConnectionBase_t *self = (apx_serverConnectionBase_t*) arg;
-   if (self != 0 && nodeData != 0)
-   {
-      apx_file2_t *file = apx_nodeData_getOutPortDataFile(nodeData);
-      if (file != 0)
-      {
-         if (apx_file2_isRemoteFile(file))
-         {
-            apx_serverConnectionBase_routeDataFromProvidePort(self, nodeData, offset, len);
-         }
-      }
-   }
-*/
-}
 
 static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnectionBase_t *self, apx_nodeData_t *srcNodeData, uint32_t offset, uint32_t len)
 {

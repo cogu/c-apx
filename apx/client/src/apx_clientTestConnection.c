@@ -64,7 +64,6 @@ apx_error_t apx_clientTestConnection_create(apx_clientTestConnection_t *self)
             apx_clientTestConnection_vdestroy,
             apx_clientTestConnection_vstart,
             apx_clientTestConnection_vclose,
-            (apx_nodeFileWriteNotifyFunc*) 0,
             apx_clientTestConnection_vfillTransmitHandler);
       apx_error_t result = apx_clientConnectionBase_create(&self->base, &vtable);
       if (result == APX_NO_ERROR)
