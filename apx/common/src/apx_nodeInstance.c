@@ -471,6 +471,7 @@ apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+/*
 apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
 {
    if ( (self != 0) && (dest != 0) )
@@ -478,6 +479,33 @@ apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_
       if (self->nodeData != 0)
       {
          return apx_nodeData_readDefinitionData(self->nodeData, dest, offset, len);
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+*/
+
+/**
+ * Updates ProvidePortData in this node instance.
+ * If the node is currently connected it will also forward the new data to remote side
+ */
+apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len)
+{
+   if ( (self != 0) && (src != 0) )
+   {
+      if (self->nodeData != 0)
+      {
+         apx_error_t rc = apx_nodeData_writeProvidePortData(self->nodeData, src, offset, len);
+         if (rc != APX_NO_ERROR)
+         {
+            return rc;
+         }
+         if(self->connection != 0)
+         {
+            assert(self->providePortDataFile != 0);
+            rc = apx_connectionBase_updateProvidePortDataDirect(self->connection, self->providePortDataFile, offset, src, len);
+         }
+         return rc;
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;

@@ -93,6 +93,7 @@ apx_error_t apx_file_create(apx_file_t *self, const apx_fileInfo_t *fileInfo)
    {
       apx_error_t retval = APX_NO_ERROR;
       self->isFileOpen = false;
+      self->hasFirstWrite = false;
       self->fileManager = (apx_fileManager_t*) 0;
       self->fileType = APX_UNKNOWN_FILE_TYPE;
       memset(&self->notificationHandler, 0, sizeof(apx_fileNotificationHandler_t));
@@ -326,6 +327,15 @@ apx_size_t apx_file_getFileSize(const apx_file_t *self)
       return self->fileInfo.length;
    }
    return 0u;
+}
+
+const char *apx_file_getName(const apx_file_t *self)
+{
+   if (self != 0)
+   {
+      return self->fileInfo.name;
+   }
+   return (const char*) 0;
 }
 
 apx_error_t apx_file_fileOpenNotify(apx_file_t *self)

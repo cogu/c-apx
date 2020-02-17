@@ -105,5 +105,6 @@ apx_nodeState_t apx_nodeInstance_getState(apx_nodeInstance_t *self);
 /********** Data API  ************/
 apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
+apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
 
 #endif //APX_NODE_INSTANCE_H

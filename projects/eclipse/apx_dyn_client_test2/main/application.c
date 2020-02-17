@@ -92,13 +92,11 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
       }
       m_nodeInstance = apx_client_getLastAttachedNode(m_client);
       assert(m_nodeInstance != 0);
-      apx_nodeData_t *nodeData = apx_nodeInstance_getNodeData(m_nodeInstance);
-      if (nodeData != 0)
-      {
-         uint8_t data[UINT16_SIZE];
-         packLE(&data[0], 0xCCBB, UINT16_SIZE);
-         apx_nodeData_writeProvidePortData(nodeData, &data[0], 1, UINT16_SIZE);
-      }
+
+      uint8_t data[UINT16_SIZE];
+      packLE(&data[0], m_wheelBasedVehicleSpeed, UINT16_SIZE);
+      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 1, UINT16_SIZE);
+
       result = apx_client_connectUnix(m_client, unix_socket_path);
       if (result != APX_NO_ERROR)
       {
@@ -111,27 +109,17 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
 
 void application_run(void)
 {
-/*
    if (m_isConnected)
    {
-      if (m_isTestNode1)
-      {
-         if (m_hasPendingStressCmd)
-         {
-            uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
-            m_hasPendingStressCmd = false;
-            m_isStressOngoing = true;
-            apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 3, UINT32_SIZE, false);
-            printf("Stress started\n");
-         }
-         else if (m_isStressOngoing)
-         {
-            printf("Stress completed, count=%d\n", m_stressCount);
-            m_isStressOngoing = false;
-         }
-      }
+      uint8_t data[UINT16_SIZE];
+      m_wheelBasedVehicleSpeed++;
+      packLE(&data[0], m_wheelBasedVehicleSpeed, UINT16_SIZE);
+      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 1, UINT16_SIZE);
    }
-*/
+   else
+   {
+      printf("Not connected\n");
+   }
 }
 
 
@@ -140,13 +128,7 @@ void application_run(void)
 //////////////////////////////////////////////////////////////////////////////
 static void onClientConnected(void *arg, apx_clientConnectionBase_t *clientConnection)
 {
-/*
-   apx_connectionEventListener_t eventListener;
    m_isConnected = true;
-   memset(&eventListener, 0, sizeof(eventListener));
-   eventListener.inPortDataWritten = inPortDataWrittenCbk;
-   apx_clientConnectionBase_registerNodeDataEventListener(clientConnection, &eventListener);
-*/
    printf("Client connected to server\n");
 }
 
