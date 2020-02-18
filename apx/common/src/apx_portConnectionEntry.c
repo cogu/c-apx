@@ -44,10 +44,6 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// PUBLIC VARIABLES
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 
@@ -96,7 +92,7 @@ void apx_portConnectionEntry_delete(apx_portConnectionEntry_t *self)
 /**
  * Adds port connect information to an entry
  */
-apx_error_t apx_portConnectionEntry_addConnection(apx_portConnectionEntry_t *self, apx_portDataRef_t *portDataRef)
+apx_error_t apx_portConnectionEntry_addConnection(apx_portConnectionEntry_t *self, apx_portRef_t *portDataRef)
 {
    if (self != 0)
    {
@@ -144,7 +140,7 @@ apx_error_t apx_portConnectionEntry_addConnection(apx_portConnectionEntry_t *sel
 /**
  * Adds port connect information to an entry
  */
-apx_error_t apx_portConnectionEntry_removeConnection(apx_portConnectionEntry_t *self, apx_portDataRef_t *portDataRef)
+apx_error_t apx_portConnectionEntry_removeConnection(apx_portConnectionEntry_t *self, apx_portRef_t *portDataRef)
 {
    if (self != 0)
    {
@@ -189,16 +185,16 @@ apx_error_t apx_portConnectionEntry_removeConnection(apx_portConnectionEntry_t *
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_portDataRef_t *apx_portConnectionEntry_get(apx_portConnectionEntry_t *self, int32_t index)
+apx_portRef_t *apx_portConnectionEntry_get(apx_portConnectionEntry_t *self, int32_t index)
 {
-   apx_portDataRef_t *retval = (apx_portDataRef_t*) 0;
+   apx_portRef_t *retval = (apx_portRef_t*) 0;
    if ( (self != 0) && (self->count != 0) && (index >= 0) )
    {
       if ( (self->count == 1) || (self->count == -1) )
       {
          if (index == 0)
          {
-            retval = (apx_portDataRef_t*) self->pAny;
+            retval = (apx_portRef_t*) self->pAny;
          }
       }
       else
@@ -206,7 +202,7 @@ apx_portDataRef_t *apx_portConnectionEntry_get(apx_portConnectionEntry_t *self, 
          if ( ( (self->count < 0) && (index < -self->count) ) || ( (self->count > 0) && (index < self->count) ) )
          {
             adt_ary_t *ary = (adt_ary_t*) self->pAny;
-            retval = (apx_portDataRef_t*) adt_ary_value(ary, index);
+            retval = (apx_portRef_t*) adt_ary_value(ary, index);
          }
       }
    }

@@ -39,7 +39,7 @@
 #include "apx_file.h"
 #include "apx_error.h"
 #include "apx_parser.h"
-//#include "apx_portConnectionTable.h"
+#include "apx_portConnectionTable.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -53,17 +53,19 @@ typedef struct apx_nodeInstance_tag
    apx_node_t *parseTree; //Temporary parse tree of APX definition file (strong reference)
    apx_nodeInfo_t *nodeInfo; //All static information about an APX node (strong reference)
    apx_nodeData_t *nodeData; //All dynamic data in a node, things that change during runtime (strong reference)
-   apx_portDataRef_t *requirePortDataRef; //strong references to apx_portDataRef_t, length of array: info->numRequirePorts
-   apx_portDataRef_t *providePortDataRef; //strong references to apx_portDataRef_t, length of array: info->numProvidePorts
+   apx_portRef_t *requirePortReferences; //Array of apx_portRef_t, length of array: info->numRequirePorts.  This is created using a single (array-sized) malloc.
+   apx_portRef_t *providePortReferences; //Array apx_portRef_t, length of array: info->numProvidePorts. This is created using a single (array-sized) malloc.
    apx_portTriggerList_t *portTriggerList; //used in server mode, strong reference to apx_portTriggerList_t, length of array: info->numProvidePorts
    struct apx_connectionBase_tag *connection; //Weak reference
-   apx_file_t *definitionFile;
-   apx_file_t *providePortDataFile;
-   apx_file_t *requirePortDataFile;
-//   apx_portConnectionTable_t *requirePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
-//   apx_portConnectionTable_t *providePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
+   apx_file_t *definitionFile;       //pointer to file in file manager
+   apx_file_t *providePortDataFile;  //pointer to file in file manager
+   apx_file_t *requirePortDataFile;  //pointer to file in file manager
+   apx_portConnectionTable_t *requirePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
+   apx_portConnectionTable_t *providePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
    apx_mode_t mode;
-   apx_nodeState_t state;
+   apx_nodeState_t nodeState;
+   apx_requirePortDataState_t requirePortState;
+   apx_providePortDataState_t providePortState;
 } apx_nodeInstance_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -88,6 +90,10 @@ apx_error_t apx_nodeInstance_createPortDataBuffers(apx_nodeInstance_t *self);
 
 apx_error_t apx_nodeInstance_buildNodeInfo(apx_nodeInstance_t *self, apx_programType_t *errProgramType, apx_uniquePortId_t *errPortId);
 apx_nodeInfo_t *apx_nodeInstane_getNodeInfo(apx_nodeInstance_t *self);
+apx_error_t apx_nodeInstance_buildPortRefs(apx_nodeInstance_t *self);
+apx_portRef_t *apx_nodeInstance_getPortRef(apx_nodeInstance_t *self, apx_uniquePortId_t portId);
+apx_portRef_t *apx_nodeInstance_getRequirePortRef(apx_nodeInstance_t *self, apx_portId_t portId);
+apx_portRef_t *apx_nodeInstance_getProvidePortRef(apx_nodeInstance_t *self, apx_portId_t portId);
 void apx_nodeInstance_setConnection(apx_nodeInstance_t *self, struct apx_connectionBase_tag *connection);
 struct apx_connectionBase_tag* apx_nodeInstance_getConnection(apx_nodeInstance_t *self);
 void apx_nodeInstance_registerDefinitionFileHandler(apx_nodeInstance_t *self, apx_file_t *file);
@@ -97,14 +103,23 @@ void apx_nodeInstance_cleanParseTree(apx_nodeInstance_t *self);
 apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self);
 int32_t apx_nodeInstance_getNumProvidePorts(apx_nodeInstance_t *self);
 int32_t apx_nodeInstance_getNumRequirePorts(apx_nodeInstance_t *self);
-apx_error_t apx_nodeInstance_createProvidePortDataFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
-apx_error_t apx_nodeInstance_createDefinitionFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
+apx_error_t apx_nodeInstance_fillProvidePortDataFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
+apx_error_t apx_nodeInstance_fillDefinitionFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
+
 void apx_nodeInstance_setState(apx_nodeInstance_t *self, apx_nodeState_t state);
 apx_nodeState_t apx_nodeInstance_getState(apx_nodeInstance_t *self);
+
 
 /********** Data API  ************/
 apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
+
+/********** Port Connection Table API  ************/
+apx_portConnectionTable_t* apx_nodeInstance_getRequirePortConnectionTable(apx_nodeInstance_t *self);
+apx_portConnectionTable_t* apx_nodeInstance_getProvidePortConnectionTable(apx_nodeInstance_t *self);
+void apx_nodeInstance_clearRequirePortConnectionTable(apx_nodeInstance_t *self);
+void apx_nodeInstance_clearProvidePortConnectionTable(apx_nodeInstance_t *self);
+
 
 #endif //APX_NODE_INSTANCE_H

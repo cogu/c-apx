@@ -104,7 +104,7 @@ void apx_portConnectionTable_delete(apx_portConnectionTable_t *self)
    }
 }
 
-apx_error_t apx_portConnectionTable_connect(apx_portConnectionTable_t *self, apx_portDataRef_t *localRef, apx_portDataRef_t *remoteRef)
+apx_error_t apx_portConnectionTable_connect(apx_portConnectionTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef)
 {
    if ( (self != 0) && (localRef != 0) && (remoteRef != 0) )
    {
@@ -117,7 +117,7 @@ apx_error_t apx_portConnectionTable_connect(apx_portConnectionTable_t *self, apx
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, apx_portDataRef_t *localRef, apx_portDataRef_t *remoteRef)
+apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef)
 {
    if ( (self != 0) && (localRef != 0) && (remoteRef != 0) )
    {
@@ -131,7 +131,7 @@ apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, 
 }
 
 /*
-apx_error_t apx_portConnectionTable_addConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portDataRef_t *portDataRef)
+apx_error_t apx_portConnectionTable_addConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portRef_t *portDataRef)
 {
    if ( (self != 0) && (portId >= 0) && (portId < self->numPorts) )
    {
@@ -140,7 +140,7 @@ apx_error_t apx_portConnectionTable_addConnection(apx_portConnectionTable_t *sel
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_portConnectionTable_removeConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portDataRef_t *portDataRef)
+apx_error_t apx_portConnectionTable_removeConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portRef_t *portDataRef)
 {
    if ( (self != 0) && (portId >= 0) && (portId < self->numPorts) )
    {
@@ -159,13 +159,13 @@ apx_portConnectionEntry_t *apx_portConnectionTable_getEntry(apx_portConnectionTa
    return (apx_portConnectionEntry_t*) 0;
 }
 
-apx_portDataRef_t *apx_portConnectionTable_getRef(apx_portConnectionTable_t *self, apx_portId_t portId, int32_t index)
+apx_portRef_t *apx_portConnectionTable_getRef(apx_portConnectionTable_t *self, apx_portId_t portId, int32_t index)
 {
    if ( (self != 0) && (portId >= 0) && (portId < self->numPorts) )
    {
       return apx_portConnectionEntry_get(&self->connections[portId], index);
    }
-   return (apx_portDataRef_t*) 0;
+   return (apx_portRef_t*) 0;
 }
 
 int32_t apx_portConnectionTable_count(apx_portConnectionTable_t *self, apx_portId_t portId)

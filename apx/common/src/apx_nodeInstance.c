@@ -4,7 +4,7 @@
 * \date      2019-12-02
 * \brief     Parent container for all things node-related.
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -41,7 +41,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-
+typedef apx_portDataProps_t* (apx_getPortDataPropsFunc)(const apx_nodeInfo_t *self, apx_portId_t portId);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -51,6 +51,7 @@ static apx_error_t apx_nodeInstance_definitionFileReadData(void *arg, apx_file_t
 static apx_error_t apx_nodeInstance_createFileInfo(apx_nodeInstance_t *self, const char *fileExtension, uint32_t fileSize, apx_fileInfo_t *fileInfo);
 static apx_error_t apx_nodeInstance_providePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len);
 static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, struct apx_file_tag *file);
+static void apx_nodeInstance_initPortRefs(apx_nodeInstance_t *self, apx_portRef_t *portRefs, apx_portCount_t numPorts, uint32_t portIdMask, apx_getPortDataPropsFunc *getPortDataProps);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -67,7 +68,9 @@ void apx_nodeInstance_create(apx_nodeInstance_t *self, apx_mode_t mode)
    {
       memset(self, 0, sizeof(apx_nodeInstance_t));
       self->mode = mode;
-      self->state = APX_NODE_STATE_STAGING;
+      self->nodeState = APX_NODE_STATE_STAGING; ///TODO: should this be calculated instead?
+      self->requirePortState = APX_REQUIRE_PORT_DATA_STATE_INIT;
+      self->providePortState = APX_PROVIDE_PORT_DATE_STATE_INIT;
    }
 }
 
@@ -87,13 +90,15 @@ void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
       {
          apx_nodeData_delete(self->nodeData);
       }
-      if (self->requirePortDataRef != 0)
+      if (self->requirePortReferences != 0)
       {
-         apx_portDataRef_delete(self->requirePortDataRef);
+         free(self->requirePortReferences);
+         self->requirePortReferences = 0;
       }
-      if (self->providePortDataRef != 0)
+      if (self->providePortReferences != 0)
       {
-         apx_portDataRef_delete(self->providePortDataRef);
+         free(self->providePortReferences);
+         self->providePortReferences = 0;
       }
       if (self->portTriggerList != 0)
       {
@@ -322,6 +327,11 @@ apx_error_t apx_nodeInstance_buildNodeInfo(apx_nodeInstance_t *self, apx_program
          assert(self->nodeInfo != 0);
          rc = apx_nodeInfo_build(self->nodeInfo, self->parseTree, &compiler, self->mode, errProgramType, errPortId);
          apx_compiler_destroy(&compiler);
+         if (rc != APX_NO_ERROR)
+         {
+            apx_nodeInfo_delete(self->nodeInfo);
+            self->nodeInfo = 0;
+         }
          return rc;
       }
       return APX_NULL_PTR_ERROR;
@@ -336,6 +346,94 @@ apx_nodeInfo_t *apx_nodeInstane_getNodeInfo(apx_nodeInstance_t *self)
       return self->nodeInfo;
    }
    return (apx_nodeInfo_t*) 0;
+}
+
+/**
+ * Builds port reference data structures in this nodeInstance.
+ * This call is only allowed after successfully calling apx_nodeInstance_buildNodeInfo (It's depending on data generated inside nodeInfo)
+ */
+apx_error_t apx_nodeInstance_buildPortRefs(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      uint32_t numRequirePorts;
+      uint32_t numProvidePorts;
+      size_t allocSize;
+      if (self->nodeInfo == 0)
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+      numRequirePorts = apx_nodeInfo_getNumRequirePorts(self->nodeInfo);
+      numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+      if (numRequirePorts > 0)
+      {
+         allocSize = numRequirePorts * sizeof(apx_portRef_t);
+         self->requirePortReferences = (apx_portRef_t*) malloc(allocSize);
+         if (self->requirePortReferences == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+         else
+         {
+            apx_nodeInstance_initPortRefs(self, self->requirePortReferences, numRequirePorts, 0u, apx_nodeInfo_getRequirePortDataProps);
+         }
+      }
+      if (numProvidePorts > 0)
+      {
+         allocSize = numProvidePorts * sizeof(apx_portRef_t);
+         self->providePortReferences = (apx_portRef_t*) malloc(allocSize);
+         if (self->providePortReferences == 0)
+         {
+            if (self->requirePortReferences != 0)
+            {
+               free(self->requirePortReferences);
+               self->requirePortReferences = (apx_portRef_t*) 0;
+            }
+            return APX_MEM_ERROR;
+         }
+         else
+         {
+            apx_nodeInstance_initPortRefs(self, self->providePortReferences, numProvidePorts, APX_PORT_ID_PROVIDE_PORT,  apx_nodeInfo_getProvidePortDataProps);
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_portRef_t *apx_nodeInstance_getPortRef(apx_nodeInstance_t *self, apx_uniquePortId_t portId)
+{
+   if ( ((portId & APX_PORT_ID_PROVIDE_PORT) != 0u ))
+   {
+      return apx_nodeInstance_getProvidePortRef(self, portId & APX_PORT_ID_MASK);
+   }
+   return (apx_portRef_t*) 0;
+}
+
+apx_portRef_t *apx_nodeInstance_getRequirePortRef(apx_nodeInstance_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (self->nodeInfo != 0) && (self->requirePortReferences != 0) )
+   {
+      apx_portCount_t numRequirePorts = apx_nodeInfo_getNumRequirePorts(self->nodeInfo);
+      if (portId >= 0 && portId < numRequirePorts)
+      {
+         return &self->requirePortReferences[portId];
+      }
+   }
+   return (apx_portRef_t*) 0;
+}
+
+apx_portRef_t *apx_nodeInstance_getProvidePortRef(apx_nodeInstance_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (self->nodeInfo != 0) && (self->providePortReferences != 0) )
+   {
+      apx_portCount_t numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+      if (portId >= 0 && portId < numProvidePorts)
+      {
+         return &self->providePortReferences[portId];
+      }
+   }
+   return (apx_portRef_t*) 0;
 }
 
 void apx_nodeInstance_registerDefinitionFileHandler(apx_nodeInstance_t *self, apx_file_t *file)
@@ -426,7 +524,7 @@ int32_t apx_nodeInstance_getNumRequirePorts(apx_nodeInstance_t *self)
 }
 
 
-apx_error_t apx_nodeInstance_createProvidePortDataFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo)
+apx_error_t apx_nodeInstance_fillProvidePortDataFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo)
 {
    if ( (self != 0) && (fileInfo != 0))
    {
@@ -442,7 +540,7 @@ apx_error_t apx_nodeInstance_createProvidePortDataFileInfo(apx_nodeInstance_t *s
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_createDefinitionFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo)
+apx_error_t apx_nodeInstance_fillDefinitionFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo)
 {
    if ( (self != 0) && (fileInfo != 0))
    {
@@ -458,6 +556,61 @@ apx_error_t apx_nodeInstance_createDefinitionFileInfo(apx_nodeInstance_t *self, 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+
+
+void apx_nodeInstance_setConnection(apx_nodeInstance_t *self, struct apx_connectionBase_tag *connection)
+{
+   if ( (self != 0) && (connection != 0) )
+   {
+      self->connection = connection;
+   }
+}
+
+struct apx_connectionBase_tag* apx_nodeInstance_getConnection(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      return self->connection;
+   }
+   return (struct apx_connectionBase_tag*) 0;
+}
+
+void apx_nodeInstance_cleanParseTree(apx_nodeInstance_t *self)
+{
+   if ( (self != 0) && (self->parseTree != 0) )
+   {
+      apx_node_delete(self->parseTree);
+      self->parseTree = (apx_node_t*) 0;
+   }
+}
+
+apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      return self->nodeInfo;
+   }
+   return (apx_nodeInfo_t*) 0;
+}
+
+void apx_nodeInstance_setState(apx_nodeInstance_t *self, apx_nodeState_t state)
+{
+   if (self != 0)
+   {
+      self->nodeState = state;
+   }
+}
+
+apx_nodeState_t apx_nodeInstance_getState(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      return self->nodeState;
+   }
+   return APX_NODE_STATE_INVALID;
+}
+
+/********** Data API  ************/
 
 apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
 {
@@ -511,57 +664,12 @@ apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, cons
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_nodeInstance_setConnection(apx_nodeInstance_t *self, struct apx_connectionBase_tag *connection)
-{
-   if ( (self != 0) && (connection != 0) )
-   {
-      self->connection = connection;
-   }
-}
+/********** Port Connection Table API  ************/
+apx_portConnectionTable_t* apx_nodeInstance_getRequirePortConnectionTable(apx_nodeInstance_t *self);
+apx_portConnectionTable_t* apx_nodeInstance_getProvidePortConnectionTable(apx_nodeInstance_t *self);
+void apx_nodeInstance_clearRequirePortConnectionTable(apx_nodeInstance_t *self);
+void apx_nodeInstance_clearProvidePortConnectionTable(apx_nodeInstance_t *self);
 
-struct apx_connectionBase_tag* apx_nodeInstance_getConnection(apx_nodeInstance_t *self)
-{
-   if (self != 0)
-   {
-      return self->connection;
-   }
-   return (struct apx_connectionBase_tag*) 0;
-}
-
-void apx_nodeInstance_cleanParseTree(apx_nodeInstance_t *self)
-{
-   if ( (self != 0) && (self->parseTree != 0) )
-   {
-      apx_node_delete(self->parseTree);
-      self->parseTree = (apx_node_t*) 0;
-   }
-}
-
-apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self)
-{
-   if (self != 0)
-   {
-      return self->nodeInfo;
-   }
-   return (apx_nodeInfo_t*) 0;
-}
-
-void apx_nodeInstance_setState(apx_nodeInstance_t *self, apx_nodeState_t state)
-{
-   if (self != 0)
-   {
-      self->state = state;
-   }
-}
-
-apx_nodeState_t apx_nodeInstance_getState(apx_nodeInstance_t *self)
-{
-   if (self != 0)
-   {
-      return self->state;
-   }
-   return APX_NODE_STATE_INVALID;
-}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -721,4 +829,19 @@ static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, str
       return apx_fileManager_writeDynamicData(fileManager, fileStartAddress, fileSize, dataBuf);
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static void apx_nodeInstance_initPortRefs(apx_nodeInstance_t *self, apx_portRef_t *portRefs, apx_portCount_t numPorts, uint32_t portIdMask, apx_getPortDataPropsFunc *getPortDataProps)
+{
+   apx_portId_t portId;
+   assert(portRefs != 0);
+   assert(self != 0);
+   assert(self->nodeInfo != 0);
+   assert(getPortDataProps != 0);
+   for (portId=0; portId < numPorts; portId++)
+   {
+      const apx_portDataProps_t *dataProps = getPortDataProps(self->nodeInfo, portId);
+      assert(dataProps != 0);
+      apx_portRef_create(&portRefs[portId], self,  (portId|portIdMask), dataProps);
+   }
 }

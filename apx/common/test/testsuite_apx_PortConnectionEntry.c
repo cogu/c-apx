@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      testsuite_apx_PortConnectionEntry.c
+* \file      testsuite_apx_portConnectionEntry.c
 * \author    Conny Gustafsson
 * \date      2019-01-28
-* \brief     Description
+* \brief     Unit tests for apx_portConnectionEntry.c
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,8 +30,7 @@
 #include "CuTest.h"
 #include <stdio.h>
 #include "apx_portConnectionEntry.h"
-#include "apx_nodeData.h"
-#include "apx_parser.h"
+#include "apx_nodeManager.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -97,51 +96,63 @@ static void test_apx_portConnectionEntry_create(CuTest *tc)
 static void test_apx_portConnectionEntry_connectOne(CuTest *tc)
 {
    apx_portConnectionEntry_t entry;
-   apx_parser_t *parser;
-   apx_nodeData_t *nodeData1;
-   apx_portDataRef_t *portRef1;
-   parser = apx_parser_new();
-   nodeData1 = apx_nodeData_makeFromString(parser, m_node_text1, NULL);
-   CuAssertPtrNotNull(tc, nodeData1);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData1, APX_SERVER_MODE));
+   apx_nodeManager_t *nodeManager;
+   apx_nodeInstance_t *nodeInstance1;
+   apx_portRef_t *portRef1;
 
+   nodeManager = apx_nodeManager_new(APX_SERVER_MODE, false);
+   CuAssertPtrNotNull(tc, nodeManager);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text1));
+   nodeInstance1 = apx_nodeManager_getLastAttached(nodeManager);
+   CuAssertPtrNotNull(tc, nodeInstance1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance1));
    apx_portConnectionEntry_create(&entry);
-   portRef1 = apx_nodeData_getRequirePortDataRef(nodeData1, 0);
+   portRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance1, 0);
+   CuAssertPtrNotNull(tc, portRef1);
    apx_portConnectionEntry_addConnection(&entry, portRef1);
    CuAssertIntEquals(tc, 1, entry.count);
    CuAssertPtrEquals(tc, portRef1, apx_portConnectionEntry_get(&entry, 0));
-   apx_portConnectionEntry_destroy(&entry);
 
-   apx_parser_delete(parser);
-   apx_nodeData_delete(nodeData1);
+
+   apx_portConnectionEntry_destroy(&entry);
+   apx_nodeManager_delete(nodeManager);
+
 }
 
 static void test_apx_portConnectionEntry_connectThree(CuTest *tc)
 {
    apx_portConnectionEntry_t entry;
-   apx_parser_t *parser;
-   apx_nodeData_t *nodeData1;
-   apx_nodeData_t *nodeData2;
-   apx_nodeData_t *nodeData3;
-   apx_portDataRef_t *portRef1;
-   apx_portDataRef_t *portRef2;
-   apx_portDataRef_t *portRef3;
+   apx_nodeManager_t *nodeManager;
+   apx_nodeInstance_t *nodeInstance1;
+   apx_nodeInstance_t *nodeInstance2;
+   apx_nodeInstance_t *nodeInstance3;
+   apx_portRef_t *portRef1;
+   apx_portRef_t *portRef2;
+   apx_portRef_t *portRef3;
 
-   parser = apx_parser_new();
-   nodeData1 = apx_nodeData_makeFromString(parser, m_node_text1, NULL);
-   nodeData2 = apx_nodeData_makeFromString(parser, m_node_text2, NULL);
-   nodeData3 = apx_nodeData_makeFromString(parser, m_node_text3, NULL);
-   CuAssertPtrNotNull(tc, nodeData1);
-   CuAssertPtrNotNull(tc, nodeData2);
-   CuAssertPtrNotNull(tc, nodeData3);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData1, APX_SERVER_MODE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData2, APX_SERVER_MODE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData3, APX_SERVER_MODE));
-
+   nodeManager = apx_nodeManager_new(APX_SERVER_MODE, false);
    apx_portConnectionEntry_create(&entry);
-   portRef1 = apx_nodeData_getRequirePortDataRef(nodeData1, 0);
-   portRef2 = apx_nodeData_getRequirePortDataRef(nodeData2, 0);
-   portRef3 = apx_nodeData_getRequirePortDataRef(nodeData3, 0);
+   CuAssertPtrNotNull(tc, nodeManager);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text1));
+   nodeInstance1 = apx_nodeManager_getLastAttached(nodeManager);
+   CuAssertPtrNotNull(tc, nodeInstance1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text2));
+   nodeInstance2 = apx_nodeManager_getLastAttached(nodeManager);
+   CuAssertPtrNotNull(tc, nodeInstance2);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text3));
+   nodeInstance3 = apx_nodeManager_getLastAttached(nodeManager);
+   CuAssertPtrNotNull(tc, nodeInstance3);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance2));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance3));
+
+
+   portRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance1, 0);
+   CuAssertPtrNotNull(tc, portRef1);
+   portRef2 = apx_nodeInstance_getRequirePortRef(nodeInstance2, 0);
+   CuAssertPtrNotNull(tc, portRef2);
+   portRef3 = apx_nodeInstance_getRequirePortRef(nodeInstance3, 0);
+   CuAssertPtrNotNull(tc, portRef3);
    apx_portConnectionEntry_addConnection(&entry, portRef1);
    apx_portConnectionEntry_addConnection(&entry, portRef2);
    apx_portConnectionEntry_addConnection(&entry, portRef3);
@@ -149,62 +160,71 @@ static void test_apx_portConnectionEntry_connectThree(CuTest *tc)
    CuAssertPtrEquals(tc, portRef1, apx_portConnectionEntry_get(&entry, 0));
    CuAssertPtrEquals(tc, portRef2, apx_portConnectionEntry_get(&entry, 1));
    CuAssertPtrEquals(tc, portRef3, apx_portConnectionEntry_get(&entry, 2));
-   apx_portConnectionEntry_destroy(&entry);
 
-   apx_parser_delete(parser);
-   apx_nodeData_delete(nodeData1);
-   apx_nodeData_delete(nodeData2);
-   apx_nodeData_delete(nodeData3);
+   apx_portConnectionEntry_destroy(&entry);
+   apx_nodeManager_delete(nodeManager);
 }
+
 
 static void test_apx_portConnectionEntry_disconnectOne(CuTest *tc)
 {
    apx_portConnectionEntry_t entry;
-   apx_parser_t *parser;
-   apx_nodeData_t *nodeData1;
-   apx_portDataRef_t *portRef1;
-   parser = apx_parser_new();
-   nodeData1 = apx_nodeData_makeFromString(parser, m_node_text1, NULL);
-   CuAssertPtrNotNull(tc, nodeData1);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData1, APX_SERVER_MODE));
+   apx_nodeManager_t *nodeManager;
+   apx_nodeInstance_t *nodeInstance1;
+   apx_portRef_t *portRef1;
 
+   nodeManager = apx_nodeManager_new(APX_SERVER_MODE, false);
+   CuAssertPtrNotNull(tc, nodeManager);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text1));
+   nodeInstance1 = apx_nodeManager_getLastAttached(nodeManager);
+   CuAssertPtrNotNull(tc, nodeInstance1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance1));
    apx_portConnectionEntry_create(&entry);
-   portRef1 = apx_nodeData_getRequirePortDataRef(nodeData1, 0);
+   portRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance1, 0);
+   CuAssertPtrNotNull(tc, portRef1);
    apx_portConnectionEntry_removeConnection(&entry, portRef1);
    CuAssertIntEquals(tc, -1, entry.count);
    CuAssertPtrEquals(tc, portRef1, apx_portConnectionEntry_get(&entry, 0));
-   apx_portConnectionEntry_destroy(&entry);
 
-   apx_parser_delete(parser);
-   apx_nodeData_delete(nodeData1);
+
+   apx_portConnectionEntry_destroy(&entry);
+   apx_nodeManager_delete(nodeManager);
 }
+
 
 static void test_apx_portConnectionEntry_disconnectThree(CuTest *tc)
 {
    apx_portConnectionEntry_t entry;
-   apx_parser_t *parser;
-   apx_nodeData_t *nodeData1;
-   apx_nodeData_t *nodeData2;
-   apx_nodeData_t *nodeData3;
-   apx_portDataRef_t *portRef1;
-   apx_portDataRef_t *portRef2;
-   apx_portDataRef_t *portRef3;
+   apx_nodeManager_t *nodeManager;
+   apx_nodeInstance_t *nodeInstance1;
+   apx_nodeInstance_t *nodeInstance2;
+   apx_nodeInstance_t *nodeInstance3;
+   apx_portRef_t *portRef1;
+   apx_portRef_t *portRef2;
+   apx_portRef_t *portRef3;
 
-   parser = apx_parser_new();
-   nodeData1 = apx_nodeData_makeFromString(parser, m_node_text1, NULL);
-   nodeData2 = apx_nodeData_makeFromString(parser, m_node_text2, NULL);
-   nodeData3 = apx_nodeData_makeFromString(parser, m_node_text3, NULL);
-   CuAssertPtrNotNull(tc, nodeData1);
-   CuAssertPtrNotNull(tc, nodeData2);
-   CuAssertPtrNotNull(tc, nodeData3);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData1, APX_SERVER_MODE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData2, APX_SERVER_MODE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_createPortDataMap(nodeData3, APX_SERVER_MODE));
-
+   nodeManager = apx_nodeManager_new(APX_SERVER_MODE, false);
    apx_portConnectionEntry_create(&entry);
-   portRef1 = apx_nodeData_getRequirePortDataRef(nodeData1, 0);
-   portRef2 = apx_nodeData_getRequirePortDataRef(nodeData2, 0);
-   portRef3 = apx_nodeData_getRequirePortDataRef(nodeData3, 0);
+   CuAssertPtrNotNull(tc, nodeManager);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text1));
+   nodeInstance1 = apx_nodeManager_getLastAttached(nodeManager);
+   CuAssertPtrNotNull(tc, nodeInstance1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text2));
+   nodeInstance2 = apx_nodeManager_getLastAttached(nodeManager);
+   CuAssertPtrNotNull(tc, nodeInstance2);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text3));
+   nodeInstance3 = apx_nodeManager_getLastAttached(nodeManager);
+   CuAssertPtrNotNull(tc, nodeInstance3);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance2));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance3));
+
+   portRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance1, 0);
+   CuAssertPtrNotNull(tc, portRef1);
+   portRef2 = apx_nodeInstance_getRequirePortRef(nodeInstance2, 0);
+   CuAssertPtrNotNull(tc, portRef2);
+   portRef3 = apx_nodeInstance_getRequirePortRef(nodeInstance3, 0);
+   CuAssertPtrNotNull(tc, portRef3);
    apx_portConnectionEntry_removeConnection(&entry, portRef1);
    apx_portConnectionEntry_removeConnection(&entry, portRef2);
    apx_portConnectionEntry_removeConnection(&entry, portRef3);
@@ -212,10 +232,7 @@ static void test_apx_portConnectionEntry_disconnectThree(CuTest *tc)
    CuAssertPtrEquals(tc, portRef1, apx_portConnectionEntry_get(&entry, 0));
    CuAssertPtrEquals(tc, portRef2, apx_portConnectionEntry_get(&entry, 1));
    CuAssertPtrEquals(tc, portRef3, apx_portConnectionEntry_get(&entry, 2));
-   apx_portConnectionEntry_destroy(&entry);
 
-   apx_parser_delete(parser);
-   apx_nodeData_delete(nodeData1);
-   apx_nodeData_delete(nodeData2);
-   apx_nodeData_delete(nodeData3);
+   apx_portConnectionEntry_destroy(&entry);
+   apx_nodeManager_delete(nodeManager);
 }

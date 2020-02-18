@@ -102,8 +102,8 @@ static void test_apx_portConnectionTable_connectPorts(CuTest *tc)
    apx_parser_t *parser;
    apx_nodeData_t *nodeData1;
    apx_nodeData_t *nodeData2;
-   apx_portDataRef_t *providePortRef;
-   apx_portDataRef_t *requirePortRef;
+   apx_portRef_t *providePortRef;
+   apx_portRef_t *requirePortRef;
    parser = apx_parser_new();
    nodeData1 = apx_nodeData_makeFromString(parser, m_node_text1, NULL);
    CuAssertPtrNotNull(tc, nodeData1);
@@ -137,9 +137,9 @@ static void test_apx_portConnectionTable_disconnectRequirePorts(CuTest *tc)
    apx_nodeData_t *nodeData1;
    apx_nodeData_t *nodeData2;
    apx_nodeData_t *nodeData3;
-   apx_portDataRef_t *providePortRef;
-   apx_portDataRef_t *requirePortRef1;
-   apx_portDataRef_t *requirePortRef2;
+   apx_portRef_t *providePortRef;
+   apx_portRef_t *requirePortRef1;
+   apx_portRef_t *requirePortRef2;
    parser = apx_parser_new();
    nodeData1 = apx_nodeData_makeFromString(parser, m_node_text1, NULL);
    CuAssertPtrNotNull(tc, nodeData1);
@@ -180,9 +180,9 @@ static void test_apx_portConnectionTable_disconnectProvidePort(CuTest *tc)
    apx_nodeData_t *nodeData1;
    apx_nodeData_t *nodeData2;
    apx_nodeData_t *nodeData3;
-   apx_portDataRef_t *providePortRef;
-   apx_portDataRef_t *requirePortRef1;
-   apx_portDataRef_t *requirePortRef2;
+   apx_portRef_t *providePortRef;
+   apx_portRef_t *requirePortRef1;
+   apx_portRef_t *requirePortRef2;
    parser = apx_parser_new();
    nodeData1 = apx_nodeData_makeFromString(parser, m_node_text1, NULL);
    CuAssertPtrNotNull(tc, nodeData1);

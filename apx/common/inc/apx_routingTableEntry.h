@@ -44,8 +44,8 @@ typedef struct apx_routingTableEntry_tag
 {
    const char *portSignature; //weak reference to string
    int32_t currentProviderId; //which provider is currently selected
-   adt_list_t requirePortRef; //weak references to apx_portDataRef_t
-   adt_list_t providePortRef; //weak references to apx_portDataRef_t
+   adt_list_t requirePortRef; //weak references to apx_portRef_t
+   adt_list_t providePortRef; //weak references to apx_portRef_t
 }apx_routingTableEntry_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -57,10 +57,10 @@ apx_routingTableEntry_t *apx_routingTableEntry_new(const char *portSignature);
 void apx_routingTableEntry_delete(apx_routingTableEntry_t *self);
 void apx_routingTableEntry_vdelete(void *arg);
 
-void apx_routingTableEntry_attachPortDataRef(apx_routingTableEntry_t *self, apx_portDataRef_t *portDataRef);
-void apx_routingTableEntry_detachPortDataRef(apx_routingTableEntry_t *self, apx_portDataRef_t *portDataRef);
+void apx_routingTableEntry_attachPortDataRef(apx_routingTableEntry_t *self, apx_portRef_t *portDataRef);
+void apx_routingTableEntry_detachPortDataRef(apx_routingTableEntry_t *self, apx_portRef_t *portDataRef);
 bool apx_routingTableEntry_isEmpty(apx_routingTableEntry_t *self);
-apx_portDataRef_t *apx_routingTableEntry_getFirstProvider(apx_routingTableEntry_t *self);
-apx_portDataRef_t *apx_routingTableEntry_getLastProvider(apx_routingTableEntry_t *self);
+apx_portRef_t *apx_routingTableEntry_getFirstProvider(apx_routingTableEntry_t *self);
+apx_portRef_t *apx_routingTableEntry_getLastProvider(apx_routingTableEntry_t *self);
 
 #endif //APX_ROUTING_TABLE_ENTRY_H
