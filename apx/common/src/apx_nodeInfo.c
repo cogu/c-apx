@@ -58,6 +58,8 @@ static apx_error_t apx_nodeInfo_compilePortPrograms(apx_nodeInfo_t *self, apx_co
 static apx_error_t apx_nodeInfo_createRequirePortInitData(apx_nodeInfo_t *self, const apx_node_t *node);
 static apx_error_t apx_nodeInfo_createProvidePortInitData(apx_nodeInfo_t *self, const apx_node_t *node);
 static uint8_t* apx_nodeInfo_createInitDataBuf(apx_size_t dataSize, adt_bytes_t **packPrograms, const adt_ary_t *ports, apx_portCount_t numPorts, apx_error_t *errorCode);
+static apx_error_t apx_nodeInfo_buildRequirePortSignatures(apx_nodeInfo_t *self, const apx_node_t *node);
+static apx_error_t apx_nodeInfo_buildProvidePortSignatures(apx_nodeInfo_t *self, const apx_node_t *node);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -147,6 +149,15 @@ apx_error_t apx_nodeInfo_build(apx_nodeInfo_t *self, const struct apx_node_tag *
             apx_nodeInfo_freeMemory(self);
             return errorCode;
          }
+         if (mode == APX_SERVER_MODE)
+         {
+            errorCode = apx_nodeInfo_buildRequirePortSignatures(self, parseTree);
+            if (errorCode != 0)
+            {
+               apx_nodeInfo_freeMemory(self);
+               return errorCode;
+            }
+         }
       }
       if (self->numProvidePorts > 0)
       {
@@ -155,6 +166,15 @@ apx_error_t apx_nodeInfo_build(apx_nodeInfo_t *self, const struct apx_node_tag *
          {
             apx_nodeInfo_freeMemory(self);
             return errorCode;
+         }
+         if (mode == APX_SERVER_MODE)
+         {
+            errorCode = apx_nodeInfo_buildProvidePortSignatures(self, parseTree);
+            if (errorCode != 0)
+            {
+               apx_nodeInfo_freeMemory(self);
+               return errorCode;
+            }
          }
       }
       return APX_NO_ERROR;
@@ -370,6 +390,29 @@ const uint8_t *apx_nodeInfo_getProvidePortInitDataPtr(const apx_nodeInfo_t *self
    return (const uint8_t*) 0;
 }
 
+const char *apx_nodeInfo_getRequirePortSignature(const apx_nodeInfo_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId >= 0) && (portId < self->numRequirePorts) )
+   {
+      if (self->requirePortSignatures != 0)
+      {
+         return self->requirePortSignatures[portId];
+      }
+   }
+   return (const char*) 0;
+}
+
+const char *apx_nodeInfo_getProvidePortSignature(const apx_nodeInfo_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId >= 0) && (portId < self->numProvidePorts) )
+   {
+      if (self->providePortSignatures != 0)
+      {
+         return self->providePortSignatures[portId];
+      }
+   }
+   return (const char*) 0;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -496,6 +539,32 @@ static void apx_nodeInfo_freeMemory(apx_nodeInfo_t *self)
       if (self->name != 0)
       {
          free(self->name);
+      }
+      if (self->requirePortSignatures != 0)
+      {
+         apx_portId_t portId;
+         for(portId = 0; portId < ((apx_portId_t)self->numRequirePorts); portId++)
+         {
+            if (self->requirePortSignatures[portId] != 0)
+            {
+               free(self->requirePortSignatures[portId]);
+            }
+         }
+         free(self->requirePortSignatures);
+         self->requirePortSignatures = 0;
+      }
+      if (self->providePortSignatures != 0)
+      {
+         apx_portId_t portId;
+         for(portId = 0; portId < ((apx_portId_t)self->numProvidePorts); portId++)
+         {
+            if (self->providePortSignatures[portId] != 0)
+            {
+               free(self->providePortSignatures[portId]);
+            }
+         }
+         free(self->providePortSignatures);
+         self->providePortSignatures = 0;
       }
    }
 }
@@ -836,4 +905,84 @@ static uint8_t* apx_nodeInfo_createInitDataBuf(apx_size_t dataSize, adt_bytes_t 
       apx_vm_destroy(&vm);
    }
    return initData;
+}
+
+static apx_error_t apx_nodeInfo_buildRequirePortSignatures(apx_nodeInfo_t *self, const apx_node_t *node)
+{
+   if (node != 0)
+   {
+      apx_portId_t portId;
+      size_t allocSize = self->numRequirePorts * sizeof(char*);
+      assert(allocSize > 0u);
+      self->requirePortSignatures = (char**) malloc(allocSize);
+      if (self->requirePortSignatures == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+      memset(self->requirePortSignatures, 0, allocSize);
+      for(portId = 0; portId < ((apx_portId_t)self->numRequirePorts); portId++)
+      {
+         const char *portSignature;
+         apx_port_t *port = apx_node_getRequirePort(node, portId);
+         if (port == 0)
+         {
+            return APX_NULL_PTR_ERROR;
+         }
+         portSignature = apx_port_getDerivedPortSignature(port);
+         if (portSignature == 0)
+         {
+            return APX_PORT_SIGNATURE_ERROR;
+         }
+         else
+         {
+            self->requirePortSignatures[portId] = STRDUP(portSignature);
+            if (self->requirePortSignatures[portId] == 0)
+            {
+               return APX_MEM_ERROR;
+            }
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_nodeInfo_buildProvidePortSignatures(apx_nodeInfo_t *self, const apx_node_t *node)
+{
+   if (node != 0)
+   {
+      apx_portId_t portId;
+      size_t allocSize = self->numProvidePorts * sizeof(char*);
+      assert(allocSize > 0u);
+      self->providePortSignatures = (char**) malloc(allocSize);
+      if (self->providePortSignatures == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+      memset(self->providePortSignatures, 0, allocSize);
+      for(portId = 0; portId < ((apx_portId_t)self->numProvidePorts); portId++)
+      {
+         const char *portSignature;
+         apx_port_t *port = apx_node_getProvidePort(node, portId);
+         if (port == 0)
+         {
+            return APX_NULL_PTR_ERROR;
+         }
+         portSignature = apx_port_getDerivedPortSignature(port);
+         if (portSignature == 0)
+         {
+            return APX_PORT_SIGNATURE_ERROR;
+         }
+         else
+         {
+            self->providePortSignatures[portId] = STRDUP(portSignature);
+            if (self->providePortSignatures[portId] == 0)
+            {
+               return APX_MEM_ERROR;
+            }
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }

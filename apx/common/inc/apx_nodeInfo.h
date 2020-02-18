@@ -5,7 +5,7 @@
 * \brief     Static information about an APX node.
 *            This a post-processed version based on information from the APX-node parse tree.
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -50,14 +50,17 @@ typedef struct apx_nodeInfo_tag
    apx_portDataProps_t *providePortDataProps; //strong reference to apx_portDataProps_t, length of array: numProvidePorts
    apx_bytePortMap_t *clientBytePortMap; //used in client mode, maps byte offset back to require port ID
    apx_bytePortMap_t *serverBytePortMap; //used in server mode, maps byte offset back to provide port ID
-   adt_bytes_t **requirePortPackPrograms; //Strong reference to adt_bytes_t*,length of array: numRequirePorts
-   adt_bytes_t **providePortPackPrograms; //Strong reference to adt_bytes_t*,length of array: numProvidePorts
-   adt_bytes_t **requirePortUnpackPrograms; //Strong reference to adt_bytes_t*,length of array: numRequirePorts
-   adt_bytes_t **providePortUnpackPrograms; //Strong reference to adt_bytes_t*,length of array: numProvidePorts
+   adt_bytes_t **requirePortPackPrograms; //Strong reference to adt_bytes_t*;length of array: numRequirePorts
+   adt_bytes_t **providePortPackPrograms; //Strong reference to adt_bytes_t*;length of array: numProvidePorts
+   adt_bytes_t **requirePortUnpackPrograms; //Strong reference to adt_bytes_t*;length of array: numRequirePorts
+   adt_bytes_t **providePortUnpackPrograms; //Strong reference to adt_bytes_t*;length of array: numProvidePorts
    adt_bytes_t *requirePortInitData; //Calculated init data for requirePorts
    adt_bytes_t *providePortInitData; //Calculated init data for providePorts
+   char **requirePortSignatures; //array of derived port signatures strings (used in server mode); length of array: numRequirePorts
+   char **providePortSignatures; //array of derived port signatures strings (used in server mode); length of array: numProvidePorts
    apx_portCount_t numRequirePorts;
    apx_portCount_t numProvidePorts;
+
    apx_mode_t mode; //The mode this nodeInfo was build for
 } apx_nodeInfo_t;
 
@@ -94,5 +97,7 @@ apx_size_t apx_nodeInfo_getRequirePortInitDataSize(const apx_nodeInfo_t *self);
 const uint8_t *apx_nodeInfo_getRequirePortInitDataPtr(const apx_nodeInfo_t *self);
 apx_size_t apx_nodeInfo_getProvidePortInitDataSize(const apx_nodeInfo_t *self);
 const uint8_t *apx_nodeInfo_getProvidePortInitDataPtr(const apx_nodeInfo_t *self);
+const char *apx_nodeInfo_getRequirePortSignature(const apx_nodeInfo_t *self, apx_portId_t portId);
+const char *apx_nodeInfo_getProvidePortSignature(const apx_nodeInfo_t *self, apx_portId_t portId);
 
 #endif //APX_NODE_INFO_H
