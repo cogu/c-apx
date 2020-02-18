@@ -252,7 +252,7 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *n
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
       {
          apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
-         apx_portDataRef_t *portref;
+         apx_portRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
          if (portref != 0)
@@ -291,7 +291,7 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
       {
          apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
-         apx_portDataRef_t *portref;
+         apx_portRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
          if (portref != 0)
@@ -329,7 +329,7 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *n
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
       {
          apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
-         apx_portDataRef_t *portref;
+         apx_portRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
          if (portref != 0)
@@ -368,7 +368,7 @@ static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
       {
          apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
-         apx_portDataRef_t *portref;
+         apx_portRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
          if (portref != 0)

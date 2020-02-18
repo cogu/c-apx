@@ -32,6 +32,7 @@
 #include "CuTest.h"
 #include "apx_parser.h"
 #include "apx_nodeInstance.h"
+#include "apx_test_nodes.h"
 #include "rmf.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -47,6 +48,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_nodeInstance_manuallyCreateClientNodeUsingAPI(CuTest *tc);
 static void test_apx_nodeInstance_manuallyCreateServerNodeUsingAPI(CuTest *tc);
+static void test_apx_nodeInstance_buildPortReferences1(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -61,6 +63,7 @@ CuSuite* testSuite_apx_nodeInstance(void)
 
    SUITE_ADD_TEST(suite, test_apx_nodeInstance_manuallyCreateClientNodeUsingAPI);
    SUITE_ADD_TEST(suite, test_apx_nodeInstance_manuallyCreateServerNodeUsingAPI);
+   SUITE_ADD_TEST(suite, test_apx_nodeInstance_buildPortReferences1);
 
    return suite;
 }
@@ -129,3 +132,47 @@ static void test_apx_nodeInstance_manuallyCreateServerNodeUsingAPI(CuTest *tc)
 
 }
 
+static void test_apx_nodeInstance_buildPortReferences1(CuTest *tc)
+{
+   apx_nodeInstance_t *inst;
+   apx_programType_t errProgramType;
+   apx_uniquePortId_t errPortId;
+   apx_portRef_t *portref;
+   apx_parser_t *parser = apx_parser_new();
+   apx_size_t apx_len = (apx_size_t) strlen(g_apx_test_node1);
+
+   inst = apx_nodeInstance_new(APX_SERVER_MODE);
+   CuAssertPtrNotNull(tc, inst);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_createDefinitionBuffer(inst, apx_len));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeDefinitionData(inst, (const uint8_t*) g_apx_test_node1, 0u, apx_len));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_parseDefinition(inst, parser));
+   CuAssertPtrNotNull(tc, apx_nodeInstance_getParseTree(inst));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildNodeInfo(inst, &errProgramType, &errPortId));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(inst));
+   portref = apx_nodeInstance_getRequirePortRef(inst, 0);
+   CuAssertPtrNotNull(tc, portref);
+   CuAssertPtrEquals(tc, inst, portref->nodeInstance);
+   CuAssertUIntEquals(tc, 0, portref->portId);
+   CuAssertUIntEquals(tc, UINT8_SIZE, portref->portDataProps->dataSize);
+   CuAssertPtrEquals(tc, NULL, apx_nodeInstance_getRequirePortRef(inst, 1));
+   portref = apx_nodeInstance_getProvidePortRef(inst, 0);
+   CuAssertPtrNotNull(tc, portref);
+   CuAssertPtrEquals(tc, inst, portref->nodeInstance);
+   CuAssertUIntEquals(tc, 0 | APX_PORT_ID_PROVIDE_PORT, portref->portId);
+   CuAssertUIntEquals(tc, UINT16_SIZE, portref->portDataProps->dataSize);
+   portref = apx_nodeInstance_getProvidePortRef(inst, 1);
+   CuAssertPtrNotNull(tc, portref);
+   CuAssertPtrEquals(tc, inst, portref->nodeInstance);
+   CuAssertUIntEquals(tc, 1 | APX_PORT_ID_PROVIDE_PORT, portref->portId);
+   CuAssertUIntEquals(tc, UINT8_SIZE, portref->portDataProps->dataSize);
+   portref = apx_nodeInstance_getProvidePortRef(inst, 2);
+   CuAssertPtrNotNull(tc, portref);
+   CuAssertPtrEquals(tc, inst, portref->nodeInstance);
+   CuAssertUIntEquals(tc, 2 | APX_PORT_ID_PROVIDE_PORT, portref->portId);
+   CuAssertUIntEquals(tc, UINT8_SIZE, portref->portDataProps->dataSize);
+   CuAssertPtrEquals(tc, NULL, apx_nodeInstance_getProvidePortRef(inst, 3));
+
+
+   apx_parser_delete(parser);
+   apx_nodeInstance_delete(inst);
+}

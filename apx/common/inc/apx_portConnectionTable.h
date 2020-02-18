@@ -51,14 +51,14 @@ void apx_portConnectionTable_destroy(apx_portConnectionTable_t *self);
 apx_portConnectionTable_t *apx_portConnectionTable_new(int32_t numPorts);
 void apx_portConnectionTable_delete(apx_portConnectionTable_t *self);
 
-apx_error_t apx_portConnectionTable_connect(apx_portConnectionTable_t *self, apx_portDataRef_t *localRef, apx_portDataRef_t *remoteRef);
-apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, apx_portDataRef_t *localRef, apx_portDataRef_t *remoteRef);
+apx_error_t apx_portConnectionTable_connect(apx_portConnectionTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef);
+apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef);
 /*
-apx_error_t apx_portConnectionTable_addConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portDataRef_t *portDataRef);
-apx_error_t apx_portConnectionTable_removeConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portDataRef_t *portDataRef);
+apx_error_t apx_portConnectionTable_addConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portRef_t *portDataRef);
+apx_error_t apx_portConnectionTable_removeConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portRef_t *portDataRef);
 */
 apx_portConnectionEntry_t *apx_portConnectionTable_getEntry(apx_portConnectionTable_t *self, apx_portId_t portId);
-apx_portDataRef_t *apx_portConnectionTable_getRef(apx_portConnectionTable_t *self, apx_portId_t portId, int32_t index);
+apx_portRef_t *apx_portConnectionTable_getRef(apx_portConnectionTable_t *self, apx_portId_t portId, int32_t index);
 int32_t apx_portConnectionTable_count(apx_portConnectionTable_t *self, apx_portId_t portId);
 
 

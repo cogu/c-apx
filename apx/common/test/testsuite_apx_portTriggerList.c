@@ -73,9 +73,9 @@ static void test_create_apx_portTriggerListFromNode1(CuTest* tc)
    apx_nodeData_t *nodeData3;
    apx_nodeData_t *nodeData4;
    apx_nodeData_t *nodeData5;
-   apx_portDataRef_t *portData3;
-   apx_portDataRef_t *portData4;
-   apx_portDataRef_t *portData5;
+   apx_portRef_t *portData3;
+   apx_portRef_t *portData4;
+   apx_portRef_t *portData5;
    apx_portTriggerList_t triggerList; //a single trigger list for port 0 of nodeData1
    apx_parser_create(&parser);
    nodeData1 = apx_nodeData_makeFromString(&parser, g_apx_test_node1, NULL);

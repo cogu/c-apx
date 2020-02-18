@@ -48,7 +48,7 @@
 static void apx_routingTable_attachPort(apx_routingTable_t *self, apx_nodeData_t *nodeData, apx_port_t *port);
 static void apx_routingTable_detachPort(apx_routingTable_t *self, apx_nodeData_t *nodeData, apx_port_t *port);
 static apx_routingTableEntry_t *apx_routingTable_createNewEntry(apx_routingTable_t *self, const char *portSignature);
-static apx_portDataRef_t *apx_routingTable_getPortDataRef(apx_nodeData_t *nodeData, apx_port_t *port);
+static apx_portRef_t *apx_routingTable_getPortDataRef(apx_nodeData_t *nodeData, apx_port_t *port);
 static apx_routingTableEntry_t *apx_routingTable_findNoLock(apx_routingTable_t *self, const char *portSignature);
 static apx_error_t apx_routingTable_remove(apx_routingTable_t *self, const char *portSignature);
 static void apx_routingTable_lock(apx_routingTable_t *self);
@@ -186,7 +186,7 @@ static void apx_routingTable_attachPort(apx_routingTable_t *self, apx_nodeData_t
    if (port != 0)
    {
       apx_routingTableEntry_t *entry;
-      apx_portDataRef_t *portDataRef;
+      apx_portRef_t *portDataRef;
       const char *portSignature = apx_port_getDerivedPortSignature(port);
       entry = apx_routingTable_findNoLock(self, portSignature);
       if (entry == 0)
@@ -207,7 +207,7 @@ static void apx_routingTable_detachPort(apx_routingTable_t *self, apx_nodeData_t
    if (port != 0)
    {
       apx_routingTableEntry_t *entry;
-      apx_portDataRef_t *portDataRef;
+      apx_portRef_t *portDataRef;
       const char *portSignature = apx_port_getDerivedPortSignature(port);
       entry = apx_routingTable_findNoLock(self, portSignature);
       if (entry != 0)
@@ -232,9 +232,9 @@ static apx_routingTableEntry_t *apx_routingTable_createNewEntry(apx_routingTable
    return entry;
 }
 
-static apx_portDataRef_t *apx_routingTable_getPortDataRef(apx_nodeData_t *nodeData, apx_port_t *port)
+static apx_portRef_t *apx_routingTable_getPortDataRef(apx_nodeData_t *nodeData, apx_port_t *port)
 {
-   apx_portDataRef_t *retval = (apx_portDataRef_t*) 0;
+   apx_portRef_t *retval = (apx_portRef_t*) 0;
    if (port->portType == APX_REQUIRE_PORT)
    {
       retval = apx_nodeData_getRequirePortDataRef(nodeData, port->portId);

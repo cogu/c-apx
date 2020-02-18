@@ -239,7 +239,7 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
       apx_nodeInstance_setConnection(nodeInstance, self);
       if (numProvidePorts > 0)
       {
-         rc = apx_nodeInstance_createProvidePortDataFileInfo(nodeInstance, &fileInfo);
+         rc = apx_nodeInstance_fillProvidePortDataFileInfo(nodeInstance, &fileInfo);
          if (rc == APX_NO_ERROR)
          {
             apx_file_t *localFile = apx_fileManager_createLocalFile(&self->fileManager, &fileInfo);
@@ -250,7 +250,7 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
             }
          }
       }
-      rc = apx_nodeInstance_createDefinitionFileInfo(nodeInstance, &fileInfo);
+      rc = apx_nodeInstance_fillDefinitionFileInfo(nodeInstance, &fileInfo);
       if (rc == APX_NO_ERROR)
       {
          apx_file_t *localFile = apx_fileManager_createLocalFile(&self->fileManager, &fileInfo);
@@ -937,13 +937,13 @@ static void apx_connectionBase_handlePortConnectEvent(apx_nodeData_t *nodeData, 
          numConnections = adt_ary_length(array);
          for(i=0;i<numConnections;i++)
          {
-            apx_portDataRef_t *remotePortRef = adt_ary_value(array, i);
+            apx_portRef_t *remotePortRef = adt_ary_value(array, i);
             portIncCountFunc(remotePortRef->nodeData, apx_portDataRef_getPortId(remotePortRef));
          }
       }
       else if (entry->count == 1)
       {
-         apx_portDataRef_t *remotePortRef = (apx_portDataRef_t*) entry->pAny;
+         apx_portRef_t *remotePortRef = (apx_portRef_t*) entry->pAny;
          portIncCountFunc(remotePortRef->nodeData, apx_portDataRef_getPortId(remotePortRef));
       }
       else
@@ -968,13 +968,13 @@ static void apx_connectionBase_handlePortDisconnectEvent(apx_nodeData_t *nodeDat
          numConnections = adt_ary_length(array);
          for(i=0;i<numConnections;i++)
          {
-            apx_portDataRef_t *remotePortRef = adt_ary_value(array, i);
+            apx_portRef_t *remotePortRef = adt_ary_value(array, i);
             portDecCountFunc(remotePortRef->nodeData, apx_portDataRef_getPortId(remotePortRef));
          }
       }
       else if (entry->count == -1)
       {
-         apx_portDataRef_t *remotePortRef = (apx_portDataRef_t*) entry->pAny;
+         apx_portRef_t *remotePortRef = (apx_portRef_t*) entry->pAny;
          portDecCountFunc(remotePortRef->nodeData, apx_portDataRef_getPortId(remotePortRef));
       }
       else

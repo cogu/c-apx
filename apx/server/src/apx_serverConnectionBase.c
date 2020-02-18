@@ -577,11 +577,12 @@ static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serve
       printf("[%u] Write %s.out(%d,%d): ", (unsigned int) apx_connectionBase_getConnectionId(&self->base), apx_nodeInstance_getName(nodeInstance), (int) offset, (int) len);
       apx_print_hex_bytes(10, data, len);
       return apx_nodeData_writeProvidePortData(nodeData, data, offset, len);
-   case APX_NODE_STATE_CONNECTED:
+   case APX_NODE_STATE_PARTIALLY_CONNECTED:
       return APX_NOT_IMPLEMENTED_ERROR;
-   case APX_NODE_STATE_CLEANUP:
-      //Ignore all writes
-      break;
+   case APX_NODE_STATE_FULLY_CONNECTED:
+      return APX_NOT_IMPLEMENTED_ERROR;
+   case APX_NODE_STATE_DISCONNECTED:
+      return APX_NOT_IMPLEMENTED_ERROR;
    case APX_NODE_STATE_INVALID:
       //Ignore all writes
       break;
@@ -663,7 +664,7 @@ static void apx_serverConnectionBase_routeDataFromProvidePort(apx_serverConnecti
          numConnections = apx_portTriggerList_length(portTriggerList);
          for(i = 0; i < numConnections; i++)
          {
-            apx_portDataRef_t *portDataRef = apx_portTriggerList_get(portTriggerList, i);
+            apx_portRef_t *portDataRef = apx_portTriggerList_get(portTriggerList, i);
             if (portDataRef != 0)
             {
                apx_nodeData_t *destNodeData = portDataRef->nodeData;

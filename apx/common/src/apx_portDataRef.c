@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portDataRef.h
+* \file      apx_portRef.h
 * \author    Conny Gustafsson
 * \date      2019-12-02
 * \brief     Collects all useful information about a specific port into a single container
@@ -50,7 +50,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeInstance_tag *nodeInstance, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps)
+void apx_portRef_create(apx_portRef_t *self, struct apx_nodeInstance_tag *nodeInstance, apx_uniquePortId_t portId, const apx_portDataProps_t *portDataProps)
 {
    if (self != 0)
    {
@@ -60,17 +60,17 @@ void apx_portDataRef_create(apx_portDataRef_t *self, struct apx_nodeInstance_tag
    }
 }
 
-apx_portDataRef_t *apx_portDataRef_new(struct apx_nodeInstance_tag *nodeInstance, apx_uniquePortId_t portId, apx_portDataProps_t *portDataProps)
+apx_portRef_t *apx_portRef_new(struct apx_nodeInstance_tag *nodeInstance, apx_uniquePortId_t portId, const apx_portDataProps_t *portDataProps)
 {
-   apx_portDataRef_t *self = (apx_portDataRef_t*) malloc(sizeof(apx_portDataRef_t));
+   apx_portRef_t *self = (apx_portRef_t*) malloc(sizeof(apx_portRef_t));
    if(self != 0)
    {
-      apx_portDataRef_create(self, nodeInstance, portId, portDataProps);
+      apx_portRef_create(self, nodeInstance, portId, portDataProps);
    }
    return self;
 }
 
-void apx_portDataRef_delete(apx_portDataRef_t *self)
+void apx_portRef_delete(apx_portRef_t *self)
 {
    if (self != 0)
    {
@@ -78,23 +78,32 @@ void apx_portDataRef_delete(apx_portDataRef_t *self)
    }
 }
 
-void apx_portDataRef_vdelete(void *arg)
+void apx_portRef_vdelete(void *arg)
 {
-   apx_portDataRef_delete((apx_portDataRef_t*) arg);
+   apx_portRef_delete((apx_portRef_t*) arg);
 }
 
-bool apx_portDataRef_isProvidePortRef(apx_portDataRef_t *self)
+bool apx_portRef_isProvidePortRef(apx_portRef_t *self)
 {
    return ( (self != 0) && ( (self->portId & APX_PORT_ID_PROVIDE_PORT) != 0u ) );
 }
 
-apx_portId_t apx_portDataRef_getPortId(apx_portDataRef_t *self)
+apx_portId_t apx_portRef_getPortId(apx_portRef_t *self)
 {
    if (self != 0)
    {
       return self->portId & APX_PORT_ID_MASK;
    }
    return -1;
+}
+
+const apx_portDataProps_t *apx_portRef_getPortDataProps(apx_portRef_t *self)
+{
+   if (self != 0)
+   {
+      return self->portDataProps;
+   }
+   return (const apx_portDataProps_t*) 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////

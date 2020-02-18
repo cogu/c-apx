@@ -93,6 +93,12 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_fileManagerReceiver());
    CuSuiteAddSuite(suite, testSuite_apx_fileManager());
 
+   //Routing Tables
+   CuSuiteAddSuite(suite, testSuite_apx_portConnectionEntry());
+//   CuSuiteAddSuite(suite, testSuite_apx_portConnectionTable());
+//   CuSuiteAddSuite(suite, testSuite_apx_portTriggerList());
+//   CuSuiteAddSuite(suite, testSuite_apx_routingTable());
+
 
    // APX Server
    CuSuiteAddSuite(suite, testSuite_apx_serverConnection());
@@ -102,14 +108,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_client_testConnection());
    //CuSuiteAddSuite(suite, testSuite_apx_client_socketConnection());
 
-   /*
 
-   CuSuiteAddSuite(suite, testSuite_apx_portConnectionEntry());
-   CuSuiteAddSuite(suite, testSuite_apx_portConnectionTable());
-   CuSuiteAddSuite(suite, testSuite_apx_portTriggerList());
-   CuSuiteAddSuite(suite, testSuite_apx_routingTable());
-
-*/
 // APX Server
    CuSuiteAddSuite(suite, testSuite_apx_serverSocketConnection());
 /*
