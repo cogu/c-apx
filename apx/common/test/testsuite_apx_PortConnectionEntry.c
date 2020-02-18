@@ -89,7 +89,7 @@ static void test_apx_portConnectionEntry_create(CuTest *tc)
    apx_portConnectionEntry_t entry;
    apx_portConnectionEntry_create(&entry);
    CuAssertIntEquals(tc, 0, entry.count);
-   CuAssertPtrEquals(tc, NULL, entry.pAny);
+   CuAssertPtrEquals(tc, NULL, entry.data.portRef);
    apx_portConnectionEntry_destroy(&entry);
 }
 
@@ -105,7 +105,6 @@ static void test_apx_portConnectionEntry_connectOne(CuTest *tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text1));
    nodeInstance1 = apx_nodeManager_getLastAttached(nodeManager);
    CuAssertPtrNotNull(tc, nodeInstance1);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance1));
    apx_portConnectionEntry_create(&entry);
    portRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance1, 0);
    CuAssertPtrNotNull(tc, portRef1);
@@ -142,9 +141,6 @@ static void test_apx_portConnectionEntry_connectThree(CuTest *tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text3));
    nodeInstance3 = apx_nodeManager_getLastAttached(nodeManager);
    CuAssertPtrNotNull(tc, nodeInstance3);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance1));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance2));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance3));
 
 
    portRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance1, 0);
@@ -178,7 +174,6 @@ static void test_apx_portConnectionEntry_disconnectOne(CuTest *tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text1));
    nodeInstance1 = apx_nodeManager_getLastAttached(nodeManager);
    CuAssertPtrNotNull(tc, nodeInstance1);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance1));
    apx_portConnectionEntry_create(&entry);
    portRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance1, 0);
    CuAssertPtrNotNull(tc, portRef1);
@@ -215,9 +210,6 @@ static void test_apx_portConnectionEntry_disconnectThree(CuTest *tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_buildNode_cstr(nodeManager, m_node_text3));
    nodeInstance3 = apx_nodeManager_getLastAttached(nodeManager);
    CuAssertPtrNotNull(tc, nodeInstance3);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance1));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance2));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildPortRefs(nodeInstance3));
 
    portRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance1, 0);
    CuAssertPtrNotNull(tc, portRef1);

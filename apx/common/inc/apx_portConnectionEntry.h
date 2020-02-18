@@ -29,6 +29,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "adt_ary.h"
 #include "apx_types.h"
 #include "apx_portDataRef.h"
 #include "apx_error.h"
@@ -39,7 +40,10 @@
 typedef struct apx_portConnectionEntry_tag
 {
    int32_t count; //initial value is 0. When in negative range it holds port disconnect info. When in positive range it holds port connect info.
-   void *pAny; //if count == 0: typeof(pAny) is NULL; else if (count == 1) || (count == -1) : typeof(pAny) is apx_portRef_t*; else typeof(pAny) is adt_ary_t* containing apx_portRef_t*
+   union portref_union_tag {
+      apx_portRef_t* portRef; //Used when -1 <= count <= 1
+      adt_ary_t *array; //Used when count<-1 or when count > 1
+   } data;
    //All references to apx_portRef_t are weak references
 } apx_portConnectionEntry_t;
 
