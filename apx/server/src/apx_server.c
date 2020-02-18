@@ -325,9 +325,9 @@ static void apx_server_initExtensions(apx_server_t *self)
             }
             if (extension->name != 0)
             {
-               char msg[MAX_LOG_LEN];
+/*               char msg[MAX_LOG_LEN];
                sprintf(msg, "Started extension %s", extension->name);
-               apx_server_logEvent(self, APX_LOG_LEVEL_INFO, "SERVER", msg);
+               apx_server_logEvent(self, APX_LOG_LEVEL_INFO, "SERVER", msg);*/
             }
          }
          iter = adt_list_iter_next(iter);

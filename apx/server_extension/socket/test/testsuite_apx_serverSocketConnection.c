@@ -9,6 +9,7 @@
 #include "apx_serverSocketConnection.h"
 #include "apx_server.h"
 #include "apx_socketServerExtension.h"
+#include "apx_serverConnectionBase.h"
 #include "testsocket_spy.h"
 #include "apx_fileManager.h"
 #include "numheader.h"
@@ -36,6 +37,7 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_serverSocketConnection_create(CuTest* tc);
+static void test_apx_serverSocketConnection_eachConnectionGetUniqueID(CuTest* tc);
 static void test_apx_serverSocketConnection_transmitHandlerSetup(CuTest* tc);
 static void test_apx_serverSocketConnection_serverSendsAckAfterAcceptingHeaderFromClient(CuTest* tc);
 static void test_apx_serverSocketConnection_serverOpensFileAfterApxFileInfoReceived(CuTest *tc);
@@ -68,6 +70,7 @@ CuSuite* testSuite_apx_serverSocketConnection(void)
 {
    CuSuite* suite = CuSuiteNew();
    SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_create);
+   SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_eachConnectionGetUniqueID);
    SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_transmitHandlerSetup);
    SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_serverSendsAckAfterAcceptingHeaderFromClient);
    SUITE_ADD_TEST(suite, test_apx_serverSocketConnection_serverOpensFileAfterApxFileInfoReceived);
@@ -87,6 +90,37 @@ static void test_apx_serverSocketConnection_create(CuTest* tc)
    CuAssertUIntEquals(tc, 0, conn.base.base.connectionId);
    CuAssertPtrEquals(tc, sock1, conn.socketObject);
    apx_serverSocketConnection_destroy(&conn);
+}
+
+static void test_apx_serverSocketConnection_eachConnectionGetUniqueID(CuTest* tc)
+{
+   apx_server_t server;
+   testsocket_t *sockets[11];
+   apx_serverConnectionBase_t *lastConnection;
+   uint32_t connectionIdExpected = 0;
+   int i;
+   apx_server_create(&server);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socketServerExtension_register(&server, NULL));
+   apx_server_start(&server);
+
+   for (i=0;i<10;i++)
+   {
+      char msg[15];
+      sockets[i] = testsocket_new();
+      apx_socketServerExtension_acceptTestSocket(sockets[i]);
+      lastConnection = apx_server_getLastConnection(&server);
+      CuAssertPtrNotNull(tc, lastConnection);
+      sprintf(msg, "i=%d",i);
+      CuAssertUIntEquals_Msg(tc, &msg[0], connectionIdExpected++, apx_serverConnectionBase_getConnectionId(lastConnection));
+   }
+   //resetting internal variable nextConnectionId to 0 shall still yield next generated ID to be unique
+   server.connectionManager.nextConnectionId=0;
+   sockets[10] = testsocket_new();
+   apx_socketServerExtension_acceptTestSocket(sockets[10]);
+   lastConnection = apx_server_getLastConnection(&server);
+   CuAssertPtrNotNull(tc, lastConnection);
+   CuAssertUIntEquals(tc, 10, apx_serverConnectionBase_getConnectionId(lastConnection));
+   apx_server_destroy(&server);
 }
 
 static void test_apx_serverSocketConnection_transmitHandlerSetup(CuTest* tc)
