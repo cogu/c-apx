@@ -2,9 +2,9 @@
 * \file      apx_portConnectionTable.c
 * \author    Conny Gustafsson
 * \date      2019-01-31
-* \brief     Description
+* \brief     A list of apx_portConnectionEntries
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -108,7 +108,7 @@ apx_error_t apx_portConnectionTable_connect(apx_portConnectionTable_t *self, apx
 {
    if ( (self != 0) && (localRef != 0) && (remoteRef != 0) )
    {
-      apx_portId_t portId = apx_portDataRef_getPortId(localRef);
+      apx_portId_t portId = apx_portRef_getPortId(localRef);
       if ( (portId >= 0) && (portId < self->numPorts) )
       {
          return apx_portConnectionEntry_addConnection(&self->connections[portId], remoteRef);
@@ -121,7 +121,7 @@ apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, 
 {
    if ( (self != 0) && (localRef != 0) && (remoteRef != 0) )
    {
-      apx_portId_t portId = apx_portDataRef_getPortId(localRef);
+      apx_portId_t portId = apx_portRef_getPortId(localRef);
       if ( (portId >= 0) && (portId < self->numPorts) )
       {
          return apx_portConnectionEntry_removeConnection(&self->connections[portId], remoteRef);
@@ -129,26 +129,6 @@ apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, 
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
-
-/*
-apx_error_t apx_portConnectionTable_addConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portRef_t *portDataRef)
-{
-   if ( (self != 0) && (portId >= 0) && (portId < self->numPorts) )
-   {
-      return apx_portConnectionEntry_addConnection(&self->connections[portId], portDataRef);
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-apx_error_t apx_portConnectionTable_removeConnection(apx_portConnectionTable_t *self, apx_portId_t portId, apx_portRef_t *portDataRef)
-{
-   if ( (self != 0) && (portId >= 0) && (portId < self->numPorts) )
-   {
-      return apx_portConnectionEntry_removeConnection(&self->connections[portId], portDataRef);
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-*/
 
 apx_portConnectionEntry_t *apx_portConnectionTable_getEntry(apx_portConnectionTable_t *self, apx_portId_t portId)
 {

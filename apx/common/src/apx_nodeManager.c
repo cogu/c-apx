@@ -253,6 +253,15 @@ apx_error_t apx_nodeManager_buildNode_cstr(apx_nodeManager_t *self, const char *
                apx_nodeInstance_delete(nodeInstance);
                return rc;
             }
+            if (self->mode == APX_SERVER_MODE)
+            {
+               rc = apx_nodeInstance_buildPortRefs(nodeInstance);
+               if (rc != APX_NO_ERROR)
+               {
+                  apx_nodeInstance_delete(nodeInstance);
+                  return rc;
+               }
+            }
             return APX_NO_ERROR;
          }
       }

@@ -29,7 +29,7 @@
 #include "apx_portConnectionEntry.h"
 #include <stdlib.h>
 #include <assert.h>
-#include "adt_ary.h"
+
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -50,22 +50,25 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+/**
+ * Constructor
+ */
 void apx_portConnectionEntry_create(apx_portConnectionEntry_t *self)
 {
    if (self != 0)
    {
       self->count = 0;
-      self->pAny = NULL;
+      self->data.portRef = NULL;
    }
 }
 
 void apx_portConnectionEntry_destroy(apx_portConnectionEntry_t *self)
 {
-   if ( (self != 0) && (self->pAny != 0) )
+   if (self != 0)
    {
-      if ( (self->count > 1) || (self->count < -1) )
+      if ( (self->count < -1) || (self->count > 1) )
       {
-         adt_ary_delete((adt_ary_t*) self->pAny);
+         adt_ary_delete((adt_ary_t*) self->data.array);
       }
    }
 }
@@ -103,29 +106,29 @@ apx_error_t apx_portConnectionEntry_addConnection(apx_portConnectionEntry_t *sel
       }
       else if (self->count == 0)
       {
-         self->pAny = (void*) portDataRef;
+         self->data.portRef = portDataRef;
       }
       else if (self->count == 1)
       {
          //convert single entry into an array of entries
-         void *tmp = self->pAny;
-         self->pAny = adt_ary_new((void(*)(void*)) 0);
-         if (self->pAny == 0)
+         apx_portRef_t *tmp = self->data.portRef;
+         self->data.array = adt_ary_new((void(*)(void*)) 0);
+         if (self->data.array == 0)
          {
             retval = APX_MEM_ERROR;
          }
          else
          {
-            retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->pAny, tmp);
+            retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, (void*) tmp);
             if (retval == APX_NO_ERROR)
             {
-               retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->pAny, portDataRef);
+               retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portDataRef);
             }
          }
       }
       else
       {
-         retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->pAny, portDataRef);
+         retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portDataRef);
       }
 
       if (retval == APX_NO_ERROR)
@@ -151,29 +154,29 @@ apx_error_t apx_portConnectionEntry_removeConnection(apx_portConnectionEntry_t *
       }
       else if (self->count == 0)
       {
-         self->pAny = (void*) portDataRef;
+         self->data.portRef = portDataRef;
       }
       else if (self->count == -1)
       {
          //convert single entry into an array of entries
-         void *tmp = self->pAny;
-         self->pAny = adt_ary_new((void(*)(void*)) 0);
-         if (self->pAny == 0)
+         apx_portRef_t *tmp = self->data.portRef;
+         self->data.array = adt_ary_new((void(*)(void*)) 0);
+         if (self->data.array == 0)
          {
             retval = APX_MEM_ERROR;
          }
          else
          {
-            retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->pAny, tmp);
+            retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, (void*) tmp);
             if (retval == APX_NO_ERROR)
             {
-               retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->pAny, portDataRef);
+               retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portDataRef);
             }
          }
       }
       else
       {
-         retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->pAny, portDataRef);
+         retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portDataRef);
       }
 
       if (retval == APX_NO_ERROR)
@@ -194,15 +197,14 @@ apx_portRef_t *apx_portConnectionEntry_get(apx_portConnectionEntry_t *self, int3
       {
          if (index == 0)
          {
-            retval = (apx_portRef_t*) self->pAny;
+            retval = self->data.portRef;
          }
       }
       else
       {
          if ( ( (self->count < 0) && (index < -self->count) ) || ( (self->count > 0) && (index < self->count) ) )
          {
-            adt_ary_t *ary = (adt_ary_t*) self->pAny;
-            retval = (apx_portRef_t*) adt_ary_value(ary, index);
+            retval = (apx_portRef_t*) adt_ary_value(self->data.array, index);
          }
       }
    }

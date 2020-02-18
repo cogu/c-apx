@@ -95,7 +95,7 @@ void RunAllTests(void)
 
    //Routing Tables
    CuSuiteAddSuite(suite, testSuite_apx_portConnectionEntry());
-//   CuSuiteAddSuite(suite, testSuite_apx_portConnectionTable());
+   CuSuiteAddSuite(suite, testSuite_apx_portConnectionTable());
 //   CuSuiteAddSuite(suite, testSuite_apx_portTriggerList());
 //   CuSuiteAddSuite(suite, testSuite_apx_routingTable());
 
