@@ -132,7 +132,7 @@ void apx_socketServer_startTcpServer(apx_socketServer_t *self, uint16_t tcpPort,
 {
    if (self != 0)
    {
-      char msg[80];
+      //char msg[80];
       msocket_handler_t serverHandler;
       self->tcpPort = tcpPort;
       if (tag != 0)
@@ -159,7 +159,7 @@ void apx_socketServer_startUnixServer(apx_socketServer_t *self, const char *file
 {
    if ( (self != 0) && (filePath != 0))
    {
-      char msg[APX_MAX_LOG_LEN];
+      //char msg[APX_MAX_LOG_LEN];
       msocket_handler_t serverHandler;
       self->unixServerFile = STRDUP(filePath);
       if (tag != 0)

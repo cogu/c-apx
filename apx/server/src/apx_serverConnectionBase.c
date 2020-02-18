@@ -474,7 +474,7 @@ static void apx_serverConnectionBase_fileInfoNotifyImpl(void *arg, const apx_fil
       }
       else if (apx_fileInfo_nameEndsWith(fileInfo, APX_OUTDATA_FILE_EXT) )
       {
-         apx_serverConnectionBase_processNewOutPortDataFile(self, fileInfo);
+         //apx_serverConnectionBase_processNewOutPortDataFile(self, fileInfo);
       }
       else
       {
