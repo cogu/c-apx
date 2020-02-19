@@ -35,7 +35,7 @@
 #include "apx_serverTextLog.h"
 #include "apx_eventListener.h"
 #include "apx_serverConnectionBase.h"
-#include "apx_portConnectionTable.h"
+#include "apx_portConnectorChangeTable.h"
 #include "apx_server.h"
 
 #ifdef MEM_LEAK_CHECK
@@ -62,10 +62,10 @@ static void apx_serverTextLog_onDisconnected(void *arg, apx_serverConnectionBase
 static void apx_serverTextLog_onDefinitionDataWritten(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
 static void apx_serverTextLog_onOutPortDataWritten(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
 static void apx_serverTextLog_onNodeDataComplete(void *arg, struct apx_nodeData_tag *nodeData);
-static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
-static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
-static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
-static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable);
+static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable);
+static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable);
+static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable);
+static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -241,7 +241,7 @@ static void apx_serverTextLog_onNodeDataComplete(void *arg, apx_nodeData_t *node
 }
 
 
-static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
+static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) && (connectionTable != 0))
@@ -253,7 +253,7 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *n
       {
          apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
          apx_portRef_t *portref;
-         apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
+         apx_portConnectionEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
          if (portref != 0)
          {
@@ -280,7 +280,7 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *n
    }
 }
 
-static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
+static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) && (connectionTable != 0) )
@@ -292,7 +292,7 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t
       {
          apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
          apx_portRef_t *portref;
-         apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
+         apx_portConnectionEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
          if (portref != 0)
          {
@@ -318,7 +318,7 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t
    }
 }
 
-static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
+static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) && (connectionTable != 0))
@@ -330,7 +330,7 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *n
       {
          apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
          apx_portRef_t *portref;
-         apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
+         apx_portConnectionEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
          if (portref != 0)
          {
@@ -357,7 +357,7 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *n
    }
 }
 
-static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable)
+static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (nodeData != 0) && (connectionTable != 0) )
@@ -369,7 +369,7 @@ static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t
       {
          apx_connectionBase_t* connection = apx_nodeData_getConnection(nodeData);
          apx_portRef_t *portref;
-         apx_portConnectionEntry_t *entry = apx_portConnectionTable_getEntry(connectionTable, localPortId);
+         apx_portConnectionEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
          if (portref != 0)
          {

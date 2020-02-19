@@ -664,11 +664,60 @@ apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, cons
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-/********** Port Connection Table API  ************/
-apx_portConnectionTable_t* apx_nodeInstance_getRequirePortConnectionTable(apx_nodeInstance_t *self);
-apx_portConnectionTable_t* apx_nodeInstance_getProvidePortConnectionTable(apx_nodeInstance_t *self);
-void apx_nodeInstance_clearRequirePortConnectionTable(apx_nodeInstance_t *self);
-void apx_nodeInstance_clearProvidePortConnectionTable(apx_nodeInstance_t *self);
+/********** Port Connection Changes API  ************/
+apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      if (self->requirePortChanges == 0)
+      {
+         assert(self->nodeInfo != 0);
+         self->requirePortChanges = apx_portConnectorChangeTable_new(apx_nodeInfo_getNumRequirePorts(self->nodeInfo));
+      }
+      return self->requirePortChanges;
+   }
+   return (apx_portConnectorChangeTable_t*) 0;
+}
+
+apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self)
+{
+   {
+      if (self != 0)
+      {
+         if (self->providePortChanges == 0)
+         {
+            assert(self->nodeInfo != 0);
+            self->providePortChanges = apx_portConnectorChangeTable_new(apx_nodeInfo_getNumProvidePorts(self->nodeInfo));
+         }
+         return self->providePortChanges;
+      }
+      return (apx_portConnectorChangeTable_t*) 0;
+   }
+}
+
+/**
+ * This clears the internal pointer. This implicitly means the caller of this function has now taken ownership of
+ * the data structure and is now responsible for its memory management.
+ */
+void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      self->requirePortChanges = (apx_portConnectorChangeTable_t*) 0;
+   }
+}
+
+/**
+ * This clears the internal pointer. This implicitly means the caller of this function has now taken ownership of
+ * the data structure and is now responsible for its memory management.
+ */
+void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      self->providePortChanges = (apx_portConnectorChangeTable_t*) 0;
+   }
+}
 
 
 

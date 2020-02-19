@@ -39,7 +39,7 @@
 #include "apx_file.h"
 #include "apx_error.h"
 #include "apx_parser.h"
-#include "apx_portConnectionTable.h"
+#include "apx_portConnectorChangeTable.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -60,8 +60,8 @@ typedef struct apx_nodeInstance_tag
    apx_file_t *definitionFile;       //pointer to file in file manager
    apx_file_t *providePortDataFile;  //pointer to file in file manager
    apx_file_t *requirePortDataFile;  //pointer to file in file manager
-   apx_portConnectionTable_t *requirePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
-   apx_portConnectionTable_t *providePortConnections; //temporary data structure used by apx_routingTableEntry_t (to build connect/disconnect events)
+   apx_portConnectorChangeTable_t *requirePortChanges; //temporary data structure used for tracking port connector changes to requirePorts
+   apx_portConnectorChangeTable_t *providePortChanges; //temporary data structure used for tracking port connector changes to providePorts
    apx_mode_t mode;
    apx_nodeState_t nodeState;
    apx_requirePortDataState_t requirePortState;
@@ -115,11 +115,11 @@ apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const
 apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
 
-/********** Port Connection Table API  ************/
-apx_portConnectionTable_t* apx_nodeInstance_getRequirePortConnectionTable(apx_nodeInstance_t *self);
-apx_portConnectionTable_t* apx_nodeInstance_getProvidePortConnectionTable(apx_nodeInstance_t *self);
-void apx_nodeInstance_clearRequirePortConnectionTable(apx_nodeInstance_t *self);
-void apx_nodeInstance_clearProvidePortConnectionTable(apx_nodeInstance_t *self);
+/********** Port Connection Changes API  ************/
+apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self);
+apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self);
+void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self);
+void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self);
 
 
 #endif //APX_NODE_INSTANCE_H

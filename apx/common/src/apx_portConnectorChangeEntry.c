@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_portConnectionEntry.c
+* \file      apx_portConnectorChangeEntry.c
 * \author    Conny Gustafsson
 * \date      2019-01-23
-* \brief     APX port connection information (for one port)
+* \brief     APX port connection change information (for one port)
 *
 * Copyright (c) 2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_portConnectionEntry.h"
+#include "apx_portConnectorChangeEntry.h"
 #include <stdlib.h>
 #include <assert.h>
 
@@ -53,7 +53,7 @@
 /**
  * Constructor
  */
-void apx_portConnectionEntry_create(apx_portConnectionEntry_t *self)
+void apx_portConnectorChangeEntry_create(apx_portConnectorChangeEntry_t *self)
 {
    if (self != 0)
    {
@@ -62,7 +62,7 @@ void apx_portConnectionEntry_create(apx_portConnectionEntry_t *self)
    }
 }
 
-void apx_portConnectionEntry_destroy(apx_portConnectionEntry_t *self)
+void apx_portConnectorChangeEntry_destroy(apx_portConnectorChangeEntry_t *self)
 {
    if (self != 0)
    {
@@ -73,21 +73,21 @@ void apx_portConnectionEntry_destroy(apx_portConnectionEntry_t *self)
    }
 }
 
-apx_portConnectionEntry_t *apx_portConnectionEntry_new(void)
+apx_portConnectorChangeEntry_t *apx_portConnectorChangeEntry_new(void)
 {
-   apx_portConnectionEntry_t *self = (apx_portConnectionEntry_t*) malloc(sizeof(apx_portConnectionEntry_t));
+   apx_portConnectorChangeEntry_t *self = (apx_portConnectorChangeEntry_t*) malloc(sizeof(apx_portConnectorChangeEntry_t));
    if (self != 0)
    {
-      apx_portConnectionEntry_create(self);
+      apx_portConnectorChangeEntry_create(self);
    }
    return self;
 }
 
-void apx_portConnectionEntry_delete(apx_portConnectionEntry_t *self)
+void apx_portConnectorChangeEntry_delete(apx_portConnectorChangeEntry_t *self)
 {
    if (self != 0)
    {
-      apx_portConnectionEntry_destroy(self);
+      apx_portConnectorChangeEntry_destroy(self);
       free(self);
    }
 }
@@ -95,7 +95,7 @@ void apx_portConnectionEntry_delete(apx_portConnectionEntry_t *self)
 /**
  * Adds port connect information to an entry
  */
-apx_error_t apx_portConnectionEntry_addConnection(apx_portConnectionEntry_t *self, apx_portRef_t *portDataRef)
+apx_error_t apx_portConnectorChangeEntry_addConnection(apx_portConnectorChangeEntry_t *self, apx_portRef_t *portRef)
 {
    if (self != 0)
    {
@@ -106,7 +106,7 @@ apx_error_t apx_portConnectionEntry_addConnection(apx_portConnectionEntry_t *sel
       }
       else if (self->count == 0)
       {
-         self->data.portRef = portDataRef;
+         self->data.portRef = portRef;
       }
       else if (self->count == 1)
       {
@@ -122,13 +122,13 @@ apx_error_t apx_portConnectionEntry_addConnection(apx_portConnectionEntry_t *sel
             retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, (void*) tmp);
             if (retval == APX_NO_ERROR)
             {
-               retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portDataRef);
+               retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portRef);
             }
          }
       }
       else
       {
-         retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portDataRef);
+         retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portRef);
       }
 
       if (retval == APX_NO_ERROR)
@@ -141,9 +141,9 @@ apx_error_t apx_portConnectionEntry_addConnection(apx_portConnectionEntry_t *sel
 }
 
 /**
- * Adds port connect information to an entry
+ * Adds port disconnect information to an entry
  */
-apx_error_t apx_portConnectionEntry_removeConnection(apx_portConnectionEntry_t *self, apx_portRef_t *portDataRef)
+apx_error_t apx_portConnectorChangeEntry_removeConnection(apx_portConnectorChangeEntry_t *self, apx_portRef_t *portRef)
 {
    if (self != 0)
    {
@@ -154,7 +154,7 @@ apx_error_t apx_portConnectionEntry_removeConnection(apx_portConnectionEntry_t *
       }
       else if (self->count == 0)
       {
-         self->data.portRef = portDataRef;
+         self->data.portRef = portRef;
       }
       else if (self->count == -1)
       {
@@ -170,13 +170,13 @@ apx_error_t apx_portConnectionEntry_removeConnection(apx_portConnectionEntry_t *
             retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, (void*) tmp);
             if (retval == APX_NO_ERROR)
             {
-               retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portDataRef);
+               retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portRef);
             }
          }
       }
       else
       {
-         retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portDataRef);
+         retval = (apx_error_t) adt_ary_push( (adt_ary_t*) self->data.array, portRef);
       }
 
       if (retval == APX_NO_ERROR)
@@ -188,7 +188,7 @@ apx_error_t apx_portConnectionEntry_removeConnection(apx_portConnectionEntry_t *
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_portRef_t *apx_portConnectionEntry_get(apx_portConnectionEntry_t *self, int32_t index)
+apx_portRef_t *apx_portConnectorChangeEntry_get(apx_portConnectorChangeEntry_t *self, int32_t index)
 {
    apx_portRef_t *retval = (apx_portRef_t*) 0;
    if ( (self != 0) && (self->count != 0) && (index >= 0) )
@@ -211,7 +211,7 @@ apx_portRef_t *apx_portConnectionEntry_get(apx_portConnectionEntry_t *self, int3
    return retval;
 }
 
-int32_t apx_portConnectionEntry_count(apx_portConnectionEntry_t *self)
+int32_t apx_portConnectorChangeEntry_count(apx_portConnectorChangeEntry_t *self)
 {
    if (self != 0)
    {

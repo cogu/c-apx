@@ -58,7 +58,7 @@ void apx_portRef_create(apx_portRef_t *self, struct apx_nodeInstance_tag *nodeIn
 apx_portRef_t *apx_portRef_new(struct apx_nodeInstance_tag *nodeInstance, apx_uniquePortId_t portId, const apx_portDataProps_t *portDataProps);
 void apx_portRef_delete(apx_portRef_t *self);
 void apx_portRef_vdelete(void *arg);
-bool apx_portRef_isProvidePortRef(apx_portRef_t *self);
+bool apx_portRef_isProvidePort(apx_portRef_t *self);
 apx_portId_t apx_portRef_getPortId(apx_portRef_t *self);
 const apx_portDataProps_t *apx_portRef_getPortDataProps(apx_portRef_t *self);
 
