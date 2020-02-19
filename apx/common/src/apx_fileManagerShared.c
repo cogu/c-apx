@@ -223,7 +223,9 @@ void apx_fileManagerShared_freeAllocatedMemory(apx_fileManagerShared_t *self, ui
    {
       if (self->freeAllocatedMemory != 0)
       {
+#if APX_DEBUG_ENABLE
          printf("Freeing %d bytes\n", (int) len);
+#endif
          self->freeAllocatedMemory(self->arg, data, len);
       }
    }

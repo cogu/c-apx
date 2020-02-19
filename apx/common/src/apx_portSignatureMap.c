@@ -46,7 +46,10 @@ static apx_error_t apx_portSignatureMap_connectRequirePortsInternal(apx_portSign
 static apx_error_t apx_portSignatureMap_connectProvidePortsInternal(apx_portSignatureMap_t *self, apx_nodeInstance_t *nodeInstance, apx_nodeInfo_t *nodeInfo);
 static apx_error_t apx_portSignatureMap_insert(apx_portSignatureMap_t *self, const char *portSignature, apx_portRef_t *portRef);
 static apx_portSignatureMapEntry_t *apx_portSignatureMap_createNewEntry(apx_portSignatureMap_t *self, const char *portSignature);
-static apx_error_t apx_portSignatureMap_remove(apx_portSignatureMap_t *self, const char *portSignature);
+static apx_error_t apx_portSignatureMap_disconnectRequirePortsInternal(apx_portSignatureMap_t *self, apx_nodeInstance_t *nodeInstance, apx_nodeInfo_t *nodeInfo);
+static apx_error_t apx_portSignatureMap_disconnectProvidePortsInternal(apx_portSignatureMap_t *self, apx_nodeInstance_t *nodeInstance, apx_nodeInfo_t *nodeInfo);
+static apx_error_t apx_portSignatureMap_remove(apx_portSignatureMap_t *self, const char *portSignature, apx_portRef_t *portRef);
+static void apx_portSignatureMap_deleteEntry(apx_portSignatureMap_t *self, const char *portSignature);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -144,7 +147,40 @@ apx_error_t apx_portSignatureMap_connectRequirePorts(apx_portSignatureMap_t *sel
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_portSignatureMap_disconnectPorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
+
+apx_error_t apx_portSignatureMap_disconnectProvidePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+
+      apx_nodeInfo_t *nodeInfo = apx_nodeInstance_getNodeInfo(nodeInstance);
+      apx_error_t retval;
+      if (nodeInfo == 0)
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+      retval = apx_portSignatureMap_disconnectProvidePortsInternal(self, nodeInstance, nodeInfo);
+      return retval;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_portSignatureMap_disconnectRequirePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+
+      apx_nodeInfo_t *nodeInfo = apx_nodeInstance_getNodeInfo(nodeInstance);
+      apx_error_t retval;
+      if (nodeInfo == 0)
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+      retval = apx_portSignatureMap_disconnectRequirePortsInternal(self, nodeInstance, nodeInfo);
+      return retval;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
@@ -191,11 +227,12 @@ static apx_error_t apx_portSignatureMap_connectProvidePortsInternal(apx_portSign
 
 static apx_error_t apx_portSignatureMap_insert(apx_portSignatureMap_t *self, const char *portSignature, apx_portRef_t *portRef)
 {
-   apx_portSignatureMapEntry_t *entry = apx_portSignatureMap_find(self, portSignature);
+   apx_portSignatureMapEntry_t *entry;
    assert(self != 0);
    assert(portSignature != 0);
    assert(strlen(portSignature) > 0);
    assert(portRef != 0);
+   entry = apx_portSignatureMap_find(self, portSignature);
    if (entry == 0)
    {
       entry = apx_portSignatureMap_createNewEntry(self, portSignature);
@@ -228,7 +265,78 @@ static apx_portSignatureMapEntry_t *apx_portSignatureMap_createNewEntry(apx_port
    return entry;
 }
 
-static apx_error_t apx_portSignatureMap_remove(apx_portSignatureMap_t *self, const char *portSignature)
+static apx_error_t apx_portSignatureMap_disconnectRequirePortsInternal(apx_portSignatureMap_t *self, apx_nodeInstance_t *nodeInstance, apx_nodeInfo_t *nodeInfo)
+{
+   apx_portId_t portId;
+   apx_portCount_t numRequirePorts = apx_nodeInfo_getNumRequirePorts(nodeInfo);
+   for(portId = 0; portId < numRequirePorts; portId++)
+   {
+      const char *portSignature;
+      apx_error_t rc;
+      apx_portRef_t *portRef;
+      portSignature = apx_nodeInfo_getRequirePortSignature(nodeInfo, portId);
+      portRef = apx_nodeInstance_getRequirePortRef(nodeInstance, portId);
+      rc = apx_portSignatureMap_remove(self, portSignature, portRef);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+   }
+   return APX_NO_ERROR;
+}
+
+static apx_error_t apx_portSignatureMap_disconnectProvidePortsInternal(apx_portSignatureMap_t *self, apx_nodeInstance_t *nodeInstance, apx_nodeInfo_t *nodeInfo)
+{
+   apx_portId_t portId;
+   apx_portCount_t numProvidePorts = apx_nodeInfo_getNumProvidePorts(nodeInfo);
+   for(portId = 0; portId < numProvidePorts; portId++)
+   {
+      const char *portSignature;
+      apx_error_t rc;
+      apx_portRef_t *portRef;
+      portSignature = apx_nodeInfo_getProvidePortSignature(nodeInfo, portId);
+      portRef = apx_nodeInstance_getProvidePortRef(nodeInstance, portId);
+      rc = apx_portSignatureMap_remove(self, portSignature, portRef);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+   }
+   return APX_NO_ERROR;
+}
+
+
+static apx_error_t apx_portSignatureMap_remove(apx_portSignatureMap_t *self, const char *portSignature, apx_portRef_t *portRef)
+{
+   apx_portSignatureMapEntry_t *entry;
+   assert(self != 0);
+   assert(portSignature != 0);
+   assert(strlen(portSignature) > 0);
+   assert(portRef != 0);
+   entry = apx_portSignatureMap_find(self, portSignature);
+   if (entry == 0)
+   {
+      return APX_NOT_FOUND_ERROR;
+   }
+   assert(entry != 0);
+   if (apx_portRef_isProvidePort(portRef))
+   {
+      apx_portSignatureMapEntry_detachProvidePort(entry, portRef);
+      apx_portSignatureMapEntry_notifyRequirePortsAboutProvidePortChange(entry, portRef, APX_PORT_DISCONNECTED_EVENT);
+   }
+   else
+   {
+      apx_portSignatureMapEntry_detachRequirePort(entry, portRef);
+      apx_portSignatureMapEntry_notifyProvidePortsAboutRequirePortChange(entry, portRef, APX_PORT_DISCONNECTED_EVENT);
+   }
+   if (apx_portSignatureMapEntry_isEmpty(entry))
+   {
+      apx_portSignatureMap_deleteEntry(self, portSignature);
+   }
+   return APX_NO_ERROR;
+}
+
+static void apx_portSignatureMap_deleteEntry(apx_portSignatureMap_t *self, const char *portSignature)
 {
    if ( (self != 0) && (portSignature != 0) )
    {
@@ -236,9 +344,6 @@ static apx_error_t apx_portSignatureMap_remove(apx_portSignatureMap_t *self, con
       if (entry != 0)
       {
          apx_portSignatureMapEntry_delete(entry);
-         return APX_NO_ERROR;
       }
-      return APX_NOT_FOUND_ERROR;
    }
-   return APX_INVALID_ARGUMENT_ERROR;
 }

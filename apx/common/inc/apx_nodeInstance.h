@@ -118,8 +118,8 @@ apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, cons
 /********** Port Connection Changes API  ************/
 apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate);
 apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate);
-void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self);
-void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self);
+void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self, bool releaseMemory);
+void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self, bool releaseMemory);
 
 
 #endif //APX_NODE_INSTANCE_H
