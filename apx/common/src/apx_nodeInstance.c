@@ -104,6 +104,14 @@ void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
       {
          apx_portTriggerList_delete(self->portTriggerList);
       }
+      if (self->requirePortChanges != 0)
+      {
+         apx_portConnectorChangeTable_delete(self->requirePortChanges);
+      }
+      if (self->providePortChanges != 0)
+      {
+         apx_portConnectorChangeTable_delete(self->providePortChanges);
+      }
    }
 }
 
@@ -665,11 +673,11 @@ apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, cons
 }
 
 /********** Port Connection Changes API  ************/
-apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self)
+apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate)
 {
    if (self != 0)
    {
-      if (self->requirePortChanges == 0)
+      if ( (self->requirePortChanges == 0) && (autoCreate) )
       {
          assert(self->nodeInfo != 0);
          self->requirePortChanges = apx_portConnectorChangeTable_new(apx_nodeInfo_getNumRequirePorts(self->nodeInfo));
@@ -679,12 +687,12 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(
    return (apx_portConnectorChangeTable_t*) 0;
 }
 
-apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self)
+apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate)
 {
    {
       if (self != 0)
       {
-         if (self->providePortChanges == 0)
+         if ( (self->providePortChanges == 0) && (autoCreate))
          {
             assert(self->nodeInfo != 0);
             self->providePortChanges = apx_portConnectorChangeTable_new(apx_nodeInfo_getNumProvidePorts(self->nodeInfo));

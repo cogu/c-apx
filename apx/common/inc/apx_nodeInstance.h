@@ -116,8 +116,8 @@ apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_
 apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
 
 /********** Port Connection Changes API  ************/
-apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self);
-apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self);
+apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate);
+apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate);
 void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self);
 void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self);
 

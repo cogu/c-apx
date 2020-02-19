@@ -40,7 +40,6 @@
 #include "apx_nodeData.h"
 #include "rmf.h"
 #include "apx_server.h"
-#include "apx_routingTable.h"
 #include "apx_portConnectorChangeTable.h"
 #include "apx_util.h"
 #ifdef MEM_LEAK_CHECK

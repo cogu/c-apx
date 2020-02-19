@@ -159,7 +159,7 @@ void apx_server_closeConnection(apx_server_t *self, apx_serverConnectionBase_t *
       apx_connectionManager_closeConnection(&self->connectionManager, serverConnection);
    }
 }
-
+/*
 apx_routingTable_t* apx_server_getRoutingTable(apx_server_t *self)
 {
    if (self != 0)
@@ -168,6 +168,7 @@ apx_routingTable_t* apx_server_getRoutingTable(apx_server_t *self)
    }
    return (apx_routingTable_t*) 0;
 }
+*/
 
 apx_error_t apx_server_addExtension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
 {
