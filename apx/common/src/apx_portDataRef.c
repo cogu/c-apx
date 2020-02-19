@@ -83,7 +83,7 @@ void apx_portRef_vdelete(void *arg)
    apx_portRef_delete((apx_portRef_t*) arg);
 }
 
-bool apx_portRef_isProvidePortRef(apx_portRef_t *self)
+bool apx_portRef_isProvidePort(apx_portRef_t *self)
 {
    return ( (self != 0) && ( (self->portId & APX_PORT_ID_PROVIDE_PORT) != 0u ) );
 }

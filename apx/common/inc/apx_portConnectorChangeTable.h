@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_portConnectionTable.h
+* \file      apx_portConnectorChangeTable.h
 * \author    Conny Gustafsson
 * \date      2019-01-31
-* \brief     A list of apx_portConnectionEntries
+* \brief     A list of apx_portConnectionChangeEntry_t. Used to track changes in port connectors on one side of a node (Require or Provide)
 *
 * Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -23,39 +23,39 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_PORT_CONNECTION_TABLE_H
-#define APX_PORT_CONNECTION_TABLE_H
+#ifndef APX_PORT_CONNECTION_CHANGE_TABLE_H
+#define APX_PORT_CONNECTION_CHANGE_TABLE_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_error.h"
-#include "apx_portConnectionTable.h"
-#include "apx_portConnectionEntry.h"
+#include "apx_portConnectorChangeTable.h"
+#include "apx_portConnectorChangeEntry.h"
 #include "adt_ary.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_portConnectionTable_tag
+typedef struct apx_portConnectorChangeTable_tag
 {
-   apx_portConnectionEntry_t *connections; //array of apx_portConnectionEntry_t (created using single malloc)
-   int32_t numPorts;
-} apx_portConnectionTable_t;
+   apx_portConnectorChangeEntry_t *entries; //array of apx_portConnectionChangeEntry_t (created using single malloc)
+   int32_t numPorts; //This must match nodeInfo->numRequirePorts when this is used for requirePorts or nodeInfo->numProvidePorts when used for providePorts
+} apx_portConnectorChangeTable_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_portConnectionTable_create(apx_portConnectionTable_t *self, int32_t numPorts);
-void apx_portConnectionTable_destroy(apx_portConnectionTable_t *self);
-apx_portConnectionTable_t *apx_portConnectionTable_new(int32_t numPorts);
-void apx_portConnectionTable_delete(apx_portConnectionTable_t *self);
+apx_error_t apx_portConnectorChangeTable_create(apx_portConnectorChangeTable_t *self, int32_t numPorts);
+void apx_portConnectorChangeTable_destroy(apx_portConnectorChangeTable_t *self);
+apx_portConnectorChangeTable_t *apx_portConnectorChangeTable_new(int32_t numPorts);
+void apx_portConnectorChangeTable_delete(apx_portConnectorChangeTable_t *self);
 
-apx_error_t apx_portConnectionTable_connect(apx_portConnectionTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef);
-apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef);
-apx_portConnectionEntry_t *apx_portConnectionTable_getEntry(apx_portConnectionTable_t *self, apx_portId_t portId);
-apx_portRef_t *apx_portConnectionTable_getRef(apx_portConnectionTable_t *self, apx_portId_t portId, int32_t index);
-int32_t apx_portConnectionTable_count(apx_portConnectionTable_t *self, apx_portId_t portId);
+apx_error_t apx_portConnectorChangeTable_connect(apx_portConnectorChangeTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef);
+apx_error_t apx_portConnectorChangeTable_disconnect(apx_portConnectorChangeTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef);
+apx_portConnectorChangeEntry_t *apx_portConnectorChangeTable_getEntry(apx_portConnectorChangeTable_t *self, apx_portId_t portId);
+apx_portRef_t *apx_portConnectorChangeTable_getRef(apx_portConnectorChangeTable_t *self, apx_portId_t portId, int32_t index);
+int32_t apx_portConnectorChangeTable_count(apx_portConnectorChangeTable_t *self, apx_portId_t portId);
 
 
-#endif //APX_PORT_CONNECTION_TABLE_H
+#endif //APX_PORT_CONNECTION_CHANGE_TABLE_H

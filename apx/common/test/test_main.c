@@ -30,8 +30,8 @@ CuSuite* testSuite_apx_nodeInfo(void);
 CuSuite* testSuite_apx_nodeInstance(void);
 CuSuite* testSuite_apx_parser(void);
 CuSuite* testsuite_apx_port(void);
-CuSuite* testSuite_apx_portConnectionEntry(void);
-CuSuite* testSuite_apx_portConnectionTable(void);
+CuSuite* testSuite_apx_portConnectorChangeEntry(void);
+CuSuite* testSuite_apx_portConnectorChangeTable(void);
 //CuSuite* testSuite_apx_portDataMap(void);
 CuSuite* testSuite_apx_portTriggerList(void);
 CuSuite* testSuite_apx_routingTable(void);
@@ -94,8 +94,8 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_fileManager());
 
    //Routing Tables
-   CuSuiteAddSuite(suite, testSuite_apx_portConnectionEntry());
-   CuSuiteAddSuite(suite, testSuite_apx_portConnectionTable());
+   CuSuiteAddSuite(suite, testSuite_apx_portConnectorChangeEntry());
+   CuSuiteAddSuite(suite, testSuite_apx_portConnectorChangeTable());
 //   CuSuiteAddSuite(suite, testSuite_apx_portTriggerList());
 //   CuSuiteAddSuite(suite, testSuite_apx_routingTable());
 

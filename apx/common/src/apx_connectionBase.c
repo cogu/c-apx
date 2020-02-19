@@ -34,7 +34,7 @@
 #include "apx_portDataRef.h"
 #include "apx_nodeData.h"
 #include "apx_logging.h"
-#include "apx_portConnectionTable.h"
+#include "apx_portConnectorChangeTable.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -560,7 +560,7 @@ void apx_connectionBase_defaultEventHandler(apx_connectionBase_t *self, apx_even
 {
    if ( (self != 0) && (event != 0) )
    {
-      apx_portConnectionTable_t *connectionTable;
+      apx_portConnectorChangeTable_t *connectorChanges;
       apx_nodeData_t *nodeData;
 
 

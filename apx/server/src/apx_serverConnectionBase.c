@@ -41,7 +41,7 @@
 #include "rmf.h"
 #include "apx_server.h"
 #include "apx_routingTable.h"
-#include "apx_portConnectionTable.h"
+#include "apx_portConnectorChangeTable.h"
 #include "apx_util.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -166,7 +166,7 @@ void apx_serverConnectionBase_defaultEventHandler(void *arg, apx_event_t *event)
    if (self != 0)
    {
       apx_nodeData_t *nodeData;
-      apx_portConnectionTable_t *portConnectionTable;
+      apx_portConnectorChangeTable_t *portConnectionTable;
       //apx_portDataMap_t *portDataMap;
       apx_connectionBase_t *baseConnection;
       apx_fileInfo_t *fileInfo;

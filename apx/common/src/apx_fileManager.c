@@ -33,7 +33,6 @@
 #include "apx_portDataRef.h"
 #include "apx_nodeData.h"
 
-#include "apx_portConnectionTable.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

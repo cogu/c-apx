@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      testsuite_apx_portConnectionTable.c
+* \file      testsuite_apx_portConnectorChangeTable.c
 * \author    Conny Gustafsson
 * \date      2019-01-31
 * \brief     Description
@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include "CuTest.h"
 #include <stdio.h>
-#include "apx_portConnectionTable.h"
+#include "apx_portConnectorChangeTable.h"
 #include "apx_nodeManager.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -42,10 +42,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_portConnectionTable_create(CuTest *tc);
-static void test_apx_portConnectionTable_connectVehicleSpeedPorts(CuTest *tc);
-static void test_apx_portConnectionTable_disconnectRequirePorts(CuTest *tc);
-static void test_apx_portConnectionTable_disconnectProvidePort(CuTest *tc);
+static void test_apx_portConnectorChangeTable_create(CuTest *tc);
+static void test_apx_portConnectorChangeTable_connectVehicleSpeedPorts(CuTest *tc);
+static void test_apx_portConnectorChangeTable_disconnectRequirePorts(CuTest *tc);
+static void test_apx_portConnectorChangeTable_disconnectProvidePort(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -70,14 +70,14 @@ static const char *m_node_text3 =
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testSuite_apx_portConnectionTable(void)
+CuSuite* testSuite_apx_portConnectorChangeTable(void)
 {
    CuSuite* suite = CuSuiteNew();
 
-   SUITE_ADD_TEST(suite, test_apx_portConnectionTable_create);
-   SUITE_ADD_TEST(suite, test_apx_portConnectionTable_connectVehicleSpeedPorts);
-   SUITE_ADD_TEST(suite, test_apx_portConnectionTable_disconnectRequirePorts);
-   SUITE_ADD_TEST(suite, test_apx_portConnectionTable_disconnectProvidePort);
+   SUITE_ADD_TEST(suite, test_apx_portConnectorChangeTable_create);
+   SUITE_ADD_TEST(suite, test_apx_portConnectorChangeTable_connectVehicleSpeedPorts);
+   SUITE_ADD_TEST(suite, test_apx_portConnectorChangeTable_disconnectRequirePorts);
+   SUITE_ADD_TEST(suite, test_apx_portConnectorChangeTable_disconnectProvidePort);
 
    return suite;
 }
@@ -85,19 +85,19 @@ CuSuite* testSuite_apx_portConnectionTable(void)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_portConnectionTable_create(CuTest *tc)
+static void test_apx_portConnectorChangeTable_create(CuTest *tc)
 {
-   apx_portConnectionTable_t *table = apx_portConnectionTable_new(3);
+   apx_portConnectorChangeTable_t *table = apx_portConnectorChangeTable_new(3);
 
    CuAssertPtrNotNull(tc, table);
-   CuAssertPtrNotNull(tc, table->connections);
+   CuAssertPtrNotNull(tc, table->entries);
    CuAssertIntEquals(tc, 3, table->numPorts);
-   apx_portConnectionTable_delete(table);
+   apx_portConnectorChangeTable_delete(table);
 }
 
-static void test_apx_portConnectionTable_connectVehicleSpeedPorts(CuTest *tc)
+static void test_apx_portConnectorChangeTable_connectVehicleSpeedPorts(CuTest *tc)
 {
-   apx_portConnectionTable_t *portConnections;
+   apx_portConnectorChangeTable_t *portConnections;
    apx_nodeManager_t *nodeManager;
    apx_nodeInstance_t *nodeInstance1;
    apx_nodeInstance_t *nodeInstance2;
@@ -115,25 +115,25 @@ static void test_apx_portConnectionTable_connectVehicleSpeedPorts(CuTest *tc)
    nodeInstance2 = apx_nodeManager_getLastAttached(nodeManager);
    CuAssertPtrNotNull(tc, nodeInstance2);
 
-   portConnections = apx_portConnectionTable_new(2);
+   portConnections = apx_portConnectorChangeTable_new(2);
    CuAssertPtrNotNull(tc, portConnections);
 
    //create a connection between nodeInstance1.P[1] and nodeInstance1.R[0]. nodeInstance1 is local node.
    localPortRef = apx_nodeInstance_getProvidePortRef(nodeInstance1, 1); // nodeInstance1.P[1]
    remotePortRef = apx_nodeInstance_getRequirePortRef(nodeInstance2, 0); //nodeInstance1.R[0]
-   CuAssertIntEquals(tc, 0, apx_portConnectionTable_count(portConnections, 0));
-   CuAssertIntEquals(tc, 0, apx_portConnectionTable_count(portConnections, 1));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectionTable_connect(portConnections, localPortRef, remotePortRef));
-   CuAssertIntEquals(tc, 0, apx_portConnectionTable_count(portConnections, 0));
-   CuAssertIntEquals(tc, 1, apx_portConnectionTable_count(portConnections, 1));
+   CuAssertIntEquals(tc, 0, apx_portConnectorChangeTable_count(portConnections, 0));
+   CuAssertIntEquals(tc, 0, apx_portConnectorChangeTable_count(portConnections, 1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectorChangeTable_connect(portConnections, localPortRef, remotePortRef));
+   CuAssertIntEquals(tc, 0, apx_portConnectorChangeTable_count(portConnections, 0));
+   CuAssertIntEquals(tc, 1, apx_portConnectorChangeTable_count(portConnections, 1));
 
    apx_nodeManager_delete(nodeManager);
-   apx_portConnectionTable_delete(portConnections);
+   apx_portConnectorChangeTable_delete(portConnections);
 }
 
-static void test_apx_portConnectionTable_disconnectRequirePorts(CuTest *tc)
+static void test_apx_portConnectorChangeTable_disconnectRequirePorts(CuTest *tc)
 {
-   apx_portConnectionTable_t *nodeConnections;
+   apx_portConnectorChangeTable_t *nodeConnections;
    apx_nodeManager_t *nodeManager;
    apx_nodeInstance_t *nodeInstance1;
    apx_nodeInstance_t *nodeInstance2;
@@ -157,7 +157,7 @@ static void test_apx_portConnectionTable_disconnectRequirePorts(CuTest *tc)
    nodeInstance3 = apx_nodeManager_getLastAttached(nodeManager);
    CuAssertPtrNotNull(tc, nodeInstance3);
 
-   nodeConnections = apx_portConnectionTable_new(2);
+   nodeConnections = apx_portConnectorChangeTable_new(2);
    CuAssertPtrNotNull(tc, nodeConnections);
 
    providePortRef = apx_nodeInstance_getProvidePortRef(nodeInstance1, 1); // nodeInstance1.P[1]
@@ -166,22 +166,22 @@ static void test_apx_portConnectionTable_disconnectRequirePorts(CuTest *tc)
 
 
    //disconnect nodeData2.R[0] and nodeData3.R[0] from nodeData1.P[1]
-   CuAssertIntEquals(tc, 0, apx_portConnectionTable_count(nodeConnections, 0));
-   CuAssertIntEquals(tc, 0, apx_portConnectionTable_count(nodeConnections, 1));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectionTable_disconnect(nodeConnections, providePortRef, requirePortRef1));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectionTable_disconnect(nodeConnections, providePortRef, requirePortRef2));
-   CuAssertIntEquals(tc, 0, apx_portConnectionTable_count(nodeConnections, 0));
-   CuAssertIntEquals(tc, -2, apx_portConnectionTable_count(nodeConnections, 1));
+   CuAssertIntEquals(tc, 0, apx_portConnectorChangeTable_count(nodeConnections, 0));
+   CuAssertIntEquals(tc, 0, apx_portConnectorChangeTable_count(nodeConnections, 1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectorChangeTable_disconnect(nodeConnections, providePortRef, requirePortRef1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectorChangeTable_disconnect(nodeConnections, providePortRef, requirePortRef2));
+   CuAssertIntEquals(tc, 0, apx_portConnectorChangeTable_count(nodeConnections, 0));
+   CuAssertIntEquals(tc, -2, apx_portConnectorChangeTable_count(nodeConnections, 1));
 
    apx_nodeManager_delete(nodeManager);
-   apx_portConnectionTable_delete(nodeConnections);
+   apx_portConnectorChangeTable_delete(nodeConnections);
 }
 
 
-static void test_apx_portConnectionTable_disconnectProvidePort(CuTest *tc)
+static void test_apx_portConnectorChangeTable_disconnectProvidePort(CuTest *tc)
 {
-   apx_portConnectionTable_t *node2RequireConnections;
-   apx_portConnectionTable_t *node3RequireConnections;
+   apx_portConnectorChangeTable_t *node2RequireConnections;
+   apx_portConnectorChangeTable_t *node3RequireConnections;
    apx_nodeManager_t *nodeManager;
    apx_nodeInstance_t *nodeInstance1;
    apx_nodeInstance_t *nodeInstance2;
@@ -204,8 +204,8 @@ static void test_apx_portConnectionTable_disconnectProvidePort(CuTest *tc)
    nodeInstance3 = apx_nodeManager_getLastAttached(nodeManager);
    CuAssertPtrNotNull(tc, nodeInstance3);
 
-   node2RequireConnections = apx_portConnectionTable_new(1);
-   node3RequireConnections = apx_portConnectionTable_new(1);
+   node2RequireConnections = apx_portConnectorChangeTable_new(1);
+   node3RequireConnections = apx_portConnectorChangeTable_new(1);
    CuAssertPtrNotNull(tc, node2RequireConnections);
    CuAssertPtrNotNull(tc, node3RequireConnections);
 
@@ -213,15 +213,15 @@ static void test_apx_portConnectionTable_disconnectProvidePort(CuTest *tc)
    requirePortRef1 = apx_nodeInstance_getRequirePortRef(nodeInstance2, 0); //nodeInstance2.R[0]
    requirePortRef2 = apx_nodeInstance_getRequirePortRef(nodeInstance3, 0); //nodeInstance3.R[0]
    //disconnect nodeInstance2.R[0] and nodeInstance3.R[0] from nodeInstance1.P[1]
-   CuAssertIntEquals(tc, 0, apx_portConnectionTable_count(node2RequireConnections, 0));
-   CuAssertIntEquals(tc, 0, apx_portConnectionTable_count(node3RequireConnections, 0));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectionTable_disconnect(node2RequireConnections, requirePortRef1, providePortRef));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectionTable_disconnect(node3RequireConnections, requirePortRef2, providePortRef));
-   CuAssertIntEquals(tc, -1, apx_portConnectionTable_count(node2RequireConnections, 0));
-   CuAssertIntEquals(tc, -1, apx_portConnectionTable_count(node3RequireConnections, 0));
+   CuAssertIntEquals(tc, 0, apx_portConnectorChangeTable_count(node2RequireConnections, 0));
+   CuAssertIntEquals(tc, 0, apx_portConnectorChangeTable_count(node3RequireConnections, 0));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectorChangeTable_disconnect(node2RequireConnections, requirePortRef1, providePortRef));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_portConnectorChangeTable_disconnect(node3RequireConnections, requirePortRef2, providePortRef));
+   CuAssertIntEquals(tc, -1, apx_portConnectorChangeTable_count(node2RequireConnections, 0));
+   CuAssertIntEquals(tc, -1, apx_portConnectorChangeTable_count(node3RequireConnections, 0));
 
    apx_nodeManager_delete(nodeManager);
-   apx_portConnectionTable_delete(node2RequireConnections);
-   apx_portConnectionTable_delete(node3RequireConnections);
+   apx_portConnectorChangeTable_delete(node2RequireConnections);
+   apx_portConnectorChangeTable_delete(node3RequireConnections);
 }
 

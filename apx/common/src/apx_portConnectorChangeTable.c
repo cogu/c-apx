@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portConnectionTable.c
+* \file      apx_portConnectorChangeTable.c
 * \author    Conny Gustafsson
 * \date      2019-01-31
 * \brief     A list of apx_portConnectionEntries
@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_portConnectionTable.h"
+#include "apx_portConnectorChangeTable.h"
 #include <malloc.h>
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -47,45 +47,45 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_portConnectionTable_create(apx_portConnectionTable_t *self, int32_t numPorts)
+apx_error_t apx_portConnectorChangeTable_create(apx_portConnectorChangeTable_t *self, int32_t numPorts)
 {
    if ( (self != 0) && (numPorts > 0) )
    {
       int32_t i;
       self->numPorts = numPorts;
-      self->connections = (apx_portConnectionEntry_t*) malloc(sizeof(apx_portConnectionEntry_t)*numPorts);
-      if (self->connections == 0)
+      self->entries = (apx_portConnectorChangeEntry_t*) malloc(sizeof(apx_portConnectorChangeEntry_t)*numPorts);
+      if (self->entries == 0)
       {
          return APX_MEM_ERROR;
       }
       for (i=0; i<self->numPorts; i++)
       {
-         apx_portConnectionEntry_create(&self->connections[i]);
+         apx_portConnectorChangeEntry_create(&self->entries[i]);
       }
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_portConnectionTable_destroy(apx_portConnectionTable_t *self)
+void apx_portConnectorChangeTable_destroy(apx_portConnectorChangeTable_t *self)
 {
-   if ( (self != 0) && (self->connections != 0))
+   if ( (self != 0) && (self->entries != 0))
    {
       int32_t i;
       for (i=0; i<self->numPorts; i++)
       {
-         apx_portConnectionEntry_destroy(&self->connections[i]);
+         apx_portConnectorChangeEntry_destroy(&self->entries[i]);
       }
-      free(self->connections);
+      free(self->entries);
    }
 }
 
-apx_portConnectionTable_t *apx_portConnectionTable_new(int32_t numPorts)
+apx_portConnectorChangeTable_t *apx_portConnectorChangeTable_new(int32_t numPorts)
 {
-   apx_portConnectionTable_t *self = (apx_portConnectionTable_t*) malloc(sizeof(apx_portConnectionTable_t));
+   apx_portConnectorChangeTable_t *self = (apx_portConnectorChangeTable_t*) malloc(sizeof(apx_portConnectorChangeTable_t));
    if (self != 0)
    {
-      apx_error_t errorCode = apx_portConnectionTable_create(self, numPorts);
+      apx_error_t errorCode = apx_portConnectorChangeTable_create(self, numPorts);
       if (errorCode != APX_NO_ERROR)
       {
          free(self);
@@ -95,64 +95,64 @@ apx_portConnectionTable_t *apx_portConnectionTable_new(int32_t numPorts)
    return self;
 }
 
-void apx_portConnectionTable_delete(apx_portConnectionTable_t *self)
+void apx_portConnectorChangeTable_delete(apx_portConnectorChangeTable_t *self)
 {
    if (self != 0)
    {
-      apx_portConnectionTable_destroy(self);
+      apx_portConnectorChangeTable_destroy(self);
       free(self);
    }
 }
 
-apx_error_t apx_portConnectionTable_connect(apx_portConnectionTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef)
+apx_error_t apx_portConnectorChangeTable_connect(apx_portConnectorChangeTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef)
 {
    if ( (self != 0) && (localRef != 0) && (remoteRef != 0) )
    {
       apx_portId_t portId = apx_portRef_getPortId(localRef);
       if ( (portId >= 0) && (portId < self->numPorts) )
       {
-         return apx_portConnectionEntry_addConnection(&self->connections[portId], remoteRef);
+         return apx_portConnectorChangeEntry_addConnection(&self->entries[portId], remoteRef);
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_portConnectionTable_disconnect(apx_portConnectionTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef)
+apx_error_t apx_portConnectorChangeTable_disconnect(apx_portConnectorChangeTable_t *self, apx_portRef_t *localRef, apx_portRef_t *remoteRef)
 {
    if ( (self != 0) && (localRef != 0) && (remoteRef != 0) )
    {
       apx_portId_t portId = apx_portRef_getPortId(localRef);
       if ( (portId >= 0) && (portId < self->numPorts) )
       {
-         return apx_portConnectionEntry_removeConnection(&self->connections[portId], remoteRef);
+         return apx_portConnectorChangeEntry_removeConnection(&self->entries[portId], remoteRef);
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_portConnectionEntry_t *apx_portConnectionTable_getEntry(apx_portConnectionTable_t *self, apx_portId_t portId)
+apx_portConnectorChangeEntry_t *apx_portConnectorChangeTable_getEntry(apx_portConnectorChangeTable_t *self, apx_portId_t portId)
 {
    if ( (self != 0) && (portId >= 0) && (portId < self->numPorts) )
    {
-      return &self->connections[portId];
+      return &self->entries[portId];
    }
-   return (apx_portConnectionEntry_t*) 0;
+   return (apx_portConnectorChangeEntry_t*) 0;
 }
 
-apx_portRef_t *apx_portConnectionTable_getRef(apx_portConnectionTable_t *self, apx_portId_t portId, int32_t index)
+apx_portRef_t *apx_portConnectorChangeTable_getRef(apx_portConnectorChangeTable_t *self, apx_portId_t portId, int32_t index)
 {
    if ( (self != 0) && (portId >= 0) && (portId < self->numPorts) )
    {
-      return apx_portConnectionEntry_get(&self->connections[portId], index);
+      return apx_portConnectorChangeEntry_get(&self->entries[portId], index);
    }
    return (apx_portRef_t*) 0;
 }
 
-int32_t apx_portConnectionTable_count(apx_portConnectionTable_t *self, apx_portId_t portId)
+int32_t apx_portConnectorChangeTable_count(apx_portConnectorChangeTable_t *self, apx_portId_t portId)
 {
    if ( (self != 0) && (portId >= 0) && (portId < self->numPorts) )
    {
-      return apx_portConnectionEntry_count(&self->connections[portId]);
+      return apx_portConnectorChangeEntry_count(&self->entries[portId]);
    }
    return 0;
 }
