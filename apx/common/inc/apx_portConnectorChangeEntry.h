@@ -54,6 +54,8 @@ typedef struct apx_portConnectorChangeEntry_tag
    //All references to apx_portRef_t are weak references
 } apx_portConnectorChangeEntry_t;
 
+typedef apx_error_t (apx_portConnectorChangeEntry_actionFunc)(apx_portConnectorChangeEntry_t *self, apx_portRef_t *portRef);
+
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////

@@ -27,7 +27,6 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_connectionManager.h"
-#include "apx_routingTable.h"
 #include <stdio.h>
 #include <errno.h>
 #ifdef MEM_LEAK_CHECK
