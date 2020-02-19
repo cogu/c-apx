@@ -57,7 +57,8 @@ apx_portSignatureMapEntry_t *apx_portSignatureMap_find(apx_portSignatureMap_t *s
 int32_t apx_portSignatureMap_length(apx_portSignatureMap_t *self);
 apx_error_t apx_portSignatureMap_connectProvidePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
 apx_error_t apx_portSignatureMap_connectRequirePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
-apx_error_t apx_portSignatureMap_disconnectPorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
+apx_error_t apx_portSignatureMap_disconnectProvidePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
+apx_error_t apx_portSignatureMap_disconnectRequirePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
 
 
 #endif //APX_PORT_SIGNATURE_MAP_H

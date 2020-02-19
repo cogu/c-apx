@@ -707,10 +707,14 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(
  * This clears the internal pointer. This implicitly means the caller of this function has now taken ownership of
  * the data structure and is now responsible for its memory management.
  */
-void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self)
+void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self, bool releaseMemory)
 {
    if (self != 0)
    {
+      if (releaseMemory && (self->requirePortChanges != 0))
+      {
+         apx_portConnectorChangeTable_delete(self->requirePortChanges);
+      }
       self->requirePortChanges = (apx_portConnectorChangeTable_t*) 0;
    }
 }
@@ -719,10 +723,14 @@ void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self)
  * This clears the internal pointer. This implicitly means the caller of this function has now taken ownership of
  * the data structure and is now responsible for its memory management.
  */
-void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self)
+void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self, bool releaseMemory)
 {
    if (self != 0)
    {
+      if (releaseMemory && (self->providePortChanges != 0))
+      {
+         apx_portConnectorChangeTable_delete(self->providePortChanges);
+      }
       self->providePortChanges = (apx_portConnectorChangeTable_t*) 0;
    }
 }
