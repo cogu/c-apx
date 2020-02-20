@@ -151,8 +151,8 @@ static void apx_serverTextLog_registerServerListener(apx_serverTextLog_t *self)
    apx_serverEventListener_t eventListener;
    memset(&eventListener, 0, sizeof(apx_serverEventListener_t));
    eventListener.arg = (void*) self;
-   eventListener.serverConnect2 = apx_serverTextLog_onConnected;
-   eventListener.serverDisconnect2 = apx_serverTextLog_onDisconnected;
+   eventListener.serverConnect1 = apx_serverTextLog_onConnected;
+   eventListener.serverDisconnect1 = apx_serverTextLog_onDisconnected;
    //eventListener.logEvent = apx_serverTextLog_onLogEvent;
    apx_server_registerEventListener(self->server, &eventListener);
 }

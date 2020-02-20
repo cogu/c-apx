@@ -56,15 +56,15 @@ typedef void (*remoteFileWriteFuncType1)(void *arg, struct apx_file_tag *remoteF
 typedef struct apx_clientEventListener_tag
 {
    void *arg;
-   void (*clientConnect2)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);
-   void (*clientDisconnect2)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);
+   void (*clientConnect1)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);
+   void (*clientDisconnect1)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);
 } apx_clientEventListener_t;
 
 typedef struct apx_serverEventListener_tag
 {
    void *arg;
-   void (*serverConnect2)(void *arg, struct apx_serverConnectionBase_tag *connection);
-   void (*serverDisconnect2)(void *arg, struct apx_serverConnectionBase_tag *connection);
+   void (*serverConnect1)(void *arg, struct apx_serverConnectionBase_tag *connection);
+   void (*serverDisconnect1)(void *arg, struct apx_serverConnectionBase_tag *connection);
 } apx_serverEventListener_t;
 
 typedef struct apx_connectionEventListener_tag

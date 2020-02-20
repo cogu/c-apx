@@ -91,6 +91,7 @@ apx_error_t apx_client_create(apx_client_t *self)
       //The node manager in this class is the true manager of the nodeInstances. Therefore we set useWeakRef argument to false.
       self->nodeManager = apx_nodeManager_new(APX_CLIENT_MODE, false);
       SPINLOCK_INIT(self->lock);
+      SPINLOCK_INIT(self->eventListenerLock);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -114,6 +115,7 @@ void apx_client_destroy(apx_client_t *self)
          apx_parser_delete(self->parser);
       }
       SPINLOCK_DESTROY(self->lock);
+      SPINLOCK_DESTROY(self->eventListenerLock);
    }
 }
 
@@ -227,9 +229,9 @@ void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEven
       void *handle = (void*) apx_clientEventListener_clone(listener);
       if (handle != 0)
       {
-         SPINLOCK_ENTER(self->lock);
+         SPINLOCK_ENTER(self->eventListenerLock);
          adt_list_insert(self->eventListeners, handle);
-         SPINLOCK_LEAVE(self->lock);
+         SPINLOCK_LEAVE(self->eventListenerLock);
       }
       return handle;
    }
@@ -242,9 +244,9 @@ void apx_client_unregisterEventListener(apx_client_t *self, void *handle)
    if ( (self != 0) && (handle != 0) )
    {
       bool deleteSuccess = false;
-      SPINLOCK_ENTER(self->lock);
+      SPINLOCK_ENTER(self->eventListenerLock);
       deleteSuccess = adt_list_remove(self->eventListeners, handle);
-      SPINLOCK_LEAVE(self->lock);
+      SPINLOCK_LEAVE(self->eventListenerLock);
       if (deleteSuccess)
       {
          apx_clientEventListener_vdelete(handle);
@@ -270,9 +272,9 @@ int32_t apx_client_getNumEventListeners(apx_client_t *self)
    if (self != 0)
    {
       int32_t retval;
-      SPINLOCK_ENTER(self->lock);
+      SPINLOCK_ENTER(self->eventListenerLock);
       retval = adt_list_length(self->eventListeners);
-      SPINLOCK_LEAVE(self->lock);
+      SPINLOCK_LEAVE(self->eventListenerLock);
       return retval;
    }
    return -1;
@@ -352,15 +354,6 @@ void apx_clientInternal_onDisconnect(apx_client_t *self, apx_clientConnectionBas
       apx_client_triggerDisconnectedEventOnListeners(self, connection);
    }
 }
-/*
-void apx_clientInternal_onNodeComplete(apx_client_t *self, apx_nodeData_t *nodeData)
-{
-   if ( (self != 0) && (nodeData != 0) )
-   {
-      apx_client_triggerNodeCompleteEvent(self, nodeData);
-   }
-}
-*/
 
 /////////////////////// END CLIENT INTERNAL API /////////////////////
 
@@ -390,46 +383,35 @@ void apx_client_run(apx_client_t *self)
 //////////////////////////////////////////////////////////////////////////////
 static void apx_client_triggerConnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection)
 {
+   SPINLOCK_ENTER(self->eventListenerLock);
    adt_list_elem_t *iter = adt_list_iter_first(self->eventListeners);
    while(iter != 0)
    {
       apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->clientConnect2 != 0))
+      if ( (listener != 0) && (listener->clientConnect1 != 0))
       {
-         listener->clientConnect2(listener->arg, connection);
+         listener->clientConnect1(listener->arg, connection);
       }
       iter = adt_list_iter_next(iter);
    }
+   SPINLOCK_LEAVE(self->eventListenerLock);
 }
 
 static void apx_client_triggerDisconnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection)
 {
+   SPINLOCK_ENTER(self->eventListenerLock);
    adt_list_elem_t *iter = adt_list_iter_first(self->eventListeners);
    while(iter != 0)
    {
       apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->clientDisconnect2 != 0))
+      if ( (listener != 0) && (listener->clientDisconnect1 != 0))
       {
-         listener->clientDisconnect2(listener->arg, connection);
+         listener->clientDisconnect1(listener->arg, connection);
       }
       iter = adt_list_iter_next(iter);
    }
+   SPINLOCK_LEAVE(self->eventListenerLock);
 }
-/*
-static void apx_client_triggerNodeCompleteEvent(apx_client_t *self, apx_nodeData_t *nodeData)
-{
-   adt_list_elem_t *iter = adt_list_iter_first(self->eventListeners);
-   while(iter != 0)
-   {
-      apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->nodeCompleted != 0))
-      {
-         listener->nodeCompleted(listener->arg, nodeData);
-      }
-      iter = adt_list_iter_next(iter);
-   }
-}
-*/
 
 static void apx_client_attachLocalNodesToConnection(apx_client_t *self)
 {

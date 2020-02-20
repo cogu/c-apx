@@ -73,6 +73,7 @@ typedef struct apx_client_tag
    struct apx_parser_tag *parser;
    struct apx_nodeManager_tag *nodeManager;
    SPINLOCK_T lock;
+   SPINLOCK_T eventListenerLock;
 } apx_client_t;
 
 //////////////////////////////////////////////////////////////////////////////

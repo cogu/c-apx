@@ -360,10 +360,17 @@ static void test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt(CuTest*
    apx_serverTestConnection_t connection;
    rmf_fileInfo_t fileInfo;
    uint8_t *buffer;
+   apx_server_t *server;
    uint8_t providePortData[UINT16_SIZE];
-
+   apx_portSignatureMap_t *portSignatureMap;
    apx_size_t definitionLen = strlen(m_apx_definition1);
+
+   server = apx_server_new();
    apx_serverTestConnection_create(&connection);
+   portSignatureMap = apx_server_getPortSignatureMap(server);
+   CuAssertPtrNotNull(tc, portSignatureMap);
+   apx_server_acceptConnection(server, (apx_serverConnectionBase_t*) &connection);
+   CuAssertPtrEquals(tc, server, apx_serverConnectionBase_getServer((apx_serverConnectionBase_t*) &connection));
    rmf_fileInfo_create(&fileInfo, "TestNode.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
    apx_serverTestConnection_onFileInfoMsgReceived(&connection, &fileInfo);
    rmf_fileInfo_create(&fileInfo, "TestNode.out", 0u, UINT16_SIZE, RMF_FILE_TYPE_FIXED);
@@ -384,10 +391,16 @@ static void test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt(CuTest*
    CuAssertIntEquals(tc, 2, apx_serverTestConnection_getTransmitLogLen(&connection));
    packLE(&providePortData[0], 0x1234, UINT16_SIZE);
 
-   //send TestNode.out contents
+   //Before sending data, verify that the provide ports are not connected to portSignatureMap
+   CuAssertIntEquals(tc, 0, apx_portSignatureMap_length(portSignatureMap));
+
+   //send TestNode.out contents from client to server
    CuAssertIntEquals(tc, RMF_LOW_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_LOW_ADDRESS_SIZE, 0u, false));
    memcpy(&buffer[RMF_LOW_ADDRESS_SIZE], &providePortData[0], UINT16_SIZE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(&connection, buffer, RMF_LOW_ADDRESS_SIZE+UINT16_SIZE));
+
+   //Verify that after providePortData has been received, the provide ports of the nodeInstance is now connected to portSignatureMap of the server
+   CuAssertIntEquals(tc, 1, apx_portSignatureMap_length(portSignatureMap));
 
    apx_serverTestConnection_destroy(&connection);
    free(buffer);
