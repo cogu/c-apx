@@ -51,6 +51,8 @@ static apx_error_t apx_nodeInstance_definitionFileReadData(void *arg, apx_file_t
 static apx_error_t apx_nodeInstance_createFileInfo(apx_nodeInstance_t *self, const char *fileExtension, uint32_t fileSize, apx_fileInfo_t *fileInfo);
 static apx_error_t apx_nodeInstance_providePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len);
 static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, struct apx_file_tag *file);
+static apx_error_t apx_nodeInstance_requirePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len);
+static apx_error_t apx_nodeInstance_requirePortDataFileOpenNotify(void *arg, struct apx_file_tag *file);
 static void apx_nodeInstance_initPortRefs(apx_nodeInstance_t *self, apx_portRef_t *portRefs, apx_portCount_t numPorts, uint32_t portIdMask, apx_getPortDataPropsFunc *getPortDataProps);
 
 
@@ -481,6 +483,25 @@ void apx_nodeInstance_registerProvidePortFileHandler(apx_nodeInstance_t *self, a
    }
 }
 
+void apx_nodeInstance_registerRequirePortFileHandler(apx_nodeInstance_t *self, apx_file_t *file)
+{
+   if ( (self != 0) && (file != 0) )
+   {
+      apx_fileNotificationHandler_t handler = {0, 0, 0};
+      handler.arg = (void*) self;
+      if (apx_file_isRemoteFile(file))
+      {
+         handler.writeNotify = apx_nodeInstance_requirePortDataFileWriteNotify;
+      }
+      else
+      {
+         handler.openNotify = apx_nodeInstance_requirePortDataFileOpenNotify;
+      }
+      apx_file_setNotificationHandler(file, &handler);
+      self->requirePortDataFile = file;
+   }
+}
+
 const char *apx_nodeInstance_getName(apx_nodeInstance_t *self)
 {
    if ( (self != 0) && (self->nodeInfo != 0) )
@@ -617,6 +638,25 @@ apx_providePortDataState_t apx_nodeInstance_getProvidePortDataState(apx_nodeInst
       return self->providePortDataState;
    }
    return (apx_providePortDataState_t*) 0;
+}
+
+void apx_nodeInstance_setRequirePortDataState(apx_nodeInstance_t *self, apx_requirePortDataState_t state)
+{
+   if (self != 0)
+   {
+      //TODO: Introduce some form of thread-lock here
+      self->requirePortDataState = state;
+   }
+}
+
+apx_requirePortDataState_t apx_nodeInstance_getRequirePortDataState(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      //TODO: Introduce some form of thread-lock here
+      return self->requirePortDataState;
+   }
+   return (apx_requirePortDataState_t*) 0;
 }
 
 
@@ -897,6 +937,26 @@ static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, str
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+static apx_error_t apx_nodeInstance_requirePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len)
+{
+   return APX_NOT_IMPLEMENTED_ERROR;
+}
+
+static apx_error_t apx_nodeInstance_requirePortDataFileOpenNotify(void *arg, struct apx_file_tag *file)
+{
+   apx_nodeInstance_t *self = (apx_nodeInstance_t*) arg;
+   if ( (self != 0) && (file != 0) )
+   {
+      if (self->connection != 0)
+      {
+         return apx_connectionBase_nodeInstanceFileOpenNotify(self->connection, self, apx_file_getApxFileType(file));
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 
 static void apx_nodeInstance_initPortRefs(apx_nodeInstance_t *self, apx_portRef_t *portRefs, apx_portCount_t numPorts, uint32_t portIdMask, apx_getPortDataPropsFunc *getPortDataProps)
 {

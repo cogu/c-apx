@@ -382,6 +382,23 @@ apx_error_t apx_connectionBase_nodeInstanceFileWriteNotify(apx_connectionBase_t 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_connectionBase_nodeInstanceFileOpenNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      if (self->vtable.nodeFileOpenNotify != 0)
+      {
+         self->vtable.nodeFileOpenNotify((void*) self, nodeInstance, fileType);
+      }
+      else
+      {
+         printf("No callback\n");
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 //Callbacks triggered due to events happening locally
 apx_error_t apx_connectionBase_updateProvidePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len)
 {

@@ -59,13 +59,17 @@ void apx_serverTestConnection_vstart(void *arg);
 void apx_serverTestConnection_close(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_vclose(void *arg);
 
+void apx_serverTestConnection_onProtocolHeaderReceived(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_createRemoteFile(apx_serverTestConnection_t *self, const rmf_fileInfo_t *fileInfo);
 void apx_serverTestConnection_writeRemoteData(apx_serverTestConnection_t *self, uint32_t address, const uint8_t* dataBuf, uint32_t dataLen, bool more);
 void apx_serverTestConnection_openRemoteFile(apx_serverTestConnection_t *self, uint32_t address);
 void apx_serverTestConnection_runEventLoop(apx_serverTestConnection_t *self);
 int32_t apx_serverTestConnection_getTransmitLogLen(apx_serverTestConnection_t *self);
 adt_bytearray_t *apx_serverTestConnection_getTransmitLogMsg(apx_serverTestConnection_t *self, int32_t index);
+void apx_serverTestConnection_clearTransmitLogMsg(apx_serverTestConnection_t *self);
 apx_error_t apx_serverTestConnection_onFileInfoMsgReceived(apx_serverTestConnection_t *self, const rmf_fileInfo_t *remoteFileInfo);
 apx_error_t apx_serverTestConnection_onSerializedMsgReceived(apx_serverTestConnection_t *self, const uint8_t *msgBuf, int32_t msgLen);
+apx_error_t apx_serverTestConnection_onFileOpenMsgReceived(apx_serverTestConnection_t *self, uint32_t address);
+apx_nodeInstance_t *apx_serverTestConnection_findNodeInstance(apx_serverTestConnection_t *self, const char *nodeName);
 
 #endif //APX_SERVER_TEST_CONNECTION_H

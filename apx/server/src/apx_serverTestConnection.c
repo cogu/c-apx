@@ -142,6 +142,14 @@ void apx_serverTestConnection_vclose(void *arg)
    apx_serverTestConnection_close((apx_serverTestConnection_t*) arg);
 }
 
+void apx_serverTestConnection_onProtocolHeaderReceived(apx_serverTestConnection_t *self)
+{
+   if (self != 0)
+   {
+      apx_serverConnectionBase_onRemoteFileHeaderReceived(&self->base);
+   }
+}
+
 
 
 /**
@@ -180,7 +188,11 @@ void apx_serverTestConnection_runEventLoop(apx_serverTestConnection_t *self)
    if (self != 0)
    {
 #ifdef UNIT_TEST
-      apx_serverConnectionBase_run(&self->base);
+      int32_t i;
+      for(i=0;i<50;i++)
+      {
+         apx_serverConnectionBase_run(&self->base);
+      }
 #endif
    }
 }
@@ -203,6 +215,14 @@ adt_bytearray_t *apx_serverTestConnection_getTransmitLogMsg(apx_serverTestConnec
    return (adt_bytearray_t*) 0;
 }
 
+void apx_serverTestConnection_clearTransmitLogMsg(apx_serverTestConnection_t *self)
+{
+   if (self != 0)
+   {
+      adt_ary_clear(self->transmitLog);
+   }
+}
+
 apx_error_t apx_serverTestConnection_onSerializedMsgReceived(apx_serverTestConnection_t *self, const uint8_t *msgBuf, int32_t msgLen)
 {
    if (self != 0)
@@ -210,6 +230,24 @@ apx_error_t apx_serverTestConnection_onSerializedMsgReceived(apx_serverTestConne
       return apx_connectionBase_processMessage(&self->base.base, msgBuf, msgLen);
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_serverTestConnection_onFileOpenMsgReceived(apx_serverTestConnection_t *self, uint32_t address)
+{
+   if (self != 0)
+   {
+      return apx_connectionBase_fileOpenNotify(&self->base.base, address);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_nodeInstance_t *apx_serverTestConnection_findNodeInstance(apx_serverTestConnection_t *self, const char *nodeName)
+{
+   if (self != 0 && nodeName != 0)
+   {
+      return apx_nodeManager_find(&self->base.base.nodeManager, nodeName);
+   }
+   return (apx_nodeInstance_t*) 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////

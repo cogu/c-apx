@@ -60,8 +60,9 @@ typedef struct apx_nodeInfo_tag
    char **providePortSignatures; //array of derived port signatures strings (used in server mode); length of array: numProvidePorts
    apx_portCount_t numRequirePorts;
    apx_portCount_t numProvidePorts;
-
-   apx_mode_t mode; //The mode this nodeInfo was build for
+   apx_size_t requirePortDataLen; //Cached result from apx_nodeInfo_calcRequirePortDataLen
+   apx_size_t providePortDataLen; //Cached result from apx_nodeInfo_calcProvidePortDataLen
+   apx_mode_t mode; //The mode this nodeInfo was built for
 } apx_nodeInfo_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -89,8 +90,12 @@ const adt_bytes_t* apx_nodeInfo_getRequirePortUnpackProgram(const apx_nodeInfo_t
 const adt_bytes_t* apx_nodeInfo_getProvidePortUnpackProgram(const apx_nodeInfo_t *self, apx_portId_t portId);
 apx_portId_t apx_nodeInfo_findProvidePortIdFromByteOffset(const apx_nodeInfo_t *self, apx_offset_t offset);
 apx_portId_t apx_nodeInfo_findRequirePortIdFromByteOffset(const apx_nodeInfo_t *self, apx_offset_t offset);
-apx_size_t apx_nodeInfo_calcRequirePortDataLen(const apx_nodeInfo_t *self);
-apx_size_t apx_nodeInfo_calcProvidePortDataLen(const apx_nodeInfo_t *self);
+
+apx_size_t apx_nodeInfo_calcRequirePortDataLen(const apx_nodeInfo_t *self); //DEPRECATED; use apx_nodeInfo_getRequirePortDataLen instead
+apx_size_t apx_nodeInfo_calcProvidePortDataLen(const apx_nodeInfo_t *self); //DEPRECATED; use apx_nodeInfo_getProvidePortDataLen instead
+apx_size_t apx_nodeInfo_getRequirePortDataLen(const apx_nodeInfo_t *self);
+apx_size_t apx_nodeInfo_getProvidePortDataLen(const apx_nodeInfo_t *self);
+
 apx_bytePortMap_t *apx_nodeInfo_getClientBytePortMap(const apx_nodeInfo_t *self);
 apx_bytePortMap_t *apx_nodeInfo_getServerBytePortMap(const apx_nodeInfo_t *self);
 apx_size_t apx_nodeInfo_getRequirePortInitDataSize(const apx_nodeInfo_t *self);

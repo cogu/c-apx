@@ -60,6 +60,7 @@ struct apx_transmitHandler_tag;
 typedef void (apx_fileInfoNotifyFunc)(void *arg, const struct apx_fileInfo_tag *fileInfo);
 typedef apx_error_t (apx_fillTransmitHandlerFunc)(void *arg, struct apx_transmitHandler_tag *handler);
 typedef void (apx_nodeFileWriteNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+typedef void (apx_nodeFileOpenNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
 
 typedef struct apx_connectionBaseVTable_tag
 {
@@ -68,6 +69,7 @@ typedef struct apx_connectionBaseVTable_tag
    apx_voidPtrFunc *close;
    apx_fileInfoNotifyFunc *fileInfoNotify;
    apx_nodeFileWriteNotifyFunc *nodeFileWriteNotify;
+   apx_nodeFileOpenNotifyFunc *nodeFileOpenNotify;
    apx_fillTransmitHandlerFunc *fillTransmitHandler;
 } apx_connectionBaseVTable_t;
 
@@ -119,6 +121,7 @@ apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const 
 apx_error_t apx_connectionBase_fileOpenNotify(apx_connectionBase_t *self, uint32_t address);
 apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
 apx_error_t apx_connectionBase_nodeInstanceFileWriteNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+apx_error_t apx_connectionBase_nodeInstanceFileOpenNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
 
 //Callbacks triggered due to events happening locally
 apx_error_t apx_connectionBase_updateProvidePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len);

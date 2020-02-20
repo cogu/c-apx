@@ -251,6 +251,46 @@ void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *l
    }
 }
 
+/**
+ * Acquires the server global lock
+ */
+void apx_server_takeGlobalLock(apx_server_t *self)
+{
+   if (self != 0)
+   {
+      MUTEX_LOCK(self->globalLock);
+   }
+}
+
+/**
+ * Releases the server global lock
+ */
+void apx_server_releaseGlobalLock(apx_server_t *self)
+{
+   if (self != 0)
+   {
+      MUTEX_UNLOCK(self->globalLock);
+   }
+}
+
+apx_error_t apx_server_connectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      return apx_portSignatureMap_connectProvidePorts(&self->portSignatureMap, nodeInstance);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_server_connectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      return apx_portSignatureMap_connectRequirePorts(&self->portSignatureMap, nodeInstance);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self)
 {
