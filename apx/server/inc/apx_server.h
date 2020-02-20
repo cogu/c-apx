@@ -8,8 +8,8 @@
 #include <Windows.h>
 #else
 #include <pthread.h>
-//#include <semaphore.h>
 #endif
+#include "apx_portSignatureMap.h"
 #include "apx_serverExtension.h"
 #include "apx_portSignatureMap.h"
 #include "apx_eventListener.h"
@@ -27,14 +27,19 @@
 typedef struct apx_server_tag
 {
    adt_list_t serverEventListeners; //weak references to apx_serverEventListener_t
-   //apx_routingTable_t routingTable; //routing table for APX port connections
+   apx_portSignatureMap_t portSignatureMap; //This is the global map that is used to build all port connectors.
+                                            //Any access to this structure must be protected by acquiring the globalLock.
    apx_connectionManager_t connectionManager; //server connections
    adt_list_t extensionManager; //TODO: replace with extensionManager class
-   THREAD_T workerThread; //local worker thread
-   bool isWorkerThreadValid; //true if workerThread is a valid variable
+   THREAD_T eventThread; //local worker thread (for playing server-global events such as log events)
+   bool isEventThreadValid; //true if workerThread is a valid variable
    soa_t soa; //small object allocator
    apx_eventLoop_t eventLoop; //event loop used by workerThread
-   MUTEX_T mutex;
+   MUTEX_T eventLoopLock; //for protecting the event loop
+   MUTEX_T globalLock; //This is the global lock which all connections use to
+                       //synchronize data routing execution as well as
+                       //controlling access to the global portSignatureMap.
+   SPINLOCK_T eventListenerLock; //Used to protect access to serverEventListeners
 #ifdef _MSC_VER
    unsigned int threadId;
 #endif
@@ -50,19 +55,21 @@ typedef struct apx_server_tag
 //////////////////////////////////////////////////////////////////////////////
 void apx_server_create(apx_server_t *self);
 void apx_server_destroy(apx_server_t *self);
+apx_server_t *apx_server_new(void);
+void apx_server_delete(apx_server_t *self);
 void apx_server_start(apx_server_t *self);
 void apx_server_stop(apx_server_t *self);
 void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener);
 void apx_server_unregisterEventListener(apx_server_t *self, void *handle);
 void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
 void apx_server_closeConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
-//apx_routingTable_t* apx_server_getRoutingTable(apx_server_t *self);
 apx_error_t apx_server_addExtension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
 void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
 
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self);
 apx_serverConnectionBase_t *apx_server_getLastConnection(apx_server_t *self);
+apx_portSignatureMap_t *apx_server_getPortSignatureMap(apx_server_t *self);
 #endif
 
 
