@@ -15,6 +15,7 @@
 #include "apx_eventListener.h"
 #include "apx_connectionManager.h"
 #include "apx_eventLoop.h"
+#include "apx_nodeInstance.h"
 #include "soa.h"
 #include "adt_str.h"
 
@@ -65,6 +66,10 @@ void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t 
 void apx_server_closeConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
 apx_error_t apx_server_addExtension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
 void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
+void apx_server_takeGlobalLock(apx_server_t *self);
+void apx_server_releaseGlobalLock(apx_server_t *self);
+apx_error_t apx_server_connectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
+apx_error_t apx_server_connectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
 
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self);

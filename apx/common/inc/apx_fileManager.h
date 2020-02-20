@@ -86,6 +86,7 @@ apx_file_t *apx_fileManager_fileInfoNotify(apx_fileManager_t *self, const apx_fi
 apx_error_t apx_fileManager_writeConstData(apx_fileManager_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg);
 apx_error_t apx_fileManager_writeDynamicData(apx_fileManager_t *self, uint32_t address, apx_size_t len, uint8_t *data);
 apx_file_t *apx_fileManager_createLocalFile(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo);
+apx_error_t apx_fileManager_sendFileInfo(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo);
 
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t *self);

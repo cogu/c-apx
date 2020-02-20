@@ -97,6 +97,7 @@ void apx_nodeInstance_setConnection(apx_nodeInstance_t *self, struct apx_connect
 struct apx_connectionBase_tag* apx_nodeInstance_getConnection(apx_nodeInstance_t *self);
 void apx_nodeInstance_registerDefinitionFileHandler(apx_nodeInstance_t *self, apx_file_t *file);
 void apx_nodeInstance_registerProvidePortFileHandler(apx_nodeInstance_t *self, apx_file_t *file);
+void apx_nodeInstance_registerRequirePortFileHandler(apx_nodeInstance_t *self, apx_file_t *file);
 const char *apx_nodeInstance_getName(apx_nodeInstance_t *self);
 void apx_nodeInstance_cleanParseTree(apx_nodeInstance_t *self);
 apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self);
@@ -105,8 +106,11 @@ int32_t apx_nodeInstance_getNumRequirePorts(apx_nodeInstance_t *self);
 apx_error_t apx_nodeInstance_fillProvidePortDataFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
 apx_error_t apx_nodeInstance_fillDefinitionFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
 
+
 void apx_nodeInstance_setProvidePortDataState(apx_nodeInstance_t *self, apx_providePortDataState_t state);
 apx_providePortDataState_t apx_nodeInstance_getProvidePortDataState(apx_nodeInstance_t *self);
+void apx_nodeInstance_setRequirePortDataState(apx_nodeInstance_t *self, apx_requirePortDataState_t state);
+apx_requirePortDataState_t apx_nodeInstance_getRequirePortDataState(apx_nodeInstance_t *self);
 
 
 

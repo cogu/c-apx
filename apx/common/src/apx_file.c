@@ -370,6 +370,15 @@ apx_error_t apx_file_fileWriteNotify(apx_file_t *self, uint32_t offset, const ui
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+const apx_fileInfo_t *apx_file_getFileInfo(apx_file_t *self)
+{
+   if (self != 0)
+   {
+      return &self->fileInfo;
+   }
+   return (const apx_fileInfo_t*) 0;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

@@ -226,19 +226,7 @@ int32_t apx_fileManager_getNumRemoteFiles(apx_fileManager_t *self)
    return -1;
 }
 
-apx_file_t *apx_fileManager_createLocalFile(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo)
-{
-   if (self != 0)
-   {
-      apx_file_t *file = apx_fileManagerShared_createLocalFile(&self->shared, fileInfo);
-      if (file != 0)
-      {
-         apx_file_setFileManager(file, self);
-      }
-      return file;
-   }
-   return (apx_file_t*) 0;
-}
+
 
 apx_file_t *apx_fileManager_fileInfoNotify(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo)
 {
@@ -305,6 +293,34 @@ apx_error_t apx_fileManager_writeConstData(apx_fileManager_t *self, uint32_t add
    if (self != 0)
    {
       return apx_fileManagerWorker_sendConstData(&self->worker, address, len, readFunc, arg);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_file_t *apx_fileManager_createLocalFile(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo)
+{
+   if (self != 0)
+   {
+      apx_file_t *file = apx_fileManagerShared_createLocalFile(&self->shared, fileInfo);
+      if (file != 0)
+      {
+         apx_file_setFileManager(file, self);
+      }
+      return file;
+   }
+   return (apx_file_t*) 0;
+}
+
+/**
+ * Sends a fileInfo structure to remote side.
+ * Note that fileInfo must be a cloned instance since this function takes ownership of the fileInfo pointer and will delete it later.
+ */
+apx_error_t apx_fileManager_sendFileInfo(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo)
+{
+   if (self != 0)
+   {
+      apx_fileManagerWorker_sendFileInfoMsg(&self->worker, fileInfo);
+      return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

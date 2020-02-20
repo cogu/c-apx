@@ -176,6 +176,8 @@ apx_error_t apx_nodeInfo_build(apx_nodeInfo_t *self, const struct apx_node_tag *
             }
          }
       }
+      self->requirePortDataLen = apx_nodeInfo_calcRequirePortDataLen(self);
+      self->providePortDataLen = apx_nodeInfo_calcProvidePortDataLen(self);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -334,6 +336,25 @@ apx_size_t apx_nodeInfo_calcProvidePortDataLen(const apx_nodeInfo_t *self)
    }
    return (apx_size_t) 0u;
 }
+
+apx_size_t apx_nodeInfo_getRequirePortDataLen(const apx_nodeInfo_t *self)
+{
+   if (self != 0)
+   {
+      return self->requirePortDataLen;
+   }
+   return 0u;
+}
+
+apx_size_t apx_nodeInfo_getProvidePortDataLen(const apx_nodeInfo_t *self)
+{
+   if (self != 0)
+   {
+      return self->providePortDataLen;
+   }
+   return 0u;
+}
+
 
 apx_bytePortMap_t *apx_nodeInfo_getClientBytePortMap(const apx_nodeInfo_t *self)
 {

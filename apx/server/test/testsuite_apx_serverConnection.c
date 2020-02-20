@@ -51,9 +51,13 @@ static const char *m_apx_definition1 = "APX/1.2\n"
       "N\"TestNode\"\n"
       "P\"VehicleSpeed\"S:=65535\n"
       "\n";
+
+
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+
 static void test_headerAcceptedEventIsTriggered(CuTest* tc);
 static void test_createRemoteFileShallTriggerFileCreatedEvent(CuTest* tc);
 static void test_nodeInstanceIsCreatedWhenDefinitionFileIsSeen(CuTest* tc);
@@ -64,6 +68,8 @@ static void test_serverProcessesDefinitionAfterClientWritesDefinitionData(CuTest
 static void test_serverCreatesOutPortDataBuffersAfterProcessingNodeDefinition(CuTest* tc);
 static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTest* tc);
 static void test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt(CuTest* tc);
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -357,7 +363,7 @@ static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTes
 
 static void test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt(CuTest* tc)
 {
-   apx_serverTestConnection_t connection;
+   apx_serverTestConnection_t *connection;
    rmf_fileInfo_t fileInfo;
    uint8_t *buffer;
    apx_server_t *server;
@@ -366,29 +372,29 @@ static void test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt(CuTest*
    apx_size_t definitionLen = strlen(m_apx_definition1);
 
    server = apx_server_new();
-   apx_serverTestConnection_create(&connection);
+   connection = apx_serverTestConnection_new();
    portSignatureMap = apx_server_getPortSignatureMap(server);
    CuAssertPtrNotNull(tc, portSignatureMap);
-   apx_server_acceptConnection(server, (apx_serverConnectionBase_t*) &connection);
-   CuAssertPtrEquals(tc, server, apx_serverConnectionBase_getServer((apx_serverConnectionBase_t*) &connection));
+   apx_server_acceptConnection(server, (apx_serverConnectionBase_t*) connection);
+   CuAssertPtrEquals(tc, server, apx_serverConnectionBase_getServer((apx_serverConnectionBase_t*) connection));
    rmf_fileInfo_create(&fileInfo, "TestNode.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
-   apx_serverTestConnection_onFileInfoMsgReceived(&connection, &fileInfo);
+   apx_serverTestConnection_onFileInfoMsgReceived(connection, &fileInfo);
    rmf_fileInfo_create(&fileInfo, "TestNode.out", 0u, UINT16_SIZE, RMF_FILE_TYPE_FIXED);
-   apx_serverTestConnection_onFileInfoMsgReceived(&connection, &fileInfo);
-   apx_serverTestConnection_runEventLoop(&connection);
+   apx_serverTestConnection_onFileInfoMsgReceived(connection, &fileInfo);
+   apx_serverTestConnection_runEventLoop(connection);
    buffer = (uint8_t*) malloc(RMF_HIGH_ADDRESS_SIZE+definitionLen);
    assert(buffer != 0);
    CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_HIGH_ADDRESS_SIZE, APX_ADDRESS_DEFINITION_START, false));
    memcpy(&buffer[RMF_HIGH_ADDRESS_SIZE], &m_apx_definition1[0], definitionLen);
-   apx_nodeInstance_t *nodeInstance = apx_nodeManager_find(&connection.base.base.nodeManager, "TestNode");
+   apx_nodeInstance_t *nodeInstance = apx_nodeManager_find(&connection->base.base.nodeManager, "TestNode");
    CuAssertPtrNotNull(tc, nodeInstance);
    apx_nodeData_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
    CuAssertPtrNotNull(tc, nodeData);
    CuAssertUIntEquals(tc, 0u, apx_nodeData_getProvidePortDataLen(nodeData));
    CuAssertPtrEquals(tc, NULL, apx_nodeInstance_getNodeInfo(nodeInstance));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(&connection, buffer, RMF_HIGH_ADDRESS_SIZE+definitionLen));
-   apx_serverTestConnection_runEventLoop(&connection);
-   CuAssertIntEquals(tc, 2, apx_serverTestConnection_getTransmitLogLen(&connection));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(connection, buffer, RMF_HIGH_ADDRESS_SIZE+definitionLen));
+   apx_serverTestConnection_runEventLoop(connection);
+   CuAssertIntEquals(tc, 2, apx_serverTestConnection_getTransmitLogLen(connection));
    packLE(&providePortData[0], 0x1234, UINT16_SIZE);
 
    //Before sending data, verify that the provide ports are not connected to portSignatureMap
@@ -397,11 +403,12 @@ static void test_clientWritesToProvidePortDataFileAfterServerHasOpenedIt(CuTest*
    //send TestNode.out contents from client to server
    CuAssertIntEquals(tc, RMF_LOW_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_LOW_ADDRESS_SIZE, 0u, false));
    memcpy(&buffer[RMF_LOW_ADDRESS_SIZE], &providePortData[0], UINT16_SIZE);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(&connection, buffer, RMF_LOW_ADDRESS_SIZE+UINT16_SIZE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(connection, buffer, RMF_LOW_ADDRESS_SIZE+UINT16_SIZE));
 
    //Verify that after providePortData has been received, the provide ports of the nodeInstance is now connected to portSignatureMap of the server
-   CuAssertIntEquals(tc, 1, apx_portSignatureMap_length(portSignatureMap));
+   CuAssertPtrNotNull(tc, apx_portSignatureMap_find(portSignatureMap, "\"VehicleSpeed\"S"));
 
-   apx_serverTestConnection_destroy(&connection);
+   //apx_serverTestConnection_destroy(&connection);
+   apx_server_delete(server);
    free(buffer);
 }
