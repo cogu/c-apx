@@ -70,6 +70,7 @@ uint32_t apx_serverConnectionBase_getConnectionId(apx_serverConnectionBase_t *se
 void apx_serverConnectionBase_close(apx_serverConnectionBase_t *self);
 void apx_serverConnectionBase_detachNodes(apx_serverConnectionBase_t *self);
 uint32_t apx_serverConnectionBase_getTotalPortReferences(apx_serverConnectionBase_t *self);
+struct apx_server_tag* apx_serverConnectionBase_getServer(apx_serverConnectionBase_t *self);
 //void* apx_serverConnectionBase_registerNodeDataEventListener(apx_serverConnectionBase_t *self, apx_nodeDataEventListener_t *listener);
 //void apx_serverConnectionBase_unregisterNodeDataEventListener(apx_serverConnectionBase_t *self, void *handle);
 

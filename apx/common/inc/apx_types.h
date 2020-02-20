@@ -153,15 +153,17 @@ typedef uint8_t apx_nodeState_t;
 #define APX_NODE_STATE_INVALID              ((apx_nodeState_t) 4u)
 
 typedef uint8_t apx_requirePortDataState_t;
-#define APX_REQUIRE_PORT_DATA_STATE_INIT                          ((apx_requirePortDataState_t) 0u)
-#define APX_REQUIRE_PORT_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST ((apx_requirePortDataState_t) 1u)
-#define APX_REQUIRE_PORT_DATA_STATE_COMPLETE                      ((apx_requirePortDataState_t) 2u)
+#define APX_REQUIRE_PORT_DATA_STATE_INIT                           ((apx_requirePortDataState_t) 0u)
+#define APX_REQUIRE_PORT_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST  ((apx_requirePortDataState_t) 1u)
+#define APX_REQUIRE_PORT_DATA_STATE_CONNECTED                      ((apx_requirePortDataState_t) 2u)
+#define APX_REQUIRE_PORT_DATA_STATE_DISCONNECTED                   ((apx_requirePortDataState_t) 3u)
 
 typedef uint8_t apx_providePortDataState_t;
 #define APX_PROVIDE_PORT_DATE_STATE_INIT                          ((apx_providePortDataState_t) 0u)
 #define APX_PROVIDE_PORT_DATE_STATE_WAITING_FOR_FILE_INFO         ((apx_providePortDataState_t) 1u)
 #define APX_PROVIDE_PORT_DATA_STATE_WAITING_FOR_FILE_DATA         ((apx_providePortDataState_t) 2u)
-#define APX_PROVIDE_PORT_DATA_STATE_COMPLETE                      ((apx_providePortDataState_t) 3u)
+#define APX_PROVIDE_PORT_DATA_STATE_CONNECTED                     ((apx_providePortDataState_t) 3u)
+#define APX_PROVIDE_PORT_DATA_STATE_DISCONNECTED                  ((apx_providePortDataState_t) 4u)
 
 
 #endif //APX_TYPES_H
