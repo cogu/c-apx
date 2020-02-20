@@ -361,6 +361,15 @@ void apx_serverConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeIn
    apx_serverConnectionBase_nodeInstanceFileWriteNotify((apx_serverConnectionBase_t*) arg, nodeInstance, fileType, offset, data, len);
 }
 
+struct apx_server_tag* apx_serverConnectionBase_getServer(apx_serverConnectionBase_t *self)
+{
+   if (self != 0)
+   {
+      return self->server;
+   }
+   return (apx_server_t*) 0;
+}
+
 /*** UNIT TEST API ***/
 
 #ifdef UNIT_TEST
@@ -566,25 +575,31 @@ static void apx_serverConnectionBase_definitionDataWriteNotify(apx_serverConnect
 
 static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len)
 {
-   apx_nodeState_t nodeState = apx_nodeInstance_getState(nodeInstance);
-   apx_nodeData_t *nodeData = apx_nodeInstance_getNodeData(nodeInstance);
+   apx_error_t rc;
+   apx_nodeData_t *nodeData;
+   apx_providePortDataState_t portDataState = apx_nodeInstance_getProvidePortDataState(nodeInstance);
+   nodeData = apx_nodeInstance_getNodeData(nodeInstance);
    assert(nodeData != 0);
-   switch(nodeState)
+   switch(portDataState)
    {
-   case APX_NODE_STATE_STAGING:
-      //In staging mode we are free to write as much data as we want without constraints
-      printf("[%u] Write %s.out(%d,%d): ", (unsigned int) apx_connectionBase_getConnectionId(&self->base), apx_nodeInstance_getName(nodeInstance), (int) offset, (int) len);
-      apx_print_hex_bytes(10, data, len);
-      return apx_nodeData_writeProvidePortData(nodeData, data, offset, len);
-   case APX_NODE_STATE_PARTIALLY_CONNECTED:
-      return APX_NOT_IMPLEMENTED_ERROR;
-   case APX_NODE_STATE_FULLY_CONNECTED:
-      return APX_NOT_IMPLEMENTED_ERROR;
-   case APX_NODE_STATE_DISCONNECTED:
-      return APX_NOT_IMPLEMENTED_ERROR;
-   case APX_NODE_STATE_INVALID:
-      //Ignore all writes
+   case APX_PROVIDE_PORT_DATE_STATE_INIT:
+      assert(0); //This is an internal error, no file handler should have been registered yet.
       break;
+   case APX_PROVIDE_PORT_DATE_STATE_WAITING_FOR_FILE_INFO:
+      assert(0); //This is an internal error, no file handler should have been registered yet.
+      break;
+   case APX_PROVIDE_PORT_DATA_STATE_WAITING_FOR_FILE_DATA:
+      rc = apx_nodeData_writeProvidePortData(nodeData, data, offset, len);
+      if (rc == APX_NO_ERROR)
+      {
+         printf("[%u] Write %s.out(%d,%d): ", (unsigned int) apx_connectionBase_getConnectionId(&self->base), apx_nodeInstance_getName(nodeInstance), (int) offset, (int) len);
+         apx_print_hex_bytes(10, data, len);
+      }
+      break;
+   case APX_PROVIDE_PORT_DATA_STATE_CONNECTED:
+      return APX_NOT_IMPLEMENTED_ERROR;
+   case APX_PROVIDE_PORT_DATA_STATE_DISCONNECTED:
+      break; //Drop all data writes in this state, we are about to close connection
    }
    return APX_NO_ERROR;
 }
@@ -627,11 +642,13 @@ static apx_error_t apx_serverConnectionBase_openOutPortDataFileIfExists(apx_serv
       {
          printf("OK\n");
          apx_nodeInstance_registerProvidePortFileHandler(nodeInstance, file);
+         apx_nodeInstance_setProvidePortDataState(nodeInstance, APX_PROVIDE_PORT_DATA_STATE_WAITING_FOR_FILE_DATA);
          retval = apx_fileManager_requestOpenFile(&self->base.fileManager, apx_file_getStartAddress(file) | RMF_REMOTE_ADDRESS_BIT);
       }
       else
       {
          printf("Not Found\n");
+         apx_nodeInstance_setProvidePortDataState(nodeInstance, APX_PROVIDE_PORT_DATE_STATE_WAITING_FOR_FILE_INFO);
       }
    }
    return retval;

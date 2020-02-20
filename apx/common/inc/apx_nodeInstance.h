@@ -63,9 +63,8 @@ typedef struct apx_nodeInstance_tag
    apx_portConnectorChangeTable_t *requirePortChanges; //temporary data structure used for tracking port connector changes to requirePorts
    apx_portConnectorChangeTable_t *providePortChanges; //temporary data structure used for tracking port connector changes to providePorts
    apx_mode_t mode;
-   apx_nodeState_t nodeState;
-   apx_requirePortDataState_t requirePortState;
-   apx_providePortDataState_t providePortState;
+   apx_requirePortDataState_t requirePortDataState;
+   apx_providePortDataState_t providePortDataState;
 } apx_nodeInstance_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -106,8 +105,9 @@ int32_t apx_nodeInstance_getNumRequirePorts(apx_nodeInstance_t *self);
 apx_error_t apx_nodeInstance_fillProvidePortDataFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
 apx_error_t apx_nodeInstance_fillDefinitionFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
 
-void apx_nodeInstance_setState(apx_nodeInstance_t *self, apx_nodeState_t state);
-apx_nodeState_t apx_nodeInstance_getState(apx_nodeInstance_t *self);
+void apx_nodeInstance_setProvidePortDataState(apx_nodeInstance_t *self, apx_providePortDataState_t state);
+apx_providePortDataState_t apx_nodeInstance_getProvidePortDataState(apx_nodeInstance_t *self);
+
 
 
 /********** Data API  ************/

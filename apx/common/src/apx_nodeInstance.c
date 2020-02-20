@@ -68,9 +68,8 @@ void apx_nodeInstance_create(apx_nodeInstance_t *self, apx_mode_t mode)
    {
       memset(self, 0, sizeof(apx_nodeInstance_t));
       self->mode = mode;
-      self->nodeState = APX_NODE_STATE_STAGING; ///TODO: should this be calculated instead?
-      self->requirePortState = APX_REQUIRE_PORT_DATA_STATE_INIT;
-      self->providePortState = APX_PROVIDE_PORT_DATE_STATE_INIT;
+      self->requirePortDataState = APX_REQUIRE_PORT_DATA_STATE_INIT;
+      self->providePortDataState = APX_PROVIDE_PORT_DATE_STATE_INIT;
    }
 }
 
@@ -601,22 +600,25 @@ apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self)
    return (apx_nodeInfo_t*) 0;
 }
 
-void apx_nodeInstance_setState(apx_nodeInstance_t *self, apx_nodeState_t state)
+void apx_nodeInstance_setProvidePortDataState(apx_nodeInstance_t *self, apx_providePortDataState_t state)
 {
    if (self != 0)
    {
-      self->nodeState = state;
+      //TODO: Introduce some form of thread-lock here
+      self->providePortDataState = state;
    }
 }
 
-apx_nodeState_t apx_nodeInstance_getState(apx_nodeInstance_t *self)
+apx_providePortDataState_t apx_nodeInstance_getProvidePortDataState(apx_nodeInstance_t *self)
 {
    if (self != 0)
    {
-      return self->nodeState;
+      //TODO: Introduce some form of thread-lock here
+      return self->providePortDataState;
    }
-   return APX_NODE_STATE_INVALID;
+   return (apx_providePortDataState_t*) 0;
 }
+
 
 /********** Data API  ************/
 
