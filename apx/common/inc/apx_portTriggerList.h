@@ -37,7 +37,9 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-
+/**
+ * Keeps a list of port connectors from one p-port to zero or more r-ports.
+ */
 typedef struct apx_portTriggerList_tag
 {
    adt_ary_t requirePortData; //weak references to apx_portRef_t

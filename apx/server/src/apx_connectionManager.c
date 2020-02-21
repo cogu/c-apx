@@ -120,7 +120,7 @@ void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConne
       uint32_t connectionId;
       SPINLOCK_ENTER(self->lock);
       connectionId = apx_connectionManager_generateConnectionId(self);
-      apx_serverConnectionBase_setConnectionId(connection, connectionId);
+      apx_serverConnectionBase_activate(connection, connectionId);
       adt_list_insert_unique(&self->activeConnections, connection);
 
       SPINLOCK_LEAVE(self->lock);
@@ -130,11 +130,12 @@ void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConne
    }
 }
 
-void apx_connectionManager_closeConnection(apx_connectionManager_t *self, apx_serverConnectionBase_t *connection)
+void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConnectionBase_t *connection)
 {
-   if (self != 0)
+   if ( (self != 0) && (connection != 0))
    {
       adt_list_elem_t *iter;
+      apx_serverConnectionBase_deactivate(connection);
       SPINLOCK_ENTER(self->lock);
       iter = adt_list_find(&self->activeConnections, connection);
       if (iter != 0)
@@ -272,6 +273,8 @@ static void apx_connectionManager_cleanupTask_run(apx_connectionManager_t *self,
    if (numInactiveConnections > 0)
    {
       SPINLOCK_ENTER(self->lock);
+      SPINLOCK_LEAVE(self->lock);
+#if 0
       adt_list_elem_t *iter = adt_list_iter_first(&self->inactiveConnections);
       apx_serverConnectionBase_t *baseConnection = (apx_serverConnectionBase_t*) iter->pItem;
       if (baseConnection->isActive)
@@ -295,7 +298,7 @@ static void apx_connectionManager_cleanupTask_run(apx_connectionManager_t *self,
 #endif
          }
       }
-      SPINLOCK_LEAVE(self->lock);
+#endif
    }
 }
 
