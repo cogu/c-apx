@@ -186,12 +186,12 @@ void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t 
    }
 }
 
-void apx_server_closeConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
+void apx_server_detachConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
 {
    if ( (self != 0) && (serverConnection != 0))
    {
+      apx_connectionManager_detach(&self->connectionManager, serverConnection);
       apx_server_triggerDisconnectedEvent(self, serverConnection);
-      apx_connectionManager_closeConnection(&self->connectionManager, serverConnection);
    }
 }
 
@@ -290,6 +290,74 @@ apx_error_t apx_server_connectNodeInstanceRequirePorts(apx_server_t *self, apx_n
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+apx_error_t apx_server_disconnectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      return apx_portSignatureMap_disconnectProvidePorts(&self->portSignatureMap, nodeInstance);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_server_disconnectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      return apx_portSignatureMap_disconnectRequirePorts(&self->portSignatureMap, nodeInstance);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/**
+ * Is is assumed that the server global lock is held by the caller of this function
+ */
+apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *requireNodeInstance, apx_portConnectorChangeTable_t *connectorChanges)
+{
+   apx_nodeInfo_t *nodeInfo;
+   apx_portCount_t numRequirePorts;
+   apx_portId_t requirePortId;
+   nodeInfo = apx_nodeInstance_getNodeInfo(requireNodeInstance);
+   assert(nodeInfo != 0);
+   numRequirePorts = apx_nodeInfo_getNumRequirePorts(nodeInfo);
+   assert(connectorChanges->numPorts == numRequirePorts);
+   for (requirePortId = 0u; requirePortId < numRequirePorts; requirePortId++)
+   {
+      apx_portConnectorChangeEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectorChanges, requirePortId);
+      assert(entry != 0);
+      if (entry->count > 0)
+      {
+         if (entry->count == 1)
+         {
+            apx_portRef_t *providePortRef = entry->data.portRef;
+            printf("%s[%d] -> %s[%d]\n",
+                  apx_nodeInstance_getName(providePortRef->nodeInstance),
+                  (int) apx_portRef_getPortId(providePortRef),
+                  apx_nodeInstance_getName(requireNodeInstance),
+                  (int) requirePortId);
+         }
+         else
+         {
+            return APX_NOT_IMPLEMENTED_ERROR;
+         }
+      }
+      else
+      {
+         return APX_NOT_IMPLEMENTED_ERROR;
+      }
+   }
+   return APX_NO_ERROR;
+}
+
+/**
+ * Is is assumed that the server global lock is held by the caller of this function
+ */
+apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *provideNodeInstance, apx_portConnectorChangeTable_t *connectorChanges)
+{
+   return APX_NO_ERROR;
+}
+
+
 
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self)

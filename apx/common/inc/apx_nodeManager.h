@@ -34,6 +34,7 @@
 #include "apx_stream.h"
 #include "apx_error.h"
 #include "adt_hash.h"
+
 #ifdef _WIN32
 #include <Windows.h>
 #else
@@ -44,7 +45,7 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
-//struct apx_node_tag;
+
 
 typedef struct apx_nodeManager_tag
 {
@@ -79,19 +80,5 @@ int32_t apx_nodeManager_keys(apx_nodeManager_t *self, adt_ary_t* array);
 int32_t apx_nodeManager_values(apx_nodeManager_t *self, adt_ary_t* array);
 apx_nodeInstance_t *apx_nodeManager_getLastAttached(apx_nodeManager_t *self);
 
-
-/*
-apx_error_t apx_nodeManager_getLastError(apx_nodeManager_t *self);
-int32_t apx_nodeManager_getErrorLine(apx_nodeManager_t *self);
-
-apx_error_t apx_nodeManager_parseDefinition(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
-apx_error_t apx_nodeManager_attach(apx_nodeManager_t *self, apx_nodeData_t *nodeData);
-apx_error_t apx_nodeManager_attachFromString(apx_nodeManager_t *self, const char *apx_text);
-
-apx_nodeData_t *apx_nodeManager_getLastAttached(apx_nodeManager_t *self);
-int32_t apx_nodeManager_length(apx_nodeManager_t *self);
-int32_t apx_nodeManager_keys(apx_nodeManager_t *self, adt_ary_t* array);
-int32_t apx_nodeManager_values(apx_nodeManager_t *self, adt_ary_t* array);
-*/
 
 #endif //APX_NODE_INSTANCE_MANAGER_H

@@ -63,13 +63,17 @@ void apx_server_stop(apx_server_t *self);
 void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener);
 void apx_server_unregisterEventListener(apx_server_t *self, void *handle);
 void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
-void apx_server_closeConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
+void apx_server_detachConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
 apx_error_t apx_server_addExtension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
 void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
 void apx_server_takeGlobalLock(apx_server_t *self);
 void apx_server_releaseGlobalLock(apx_server_t *self);
 apx_error_t apx_server_connectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
 apx_error_t apx_server_connectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
+apx_error_t apx_server_disconnectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
+apx_error_t apx_server_disconnectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
+apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *requireNodeInstance, apx_portConnectorChangeTable_t *connectorChanges);
+apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *provideNodeInstance, apx_portConnectorChangeTable_t *connectorChanges);
 
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self);

@@ -113,92 +113,7 @@ void apx_nodeManager_delete(apx_nodeManager_t *self)
    }
 }
 
-apx_nodeInstance_t *apx_nodeManager_createNode(apx_nodeManager_t *self, const char *nodeName)
-{
-   if (self != 0)
-   {
-      ///TODO: only accept if the nodeManager is not in weakRef mode
-      apx_nodeInstance_t *nodeInstance = apx_nodeInstance_new(self->mode);
-      if (nodeInstance != 0)
-      {
-         adt_hash_set(&self->nodeInstanceMap, nodeName, (void*) nodeInstance);
-         self->lastAttached = nodeInstance;
-      }
-      return nodeInstance;
-   }
-   return (apx_nodeInstance_t*) 0;
-}
-
-apx_error_t apx_nodeManager_parseDefinition(apx_nodeManager_t *self, apx_nodeInstance_t *nodeInstance)
-{
-   if ( (self != 0) && (nodeInstance != 0) )
-   {
-      return apx_nodeInstance_parseDefinition(nodeInstance, &self->parser);
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-/********** Utility functions  ************/
-apx_nodeInstance_t *apx_nodeManager_find(apx_nodeManager_t *self, const char *name)
-{
-   if ( (self != 0 ) && (name != 0) )
-   {
-      void **result = adt_hash_get(&self->nodeInstanceMap, name);
-      if (result != 0)
-      {
-         return (apx_nodeInstance_t*) *result;
-      }
-   }
-   return (apx_nodeInstance_t*) 0;
-}
-
-int32_t apx_nodeManager_length(apx_nodeManager_t *self)
-{
-   if (self != 0)
-   {
-      int32_t retval;
-      SPINLOCK_ENTER(self->lock);
-      retval = adt_hash_length(&self->nodeInstanceMap);
-      SPINLOCK_LEAVE(self->lock);
-      return retval;
-   }
-   return -1;
-}
-
-int32_t apx_nodeManager_keys(apx_nodeManager_t *self, adt_ary_t* array)
-{
-   if (self != 0)
-   {
-      int32_t retval;
-      SPINLOCK_ENTER(self->lock);
-      retval = adt_hash_keys(&self->nodeInstanceMap, array);
-      SPINLOCK_LEAVE(self->lock);
-      return retval;
-   }
-   return -1;
-}
-
-int32_t apx_nodeManager_values(apx_nodeManager_t *self, adt_ary_t* array)
-{
-   if (self != 0)
-   {
-      int32_t retval;
-      SPINLOCK_ENTER(self->lock);
-      retval = adt_hash_values(&self->nodeInstanceMap, array);
-      SPINLOCK_LEAVE(self->lock);
-      return retval;
-   }
-   return -1;
-}
-
-apx_nodeInstance_t *apx_nodeManager_getLastAttached(apx_nodeManager_t *self)
-{
-   if (self != 0)
-   {
-      return self->lastAttached;
-   }
-   return (apx_nodeInstance_t*) 0;
-}
+/********** Client mode API  ************/
 
 apx_error_t apx_nodeManager_buildNode_cstr(apx_nodeManager_t *self, const char *definition_text)
 {
@@ -284,6 +199,96 @@ apx_error_t apx_nodeManager_attachNode(apx_nodeManager_t *self, apx_nodeInstance
       return APX_NAME_MISSING_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/********** Server mode API  ************/
+
+apx_nodeInstance_t *apx_nodeManager_createNode(apx_nodeManager_t *self, const char *nodeName)
+{
+   if (self != 0)
+   {
+      ///TODO: only accept if the nodeManager is not in weakRef mode
+      apx_nodeInstance_t *nodeInstance = apx_nodeInstance_new(self->mode);
+      if (nodeInstance != 0)
+      {
+         adt_hash_set(&self->nodeInstanceMap, nodeName, (void*) nodeInstance);
+         self->lastAttached = nodeInstance;
+      }
+      return nodeInstance;
+   }
+   return (apx_nodeInstance_t*) 0;
+}
+
+apx_error_t apx_nodeManager_parseDefinition(apx_nodeManager_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      return apx_nodeInstance_parseDefinition(nodeInstance, &self->parser);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/********** Utility functions  ************/
+
+apx_nodeInstance_t *apx_nodeManager_find(apx_nodeManager_t *self, const char *name)
+{
+   if ( (self != 0 ) && (name != 0) )
+   {
+      void **result = adt_hash_get(&self->nodeInstanceMap, name);
+      if (result != 0)
+      {
+         return (apx_nodeInstance_t*) *result;
+      }
+   }
+   return (apx_nodeInstance_t*) 0;
+}
+
+int32_t apx_nodeManager_length(apx_nodeManager_t *self)
+{
+   if (self != 0)
+   {
+      int32_t retval;
+      SPINLOCK_ENTER(self->lock);
+      retval = adt_hash_length(&self->nodeInstanceMap);
+      SPINLOCK_LEAVE(self->lock);
+      return retval;
+   }
+   return -1;
+}
+
+int32_t apx_nodeManager_keys(apx_nodeManager_t *self, adt_ary_t* array)
+{
+   if ( (self != 0) && (array != 0) )
+   {
+      int32_t retval;
+      SPINLOCK_ENTER(self->lock);
+      retval = adt_hash_keys(&self->nodeInstanceMap, array);
+      SPINLOCK_LEAVE(self->lock);
+      return retval;
+   }
+   return -1;
+}
+
+int32_t apx_nodeManager_values(apx_nodeManager_t *self, adt_ary_t* array)
+{
+   if ( (self != 0) && (array != 0) )
+   {
+      int32_t retval;
+      SPINLOCK_ENTER(self->lock);
+      retval = adt_hash_values(&self->nodeInstanceMap, array);
+      SPINLOCK_LEAVE(self->lock);
+      return retval;
+   }
+   return -1;
+}
+
+apx_nodeInstance_t *apx_nodeManager_getLastAttached(apx_nodeManager_t *self)
+{
+   if (self != 0)
+   {
+      return self->lastAttached;
+   }
+   return (apx_nodeInstance_t*) 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////

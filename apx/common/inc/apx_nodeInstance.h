@@ -55,7 +55,7 @@ typedef struct apx_nodeInstance_tag
    apx_nodeData_t *nodeData; //All dynamic data in a node, things that change during runtime (strong reference)
    apx_portRef_t *requirePortReferences; //Array of apx_portRef_t, length of array: info->numRequirePorts.  This is created using a single (array-sized) malloc.
    apx_portRef_t *providePortReferences; //Array apx_portRef_t, length of array: info->numProvidePorts. This is created using a single (array-sized) malloc.
-   apx_portTriggerList_t *portTriggerList; //used in server mode, strong reference to apx_portTriggerList_t, length of array: info->numProvidePorts
+   apx_portTriggerList_t *portTriggerList; //used in server mode, strong reference to apx_portTriggerList_t, length of array: info->numProvidePorts. Created using a single malloc.
    struct apx_connectionBase_tag *connection; //Weak reference
    apx_file_t *definitionFile;       //pointer to file in file manager
    apx_file_t *providePortDataFile;  //pointer to file in file manager

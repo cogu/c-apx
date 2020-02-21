@@ -70,7 +70,7 @@ void apx_connectionManager_destroy(apx_connectionManager_t *self);
 void apx_connectionManager_start(apx_connectionManager_t *self);
 void apx_connectionManager_stop(apx_connectionManager_t *self);
 void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConnectionBase_t *connection);
-void apx_connectionManager_closeConnection(apx_connectionManager_t *self, apx_serverConnectionBase_t *connection);
+void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConnectionBase_t *connection);
 apx_serverConnectionBase_t* apx_connectionManager_getLastConnection(apx_connectionManager_t *self);
 uint32_t apx_connectionManager_getNumConnections(apx_connectionManager_t *self);
 #ifdef UNIT_TEST
