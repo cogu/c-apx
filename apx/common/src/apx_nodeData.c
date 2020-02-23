@@ -467,6 +467,40 @@ apx_error_t apx_nodeData_readProvidePortData(apx_nodeData_t *self, uint8_t *dest
    return retval;
 }
 
+/**
+ * Internal write function used by APX server
+ */
+apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, const struct apx_portDataProps_tag *destDatProps,
+      apx_nodeData_t *srcNodeData, const struct apx_portDataProps_tag *srcDataProps)
+{
+   if ( (destNodeData != 0) && (destDatProps != 0) && (srcNodeData != 0) && (srcDataProps != 0) && (destDatProps->dataSize == srcDataProps->dataSize) )
+   {
+      if ( apx_portDataProps_isPlainOldData(destDatProps) )
+      {
+         assert(destNodeData->requirePortDataBuf != 0);
+         assert(srcNodeData->providePortDataBuf != 0);
+#ifndef APX_EMBEDDED
+         SPINLOCK_ENTER(destNodeData->requirePortDataLock);
+         SPINLOCK_ENTER(srcNodeData->providePortDataLock);
+#endif
+
+         memcpy(&destNodeData->requirePortDataBuf[destDatProps->offset], &srcNodeData->providePortDataBuf[srcDataProps->offset], srcDataProps->dataSize);
+
+#ifndef APX_EMBEDDED
+         SPINLOCK_LEAVE(srcNodeData->providePortDataLock);
+         SPINLOCK_LEAVE(destNodeData->requirePortDataLock);
+#endif
+         return APX_NO_ERROR;
+      }
+      else
+      {
+         //Complex data types not yet supported
+         return APX_NOT_IMPLEMENTED_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 ////////////////// NodeInstance (parent) API //////////////////
 
 void apx_nodeData_setNodeInstance(apx_nodeData_t *self, struct apx_nodeInstance_tag *node)

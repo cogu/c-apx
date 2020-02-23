@@ -124,7 +124,8 @@ apx_error_t apx_connectionBase_nodeInstanceFileWriteNotify(apx_connectionBase_t 
 apx_error_t apx_connectionBase_nodeInstanceFileOpenNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
 
 //Callbacks triggered due to events happening locally
-apx_error_t apx_connectionBase_updateProvidePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
+apx_error_t apx_connectionBase_updateProvidePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, const uint8_t *data, uint32_t offset, uint32_t len);
+apx_error_t apx_connectionBase_updateRequirePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, const uint8_t *data, uint32_t offset, uint32_t len);
 
 /*** Event triggering API ***/
 

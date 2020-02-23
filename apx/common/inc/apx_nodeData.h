@@ -46,6 +46,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
 struct apx_nodeInstance_tag;
+struct apx_portDataProps_tag;
 
 typedef struct apx_nodeDataBuffers_tag
 {
@@ -129,6 +130,9 @@ apx_error_t apx_nodeData_createProvidePortBuffer(apx_nodeData_t *self, apx_size_
 apx_size_t apx_nodeData_getProvidePortDataLen(apx_nodeData_t *self);
 apx_error_t apx_nodeData_writeProvidePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
 apx_error_t apx_nodeData_readProvidePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, apx_size_t len);
+
+apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, const struct apx_portDataProps_tag *destDatProps,
+      apx_nodeData_t *srcNodeData, const struct apx_portDataProps_tag *srcDataProps);
 
 ////////////////// NodeInstance (parent) API //////////////////
 void apx_nodeData_setNodeInstance(apx_nodeData_t *self, struct apx_nodeInstance_tag *node);

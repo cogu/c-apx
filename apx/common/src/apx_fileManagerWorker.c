@@ -663,7 +663,7 @@ static apx_error_t workerThread_sendFileDynData(apx_fileManagerWorker_t *self, a
             apx_fileManagerShared_freeAllocatedMemory(self->shared, dataPtr, dataSize);
             result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
 #if APX_DEBUG_ENABLE
-            printf("[WORKER] Bytes transmitted: %d\n", result);
+            printf("[WORKER] Bytes transmitted: %d/%d \n", result, msgSize);
 #endif
             if (result != msgSize)
             {
