@@ -72,6 +72,7 @@ void apx_nodeInstance_create(apx_nodeInstance_t *self, apx_mode_t mode)
       self->mode = mode;
       self->requirePortDataState = APX_REQUIRE_PORT_DATA_STATE_INIT;
       self->providePortDataState = APX_PROVIDE_PORT_DATE_STATE_INIT;
+      MUTEX_INIT(self->connectorTableLock);
    }
 }
 
@@ -82,6 +83,22 @@ void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
       if (self->parseTree != 0)
       {
          apx_node_delete(self->parseTree);
+      }
+      if (self->connectorTable != 0)
+      {
+         apx_portCount_t numProvidePorts;
+         apx_portId_t portId;
+         assert(self->nodeInfo != 0);
+         numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+         assert(numProvidePorts > 0);
+         MUTEX_LOCK(self->connectorTableLock);
+         for(portId = 0; portId < numProvidePorts; portId++)
+         {
+            apx_portConnectorList_destroy(&self->connectorTable[portId]);
+         }
+         free(self->connectorTable);
+         self->connectorTable = (apx_portConnectorList_t*) 0;
+         MUTEX_UNLOCK(self->connectorTableLock);
       }
       if (self->nodeInfo != 0)
       {
@@ -101,10 +118,6 @@ void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
          free(self->providePortReferences);
          self->providePortReferences = 0;
       }
-      if (self->portTriggerList != 0)
-      {
-         apx_portTriggerList_delete(self->portTriggerList);
-      }
       if (self->requirePortChanges != 0)
       {
          apx_portConnectorChangeTable_delete(self->requirePortChanges);
@@ -113,6 +126,7 @@ void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
       {
          apx_portConnectorChangeTable_delete(self->providePortChanges);
       }
+      MUTEX_DESTROY(self->connectorTableLock);
    }
 }
 
@@ -637,7 +651,7 @@ apx_providePortDataState_t apx_nodeInstance_getProvidePortDataState(apx_nodeInst
       //TODO: Introduce some form of thread-lock here
       return self->providePortDataState;
    }
-   return (apx_providePortDataState_t*) 0;
+   return APX_PROVIDE_PORT_DATE_STATE_INIT;
 }
 
 void apx_nodeInstance_setRequirePortDataState(apx_nodeInstance_t *self, apx_requirePortDataState_t state)
@@ -656,8 +670,12 @@ apx_requirePortDataState_t apx_nodeInstance_getRequirePortDataState(apx_nodeInst
       //TODO: Introduce some form of thread-lock here
       return self->requirePortDataState;
    }
-   return (apx_requirePortDataState_t*) 0;
+   return APX_REQUIRE_PORT_DATA_STATE_INIT;
 }
+
+
+
+
 
 
 /********** Data API  ************/
@@ -710,6 +728,89 @@ apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, cons
          }
          return rc;
       }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/********** P-Port connector API  ************/
+apx_error_t apx_nodeInstance_buildConnectorTable(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      apx_portCount_t numProvidePorts;
+      assert(self->nodeInfo != 0);
+      numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+      if (numProvidePorts > 0)
+      {
+         apx_portId_t portId;
+         size_t allocSize = numProvidePorts * sizeof(apx_portConnectorList_t);
+         self->connectorTable = (apx_portConnectorList_t*) malloc(allocSize);
+         MUTEX_LOCK(self->connectorTableLock);
+         for(portId = 0; portId < numProvidePorts; portId++)
+         {
+            apx_portConnectorList_create(&self->connectorTable[portId]);
+         }
+         MUTEX_UNLOCK(self->connectorTableLock);
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+void apx_nodeInstance_lockPortConnectorTable(apx_nodeInstance_t *self)
+{
+   if ( (self != 0) && (self->connectorTable != 0) )
+   {
+      MUTEX_LOCK(self->connectorTableLock);
+   }
+}
+
+void apx_nodeInstance_unlockPortConnectorTable(apx_nodeInstance_t *self)
+{
+   if ( (self != 0) && (self->connectorTable != 0) )
+   {
+      MUTEX_UNLOCK(self->connectorTableLock);
+   }
+}
+
+apx_portConnectorList_t *apx_nodeInstance_getProvidePortConnectors(apx_nodeInstance_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (self->connectorTable != 0) )
+   {
+      {
+         apx_portCount_t numProvidePorts;
+         assert(self->nodeInfo != 0);
+         numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+         if ( (portId >= 0) && (portId < numProvidePorts) )
+         {
+            return &self->connectorTable[portId];
+         }
+      }
+   }
+   return (apx_portConnectorList_t*) 0;
+}
+
+/**
+ * Creates a new connector from this nodes' P-Port to another nodes' R-port.
+ * The caller of this function must have previously have called apx_nodeInstance_lockPortConnectorTable on this object
+ */
+apx_error_t apx_nodeInstance_insertProvidePortConnector(apx_nodeInstance_t *self, apx_portId_t portId, apx_portRef_t *requirePortRef)
+{
+   if ( (self != 0) && (portId >= 0) && (requirePortRef != 0) )
+   {
+      apx_portCount_t numProvidePorts;
+      assert(self->nodeInfo != 0);
+      numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+      if (portId < numProvidePorts)
+      {
+         if (self->connectorTable != 0)
+         {
+            apx_portConnectorList_t *connectors = &self->connectorTable[portId];
+            return apx_portConnectorList_insert(connectors, requirePortRef);
+         }
+         return APX_NULL_PTR_ERROR;
+      }
+      //fall-through to return APX_INVALID_ARGUMENT_ERROR
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

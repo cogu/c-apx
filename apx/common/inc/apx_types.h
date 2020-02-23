@@ -141,9 +141,10 @@ typedef uint8_t apx_logLevel_t;
 
 #define APX_INVALID_CONNECTION_ID 0xFFFFFFFF
 
-#define APX_ADDRESS_PORT_DATA_BOUNDARY   0x400 //1KB, this must be a power of 2
+#define APX_ADDRESS_PORT_DATA_START      0x0u
+#define APX_ADDRESS_PORT_DATA_BOUNDARY   0x400u //1KB, this must be a power of 2
 #define APX_ADDRESS_DEFINITION_BOUNDARY  0x100000u //1MB, this must be a power of 2
-#define APX_ADDRESS_DEFINITION_START     0x4000000 //64MB, this must be a power of 2
+#define APX_ADDRESS_DEFINITION_START     0x4000000u //64MB, this must be a power of 2
 
 typedef uint8_t apx_nodeState_t;
 #define APX_NODE_STATE_STAGING              ((apx_nodeState_t) 0u)

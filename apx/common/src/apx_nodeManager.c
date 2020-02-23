@@ -170,11 +170,21 @@ apx_error_t apx_nodeManager_buildNode_cstr(apx_nodeManager_t *self, const char *
             }
             if (self->mode == APX_SERVER_MODE)
             {
+               apx_portCount_t numProvidePorts;;
                rc = apx_nodeInstance_buildPortRefs(nodeInstance);
                if (rc != APX_NO_ERROR)
                {
                   apx_nodeInstance_delete(nodeInstance);
                   return rc;
+               }
+               numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
+               if (numProvidePorts > 0)
+               {
+                  rc = apx_nodeInstance_buildConnectorTable(nodeInstance);
+                  if (rc != APX_NO_ERROR)
+                  {
+                     return rc;
+                  }
                }
             }
             return APX_NO_ERROR;
