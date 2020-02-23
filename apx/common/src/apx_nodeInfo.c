@@ -33,7 +33,6 @@
 #include "apx_node.h"
 #include "apx_parser.h"
 #include "apx_nodeInfo.h"
-#include "apx_portTriggerList.h"
 #include "apx_vm.h"
 #include <stdio.h> //DEBUG ONLY
 #ifdef MEM_LEAK_CHECK

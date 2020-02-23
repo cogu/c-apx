@@ -520,6 +520,7 @@ static void apx_serverConnectionBase_definitionDataWriteNotify(apx_serverConnect
 {
    apx_programType_t errProgramType;
    apx_uniquePortId_t errPortId;
+   apx_portCount_t numProvidePorts;
    apx_error_t rc = apx_nodeManager_parseDefinition(&self->base.nodeManager, nodeInstance);
    if (rc != APX_NO_ERROR )
    {
@@ -550,6 +551,16 @@ static void apx_serverConnectionBase_definitionDataWriteNotify(apx_serverConnect
    {
       ///TODO: send error code back to client
       return;
+   }
+   numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
+   if (numProvidePorts > 0)
+   {
+      rc = apx_nodeInstance_buildConnectorTable(nodeInstance);
+      if (rc != APX_NO_ERROR)
+      {
+         ///TODO: send error code back to client
+         return;
+      }
    }
    rc = apx_serverConnectionBase_openOutPortDataFileIfExists(self, nodeInstance);
    if (rc != APX_NO_ERROR)
@@ -595,7 +606,18 @@ static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serve
          rc = apx_server_connectNodeInstanceProvidePorts(self->server, nodeInstance);
          if (rc == APX_NO_ERROR)
          {
+            apx_portConnectorChangeTable_t *providePortChanges;
             apx_nodeInstance_setProvidePortDataState(nodeInstance, APX_PROVIDE_PORT_DATA_STATE_CONNECTED);
+            providePortChanges = apx_nodeInstance_getProvidePortConnectorChanges(nodeInstance, false);
+            if (providePortChanges != 0)
+            {
+               rc = apx_server_processProvidePortConnectorChanges(self->server, nodeInstance, providePortChanges);
+               if (rc != APX_NO_ERROR)
+               {
+                  apx_server_releaseGlobalLock(self->server);
+                  return rc;
+               }
+            }
          }
          else
          {
@@ -765,7 +787,7 @@ static apx_error_t apx_serverConnectionBase_RequirePortDataFileOpenNotify(apx_se
          if (rc != APX_NO_ERROR)
          {
             apx_server_releaseGlobalLock(self->server);
-            return APX_NOT_IMPLEMENTED_ERROR;
+            return rc;
          }
       }
       apx_server_releaseGlobalLock(self->server);

@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portTriggerList.c
+* \file      apx_portConnectorList.c
 * \author    Conny Gustafsson
 * \date      2018-12-07
 * \brief     Internal lookup table for port subscriptions
@@ -27,7 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
-#include "apx_portTriggerList.h"
+#include "apx_portConnectorList.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -48,7 +48,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portTriggerList_create(apx_portTriggerList_t *self)
+void apx_portConnectorList_create(apx_portConnectorList_t *self)
 {
    if (self != 0)
    {
@@ -56,7 +56,7 @@ void apx_portTriggerList_create(apx_portTriggerList_t *self)
    }
 }
 
-void apx_portTriggerList_destroy(apx_portTriggerList_t *self)
+void apx_portConnectorList_destroy(apx_portConnectorList_t *self)
 {
    if (self != 0)
    {
@@ -64,26 +64,26 @@ void apx_portTriggerList_destroy(apx_portTriggerList_t *self)
    }
 }
 
-apx_portTriggerList_t* apx_portTriggerList_new(void)
+apx_portConnectorList_t* apx_portConnectorList_new(void)
 {
-   apx_portTriggerList_t *self = (apx_portTriggerList_t*) malloc(sizeof(apx_portTriggerList_t));
+   apx_portConnectorList_t *self = (apx_portConnectorList_t*) malloc(sizeof(apx_portConnectorList_t));
    if (self != 0)
    {
-      apx_portTriggerList_create(self);
+      apx_portConnectorList_create(self);
    }
    return self;
 }
 
-void apx_portTriggerList_delete(apx_portTriggerList_t *self)
+void apx_portConnectorList_delete(apx_portConnectorList_t *self)
 {
    if (self != 0)
    {
-      apx_portTriggerList_destroy(self);
+      apx_portConnectorList_destroy(self);
       free(self);
    }
 }
 
-apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portRef_t *portData)
+apx_error_t apx_portConnectorList_insert(apx_portConnectorList_t *self, apx_portRef_t *portData)
 {
    if ( (self != 0) && (portData != 0) )
    {
@@ -97,7 +97,7 @@ apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portRef_
          }
          else
          {
-            retval = -1; //unhandled error
+            retval = APX_GENERIC_ERROR; //unhandled error
          }
       }
       return retval;
@@ -105,7 +105,7 @@ apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portRef_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_portTriggerList_remove(apx_portTriggerList_t *self, apx_portRef_t *portData)
+void apx_portConnectorList_remove(apx_portConnectorList_t *self, apx_portRef_t *portData)
 {
    if ( (self != 0) && (portData != 0) )
    {
@@ -113,7 +113,7 @@ void apx_portTriggerList_remove(apx_portTriggerList_t *self, apx_portRef_t *port
    }
 }
 
-int32_t apx_portTriggerList_length(apx_portTriggerList_t *self)
+int32_t apx_portConnectorList_length(apx_portConnectorList_t *self)
 {
    if (self != 0)
    {
@@ -122,7 +122,7 @@ int32_t apx_portTriggerList_length(apx_portTriggerList_t *self)
    return -1;
 }
 
-apx_portRef_t *apx_portTriggerList_get(apx_portTriggerList_t *self, int32_t index)
+apx_portRef_t *apx_portConnectorList_get(apx_portConnectorList_t *self, int32_t index)
 {
    if (self != 0)
    {

@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portTriggerList.h
+* \file      apx_portConnectorList.h
 * \author    Conny Gustafsson
 * \date      2018-12-07
 * \brief     Internal lookup table for port subscriptions
@@ -40,10 +40,10 @@
 /**
  * Keeps a list of port connectors from one p-port to zero or more r-ports.
  */
-typedef struct apx_portTriggerList_tag
+typedef struct apx_portConnectorList_tag
 {
    adt_ary_t requirePortData; //weak references to apx_portRef_t
-}apx_portTriggerList_t;
+} apx_portConnectorList_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -55,14 +55,14 @@ typedef struct apx_portTriggerList_tag
 //////////////////////////////////////////////////////////////////////////////
 
 //dataTriggerTable
-void apx_portTriggerList_create(apx_portTriggerList_t *self);
-void apx_portTriggerList_destroy(apx_portTriggerList_t *self);
-apx_portTriggerList_t* apx_portTriggerList_new(void);
-void apx_portTriggerList_delete(apx_portTriggerList_t *self);
+void apx_portConnectorList_create(apx_portConnectorList_t *self);
+void apx_portConnectorList_destroy(apx_portConnectorList_t *self);
+apx_portConnectorList_t* apx_portConnectorList_new(void);
+void apx_portConnectorList_delete(apx_portConnectorList_t *self);
 
-apx_error_t apx_portTriggerList_insert(apx_portTriggerList_t *self, apx_portRef_t *portData);
-void apx_portTriggerList_remove(apx_portTriggerList_t *self, apx_portRef_t *portData);
-int32_t apx_portTriggerList_length(apx_portTriggerList_t *self);
-apx_portRef_t *apx_portTriggerList_get(apx_portTriggerList_t *self, int32_t index);
+apx_error_t apx_portConnectorList_insert(apx_portConnectorList_t *self, apx_portRef_t *portData);
+void apx_portConnectorList_remove(apx_portConnectorList_t *self, apx_portRef_t *portData);
+int32_t apx_portConnectorList_length(apx_portConnectorList_t *self);
+apx_portRef_t *apx_portConnectorList_get(apx_portConnectorList_t *self, int32_t index);
 
 #endif //APX_PORT_TRIGGER_LIST_H

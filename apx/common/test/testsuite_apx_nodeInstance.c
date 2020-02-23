@@ -4,7 +4,7 @@
 * \date      2019-12-02
 * \brief     Unit tests for apx_nodeInstance
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -48,7 +48,8 @@
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_nodeInstance_manuallyCreateClientNodeUsingAPI(CuTest *tc);
 static void test_apx_nodeInstance_manuallyCreateServerNodeUsingAPI(CuTest *tc);
-static void test_apx_nodeInstance_buildPortReferences1(CuTest *tc);
+static void test_apx_nodeInstance_buildPortReferences(CuTest *tc);
+static void test_apx_nodeInstance_buildConnectorTable(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -63,7 +64,8 @@ CuSuite* testSuite_apx_nodeInstance(void)
 
    SUITE_ADD_TEST(suite, test_apx_nodeInstance_manuallyCreateClientNodeUsingAPI);
    SUITE_ADD_TEST(suite, test_apx_nodeInstance_manuallyCreateServerNodeUsingAPI);
-   SUITE_ADD_TEST(suite, test_apx_nodeInstance_buildPortReferences1);
+   SUITE_ADD_TEST(suite, test_apx_nodeInstance_buildPortReferences);
+   SUITE_ADD_TEST(suite, test_apx_nodeInstance_buildConnectorTable);
 
    return suite;
 }
@@ -132,7 +134,7 @@ static void test_apx_nodeInstance_manuallyCreateServerNodeUsingAPI(CuTest *tc)
 
 }
 
-static void test_apx_nodeInstance_buildPortReferences1(CuTest *tc)
+static void test_apx_nodeInstance_buildPortReferences(CuTest *tc)
 {
    apx_nodeInstance_t *inst;
    apx_programType_t errProgramType;
@@ -175,4 +177,28 @@ static void test_apx_nodeInstance_buildPortReferences1(CuTest *tc)
 
    apx_parser_delete(parser);
    apx_nodeInstance_delete(inst);
+}
+
+static void test_apx_nodeInstance_buildConnectorTable(CuTest *tc)
+{
+   apx_nodeInstance_t *inst;
+   apx_programType_t errProgramType;
+   apx_uniquePortId_t errPortId;
+   apx_parser_t *parser = apx_parser_new();
+   apx_size_t apx_len = (apx_size_t) strlen(g_apx_test_node1);
+
+   inst = apx_nodeInstance_new(APX_SERVER_MODE);
+   CuAssertPtrNotNull(tc, inst);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_createDefinitionBuffer(inst, apx_len));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeDefinitionData(inst, (const uint8_t*) g_apx_test_node1, 0u, apx_len));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_parseDefinition(inst, parser));
+   CuAssertPtrNotNull(tc, apx_nodeInstance_getParseTree(inst));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildNodeInfo(inst, &errProgramType, &errPortId));
+   CuAssertPtrEquals(tc, NULL, inst->connectorTable);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_buildConnectorTable(inst));
+   CuAssertPtrNotNull(tc, inst->connectorTable );
+
+   apx_parser_delete(parser);
+   apx_nodeInstance_delete(inst);
+
 }

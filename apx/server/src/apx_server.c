@@ -314,36 +314,45 @@ apx_error_t apx_server_disconnectNodeInstanceRequirePorts(apx_server_t *self, ap
  */
 apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *requireNodeInstance, apx_portConnectorChangeTable_t *connectorChanges)
 {
-   apx_nodeInfo_t *nodeInfo;
+   apx_nodeInfo_t *requireNodeInfo;
    apx_portCount_t numRequirePorts;
    apx_portId_t requirePortId;
-   nodeInfo = apx_nodeInstance_getNodeInfo(requireNodeInstance);
-   assert(nodeInfo != 0);
-   numRequirePorts = apx_nodeInfo_getNumRequirePorts(nodeInfo);
+   requireNodeInfo = apx_nodeInstance_getNodeInfo(requireNodeInstance);
+   assert(requireNodeInfo != 0);
+   numRequirePorts = apx_nodeInfo_getNumRequirePorts(requireNodeInfo);
    assert(connectorChanges->numPorts == numRequirePorts);
    for (requirePortId = 0u; requirePortId < numRequirePorts; requirePortId++)
    {
-      apx_portConnectorChangeEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectorChanges, requirePortId);
+      apx_portRef_t *requirePortRef;
+      apx_portConnectorChangeEntry_t *entry;
+      requirePortRef = apx_nodeInstance_getRequirePortRef(requireNodeInstance, requirePortId);
+      entry = apx_portConnectorChangeTable_getEntry(connectorChanges, requirePortId);
+      assert(requirePortRef != 0);
       assert(entry != 0);
       if (entry->count > 0)
       {
          if (entry->count == 1)
          {
+            apx_error_t rc;
+            apx_nodeInstance_t *provideNodeInstance;
+            apx_portId_t providePortId;
             apx_portRef_t *providePortRef = entry->data.portRef;
-            printf("%s[%d] -> %s[%d]\n",
-                  apx_nodeInstance_getName(providePortRef->nodeInstance),
-                  (int) apx_portRef_getPortId(providePortRef),
-                  apx_nodeInstance_getName(requireNodeInstance),
-                  (int) requirePortId);
+            provideNodeInstance = providePortRef->nodeInstance;
+            providePortId = apx_portRef_getPortId(providePortRef);
+            assert(provideNodeInstance != 0);
+            assert(providePortId >= 0u);
+            apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
+            rc = apx_nodeInstance_insertProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
+            apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+            if (rc != APX_NO_ERROR)
+            {
+               return rc;
+            }
          }
          else
          {
             return APX_NOT_IMPLEMENTED_ERROR;
          }
-      }
-      else
-      {
-         return APX_NOT_IMPLEMENTED_ERROR;
       }
    }
    return APX_NO_ERROR;
@@ -354,6 +363,52 @@ apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, ap
  */
 apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *provideNodeInstance, apx_portConnectorChangeTable_t *connectorChanges)
 {
+   apx_nodeInfo_t *provideNodeInfo;
+   apx_portCount_t numProvidePorts;
+   apx_portId_t providePortId;
+   provideNodeInfo = apx_nodeInstance_getNodeInfo(provideNodeInstance);
+   assert(provideNodeInfo != 0);
+   numProvidePorts = apx_nodeInfo_getNumProvidePorts(provideNodeInfo);
+   assert(connectorChanges->numPorts == numProvidePorts);
+   apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
+   for (providePortId = 0u; providePortId < numProvidePorts; providePortId++)
+   {
+      apx_portConnectorChangeEntry_t *entry;
+      entry = apx_portConnectorChangeTable_getEntry(connectorChanges, providePortId);
+      assert(entry != 0);
+      if (entry->count > 0)
+      {
+         if (entry->count == 1)
+         {
+            apx_error_t rc;
+            apx_portRef_t *requirePortRef = entry->data.portRef;
+            assert(requirePortRef != 0);
+            rc = apx_nodeInstance_insertProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
+            if (rc != APX_NO_ERROR)
+            {
+               apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+               return rc;
+            }
+         }
+         else
+         {
+            int32_t i;
+            for(i=0; i < entry->count; i++)
+            {
+               apx_error_t rc;
+               apx_portRef_t *requirePortRef = adt_ary_value(entry->data.array, i);
+               assert(requirePortRef != 0);
+               rc = apx_nodeInstance_insertProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
+               if (rc != APX_NO_ERROR)
+               {
+                  apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+                  return rc;
+               }
+            }
+         }
+      }
+   }
+   apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
    return APX_NO_ERROR;
 }
 

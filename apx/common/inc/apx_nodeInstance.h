@@ -34,12 +34,21 @@
 #include "apx_nodeInfo.h"
 #include "apx_nodeData.h"
 #include "apx_portDataRef.h"
-#include "apx_portTriggerList.h"
+#include "apx_portConnectorList.h"
 #include "apx_eventListener.h"
 #include "apx_file.h"
 #include "apx_error.h"
 #include "apx_parser.h"
 #include "apx_portConnectorChangeTable.h"
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+# endif
+# include <Windows.h>
+#else
+# include <pthread.h>
+#endif
+#include "osmacro.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -53,9 +62,9 @@ typedef struct apx_nodeInstance_tag
    apx_node_t *parseTree; //Temporary parse tree of APX definition file (strong reference)
    apx_nodeInfo_t *nodeInfo; //All static information about an APX node (strong reference)
    apx_nodeData_t *nodeData; //All dynamic data in a node, things that change during runtime (strong reference)
-   apx_portRef_t *requirePortReferences; //Array of apx_portRef_t, length of array: info->numRequirePorts.  This is created using a single (array-sized) malloc.
-   apx_portRef_t *providePortReferences; //Array apx_portRef_t, length of array: info->numProvidePorts. This is created using a single (array-sized) malloc.
-   apx_portTriggerList_t *portTriggerList; //used in server mode, strong reference to apx_portTriggerList_t, length of array: info->numProvidePorts. Created using a single malloc.
+   apx_portRef_t *requirePortReferences; //Array of apx_portRef_t, length of array: info->numRequirePorts.  This is created using a single (array-sized) malloc. Only used in server mode.
+   apx_portRef_t *providePortReferences; //Array apx_portRef_t, length of array: info->numProvidePorts. This is created using a single (array-sized) malloc. Only used in server mode.
+   apx_portConnectorList_t *connectorTable; //Array of apx_portConnectorList_t; Length of array: info->numProvidePorts. Created using a single malloc. Only used in server mode.
    struct apx_connectionBase_tag *connection; //Weak reference
    apx_file_t *definitionFile;       //pointer to file in file manager
    apx_file_t *providePortDataFile;  //pointer to file in file manager
@@ -65,6 +74,7 @@ typedef struct apx_nodeInstance_tag
    apx_mode_t mode;
    apx_requirePortDataState_t requirePortDataState;
    apx_providePortDataState_t providePortDataState;
+   MUTEX_T connectorTableLock;
 } apx_nodeInstance_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -101,29 +111,31 @@ void apx_nodeInstance_registerRequirePortFileHandler(apx_nodeInstance_t *self, a
 const char *apx_nodeInstance_getName(apx_nodeInstance_t *self);
 void apx_nodeInstance_cleanParseTree(apx_nodeInstance_t *self);
 apx_nodeInfo_t *apx_nodeInstance_getNodeInfo(apx_nodeInstance_t *self);
-int32_t apx_nodeInstance_getNumProvidePorts(apx_nodeInstance_t *self);
-int32_t apx_nodeInstance_getNumRequirePorts(apx_nodeInstance_t *self);
+apx_portCount_t apx_nodeInstance_getNumProvidePorts(apx_nodeInstance_t *self);
+apx_portCount_t apx_nodeInstance_getNumRequirePorts(apx_nodeInstance_t *self);
 apx_error_t apx_nodeInstance_fillProvidePortDataFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
 apx_error_t apx_nodeInstance_fillDefinitionFileInfo(apx_nodeInstance_t *self, apx_fileInfo_t *fileInfo);
-
-
 void apx_nodeInstance_setProvidePortDataState(apx_nodeInstance_t *self, apx_providePortDataState_t state);
 apx_providePortDataState_t apx_nodeInstance_getProvidePortDataState(apx_nodeInstance_t *self);
 void apx_nodeInstance_setRequirePortDataState(apx_nodeInstance_t *self, apx_requirePortDataState_t state);
 apx_requirePortDataState_t apx_nodeInstance_getRequirePortDataState(apx_nodeInstance_t *self);
-
-
 
 /********** Data API  ************/
 apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
 
-/********** Port Connection Changes API  ************/
+/********** P-Port connector API  ************/
+apx_error_t apx_nodeInstance_buildConnectorTable(apx_nodeInstance_t *self);
+void apx_nodeInstance_lockPortConnectorTable(apx_nodeInstance_t *self);
+void apx_nodeInstance_unlockPortConnectorTable(apx_nodeInstance_t *self);
+apx_portConnectorList_t *apx_nodeInstance_getProvidePortConnectors(apx_nodeInstance_t *self, apx_portId_t portId);
+apx_error_t apx_nodeInstance_insertProvidePortConnector(apx_nodeInstance_t *self, apx_portId_t portId, apx_portRef_t *requirePortRef);
+
+/********** Port Connector Change API  ************/
 apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate);
 apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate);
 void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self, bool releaseMemory);
 void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self, bool releaseMemory);
-
 
 #endif //APX_NODE_INSTANCE_H
