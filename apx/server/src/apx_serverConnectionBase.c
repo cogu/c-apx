@@ -596,9 +596,9 @@ static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serve
       break;
    case APX_PROVIDE_PORT_DATA_STATE_WAITING_FOR_FILE_DATA:
       rc = apx_nodeData_writeProvidePortData(nodeData, data, offset, len);
-      if (rc == APX_NO_ERROR)
+      if (rc != APX_NO_ERROR)
       {
-         printf("[%u] First write of %s.out(%d,%d)\n", (unsigned int) apx_connectionBase_getConnectionId(&self->base), apx_nodeInstance_getName(nodeInstance), (int) offset, (int) len);
+         return rc;
       }
       if (self->server != 0)
       {
@@ -790,7 +790,10 @@ static apx_error_t apx_serverConnectionBase_RequirePortDataFileOpenNotify(apx_se
             return rc;
          }
       }
+      //Trigger transmission of .in file back to client
+      rc = apx_nodeInstance_sendRequirePortDataToFileManager(nodeInstance);
       apx_server_releaseGlobalLock(self->server);
+      return rc;
    }
    return APX_NO_ERROR;
 }

@@ -116,7 +116,7 @@ void apx_server_start(apx_server_t *self)
       apx_server_initExtensions(self);
 #ifndef UNIT_TEST
       apx_connectionManager_start(&self->connectionManager);
-      if (self->isWorkerThreadValid == false)
+      if (self->isEventThreadValid == false)
       {
          apx_server_startThread(self);
       }
@@ -135,7 +135,7 @@ void apx_server_stop(apx_server_t *self)
       apx_server_shutdownExtensions(self);
 #ifndef UNIT_TEST
       apx_eventLoop_exit(&self->eventLoop);
-      if (self->isWorkerThreadValid)
+      if (self->isEventThreadValid)
       {
          apx_server_stopThread(self);
       }
@@ -314,48 +314,41 @@ apx_error_t apx_server_disconnectNodeInstanceRequirePorts(apx_server_t *self, ap
  */
 apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *requireNodeInstance, apx_portConnectorChangeTable_t *connectorChanges)
 {
-   apx_nodeInfo_t *requireNodeInfo;
-   apx_portCount_t numRequirePorts;
-   apx_portId_t requirePortId;
-   requireNodeInfo = apx_nodeInstance_getNodeInfo(requireNodeInstance);
-   assert(requireNodeInfo != 0);
-   numRequirePorts = apx_nodeInfo_getNumRequirePorts(requireNodeInfo);
-   assert(connectorChanges->numPorts == numRequirePorts);
-   for (requirePortId = 0u; requirePortId < numRequirePorts; requirePortId++)
+   if ( (requireNodeInstance != 0) && (connectorChanges != 0 ) )
    {
-      apx_portRef_t *requirePortRef;
-      apx_portConnectorChangeEntry_t *entry;
-      requirePortRef = apx_nodeInstance_getRequirePortRef(requireNodeInstance, requirePortId);
-      entry = apx_portConnectorChangeTable_getEntry(connectorChanges, requirePortId);
-      assert(requirePortRef != 0);
-      assert(entry != 0);
-      if (entry->count > 0)
+      apx_portCount_t numRequirePorts;
+      apx_portId_t requirePortId;
+      apx_requirePortDataState_t requirePortState;
+      requirePortState = apx_nodeInstance_getRequirePortDataState(requireNodeInstance);
+      numRequirePorts = apx_nodeInstance_getNumRequirePorts(requireNodeInstance);
+      assert(connectorChanges->numPorts == numRequirePorts);
+      for (requirePortId = 0u; requirePortId < numRequirePorts; requirePortId++)
       {
-         if (entry->count == 1)
+         apx_portRef_t *requirePortRef;
+         apx_portConnectorChangeEntry_t *entry;
+         requirePortRef = apx_nodeInstance_getRequirePortRef(requireNodeInstance, requirePortId);
+         entry = apx_portConnectorChangeTable_getEntry(connectorChanges, requirePortId);
+         assert(requirePortRef != 0);
+         assert(entry != 0);
+         if (entry->count > 0)
          {
-            apx_error_t rc;
-            apx_nodeInstance_t *provideNodeInstance;
-            apx_portId_t providePortId;
-            apx_portRef_t *providePortRef = entry->data.portRef;
-            provideNodeInstance = providePortRef->nodeInstance;
-            providePortId = apx_portRef_getPortId(providePortRef);
-            assert(provideNodeInstance != 0);
-            assert(providePortId >= 0u);
-            apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
-            rc = apx_nodeInstance_insertProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
-            apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
-            if (rc != APX_NO_ERROR)
+            if (entry->count == 1)
             {
-               return rc;
+               apx_error_t rc;
+               apx_portRef_t *providePortRef = entry->data.portRef;
+               assert(providePortRef != 0);
+               rc = apx_nodeInstance_handleRequirePortWasConnectedToProvidePort(requirePortRef, providePortRef);
+            }
+            else
+            {
+               //Multiple providers are available. This needs to be handled later
+               return APX_NOT_IMPLEMENTED_ERROR;
             }
          }
-         else
-         {
-            return APX_NOT_IMPLEMENTED_ERROR;
-         }
       }
+      return APX_NO_ERROR;
    }
-   return APX_NO_ERROR;
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 /**
@@ -363,53 +356,57 @@ apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, ap
  */
 apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *provideNodeInstance, apx_portConnectorChangeTable_t *connectorChanges)
 {
-   apx_nodeInfo_t *provideNodeInfo;
-   apx_portCount_t numProvidePorts;
-   apx_portId_t providePortId;
-   provideNodeInfo = apx_nodeInstance_getNodeInfo(provideNodeInstance);
-   assert(provideNodeInfo != 0);
-   numProvidePorts = apx_nodeInfo_getNumProvidePorts(provideNodeInfo);
-   assert(connectorChanges->numPorts == numProvidePorts);
-   apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
-   for (providePortId = 0u; providePortId < numProvidePorts; providePortId++)
+   if ( (provideNodeInstance != 0) && (connectorChanges != 0 ) )
    {
-      apx_portConnectorChangeEntry_t *entry;
-      entry = apx_portConnectorChangeTable_getEntry(connectorChanges, providePortId);
-      assert(entry != 0);
-      if (entry->count > 0)
+      apx_portCount_t numProvidePorts;
+      apx_portId_t providePortId;
+      numProvidePorts = apx_nodeInstance_getNumProvidePorts(provideNodeInstance);
+      assert(connectorChanges->numPorts == numProvidePorts);
+      apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
+      for (providePortId = 0u; providePortId < numProvidePorts; providePortId++)
       {
-         if (entry->count == 1)
+         apx_portRef_t *providePortRef;
+         apx_portConnectorChangeEntry_t *entry;
+         entry = apx_portConnectorChangeTable_getEntry(connectorChanges, providePortId);
+         providePortRef = apx_nodeInstance_getProvidePortRef(provideNodeInstance, providePortId);
+         assert(entry != 0);
+         assert(providePortRef != 0);
+         if (entry->count > 0)
          {
-            apx_error_t rc;
-            apx_portRef_t *requirePortRef = entry->data.portRef;
-            assert(requirePortRef != 0);
-            rc = apx_nodeInstance_insertProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
-            if (rc != APX_NO_ERROR)
-            {
-               apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
-               return rc;
-            }
-         }
-         else
-         {
-            int32_t i;
-            for(i=0; i < entry->count; i++)
+            if (entry->count == 1)
             {
                apx_error_t rc;
-               apx_portRef_t *requirePortRef = adt_ary_value(entry->data.array, i);
+               apx_portRef_t *requirePortRef = entry->data.portRef;
                assert(requirePortRef != 0);
-               rc = apx_nodeInstance_insertProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
+               rc = apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(providePortRef, requirePortRef);
                if (rc != APX_NO_ERROR)
                {
                   apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
                   return rc;
                }
             }
+            else
+            {
+               int32_t i;
+               for(i=0; i < entry->count; i++)
+               {
+                  apx_error_t rc;
+                  apx_portRef_t *requirePortRef = adt_ary_value(entry->data.array, i);
+                  assert(requirePortRef != 0);
+                  rc = apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(providePortRef, requirePortRef);
+                  if (rc != APX_NO_ERROR)
+                  {
+                     apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+                     return rc;
+                  }
+               }
+            }
          }
       }
+      apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+      return APX_NO_ERROR;
    }
-   apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
-   return APX_NO_ERROR;
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 
@@ -596,19 +593,19 @@ static void apx_server_handleEvent(void *arg, apx_event_t *event)
 #ifndef UNIT_TEST
 static apx_error_t apx_server_startThread(apx_server_t *self)
 {
-   self->isWorkerThreadValid = true;
+   self->isEventThreadValid = true;
 #ifdef _MSC_VER
-   THREAD_CREATE(self->workerThread, threadTask, self, self->threadId);
-   if(self->workerThread == INVALID_HANDLE_VALUE)
+   THREAD_CREATE(self->eventThread, threadTask, self, self->threadId);
+   if(self->eventThread == INVALID_HANDLE_VALUE)
    {
-      self->workerThreadValid = false;
+      self->eventThreadValid = false;
       return APX_THREAD_CREATE_ERROR;
    }
 #else
-   int rc = THREAD_CREATE(self->workerThread,threadTask,self);
+   int rc = THREAD_CREATE(self->eventThread,threadTask,self);
    if(rc != 0)
    {
-      self->isWorkerThreadValid = false;
+      self->isEventThreadValid = false;
       return APX_THREAD_CREATE_ERROR;
    }
 #endif
@@ -617,10 +614,10 @@ static apx_error_t apx_server_startThread(apx_server_t *self)
 
 static apx_error_t apx_server_stopThread(apx_server_t *self)
 {
-   if (self->isWorkerThreadValid)
+   if (self->isEventThreadValid)
    {
 #ifdef _MSC_VER
-      result = WaitForSingleObject(self->workerThread, 5000);
+      result = WaitForSingleObject(self->eventThread, 5000);
       if (result == WAIT_TIMEOUT)
       {
          return APX_THREAD_JOIN_TIMEOUT_ERROR;
@@ -629,13 +626,13 @@ static apx_error_t apx_server_stopThread(apx_server_t *self)
       {
          return APX_THREAD_JOIN_ERROR;
       }
-      CloseHandle(self->workerThread);
-      self->workerThread = INVALID_HANDLE_VALUE;
+      CloseHandle(self->eventThread);
+      self->eventThread = INVALID_HANDLE_VALUE;
 #else
-      if(pthread_equal(pthread_self(),self->workerThread) == 0)
+      if(pthread_equal(pthread_self(),self->eventThread) == 0)
       {
          void *status;
-         int s = pthread_join(self->workerThread, &status);
+         int s = pthread_join(self->eventThread, &status);
          if (s != 0)
          {
             return APX_THREAD_JOIN_ERROR;
@@ -646,7 +643,7 @@ static apx_error_t apx_server_stopThread(apx_server_t *self)
          return APX_THREAD_JOIN_ERROR;
       }
 #endif
-   self->isWorkerThreadValid = false;
+   self->isEventThreadValid = false;
    }
    return APX_NO_ERROR;
 }

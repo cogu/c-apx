@@ -41,7 +41,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+#define STACK_DATA_BUF_SIZE 256
+
 typedef apx_portDataProps_t* (apx_getPortDataPropsFunc)(const apx_nodeInfo_t *self, apx_portId_t portId);
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -54,6 +57,7 @@ static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, str
 static apx_error_t apx_nodeInstance_requirePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len);
 static apx_error_t apx_nodeInstance_requirePortDataFileOpenNotify(void *arg, struct apx_file_tag *file);
 static void apx_nodeInstance_initPortRefs(apx_nodeInstance_t *self, apx_portRef_t *portRefs, apx_portCount_t numPorts, uint32_t portIdMask, apx_getPortDataPropsFunc *getPortDataProps);
+static apx_error_t apx_nodeInstance_routeProvidePortDataToRequirePortByRef(apx_portRef_t *providePortRef, apx_portRef_t *requirePortRef);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -300,11 +304,15 @@ apx_error_t apx_nodeInstance_createPortDataBuffers(apx_nodeInstance_t *self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-
-
-apx_error_t apx_nodeInstance_updatePortDataDirect(apx_nodeInstance_t *destNode, apx_portDataProps_t *destDataProps, apx_nodeInstance_t *srcNode, apx_portDataProps_t *srcDataProps)
+apx_error_t apx_nodeInstance_updatePortDataDirect(apx_nodeInstance_t *destNodeInstance, const apx_portDataProps_t *destDataProps, apx_nodeInstance_t *srcNodeInstance, const apx_portDataProps_t *srcDataProps)
 {
-   return APX_NOT_IMPLEMENTED_ERROR;
+   if (destNodeInstance != 0 && srcNodeInstance != 0)
+   {
+      assert(destNodeInstance->nodeData != 0);
+      assert(srcNodeInstance->nodeData != 0);
+      return apx_nodeData_updatePortDataDirect(destNodeInstance->nodeData, destDataProps, srcNodeInstance->nodeData, srcDataProps);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 /**
@@ -724,9 +732,44 @@ apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, cons
          if(self->connection != 0)
          {
             assert(self->providePortDataFile != 0);
-            rc = apx_connectionBase_updateProvidePortDataDirect(self->connection, self->providePortDataFile, offset, src, len);
+            rc = apx_connectionBase_updateProvidePortDataDirect(self->connection, self->providePortDataFile, src, offset, len);
          }
          return rc;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_nodeInstance_readProvidePortData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, apx_size_t len)
+{
+   if ( (self != 0) && (dest != 0) )
+   {
+      if (self->nodeData != 0)
+      {
+         return apx_nodeData_readProvidePortData(self->nodeData, dest, offset, len);
+      }
+      else
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/**
+ * Reads raw data from requirePortData buffer
+ */
+apx_error_t apx_nodeInstance_readRequirePortData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
+{
+   if ( (self != 0) && (dest != 0) )
+   {
+      if (self->nodeData != 0)
+      {
+         return apx_nodeData_readRequirePortData(self->nodeData, dest, offset, len);
+      }
+      else
+      {
+         return APX_NULL_PTR_ERROR;
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -877,6 +920,125 @@ void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self,
       self->providePortChanges = (apx_portConnectorChangeTable_t*) 0;
    }
 }
+
+/********** Data Routing API  ************/
+
+/**
+ * Call once per port when new RequirePortData was just connected to a provide port
+ *
+ */
+apx_error_t apx_nodeInstance_handleRequirePortWasConnectedToProvidePort(apx_portRef_t *requirePortRef, apx_portRef_t *providePortRef)
+{
+   if ( (requirePortRef != 0) && (providePortRef != 0) )
+   {
+      apx_error_t rc;
+      apx_nodeInstance_t *requireNodeInstance;
+      apx_nodeInstance_t *provideNodeInstance;
+      apx_portId_t providePortId;
+      requireNodeInstance = requirePortRef->nodeInstance;
+      provideNodeInstance = providePortRef->nodeInstance;
+      providePortId = apx_portRef_getPortId(providePortRef);
+      assert(requireNodeInstance != 0);
+      assert(provideNodeInstance != 0);
+      assert(providePortId >= 0u);
+      apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
+      rc = apx_nodeInstance_insertProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
+      apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      //Copy init-value for R-PORT directly from provide port connector
+      rc = apx_nodeInstance_updatePortDataDirect(requireNodeInstance, requirePortRef->portDataProps,
+            provideNodeInstance, providePortRef->portDataProps);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(apx_portRef_t *providePortRef, apx_portRef_t *requirePortRef)
+{
+   if ( (requirePortRef != 0) && (providePortRef != 0) )
+   {
+      apx_error_t rc;
+      apx_nodeInstance_t *provideNodeInstance;
+      provideNodeInstance = providePortRef->nodeInstance;
+      apx_portId_t providePortId = apx_portRef_getPortId(providePortRef);
+      assert(provideNodeInstance != 0);
+      assert(providePortId >= 0u);
+      rc = apx_nodeInstance_insertProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      rc = apx_nodeInstance_routeProvidePortDataToRequirePortByRef(providePortRef, requirePortRef);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_nodeInstance_sendRequirePortDataToFileManager(apx_nodeInstance_t *self)
+{
+   if ( self != 0 )
+   {
+      uint8_t *dataBuf;
+      size_t bufSize;
+      apx_size_t fileSize;
+      uint32_t fileStartAddress;
+      apx_error_t rc;
+      apx_file_t *file;
+      apx_fileManager_t *fileManager;
+      file = self->requirePortDataFile;
+      assert(file != 0);
+      fileManager = apx_file_getFileManager(file);
+      assert(fileManager != 0);
+      assert(self->nodeData != 0);
+      if (self->connection == 0)
+      {
+         return APX_NOT_CONNECTED_ERROR;
+      }
+      bufSize = (size_t) apx_nodeData_getRequirePortDataLen(self->nodeData);
+      fileSize = apx_file_getFileSize(file);
+      fileStartAddress = apx_file_getStartAddress(file);
+      assert(fileSize > 0);
+      if (fileSize != bufSize)
+      {
+         if (bufSize == 0u)
+         {
+            return APX_MISSING_BUFFER_ERROR;
+         }
+         else
+         {
+            return APX_LENGTH_ERROR;
+         }
+      }
+      if (fileSize > APX_MAX_FILE_SIZE)
+      {
+         return APX_FILE_TOO_LARGE_ERROR;
+      }
+      dataBuf = apx_connectionBase_alloc(self->connection, bufSize);
+      if (dataBuf == 0)
+      {
+         return APX_MEM_ERROR;
+      }
+      rc = apx_nodeData_readRequirePortData(self->nodeData, dataBuf, 0u, bufSize);
+      if (rc != APX_NO_ERROR)
+      {
+         apx_connectionBase_free(self->connection, dataBuf, bufSize);
+      }
+      return apx_fileManager_writeDynamicData(fileManager, fileStartAddress, fileSize, dataBuf);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 
 
 
@@ -1073,3 +1235,65 @@ static void apx_nodeInstance_initPortRefs(apx_nodeInstance_t *self, apx_portRef_
       apx_portRef_create(&portRefs[portId], self,  (portId|portIdMask), dataProps);
    }
 }
+
+static apx_error_t apx_nodeInstance_routeProvidePortDataToRequirePortByRef(apx_portRef_t *providePortRef, apx_portRef_t *requirePortRef)
+{
+   assert(providePortRef != 0);
+   assert(requirePortRef != 0);
+   const apx_portDataProps_t *requirePortDataProps;
+   const apx_portDataProps_t *providePortDataProps;
+   requirePortDataProps = requirePortRef->portDataProps;
+   providePortDataProps = providePortRef->portDataProps;
+   if ( apx_portDataProps_isPlainOldData(requirePortDataProps) )
+   {
+      apx_nodeInstance_t *provideNodeInstance;
+      apx_nodeInstance_t *requireNodeInstance;
+      apx_connectionBase_t *requireConnection;
+      assert(providePortDataProps->dataSize == requirePortDataProps->dataSize);
+      provideNodeInstance = providePortRef->nodeInstance;
+      requireNodeInstance = requirePortRef->nodeInstance;
+      requireConnection = apx_nodeInstance_getConnection(requireNodeInstance);
+      if ( (requireConnection != 0) && (requireNodeInstance->requirePortDataFile) )
+      {
+         uint8_t stackDataBuf[STACK_DATA_BUF_SIZE];
+         uint8_t *providePortDataBuf = &stackDataBuf[0];
+         bool isDataBufMalloced;
+         apx_error_t rc;
+         isDataBufMalloced = providePortDataProps->dataSize > STACK_DATA_BUF_SIZE;
+         if (isDataBufMalloced)
+         {
+            providePortDataBuf = (uint8_t*) malloc(providePortDataProps->dataSize);
+            if (providePortDataBuf == NULL)
+            {
+               return APX_MEM_ERROR;
+            }
+         }
+         rc = apx_nodeInstance_readProvidePortData(provideNodeInstance, providePortDataBuf, providePortDataProps->offset, providePortDataProps->dataSize);
+         if (rc != APX_NO_ERROR)
+         {
+            if (isDataBufMalloced) free(providePortDataBuf);
+            return rc;
+         }
+         rc = apx_connectionBase_updateRequirePortDataDirect(requireConnection,
+               requireNodeInstance->requirePortDataFile,
+               providePortDataBuf,
+               requirePortDataProps->offset,
+               requirePortDataProps->dataSize);
+         if (rc != APX_NO_ERROR)
+         {
+            if (isDataBufMalloced) free(providePortDataBuf);
+            return rc;
+         }
+      }
+      else
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+   }
+   else
+   {
+      return APX_NOT_IMPLEMENTED_ERROR;
+   }
+   return APX_NO_ERROR;
+}
+

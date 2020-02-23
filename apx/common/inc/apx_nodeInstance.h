@@ -90,7 +90,7 @@ apx_nodeData_t* apx_nodeInstance_createNodeData(apx_nodeInstance_t *self);
 apx_nodeData_t* apx_nodeInstance_getNodeData(apx_nodeInstance_t *self);
 
 
-apx_error_t apx_nodeInstance_updatePortDataDirect(apx_nodeInstance_t *destNode, apx_portDataProps_t *destDataProps, apx_nodeInstance_t *srcNode, apx_portDataProps_t *srcDataProps);
+apx_error_t apx_nodeInstance_updatePortDataDirect(apx_nodeInstance_t *destNodeInstance, const apx_portDataProps_t *destDataProps, apx_nodeInstance_t *srcNodeInstance, const apx_portDataProps_t *srcDataProps);
 apx_error_t apx_nodeInstance_updatePortDataDirectById(apx_nodeInstance_t *destNode, apx_portId_t destPortId, apx_nodeInstance_t *srcNode, apx_portId_t srcPortId);
 apx_error_t apx_nodeInstance_parseDefinition(apx_nodeInstance_t *self, apx_parser_t *parser);
 apx_node_t *apx_nodeInstance_getParseTree(apx_nodeInstance_t *self);
@@ -124,6 +124,8 @@ apx_requirePortDataState_t apx_nodeInstance_getRequirePortDataState(apx_nodeInst
 apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_writeProvidePortData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
+apx_error_t apx_nodeInstance_readProvidePortData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, apx_size_t len);
+apx_error_t apx_nodeInstance_readRequirePortData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
 
 /********** P-Port connector API  ************/
 apx_error_t apx_nodeInstance_buildConnectorTable(apx_nodeInstance_t *self);
@@ -137,5 +139,10 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(
 apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate);
 void apx_nodeInstance_clearRequirePortConnectorChanges(apx_nodeInstance_t *self, bool releaseMemory);
 void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self, bool releaseMemory);
+
+/********** Port Routing API  ************/
+apx_error_t apx_nodeInstance_handleRequirePortWasConnectedToProvidePort(apx_portRef_t *requirePortRef, apx_portRef_t *providePortRef);
+apx_error_t apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(apx_portRef_t *providePortRef, apx_portRef_t *requirePortRef);
+apx_error_t apx_nodeInstance_sendRequirePortDataToFileManager(apx_nodeInstance_t *self);
 
 #endif //APX_NODE_INSTANCE_H

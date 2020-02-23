@@ -315,7 +315,7 @@ apx_file_t *apx_fileManager_createLocalFile(apx_fileManager_t *self, const apx_f
  * Sends a fileInfo structure to remote side.
  * Note that fileInfo must be a cloned instance since this function takes ownership of the fileInfo pointer and will delete it later.
  */
-apx_error_t apx_fileManager_sendFileInfo(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo)
+apx_error_t apx_fileManager_sendFileInfo(apx_fileManager_t *self, apx_fileInfo_t *fileInfo)
 {
    if (self != 0)
    {

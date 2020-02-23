@@ -70,8 +70,8 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
    apx_clientEventListener_t handlerTable;
    apx_error_t result;
    memset(&handlerTable, 0, sizeof(handlerTable));
-   handlerTable.clientConnect2 = onClientConnected;
-   handlerTable.clientDisconnect2 = onClientDisconnected;
+   handlerTable.clientConnect1 = onClientConnected;
+   handlerTable.clientDisconnect1 = onClientDisconnected;
    //handlerTable.logEvent = onLogEvent;
 
    m_wheelBasedVehicleSpeed = 0u;
@@ -103,7 +103,6 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
          printf("apx_client_connectTcp returned %d\n", (int) result);
          return;
       }
-
    }
 }
 
@@ -114,7 +113,7 @@ void application_run(void)
       uint8_t data[UINT16_SIZE];
       m_wheelBasedVehicleSpeed++;
       packLE(&data[0], m_wheelBasedVehicleSpeed, UINT16_SIZE);
-      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 1, UINT16_SIZE);
+      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], UINT8_SIZE, UINT16_SIZE);
    }
    else
    {

@@ -64,9 +64,13 @@ SHARED_SOURCES = \
 	apx/common/src/apx_parser.c \
 	apx/common/src/apx_port.c \
 	apx/common/src/apx_portAttributes.c \
+	apx/common/src/apx_portConnectorChangeEntry.c \
+	apx/common/src/apx_portConnectorChangeTable.c \
+	apx/common/src/apx_portConnectorList.c \
 	apx/common/src/apx_portDataProps.c \
 	apx/common/src/apx_portDataRef.c \
-	apx/common/src/apx_portTriggerList.c \
+	apx/common/src/apx_portSignatureMap.c \
+	apx/common/src/apx_portSignatureMapEntry.c \
 	apx/common/src/apx_stream.c \
 	apx/common/src/apx_typeAttribute.c \
 	apx/common/src/apx_util.c \
