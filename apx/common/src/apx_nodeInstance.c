@@ -775,6 +775,34 @@ apx_error_t apx_nodeInstance_readRequirePortData(apx_nodeInstance_t *self, uint8
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_nodeInstance_writeRequirePortData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len)
+{
+   if ( (self != 0) && (src != 0) )
+   {
+      assert(self->nodeData != 0);
+
+      apx_error_t rc = apx_nodeData_writeRequirePortData(self->nodeData, src, offset, len);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      if(self->connection != 0)
+      {
+         assert(self->requirePortDataFile != 0);
+         if (self->mode == APX_CLIENT_MODE)
+         {
+            rc = APX_NOT_IMPLEMENTED_ERROR;
+         }
+         else
+         {
+            rc = apx_connectionBase_updateRequirePortDataDirect(self->connection, self->requirePortDataFile, src, offset, len);
+         }
+      }
+      return rc;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 /********** P-Port connector API  ************/
 apx_error_t apx_nodeInstance_buildConnectorTable(apx_nodeInstance_t *self)
 {
@@ -1039,7 +1067,49 @@ apx_error_t apx_nodeInstance_sendRequirePortDataToFileManager(apx_nodeInstance_t
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-
+apx_error_t apx_nodeInstance_routeProvidePortDataToReceivers(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len)
+{
+   if ( (self != 0) )
+   {
+      apx_portId_t portId;
+      apx_portCount_t numProvidePorts;
+      assert(self->nodeInfo != 0);
+      assert(self->connectorTable != 0);
+      numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+      MUTEX_LOCK(self->connectorTableLock);
+      for(portId=0; portId < numProvidePorts; portId++)
+      {
+         apx_error_t rc;
+         int32_t numConnectors;
+         int32_t connectorId;
+         apx_portConnectorList_t *portConnectors = &self->connectorTable[portId];
+         numConnectors = apx_portConnectorList_length(portConnectors);
+         for(connectorId = 0; connectorId < numConnectors; connectorId++)
+         {
+            const apx_portDataProps_t *portDataProps;
+            apx_portRef_t *requirePortRef = apx_portConnectorList_get(portConnectors, connectorId);
+            portDataProps = requirePortRef->portDataProps;
+            if (apx_portDataProps_isPlainOldData(portDataProps))
+            {
+               if (portDataProps->dataSize != len)
+               {
+                  MUTEX_UNLOCK(self->connectorTableLock);
+                  return APX_LENGTH_ERROR;
+               }
+               rc = apx_nodeInstance_writeRequirePortData(requirePortRef->nodeInstance, src, portDataProps->offset, portDataProps->dataSize);
+               if (rc != APX_NO_ERROR)
+               {
+                  MUTEX_UNLOCK(self->connectorTableLock);
+                  return rc;
+               }
+            }
+         }
+      }
+      MUTEX_UNLOCK(self->connectorTableLock);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////

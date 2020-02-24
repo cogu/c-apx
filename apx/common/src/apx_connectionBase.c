@@ -358,9 +358,11 @@ apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_f
    if ( (self != 0) && (file != 0) && (data != 0) )
    {
 #if APX_DEBUG_ENABLE
+if (self->mode == APX_CLIENT_MODE)
+{
       printf("[CONNECTION-BASE] fileWriteNotify %s(%u, %u)\n", apx_file_getName(file), offset, len);
       apx_print_hex_bytes(16, data, len);
-
+}
 #endif
       apx_error_t retval = apx_file_fileWriteNotify(file, offset, data, len);
       if (retval == APX_NO_ERROR)

@@ -604,7 +604,22 @@ static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serve
       }
       break;
    case APX_PROVIDE_PORT_DATA_STATE_CONNECTED:
-      printf("[%u] Consecutive write of %s.out(%d,%d)\n", (unsigned int) apx_connectionBase_getConnectionId(&self->base), apx_nodeInstance_getName(nodeInstance), (int) offset, (int) len);
+      if (self->server != 0)
+      {
+         apx_server_takeGlobalLock(self->server);
+         rc = apx_nodeData_writeProvidePortData(nodeData, data, offset, len);
+         if (rc != APX_NO_ERROR)
+         {
+            apx_server_releaseGlobalLock(self->server);
+            return rc;
+         }
+         apx_server_releaseGlobalLock(self->server);
+         rc = apx_nodeInstance_routeProvidePortDataToReceivers(nodeInstance, data, offset, len);
+         if (rc != APX_NO_ERROR)
+         {
+            return rc;
+         }
+      }
       break;
    case APX_PROVIDE_PORT_DATA_STATE_DISCONNECTED:
       break; //Drop all data writes in this state, we are about to close connection
