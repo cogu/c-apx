@@ -290,7 +290,8 @@ void apx_fileInfo_copyBaseName(const apx_fileInfo_t *self, char *dest, uint32_t 
       char *dot = strchr(self->name, '.');
       if (dot != 0)
       {
-         uint32_t len = (uint32_t) strlen(dot);
+         //uint32_t len = (uint32_t) strlen(dot);
+         uint32_t len = (uint32_t) (dot - self->name);
          if (maxDestLen < len)
          {
             strncpy(dest, self->name, maxDestLen-1);

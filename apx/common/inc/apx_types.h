@@ -155,9 +155,11 @@ typedef uint8_t apx_nodeState_t;
 
 typedef uint8_t apx_requirePortDataState_t;
 #define APX_REQUIRE_PORT_DATA_STATE_INIT                           ((apx_requirePortDataState_t) 0u)
-#define APX_REQUIRE_PORT_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST  ((apx_requirePortDataState_t) 1u)
-#define APX_REQUIRE_PORT_DATA_STATE_CONNECTED                      ((apx_requirePortDataState_t) 2u)
-#define APX_REQUIRE_PORT_DATA_STATE_DISCONNECTED                   ((apx_requirePortDataState_t) 3u)
+#define APX_REQUIRE_PORT_DATA_STATE_WAITING_FILE_INFO              ((apx_requirePortDataState_t) 1u) //used in client mode
+#define APX_REQUIRE_PORT_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST  ((apx_requirePortDataState_t) 2u) //used in server mode
+#define APX_REQUIRE_PORT_DATA_STATE_WAITING_FOR_FILE_DATA          ((apx_requirePortDataState_t) 3u) //used in client mode
+#define APX_REQUIRE_PORT_DATA_STATE_CONNECTED                      ((apx_requirePortDataState_t) 4u)
+#define APX_REQUIRE_PORT_DATA_STATE_DISCONNECTED                   ((apx_requirePortDataState_t) 5u)
 
 typedef uint8_t apx_providePortDataState_t;
 #define APX_PROVIDE_PORT_DATE_STATE_INIT                          ((apx_providePortDataState_t) 0u)

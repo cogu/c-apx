@@ -51,12 +51,15 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager_t *fileManager, struct apx_file_tag *file);
 static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
-//static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file_tag *file);
 static void apx_clientConnectionBase_sendGreeting(apx_clientConnectionBase_t *self);
-//static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase_t *self);
-
+static void apx_clientConnectionBase_fileInfoNotifyImpl(void *arg, const apx_fileInfo_t *fileInfo);
+static void apx_clientConnectionBase_nodeInstanceFileWriteNotify(apx_clientConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+static void apx_clientConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+static void apx_clientConnectionBase_nodeInstanceFileOpenNotify(apx_clientConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
+static void apx_clientConnectionBase_vnodeInstanceFileOpenNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
+static apx_error_t apx_clientConnectionBase_processNewRequirePortDataFile(apx_clientConnectionBase_t *self, const apx_fileInfo_t *fileInfo);
+static apx_error_t apx_clientConnectionBase_requirePortDataWriteNotify(apx_clientConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -68,7 +71,12 @@ apx_error_t apx_clientConnectionBase_create(apx_clientConnectionBase_t *self, ap
 {
    if (self != 0)
    {
-      apx_error_t errorCode = apx_connectionBase_create(&self->base, APX_CLIENT_MODE, vtable);
+      apx_error_t errorCode;
+      //init non-overridable virtual functions
+      vtable->fileInfoNotify = apx_clientConnectionBase_fileInfoNotifyImpl;
+      vtable->nodeFileWriteNotify = apx_clientConnectionBase_vnodeInstanceFileWriteNotify;
+      vtable->nodeFileOpenNotify = apx_clientConnectionBase_vnodeInstanceFileOpenNotify;
+      errorCode = apx_connectionBase_create(&self->base, APX_CLIENT_MODE, vtable);
       self->isAcknowledgeSeen = false;
       apx_connectionBase_setEventHandler(&self->base, apx_clientConnectionBase_defaultEventHandler, (void*) self);
       return errorCode;
@@ -282,6 +290,14 @@ apx_error_t apx_clientConnectionBase_fileOpenNotify(apx_clientConnectionBase_t *
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_clientConnectionBase_fileInfoNotify(apx_clientConnectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo)
+{
+   if ( (self != 0) && (remoteFileInfo != 0))
+   {
+      return apx_connectionBase_fileInfoNotify(&self->base, remoteFileInfo);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 #ifdef UNIT_TEST
 void apx_clientConnectionBase_run(apx_clientConnectionBase_t *self)
@@ -296,19 +312,6 @@ void apx_clientConnectionBase_run(apx_clientConnectionBase_t *self)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientConnectionBase_onFileCreate(void *arg, apx_fileManager_t *fileManager, struct apx_file_tag *file)
-{
-   apx_clientConnectionBase_t *self = (apx_clientConnectionBase_t*) arg;
-   printf("file created: %s\n", file->fileInfo.name);
-   if (self != 0)
-   {
-      if ( apx_fileInfo_nameEndsWith(&file->fileInfo, APX_INDATA_FILE_EXT) )
-      {
-         //apx_clientConnectionBase_processNewInPortDataFile(self,  file);
-      }
-   }
-}
-
 static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
 {
    uint32_t msgLen;
@@ -370,27 +373,7 @@ static apx_error_t apx_clientConnectionBase_parseMessage(apx_clientConnectionBas
    }
    return APX_NO_ERROR;
 }
-/*
-static void apx_clientConnectionBase_processNewInPortDataFile(apx_clientConnectionBase_t *self, struct apx_file_tag *inPortDataFile)
-{
-   if (inPortDataFile->fileInfo.fileType == RMF_FILE_TYPE_FIXED)
-   {
-      apx_nodeData_t *nodeData = apx_nodeManager_find(&self->base.nodeManager, apx_file_basename(inPortDataFile));
-      if ( (nodeData != 0) && (nodeData->inPortDataBuf != 0))
-      {
-         if (inPortDataFile->fileInfo.length == nodeData->inPortDataLen)
-         {
-            apx_nodeData_setInPortDataFile(nodeData, inPortDataFile);
-            apx_fileManager_openRemoteFile(&self->base.fileManager, inPortDataFile->fileInfo.address, self);
-            if (apx_nodeData_isComplete(nodeData))
-            {
-               apx_connectionBase_emitNodeComplete(&self->base, nodeData);
-            }
-         }
-      }
-   }
-}
-*/
+
 
 static void apx_clientConnectionBase_sendGreeting(apx_clientConnectionBase_t *self)
 {
@@ -419,42 +402,86 @@ static void apx_clientConnectionBase_sendGreeting(apx_clientConnectionBase_t *se
       }
    }
 }
-/*
-static void apx_clientConnectionBase_registerLocalFiles(apx_clientConnectionBase_t *self)
-{
-   adt_ary_t nodeNames;
-   int32_t numNodes;
-   int32_t i;
-   adt_ary_create(&nodeNames, vfree);
-   numNodes = apx_nodeManager_keys(&self->base.nodeManager, &nodeNames);
 
-   for(i=0;i<numNodes;i++)
+static void apx_clientConnectionBase_fileInfoNotifyImpl(void *arg, const apx_fileInfo_t *fileInfo)
+{
+   apx_clientConnectionBase_t *self = (apx_clientConnectionBase_t*) arg;
+   if (self != 0)
    {
-      apx_nodeData_t *nodeData;
-      const char *nodeName = (const char*) adt_ary_value(&nodeNames, i);
-      nodeData = apx_nodeManager_find(&self->base.nodeManager, nodeName);
-      if (nodeData != 0)
+      if (apx_fileInfo_nameEndsWith(fileInfo, APX_INDATA_FILE_EXT) )
       {
-         if (nodeData->definitionDataBuf != 0)
-         {
-            apx_file_t *outDataFile;
-            apx_file_t *definitionFile = apx_nodeData_createLocalDefinitionFile(nodeData);
-            if (definitionFile != 0)
-            {
-               apx_fileManager_t *fileManager = &self->base.fileManager;
-               apx_nodeData_setFileManager(nodeData, fileManager);
-               apx_fileManager_attachLocalFile(fileManager, definitionFile, (void*) self);
-            }
-            outDataFile  = apx_nodeData_createLocalOutPortDataFile(nodeData);
-            if (outDataFile != 0)
-            {
-               apx_fileManager_t *fileManager = &self->base.fileManager;
-               apx_nodeData_setFileManager(nodeData, fileManager);
-               apx_fileManager_attachLocalFile(fileManager, outDataFile, (void*) self);
-            }
-         }
+         apx_clientConnectionBase_processNewRequirePortDataFile(self, fileInfo);
+      }
+      else
+      {
+         //ignore
       }
    }
-   adt_ary_destroy(&nodeNames);
 }
-*/
+
+static void apx_clientConnectionBase_nodeInstanceFileWriteNotify(apx_clientConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   if ( (self != 0) && (nodeInstance != 0) && (data != 0) )
+   {
+      if (fileType == APX_INDATA_FILE_TYPE)
+      {
+         apx_error_t rc = apx_clientConnectionBase_requirePortDataWriteNotify(self, nodeInstance, offset, data, len);
+         if (rc != APX_NO_ERROR)
+         {
+            printf("[CLIENT-CONNECTION-BASE] requirePortDataWriteNotify failed with error %d\n", rc);
+         }
+      }
+      else
+      {
+         //Ignore
+      }
+   }
+}
+
+static void apx_clientConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   apx_clientConnectionBase_nodeInstanceFileWriteNotify((apx_clientConnectionBase_t*) arg, nodeInstance, fileType, offset, data, len);
+}
+
+static void apx_clientConnectionBase_nodeInstanceFileOpenNotify(apx_clientConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      if (fileType == APX_OUTDATA_FILE_TYPE)
+      {
+         printf("[CLIENT-CONNECTION-BASE] OUTDATA opened\n");
+      }
+   }
+}
+
+static void apx_clientConnectionBase_vnodeInstanceFileOpenNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType)
+{
+   apx_clientConnectionBase_nodeInstanceFileOpenNotify((apx_clientConnectionBase_t*) arg, nodeInstance, fileType);
+}
+
+static apx_error_t apx_clientConnectionBase_processNewRequirePortDataFile(apx_clientConnectionBase_t *self, const apx_fileInfo_t *fileInfo)
+{
+   char baseNameBuf[RMF_MAX_FILE_NAME+1];
+   apx_nodeInstance_t *nodeInstance;
+   apx_fileInfo_copyBaseName(fileInfo, baseNameBuf, RMF_MAX_FILE_NAME);
+   nodeInstance = apx_nodeManager_find(&self->base.nodeManager, baseNameBuf);
+   if (nodeInstance != 0)
+   {
+      assert(apx_nodeInstance_getRequirePortDataState(nodeInstance) == APX_REQUIRE_PORT_DATA_STATE_WAITING_FILE_INFO);
+      //Search for file in fileManager
+      apx_file_t *file = apx_fileManager_findFileByAddress(&self->base.fileManager, fileInfo->address);
+      if (file != 0)
+      {
+         apx_nodeInstance_registerRequirePortFileHandler(nodeInstance, file);
+         apx_nodeInstance_setRequirePortDataState(nodeInstance, APX_PROVIDE_PORT_DATA_STATE_WAITING_FOR_FILE_DATA);
+         return apx_fileManager_requestOpenFile(&self->base.fileManager, fileInfo->address);
+      }
+   }
+   return APX_NO_ERROR;
+}
+
+static apx_error_t apx_clientConnectionBase_requirePortDataWriteNotify(apx_clientConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   printf("[CLIENT-SERVER-BASE](%d) NOT IMPLEMENTED\n", __LINE__);
+   return APX_NOT_IMPLEMENTED_ERROR;
+}

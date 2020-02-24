@@ -67,6 +67,7 @@ void apx_clientConnectionBase_attachNodeInstance(apx_clientConnectionBase_t *sel
 // Internal Callback API
 void apx_clientConnectionBaseInternal_headerAccepted(apx_clientConnectionBase_t *self);
 apx_error_t apx_clientConnectionBase_fileOpenNotify(apx_clientConnectionBase_t *self, const rmf_cmdOpenFile_t *openFileCmd);
+apx_error_t apx_clientConnectionBase_fileInfoNotify(apx_clientConnectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
 
 // Unit Test API
 #ifdef UNIT_TEST

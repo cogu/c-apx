@@ -124,7 +124,10 @@ void apx_serverSocketConnection_destroy(apx_serverSocketConnection_t *self)
    {
       apx_serverConnectionBase_destroy(&self->base);
       adt_bytearray_destroy(&self->sendBuffer);
+      ///TODO: Investigate why socketObject cannot be deleted without either hanging server or make valgrind very nervous
+#ifdef UNIT_TEST
       SOCKET_DELETE(self->socketObject);
+#endif
    }
 }
 
@@ -299,7 +302,7 @@ static int32_t apx_serverSocketConnection_send(void *arg, int32_t offset, int32_
          }
 #endif
          SOCKET_SEND(self->socketObject, pBegin, msgLen+headerLen);
-         return 0;
+         return msgLen;
       }
       else
       {
