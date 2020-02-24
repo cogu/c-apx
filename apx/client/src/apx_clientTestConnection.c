@@ -247,6 +247,15 @@ apx_error_t apx_clientTestConnection_onFileOpenMsgReceived(apx_clientTestConnect
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_clientTestConnection_onFileInfoMsgReceived(apx_clientTestConnection_t *self, const rmf_fileInfo_t *remoteFileInfo)
+{
+   if ( (self != 0) && (remoteFileInfo != 0) )
+   {
+      return apx_clientConnectionBase_fileInfoNotify(&self->base, remoteFileInfo);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

@@ -75,6 +75,7 @@ adt_bytearray_t *apx_clientTestConnection_getTransmitLogMsg(apx_clientTestConnec
 void apx_clientTestConnection_clearTransmitLog(apx_clientTestConnection_t *self);
 
 apx_error_t apx_clientTestConnection_onFileOpenMsgReceived(apx_clientTestConnection_t *self, const rmf_cmdOpenFile_t *openFileCmd);
+apx_error_t apx_clientTestConnection_onFileInfoMsgReceived(apx_clientTestConnection_t *self, const rmf_fileInfo_t *remoteFileInfo);
 
 
 #endif //APX_CLIENT_TEST_CONNECTION_H

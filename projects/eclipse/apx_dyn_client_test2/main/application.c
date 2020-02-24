@@ -55,7 +55,7 @@ static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, u
 //////////////////////////////////////////////////////////////////////////////
 static apx_client_t *m_client = NULL;
 static apx_nodeInstance_t *m_nodeInstance = NULL;
-static uint16_t m_wheelBasedVehicleSpeed;
+static uint16_t m_vehicleSpeed;
 static uint32_t m_stressCount;
 static bool m_isConnected;
 static bool m_hasPendingStressCmd;
@@ -74,7 +74,7 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
    handlerTable.clientDisconnect1 = onClientDisconnected;
    //handlerTable.logEvent = onLogEvent;
 
-   m_wheelBasedVehicleSpeed = 0u;
+   m_vehicleSpeed = 0x0085u;
    m_stressCount = 0;
    m_isConnected = false;
    m_hasPendingStressCmd = true;
@@ -94,7 +94,7 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
       assert(m_nodeInstance != 0);
 
       uint8_t data[UINT16_SIZE];
-      packLE(&data[0], m_wheelBasedVehicleSpeed, UINT16_SIZE);
+      packLE(&data[0], m_vehicleSpeed, UINT16_SIZE);
       apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 1, UINT16_SIZE);
 
       result = apx_client_connectUnix(m_client, unix_socket_path);
@@ -111,8 +111,8 @@ void application_run(void)
    if (m_isConnected)
    {
       uint8_t data[UINT16_SIZE];
-      m_wheelBasedVehicleSpeed++;
-      packLE(&data[0], m_wheelBasedVehicleSpeed, UINT16_SIZE);
+      m_vehicleSpeed++;
+      packLE(&data[0], m_vehicleSpeed, UINT16_SIZE);
       apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], UINT8_SIZE, UINT16_SIZE);
    }
    else

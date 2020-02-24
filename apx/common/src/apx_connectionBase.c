@@ -35,6 +35,7 @@
 #include "apx_nodeData.h"
 #include "apx_logging.h"
 #include "apx_portConnectorChangeTable.h"
+#include "apx_util.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -230,11 +231,14 @@ void apx_connectionBase_close(apx_connectionBase_t *self)
 
 void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance)
 {
-   if (self != 0 && nodeInstance != 0)
+   if ( (self != 0) && (nodeInstance != 0) )
    {
       apx_fileInfo_t fileInfo;
       apx_error_t rc = APX_NO_ERROR;
-      int32_t numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
+      apx_portCount_t numRequirePorts;
+      apx_portCount_t numProvidePorts;
+      numRequirePorts = apx_nodeInstance_getNumRequirePorts(nodeInstance);
+      numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
       apx_nodeManager_attachNode(&self->nodeManager, nodeInstance);
       apx_nodeInstance_setConnection(nodeInstance, self);
       if (numProvidePorts > 0)
@@ -249,6 +253,10 @@ void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeI
                apx_nodeInstance_registerProvidePortFileHandler(nodeInstance, localFile);
             }
          }
+      }
+      if (numRequirePorts > 0)
+      {
+         apx_nodeInstance_setRequirePortDataState(nodeInstance, APX_REQUIRE_PORT_DATA_STATE_WAITING_FILE_INFO);
       }
       rc = apx_nodeInstance_fillDefinitionFileInfo(nodeInstance, &fileInfo);
       if (rc == APX_NO_ERROR)
@@ -316,7 +324,10 @@ apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const 
             //In client case: Start preparing for a new file belonging to a nodeInstance
             self->vtable.fileInfoNotify((void*) self, &fileInfo);
          }
-         apx_connectionBase_emitFileCreatedEvent(self, &fileInfo); ///TODO: Perhaps remove cloning of fileInfo inside call?
+         if(self->mode == APX_SERVER_MODE) ///TODO: fix memory leak in client mode
+         {
+            apx_connectionBase_emitFileCreatedEvent(self, &fileInfo); ///TODO: Perhaps remove cloning of fileInfo inside call?
+         }
          apx_fileInfo_destroy(&fileInfo);
          return APX_NO_ERROR;
       }
@@ -347,7 +358,9 @@ apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_f
    if ( (self != 0) && (file != 0) && (data != 0) )
    {
 #if APX_DEBUG_ENABLE
-      //printf("[CONNECTION-BASE] fileWriteNotify %s(%u, %u)\n", apx_file_getName(file), offset, len);
+      printf("[CONNECTION-BASE] fileWriteNotify %s(%u, %u)\n", apx_file_getName(file), offset, len);
+      apx_print_hex_bytes(16, data, len);
+
 #endif
       apx_error_t retval = apx_file_fileWriteNotify(file, offset, data, len);
       if (retval == APX_NO_ERROR)

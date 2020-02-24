@@ -69,6 +69,8 @@ static void apx_serverConnectionBase_nodeInstanceFileOpenNotify(apx_serverConnec
 static void apx_serverConnectionBase_vnodeInstanceFileOpenNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
 static apx_error_t apx_serverConnectionBase_RequirePortDataFileOpenNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance);
 static void apx_serverConnectionBase_detachAllNodes(apx_serverConnectionBase_t *self);
+static void apx_serverConnectionBase_nodeInstanceFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+static void apx_serverConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -308,33 +310,7 @@ apx_error_t apx_serverConnectionBase_fileInfoNotify(apx_serverConnectionBase_t *
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_serverConnectionBase_nodeInstanceFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
-{
-   if ( (self != 0) && (nodeInstance != 0) && (data != 0) )
-   {
-      if (fileType == APX_DEFINITION_FILE_TYPE)
-      {
-         apx_serverConnectionBase_definitionDataWriteNotify(self, nodeInstance, offset, len);
-      }
-      else if (fileType == APX_OUTDATA_FILE_TYPE)
-      {
-         apx_error_t rc = apx_serverConnectionBase_providePortDataWriteNotify(self, nodeInstance, offset, data, len);
-         if (rc != APX_NO_ERROR)
-         {
-            printf("[SERVER-CONNECTION-BASE] providePortDataWriteNotify failed with error %d\n", rc);
-         }
-      }
-      else
-      {
-         printf("[SERVER-CONNECTION-BASE] NOT IMPLEMENTED\n");
-      }
-   }
-}
 
-void apx_serverConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
-{
-   apx_serverConnectionBase_nodeInstanceFileWriteNotify((apx_serverConnectionBase_t*) arg, nodeInstance, fileType, offset, data, len);
-}
 
 struct apx_server_tag* apx_serverConnectionBase_getServer(apx_serverConnectionBase_t *self)
 {
@@ -576,7 +552,6 @@ static void apx_serverConnectionBase_definitionDataWriteNotify(apx_serverConnect
       ///TODO: send error code back to client
       return;
    }
-
 }
 
 static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len)
@@ -882,3 +857,30 @@ static void apx_serverConnectionBase_detachAllNodes(apx_serverConnectionBase_t *
    }
 }
 
+static void apx_serverConnectionBase_nodeInstanceFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   if ( (self != 0) && (nodeInstance != 0) && (data != 0) )
+   {
+      if (fileType == APX_DEFINITION_FILE_TYPE)
+      {
+         apx_serverConnectionBase_definitionDataWriteNotify(self, nodeInstance, offset, len);
+      }
+      else if (fileType == APX_OUTDATA_FILE_TYPE)
+      {
+         apx_error_t rc = apx_serverConnectionBase_providePortDataWriteNotify(self, nodeInstance, offset, data, len);
+         if (rc != APX_NO_ERROR)
+         {
+            printf("[SERVER-CONNECTION-BASE] providePortDataWriteNotify failed with error %d\n", rc);
+         }
+      }
+      else
+      {
+         printf("[SERVER-CONNECTION-BASE] NOT IMPLEMENTED\n");
+      }
+   }
+}
+
+static void apx_serverConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   apx_serverConnectionBase_nodeInstanceFileWriteNotify((apx_serverConnectionBase_t*) arg, nodeInstance, fileType, offset, data, len);
+}

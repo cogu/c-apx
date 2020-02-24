@@ -50,6 +50,12 @@ static const char *m_apx_definition2 = "APX/1.2\n"
       "P\"EngineSpeed\"S:=65535\n"
       "\n";
 
+static const char *m_apx_definition3 = "APX/1.2\n"
+      "N\"TestNode3\"\n"
+      "R\"VehicleSpeed\"S:=65535\n"
+      "\n";
+
+
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -64,6 +70,7 @@ static void test_headerAcceptedEventTriggered(CuTest* tc);
 static void test_localFileInfoShallBeSentAfterHeaderAcknowledge(CuTest* tc);
 static void test_definitionFileIsSentWhenServerSendsFileOpenRequest(CuTest* tc);
 static void test_providePortDataFileIsSentWhenServerSendsFileOpenRequest(CuTest* tc);
+static void test_openFileRequestIsSentWhenServerSendsRequirePortDataFileInfo(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -89,6 +96,7 @@ CuSuite* testSuite_apx_client_testConnection(void)
    SUITE_ADD_TEST(suite, test_localFileInfoShallBeSentAfterHeaderAcknowledge);
    SUITE_ADD_TEST(suite, test_definitionFileIsSentWhenServerSendsFileOpenRequest);
    SUITE_ADD_TEST(suite, test_providePortDataFileIsSentWhenServerSendsFileOpenRequest);
+   SUITE_ADD_TEST(suite, test_openFileRequestIsSentWhenServerSendsRequirePortDataFileInfo);
 
 
    return suite;
@@ -385,4 +393,52 @@ static void test_providePortDataFileIsSentWhenServerSendsFileOpenRequest(CuTest*
    CuAssertUIntEquals(tc, 0xFF, msgData[3] );
 
    apx_client_delete(client);
+}
+
+static void test_openFileRequestIsSentWhenServerSendsRequirePortDataFileInfo(CuTest* tc)
+{
+   apx_clientTestConnection_t *connection;
+   apx_client_t *client;
+   //rmf_cmdOpenFile_t fileOpenCmd;
+   rmf_fileInfo_t fileInfo;
+   adt_bytearray_t *transmittedMsg;
+   const uint8_t *msgData;
+   uint32_t msgSize;
+
+   //Init
+   client = apx_client_new();
+   CuAssertPtrNotNull(tc, client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition3));
+   connection = apx_clientTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   apx_client_attachConnection(client, (apx_clientConnectionBase_t*) connection);
+   apx_clientTestConnection_connect(connection); //Sends greeting header
+
+   //Trigger fileInfo to be sent
+   apx_clientTestConnection_headerAccepted(connection);
+   apx_client_run(client);
+   CuAssertIntEquals(tc, 2, apx_clientTestConnection_getTransmitLogLen(connection)); //ACK+FileInfo("TestNode3")
+   apx_clientTestConnection_clearTransmitLog(connection);
+
+   //Pretending that we have the TestNode2.apx already in our cache, let's present the client with TestNode3.in directly
+   rmf_fileInfo_create(&fileInfo, "TestNode3.in", APX_ADDRESS_PORT_DATA_START, UINT16_SIZE, RMF_FILE_TYPE_FIXED);
+   apx_clientTestConnection_onFileInfoMsgReceived(connection, &fileInfo);
+   apx_client_run(client);
+
+   //Verify that client transmitted openFile("TestNode3.in")
+   CuAssertIntEquals(tc, 1, apx_clientTestConnection_getTransmitLogLen(connection));
+   transmittedMsg = apx_clientTestConnection_getTransmitLogMsg(connection, 0);
+   CuAssertPtrNotNull(tc, transmittedMsg);
+   msgData = (const uint8_t*) adt_bytearray_data(transmittedMsg);
+   msgSize = adt_bytearray_length(transmittedMsg);
+   CuAssertUIntEquals(tc, RMF_HIGH_ADDRESS_SIZE+RMF_CMD_FILE_OPEN_LEN, msgSize);
+   CuAssertUIntEquals(tc, RMF_CMD_START_ADDR, rmf_unpackAddress(msgData, RMF_HIGH_ADDRESS_SIZE));
+   CuAssertUIntEquals(tc, RMF_CMD_FILE_OPEN, unpackLE(msgData+RMF_HIGH_ADDRESS_SIZE, UINT32_SIZE));
+   CuAssertUIntEquals(tc, APX_ADDRESS_PORT_DATA_START, unpackLE(msgData+RMF_HIGH_ADDRESS_SIZE+UINT32_SIZE, UINT32_SIZE));
+
+   //Cleanup
+   apx_client_run(client);
+   apx_client_delete(client);
+
 }
