@@ -61,6 +61,7 @@ typedef struct apx_fileManagerShared_tag
    apx_fileMap_t localFileMap;
    apx_fileMap_t remoteFileMap;
    uint32_t connectionId;
+   bool isConnected;
    SPINLOCK_T lock;
    apx_allocatorFreeFunc *freeAllocatedMemory;
 } apx_fileManagerShared_t;
@@ -82,5 +83,8 @@ void apx_fileManagerShared_setConnectionId(apx_fileManagerShared_t *self, uint32
 uint32_t apx_fileManagerShared_getConnectionId(const apx_fileManagerShared_t *self);
 adt_ary_t *apx_fileManagerShared_getLocalFileList(apx_fileManagerShared_t *self);
 void apx_fileManagerShared_freeAllocatedMemory(apx_fileManagerShared_t *self, uint8_t *data, uint32_t len);
+void apx_fileManagerShared_connect(apx_fileManagerShared_t *self);
+void apx_fileManagerShared_disconnect(apx_fileManagerShared_t *self);
+bool apx_fileManagerShared_isConnected(apx_fileManagerShared_t *self);
 
 #endif //APX_FILE_MANAGER_SHARED_H

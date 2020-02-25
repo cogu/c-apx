@@ -238,7 +238,7 @@ void apx_serverConnectionBase_deactivate(apx_serverConnectionBase_t *self)
    if (self != 0)
    {
       self->isActive = false;
-      apx_serverConnectionBase_close(self);
+      apx_connectionBase_disconnectNotify(&self->base);
       apx_serverConnectionBase_detachAllNodes(self);
    }
 }

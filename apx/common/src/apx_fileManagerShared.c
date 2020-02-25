@@ -56,6 +56,7 @@ apx_error_t apx_fileManagerShared_create(apx_fileManagerShared_t *self)
       self->connectionId = APX_INVALID_CONNECTION_ID;
       self->arg = (void*) 0;
       self->freeAllocatedMemory = (apx_allocatorFreeFunc*) 0;
+      self->isConnected = false;
       SPINLOCK_INIT(self->lock);
       apx_fileMap_create(&self->localFileMap);
       apx_fileMap_create(&self->remoteFileMap);
@@ -230,6 +231,40 @@ void apx_fileManagerShared_freeAllocatedMemory(apx_fileManagerShared_t *self, ui
       }
    }
 }
+
+void apx_fileManagerShared_connect(apx_fileManagerShared_t *self)
+{
+   if (self != 0)
+   {
+      SPINLOCK_ENTER(self->lock);
+      self->isConnected = true;
+      SPINLOCK_LEAVE(self->lock);
+   }
+}
+
+void apx_fileManagerShared_disconnect(apx_fileManagerShared_t *self)
+{
+   if (self != 0)
+   {
+      SPINLOCK_ENTER(self->lock);
+      self->isConnected = false;
+      SPINLOCK_LEAVE(self->lock);
+   }
+}
+
+bool apx_fileManagerShared_isConnected(apx_fileManagerShared_t *self)
+{
+   if (self != 0)
+   {
+      bool retval;
+      SPINLOCK_ENTER(self->lock);
+      retval = self->isConnected;
+      SPINLOCK_LEAVE(self->lock);
+      return retval;
+   }
+   return false;
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////

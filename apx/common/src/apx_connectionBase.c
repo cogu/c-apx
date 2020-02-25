@@ -357,13 +357,6 @@ apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_f
 {
    if ( (self != 0) && (file != 0) && (data != 0) )
    {
-#if APX_DEBUG_ENABLE
-if (self->mode == APX_CLIENT_MODE)
-{
-      printf("[CONNECTION-BASE] fileWriteNotify %s(%u, %u)\n", apx_file_getName(file), offset, len);
-      apx_print_hex_bytes(16, data, len);
-}
-#endif
       apx_error_t retval = apx_file_fileWriteNotify(file, offset, data, len);
       if (retval == APX_NO_ERROR)
       {
@@ -413,6 +406,7 @@ apx_error_t apx_connectionBase_nodeInstanceFileOpenNotify(apx_connectionBase_t *
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
 
 //Callbacks triggered due to events happening locally
 
@@ -493,6 +487,15 @@ apx_error_t apx_connectionBase_updateRequirePortDataDirect(apx_connectionBase_t 
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+void apx_connectionBase_disconnectNotify(apx_connectionBase_t *self)
+{
+   if (self != 0)
+   {
+      apx_fileManager_disconnectNotify(&self->fileManager);
+   }
+}
+
 
 /*** Event triggering API ***/
 void apx_connectionBase_triggerRemoteFileHeaderCompleteEvent(apx_connectionBase_t *self)

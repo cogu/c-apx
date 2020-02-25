@@ -87,6 +87,7 @@ apx_error_t apx_fileManager_writeConstData(apx_fileManager_t *self, uint32_t add
 apx_error_t apx_fileManager_writeDynamicData(apx_fileManager_t *self, uint32_t address, apx_size_t len, uint8_t *data);
 apx_file_t *apx_fileManager_createLocalFile(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo);
 apx_error_t apx_fileManager_sendFileInfo(apx_fileManager_t *self, apx_fileInfo_t *fileInfo);
+void apx_fileManager_disconnectNotify(apx_fileManager_t *self);
 
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t *self);

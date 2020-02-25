@@ -32,6 +32,7 @@
 #include <assert.h>
 #include "apx_eventListener.h"
 #include "apx_nodeData.h"
+#include "apx_util.h"
 #include "application.h"
 #include "pack.h"
 
@@ -74,7 +75,7 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
    handlerTable.clientDisconnect1 = onClientDisconnected;
    //handlerTable.logEvent = onLogEvent;
 
-   m_vehicleSpeed = 0x0085u;
+   m_vehicleSpeed = 0x0000u;
    m_stressCount = 0;
    m_isConnected = false;
    m_hasPendingStressCmd = true;
@@ -113,11 +114,11 @@ void application_run(void)
       uint8_t data[UINT16_SIZE];
       m_vehicleSpeed++;
       packLE(&data[0], m_vehicleSpeed, UINT16_SIZE);
+      printf("Writing %02X %02X\n", (int) data[0], (int) data[1]);
       apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], UINT8_SIZE, UINT16_SIZE);
    }
    else
    {
-      printf("Not connected\n");
    }
 }
 
@@ -138,29 +139,3 @@ static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientCo
    m_isStressOngoing = false;
    printf("Client disconnected from server\n");
 }
-/*
-static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg)
-{
-   printf("onLogEvent\n");
-}
-
-static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
-{
-   if ( m_isTestNode1 && m_isStressOngoing && (offset == 0) && (len == UINT32_SIZE))
-   {
-      m_stressCount++;
-      uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
-      apx_nodeData_readInPortData(m_nodeData, &tmp[0], offset, len);
-      packLE(&tmp[0], m_stressCount, UINT32_SIZE);
-      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 3, UINT32_SIZE, false);
-
-   }
-   else if( (offset == 3) && (len == UINT32_SIZE))
-   {
-      uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
-      apx_nodeData_readInPortData(m_nodeData, &tmp[0], offset, len);
-      (void) unpackLE(&tmp[0], UINT32_SIZE);
-      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 0, UINT32_SIZE, false);
-   }
-}
-*/

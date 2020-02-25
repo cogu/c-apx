@@ -31,6 +31,7 @@
 #include <stdio.h> //DEBUG ONLY
 #include "apx_nodeInstance.h"
 #include "apx_connectionBase.h"
+#include "apx_util.h"
 #include "rmf.h"
 
 #ifdef MEM_LEAK_CHECK
@@ -1273,7 +1274,9 @@ static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, str
 
 static apx_error_t apx_nodeInstance_requirePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len)
 {
-   return APX_NOT_IMPLEMENTED_ERROR;
+   printf("[CONNECTION-BASE] requirePortDataFileWriteNotify %s(%u, %u)\n", apx_file_getName(file), offset, len);
+   apx_print_hex_bytes(16, src, len);
+   return APX_NO_ERROR;
 }
 
 static apx_error_t apx_nodeInstance_requirePortDataFileOpenNotify(void *arg, struct apx_file_tag *file)

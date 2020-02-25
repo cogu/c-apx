@@ -192,6 +192,7 @@ void apx_clientTestConnection_connect(apx_clientTestConnection_t *self)
 {
    if (self != 0)
    {
+      apx_clientConnectionBase_start(&self->base);
       apx_clientConnectionBase_connectedCbk(&self->base);
    }
 }
