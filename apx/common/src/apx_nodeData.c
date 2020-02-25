@@ -487,9 +487,9 @@ void apx_nodeData_inPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, u
  */
 int8_t apx_nodeData_outPortDataWriteNotify(apx_nodeData_t *self, uint32_t offset, uint32_t len, bool directWriteEnabled)
 {
-   if ( (self != 0) && (self->fileManager != 0) && (self->outPortDataFile != 0) )
+   if ( self != 0 )
    {
-      if (self->outPortDataFile->isOpen)
+      if ( (self->fileManager != 0) && (self->outPortDataFile != 0) && (self->outPortDataFile->isOpen) )
       {
          int8_t result = apx_nodeData_processSmallData(self, offset, len, directWriteEnabled);
          if (result == APX_DATA_NOT_PROCESSED_ERROR)
