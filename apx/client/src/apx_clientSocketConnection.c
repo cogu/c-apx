@@ -117,7 +117,7 @@ apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self
       }
       adt_bytearray_create(&self->sendBuffer, SEND_BUFFER_GROW_SIZE);
       self->socketObject = socketObject;
-      apx_connectionBase_start(&self->base.base);
+      apx_connectionBase_start(&self->base.base);///TODO: Don't call start from the constructor
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;

@@ -227,6 +227,7 @@ static void test_fileOpenRequestIsSentWhenDefinitionFileIsSeen(CuTest* tc)
 
    apx_size_t definitionLen = strlen(m_apx_definition1);
    apx_serverTestConnection_create(&connection);
+   apx_serverTestConnection_start(&connection);
 
    rmf_fileInfo_create(&fileInfo, "TestNode.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
 
@@ -256,6 +257,7 @@ static void test_serverProcessesDefinitionAfterClientWritesDefinitionData(CuTest
 
    apx_size_t definitionLen = strlen(m_apx_definition1);
    apx_serverTestConnection_create(&connection);
+   apx_serverTestConnection_start(&connection);
 
 
    rmf_fileInfo_create(&fileInfo, "TestNode.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
@@ -326,6 +328,7 @@ static void test_serverDetectsOutPortDataFileAfterProcessingNodeDefinition(CuTes
 
    apx_size_t definitionLen = strlen(m_apx_definition1);
    apx_serverTestConnection_create(&connection);
+   apx_serverTestConnection_start(&connection);
    rmf_fileInfo_create(&fileInfo, "TestNode.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
    apx_serverTestConnection_onFileInfoMsgReceived(&connection, &fileInfo);
    rmf_fileInfo_create(&fileInfo, "TestNode.out", 0u, UINT16_SIZE, RMF_FILE_TYPE_FIXED);

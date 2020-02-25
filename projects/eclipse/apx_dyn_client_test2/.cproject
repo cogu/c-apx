@@ -89,7 +89,7 @@
                                     									
                                     <listOptionValue builtIn="false" value="ADT_RBFH_ENABLE=1"/>
                                     									
-                                    <listOptionValue builtIn="false" value="APX_DEBUG_ENABLE=1"/>
+                                    <listOptionValue builtIn="false" value="APX_DEBUG_ENABLE=0"/>
                                     									
                                     <listOptionValue builtIn="false" value="PLATFORM_BYTE_ORDER=0"/>
                                     								

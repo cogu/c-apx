@@ -110,11 +110,11 @@ void application_run(void)
 {
    if (m_isConnected)
    {
-      printf("Connected\n");
+
    }
    else
    {
-      printf("Not connected\n");
+
    }
 }
 

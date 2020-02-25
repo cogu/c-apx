@@ -102,6 +102,7 @@ void apx_fileManager_start(apx_fileManager_t *self)
 {
    if (self != 0)
    {
+      apx_fileManagerShared_connect(&self->shared);
       apx_fileManagerWorker_start(&self->worker);
    }
 }
@@ -339,6 +340,14 @@ apx_error_t apx_fileManager_writeDynamicData(apx_fileManager_t *self, uint32_t a
       return apx_fileManagerWorker_sendDynamicData(&self->worker, address, len, data);
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+void apx_fileManager_disconnectNotify(apx_fileManager_t *self)
+{
+   if (self != 0)
+   {
+      apx_fileManagerShared_disconnect(&self->shared);
+   }
 }
 
 #ifdef UNIT_TEST

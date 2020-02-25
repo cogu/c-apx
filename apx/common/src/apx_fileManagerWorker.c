@@ -531,13 +531,16 @@ static void workerThread_sendFileInfo(apx_fileManagerWorker_t *self, apx_msg_t *
    msgSize = apx_fileManagerWorker_calcFileInfoMsgSize(fileInfo);
    assert(self->transmitHandler.getSendBuffer != 0);
    assert(self->transmitHandler.send != 0);
-   msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-   if (msgBuf != 0)
+   if (apx_fileManagerShared_isConnected(self->shared) )
    {
-      int32_t result = apx_fileManagerWorker_serializeFileInfo(msgBuf, msgSize, fileInfo);
-      if (result > 0)
+      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
+      if (msgBuf != 0)
       {
-         self->transmitHandler.send(self->transmitHandler.arg, 0, result);
+         int32_t result = apx_fileManagerWorker_serializeFileInfo(msgBuf, msgSize, fileInfo);
+         if (result > 0)
+         {
+            self->transmitHandler.send(self->transmitHandler.arg, 0, result);
+         }
       }
    }
    apx_fileInfo_delete(fileInfo);
@@ -555,19 +558,22 @@ static void workerThread_sendFileOpen(apx_fileManagerWorker_t *self, apx_msg_t *
       apx_file_open(file);
       assert(self->transmitHandler.getSendBuffer != 0);
       assert(self->transmitHandler.send != 0);
-      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-      if (msgBuf != 0)
+      if (apx_fileManagerShared_isConnected(self->shared) )
       {
-         int32_t result = rmf_packHeader(msgBuf, msgSize, RMF_CMD_START_ADDR, false);
-         if (result == RMF_CMD_ADDRESS_LEN)
+         msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
+         if (msgBuf != 0)
          {
-            rmf_cmdOpenFile_t cmd;
-            msgBuf+=RMF_CMD_ADDRESS_LEN;
-            cmd.address = address & RMF_ADDRESS_MASK_INTERNAL;
-            result = rmf_serialize_cmdOpenFile(msgBuf, RMF_CMD_FILE_OPEN_LEN, &cmd);
-            if (result == RMF_CMD_FILE_OPEN_LEN)
+            int32_t result = rmf_packHeader(msgBuf, msgSize, RMF_CMD_START_ADDR, false);
+            if (result == RMF_CMD_ADDRESS_LEN)
             {
-               self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
+               rmf_cmdOpenFile_t cmd;
+               msgBuf+=RMF_CMD_ADDRESS_LEN;
+               cmd.address = address & RMF_ADDRESS_MASK_INTERNAL;
+               result = rmf_serialize_cmdOpenFile(msgBuf, RMF_CMD_FILE_OPEN_LEN, &cmd);
+               if (result == RMF_CMD_FILE_OPEN_LEN)
+               {
+                  self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
+               }
             }
          }
       }
@@ -606,34 +612,37 @@ static apx_error_t workerThread_sendFileConstData(apx_fileManagerWorker_t *self,
       assert(readFunc != 0);
       headerSize = (address <= RMF_DATA_LOW_MAX_ADDR)? RMF_LOW_ADDRESS_SIZE : RMF_HIGH_ADDRESS_SIZE;
       msgSize = headerSize + dataSize;
-      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-      if (msgBuf != 0)
+      if (apx_fileManagerShared_isConnected(self->shared) )
       {
-         int32_t result = rmf_packHeader(msgBuf, msgSize, address, false);
-         if (result == headerSize)
+         msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
+         if (msgBuf != 0)
          {
-
-            apx_error_t rc = readFunc(arg, file, offset, &msgBuf[headerSize], dataSize);
-            if (rc == APX_NO_ERROR)
+            int32_t result = rmf_packHeader(msgBuf, msgSize, address, false);
+            if (result == headerSize)
             {
-               result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
-#if APX_DEBUG_ENABLE
-               printf("[WORKER] Bytes transmitted: %d\n", result);
-#endif
-               if (result != msgSize)
+
+               apx_error_t rc = readFunc(arg, file, offset, &msgBuf[headerSize], dataSize);
+               if (rc == APX_NO_ERROR)
                {
-                  return APX_TRANSMIT_ERROR;
+                  result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
+   #if APX_DEBUG_ENABLE
+                  printf("[WORKER] Bytes transmitted: %d\n", result);
+   #endif
+                  if (result != msgSize)
+                  {
+                     return APX_TRANSMIT_ERROR;
+                  }
+               }
+               else
+               {
+                  return rc;
                }
             }
-            else
-            {
-               return rc;
-            }
          }
-      }
-      else
-      {
-         return APX_MISSING_BUFFER_ERROR;
+         else
+         {
+            return APX_MISSING_BUFFER_ERROR;
+         }
       }
       return APX_NO_ERROR;
    }
@@ -652,28 +661,36 @@ static apx_error_t workerThread_sendFileDynData(apx_fileManagerWorker_t *self, a
       uint8_t *dataPtr = (uint8_t*) msg->msgData3.ptr;
       headerSize = (address <= RMF_DATA_LOW_MAX_ADDR)? RMF_LOW_ADDRESS_SIZE : RMF_HIGH_ADDRESS_SIZE;
       msgSize = headerSize + dataSize;
-      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-      if (msgBuf != 0)
+      assert(self->shared != 0);
+      if (apx_fileManagerShared_isConnected(self->shared) )
       {
-         int32_t result = rmf_packHeader(msgBuf, msgSize, address, false);
-         if (result == headerSize)
+         msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
+         if (msgBuf != 0)
          {
-            memcpy(&msgBuf[headerSize], dataPtr, dataSize);
-            assert(self->shared != 0);
-            apx_fileManagerShared_freeAllocatedMemory(self->shared, dataPtr, dataSize);
-            result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
-#if APX_DEBUG_ENABLE
-            printf("[WORKER] Bytes transmitted: %d/%d \n", result, msgSize);
-#endif
-            if (result != msgSize)
+            int32_t result = rmf_packHeader(msgBuf, msgSize, address, false);
+            if (result == headerSize)
             {
-               return APX_TRANSMIT_ERROR;
+               memcpy(&msgBuf[headerSize], dataPtr, dataSize);
+               assert(self->shared != 0);
+               apx_fileManagerShared_freeAllocatedMemory(self->shared, dataPtr, dataSize);
+               result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
+   #if APX_DEBUG_ENABLE
+               printf("[WORKER] Bytes transmitted: %d/%d \n", result, msgSize);
+   #endif
+               if (result != msgSize)
+               {
+                  return APX_TRANSMIT_ERROR;
+               }
             }
+         }
+         else
+         {
+            return APX_MISSING_BUFFER_ERROR;
          }
       }
       else
       {
-         return APX_MISSING_BUFFER_ERROR;
+         apx_fileManagerShared_freeAllocatedMemory(self->shared, dataPtr, dataSize);
       }
       return APX_NO_ERROR;
    }
@@ -686,17 +703,19 @@ static void workerThread_sendAcknowledge(apx_fileManagerWorker_t *self)
    uint8_t *msgBuf;
    assert(self->transmitHandler.getSendBuffer != 0);
    assert(self->transmitHandler.send != 0);
-   msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-
-   if (msgBuf != 0)
+   if (apx_fileManagerShared_isConnected(self->shared) )
    {
-      int32_t result = rmf_packHeader(msgBuf, msgSize, RMF_CMD_START_ADDR, false);
-      if (result == RMF_CMD_ADDRESS_LEN)
+      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
+      if (msgBuf != 0)
       {
-         result = rmf_serialize_acknowledge(msgBuf+RMF_CMD_ADDRESS_LEN, RMF_CMD_ACK_LEN);
-         if (result == RMF_CMD_ACK_LEN)
+         int32_t result = rmf_packHeader(msgBuf, msgSize, RMF_CMD_START_ADDR, false);
+         if (result == RMF_CMD_ADDRESS_LEN)
          {
-            self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
+            result = rmf_serialize_acknowledge(msgBuf+RMF_CMD_ADDRESS_LEN, RMF_CMD_ACK_LEN);
+            if (result == RMF_CMD_ACK_LEN)
+            {
+               self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
+            }
          }
       }
    }
