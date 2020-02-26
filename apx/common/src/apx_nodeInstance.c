@@ -1072,32 +1072,43 @@ apx_error_t apx_nodeInstance_routeProvidePortDataToReceivers(apx_nodeInstance_t 
 {
    if ( (self != 0) )
    {
-      apx_portId_t portId;
-      apx_portCount_t numProvidePorts;
+      uint32_t endOffset;
       assert(self->nodeInfo != 0);
       assert(self->connectorTable != 0);
-      numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+      endOffset = offset + len;
       MUTEX_LOCK(self->connectorTableLock);
-      for(portId=0; portId < numProvidePorts; portId++)
+      while(offset < endOffset)
       {
          apx_error_t rc;
          int32_t numConnectors;
          int32_t connectorId;
-         apx_portConnectorList_t *portConnectors = &self->connectorTable[portId];
+         apx_portId_t providerPortId;
+         apx_portConnectorList_t *portConnectors;
+         const apx_portDataProps_t *providePortDataProps;
+         providerPortId = apx_nodeInfo_findProvidePortIdFromByteOffset(self->nodeInfo, offset);
+         if (providerPortId < 0)
+         {
+            printf("[APX_NODEINSTANCE] detected write on invalid offset %d\n", offset);
+            break;
+         }
+         providePortDataProps = apx_nodeInfo_getProvidePortDataProps(self->nodeInfo, providerPortId);
+         assert(providePortDataProps != 0);
+         offset += providePortDataProps->dataSize; ///TODO: Verify if this also works for complex data
+         portConnectors = &self->connectorTable[providerPortId];
          numConnectors = apx_portConnectorList_length(portConnectors);
          for(connectorId = 0; connectorId < numConnectors; connectorId++)
          {
-            const apx_portDataProps_t *portDataProps;
+            const apx_portDataProps_t *requireePortDataProps;
             apx_portRef_t *requirePortRef = apx_portConnectorList_get(portConnectors, connectorId);
-            portDataProps = requirePortRef->portDataProps;
-            if (apx_portDataProps_isPlainOldData(portDataProps))
+            requireePortDataProps = requirePortRef->portDataProps;
+            if (apx_portDataProps_isPlainOldData(requireePortDataProps))
             {
-               if (portDataProps->dataSize != len)
+               if (requireePortDataProps->dataSize != len)
                {
                   MUTEX_UNLOCK(self->connectorTableLock);
                   return APX_LENGTH_ERROR;
                }
-               rc = apx_nodeInstance_writeRequirePortData(requirePortRef->nodeInstance, src, portDataProps->offset, portDataProps->dataSize);
+               rc = apx_nodeInstance_writeRequirePortData(requirePortRef->nodeInstance, src, requireePortDataProps->offset, requireePortDataProps->dataSize);
                if (rc != APX_NO_ERROR)
                {
                   MUTEX_UNLOCK(self->connectorTableLock);
@@ -1106,6 +1117,7 @@ apx_error_t apx_nodeInstance_routeProvidePortDataToReceivers(apx_nodeInstance_t 
             }
          }
       }
+
       MUTEX_UNLOCK(self->connectorTableLock);
       return APX_NO_ERROR;
    }
