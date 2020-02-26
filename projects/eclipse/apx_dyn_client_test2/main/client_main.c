@@ -39,8 +39,8 @@
 static const char *m_apx_definition =
 "APX/1.2\n"
 "N\"TestNode1\"\n"
-"P\"VehicleMode\"C(0,15):=15\n"
-"P\"VehicleSpeed\"S:=0xFFFF\n";
+"P\"VehicleSpeed\"S:=0xFFFF\n"
+"R\"VehicleMode\"C(0,15):=15\n";
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES

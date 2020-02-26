@@ -96,7 +96,7 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
 
       uint8_t data[UINT16_SIZE];
       packLE(&data[0], m_vehicleSpeed, UINT16_SIZE);
-      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 1, UINT16_SIZE);
+      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 0, UINT16_SIZE);
 
       result = apx_client_connectUnix(m_client, unix_socket_path);
       if (result != APX_NO_ERROR)
@@ -115,7 +115,7 @@ void application_run(void)
       m_vehicleSpeed++;
       packLE(&data[0], m_vehicleSpeed, UINT16_SIZE);
       printf("Writing %02X %02X\n", (int) data[0], (int) data[1]);
-      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], UINT8_SIZE, UINT16_SIZE);
+      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 0u, UINT16_SIZE);
    }
    else
    {
