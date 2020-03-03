@@ -73,16 +73,16 @@ void apx_server_destroy(apx_server_t *self)
    if (self != 0)
    {
       apx_server_stop(self);
-      apx_eventLoop_destroy(&self->eventLoop);
+      MUTEX_LOCK(self->globalLock);
       soa_destroy(&self->soa);
-      apx_connectionManager_destroy(&self->connectionManager);
       adt_list_destroy(&self->extensionManager);
       SPINLOCK_ENTER(self->eventListenerLock);
       adt_list_destroy(&self->serverEventListeners);
       SPINLOCK_LEAVE(self->eventListenerLock);
-      MUTEX_LOCK(self->globalLock);
+      apx_connectionManager_destroy(&self->connectionManager);
       apx_portSignatureMap_destroy(&self->portSignatureMap);
       MUTEX_UNLOCK(self->globalLock);
+      apx_eventLoop_destroy(&self->eventLoop);
       MUTEX_DESTROY(self->eventLoopLock);
       MUTEX_DESTROY(self->globalLock);
       SPINLOCK_DESTROY(self->eventListenerLock);
@@ -191,6 +191,7 @@ void apx_server_detachConnection(apx_server_t *self, apx_serverConnectionBase_t 
    if ( (self != 0) && (serverConnection != 0))
    {
       apx_connectionManager_detach(&self->connectionManager, serverConnection);
+      apx_serverConnectionBase_disconnectNotify(serverConnection);
       apx_server_triggerDisconnectedEvent(self, serverConnection);
    }
 }
@@ -362,7 +363,7 @@ apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, ap
       apx_portId_t providePortId;
       numProvidePorts = apx_nodeInstance_getNumProvidePorts(provideNodeInstance);
       assert(connectorChanges->numPorts == numProvidePorts);
-      apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
+      apx_nodeInstance_lockNode(provideNodeInstance);
       for (providePortId = 0u; providePortId < numProvidePorts; providePortId++)
       {
          apx_portRef_t *providePortRef;
@@ -381,7 +382,7 @@ apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, ap
                rc = apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(providePortRef, requirePortRef);
                if (rc != APX_NO_ERROR)
                {
-                  apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+                  apx_nodeInstance_unlockNode(provideNodeInstance);
                   return rc;
                }
             }
@@ -396,14 +397,14 @@ apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, ap
                   rc = apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(providePortRef, requirePortRef);
                   if (rc != APX_NO_ERROR)
                   {
-                     apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+                     apx_nodeInstance_unlockNode(provideNodeInstance);
                      return rc;
                   }
                }
             }
          }
       }
-      apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+      apx_nodeInstance_unlockNode(provideNodeInstance);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;

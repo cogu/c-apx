@@ -2,7 +2,7 @@ include config.inc
 CC ?= gcc
 
 CFLAGS += -Wall -O0 -g -DSW_VERSION_LITERAL=$(VERSION) -DADT_RBFH_ENABLE=1 -DPLATFORM_BYTE_ORDER=0
-CFLAGS += -DAPX_DEBUG_ENABLE=0
+CFLAGS += -DAPX_DEBUG_ENABLE=1
 
 LDFLAGS += -pthread
 
@@ -67,6 +67,7 @@ SHARED_SOURCES = \
 	apx/common/src/apx_portAttributes.c \
 	apx/common/src/apx_portConnectorChangeEntry.c \
 	apx/common/src/apx_portConnectorChangeTable.c \
+	apx/common/src/apx_portConnectorChangeRef.c \
 	apx/common/src/apx_portConnectorList.c \
 	apx/common/src/apx_portDataProps.c \
 	apx/common/src/apx_portDataRef.c \

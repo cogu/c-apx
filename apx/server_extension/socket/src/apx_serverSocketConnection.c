@@ -329,6 +329,7 @@ static void apx_serverSocketConnection_disconnected(void *arg)
 #endif
    if (self != 0)
    {
+      assert(self->base.server != 0);
       apx_server_detachConnection(self->base.server, &self->base);
    }
 }

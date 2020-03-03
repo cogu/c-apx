@@ -27,7 +27,9 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
-#include <stdio.h> //DEBUG ONLY
+#if APX_DEBUG_ENABLE
+#include <stdio.h>
+#endif
 #include "apx_fileManagerShared.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -225,7 +227,7 @@ void apx_fileManagerShared_freeAllocatedMemory(apx_fileManagerShared_t *self, ui
       if (self->freeAllocatedMemory != 0)
       {
 #if APX_DEBUG_ENABLE
-         printf("Freeing %d bytes\n", (int) len);
+//         printf("Freeing %d bytes\n", (int) len);
 #endif
          self->freeAllocatedMemory(self->arg, data, len);
       }
@@ -249,6 +251,9 @@ void apx_fileManagerShared_disconnect(apx_fileManagerShared_t *self)
       SPINLOCK_ENTER(self->lock);
       self->isConnected = false;
       SPINLOCK_LEAVE(self->lock);
+#if APX_DEBUG_ENABLE
+      printf("[%u] Disabled transmit handler\n", (unsigned int) self->connectionId);
+#endif
    }
 }
 
