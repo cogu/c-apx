@@ -37,7 +37,7 @@ typedef struct apx_server_tag
    soa_t soa; //small object allocator
    apx_eventLoop_t eventLoop; //event loop used by workerThread
    MUTEX_T eventLoopLock; //for protecting the event loop
-   MUTEX_T globalLock; //This is the global lock which all connections use to
+   MUTEX_T globalLock; //Protects the portSignatureMap and connectionManager
                        //synchronize data routing execution as well as
                        //controlling access to the global portSignatureMap.
    SPINLOCK_T eventListenerLock; //Used to protect access to serverEventListeners

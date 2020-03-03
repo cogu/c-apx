@@ -2,7 +2,7 @@
 * \file      apx_serverConnectionBase.h
 * \author    Conny Gustafsson
 * \date      2018-09-26
-* \brief     Description
+* \brief     Base class for all APX server connections
 *
 * Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -64,8 +64,8 @@ apx_fileManager_t *apx_serverConnectionBase_getFileManager(apx_serverConnectionB
 int8_t apx_serverConnectionBase_dataReceived(apx_serverConnectionBase_t *self, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen);
 void apx_serverConnectionBase_start(apx_serverConnectionBase_t *self);
 void apx_serverConnectionBase_defaultEventHandler(void *arg, apx_event_t *event);
-void apx_serverConnectionBase_activate(apx_serverConnectionBase_t *self, uint32_t connectionId);
-void apx_serverConnectionBase_deactivate(apx_serverConnectionBase_t *self);
+void apx_serverConnectionBase_connectNotify(apx_serverConnectionBase_t *self, uint32_t connectionId);
+void apx_serverConnectionBase_disconnectNotify(apx_serverConnectionBase_t *self);
 void apx_serverConnectionBase_setServer(apx_serverConnectionBase_t *self, struct apx_server_tag *server);
 uint32_t apx_serverConnectionBase_getConnectionId(apx_serverConnectionBase_t *self);
 void apx_serverConnectionBase_close(apx_serverConnectionBase_t *self);
