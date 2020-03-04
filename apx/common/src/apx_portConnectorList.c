@@ -113,6 +113,14 @@ void apx_portConnectorList_remove(apx_portConnectorList_t *self, apx_portRef_t *
    }
 }
 
+void apx_portConnectorList_clear(apx_portConnectorList_t *self)
+{
+   if (self != 0)
+   {
+      adt_ary_clear(&self->requirePortData);
+   }
+}
+
 int32_t apx_portConnectorList_length(apx_portConnectorList_t *self)
 {
    if (self != 0)

@@ -70,6 +70,7 @@ void apx_serverTestConnection_clearTransmitLogMsg(apx_serverTestConnection_t *se
 apx_error_t apx_serverTestConnection_onFileInfoMsgReceived(apx_serverTestConnection_t *self, const rmf_fileInfo_t *remoteFileInfo);
 apx_error_t apx_serverTestConnection_onSerializedMsgReceived(apx_serverTestConnection_t *self, const uint8_t *msgBuf, int32_t msgLen);
 apx_error_t apx_serverTestConnection_onFileOpenMsgReceived(apx_serverTestConnection_t *self, uint32_t address);
+apx_error_t apx_serverTestConnection_onDisconnect(apx_serverTestConnection_t *self);
 apx_nodeInstance_t *apx_serverTestConnection_findNodeInstance(apx_serverTestConnection_t *self, const char *nodeName);
 
 #endif //APX_SERVER_TEST_CONNECTION_H

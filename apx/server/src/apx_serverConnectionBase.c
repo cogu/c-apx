@@ -76,6 +76,8 @@ static apx_error_t apx_serverConnectionBase_processDisconnectedProviderNodes(adt
 static apx_error_t apx_serverConnectionBase_processDisconnectedRequesterNodes(adt_ary_t *requesterChangeArray);
 static void apx_serverConnectionBase_nodeInstanceFileWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 static void apx_serverConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+static void apx_serverConnectionBase_portConnectorChangeCreateNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_portType_t portType);
+static void apx_serverConnectionBase_vportConnectorChangeCreateNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_portType_t portType);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -95,6 +97,7 @@ apx_error_t apx_serverConnectionBase_create(apx_serverConnectionBase_t *self, ap
       vtable->fileInfoNotify = apx_serverConnectionBase_fileInfoNotifyImpl;
       vtable->nodeFileWriteNotify = apx_serverConnectionBase_vnodeInstanceFileWriteNotify;
       vtable->nodeFileOpenNotify = apx_serverConnectionBase_vnodeInstanceFileOpenNotify;
+      vtable->portConnectorChangeCreateNotify = apx_serverConnectionBase_vportConnectorChangeCreateNotify;
       result = apx_connectionBase_create(&self->base, APX_SERVER_MODE, vtable);
       self->server = (apx_server_t*) 0;
       self->isGreetingParsed = false;
@@ -603,6 +606,8 @@ static apx_error_t apx_serverConnectionBase_providePortDataWriteNotify(apx_serve
             return rc;
          }
          apx_nodeInstance_clearProvidePortConnectorChanges(nodeInstance, true); ///TODO: switch this to false once event handlers are working again
+         //TODO: Update port count in all affected nodes and trigger sending of port count deltas to clients
+         apx_server_clearPortConnectorChanges(self->server);
          apx_server_releaseGlobalLock(self->server);
       }
       break;
@@ -780,6 +785,8 @@ static apx_error_t apx_serverConnectionBase_RequirePortDataFileOpenNotify(apx_se
          }
       }
       apx_nodeInstance_setRequirePortDataState(nodeInstance, APX_REQUIRE_PORT_DATA_STATE_CONNECTED);
+      //TODO: update port counts and trigger transmission of port count delta
+      apx_server_clearPortConnectorChanges(self->server);
       //Trigger transmission of .in file back to client
       rc = apx_nodeInstance_sendRequirePortDataToFileManager(nodeInstance);
       apx_server_releaseGlobalLock(self->server);
@@ -822,6 +829,11 @@ static void apx_serverConnectionBase_disconnectAllNodePorts(apx_serverConnection
             apx_serverConnectionBase_gatherRequirePortConnectorChanges(&nodeInstanceArray, &requesterConnectorChangeArray);
             //TODO: check return value
          }
+         // We have now gathered all portConnectorTables belonging to this connection and placed them into providerConnectorChangeArray
+         // and requesterConnectorChangeArray.
+         // All other nodes that happened to be affected by port connector changes now need to have their port connector tables cleared.
+         // TODO: before clearing the tables we should actually update the port count and also send out update port count deltas to clients
+         apx_server_clearPortConnectorChanges(self->server);
          //All information we need is now located in providerConnectorChangeArray and requesterConnectorChangeArray respectively
          //We can do further processing after releasing global lock
          apx_server_releaseGlobalLock(self->server);
@@ -912,6 +924,11 @@ static apx_error_t apx_serverConnectionBase_gatherProvidePortConnectorChanges(ad
             }
             apx_nodeInstance_clearProvidePortConnectorChanges(nodeInstance, false); //This moves ownership of the memory to the ref variable.
          }
+         else
+         {
+            //This node was not connected to any require ports, no further processing needed
+            apx_nodeInstance_setProvidePortDataState(nodeInstance, APX_PROVIDE_PORT_DATA_STATE_DISCONNECTED);
+         }
       }
    }
    return APX_NO_ERROR;
@@ -953,6 +970,11 @@ static apx_error_t apx_serverConnectionBase_gatherRequirePortConnectorChanges(ad
             }
             apx_nodeInstance_clearRequirePortConnectorChanges(nodeInstance, false); //This moves ownership of the memory to the ref variable.
          }
+         else
+         {
+            //This node was not connected to any provide ports, no further processing needed
+            apx_nodeInstance_setRequirePortDataState(nodeInstance, APX_REQUIRE_PORT_DATA_STATE_DISCONNECTED);
+         }
       }
    }
    return APX_NO_ERROR;
@@ -961,16 +983,42 @@ static apx_error_t apx_serverConnectionBase_gatherRequirePortConnectorChanges(ad
 static apx_error_t apx_serverConnectionBase_processDisconnectedProviderNodes(adt_ary_t *providerChangeArray)
 {
    int32_t numNodes;
+   int32_t i;
+   assert(providerChangeArray != 0);
    numNodes = adt_ary_length(providerChangeArray);
-   printf("Modified provider nodes: %d\n", (int) numNodes);
+   for (i=0; i < numNodes; i++)
+   {
+      apx_nodeInstance_t *provideNodeInstance;
+      apx_portConnectorChangeTable_t *connectorChanges;
+      apx_portConnectorChangeRef_t *ref = (apx_portConnectorChangeRef_t*) adt_ary_value(providerChangeArray, i);
+      provideNodeInstance = ref->nodeInstance;
+      connectorChanges = ref->connectorChanges;
+      assert(apx_nodeInstance_getProvidePortDataState(provideNodeInstance) == APX_PROVIDE_PORT_DATA_STATE_CONNECTED);
+      assert(connectorChanges->numPorts == apx_nodeInstance_getNumProvidePorts(provideNodeInstance));
+      apx_nodeInstance_clearConnectorTable(provideNodeInstance);
+      apx_nodeInstance_setProvidePortDataState(provideNodeInstance, APX_PROVIDE_PORT_DATA_STATE_DISCONNECTED);
+   }
    return APX_NO_ERROR;
 }
 
 static apx_error_t apx_serverConnectionBase_processDisconnectedRequesterNodes(adt_ary_t *requesterChangeArray)
 {
    int32_t numNodes;
+   int32_t i;
+   assert(requesterChangeArray != 0);
    numNodes = adt_ary_length(requesterChangeArray);
-   printf("Modified requester nodes: %d\n", (int) numNodes);
+   for (i=0; i < numNodes; i++)
+   {
+      apx_nodeInstance_t *requireNodeInstance;
+      apx_portConnectorChangeTable_t *connectorChanges;
+      apx_portConnectorChangeRef_t *ref = (apx_portConnectorChangeRef_t*) adt_ary_value(requesterChangeArray, i);
+      requireNodeInstance = ref->nodeInstance;
+      connectorChanges = ref->connectorChanges;
+      assert(apx_nodeInstance_getRequirePortDataState(requireNodeInstance) == APX_REQUIRE_PORT_DATA_STATE_CONNECTED);
+      assert(connectorChanges->numPorts == apx_nodeInstance_getNumRequirePorts(requireNodeInstance));
+      apx_nodeInstance_handleRequirePortDataDisconnected(requireNodeInstance, connectorChanges);
+      apx_nodeInstance_setRequirePortDataState(requireNodeInstance, APX_REQUIRE_PORT_DATA_STATE_DISCONNECTED);
+   }
    return APX_NO_ERROR;
 }
 
@@ -1003,4 +1051,25 @@ static void apx_serverConnectionBase_nodeInstanceFileWriteNotify(apx_serverConne
 static void apx_serverConnectionBase_vnodeInstanceFileWriteNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len)
 {
    apx_serverConnectionBase_nodeInstanceFileWriteNotify((apx_serverConnectionBase_t*) arg, nodeInstance, fileType, offset, data, len);
+}
+
+static void apx_serverConnectionBase_portConnectorChangeCreateNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_portType_t portType)
+{
+   (void) portType;
+   if (self != 0 && nodeInstance !=0 )
+   {
+      if (self->server != 0)
+      {
+         apx_server_insertModifiedNode(self->server, nodeInstance);
+      }
+      else
+      {
+         printf("apx_serverConnectionBase_portConnectorChangeCreateNotify %s %d\n", apx_nodeInstance_getName(nodeInstance), (int) portType);
+      }
+   }
+}
+
+static void apx_serverConnectionBase_vportConnectorChangeCreateNotify(void *arg, apx_nodeInstance_t *nodeInstance, apx_portType_t portType)
+{
+   apx_serverConnectionBase_portConnectorChangeCreateNotify((apx_serverConnectionBase_t*) arg, nodeInstance, portType);
 }

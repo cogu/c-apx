@@ -30,7 +30,6 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_hash.h"
-#include "adt_list.h"
 #include "apx_types.h"
 #include "apx_error.h"
 #include "apx_portSignatureMapEntry.h"
