@@ -37,7 +37,7 @@
                             							
                             <targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.gnu.platform.base.266732394" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
                             							
-                            <builder buildPath="/home/cogu/repo/c-apx" id="cdt.managedbuild.target.gnu.builder.base.1930192099" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+                            <builder buildPath="/home/cogu/repo/c-apx" id="cdt.managedbuild.target.gnu.builder.base.1930192099" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base"/>
                             							
                             <tool id="cdt.managedbuild.tool.gnu.archiver.base.1507439748" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
                             							

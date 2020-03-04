@@ -227,7 +227,14 @@ int32_t apx_fileManager_getNumRemoteFiles(apx_fileManager_t *self)
    return -1;
 }
 
-
+uint16_t apx_fileManager_getNumPendingWorkerMessages(apx_fileManager_t *self)
+{
+   if (self != 0)
+   {
+      return apx_fileManagerWorker_getNumPendingMessages(&self->worker);
+   }
+   return 0u;
+}
 
 apx_file_t *apx_fileManager_fileInfoNotify(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo)
 {

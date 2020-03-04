@@ -151,7 +151,7 @@ void apx_connectionBase_setConnectionId(apx_connectionBase_t *self, uint32_t con
 uint32_t apx_connectionBase_getConnectionId(apx_connectionBase_t *self);
 void apx_connectionBase_getTransmitHandler(apx_connectionBase_t *self, apx_transmitHandler_t *transmitHandler);
 uint16_t apx_connectionBase_getNumPendingEvents(apx_connectionBase_t *self);
-
+uint16_t apx_connectionBase_getNumPendingWorkerMessages(apx_connectionBase_t *self);
 
 /*** Event triggering API ***/
 

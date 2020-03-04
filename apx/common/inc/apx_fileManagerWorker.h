@@ -83,6 +83,7 @@ void apx_fileManagerWorker_stop(apx_fileManagerWorker_t *self);
 void apx_fileManagerWorker_setTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler);
 void apx_fileManagerWorker_copyTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler);
 void apx_fileManagerWorker_setNumHeaderSize(apx_fileManagerWorker_t *self, uint8_t bits);
+uint16_t apx_fileManagerWorker_getNumPendingMessages(apx_fileManagerWorker_t *self);
 
 //Message API
 void apx_fileManagerWorker_sendFileInfoMsg(apx_fileManagerWorker_t *self, apx_fileInfo_t *fileInfo);

@@ -77,6 +77,7 @@ apx_error_t apx_fileManager_requestOpenFile(apx_fileManager_t *self, uint32_t ad
 void apx_fileManager_setConnectionId(apx_fileManager_t *self, uint32_t connectionId);
 int32_t apx_fileManager_getNumLocalFiles(apx_fileManager_t *self);
 int32_t apx_fileManager_getNumRemoteFiles(apx_fileManager_t *self);
+uint16_t apx_fileManager_getNumPendingWorkerMessages(apx_fileManager_t *self);
 
 //Actions triggered by remote side
 apx_error_t apx_fileManager_messageReceived(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
