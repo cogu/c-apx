@@ -887,6 +887,32 @@ apx_error_t apx_nodeInstance_insertProvidePortConnector(apx_nodeInstance_t *self
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+/**
+ * Undo action previously performed by apx_nodeInstance_insertProvidePortConnector.
+ * The caller must have previously called apx_nodeInstance_lockPortConnectorTable on this object
+ */
+apx_error_t apx_nodeInstance_removeProvidePortConnector(apx_nodeInstance_t *self, apx_portId_t portId, apx_portRef_t *requirePortRef)
+{
+   if ( (self != 0) && (portId >= 0) && (requirePortRef != 0) )
+   {
+      apx_portCount_t numProvidePorts;
+      assert(self->nodeInfo != 0);
+      numProvidePorts = apx_nodeInfo_getNumProvidePorts(self->nodeInfo);
+      if (portId < numProvidePorts)
+      {
+         if (self->connectorTable != 0)
+         {
+            apx_portConnectorList_t *connectors = &self->connectorTable[portId];
+            apx_portConnectorList_remove(connectors, requirePortRef);
+            return APX_NO_ERROR;
+         }
+         return APX_NULL_PTR_ERROR;
+      }
+      //fall-through to return APX_INVALID_ARGUMENT_ERROR
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 /********** Port Connection Changes API  ************/
 apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(apx_nodeInstance_t *self, bool autoCreate)
 {
@@ -962,14 +988,29 @@ apx_error_t apx_nodeInstance_handleRequirePortDataDisconnected(apx_nodeInstance_
 {
    if ( (self != 0) && (connectorChanges != 0) )
    {
-      apx_portId_t portId;
+      apx_portId_t requirePortId;
       apx_portCount_t numRequirePorts = apx_nodeInstance_getNumRequirePorts(self);
-      for (portId = 0; portId < numRequirePorts; portId++)
+      for (requirePortId = 0; requirePortId < numRequirePorts; requirePortId++)
       {
-         apx_portConnectorChangeEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectorChanges, portId);
+         apx_portRef_t *requirePortRef;
+         apx_portConnectorChangeEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectorChanges, requirePortId);
+         requirePortRef = apx_nodeInstance_getRequirePortRef(self, requirePortId);
          if (entry->count == -1)
          {
+            apx_error_t rc;
+            apx_portId_t providePortId;
+            apx_nodeInstance_t *provideNodeInstance;
             apx_portRef_t *providePortRef = entry->data.portRef;
+            provideNodeInstance = providePortRef->nodeInstance;
+            assert(provideNodeInstance != 0);
+            providePortId = apx_portRef_getPortId(providePortRef);
+            apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
+            rc = apx_nodeInstance_removeProvidePortConnector(provideNodeInstance, providePortId, requirePortRef);
+            apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+            if (rc != APX_NO_ERROR)
+            {
+               return rc;
+            }
          }
          else if (entry->count < -1)
          {

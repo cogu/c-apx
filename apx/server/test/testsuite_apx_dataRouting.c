@@ -59,6 +59,8 @@ static void test_connectors_disconnectNodeWithOnlyProvidePorts(CuTest* tc);
 static void test_connectors_nodeWithRequirePortIsConnectedAfterNodeWithProvidePort(CuTest* tc);
 static void test_connectors_nodeWithProvidePortIsConnectedAfterMultipleRequireNodesAreWaiting(CuTest* tc);
 static void test_connectors_nodeWithProvidePortIsDisconnectedFromMultipleRequireNodes(CuTest* tc);
+static void test_connectors_nodeWithRequirePortIsDisconnectedFromProviderNodeInDifferentApxConnection(CuTest* tc);
+
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -93,6 +95,7 @@ CuSuite* testSuite_apx_dataRouting(void)
    SUITE_ADD_TEST(suite, test_connectors_nodeWithRequirePortIsConnectedAfterNodeWithProvidePort);
    SUITE_ADD_TEST(suite, test_connectors_nodeWithProvidePortIsConnectedAfterMultipleRequireNodesAreWaiting);
    SUITE_ADD_TEST(suite, test_connectors_nodeWithProvidePortIsDisconnectedFromMultipleRequireNodes);
+   SUITE_ADD_TEST(suite, test_connectors_nodeWithRequirePortIsDisconnectedFromProviderNodeInDifferentApxConnection);
 
    return suite;
 }
@@ -802,5 +805,178 @@ static void test_connectors_nodeWithProvidePortIsDisconnectedFromMultipleRequire
    CuAssertIntEquals(tc, APX_REQUIRE_PORT_DATA_STATE_DISCONNECTED, apx_nodeInstance_getRequirePortDataState(nodeInstance3));
 
    apx_serverTestConnection_runEventLoop(connection);
+   apx_server_delete(server);
+}
+
+static void test_connectors_nodeWithRequirePortIsDisconnectedFromProviderNodeInDifferentApxConnection(CuTest* tc)
+{
+   apx_serverTestConnection_t *connection1; //Contains TestNode1 and TestNode2
+   apx_serverTestConnection_t *connection2; //Contains TestNode3
+   rmf_fileInfo_t fileInfo;
+   uint8_t *buffer;
+   apx_server_t *server;
+   apx_portSignatureMap_t *portSignatureMap;
+   apx_size_t definitionLen;
+   apx_nodeInstance_t *nodeInstance1; //Associated with TestNode1
+   apx_nodeInstance_t *nodeInstance2; //Associated with TestNode2
+   apx_nodeInstance_t *nodeInstance3; //Associated with TestNode3
+   apx_portConnectorList_t *portConnectors;
+   uint8_t rawProvidePortData[UINT16_SIZE];
+
+   adt_bytearray_t *transmittedMsg;
+   const uint8_t *transmittedBytes;
+   apx_portRef_t *portRef;
+
+   //Init Server
+   server = apx_server_new();
+
+   //Init Connection 1
+   connection1 = apx_serverTestConnection_new();
+   portSignatureMap = apx_server_getPortSignatureMap(server);
+   CuAssertPtrNotNull(tc, portSignatureMap);
+   apx_server_acceptConnection(server, (apx_serverConnectionBase_t*) connection1);
+   apx_serverTestConnection_onProtocolHeaderReceived(connection1);
+   apx_serverTestConnection_runEventLoop(connection1);
+
+   //Init Connection 2
+   connection2 = apx_serverTestConnection_new();
+   portSignatureMap = apx_server_getPortSignatureMap(server);
+   CuAssertPtrNotNull(tc, portSignatureMap);
+   apx_server_acceptConnection(server, (apx_serverConnectionBase_t*) connection2);
+   apx_serverTestConnection_onProtocolHeaderReceived(connection2);
+   apx_serverTestConnection_runEventLoop(connection2);
+
+   //Client sends file info about TestNode1 to server
+   definitionLen = strlen(m_apx_definition1);
+   rmf_fileInfo_create(&fileInfo, "TestNode1.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
+   apx_serverTestConnection_onFileInfoMsgReceived(connection1, &fileInfo);
+   rmf_fileInfo_create(&fileInfo, "TestNode1.out", APX_ADDRESS_PORT_DATA_START, UINT16_SIZE, RMF_FILE_TYPE_FIXED);
+   apx_serverTestConnection_onFileInfoMsgReceived(connection1, &fileInfo);
+   apx_serverTestConnection_runEventLoop(connection1);
+
+   //Client sends contents of TestNode1.apx
+   buffer = (uint8_t*) malloc(RMF_HIGH_ADDRESS_SIZE+definitionLen);
+   assert(buffer != 0);
+   CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_HIGH_ADDRESS_SIZE, APX_ADDRESS_DEFINITION_START, false));
+   memcpy(&buffer[RMF_HIGH_ADDRESS_SIZE], &m_apx_definition1[0], definitionLen);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(connection1, buffer, RMF_HIGH_ADDRESS_SIZE+definitionLen));
+   apx_serverTestConnection_runEventLoop(connection1);
+
+   //Send contents of TestNode1.out
+   apx_serverTestConnection_clearTransmitLogMsg(connection1);
+   packLE(&rawProvidePortData[0], 0x1234, UINT16_SIZE); //VehicleSpeed value
+   CuAssertIntEquals(tc, RMF_LOW_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_LOW_ADDRESS_SIZE, APX_ADDRESS_PORT_DATA_START, false));
+   memcpy(&buffer[RMF_LOW_ADDRESS_SIZE], &rawProvidePortData[0], UINT16_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(connection1, buffer, RMF_LOW_ADDRESS_SIZE+UINT16_SIZE));
+   free(buffer);
+
+   //Verify port connection state on TestNode1
+   nodeInstance1 = apx_serverTestConnection_findNodeInstance(connection1, "TestNode1");
+   CuAssertPtrNotNull(tc, nodeInstance1);
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT_DATA_STATE_CONNECTED, apx_nodeInstance_getProvidePortDataState(nodeInstance1));
+
+   //Client sends info about TestNode2 to server
+   definitionLen = strlen(m_apx_definition2);
+   rmf_fileInfo_create(&fileInfo, "TestNode2.apx", APX_ADDRESS_DEFINITION_START+APX_ADDRESS_DEFINITION_BOUNDARY, definitionLen, RMF_FILE_TYPE_FIXED);
+   apx_serverTestConnection_onFileInfoMsgReceived(connection1, &fileInfo);
+   apx_serverTestConnection_runEventLoop(connection1);
+   apx_serverTestConnection_runEventLoop(connection2);
+
+   //Client sends contents of TestNode2.apx
+   buffer = (uint8_t*) malloc(RMF_HIGH_ADDRESS_SIZE+definitionLen);
+   assert(buffer != 0);
+   CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_HIGH_ADDRESS_SIZE, APX_ADDRESS_DEFINITION_START+APX_ADDRESS_DEFINITION_BOUNDARY, false));
+   memcpy(&buffer[RMF_HIGH_ADDRESS_SIZE], &m_apx_definition2[0], definitionLen);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(connection1, buffer, RMF_HIGH_ADDRESS_SIZE+definitionLen));
+   apx_serverTestConnection_runEventLoop(connection1);
+   apx_serverTestConnection_runEventLoop(connection2);
+   free(buffer);
+
+   //Client sends fileOpen("TestNode2.in")
+   apx_serverTestConnection_clearTransmitLogMsg(connection1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onFileOpenMsgReceived(connection1, 0u));
+   apx_serverTestConnection_runEventLoop(connection1);
+   apx_serverTestConnection_runEventLoop(connection2);
+
+   //Verify port connection state on TestNode2
+   nodeInstance2 = apx_serverTestConnection_findNodeInstance(connection1, "TestNode2");
+   CuAssertPtrNotNull(tc, nodeInstance2);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT_DATA_STATE_CONNECTED, apx_nodeInstance_getRequirePortDataState(nodeInstance2));
+
+   //Verify that TestNode2.in has been sent from server
+   CuAssertIntEquals(tc, 1, apx_serverTestConnection_getTransmitLogLen(connection1));
+   transmittedMsg = apx_serverTestConnection_getTransmitLogMsg(connection1, 0);
+   CuAssertPtrNotNull(tc, transmittedMsg);
+   transmittedBytes = adt_bytearray_data(transmittedMsg);
+   CuAssertUIntEquals(tc, APX_ADDRESS_PORT_DATA_START, rmf_unpackAddress(transmittedBytes, RMF_LOW_ADDRESS_SIZE));
+   CuAssertUIntEquals(tc, 0x1234, unpackLE(&transmittedBytes[RMF_LOW_ADDRESS_SIZE], UINT16_SIZE));
+
+   //Client sends info about TestNode3 to server
+   definitionLen = strlen(m_apx_definition3);
+   rmf_fileInfo_create(&fileInfo, "TestNode3.apx", APX_ADDRESS_DEFINITION_START, definitionLen, RMF_FILE_TYPE_FIXED);
+   apx_serverTestConnection_onFileInfoMsgReceived(connection2, &fileInfo);
+   apx_serverTestConnection_runEventLoop(connection1);
+   apx_serverTestConnection_runEventLoop(connection2);
+
+   //Client sends contents of TestNode3.apx
+   buffer = (uint8_t*) malloc(RMF_HIGH_ADDRESS_SIZE+definitionLen);
+   assert(buffer != 0);
+   CuAssertIntEquals(tc, RMF_HIGH_ADDRESS_SIZE, rmf_packHeader(&buffer[0], RMF_HIGH_ADDRESS_SIZE, APX_ADDRESS_DEFINITION_START, false));
+   memcpy(&buffer[RMF_HIGH_ADDRESS_SIZE], &m_apx_definition3[0], definitionLen);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onSerializedMsgReceived(connection2, buffer, RMF_HIGH_ADDRESS_SIZE+definitionLen));
+   apx_serverTestConnection_runEventLoop(connection1);
+   apx_serverTestConnection_runEventLoop(connection2);
+   free(buffer);
+
+   //Client sends fileOpen("TestNode3.in")
+   apx_serverTestConnection_clearTransmitLogMsg(connection2);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_onFileOpenMsgReceived(connection2, APX_ADDRESS_PORT_DATA_START));
+   apx_serverTestConnection_runEventLoop(connection2);
+
+
+   //Verify that TestNode3.in has been sent from server
+   CuAssertIntEquals(tc, 1, apx_serverTestConnection_getTransmitLogLen(connection2));
+   transmittedMsg = apx_serverTestConnection_getTransmitLogMsg(connection2, 0);
+   CuAssertPtrNotNull(tc, transmittedMsg);
+   CuAssertIntEquals(tc, RMF_LOW_ADDRESS_SIZE+UINT16_SIZE*2, adt_bytearray_length(transmittedMsg));
+   transmittedBytes = adt_bytearray_data(transmittedMsg);
+   CuAssertUIntEquals(tc, APX_ADDRESS_PORT_DATA_START, rmf_unpackAddress(transmittedBytes, RMF_LOW_ADDRESS_SIZE));
+   CuAssertUIntEquals(tc, 0xFFFF, unpackLE(&transmittedBytes[RMF_LOW_ADDRESS_SIZE], UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0x1234, unpackLE(&transmittedBytes[RMF_LOW_ADDRESS_SIZE+UINT16_SIZE], UINT16_SIZE));
+
+   //Verify port connection state on TestNode3
+   nodeInstance3 = apx_serverTestConnection_findNodeInstance(connection2, "TestNode3");
+   CuAssertPtrNotNull(tc, nodeInstance3);
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT_DATA_STATE_CONNECTED, apx_nodeInstance_getRequirePortDataState(nodeInstance3));
+
+   //Before disconnect, verify that all port connector tables are clean
+   CuAssertPtrEquals(tc, 0, apx_nodeInstance_getProvidePortConnectorChanges(nodeInstance1, false));
+   CuAssertPtrEquals(tc, 0, apx_nodeInstance_getRequirePortConnectorChanges(nodeInstance2, false));
+   CuAssertPtrEquals(tc, 0, apx_nodeInstance_getRequirePortConnectorChanges(nodeInstance3, false));
+
+   //Verify that TestNode1.VehicleSpeed has a data route to TestNode3.VehicleSpeed
+   portConnectors = apx_nodeInstance_getProvidePortConnectors(nodeInstance1, 0);
+   CuAssertIntEquals(tc, 2, apx_portConnectorList_length(portConnectors));
+   portRef = apx_portConnectorList_get(portConnectors, 0);
+   CuAssertPtrEquals(tc, nodeInstance2, portRef->nodeInstance);
+   portRef = apx_portConnectorList_get(portConnectors, 1);
+   CuAssertPtrEquals(tc, nodeInstance3, portRef->nodeInstance);
+
+   //trigger close event on connection1
+   apx_serverTestConnection_onDisconnect(connection2);
+
+   //Verify all TestNode3 has disconnected
+   CuAssertIntEquals(tc, APX_PROVIDE_PORT_DATA_STATE_CONNECTED, apx_nodeInstance_getProvidePortDataState(nodeInstance1));
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT_DATA_STATE_CONNECTED, apx_nodeInstance_getRequirePortDataState(nodeInstance2));
+   CuAssertIntEquals(tc, APX_REQUIRE_PORT_DATA_STATE_DISCONNECTED, apx_nodeInstance_getRequirePortDataState(nodeInstance3));
+
+   //Verify that TestNode is no longer routing data to TestNode3
+   portConnectors = apx_nodeInstance_getProvidePortConnectors(nodeInstance1, 0);
+   CuAssertIntEquals(tc, 1, apx_portConnectorList_length(portConnectors));
+   portRef = apx_portConnectorList_get(portConnectors, 0);
+   CuAssertPtrEquals(tc, nodeInstance2, portRef->nodeInstance);
+
+   apx_serverTestConnection_runEventLoop(connection1);
+   apx_serverTestConnection_runEventLoop(connection2);
    apx_server_delete(server);
 }
