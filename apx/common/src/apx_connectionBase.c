@@ -496,6 +496,17 @@ void apx_connectionBase_disconnectNotify(apx_connectionBase_t *self)
    }
 }
 
+void apx_connectionBase_portConnectorChangeCreateNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_portType_t portType)
+{
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      if (self->vtable.portConnectorChangeCreateNotify != 0)
+      {
+         self->vtable.portConnectorChangeCreateNotify((void*) self, nodeInstance, portType);
+      }
+   }
+}
+
 
 /*** Event triggering API ***/
 void apx_connectionBase_triggerRemoteFileHeaderCompleteEvent(apx_connectionBase_t *self)

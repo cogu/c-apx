@@ -18,6 +18,7 @@
 #include "apx_nodeInstance.h"
 #include "soa.h"
 #include "adt_str.h"
+#include "adt_ary.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -32,6 +33,7 @@ typedef struct apx_server_tag
                                             //Any access to this structure must be protected by acquiring the globalLock.
    apx_connectionManager_t connectionManager; //server connections
    adt_list_t extensionManager; //TODO: replace with extensionManager class
+   adt_ary_t modifiedNodes; //weak references to apx_nodeInstance_t. Used to keep track of which nodes have modified port connectors.
    THREAD_T eventThread; //local worker thread (for playing server-global events such as log events)
    bool isEventThreadValid; //true if workerThread is a valid variable
    soa_t soa; //small object allocator
@@ -74,6 +76,10 @@ apx_error_t apx_server_disconnectNodeInstanceProvidePorts(apx_server_t *self, ap
 apx_error_t apx_server_disconnectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
 apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *requireNodeInstance, apx_portConnectorChangeTable_t *connectorChanges);
 apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *provideNodeInstance, apx_portConnectorChangeTable_t *connectorChanges);
+apx_error_t apx_server_insertModifiedNode(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
+adt_ary_t *apx_server_getModifiedNodes(const apx_server_t *self);
+void apx_server_clearPortConnectorChanges(apx_server_t *self);
+
 
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self);

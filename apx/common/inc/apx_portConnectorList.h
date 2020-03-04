@@ -62,6 +62,7 @@ void apx_portConnectorList_delete(apx_portConnectorList_t *self);
 
 apx_error_t apx_portConnectorList_insert(apx_portConnectorList_t *self, apx_portRef_t *portData);
 void apx_portConnectorList_remove(apx_portConnectorList_t *self, apx_portRef_t *portData);
+void apx_portConnectorList_clear(apx_portConnectorList_t *self);
 int32_t apx_portConnectorList_length(apx_portConnectorList_t *self);
 apx_portRef_t *apx_portConnectorList_get(apx_portConnectorList_t *self, int32_t index);
 

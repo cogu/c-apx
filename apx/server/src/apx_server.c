@@ -56,6 +56,7 @@ void apx_server_create(apx_server_t *self)
       apx_portSignatureMap_create(&self->portSignatureMap);
       apx_connectionManager_create(&self->connectionManager);
       adt_list_create(&self->extensionManager, apx_serverExtension_vdelete);
+      adt_ary_create(&self->modifiedNodes, (void(*)(void*)) 0);
       soa_init(&self->soa);
       apx_eventLoop_create(&self->eventLoop);
       self->isEventThreadValid = false;
@@ -76,6 +77,7 @@ void apx_server_destroy(apx_server_t *self)
       MUTEX_LOCK(self->globalLock);
       soa_destroy(&self->soa);
       adt_list_destroy(&self->extensionManager);
+      adt_ary_destroy(&self->modifiedNodes);
       SPINLOCK_ENTER(self->eventListenerLock);
       adt_list_destroy(&self->serverEventListeners);
       SPINLOCK_LEAVE(self->eventListenerLock);
@@ -319,8 +321,8 @@ apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, ap
    {
       apx_portCount_t numRequirePorts;
       apx_portId_t requirePortId;
-      apx_requirePortDataState_t requirePortState;
-      requirePortState = apx_nodeInstance_getRequirePortDataState(requireNodeInstance);
+//      apx_requirePortDataState_t requirePortState;
+//      requirePortState = apx_nodeInstance_getRequirePortDataState(requireNodeInstance);
       numRequirePorts = apx_nodeInstance_getNumRequirePorts(requireNodeInstance);
       assert(connectorChanges->numPorts == numRequirePorts);
       for (requirePortId = 0u; requirePortId < numRequirePorts; requirePortId++)
@@ -339,6 +341,10 @@ apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, ap
                apx_portRef_t *providePortRef = entry->data.portRef;
                assert(providePortRef != 0);
                rc = apx_nodeInstance_handleRequirePortWasConnectedToProvidePort(requirePortRef, providePortRef);
+               if (rc != APX_NO_ERROR)
+               {
+                  return rc;
+               }
             }
             else
             {
@@ -363,7 +369,7 @@ apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, ap
       apx_portId_t providePortId;
       numProvidePorts = apx_nodeInstance_getNumProvidePorts(provideNodeInstance);
       assert(connectorChanges->numPorts == numProvidePorts);
-      apx_nodeInstance_lockNode(provideNodeInstance);
+      apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
       for (providePortId = 0u; providePortId < numProvidePorts; providePortId++)
       {
          apx_portRef_t *providePortRef;
@@ -382,7 +388,7 @@ apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, ap
                rc = apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(providePortRef, requirePortRef);
                if (rc != APX_NO_ERROR)
                {
-                  apx_nodeInstance_unlockNode(provideNodeInstance);
+                  apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
                   return rc;
                }
             }
@@ -397,19 +403,74 @@ apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, ap
                   rc = apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(providePortRef, requirePortRef);
                   if (rc != APX_NO_ERROR)
                   {
-                     apx_nodeInstance_unlockNode(provideNodeInstance);
+                     apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
                      return rc;
                   }
                }
             }
          }
       }
-      apx_nodeInstance_unlockNode(provideNodeInstance);
+      apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+/**
+ * Note: Should only be used when caller holds globalLock
+ */
+apx_error_t apx_server_insertModifiedNode(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+{
+   if (self != 0)
+   {
+      adt_error_t rc = adt_ary_push_unique(&self->modifiedNodes, (void*) nodeInstance);
+      if (rc == ADT_MEM_ERROR)
+      {
+         return APX_MEM_ERROR;
+      }
+      else if(rc != APX_NO_ERROR)
+      {
+         return APX_GENERIC_ERROR;
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/**
+ * Note: Should only be used when caller holds globalLock
+ */
+adt_ary_t *apx_server_getModifiedNodes(const apx_server_t *self)
+{
+   if (self != 0)
+   {
+      return (adt_ary_t*) &self->modifiedNodes;
+   }
+   return (adt_ary_t*) 0;
+}
+
+/**
+ * Note: Should only be used when caller holds globalLock
+ */
+void apx_server_clearPortConnectorChanges(apx_server_t *self)
+{
+   if (self != 0)
+   {
+      int32_t i;
+      int32_t numNodes = adt_ary_length(&self->modifiedNodes);
+      for(i=0; i<numNodes; i++)
+      {
+         apx_nodeInstance_t *nodeInstance = (apx_nodeInstance_t*) adt_ary_value(&self->modifiedNodes, i);
+         assert(nodeInstance != 0);
+         apx_nodeInstance_clearProvidePortConnectorChanges(nodeInstance, true);
+         apx_nodeInstance_clearRequirePortConnectorChanges(nodeInstance, true);
+      }
+      if (numNodes > 0)
+      {
+         adt_ary_clear(&self->modifiedNodes);
+      }
+   }
+}
 
 
 #ifdef UNIT_TEST

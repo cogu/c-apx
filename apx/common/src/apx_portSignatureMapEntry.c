@@ -245,8 +245,8 @@ void apx_portSignatureMapEntry_notifyProvidePortsAboutRequirePortChange(apx_port
             apx_portConnectorChangeTable_t *providePortChangeTable;
             apx_portConnectorChangeEntry_t *providePortChangeEntry;
             apx_portRef_t *providePortRef = (apx_portRef_t*) iter->pItem;
-            assert(requirePortRef != 0);
-            assert(requirePortRef->nodeInstance != 0);
+            assert(providePortRef != 0);
+            assert(providePortRef->nodeInstance != 0);
             providePortChangeTable = apx_nodeInstance_getProvidePortConnectorChanges(providePortRef->nodeInstance, true);
             assert(providePortChangeTable != 0);
             providePortChangeEntry = apx_portConnectorChangeTable_getEntry(providePortChangeTable, apx_portRef_getPortId(providePortRef));

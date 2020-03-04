@@ -896,6 +896,10 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_getRequirePortConnectorChanges(
       {
          assert(self->nodeInfo != 0);
          self->requirePortChanges = apx_portConnectorChangeTable_new(apx_nodeInfo_getNumRequirePorts(self->nodeInfo));
+         if (self->connection != 0)
+         {
+            apx_connectionBase_portConnectorChangeCreateNotify(self->connection, self, APX_REQUIRE_PORT);
+         }
       }
       return self->requirePortChanges;
    }
@@ -911,6 +915,10 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_getProvidePortConnectorChanges(
          {
             assert(self->nodeInfo != 0);
             self->providePortChanges = apx_portConnectorChangeTable_new(apx_nodeInfo_getNumProvidePorts(self->nodeInfo));
+            if (self->connection != 0)
+            {
+               apx_connectionBase_portConnectorChangeCreateNotify(self->connection, self, APX_PROVIDE_PORT);
+            }
          }
          return self->providePortChanges;
       }
@@ -948,6 +956,34 @@ void apx_nodeInstance_clearProvidePortConnectorChanges(apx_nodeInstance_t *self,
       }
       self->providePortChanges = (apx_portConnectorChangeTable_t*) 0;
    }
+}
+
+apx_error_t apx_nodeInstance_handleRequirePortDataDisconnected(apx_nodeInstance_t *self, apx_portConnectorChangeTable_t *connectorChanges)
+{
+   if ( (self != 0) && (connectorChanges != 0) )
+   {
+      apx_portId_t portId;
+      apx_portCount_t numRequirePorts = apx_nodeInstance_getNumRequirePorts(self);
+      for (portId = 0; portId < numRequirePorts; portId++)
+      {
+         apx_portConnectorChangeEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectorChanges, portId);
+         if (entry->count == -1)
+         {
+            apx_portRef_t *providePortRef = entry->data.portRef;
+         }
+         else if (entry->count < -1)
+         {
+            //TODO: Handle multiple providers
+            return APX_NOT_IMPLEMENTED_ERROR;
+         }
+         else
+         {
+            assert(entry->count == 0);
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 /********** Data Routing API  ************/
@@ -1009,6 +1045,16 @@ apx_error_t apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(apx_port
       {
          return rc;
       }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_nodeInstance_handleRequirePortWasDisconnectedFromProvidePort(apx_portRef_t *requirePortRef, apx_portRef_t *providePortRef)
+{
+   if ( (requirePortRef != 0) && (providePortRef != 0) )
+   {
+
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -1122,6 +1168,16 @@ apx_error_t apx_nodeInstance_routeProvidePortDataToReceivers(apx_nodeInstance_t 
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+void apx_nodeInstance_clearConnectorTable(apx_nodeInstance_t *self)
+{
+   if (self != 0)
+   {
+      MUTEX_LOCK(self->connectorTableLock);
+      apx_portConnectorList_clear(self->connectorTable);
+      MUTEX_UNLOCK(self->connectorTableLock);
+   }
 }
 
 

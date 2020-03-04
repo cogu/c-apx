@@ -241,6 +241,16 @@ apx_error_t apx_serverTestConnection_onFileOpenMsgReceived(apx_serverTestConnect
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_serverTestConnection_onDisconnect(apx_serverTestConnection_t *self)
+{
+   if (self != 0)
+   {
+      apx_serverConnectionBase_disconnectNotify(&self->base);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_nodeInstance_t *apx_serverTestConnection_findNodeInstance(apx_serverTestConnection_t *self, const char *nodeName)
 {
    if (self != 0 && nodeName != 0)

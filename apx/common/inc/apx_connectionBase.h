@@ -61,6 +61,7 @@ typedef void (apx_fileInfoNotifyFunc)(void *arg, const struct apx_fileInfo_tag *
 typedef apx_error_t (apx_fillTransmitHandlerFunc)(void *arg, struct apx_transmitHandler_tag *handler);
 typedef void (apx_nodeFileWriteNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
 typedef void (apx_nodeFileOpenNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
+typedef void (apx_portConnectorChangeCreateNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_portType_t portType);
 
 typedef struct apx_connectionBaseVTable_tag
 {
@@ -71,6 +72,7 @@ typedef struct apx_connectionBaseVTable_tag
    apx_nodeFileWriteNotifyFunc *nodeFileWriteNotify;
    apx_nodeFileOpenNotifyFunc *nodeFileOpenNotify;
    apx_fillTransmitHandlerFunc *fillTransmitHandler;
+   apx_portConnectorChangeCreateNotifyFunc *portConnectorChangeCreateNotify;
 } apx_connectionBaseVTable_t;
 
 typedef struct apx_connectionBase_tag
@@ -128,9 +130,8 @@ apx_error_t apx_connectionBase_nodeInstanceFileOpenNotify(apx_connectionBase_t *
 apx_error_t apx_connectionBase_updateProvidePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, const uint8_t *data, uint32_t offset, uint32_t len);
 apx_error_t apx_connectionBase_updateRequirePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, const uint8_t *data, uint32_t offset, uint32_t len);
 void apx_connectionBase_disconnectNotify(apx_connectionBase_t *self);
-/*** Event triggering API ***/
-
 void apx_connectionBase_triggerRemoteFileHeaderCompleteEvent(apx_connectionBase_t *self);
+void apx_connectionBase_portConnectorChangeCreateNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_portType_t portType);
 
 //void apx_connectionBase_emitFileManagerPreStartEvent(apx_connectionBase_t *self);
 //void apx_connectionBase_emitFileManagerPostStopEvent(apx_connectionBase_t *self);
@@ -142,11 +143,15 @@ void apx_connectionBase_emitRemoteFileWrittenType1(apx_connectionBase_t *self, s
 void apx_connectionBase_emitNodeComplete(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData);
 void apx_connectionBase_emitHeaderAccepted(apx_connectionBase_t *self);
 void apx_connectionBase_emitGenericEvent(apx_connectionBase_t *self, apx_event_t *event);
+
+
+/*** Utility functions ***/
 void apx_connectionBase_defaultEventHandler(apx_connectionBase_t *self, apx_event_t *event);
 void apx_connectionBase_setConnectionId(apx_connectionBase_t *self, uint32_t connectionId);
 uint32_t apx_connectionBase_getConnectionId(apx_connectionBase_t *self);
 void apx_connectionBase_getTransmitHandler(apx_connectionBase_t *self, apx_transmitHandler_t *transmitHandler);
 uint16_t apx_connectionBase_getNumPendingEvents(apx_connectionBase_t *self);
+
 
 /*** Event triggering API ***/
 
