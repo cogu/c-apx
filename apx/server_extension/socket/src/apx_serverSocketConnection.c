@@ -124,10 +124,7 @@ void apx_serverSocketConnection_destroy(apx_serverSocketConnection_t *self)
    {
       apx_serverConnectionBase_destroy(&self->base);
       adt_bytearray_destroy(&self->sendBuffer);
-      ///TODO: Investigate why socketObject cannot be deleted without either hanging server or make valgrind very nervous
-#ifdef UNIT_TEST
       SOCKET_DELETE(self->socketObject);
-#endif
    }
 }
 
@@ -192,6 +189,7 @@ void apx_serverSocketConnection_close(apx_serverSocketConnection_t *self)
 {
    if (self != 0)
    {
+      printf("[SERVER-SOCKET-CONNECTION] closing socket object\n");
       SOCKET_OBJECT_CLOSE(self->socketObject);
    }
 }

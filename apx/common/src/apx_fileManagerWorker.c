@@ -182,6 +182,18 @@ void apx_fileManagerWorker_setNumHeaderSize(apx_fileManagerWorker_t *self, uint8
    }
 }
 
+uint16_t apx_fileManagerWorker_getNumPendingMessages(apx_fileManagerWorker_t *self)
+{
+   if (self != 0)
+   {
+      uint16_t retval;
+      SPINLOCK_ENTER(self->lock);
+      retval = adt_rbfh_length(&self->messages);
+      SPINLOCK_LEAVE(self->lock);
+      return retval;
+   }
+   return 0u;
+}
 
 //Message API
 

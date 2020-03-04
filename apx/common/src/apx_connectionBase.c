@@ -722,6 +722,15 @@ uint16_t apx_connectionBase_getNumPendingEvents(apx_connectionBase_t *self)
    return 0;
 }
 
+uint16_t apx_connectionBase_getNumPendingWorkerMessages(apx_connectionBase_t *self)
+{
+   if (self != 0)
+   {
+      return apx_fileManager_getNumPendingWorkerMessages(&self->fileManager);
+   }
+   return 0u;
+}
+
 void* apx_connectionBase_registerEventListener(apx_connectionBase_t *self, apx_connectionEventListener_t *listener)
 {
    if ( (self != 0) && (listener != 0))
