@@ -51,6 +51,7 @@ static void test_apx_nodeInfo_calcPortDataLen3(CuTest *tc);
 static void test_apx_nodeInfo_calcPortDataLen4(CuTest *tc);
 static void test_apx_nodeInfo_calcPortDataLen5(CuTest *tc);
 static void test_apx_nodeInfo_buildDerivedPortSignatures1(CuTest *tc);
+static void test_apx_nodeInfo_getClientPortNamesFromSignatures(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -71,6 +72,7 @@ CuSuite* testSuite_apx_nodeInfo(void)
    SUITE_ADD_TEST(suite, test_apx_nodeInfo_calcPortDataLen4);
    SUITE_ADD_TEST(suite, test_apx_nodeInfo_calcPortDataLen5);
    SUITE_ADD_TEST(suite, test_apx_nodeInfo_buildDerivedPortSignatures1);
+   SUITE_ADD_TEST(suite, test_apx_nodeInfo_getClientPortNamesFromSignatures);
 
    return suite;
 }
@@ -185,5 +187,17 @@ static void test_apx_nodeInfo_buildDerivedPortSignatures1(CuTest *tc)
    CuAssertConstPtrEquals(tc, NULL, apx_nodeInfo_getProvidePortSignature(nodeInfo, 3));
    CuAssertStrEquals(tc, "\"GearSelectionMode\"C(0,7)", apx_nodeInfo_getRequirePortSignature(nodeInfo, 0));
    CuAssertConstPtrEquals(tc, NULL, apx_nodeInfo_getRequirePortSignature(nodeInfo, 1));
+   apx_nodeInfo_delete(nodeInfo);
+}
+
+static void test_apx_nodeInfo_getClientPortNamesFromSignatures(CuTest *tc)
+{
+   apx_nodeInfo_t *nodeInfo = apx_nodeInfo_make_from_cstr(g_apx_test_node1, APX_CLIENT_MODE);
+   CuAssertPtrNotNull(tc, nodeInfo);
+   CuAssertUIntEquals(tc, APX_PORT_ID_PROVIDE_PORT | 0u, apx_nodeInfo_findPortIdByName(nodeInfo, "WheelBasedVehicleSpeed"));
+   CuAssertUIntEquals(tc, APX_PORT_ID_PROVIDE_PORT | 1u, apx_nodeInfo_findPortIdByName(nodeInfo, "CabTiltLockWarning"));
+   CuAssertUIntEquals(tc, APX_PORT_ID_PROVIDE_PORT | 2u, apx_nodeInfo_findPortIdByName(nodeInfo, "VehicleMode"));
+   CuAssertUIntEquals(tc, 0u, apx_nodeInfo_findPortIdByName(nodeInfo, "GearSelectionMode"));
+   CuAssertUIntEquals(tc, APX_INVALID_PORT_ID, apx_nodeInfo_findPortIdByName(nodeInfo, "DoesNotExist"));
    apx_nodeInfo_delete(nodeInfo);
 }

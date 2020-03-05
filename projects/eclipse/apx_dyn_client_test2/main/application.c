@@ -55,12 +55,12 @@ static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, u
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static apx_client_t *m_client = NULL;
-static apx_nodeInstance_t *m_nodeInstance = NULL;
 static uint16_t m_vehicleSpeed;
 static uint32_t m_stressCount;
 static bool m_isConnected;
 static bool m_hasPendingStressCmd;
 static bool m_isStressOngoing;
+static void *m_vehicleSpeedHandle;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -91,12 +91,12 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
          printf("apx_client_createLocalNode_cstr returned %d\n", (int) result);
          return;
       }
-      m_nodeInstance = apx_client_getLastAttachedNode(m_client);
-      assert(m_nodeInstance != 0);
-
-      uint8_t data[UINT16_SIZE];
-      packLE(&data[0], m_vehicleSpeed, UINT16_SIZE);
-      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 0, UINT16_SIZE);
+      m_vehicleSpeedHandle = apx_client_getPortHandle(m_client, NULL, "VehicleSpeed");
+      assert(m_vehicleSpeedHandle != 0);
+      if (apx_client_writePortData_u16(m_client, m_vehicleSpeedHandle, m_vehicleSpeed) != APX_NO_ERROR)
+      {
+         assert(0);
+      }
 
       result = apx_client_connectUnix(m_client, unix_socket_path);
       if (result != APX_NO_ERROR)
@@ -111,11 +111,12 @@ void application_run(void)
 {
    if (m_isConnected)
    {
-      uint8_t data[UINT16_SIZE];
       m_vehicleSpeed++;
-      packLE(&data[0], m_vehicleSpeed, UINT16_SIZE);
-      printf("Writing %02X %02X\n", (int) data[0], (int) data[1]);
-      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 0u, UINT16_SIZE);
+      printf("Writing %d\n", m_vehicleSpeed);
+      if (apx_client_writePortData_u16(m_client, m_vehicleSpeedHandle, m_vehicleSpeed) != APX_NO_ERROR)
+      {
+         assert(0);
+      }
    }
    else
    {

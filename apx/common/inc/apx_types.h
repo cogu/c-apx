@@ -87,6 +87,7 @@ typedef struct apx_dataWriteCmd_tag
 
 #define APX_PORT_ID_PROVIDE_PORT 0x80000000 //used inside an uint32_t to carry either a provide port ID and a require port ID.
 #define APX_PORT_ID_MASK         0x7FFFFFFF //used to clear the port flag (ready to cast it into an int32_t)
+#define APX_INVALID_PORT_ID      0xFFFFFFFF //Pattern used when there is no valid port id
 
 #define APX_BASE_TYPE_NONE     -1
 #define APX_BASE_TYPE_UINT8    0 //'C' (uint8)
