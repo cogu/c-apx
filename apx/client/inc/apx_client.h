@@ -113,6 +113,12 @@ apx_nodeInstance_t *apx_client_getLastAttachedNode(apx_client_t *self);
 struct apx_fileManager_tag *apx_client_getFileManager(apx_client_t *self);
 struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self);
 
+/*** Port Handle API ***/
+void *apx_client_getPortHandle(apx_client_t *self, const char *nodeName, const char *portName);
+
+/*** Port Data Write API ***/
+apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
+
 #ifdef UNIT_TEST
 void apx_client_run(apx_client_t *self);
 #endif

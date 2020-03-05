@@ -24,11 +24,6 @@
 #define ERROR_MSG_SIZE 150
 #define FILE_INFO_MAX_SIZE 256
 
-#define PORT_DATA_START      0x0
-#define DEFINITION_START     0x4000000
-#define PORT_DATA_BOUNDARY   0x400u //1KB, this must be a power of 2
-#define DEFINITION_BOUNDARY  0x100000u //1MB, this must be a power of 2
-
 #define CLIENT_RUN(cli, sock) testsocket_run(sock); apx_client_run(cli); testsocket_run(sock); apx_client_run(cli)
 
 
@@ -36,7 +31,6 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_clientSocketConnection_create(CuTest* tc);
-static void test_apx_clientSocketConnection_transmitHandlerSetup(CuTest* tc);
 static void test_apx_clientSocketConnection_sendGreetingOnConnect(CuTest* tc);
 static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge1(CuTest* tc);
 static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge2(CuTest* tc);
@@ -61,7 +55,6 @@ CuSuite* testSuite_apx_client_socketConnection(void)
 {
    CuSuite* suite = CuSuiteNew();
    SUITE_ADD_TEST(suite, test_apx_clientSocketConnection_create);
-   SUITE_ADD_TEST(suite, test_apx_clientSocketConnection_transmitHandlerSetup);
    SUITE_ADD_TEST(suite, test_apx_clientSocketConnection_sendGreetingOnConnect);
    SUITE_ADD_TEST(suite, test_apx_clientSocketConnection_sendApxFileAfterAcknowledge1);
    SUITE_ADD_TEST(suite, test_apx_clientSocketConnection_sendApxFileAfterAcknowledge2);
@@ -87,20 +80,7 @@ static void test_apx_clientSocketConnection_create(CuTest* tc)
    apx_clientSocketConnection_destroy(&conn);
 }
 
-static void test_apx_clientSocketConnection_transmitHandlerSetup(CuTest* tc)
-{
-   apx_clientSocketConnection_t *conn;
-   testsocket_t *sock;
-   apx_fileManager_t *fileManager;
-   testsocket_spy_create();
-   sock = testsocket_spy_client();
-   conn = apx_clientSocketConnection_new(sock);
-   CuAssertPtrNotNull(tc, conn);
-   fileManager = &conn->base.base.fileManager;
-   CuAssertPtrNotNull(tc, fileManager->worker.transmitHandler.send);
-   apx_connectionBase_delete(&conn->base.base); //always delete using the base pointer
-   testsocket_spy_destroy();
-}
+
 
 static void test_apx_clientSocketConnection_sendGreetingOnConnect(CuTest* tc)
 {
@@ -162,12 +142,12 @@ static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge1(CuTest*
    data = (const char*) testsocket_spy_getReceivedData(&len);
    CuAssertIntEquals(tc, 134, len);
    CuAssertIntEquals(tc, 66, data[0]);
-   rmf_fileInfo_create(&fileInfo, "TestNode1.out", PORT_DATA_START, (uint32_t) APX_TESTNODE1_OUT_DATA_LEN, RMF_FILE_TYPE_FIXED);
+   rmf_fileInfo_create(&fileInfo, "TestNode1.out", APX_ADDRESS_PORT_DATA_START, (uint32_t) APX_TESTNODE1_OUT_DATA_LEN, RMF_FILE_TYPE_FIXED);
    CuAssertIntEquals(tc, 4, rmf_packHeader(msgBuf, sizeof(msgBuf), RMF_CMD_START_ADDR, false));
    CuAssertIntEquals(tc, 62, rmf_serialize_cmdFileInfo(msgBuf+4, sizeof(msgBuf)-4, &fileInfo));
    CuAssertIntEquals(tc, 0, memcmp(&data[1], &msgBuf[0], 66));
    CuAssertIntEquals(tc, 66, data[67]);
-   rmf_fileInfo_create(&fileInfo, "TestNode1.apx", DEFINITION_START, (uint32_t) strlen(g_apx_test_node1), RMF_FILE_TYPE_FIXED);
+   rmf_fileInfo_create(&fileInfo, "TestNode1.apx", APX_ADDRESS_DEFINITION_START, (uint32_t) strlen(g_apx_test_node1), RMF_FILE_TYPE_FIXED);
    CuAssertIntEquals(tc, 4, rmf_packHeader(msgBuf, sizeof(msgBuf), RMF_CMD_START_ADDR, false));
    CuAssertIntEquals(tc, 62, rmf_serialize_cmdFileInfo(msgBuf+4, sizeof(msgBuf)-4, &fileInfo));
    CuAssertIntEquals(tc, 0, memcmp(&data[68], &msgBuf[0], 66));
@@ -209,23 +189,22 @@ static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge2(CuTest*
    data = (const char*) testsocket_spy_getReceivedData(&len);
    CuAssertIntEquals(tc, 268, len);
    CuAssertIntEquals(tc, 66, data[0]);
-   rmf_fileInfo_create(&fileInfo, "TestNode1.out", PORT_DATA_START, (uint32_t) APX_TESTNODE1_OUT_DATA_LEN, RMF_FILE_TYPE_FIXED);
+   rmf_fileInfo_create(&fileInfo, "TestNode1.out", APX_ADDRESS_PORT_DATA_START, (uint32_t) APX_TESTNODE1_OUT_DATA_LEN, RMF_FILE_TYPE_FIXED);
    CuAssertIntEquals(tc, 4, rmf_packHeader(msgBuf, sizeof(msgBuf), RMF_CMD_START_ADDR, false));
    CuAssertIntEquals(tc, 62, rmf_serialize_cmdFileInfo(msgBuf+4, sizeof(msgBuf)-4, &fileInfo));
    CuAssertIntEquals(tc, 0, memcmp(&data[1], &msgBuf[0], 66));
    CuAssertIntEquals(tc, 66, data[67]);
-   rmf_fileInfo_create(&fileInfo, "TestNode2.out", PORT_DATA_START+PORT_DATA_BOUNDARY, (uint32_t) APX_TESTNODE2_OUT_DATA_LEN, RMF_FILE_TYPE_FIXED);
-   //rmf_fileInfo_create(&fileInfo, "TestNode1.apx", DEFINITION_START, (uint32_t) strlen(g_apx_test_node1), RMF_FILE_TYPE_FIXED);
+   rmf_fileInfo_create(&fileInfo, "TestNode2.out", APX_ADDRESS_PORT_DATA_START+APX_ADDRESS_PORT_DATA_BOUNDARY, (uint32_t) APX_TESTNODE2_OUT_DATA_LEN, RMF_FILE_TYPE_FIXED);
    CuAssertIntEquals(tc, 4, rmf_packHeader(msgBuf, sizeof(msgBuf), RMF_CMD_START_ADDR, false));
    CuAssertIntEquals(tc, 62, rmf_serialize_cmdFileInfo(msgBuf+4, sizeof(msgBuf)-4, &fileInfo));
    CuAssertIntEquals(tc, 0, memcmp(&data[68], &msgBuf[0], 66));
    CuAssertIntEquals(tc, 66, data[134]);
-   rmf_fileInfo_create(&fileInfo, "TestNode1.apx", DEFINITION_START, (uint32_t) strlen(g_apx_test_node1), RMF_FILE_TYPE_FIXED);
+   rmf_fileInfo_create(&fileInfo, "TestNode1.apx", APX_ADDRESS_DEFINITION_START, (uint32_t) strlen(g_apx_test_node1), RMF_FILE_TYPE_FIXED);
    CuAssertIntEquals(tc, 4, rmf_packHeader(msgBuf, sizeof(msgBuf), RMF_CMD_START_ADDR, false));
    CuAssertIntEquals(tc, 62, rmf_serialize_cmdFileInfo(msgBuf+4, sizeof(msgBuf)-4, &fileInfo));
    CuAssertIntEquals(tc, 0, memcmp(&data[135], &msgBuf[0], 66));
    CuAssertIntEquals(tc, 66, data[201]);
-   rmf_fileInfo_create(&fileInfo, "TestNode2.apx", DEFINITION_START+DEFINITION_BOUNDARY, (uint32_t) strlen(g_apx_test_node2), RMF_FILE_TYPE_FIXED);
+   rmf_fileInfo_create(&fileInfo, "TestNode2.apx", APX_ADDRESS_DEFINITION_START+APX_ADDRESS_DEFINITION_BOUNDARY, (uint32_t) strlen(g_apx_test_node2), RMF_FILE_TYPE_FIXED);
    CuAssertIntEquals(tc, 4, rmf_packHeader(msgBuf, sizeof(msgBuf), RMF_CMD_START_ADDR, false));
    CuAssertIntEquals(tc, 62, rmf_serialize_cmdFileInfo(msgBuf+4, sizeof(msgBuf)-4, &fileInfo));
    CuAssertIntEquals(tc, 0, memcmp(&data[202], &msgBuf[0], 66));

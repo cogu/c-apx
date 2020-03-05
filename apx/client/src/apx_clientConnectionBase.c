@@ -78,6 +78,7 @@ apx_error_t apx_clientConnectionBase_create(apx_clientConnectionBase_t *self, ap
       vtable->nodeFileOpenNotify = apx_clientConnectionBase_vnodeInstanceFileOpenNotify;
       errorCode = apx_connectionBase_create(&self->base, APX_CLIENT_MODE, vtable);
       self->isAcknowledgeSeen = false;
+      self->client = (apx_client_t*) 0;
       apx_connectionBase_setEventHandler(&self->base, apx_clientConnectionBase_defaultEventHandler, (void*) self);
       return errorCode;
    }

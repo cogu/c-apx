@@ -90,6 +90,7 @@ const adt_bytes_t* apx_nodeInfo_getRequirePortUnpackProgram(const apx_nodeInfo_t
 const adt_bytes_t* apx_nodeInfo_getProvidePortUnpackProgram(const apx_nodeInfo_t *self, apx_portId_t portId);
 apx_portId_t apx_nodeInfo_findProvidePortIdFromByteOffset(const apx_nodeInfo_t *self, apx_offset_t offset);
 apx_portId_t apx_nodeInfo_findRequirePortIdFromByteOffset(const apx_nodeInfo_t *self, apx_offset_t offset);
+apx_uniquePortId_t apx_nodeInfo_findPortIdByName(const apx_nodeInfo_t *self, const char *name);
 
 apx_size_t apx_nodeInfo_calcRequirePortDataLen(const apx_nodeInfo_t *self); //DEPRECATED; use apx_nodeInfo_getRequirePortDataLen instead
 apx_size_t apx_nodeInfo_calcProvidePortDataLen(const apx_nodeInfo_t *self); //DEPRECATED; use apx_nodeInfo_getProvidePortDataLen instead
@@ -104,5 +105,7 @@ apx_size_t apx_nodeInfo_getProvidePortInitDataSize(const apx_nodeInfo_t *self);
 const uint8_t *apx_nodeInfo_getProvidePortInitDataPtr(const apx_nodeInfo_t *self);
 const char *apx_nodeInfo_getRequirePortSignature(const apx_nodeInfo_t *self, apx_portId_t portId);
 const char *apx_nodeInfo_getProvidePortSignature(const apx_nodeInfo_t *self, apx_portId_t portId);
+
+
 
 #endif //APX_NODE_INFO_H

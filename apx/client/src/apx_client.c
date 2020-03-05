@@ -45,6 +45,8 @@
 #include "adt_hash.h"
 #include "apx_eventListener.h"
 #include "apx_compiler.h"
+#include "pack.h"
+#include "apx_vm.h"
 
 #ifdef UNIT_TEST
 #include "testsocket.h"
@@ -157,7 +159,7 @@ apx_error_t apx_client_socketConnect(apx_client_t *self, struct testsocket_tag *
       if (socketConnection)
       {
          apx_error_t result;
-         self->connection = (apx_clientConnectionBase_t*) socketConnection;
+         apx_client_attachConnection(self, &socketConnection->base);
          result = apx_clientSocketConnection_connect(socketConnection);
          if (result == APX_NO_ERROR)
          {
@@ -337,6 +339,102 @@ struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self)
    }
    return (apx_nodeManager_t*) 0;
 }
+
+/*** Port Handle API ***/
+void *apx_client_getPortHandle(apx_client_t *self, const char *nodeName, const char *portName)
+{
+   if ( (self != 0) && (portName != 0))
+   {
+      apx_nodeInstance_t *nodeInstance = 0;
+      if (nodeName == 0)
+      {
+         nodeInstance = apx_client_getLastAttachedNode(self);
+      }
+      else
+      {
+         nodeInstance = apx_nodeManager_find(self->nodeManager, nodeName);
+      }
+      if (nodeInstance != 0)
+      {
+         apx_uniquePortId_t uniquePortId;
+         apx_nodeInfo_t *nodeInfo = apx_nodeInstance_getNodeInfo(nodeInstance);
+         assert(nodeInfo != 0);
+         uniquePortId = apx_nodeInfo_findPortIdByName(nodeInfo, portName);
+         if (uniquePortId != APX_INVALID_PORT_ID)
+         {
+            apx_portId_t portId;
+            if ((uniquePortId & APX_PORT_ID_PROVIDE_PORT) != 0)
+            {
+               portId = uniquePortId & APX_PORT_ID_MASK;
+               return (void*) apx_nodeInstance_getProvidePortRef(nodeInstance, portId);
+            }
+            else
+            {
+               portId = uniquePortId;
+               return (void*) apx_nodeInstance_getRequirePortRef(nodeInstance, portId);
+            }
+         }
+      }
+   }
+   return (void*) 0;
+}
+
+
+/*** Port Data Write API ***/
+apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value)
+{
+   if (self != 0 && portHandle != 0)
+   {
+      apx_nodeInfo_t *nodeInfo;
+      const adt_bytes_t *program;
+      uint8_t packedData[UINT16_SIZE];
+      apx_portRef_t *portRef = (apx_portRef_t*) portHandle;
+      if (!apx_portRef_isProvidePort(portRef))
+      {
+         return APX_PORT_SIGNATURE_ERROR;
+      }
+      nodeInfo = apx_nodeInstance_getNodeInfo(portRef->nodeInstance);
+      assert(nodeInfo != 0);
+      program = apx_nodeInfo_getProvidePortPackProgram(nodeInfo, apx_portRef_getPortId(portRef));
+      if (program != 0)
+      {
+         const uint8_t *code;
+         int32_t length;
+         code = adt_bytes_constData(program);
+         length = adt_bytes_length(program);
+         //This specialized version of writePortData only works when there is only a single instruction in the program
+         if (length == APX_VM_HEADER_SIZE + APX_VM_INSTRUCTION_SIZE)
+         {
+            uint8_t opcode;
+            uint8_t variant;
+            uint8_t flags;
+            apx_error_t rc = apx_vm_decodeInstruction(code[APX_VM_HEADER_SIZE], &opcode, &variant, &flags);
+            if ( (rc == APX_NO_ERROR) &&
+                 (opcode == APX_OPCODE_PACK) &&
+                 (variant == APX_VARIANT_U16) &&
+                 (flags == 0u))
+            {
+               packLE(&packedData[0], value, UINT16_SIZE);
+               return apx_nodeInstance_writeProvidePortData(portRef->nodeInstance, &packedData[0], portRef->portDataProps->offset, UINT16_SIZE);
+            }
+            else
+            {
+               return APX_INVALID_INSTRUCTION_ERROR;
+            }
+         }
+         else
+         {
+            return APX_INVALID_PROGRAM_ERROR;
+         }
+      }
+      else
+      {
+         return APX_INVALID_PROGRAM_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 
 /////////////////////// BEGIN CLIENT INTERNAL API /////////////////////
 void apx_clientInternal_onConnect(apx_client_t *self, apx_clientConnectionBase_t *connection)

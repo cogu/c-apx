@@ -34,6 +34,7 @@
 #include "apx_parser.h"
 #include "apx_nodeInfo.h"
 #include "apx_vm.h"
+#include "bstr.h"
 #include <stdio.h> //DEBUG ONLY
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -147,14 +148,11 @@ apx_error_t apx_nodeInfo_build(apx_nodeInfo_t *self, const struct apx_node_tag *
             apx_nodeInfo_freeMemory(self);
             return errorCode;
          }
-         if (mode == APX_SERVER_MODE)
+         errorCode = apx_nodeInfo_buildRequirePortSignatures(self, parseTree);
+         if (errorCode != 0)
          {
-            errorCode = apx_nodeInfo_buildRequirePortSignatures(self, parseTree);
-            if (errorCode != 0)
-            {
-               apx_nodeInfo_freeMemory(self);
-               return errorCode;
-            }
+            apx_nodeInfo_freeMemory(self);
+            return errorCode;
          }
       }
       if (self->numProvidePorts > 0)
@@ -165,14 +163,11 @@ apx_error_t apx_nodeInfo_build(apx_nodeInfo_t *self, const struct apx_node_tag *
             apx_nodeInfo_freeMemory(self);
             return errorCode;
          }
-         if (mode == APX_SERVER_MODE)
+         errorCode = apx_nodeInfo_buildProvidePortSignatures(self, parseTree);
+         if (errorCode != 0)
          {
-            errorCode = apx_nodeInfo_buildProvidePortSignatures(self, parseTree);
-            if (errorCode != 0)
-            {
-               apx_nodeInfo_freeMemory(self);
-               return errorCode;
-            }
+            apx_nodeInfo_freeMemory(self);
+            return errorCode;
          }
       }
       self->requirePortDataLen = apx_nodeInfo_calcRequirePortDataLen(self);
@@ -316,6 +311,63 @@ apx_portId_t apx_nodeInfo_findRequirePortIdFromByteOffset(const apx_nodeInfo_t *
       return apx_bytePortMap_lookup(self->clientBytePortMap, offset);
    }
    return (apx_portId_t) -1;
+}
+
+apx_uniquePortId_t apx_nodeInfo_findPortIdByName(const apx_nodeInfo_t *self, const char *name)
+{
+   if (self != 0)
+   {
+      apx_portId_t portId;
+      if (self->numProvidePorts > 0)
+      {
+         assert(self->providePortSignatures != 0);
+         for(portId=0; portId < self->numProvidePorts; portId++)
+         {
+            const uint8_t *pMatch;
+            const uint8_t *pEnd;
+            const uint8_t *pNext;
+            pNext = (const uint8_t*) self->providePortSignatures[portId];
+            pEnd = pNext + strlen(self->providePortSignatures[portId]);
+            if (pNext < pEnd)
+            {
+               assert((char) (*pNext++) == '"');
+               pMatch = bstr_match_cstr(pNext, pEnd, name);
+               if (pMatch > pNext)
+               {
+                  if ((char) (*pMatch) == '"')
+                  {
+                     return (portId | APX_PORT_ID_PROVIDE_PORT);
+                  }
+               }
+            }
+         }
+      }
+      if (self->numRequirePorts > 0)
+      {
+         assert(self->requirePortSignatures != 0);
+         for(portId=0; portId < self->numRequirePorts; portId++)
+         {
+            const uint8_t *pMatch;
+            const uint8_t *pEnd;
+            const uint8_t *pNext;
+            pNext = (const uint8_t*) self->requirePortSignatures[portId];
+            pEnd = pNext + strlen(self->requirePortSignatures[portId]);
+            if (pNext < pEnd)
+            {
+               assert((char) (*pNext++) == '"');
+               pMatch = bstr_match_cstr(pNext, pEnd, name);
+               if (pMatch > pNext)
+               {
+                  if ((char) (*pMatch) == '"')
+                  {
+                     return (portId);
+                  }
+               }
+            }
+         }
+      }
+   }
+   return APX_INVALID_PORT_ID;
 }
 
 apx_size_t apx_nodeInfo_calcRequirePortDataLen(const apx_nodeInfo_t *self)
