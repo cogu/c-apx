@@ -2,57 +2,47 @@
 
 This is the C implementation of [APX](https://github.com/cogu/apx-doc).
 
-## Stable code base
+## v0.2.x (Stable)
 
-The c-apx code base has gone through a major refactoring phase. If you are looking for a stable release, 
-please use any of the 0.2.x releases (latest is [v0.2.5](https://github.com/cogu/c-apx/releases/tag/v0.2.5)).
+All maintenance work for v0.2 is done on the [maintenance_0.2](https://github.com/cogu/c-apx/tree/maintenance_0.2) branch.
+Latest release is [v0.2.5](https://github.com/cogu/c-apx/releases/tag/v0.2.5).
 
-## New experimental code base
+## v0.3.x (In development)
 
-The master branch should be considered highly experimental for a time and cannot be used for anything useful except 
-runnning the unit test suite.
+All development work for v0.3 is done on the master branch. As such, the master branch should for now be considered
+highly experimental.
 
-### What internal features was added by the refactoring?
+### Current status of master branch (v0.3.0a)
 
-- New event loop and event listener API (Server+Client)
-- Support for extensions (Server)
-	- First extension will be the socket extension.
-- Preparations for APX 1.3 (Server+Client)
-	- Boolean type
-	- byte array type
-	- UTF-8 string support
-	- Dynamically sized arrays
-	- Queued signals
-	- JSON data import/export
-
-
-## Planned features in next release (v0.3.0)
-
-- Socket extension (TCP+Unix) (Server).
-- JSON configuration file (Server).
-- New data routing engine (Server).
-- Minimal support for APX VM 2 (Client).
-
+- apx-server should be considered "minimum viable product".
+- GCC support only (Visual Studio project is currently out of sync).
+- APX-ES is not yet supported (needs refactoring/rework).
+- Dynamic nodes only (code-generated nodes not yet implemented).
+- Extremely limited data type support:
+  - uint16
 
 ## What is APX?
 
-APX consists of a set of clients (called nodes) and a server. The server acts as a message router between the clients so 
-that signal data can flow between them. APX is free and open source.
+APX is a software technology designed for the automotive industry. It is used to stream automotive signals in real-time
+to (or from) Linux or Windows systems. APX is designed to work well for high-frequency signal changes (low latency updates) over short distances (SPI buses, local area ethernet or local host).
+
+APX is a client-server solution. In a typical setup, one apx-server instance executes on Linux (or Windows).
+APX clients connects to the server instance and starts streaming signal changes (to the server).
+The server automatically builds data routing tables and continously forwards the signal changes
+sent from client output (or provide) port(s) to client input (or require) port(s).
 
 ## Where can APX be used?
 
-APX is used in the automotive industry to quickly transfer automotive signals (primarily AUTOSAR signals) in real-time.
-It is designed to be used in small, local networks such as an intranet or on localhost.
-APX can scale from being used in a simple protype setup to full production solutions.
+APX can be integrated on systems that run AUTOSAR classic (see APX-ES) as well as on any Linux or Windows system.
+
+APX clients can be implemented in any programming language and can run on any platform. The APX protocol is designed to work well on small embedded systems (where RAM and ROM availability is a usual constraint).
 
 ## What is APX-ES?
 
-APX for embedded systems (APX-ES) is client source code written for very small devices.
+APX for embedded systems (APX-ES) is client source code written in C for very small devices.
 
 - It does not require an operating system (Using a small RTOS is recomended)
 - It does not require any heap memory.
 - It is intended to be MISRA-compliant (at some point).
 
-
-
-
+Note that APX-ES on master branch is not yet updated to work with the new v0.3.x code base (that work will start soon).
