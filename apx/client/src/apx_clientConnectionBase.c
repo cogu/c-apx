@@ -483,6 +483,17 @@ static apx_error_t apx_clientConnectionBase_processNewRequirePortDataFile(apx_cl
 
 static apx_error_t apx_clientConnectionBase_requirePortDataWriteNotify(apx_clientConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len)
 {
-   printf("[CLIENT-SERVER-BASE](%d) NOT IMPLEMENTED\n", __LINE__);
-   return APX_NOT_IMPLEMENTED_ERROR;
+   apx_error_t rc;
+   assert(self != 0);
+   assert(nodeInstance != 0);
+   rc = apx_nodeInstance_writeRequirePortData(nodeInstance, data, offset, len);
+   if (rc != APX_NO_ERROR)
+   {
+      return rc;
+   }
+   if (self->client != 0)
+   {
+      apx_clientInternal_requirePortDataWriteNotify(self->client, self, nodeInstance, offset, data, len);
+   }
+   return APX_NO_ERROR;
 }

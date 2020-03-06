@@ -45,21 +45,14 @@
 //////////////////////////////////////////////////////////////////////////////
 static void onClientConnected(void *arg, apx_clientConnectionBase_t *clientConnection);
 static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientConnection);
-/*
-static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg);
-static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
-*/
+static void onClientRequirePortWrite(void *arg, const char *nodeName, apx_portId_t requirePortId, void *portHandle);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static apx_client_t *m_client = NULL;
-static apx_nodeInstance_t *m_nodeInstance = NULL;
-static uint16_t m_wheelBasedVehicleSpeed;
-static uint32_t m_stressCount;
 static bool m_isConnected;
-static bool m_hasPendingStressCmd;
-static bool m_isStressOngoing;
+static void *m_vehicleSpeedHandle;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -72,13 +65,9 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
    memset(&handlerTable, 0, sizeof(handlerTable));
    handlerTable.clientConnect1 = onClientConnected;
    handlerTable.clientDisconnect1 = onClientDisconnected;
-   //handlerTable.logEvent = onLogEvent;
+   handlerTable.requirePortWrite1 = onClientRequirePortWrite;
 
-   m_wheelBasedVehicleSpeed = 0u;
-   m_stressCount = 0;
    m_isConnected = false;
-   m_hasPendingStressCmd = true;
-   m_isStressOngoing = false;
 
    m_client = apx_client_new();
    if (m_client != 0)
@@ -90,12 +79,8 @@ void application_init(const char *apx_definition, const char *unix_socket_path)
          printf("apx_client_createLocalNode_cstr returned %d\n", (int) result);
          return;
       }
-      m_nodeInstance = apx_client_getLastAttachedNode(m_client);
-      assert(m_nodeInstance != 0);
-
-      uint8_t data[UINT16_SIZE];
-      packLE(&data[0], m_wheelBasedVehicleSpeed, UINT16_SIZE);
-      apx_nodeInstance_writeProvidePortData(m_nodeInstance, &data[0], 1, UINT16_SIZE);
+      m_vehicleSpeedHandle = apx_client_getPortHandle(m_client, NULL, "VehicleSpeed");
+      assert(m_vehicleSpeedHandle != 0);
 
       result = apx_client_connectUnix(m_client, unix_socket_path);
       if (result != APX_NO_ERROR)
@@ -131,33 +116,22 @@ static void onClientConnected(void *arg, apx_clientConnectionBase_t *clientConne
 static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientConnection)
 {
    m_isConnected = false;
-   m_hasPendingStressCmd = true;
-   m_isStressOngoing = false;
    printf("Client disconnected from server\n");
 }
-/*
-static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg)
-{
-   printf("onLogEvent\n");
-}
 
-static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
+static void onClientRequirePortWrite(void *arg, const char *nodeName, apx_portId_t requirePortId, void *portHandle)
 {
-   if ( m_isTestNode1 && m_isStressOngoing && (offset == 0) && (len == UINT32_SIZE))
+   if (portHandle == m_vehicleSpeedHandle)
    {
-      m_stressCount++;
-      uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
-      apx_nodeData_readInPortData(m_nodeData, &tmp[0], offset, len);
-      packLE(&tmp[0], m_stressCount, UINT32_SIZE);
-      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 3, UINT32_SIZE, false);
-
-   }
-   else if( (offset == 3) && (len == UINT32_SIZE))
-   {
-      uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
-      apx_nodeData_readInPortData(m_nodeData, &tmp[0], offset, len);
-      (void) unpackLE(&tmp[0], UINT32_SIZE);
-      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 0, UINT32_SIZE, false);
+      uint16_t u16Value;
+      apx_error_t result = apx_client_readPortData_u16(m_client, portHandle, &u16Value);
+      if (result == APX_NO_ERROR)
+      {
+         printf("VehicleSpeed: %d\n", u16Value);
+      }
+      else
+      {
+         printf("apx_client_readPortData_u16 failed with %d\n", (int) result);
+      }
    }
 }
-*/

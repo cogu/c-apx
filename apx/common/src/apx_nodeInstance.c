@@ -790,11 +790,7 @@ apx_error_t apx_nodeInstance_writeRequirePortData(apx_nodeInstance_t *self, cons
       if(self->connection != 0)
       {
          assert(self->requirePortDataFile != 0);
-         if (self->mode == APX_CLIENT_MODE)
-         {
-            rc = APX_NOT_IMPLEMENTED_ERROR;
-         }
-         else
+         if (self->mode == APX_SERVER_MODE)
          {
             rc = apx_connectionBase_updateRequirePortDataDirect(self->connection, self->requirePortDataFile, src, offset, len);
          }
@@ -1383,9 +1379,15 @@ static apx_error_t apx_nodeInstance_providePortDataFileOpenNotify(void *arg, str
 
 static apx_error_t apx_nodeInstance_requirePortDataFileWriteNotify(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *src, uint32_t len)
 {
-   printf("[CONNECTION-BASE] requirePortDataFileWriteNotify %s(%u, %u)\n", apx_file_getName(file), offset, len);
-   apx_print_hex_bytes(16, src, len);
-   return APX_NO_ERROR;
+   apx_nodeInstance_t *self = (apx_nodeInstance_t*) arg;
+   if ( (self != 0) && (file != 0) )
+   {
+      if (self->connection != 0)
+      {
+         return apx_connectionBase_nodeInstanceFileWriteNotify(self->connection, self, apx_file_getApxFileType(file), offset, src, len);
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 static apx_error_t apx_nodeInstance_requirePortDataFileOpenNotify(void *arg, struct apx_file_tag *file)

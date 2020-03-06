@@ -4,7 +4,7 @@
 * \date      2017-02-20
 * \brief     APX client class
 *
-* Copyright (c) 2017-2018 Conny Gustafsson
+* Copyright (c) 2017-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -118,6 +118,9 @@ void *apx_client_getPortHandle(apx_client_t *self, const char *nodeName, const c
 
 /*** Port Data Write API ***/
 apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
+
+/*** Port Data Read API ***/
+apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value);
 
 #ifdef UNIT_TEST
 void apx_client_run(apx_client_t *self);
