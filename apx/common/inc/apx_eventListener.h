@@ -51,13 +51,14 @@ typedef void (apx_eventListener2_portConnectFunc_t)(void *arg, struct apx_nodeIn
 typedef void (apx_eventListener2_fileEvent_t)(void *arg, struct apx_connectionBase_tag *connection, const struct apx_fileInfo_tag *fileInfo);
 typedef void (*remoteFilePreWriteFuncType1)(void *arg, struct apx_file_tag *remoteFile, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit);
 typedef void (*remoteFileWriteFuncType1)(void *arg, struct apx_file_tag *remoteFile, uint32_t offset, const uint8_t *data, uint32_t len);
-
+typedef void (clientRequirePortWriteFuncType1)(void *arg, const char *nodeName, apx_portId_t requirePortId, void *portHandle);
 
 typedef struct apx_clientEventListener_tag
 {
    void *arg;
    void (*clientConnect1)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);
    void (*clientDisconnect1)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);
+   clientRequirePortWriteFuncType1 *requirePortWrite1;
 } apx_clientEventListener_t;
 
 typedef struct apx_serverEventListener_tag

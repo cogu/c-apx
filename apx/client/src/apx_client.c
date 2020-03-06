@@ -66,7 +66,10 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_client_triggerConnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection);
 static void apx_client_triggerDisconnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection);
+static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId, void *portHandle);
 static void apx_client_attachLocalNodesToConnection(apx_client_t *self);
+static apx_error_t apx_client_verifySingleInstructionProgramFromPortRef(apx_portRef_t *portRef, uint8_t *opcode, uint8_t *variant);
+static apx_error_t apx_client_verifySingleInstructionProgram(const adt_bytes_t *program, uint8_t *opcode, uint8_t *variant);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -182,7 +185,7 @@ apx_error_t apx_client_connectTcp(apx_client_t *self, const char *address, uint1
       apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0);
       if (socketConnection != 0)
       {
-         apx_client_attachConnection(self, socketConnection);
+         apx_client_attachConnection(self, (apx_clientConnectionBase_t*) socketConnection);
          return apx_clientConnection_tcp_connect(socketConnection, address, port);
       }
       else
@@ -201,7 +204,7 @@ apx_error_t apx_client_connectUnix(apx_client_t *self, const char *socketPath)
       apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0);
       if (socketConnection != 0)
       {
-         apx_client_attachConnection(self, socketConnection);
+         apx_client_attachConnection(self, (apx_clientConnectionBase_t*) socketConnection);
          return apx_clientConnection_unix_connect(socketConnection, socketPath);
       }
       else
@@ -385,51 +388,62 @@ apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, u
 {
    if (self != 0 && portHandle != 0)
    {
-      apx_nodeInfo_t *nodeInfo;
-      const adt_bytes_t *program;
-      uint8_t packedData[UINT16_SIZE];
+      uint8_t opcode;
+      uint8_t variant;
+      apx_error_t rc;
       apx_portRef_t *portRef = (apx_portRef_t*) portHandle;
-      if (!apx_portRef_isProvidePort(portRef))
+      rc = apx_client_verifySingleInstructionProgramFromPortRef(portRef, &opcode, &variant);
+      if (rc == APX_NO_ERROR)
       {
-         return APX_PORT_SIGNATURE_ERROR;
-      }
-      nodeInfo = apx_nodeInstance_getNodeInfo(portRef->nodeInstance);
-      assert(nodeInfo != 0);
-      program = apx_nodeInfo_getProvidePortPackProgram(nodeInfo, apx_portRef_getPortId(portRef));
-      if (program != 0)
-      {
-         const uint8_t *code;
-         int32_t length;
-         code = adt_bytes_constData(program);
-         length = adt_bytes_length(program);
-         //This specialized version of writePortData only works when there is only a single instruction in the program
-         if (length == APX_VM_HEADER_SIZE + APX_VM_INSTRUCTION_SIZE)
+         if ( (opcode == APX_OPCODE_PACK) && (variant == APX_VARIANT_U16) )
          {
-            uint8_t opcode;
-            uint8_t variant;
-            uint8_t flags;
-            apx_error_t rc = apx_vm_decodeInstruction(code[APX_VM_HEADER_SIZE], &opcode, &variant, &flags);
-            if ( (rc == APX_NO_ERROR) &&
-                 (opcode == APX_OPCODE_PACK) &&
-                 (variant == APX_VARIANT_U16) &&
-                 (flags == 0u))
-            {
-               packLE(&packedData[0], value, UINT16_SIZE);
-               return apx_nodeInstance_writeProvidePortData(portRef->nodeInstance, &packedData[0], portRef->portDataProps->offset, UINT16_SIZE);
-            }
-            else
-            {
-               return APX_INVALID_INSTRUCTION_ERROR;
-            }
+            uint8_t packedData[UINT16_SIZE];
+            packLE(&packedData[0], value, UINT16_SIZE);
+            return apx_nodeInstance_writeProvidePortData(portRef->nodeInstance, &packedData[0], portRef->portDataProps->offset, UINT16_SIZE);
          }
          else
          {
-            return APX_INVALID_PROGRAM_ERROR;
+            return APX_VALUE_ERROR;
          }
       }
       else
       {
-         return APX_INVALID_PROGRAM_ERROR;
+         return rc;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/*** Port Data Read API ***/
+apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value)
+{
+   if ( (self != 0) && (portHandle != 0)  && (value != 0) )
+   {
+      uint8_t opcode;
+      uint8_t variant;
+      apx_error_t rc;
+      apx_portRef_t *portRef = (apx_portRef_t*) portHandle;
+      rc = apx_client_verifySingleInstructionProgramFromPortRef(portRef, &opcode, &variant);
+      if (rc == APX_NO_ERROR)
+      {
+         if ( (opcode == APX_OPCODE_UNPACK) && (variant == APX_VARIANT_U16) )
+         {
+            uint8_t packedData[UINT16_SIZE];
+            rc = apx_nodeInstance_readRequirePortData(portRef->nodeInstance, &packedData[0], portRef->portDataProps->offset, UINT16_SIZE);
+            if (rc == APX_NO_ERROR)
+            {
+               *value = (uint16_t) unpackLE(&packedData[0], UINT16_SIZE);
+            }
+            return rc;
+         }
+         else
+         {
+            return APX_VALUE_ERROR;
+         }
+      }
+      else
+      {
+         return rc;
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -450,6 +464,29 @@ void apx_clientInternal_onDisconnect(apx_client_t *self, apx_clientConnectionBas
    if ( (self != 0) && (connection != 0) )
    {
       apx_client_triggerDisconnectedEventOnListeners(self, connection);
+   }
+}
+
+void apx_clientInternal_requirePortDataWriteNotify(apx_client_t *self, apx_clientConnectionBase_t *connection, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len)
+{
+   (void) connection;
+   if ( (self != 0) && (nodeInstance != 0) )
+   {
+      const char *nodeName = 0;
+      apx_portId_t requirePortId = 0;
+      void *portHandle = 0;
+      apx_nodeInfo_t *nodeInfo = apx_nodeInstance_getNodeInfo(nodeInstance);
+      assert(nodeInfo != 0);
+      nodeName = apx_nodeInfo_getName(nodeInfo);
+      requirePortId = apx_nodeInfo_findRequirePortIdFromByteOffset(nodeInfo, offset);
+      if (requirePortId < 0)
+      {
+         printf("[APX-CLIENT] Write at invalid offset %d\n", (int) offset);
+         return;
+      }
+      portHandle = (void*) apx_nodeInstance_getRequirePortRef(nodeInstance, requirePortId);
+      assert(portHandle != 0);
+      apx_client_triggerRequirePortDataWriteEventOnListeners(self, nodeName, requirePortId, portHandle);
    }
 }
 
@@ -511,6 +548,22 @@ static void apx_client_triggerDisconnectedEventOnListeners(apx_client_t *self, a
    SPINLOCK_LEAVE(self->eventListenerLock);
 }
 
+static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId, void *portHandle)
+{
+   SPINLOCK_ENTER(self->eventListenerLock);
+   adt_list_elem_t *iter = adt_list_iter_first(self->eventListeners);
+   while(iter != 0)
+   {
+      apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
+      if ( (listener != 0) && (listener->requirePortWrite1 != 0))
+      {
+         listener->requirePortWrite1(listener->arg, nodeName, requirePortId, portHandle);
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   SPINLOCK_LEAVE(self->eventListenerLock);
+}
+
 static void apx_client_attachLocalNodesToConnection(apx_client_t *self)
 {
    if (self->connection != 0)
@@ -530,4 +583,60 @@ static void apx_client_attachLocalNodesToConnection(apx_client_t *self)
       }
    }
 }
+
+static apx_error_t apx_client_verifySingleInstructionProgramFromPortRef(apx_portRef_t *portRef, uint8_t *opcode, uint8_t *variant)
+{
+   apx_nodeInfo_t *nodeInfo;
+   const adt_bytes_t *program = 0;
+   nodeInfo = apx_nodeInstance_getNodeInfo(portRef->nodeInstance);
+   assert(nodeInfo != 0);
+
+   if (apx_portRef_isProvidePort(portRef))
+   {
+      program = apx_nodeInfo_getProvidePortPackProgram(nodeInfo, apx_portRef_getPortId(portRef));
+   }
+   else
+   {
+      program = apx_nodeInfo_getRequirePortUnpackProgram(nodeInfo, apx_portRef_getPortId(portRef));
+   }
+
+   if (program != 0)
+   {
+      return apx_client_verifySingleInstructionProgram(program, opcode, variant);
+   }
+   else
+   {
+      return APX_INVALID_PROGRAM_ERROR;
+   }
+}
+
+static apx_error_t apx_client_verifySingleInstructionProgram(const adt_bytes_t *program, uint8_t *opcode, uint8_t *variant)
+{
+   if (program != 0 && opcode != 0 && variant)
+   {
+      const uint8_t *code;
+      int32_t length;
+      code = adt_bytes_constData(program);
+      length = adt_bytes_length(program);
+      if (length == APX_VM_HEADER_SIZE + APX_VM_INSTRUCTION_SIZE)
+      {
+         uint8_t flags;
+         apx_error_t rc = apx_vm_decodeInstruction(code[APX_VM_HEADER_SIZE], opcode, variant, &flags);
+         if ( (rc == APX_NO_ERROR) && (flags == 0u) )
+         {
+            return APX_NO_ERROR;
+         }
+         else
+         {
+            return APX_INVALID_INSTRUCTION_ERROR;
+         }
+      }
+      else
+      {
+         return APX_INVALID_PROGRAM_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 
