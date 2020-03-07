@@ -147,7 +147,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="apx/common/test/apx_fileManagerSharedSpy.c|apx/common/test/testsuite_apx_portTriggerList.c|apx/server_main/server_main.c|adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="apx/server_main/server_main.c|adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
@@ -241,7 +241,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="apx/common/test/apx_fileManagerSharedSpy.c|apx/common/test/testsuite_apx_portTriggerList.c|apx/server_main/server_main.c|adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="apx/server_main/server_main.c|adt/src/adt_u16Map.c|apx/server/src/server_main.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
