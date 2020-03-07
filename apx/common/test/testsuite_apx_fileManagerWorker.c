@@ -9,7 +9,6 @@
 #include <string.h>
 #include "CuTest.h"
 #include "apx_fileManagerWorker.h"
-#include "apx_fileManagerSharedSpy.h"
 #include "apx_fileMap.h"
 #include "rmf.h"
 #include "apx_file.h"
