@@ -84,5 +84,15 @@
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/msocket/src</locationURI>
 		</link>
+		<link>
+			<name>remotefile/inc</name>
+			<type>2</type>
+			<location>/home/cogu/repo/c-apx/remotefile/inc</location>
+		</link>
+		<link>
+			<name>remotefile/src</name>
+			<type>2</type>
+			<location>/home/cogu/repo/c-apx/remotefile/src</location>
+		</link>
 	</linkedResources>
 </projectDescription>

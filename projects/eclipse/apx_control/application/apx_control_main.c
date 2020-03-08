@@ -34,15 +34,19 @@
 #include "osmacro.h"
 #include "filestream.h"
 #include "dtl_json.h"
+#include "adt_str.h"
+#include "message_client_connection.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+#define socket_path "/tmp/apx_sender.socket"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void print_usage(void);
+static void connect_and_send_message_unix(const char *socketPath, adt_str_t *str);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -131,7 +135,7 @@ int main(int argc, char **argv)
    {
       adt_str_t *str = dtl_json_dumps(dv, 0, false);
       assert(str != 0);
-      printf("%s\n", adt_str_cstr(str));
+      connect_and_send_message_unix(socket_path, str);
       adt_str_delete(str);
       dtl_dec_ref(dv);
    }
@@ -151,4 +155,33 @@ static void print_usage(void)
          "  Mode 3: apx_control -i file_name\n"
          "          Reads JSON data from file\n"
          );
+}
+
+static void connect_and_send_message_unix(const char *socketPath, adt_str_t *message)
+{
+   message_client_connection_t *connection = message_client_connection_new(AF_UNIX);
+   if (connection != 0)
+   {
+      adt_error_t rc = message_client_prepare_message(connection, message);
+      if (rc == ADT_NO_ERROR)
+      {
+         int32_t result;
+         result = message_client_connect_unix(connection, socketPath);
+         if (result != 0)
+         {
+            printf("Failed to connect\n");
+         }
+         result = message_client_wait_for_message_transmitted(connection);
+         if (result != 0)
+         {
+            printf("message_client_wait_for_message_transmitted failed with %d\n", (int) result);
+         }
+         usleep(10000u);
+      }
+      else
+      {
+         printf("Failed to prepare data\n");
+      }
+      message_client_connection_delete(connection);
+   }
 }

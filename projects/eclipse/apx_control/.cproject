@@ -59,6 +59,8 @@
                                     									
                                     <listOptionValue builtIn="false" value="../../../../cutil/inc"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../../../../remotefile/inc"/>
+                                    									
                                     <listOptionValue builtIn="false" value="../../../../bstr/inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../adt/inc"/>
@@ -106,6 +108,12 @@
                         </toolChain>
                         					
                     </folderInfo>
+                    					
+                    <sourceEntries>
+                        						
+                        <entry excluding="remotefile/src/rmf.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        					
+                    </sourceEntries>
                     				
                 </configuration>
                 			
@@ -194,6 +202,12 @@
                         </toolChain>
                         					
                     </folderInfo>
+                    					
+                    <sourceEntries>
+                        						
+                        <entry excluding="remotefile/src/rmf.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        					
+                    </sourceEntries>
                     				
                 </configuration>
                 			
