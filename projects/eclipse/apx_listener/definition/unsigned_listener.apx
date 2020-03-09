@@ -1,0 +1,5 @@
+APX/1.2
+N"apx_listener"
+R"VehicleMode"C(0,15):=15
+R"VehicleSpeed"S:=65535
+

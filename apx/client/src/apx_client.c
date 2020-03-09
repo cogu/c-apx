@@ -66,7 +66,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_client_triggerConnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection);
 static void apx_client_triggerDisconnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection);
-static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId, void *portHandle);
+static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t *self, apx_nodeInstance_t *nodeInstance, apx_portId_t requirePortId, void *portHandle);
 static void apx_client_attachLocalNodesToConnection(apx_client_t *self);
 static apx_error_t apx_client_verifySingleInstructionProgramFromPortRef(apx_portRef_t *portRef, uint8_t *opcode, uint8_t *variant);
 static apx_error_t apx_client_verifySingleInstructionProgram(const adt_bytes_t *program, uint8_t *opcode, uint8_t *variant);
@@ -488,12 +488,14 @@ apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const
       result = apx_vm_setWriteBuffer(self->vm, writeBuffer, portDataProps->dataSize);
       if (result != APX_NO_ERROR)
       {
+         SPINLOCK_LEAVE(self->lock);
          if (isHeapAllocated) free(writeBuffer);
          return result;
       }
       result = apx_vm_packValue(self->vm, value);
       if (result != APX_NO_ERROR)
       {
+         SPINLOCK_LEAVE(self->lock);
          if (isHeapAllocated) free(writeBuffer);
          return result;
       }
@@ -540,6 +542,88 @@ apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, u
 }
 
 /*** Port Data Read API ***/
+
+apx_error_t apx_client_readPortData(apx_client_t *self, void *portHandle, dtl_dv_t **dv)
+{
+   if ( (self != 0) && (portHandle != 0) && (dv != 0) )
+   {
+      uint8_t stackBuffer[MAX_STACK_BUFFER_SIZE];
+      apx_error_t result;
+      uint8_t *readBuffer;
+      bool isHeapAllocated = false;
+      const apx_portDataProps_t *portDataProps;
+      apx_portRef_t *portRef = (apx_portRef_t*) portHandle;
+      const adt_bytes_t *portProgram;
+      if (apx_portRef_isProvidePort(portRef))
+      {
+         return APX_INVALID_PORT_HANDLE_ERROR;
+      }
+      portDataProps = portRef->portDataProps;
+      if (!apx_portDataProps_isPlainOldData(portDataProps))
+      {
+         printf("Not plain old data\n");
+         return APX_NOT_IMPLEMENTED_ERROR; ///TODO: Implement dynamic array and queued signals later
+      }
+      if (portDataProps->dataSize > MAX_STACK_BUFFER_SIZE)
+      {
+         readBuffer = (uint8_t*) malloc(portDataProps->dataSize);
+         if (readBuffer == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+         isHeapAllocated = true;
+      }
+      else
+      {
+         readBuffer = &stackBuffer[0];
+      }
+      assert(readBuffer != 0);
+      result = apx_nodeInstance_readRequirePortData(portRef->nodeInstance, readBuffer, portDataProps->offset, portDataProps->dataSize);
+      if (result != APX_NO_ERROR)
+      {
+         return result;
+      }
+      SPINLOCK_ENTER(self->lock);
+      if (self->vm == 0)
+      {
+         self->vm = apx_vm_new();
+         if (self->vm == 0)
+         {
+            SPINLOCK_LEAVE(self->lock);
+            if (isHeapAllocated) free(readBuffer);
+            return APX_MEM_ERROR;
+         }
+      }
+      assert(self->vm != 0);
+      portProgram = apx_nodeInstance_getRequirePortUnpackProgram(portRef->nodeInstance, apx_portRef_getPortId(portRef));
+      if (portProgram == 0)
+      {
+         SPINLOCK_LEAVE(self->lock);
+         if (isHeapAllocated) free(readBuffer);
+         return APX_INVALID_PROGRAM_ERROR;
+      }
+      result = apx_vm_selectProgram(self->vm, portProgram);
+      if (result != APX_NO_ERROR)
+      {
+         SPINLOCK_LEAVE(self->lock);
+         if (isHeapAllocated) free(readBuffer);
+         return result;
+      }
+      result = apx_vm_setReadBuffer(self->vm, readBuffer, portDataProps->dataSize);
+      if (result != APX_NO_ERROR)
+      {
+         SPINLOCK_LEAVE(self->lock);
+         if (isHeapAllocated) free(readBuffer);
+         return result;
+      }
+      result = apx_vm_unpackValue(self->vm, dv);
+      SPINLOCK_LEAVE(self->lock);
+      if (isHeapAllocated) free(readBuffer);
+      return result;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value)
 {
    if ( (self != 0) && (portHandle != 0)  && (value != 0) )
@@ -599,21 +683,27 @@ void apx_clientInternal_requirePortDataWriteNotify(apx_client_t *self, apx_clien
    (void) connection;
    if ( (self != 0) && (nodeInstance != 0) )
    {
-      const char *nodeName = 0;
       apx_portId_t requirePortId = 0;
       void *portHandle = 0;
+      uint32_t endOffset = offset + len;
       apx_nodeInfo_t *nodeInfo = apx_nodeInstance_getNodeInfo(nodeInstance);
       assert(nodeInfo != 0);
-      nodeName = apx_nodeInfo_getName(nodeInfo);
-      requirePortId = apx_nodeInfo_findRequirePortIdFromByteOffset(nodeInfo, offset);
-      if (requirePortId < 0)
+      while(offset < endOffset)
       {
-         printf("[APX-CLIENT] Write at invalid offset %d\n", (int) offset);
-         return;
+         apx_portDataProps_t *portDataProps;
+         requirePortId = apx_nodeInfo_findRequirePortIdFromByteOffset(nodeInfo, offset);
+         if (requirePortId < 0)
+         {
+            printf("[APX-CLIENT] Write at invalid offset %d\n", (int) offset);
+            return;
+         }
+         portDataProps = apx_nodeInfo_getRequirePortDataProps(nodeInfo, requirePortId);
+         assert(portDataProps != 0);
+         portHandle = (void*) apx_nodeInstance_getRequirePortRef(nodeInstance, requirePortId);
+         assert(portHandle != 0);
+         apx_client_triggerRequirePortDataWriteEventOnListeners(self, nodeInstance, requirePortId, portHandle);
+         offset += portDataProps->dataSize;
       }
-      portHandle = (void*) apx_nodeInstance_getRequirePortRef(nodeInstance, requirePortId);
-      assert(portHandle != 0);
-      apx_client_triggerRequirePortDataWriteEventOnListeners(self, nodeName, requirePortId, portHandle);
    }
 }
 
@@ -675,7 +765,7 @@ static void apx_client_triggerDisconnectedEventOnListeners(apx_client_t *self, a
    SPINLOCK_LEAVE(self->eventListenerLock);
 }
 
-static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId, void *portHandle)
+static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t *self, apx_nodeInstance_t *nodeInstance, apx_portId_t requirePortId, void *portHandle)
 {
    SPINLOCK_ENTER(self->eventListenerLock);
    adt_list_elem_t *iter = adt_list_iter_first(self->eventListeners);
@@ -684,7 +774,7 @@ static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t 
       apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
       if ( (listener != 0) && (listener->requirePortWrite1 != 0))
       {
-         listener->requirePortWrite1(listener->arg, nodeName, requirePortId, portHandle);
+         listener->requirePortWrite1(listener->arg, nodeInstance, requirePortId, portHandle);
       }
       iter = adt_list_iter_next(iter);
    }

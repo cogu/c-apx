@@ -1,5 +1,5 @@
 APX/1.2
 N"apx_sender"
-P"VechileMode"C(0,15):=15
+P"VehicleMode"C(0,15):=15
 P"VehicleSpeed"S:=65535
 
