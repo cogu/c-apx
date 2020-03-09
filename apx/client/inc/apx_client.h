@@ -116,6 +116,8 @@ struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self);
 
 /*** Port Handle API ***/
 void *apx_client_getPortHandle(apx_client_t *self, const char *nodeName, const char *portName);
+void *apx_client_getProvidePortHandleById(apx_client_t *self, const char *nodeName, apx_portId_t providePortId);
+void *apx_client_getRequirePortHandleById(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId);
 
 /*** Port Data Write API ***/
 apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const dtl_dv_t *value);

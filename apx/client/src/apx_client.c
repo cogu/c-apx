@@ -422,6 +422,47 @@ void *apx_client_getPortHandle(apx_client_t *self, const char *nodeName, const c
    return (void*) 0;
 }
 
+void *apx_client_getProvidePortHandleById(apx_client_t *self, const char *nodeName, apx_portId_t providePortId)
+{
+   if ( (self != 0) && (providePortId >= 0))
+   {
+      apx_nodeInstance_t *nodeInstance = 0;
+      if (nodeName == 0)
+      {
+         nodeInstance = apx_client_getLastAttachedNode(self);
+      }
+      else
+      {
+         nodeInstance = apx_nodeManager_find(self->nodeManager, nodeName);
+      }
+      if (nodeInstance != 0)
+      {
+         return apx_nodeInstance_getProvidePortHandle(nodeInstance, providePortId);
+      }
+   }
+   return (void*) 0;
+}
+
+void *apx_client_getRequirePortHandleById(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId)
+{
+   if ( (self != 0) && (requirePortId >= 0))
+   {
+      apx_nodeInstance_t *nodeInstance = 0;
+      if (nodeName == 0)
+      {
+         nodeInstance = apx_client_getLastAttachedNode(self);
+      }
+      else
+      {
+         nodeInstance = apx_nodeManager_find(self->nodeManager, nodeName);
+      }
+      if (nodeInstance != 0)
+      {
+         return apx_nodeInstance_getRequirePortHandle(nodeInstance, requirePortId);
+      }
+   }
+   return (void*) 0;
+}
 
 /*** Port Data Write API ***/
 
