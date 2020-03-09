@@ -1278,6 +1278,16 @@ const adt_bytes_t *apx_nodeInstance_getProvidePortPackProgram(apx_nodeInstance_t
    return (const adt_bytes_t*) 0;
 }
 
+const adt_bytes_t *apx_nodeInstance_getRequirePortUnpackProgram(apx_nodeInstance_t *self, apx_portId_t requirePortId)
+{
+   if (self != 0)
+   {
+      assert(self->nodeInfo != 0);
+      return apx_nodeInfo_getRequirePortUnpackProgram(self->nodeInfo, requirePortId);
+   }
+   return (const adt_bytes_t*) 0;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////

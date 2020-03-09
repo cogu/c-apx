@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_sender_main.c
+* \file      apx_listener_main.c
 * \author    Conny Gustafsson
-* \date      2020-03-07
-* \brief     apx_sender application
+* \date      2020-03-09
+* \brief     apx_listener application
 *
 * Copyright (c) 2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -30,14 +30,12 @@
 #include <unistd.h>
 #include <signal.h>
 #include <assert.h>
-#include "message_server.h"
-
+#include "apx_receive_connection.h"
 #include "filestream.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define MESSAGE_SERVER_PATH "/tmp/apx_sender.socket"
 #define APX_SERVER_PATH "/tmp/apx_server.socket"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -51,7 +49,7 @@ void signal_handler(int signum);
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 int m_runFlag = 1;
-apx_send_connection_t *m_send_connection;
+apx_receive_connection_t *m_apx_connection;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -63,7 +61,7 @@ int main(int argc, char **argv)
    apx_error_t rc;
    sigset_t mask, oldmask;
    apx_nodeInstance_t *nodeInstance;
-   apx_portCount_t numProvidePorts = 0;
+   apx_portCount_t numRequirePorts = 0;
    const char *apx_server_path_default = APX_SERVER_PATH;
    signal_handler_setup();
    if (argc < 2)
@@ -98,8 +96,8 @@ int main(int argc, char **argv)
    sigprocmask(SIG_BLOCK, &mask, &oldmask);
 
    printf("Creating APX client...");
-   m_send_connection = apx_send_connection_new();
-   if (m_send_connection == 0)
+   m_apx_connection = apx_receive_connection_new();
+   if (m_apx_connection == 0)
    {
       printf("Failed\n");
       return 1;
@@ -109,12 +107,12 @@ int main(int argc, char **argv)
       printf("OK\n");
    }
    printf("Parsing definition...");
-   rc = apx_send_connection_attachNode(m_send_connection, definition_str);
+   rc = apx_receive_connection_attachNode(m_apx_connection, definition_str);
    if (rc != APX_NO_ERROR)
    {
       if (rc == APX_PARSE_ERROR)
       {
-         int32_t errorLine = apx_send_connection_getLastErrorLine(m_send_connection);
+         int32_t errorLine = apx_receive_connection_getLastErrorLine(m_apx_connection);
          printf("Parse error on line %d\n", (int) errorLine);
       }
       else
@@ -128,16 +126,10 @@ int main(int argc, char **argv)
       printf("OK\n");
    }
 
-   rc = apx_send_connection_prepareProvidePorts(m_send_connection);
-   if (rc != APX_NO_ERROR)
-   {
-      printf("Port preparation failed\n");
-      return 1;
-   }
-   nodeInstance = apx_send_connection_getLastAttachedNode(m_send_connection);
+   nodeInstance = apx_receive_connection_getLastAttachedNode(m_apx_connection);
    if (nodeInstance != 0)
    {
-      numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
+      numRequirePorts = apx_nodeInstance_getNumRequirePorts(nodeInstance);
    }
 
    if (definition_str != 0)
@@ -147,7 +139,7 @@ int main(int argc, char **argv)
    }
 
    printf("Connecting to APX server...");
-   rc = apx_send_connection_connect_unix(m_send_connection, apx_server_path_default);
+   rc = apx_receive_connection_connect_unix(m_apx_connection, apx_server_path_default);
    if (rc != APX_NO_ERROR)
    {
       printf("Failed with error code %d\n", (int) rc);
@@ -158,22 +150,14 @@ int main(int argc, char **argv)
       printf("OK\n");
    }
 
-   printf("Starting message server...");
-   message_server_init(m_send_connection);
-   message_server_start(MESSAGE_SERVER_PATH);
-   printf("OK\n");
-
-   printf("Ready (%d ports)\n", (int) numProvidePorts);
+   printf("Ready (%d ports)\n", (int) numRequirePorts);
    while(m_runFlag)
    {
       sigsuspend(&oldmask);
    }
    sigprocmask(SIG_UNBLOCK, &mask, NULL);
-   printf("Shutting down message server...");
-   message_server_shutdown();
-   printf("OK\n");
    printf("Shutting down APX client...");
-   apx_send_connection_delete(m_send_connection);
+   apx_receive_connection_delete(m_apx_connection);
    printf("OK\n");
    return 0;
 }

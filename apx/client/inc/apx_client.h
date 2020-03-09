@@ -122,6 +122,7 @@ apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const
 apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
 
 /*** Port Data Read API ***/
+apx_error_t apx_client_readPortData(apx_client_t *self, void *portHandle, dtl_dv_t **dv);
 apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value);
 
 #ifdef UNIT_TEST

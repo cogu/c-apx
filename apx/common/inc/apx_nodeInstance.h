@@ -161,5 +161,6 @@ void apx_nodeInstance_clearConnectorTable(apx_nodeInstance_t *self);
 
 /********** Port Program API ***************/
 const adt_bytes_t *apx_nodeInstance_getProvidePortPackProgram(apx_nodeInstance_t *self, apx_portId_t providePortId);
+const adt_bytes_t *apx_nodeInstance_getRequirePortUnpackProgram(apx_nodeInstance_t *self, apx_portId_t requirePortId);
 
 #endif //APX_NODE_INSTANCE_H
