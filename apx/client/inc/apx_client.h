@@ -36,7 +36,6 @@
 #include "apx_nodeInstance.h"
 
 
-
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -47,8 +46,8 @@ struct adt_list_tag;
 struct adt_hash_tag;
 struct apx_clientEventListener_tag;
 struct apx_fileManager_tag;
-struct apx_parser_tag;
 struct apx_nodeManager_tag;
+struct apx_vm_tag;
 
 #ifndef APX_EMBEDDED
 # ifdef _WIN32
@@ -70,10 +69,11 @@ typedef struct apx_client_tag
 {
    apx_clientConnectionBase_t *connection; //message connection
    struct adt_list_tag *eventListeners; //weak references to apx_clientEventListener_t
-   struct apx_parser_tag *parser;
    struct apx_nodeManager_tag *nodeManager;
+   struct apx_vm_tag *vm;
    SPINLOCK_T lock;
    SPINLOCK_T eventListenerLock;
+   bool isConnected;
 } apx_client_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -91,11 +91,11 @@ void apx_client_delete(apx_client_t *self);
 void apx_client_vdelete(void *arg);
 
 #ifdef UNIT_TEST
-apx_error_t apx_client_socketConnect(apx_client_t *self, struct testsocket_tag *socketObject);
+apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_tag *socketObject);
 #else
-apx_error_t apx_client_connectTcp(apx_client_t *self, const char *address, uint16_t port);
+apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint16_t port);
 # ifndef _WIN32
-apx_error_t apx_client_connectUnix(apx_client_t *self, const char *socketPath);
+apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socketPath);
 # endif
 #endif
 void apx_client_disconnect(apx_client_t *self);
@@ -109,6 +109,7 @@ void apx_client_attachConnection(apx_client_t *self, apx_clientConnectionBase_t 
 apx_clientConnectionBase_t *apx_client_getConnection(apx_client_t *self);
 
 apx_error_t apx_client_buildNode_cstr(apx_client_t *self, const char *definition_text);
+int32_t apx_client_getLastErrorLine(apx_client_t *self);
 apx_nodeInstance_t *apx_client_getLastAttachedNode(apx_client_t *self);
 struct apx_fileManager_tag *apx_client_getFileManager(apx_client_t *self);
 struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self);
@@ -117,6 +118,7 @@ struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self);
 void *apx_client_getPortHandle(apx_client_t *self, const char *nodeName, const char *portName);
 
 /*** Port Data Write API ***/
+apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const dtl_dv_t *value);
 apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
 
 /*** Port Data Read API ***/

@@ -120,6 +120,13 @@ apx_providePortDataState_t apx_nodeInstance_getProvidePortDataState(apx_nodeInst
 void apx_nodeInstance_setRequirePortDataState(apx_nodeInstance_t *self, apx_requirePortDataState_t state);
 apx_requirePortDataState_t apx_nodeInstance_getRequirePortDataState(apx_nodeInstance_t *self);
 
+/********** Port handle API  ************/
+void *apx_nodeInstance_getRequirePortHandle(apx_nodeInstance_t *self, apx_portId_t requirePortId);
+void *apx_nodeInstance_getProvidePortHandle(apx_nodeInstance_t *self, apx_portId_t providePortId);
+adt_str_t *apx_nodeInstance_getRequirePortName(apx_nodeInstance_t *self, apx_portId_t requirePortId);
+adt_str_t *apx_nodeInstance_getProvidePortName(apx_nodeInstance_t *self, apx_portId_t providePortId);
+
+
 /********** Data API  ************/
 apx_error_t apx_nodeInstance_writeDefinitionData(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, uint32_t len);
 apx_error_t apx_nodeInstance_readDefinitionData(apx_nodeInstance_t *self, uint8_t *dest, uint32_t offset, uint32_t len);
@@ -151,5 +158,8 @@ apx_error_t apx_nodeInstance_handleRequirePortWasDisconnectedFromProvidePort(apx
 apx_error_t apx_nodeInstance_sendRequirePortDataToFileManager(apx_nodeInstance_t *self);
 apx_error_t apx_nodeInstance_routeProvidePortDataToReceivers(apx_nodeInstance_t *self, const uint8_t *src, uint32_t offset, apx_size_t len);
 void apx_nodeInstance_clearConnectorTable(apx_nodeInstance_t *self);
+
+/********** Port Program API ***************/
+const adt_bytes_t *apx_nodeInstance_getProvidePortPackProgram(apx_nodeInstance_t *self, apx_portId_t providePortId);
 
 #endif //APX_NODE_INSTANCE_H

@@ -42,8 +42,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t message_server_init(void);
+apx_error_t message_server_init(apx_send_connection_t *apx_connection);
 void message_server_start(const char *socket_path);
 void message_server_cleanup_connection(message_server_connection_t *connection);
+void message_server_shutdown(void);
 
 #endif //MESSAGE_SERVER_H

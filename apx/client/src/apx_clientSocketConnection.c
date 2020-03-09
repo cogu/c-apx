@@ -381,7 +381,7 @@ static void apx_clientSocketConnection_disconnected(void *arg)
 
 static void apx_clientSocketConnection_close(apx_clientSocketConnection_t *self)
 {
-   printf("client close\n");
+
 }
 
 static void apx_clientSocketConnection_vclose(void *arg)

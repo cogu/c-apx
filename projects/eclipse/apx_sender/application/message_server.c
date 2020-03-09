@@ -43,6 +43,7 @@ static void message_server_accept(void *arg, struct msocket_server_tag *srv, str
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static msocket_server_t *m_server = NULL;
+static apx_send_connection_t *m_apx_connection = (apx_send_connection_t*) NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -51,9 +52,10 @@ static msocket_server_t *m_server = NULL;
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t message_server_init(void)
+apx_error_t message_server_init(apx_send_connection_t *apx_connection)
 {
-
+   assert(apx_connection != 0);
+   m_apx_connection = apx_connection;
    m_server = msocket_server_new(AF_UNIX, message_server_connection_vdelete);
    if (m_server != 0)
    {
@@ -68,23 +70,6 @@ apx_error_t message_server_init(void)
 void message_server_start(const char *socket_path)
 {
    msocket_server_unix_start(m_server, socket_path);
-   printf("Waiting for connection\n");
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTIONS
-//////////////////////////////////////////////////////////////////////////////
-static void message_server_accept(void *arg, struct msocket_server_tag *srv,struct msocket_t *msocket)
-{
-   message_server_connection_t *connection = message_server_connection_new(msocket);
-   if (connection != 0)
-   {
-      message_server_connection_start(connection);
-   }
-   else
-   {
-      printf("message_connection_new failed\n");
-   }
 }
 
 void message_server_cleanup_connection(message_server_connection_t *connection)
@@ -95,4 +80,35 @@ void message_server_cleanup_connection(message_server_connection_t *connection)
       msocket_server_cleanup_connection(m_server, connection);
    }
 }
+
+void message_server_shutdown(void)
+{
+   if (m_server != 0)
+   {
+      m_apx_connection = (apx_send_connection_t*) NULL;
+      msocket_server_delete(m_server);
+      m_server = (msocket_server_t*) 0;
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
+//////////////////////////////////////////////////////////////////////////////
+static void message_server_accept(void *arg, struct msocket_server_tag *srv, struct msocket_t *msocket)
+{
+   if (m_apx_connection != 0)
+   {
+      message_server_connection_t *connection = message_server_connection_new(msocket, m_apx_connection);
+      if (connection != 0)
+      {
+         message_server_connection_start(connection);
+      }
+      else
+      {
+         printf("message_connection_new failed\n");
+      }
+   }
+}
+
+
 

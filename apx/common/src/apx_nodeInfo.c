@@ -485,6 +485,55 @@ const char *apx_nodeInfo_getProvidePortSignature(const apx_nodeInfo_t *self, apx
    return (const char*) 0;
 }
 
+adt_str_t *apx_nodeInfo_getRequirePortName(const apx_nodeInfo_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId >= 0) && (portId < self->numRequirePorts) )
+   {
+      const uint8_t *pMatch;
+      const uint8_t *pEnd;
+      const uint8_t *pNext;
+      assert(self->requirePortSignatures != 0);
+      pNext = (const uint8_t*) self->requirePortSignatures[portId];
+      pEnd = pNext + strlen(self->requirePortSignatures[portId]);
+      if (pNext < pEnd)
+      {
+         assert((char) (*pNext) == '"');
+         pMatch = bstr_match_pair(pNext, pEnd, (uint8_t) '"', (uint8_t) '"', (uint8_t) '\\');
+         if (pMatch > pNext)
+         {
+            assert((char) (*pMatch) == '"');
+            return adt_str_new_bstr(pNext+1, pMatch);
+         }
+      }
+   }
+   return (adt_str_t*) 0;
+}
+
+adt_str_t *apx_nodeInfo_getProvidePortName(const apx_nodeInfo_t *self, apx_portId_t portId)
+{
+   if ( (self != 0) && (portId >= 0) && (portId < self->numProvidePorts) )
+   {
+      const uint8_t *pMatch;
+      const uint8_t *pEnd;
+      const uint8_t *pNext;
+      assert(self->providePortSignatures != 0);
+      pNext = (const uint8_t*) self->providePortSignatures[portId];
+      pEnd = pNext + strlen(self->providePortSignatures[portId]);
+      if (pNext < pEnd)
+      {
+         assert((char) (*pNext) == '"');
+         pMatch = bstr_match_pair(pNext, pEnd, (uint8_t) '"', (uint8_t) '"', (uint8_t) '\\');
+         if (pMatch > pNext)
+         {
+            assert((char) (*pMatch) == '"');
+            return adt_str_new_bstr(pNext+1, pMatch);
+         }
+      }
+   }
+   return (adt_str_t*) 0;
+}
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

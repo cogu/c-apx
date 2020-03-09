@@ -301,6 +301,18 @@ apx_nodeInstance_t *apx_nodeManager_getLastAttached(apx_nodeManager_t *self)
    return (apx_nodeInstance_t*) 0;
 }
 
+/**
+ * Returns the line of last seen parse error
+ */
+int32_t apx_nodeManager_getLastErrorLine(apx_nodeManager_t *self)
+{
+   if (self != 0)
+   {
+      return apx_parser_getErrorLine(&self->parser);
+   }
+   return -1;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////

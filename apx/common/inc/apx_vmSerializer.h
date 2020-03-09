@@ -70,7 +70,7 @@ typedef struct apx_vmSerializer_tag
    apx_vmWriteState_t *state; //current inner state
    bool hasValidWriteBuf;
    apx_vmWriteBuf_t buf;
-}apx_vmSerializer_t;
+} apx_vmSerializer_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES

@@ -684,6 +684,56 @@ apx_requirePortDataState_t apx_nodeInstance_getRequirePortDataState(apx_nodeInst
 
 
 
+/********** Port handle API  ************/
+void *apx_nodeInstance_getRequirePortHandle(apx_nodeInstance_t *self, apx_portId_t requirePortId)
+{
+   if ( (self != 0) && (requirePortId >= 0))
+   {
+      apx_portCount_t numRequirePorts;
+      apx_nodeInfo_t *nodeInfo = apx_nodeInstance_getNodeInfo(self);
+      assert(nodeInfo != 0);
+      numRequirePorts = apx_nodeInfo_getNumRequirePorts(nodeInfo);
+      if (requirePortId < numRequirePorts)
+      {
+         return (void*) &self->requirePortReferences[requirePortId];
+      }
+   }
+   return (void*) 0;
+}
+
+void *apx_nodeInstance_getProvidePortHandle(apx_nodeInstance_t *self, apx_portId_t providePortId)
+{
+   if ( (self != 0) && (providePortId >= 0))
+   {
+      apx_portCount_t numProvidePorts;
+      apx_nodeInfo_t *nodeInfo = apx_nodeInstance_getNodeInfo(self);
+      assert(nodeInfo != 0);
+      numProvidePorts = apx_nodeInfo_getNumProvidePorts(nodeInfo);
+      if (providePortId < numProvidePorts)
+      {
+         return (void*) &self->providePortReferences[providePortId];
+      }
+   }
+   return (void*) 0;
+}
+
+adt_str_t *apx_nodeInstance_getRequirePortName(apx_nodeInstance_t *self, apx_portId_t requirePortId)
+{
+   if (self != 0)
+   {
+      return apx_nodeInfo_getRequirePortName(self->nodeInfo, requirePortId);
+   }
+   return (adt_str_t*) 0;
+}
+
+adt_str_t *apx_nodeInstance_getProvidePortName(apx_nodeInstance_t *self, apx_portId_t providePortId)
+{
+   if (self != 0)
+   {
+      return apx_nodeInfo_getProvidePortName(self->nodeInfo, providePortId);
+   }
+   return (adt_str_t*) 0;
+}
 
 
 
@@ -1217,6 +1267,16 @@ void apx_nodeInstance_clearConnectorTable(apx_nodeInstance_t *self)
    }
 }
 
+/********** Port Program API ***************/
+const adt_bytes_t *apx_nodeInstance_getProvidePortPackProgram(apx_nodeInstance_t *self, apx_portId_t providePortId)
+{
+   if (self != 0)
+   {
+      assert(self->nodeInfo != 0);
+      return apx_nodeInfo_getProvidePortPackProgram(self->nodeInfo, providePortId);
+   }
+   return (const adt_bytes_t*) 0;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

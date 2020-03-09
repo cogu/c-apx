@@ -96,7 +96,7 @@ static void test_apx_clientSocketConnection_sendGreetingOnConnect(CuTest* tc)
    CuAssertPtrNotNull(tc, sock);
 
    CuAssertIntEquals(tc, 0, testsocket_spy_getServerConnectedCount());
-   apx_client_socketConnect(client, sock);
+   apx_client_connect_testsocket(client, sock);
    CLIENT_RUN(client, sock);
    CuAssertIntEquals(tc, 1, testsocket_spy_getServerConnectedCount());
    data = (const char*) testsocket_spy_getReceivedData(&len);
@@ -132,7 +132,7 @@ static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge1(CuTest*
    sock = testsocket_spy_server();
    CuAssertPtrNotNull(tc, sock);
    CuAssertIntEquals(tc, 0, testsocket_spy_getServerConnectedCount());
-   apx_client_socketConnect(client, sock);
+   apx_client_connect_testsocket(client, sock);
    CLIENT_RUN(client, sock);
    testsocket_spy_clearReceivedData();
 
@@ -179,7 +179,7 @@ static void test_apx_clientSocketConnection_sendApxFileAfterAcknowledge2(CuTest*
    sock = testsocket_spy_server();
    CuAssertPtrNotNull(tc, sock);
    CuAssertIntEquals(tc, 0, testsocket_spy_getServerConnectedCount());
-   apx_client_socketConnect(client, sock);
+   apx_client_connect_testsocket(client, sock);
    CLIENT_RUN(client, sock);
    testsocket_spy_clearReceivedData();
 
