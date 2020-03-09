@@ -476,7 +476,7 @@ apx_error_t apx_vmSerializer_packValueAsU16(apx_vmSerializer_t *self, uint32_t a
                      uint32_t u32Value = dtl_sv_to_u32((dtl_sv_t*) childValue, &valueOk);
                      if (valueOk)
                      {
-                        apx_error_t rc = apx_vmSerializer_packU16(self, (uint8_t) u32Value);
+                        apx_error_t rc = apx_vmSerializer_packU16(self, (uint16_t) u32Value);
                         if (rc != APX_NO_ERROR)
                         {
                            return rc;

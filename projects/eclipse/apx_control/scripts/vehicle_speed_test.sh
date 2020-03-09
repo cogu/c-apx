@@ -1,4 +1,4 @@
-for i in 0 1000 8000 65535
+for i in {0..10000..25}
   do
       ../Debug/apx_control VehicleSpeed $i
   done

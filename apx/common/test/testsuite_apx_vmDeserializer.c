@@ -54,6 +54,8 @@ static void test_apx_vmDeserializer_unpackFixedStrUtf8(CuTest* tc);
 static void test_apx_vmDeserializer_unpackBytes(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU8Scalar(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU8Array(CuTest* tc);
+static void test_apx_vmDeserializer_unpackU16LEArray(CuTest* tc);
+static void test_apx_vmDeserializer_unpackU32LEArray(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU8Record(CuTest* tc);
 static void test_apx_vmDeserializer_unpackRecordStrU32(CuTest* tc);
 static void test_apx_vmDeserializer_unpackBytesValue(CuTest* tc);
@@ -75,6 +77,8 @@ CuSuite* testSuite_apx_vmDeserializer(void)
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackFixedStrUtf8);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU8Scalar);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU8Array);
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU16LEArray);
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU32LEArray);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackU8Record);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackRecordStrU32);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackBytes);
@@ -216,6 +220,64 @@ static void test_apx_vmDeserializer_unpackU8Array(CuTest* tc)
       CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
       CuAssertUIntEquals(tc, packedData[i], dtl_sv_to_u32(sv, NULL));
    }
+   apx_vmDeserializer_delete(sr);
+}
+
+static void test_apx_vmDeserializer_unpackU16LEArray(CuTest* tc)
+{
+   const uint32_t arrayLen = 3u;
+   uint8_t packedData[UINT16_SIZE*3] = {0x00, 0x00, 0x34, 0x12, 0xff, 0xff};
+   dtl_dv_t *dv = 0;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+
+   apx_vmDeserializer_t *sr = apx_vmDeserializer_new();
+   apx_vmDeserializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU16Value(sr, arrayLen, APX_DYN_LEN_NONE));
+   CuAssertConstPtrEquals(tc, packedData+UINT16_SIZE*arrayLen, apx_vmDeserializer_getReadPtr(sr));
+   dv = apx_vmDeserializer_getValue(sr, false);
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
+   av = (dtl_av_t*) dv;
+   CuAssertIntEquals(tc, arrayLen, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 0x0000, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 0x1234, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 0xffff, dtl_sv_to_u32(sv, NULL));
+
+   apx_vmDeserializer_delete(sr);
+}
+
+static void test_apx_vmDeserializer_unpackU32LEArray(CuTest* tc)
+{
+   const uint32_t arrayLen = 3u;
+   uint8_t packedData[UINT32_SIZE*3] = {0x00, 0x00, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0xff, 0xff, 0xff, 0xff};
+   dtl_dv_t *dv = 0;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+
+   apx_vmDeserializer_t *sr = apx_vmDeserializer_new();
+   apx_vmDeserializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU32Value(sr, arrayLen, APX_DYN_LEN_NONE));
+   CuAssertConstPtrEquals(tc, packedData+UINT32_SIZE*arrayLen, apx_vmDeserializer_getReadPtr(sr));
+   dv = apx_vmDeserializer_getValue(sr, false);
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
+   av = (dtl_av_t*) dv;
+   CuAssertIntEquals(tc, arrayLen, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 0x00000000, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 0x12345678, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 0xffffffff, dtl_sv_to_u32(sv, NULL));
+
    apx_vmDeserializer_delete(sr);
 }
 
