@@ -60,7 +60,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-
+#define MAX_STACK_BUFFER_SIZE 256u
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -92,9 +92,10 @@ apx_error_t apx_client_create(apx_client_t *self)
          return APX_MEM_ERROR;
       }
       self->connection = (apx_clientConnectionBase_t*) 0;
-      self->parser = (apx_parser_t*) 0;
+      self->vm = (apx_vm_t*) 0;
       //The node manager in this class is the true manager of the nodeInstances. Therefore we set useWeakRef argument to false.
       self->nodeManager = apx_nodeManager_new(APX_CLIENT_MODE, false);
+      self->isConnected = false;
       SPINLOCK_INIT(self->lock);
       SPINLOCK_INIT(self->eventListenerLock);
       return APX_NO_ERROR;
@@ -106,6 +107,14 @@ void apx_client_destroy(apx_client_t *self)
 {
    if (self != 0)
    {
+      bool isConnected;
+      SPINLOCK_ENTER(self->lock);
+      isConnected = self->isConnected;
+      SPINLOCK_LEAVE(self->lock);
+      if (isConnected)
+      {
+         apx_client_disconnect(self);
+      }
       adt_list_delete(self->eventListeners);
       if (self->connection != 0)
       {
@@ -115,9 +124,9 @@ void apx_client_destroy(apx_client_t *self)
       {
          apx_nodeManager_delete(self->nodeManager);
       }
-      if (self->parser != 0)
+      if (self->vm != 0)
       {
-         apx_parser_delete(self->parser);
+         apx_vm_delete(self->vm);
       }
       SPINLOCK_DESTROY(self->lock);
       SPINLOCK_DESTROY(self->eventListenerLock);
@@ -154,7 +163,7 @@ void apx_client_vdelete(void *arg)
 }
 
 #ifdef UNIT_TEST
-apx_error_t apx_client_socketConnect(apx_client_t *self, struct testsocket_tag *socketObject)
+apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_tag *socketObject)
 {
    if (self != 0)
    {
@@ -166,6 +175,9 @@ apx_error_t apx_client_socketConnect(apx_client_t *self, struct testsocket_tag *
          result = apx_clientSocketConnection_connect(socketConnection);
          if (result == APX_NO_ERROR)
          {
+            SPINLOCK_ENTER(self->lock);
+            self->isConnected = true;
+            SPINLOCK_LEAVE(self->lock);
             testsocket_onConnect(socketObject);
          }
          return result;
@@ -178,15 +190,23 @@ apx_error_t apx_client_socketConnect(apx_client_t *self, struct testsocket_tag *
 /**
  * On connection error, the user can retreive the actual error using errno on Linux and WSAGetLastError on Windows
  */
-apx_error_t apx_client_connectTcp(apx_client_t *self, const char *address, uint16_t port)
+apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint16_t port)
 {
    if (self != 0)
    {
       apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0);
       if (socketConnection != 0)
       {
+         apx_error_t result;
          apx_client_attachConnection(self, (apx_clientConnectionBase_t*) socketConnection);
-         return apx_clientConnection_tcp_connect(socketConnection, address, port);
+         result = apx_clientConnection_tcp_connect(socketConnection, address, port);
+         if (result == APX_NO_ERROR)
+         {
+            SPINLOCK_ENTER(self->lock);
+            self->isConnected = true;
+            SPINLOCK_LEAVE(self->lock);
+         }
+         return result;
       }
       else
       {
@@ -197,15 +217,23 @@ apx_error_t apx_client_connectTcp(apx_client_t *self, const char *address, uint1
 }
 
 # ifndef _WIN32
-apx_error_t apx_client_connectUnix(apx_client_t *self, const char *socketPath)
+apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socketPath)
 {
    if (self != 0)
    {
       apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0);
       if (socketConnection != 0)
       {
+         apx_error_t result;
          apx_client_attachConnection(self, (apx_clientConnectionBase_t*) socketConnection);
-         return apx_clientConnection_unix_connect(socketConnection, socketPath);
+         result = apx_clientConnection_unix_connect(socketConnection, socketPath);
+         if (result == APX_NO_ERROR)
+         {
+            SPINLOCK_ENTER(self->lock);
+            self->isConnected = true;
+            SPINLOCK_LEAVE(self->lock);
+         }
+         return result;
       }
       else
       {
@@ -223,6 +251,9 @@ void apx_client_disconnect(apx_client_t *self)
    if ( (self != 0) && (self->connection != 0))
    {
       apx_connectionBase_close(&self->connection->base);
+      SPINLOCK_ENTER(self->lock);
+      self->isConnected = false;
+      SPINLOCK_LEAVE(self->lock);
    }
 }
 
@@ -316,6 +347,15 @@ apx_error_t apx_client_buildNode_cstr(apx_client_t *self, const char *definition
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+int32_t apx_client_getLastErrorLine(apx_client_t *self)
+{
+   if (self != 0)
+   {
+      return apx_nodeManager_getLastErrorLine(self->nodeManager);
+   }
+   return -1;
+}
+
 apx_nodeInstance_t *apx_client_getLastAttachedNode(apx_client_t *self)
 {
    if (self != 0)
@@ -384,6 +424,87 @@ void *apx_client_getPortHandle(apx_client_t *self, const char *nodeName, const c
 
 
 /*** Port Data Write API ***/
+
+apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const dtl_dv_t *value)
+{
+   if ( (self != 0) && (portHandle != 0) && (value != 0) )
+   {
+      uint8_t stackBuffer[MAX_STACK_BUFFER_SIZE];
+      apx_error_t result;
+      uint8_t *writeBuffer;
+      bool isHeapAllocated = false;
+      const apx_portDataProps_t *portDataProps;
+      apx_portRef_t *portRef = (apx_portRef_t*) portHandle;
+      const adt_bytes_t *portProgram;
+      if (!apx_portRef_isProvidePort(portRef))
+      {
+         return APX_INVALID_PORT_HANDLE_ERROR;
+      }
+      portDataProps = portRef->portDataProps;
+      if (!apx_portDataProps_isPlainOldData(portDataProps))
+      {
+         printf("Not plain old data\n");
+         return APX_NOT_IMPLEMENTED_ERROR; ///TODO: Implement dynamic array and queued signals later
+      }
+      if (portDataProps->dataSize > MAX_STACK_BUFFER_SIZE)
+      {
+         writeBuffer = (uint8_t*) malloc(portDataProps->dataSize);
+         if (writeBuffer == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+         isHeapAllocated = true;
+      }
+      else
+      {
+         writeBuffer = &stackBuffer[0];
+      }
+      SPINLOCK_ENTER(self->lock);
+      if (self->vm == 0)
+      {
+         self->vm = apx_vm_new();
+         if (self->vm == 0)
+         {
+            SPINLOCK_LEAVE(self->lock);
+            if (isHeapAllocated) free(writeBuffer);
+            return APX_MEM_ERROR;
+         }
+      }
+      assert(self->vm != 0);
+      portProgram = apx_nodeInstance_getProvidePortPackProgram(portRef->nodeInstance, apx_portRef_getPortId(portRef));
+      if (portProgram == 0)
+      {
+         SPINLOCK_LEAVE(self->lock);
+         if (isHeapAllocated) free(writeBuffer);
+         return APX_INVALID_PROGRAM_ERROR;
+      }
+      result = apx_vm_selectProgram(self->vm, portProgram);
+      if (result != APX_NO_ERROR)
+      {
+         SPINLOCK_LEAVE(self->lock);
+         if (isHeapAllocated) free(writeBuffer);
+         return result;
+      }
+      result = apx_vm_setWriteBuffer(self->vm, writeBuffer, portDataProps->dataSize);
+      if (result != APX_NO_ERROR)
+      {
+         if (isHeapAllocated) free(writeBuffer);
+         return result;
+      }
+      result = apx_vm_packValue(self->vm, value);
+      if (result != APX_NO_ERROR)
+      {
+         if (isHeapAllocated) free(writeBuffer);
+         return result;
+      }
+      SPINLOCK_LEAVE(self->lock);
+      result = apx_nodeInstance_writeProvidePortData(portRef->nodeInstance, writeBuffer, portDataProps->offset, portDataProps->dataSize);
+      if (isHeapAllocated) free(writeBuffer);
+      return result;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value)
 {
    if (self != 0 && portHandle != 0)
@@ -397,9 +518,13 @@ apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, u
       {
          if ( (opcode == APX_OPCODE_PACK) && (variant == APX_VARIANT_U16) )
          {
+            apx_error_t result;
             uint8_t packedData[UINT16_SIZE];
             packLE(&packedData[0], value, UINT16_SIZE);
-            return apx_nodeInstance_writeProvidePortData(portRef->nodeInstance, &packedData[0], portRef->portDataProps->offset, UINT16_SIZE);
+            SPINLOCK_ENTER(self->lock);
+            result = apx_nodeInstance_writeProvidePortData(portRef->nodeInstance, &packedData[0], portRef->portDataProps->offset, UINT16_SIZE);
+            SPINLOCK_LEAVE(self->lock);
+            return result;
          }
          else
          {
@@ -429,7 +554,9 @@ apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, ui
          if ( (opcode == APX_OPCODE_UNPACK) && (variant == APX_VARIANT_U16) )
          {
             uint8_t packedData[UINT16_SIZE];
+            SPINLOCK_ENTER(self->lock);
             rc = apx_nodeInstance_readRequirePortData(portRef->nodeInstance, &packedData[0], portRef->portDataProps->offset, UINT16_SIZE);
+            SPINLOCK_LEAVE(self->lock);
             if (rc == APX_NO_ERROR)
             {
                *value = (uint16_t) unpackLE(&packedData[0], UINT16_SIZE);

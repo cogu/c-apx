@@ -36,7 +36,6 @@ CuSuite* testSuite_apx_portSignatureMap(void);
 CuSuite* testSuite_apx_vm(void);
 CuSuite* testSuite_apx_vmSerializer(void);
 CuSuite* testSuite_apx_vmDeserializer(void);
-CuSuite* testSuite_apx_nodeInfo(void);
 CuSuite* testSuite_apx_connectionBase(void);
 
 /** APX Server **/

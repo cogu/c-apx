@@ -30,22 +30,23 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "msocket.h"
+#include "apx_send_connection.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 typedef struct message_server_connection_tag
 {
-   msocket_t *msocket;
-
+   msocket_t *msocket; //Strong reference
+   apx_send_connection_t *apx_connection; //Weak reference
 } message_server_connection_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void message_server_connection_create(message_server_connection_t *self, msocket_t *msocket);
+void message_server_connection_create(message_server_connection_t *self, msocket_t *msocket, apx_send_connection_t *apx_connection);
 void message_server_connection_destroy(message_server_connection_t *self);
-message_server_connection_t *message_server_connection_new(msocket_t *msocket);
+message_server_connection_t *message_server_connection_new(msocket_t *msocket, apx_send_connection_t *apx_connection);
 void message_server_connection_delete(message_server_connection_t *self);
 void message_server_connection_vdelete(void *arg);
 void message_server_connection_start(message_server_connection_t *self);

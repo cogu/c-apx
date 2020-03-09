@@ -79,6 +79,7 @@ int32_t apx_nodeManager_length(apx_nodeManager_t *self);
 int32_t apx_nodeManager_keys(apx_nodeManager_t *self, adt_ary_t* array);
 int32_t apx_nodeManager_values(apx_nodeManager_t *self, adt_ary_t* array);
 apx_nodeInstance_t *apx_nodeManager_getLastAttached(apx_nodeManager_t *self);
+int32_t apx_nodeManager_getLastErrorLine(apx_nodeManager_t *self);
 
 
 #endif //APX_NODE_INSTANCE_MANAGER_H

@@ -105,7 +105,8 @@ apx_size_t apx_nodeInfo_getProvidePortInitDataSize(const apx_nodeInfo_t *self);
 const uint8_t *apx_nodeInfo_getProvidePortInitDataPtr(const apx_nodeInfo_t *self);
 const char *apx_nodeInfo_getRequirePortSignature(const apx_nodeInfo_t *self, apx_portId_t portId);
 const char *apx_nodeInfo_getProvidePortSignature(const apx_nodeInfo_t *self, apx_portId_t portId);
-
+adt_str_t *apx_nodeInfo_getRequirePortName(const apx_nodeInfo_t *self, apx_portId_t portId);
+adt_str_t *apx_nodeInfo_getProvidePortName(const apx_nodeInfo_t *self, apx_portId_t portId);
 
 
 #endif //APX_NODE_INFO_H

@@ -57,7 +57,8 @@ static void test_apx_client_buildNodeFromString2(CuTest* tc);
 static void test_apx_client_registerEventHandler(CuTest* tc);
 static void test_apx_client_portHandleWithoutDefiningNodeName1(CuTest* tc);
 static void test_apx_client_portHandleWithoutDefiningNodeName2(CuTest* tc);
-static void test_apx_client_writeDynamicProvidePort(CuTest* tc);
+static void test_apx_client_writePortData_dtl_u16(CuTest* tc);
+static void test_apx_client_writePortData_direct_u16(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -76,7 +77,8 @@ CuSuite* testSuite_apx_client(void)
    SUITE_ADD_TEST(suite, test_apx_client_registerEventHandler);
    SUITE_ADD_TEST(suite, test_apx_client_portHandleWithoutDefiningNodeName1);
    SUITE_ADD_TEST(suite, test_apx_client_portHandleWithoutDefiningNodeName2);
-   SUITE_ADD_TEST(suite, test_apx_client_writeDynamicProvidePort);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_u16);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_direct_u16);
 
 
    return suite;
@@ -178,7 +180,42 @@ static void test_apx_client_portHandleWithoutDefiningNodeName2(CuTest* tc)
 
 }
 
-static void test_apx_client_writeDynamicProvidePort(CuTest* tc)
+static void test_apx_client_writePortData_dtl_u16(CuTest* tc)
+{
+   void *VehicleSpeedHandle;
+   void *EngineSpeedHandle;
+   uint8_t rawData[UINT16_SIZE] = {0, 0};
+   apx_nodeInstance_t *node;
+   apx_client_t *client = apx_client_new();
+   dtl_sv_t *sv = dtl_sv_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition1));
+   VehicleSpeedHandle = apx_client_getPortHandle(client, NULL, "VehicleSpeed");
+   EngineSpeedHandle = apx_client_getPortHandle(client, NULL, "EngineSpeed");
+   node = apx_client_getLastAttachedNode(client);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(node, &rawData[0], 0u, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0xFF, rawData[0]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[1]);
+   dtl_sv_set_u32(sv, 0x1234);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, VehicleSpeedHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(node, &rawData[0], 0u, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0x34, rawData[0]);
+   CuAssertUIntEquals(tc, 0x12, rawData[1]);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(node, &rawData[0], UINT16_SIZE, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0xFF, rawData[0]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[1]);
+   dtl_sv_set_u32(sv, 0x6218);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, EngineSpeedHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(node, &rawData[0], UINT16_SIZE, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0x18, rawData[0]);
+   CuAssertUIntEquals(tc, 0x62, rawData[1]);
+
+   apx_client_delete(client);
+   dtl_dec_ref((dtl_dv_t*) sv);
+
+}
+
+static void test_apx_client_writePortData_direct_u16(CuTest* tc)
 {
    void *VehicleSpeedHandle;
    void *EngineSpeedHandle;

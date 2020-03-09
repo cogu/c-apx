@@ -195,7 +195,7 @@ apx_error_t apx_vmSerializer_setValue(apx_vmSerializer_t *self, const dtl_dv_t *
 {
    if ( (self != 0) && (dv != 0) )
    {
-      if (self->state != 0)
+      if (self->state != (apx_vmWriteState_t*) 0)
       {
          return apx_vmWriteState_setValue(self->state, dv);
       }

@@ -53,12 +53,13 @@ static void message_server_connection_process_hash_value(message_server_connecti
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void message_server_connection_create(message_server_connection_t *self, msocket_t *msocket)
+void message_server_connection_create(message_server_connection_t *self, msocket_t *msocket, apx_send_connection_t *apx_connection)
 {
-   if ( (self != 0) && (msocket != 0) )
+   if ( (self != 0) && (msocket != 0) && (apx_connection != 0) )
    {
       msocket_handler_t handler;
       self->msocket = msocket;
+      self->apx_connection = apx_connection;
       memset(&handler, 0, sizeof(msocket_handler_t));
       handler.tcp_data = message_server_connection_data;
       handler.tcp_disconnected = message_server_connection_disconnected;
@@ -74,12 +75,12 @@ void message_server_connection_destroy(message_server_connection_t *self)
    }
 }
 
-message_server_connection_t *message_server_connection_new(msocket_t *msocket)
+message_server_connection_t *message_server_connection_new(msocket_t *msocket, apx_send_connection_t *apx_connection)
 {
    message_server_connection_t *self = (message_server_connection_t*) malloc(sizeof(message_server_connection_t));
    if (self != 0)
    {
-      message_server_connection_create(self, msocket);
+      message_server_connection_create(self, msocket, apx_connection);
    }
    return self;
 }
@@ -169,17 +170,18 @@ static void message_server_connection_process_hash_value(message_server_connecti
    dv = dtl_hv_iter_next_cstr(hv, &key);
    while(dv != 0)
    {
-      adt_str_t *tmp;
-      tmp = dtl_json_dumps(dv, 0, true);
-      if (tmp != 0)
+      apx_error_t result;
+      if (self->apx_connection != 0)
       {
-         printf("Setting new value for %s: ", key);
-         printf("%s\n", adt_str_cstr(tmp));
-         adt_str_delete(tmp);
+         result = apx_send_connection_writeProvidePortData(self->apx_connection, key, dv);
       }
       else
       {
-         printf("Failed JSON conversion\n");
+         result = APX_NULL_PTR_ERROR;
+      }
+      if (result != APX_NO_ERROR)
+      {
+         printf("%s: Write failed for signal with error code %d\n", key, (int) result);
       }
       dv = dtl_hv_iter_next_cstr(hv, &key);
    }

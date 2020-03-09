@@ -176,7 +176,6 @@ static void connect_and_send_message_unix(const char *socketPath, adt_str_t *mes
          {
             printf("message_client_wait_for_message_transmitted failed with %d\n", (int) result);
          }
-         usleep(10000u);
       }
       else
       {
