@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "apx_eventListener.h"
 #include "apx_nodeData.h"
 #include "application.h"
@@ -37,43 +38,43 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-
+#define APX_SOCKET_PATH "/tmp/apx_server.socket"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void onClientConnected(void *arg, apx_clientConnectionBase_t *clientConnection);
 static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientConnection);
-/*
-static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg);
-static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
-*/
+static void onRequirePortWrite(void *arg, struct apx_nodeInstance_tag *nodeInstance, apx_portId_t requirePortId, void *portHandle);
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static apx_client_t *m_client = NULL;
 static apx_nodeInstance_t *m_nodeInstance = NULL;
-static uint16_t m_wheelBasedVehicleSpeed;
 static uint32_t m_stressCount;
 static bool m_isConnected;
 static bool m_hasPendingStressCmd;
 static bool m_isStressOngoing;
-static bool m_isTestNode1;
+static bool m_isSendNode;
+static void *m_rqst_handle;
+static void *m_rsp_handle;
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void application_init(const char *apx_definition, const char *tcp_addr, uint16_t tcp_port)
+void application_init(const char *apx_definition)
 {
    apx_clientEventListener_t handlerTable;
    apx_error_t result;
    memset(&handlerTable, 0, sizeof(handlerTable));
-   handlerTable.clientConnect2 = onClientConnected;
-   handlerTable.clientDisconnect2 = onClientDisconnected;
-   //handlerTable.logEvent = onLogEvent;
+   handlerTable.clientConnect1 = onClientConnected;
+   handlerTable.clientDisconnect1 = onClientDisconnected;
+   handlerTable.requirePortWrite1 = onRequirePortWrite;
 
-   m_wheelBasedVehicleSpeed = 0u;
+   m_isSendNode = false;
    m_stressCount = 0;
    m_isConnected = false;
    m_hasPendingStressCmd = true;
@@ -90,16 +91,15 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
          return;
       }
       m_nodeInstance = apx_client_getLastAttachedNode(m_client);
-      if ( (strcmp(apx_nodeInstance_getName(m_nodeInstance), "TestNode1")==0) )
+      if ( (strcmp(apx_nodeInstance_getName(m_nodeInstance), "SendNode")==0) )
       {
-         m_isTestNode1 = true;
+         m_isSendNode = true;
       }
-      else
-      {
-         m_isTestNode1 = false;
-      }
-      //result = apx_client_connectTcp(m_client, tcp_addr, tcp_port);
-      result = apx_client_connectUnix(m_client, "/tmp/apx_server.socket");
+      m_rqst_handle = apx_client_getPortHandle(m_client, NULL, "StressTest_rqst");
+      m_rsp_handle = apx_client_getPortHandle(m_client, NULL, "StressTest_rsp");
+      assert(m_rqst_handle != 0);
+      assert(m_rsp_handle != 0);
+      result = apx_client_connect_unix(m_client, APX_SOCKET_PATH);
       if (result != APX_NO_ERROR)
       {
          printf("apx_client_connectTcp returned %d\n", (int) result);
@@ -111,27 +111,28 @@ void application_init(const char *apx_definition, const char *tcp_addr, uint16_t
 
 void application_run(void)
 {
-/*
    if (m_isConnected)
    {
-      if (m_isTestNode1)
+      if (m_isSendNode)
       {
          if (m_hasPendingStressCmd)
          {
-            uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
+            apx_error_t result;
+            m_stressCount = 0u;
             m_hasPendingStressCmd = false;
             m_isStressOngoing = true;
-            apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 3, UINT32_SIZE, false);
-            printf("Stress started\n");
+            result = apx_client_writePortData_u32(m_client, m_rqst_handle, m_stressCount);
+            assert(result == APX_NO_ERROR);
+            printf("Stress test started\n");
          }
          else if (m_isStressOngoing)
          {
-            printf("Stress completed, count=%d\n", m_stressCount);
+            printf("Stress test completed, count=%d\n", m_stressCount);
             m_isStressOngoing = false;
          }
       }
    }
-*/
+
 }
 
 
@@ -140,13 +141,9 @@ void application_run(void)
 //////////////////////////////////////////////////////////////////////////////
 static void onClientConnected(void *arg, apx_clientConnectionBase_t *clientConnection)
 {
-/*
-   apx_connectionEventListener_t eventListener;
+
    m_isConnected = true;
-   memset(&eventListener, 0, sizeof(eventListener));
-   eventListener.inPortDataWritten = inPortDataWrittenCbk;
-   apx_clientConnectionBase_registerNodeDataEventListener(clientConnection, &eventListener);
-*/
+
 }
 
 static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientConnection)
@@ -155,29 +152,24 @@ static void onClientDisconnected(void *arg, apx_clientConnectionBase_t *clientCo
    m_hasPendingStressCmd = true;
    m_isStressOngoing = false;
 }
-/*
-static void onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg)
-{
-   printf("onLogEvent\n");
-}
 
-static void inPortDataWrittenCbk(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len)
+
+static void onRequirePortWrite(void *arg, struct apx_nodeInstance_tag *nodeInstance, apx_portId_t requirePortId, void *portHandle)
 {
-   if ( m_isTestNode1 && m_isStressOngoing && (offset == 0) && (len == UINT32_SIZE))
+   if ( (m_isSendNode) && (m_isStressOngoing) && (portHandle == m_rsp_handle))
    {
+      apx_error_t result;
       m_stressCount++;
-      uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
-      apx_nodeData_readInPortData(m_nodeData, &tmp[0], offset, len);
-      packLE(&tmp[0], m_stressCount, UINT32_SIZE);
-      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 3, UINT32_SIZE, false);
-
+      result = apx_client_writePortData_u32(m_client, m_rqst_handle, m_stressCount);
+      assert(result == APX_NO_ERROR);
    }
-   else if( (offset == 3) && (len == UINT32_SIZE))
+   else if( (!m_isSendNode) && (portHandle == m_rqst_handle))
    {
-      uint8_t tmp[UINT32_SIZE] = {0, 0, 0, 0};
-      apx_nodeData_readInPortData(m_nodeData, &tmp[0], offset, len);
-      (void) unpackLE(&tmp[0], UINT32_SIZE);
-      apx_nodeData_updateOutPortData(m_nodeData, &tmp[0], 0, UINT32_SIZE, false);
+      apx_error_t result;
+      uint32_t value = 0u;
+      result = apx_client_readPortData_u32(m_client, m_rqst_handle, &value);
+      assert(result == APX_NO_ERROR);
+      result = apx_client_writePortData_u32(m_client, m_rsp_handle, value);
+      assert(result == APX_NO_ERROR);
    }
 }
-*/

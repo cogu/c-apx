@@ -37,7 +37,7 @@
                             							
                             <targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.gnu.platform.base.1098985407" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
                             							
-                            <builder buildPath="${workspace_loc:/apx_test_dyn_client1}/Debug" id="cdt.managedbuild.target.gnu.builder.base.1803405983" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+                            <builder buildPath="${workspace_loc:/apx_stress_test}/Debug" id="cdt.managedbuild.target.gnu.builder.base.1803405983" keepEnvironmentInBuildfile="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base"/>
                             							
                             <tool id="cdt.managedbuild.tool.gnu.archiver.base.1144860879" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
                             							
@@ -135,7 +135,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="apx/common/src/apx_routingTableEntry.c|apx/common/src/apx_routingTable.c|adt/src/adt_u16Map.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="adt/src/adt_u16Map.c|apx/common/src/apx_routingTable.c|apx/common/src/apx_routingTableEntry.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
@@ -181,7 +181,7 @@
                             							
                             <targetPlatform id="cdt.managedbuild.target.gnu.platform.cygwin.exe.release.493107043" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.cygwin.exe.release"/>
                             							
-                            <builder buildPath="${workspace_loc:/apx_test_dyn_client1}/Release" id="cdt.managedbuild.target.gnu.builder.cygwin.exe.release.1401650213" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.cygwin.exe.release"/>
+                            <builder buildPath="${workspace_loc:/apx_stress_test}/Release" id="cdt.managedbuild.target.gnu.builder.cygwin.exe.release.1401650213" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.cygwin.exe.release"/>
                             							
                             <tool id="cdt.managedbuild.tool.gnu.assembler.cygwin.exe.release.1766824515" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.cygwin.exe.release">
                                 								
@@ -229,7 +229,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="apx/common/src/apx_routingTableEntry.c|apx/common/src/apx_routingTable.c|adt/src/adt_u16Map.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="adt/src/adt_u16Map.c|apx/common/src/apx_routingTable.c|apx/common/src/apx_routingTableEntry.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
@@ -245,7 +245,7 @@
     	
     <storageModule moduleId="cdtBuildSystem" version="4.0.0">
         		
-        <project id="apx_test_dyn_client1.cdt.managedbuild.target.gnu.cygwin.exe.22185615" name="Executable" projectType="cdt.managedbuild.target.gnu.cygwin.exe"/>
+        <project id="apx_stress_test.cdt.managedbuild.target.gnu.cygwin.exe.22185615" name="Executable" projectType="cdt.managedbuild.target.gnu.cygwin.exe"/>
         	
     </storageModule>
     	
@@ -255,13 +255,13 @@
         		
         <configuration configurationName="Debug">
             			
-            <resource resourceType="PROJECT" workspacePath="/apx_test_dyn_client1"/>
+            <resource resourceType="PROJECT" workspacePath="/apx_stress_test"/>
             		
         </configuration>
         		
         <configuration configurationName="Release">
             			
-            <resource resourceType="PROJECT" workspacePath="/apx_test_dyn_client1"/>
+            <resource resourceType="PROJECT" workspacePath="/apx_stress_test"/>
             		
         </configuration>
         	
