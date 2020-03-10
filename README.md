@@ -18,8 +18,13 @@ highly experimental.
 - GCC support only (Visual Studio project is currently out of sync).
 - APX-ES is not yet supported (needs refactoring/rework).
 - Dynamic nodes only (code-generated nodes not yet implemented).
-- Extremely limited data type support:
+- Limited data type support:
+  - uint8
   - uint16
+  - uint32
+  - uint8 array (fixed length)
+  - uint16 array (fixed length)
+  - uint32 array (fixed length)
 
 ## What is APX?
 
