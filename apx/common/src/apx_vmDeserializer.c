@@ -47,6 +47,13 @@ static apx_error_t apx_vmReadState_setRecordKey_cstr(apx_vmReadState_t *self, co
 static apx_error_t apx_vmReadState_initValue(apx_vmReadState_t *self, apx_valueType_t valueType, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 static apx_error_t apx_vmDeserializer_unpackDynArrayValue(apx_vmDeserializer_t *self, apx_dynLenType_t dynLenType);
 static void apx_vmDeserializer_popState(apx_vmDeserializer_t *self);
+static apx_error_t apx_vmDeserializer_unpackValueInternal(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType, apx_vmVariant_t variant);
+static apx_error_t apx_vmDeserializer_unpackValueU8(apx_vmDeserializer_t *self, dtl_sv_t **sv);
+static apx_error_t apx_vmDeserializer_unpackValueU16(apx_vmDeserializer_t *self, dtl_sv_t **sv);
+static apx_error_t apx_vmDeserializer_unpackValueU32(apx_vmDeserializer_t *self, dtl_sv_t **sv);
+static apx_error_t apx_vmDeserializer_unpackValueS8(apx_vmDeserializer_t *self, dtl_sv_t **sv);
+static apx_error_t apx_vmDeserializer_unpackValueS16(apx_vmDeserializer_t *self, dtl_sv_t **sv);
+static apx_error_t apx_vmDeserializer_unpackValueS32(apx_vmDeserializer_t *self, dtl_sv_t **sv);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -299,6 +306,79 @@ apx_error_t apx_vmDeserializer_unpackU32(apx_vmDeserializer_t *self, uint32_t *u
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_vmDeserializer_unpackS8(apx_vmDeserializer_t *self, int8_t *s8Value)
+{
+   if ( (self != 0) && (s8Value != 0) )
+   {
+      if (self->hasValidReadBuf)
+      {
+         if (self->buf.pNext < self->buf.pEnd)
+         {
+            *s8Value = (int8_t) *self->buf.pNext++;
+            return APX_NO_ERROR;
+         }
+         else
+         {
+            return APX_BUFFER_BOUNDARY_ERROR;
+         }
+      }
+      else
+      {
+         return APX_MISSING_BUFFER_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmDeserializer_unpackS16(apx_vmDeserializer_t *self, int16_t *s16Value)
+{
+   if ( self != 0)
+   {
+      if (self->hasValidReadBuf)
+      {
+         if (self->buf.pNext+1u < self->buf.pEnd)
+         {
+            *s16Value = (int16_t) unpackU16LE(self->buf.pNext);
+            return APX_NO_ERROR;
+         }
+         else
+         {
+            return APX_BUFFER_BOUNDARY_ERROR;
+         }
+      }
+      else
+      {
+         return APX_MISSING_BUFFER_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmDeserializer_unpackS32(apx_vmDeserializer_t *self, int32_t *s32Value)
+{
+   if ( (self != 0) && (s32Value != 0))
+   {
+      if (self->hasValidReadBuf)
+      {
+         if (self->buf.pNext+1u < self->buf.pEnd)
+         {
+            *s32Value = (int32_t) unpackU32LE(self->buf.pNext);
+            return APX_NO_ERROR;
+         }
+         else
+         {
+            return APX_BUFFER_BOUNDARY_ERROR;
+         }
+      }
+      else
+      {
+         return APX_MISSING_BUFFER_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+
 apx_error_t apx_vmDeserializer_unpackFixedStr(apx_vmDeserializer_t *self, adt_str_t *str, int32_t readLen)
 {
    if ( (self != 0) && (str != 0) && (readLen > 0) )
@@ -400,72 +480,12 @@ apx_error_t apx_vmDeserializer_setRecordKey_cstr(apx_vmDeserializer_t *self, con
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
 apx_error_t apx_vmDeserializer_unpackU8Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType)
 {
    if (self != 0)
    {
-      const apx_size_t elemSize = UINT8_SIZE;
-      apx_vmReadState_t *state = self->state;
-      apx_error_t rc;
-      if (state != 0)
-      {
-         rc = apx_vmReadState_initValue(state, maxArrayLen > 0u? APX_VALUE_TYPE_ARRAY : APX_VALUE_TYPE_SCALAR, maxArrayLen, dynLenType);
-         if (rc != APX_NO_ERROR)
-         {
-            return rc;
-         }
-         if ( state->valueType == APX_VALUE_TYPE_SCALAR )
-         {
-            uint8_t u8Value;
-            rc = apx_vmDeserializer_unpackU8(self, &u8Value);
-            if (rc != APX_NO_ERROR)
-            {
-               return rc;
-            }
-            dtl_sv_set_u32(state->value.sv, (uint32_t) u8Value);
-         }
-         else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
-         {
-            self->buf.pAdjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
-            uint32_t i;
-            if (state->dynLenType == APX_DYN_LEN_NONE)
-            {
-               state->arrayLen = state->maxArrayLen;
-            }
-            else
-            {
-               apx_error_t rc;
-               rc = apx_vmDeserializer_unpackDynArrayValue(self, state->dynLenType);
-               if (rc != APX_NO_ERROR)
-               {
-                  return rc;
-               }
-            }
-            for(i=0; i < state->arrayLen; i++)
-            {
-               uint8_t u8Value;
-               dtl_sv_t *childValue;
-               rc = apx_vmDeserializer_unpackU8(self, &u8Value);
-               if (rc != APX_NO_ERROR)
-               {
-                  return rc;
-               }
-               childValue = dtl_sv_make_u32((uint32_t) u8Value);
-               if (childValue == 0)
-               {
-                  return APX_MEM_ERROR;
-               }
-               dtl_av_push(state->value.av, (dtl_dv_t*) childValue, false);
-            }
-         }
-         else
-         {
-            return APX_DV_TYPE_ERROR;
-         }
-         apx_vmDeserializer_popState(self);
-         return APX_NO_ERROR;
-      }
-      return APX_NULL_PTR_ERROR;
+      return apx_vmDeserializer_unpackValueInternal(self, maxArrayLen, dynLenType, APX_VARIANT_U8);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -474,68 +494,7 @@ apx_error_t apx_vmDeserializer_unpackU16Value(apx_vmDeserializer_t *self, uint32
 {
    if (self != 0)
    {
-      const apx_size_t elemSize = UINT16_SIZE;
-      apx_vmReadState_t *state = self->state;
-      apx_error_t rc;
-      if (state != 0)
-      {
-         rc = apx_vmReadState_initValue(state, maxArrayLen > 0u? APX_VALUE_TYPE_ARRAY : APX_VALUE_TYPE_SCALAR, maxArrayLen, dynLenType);
-         if (rc != APX_NO_ERROR)
-         {
-            return rc;
-         }
-         if ( state->valueType == APX_VALUE_TYPE_SCALAR )
-         {
-            uint16_t u16Value;
-            rc = apx_vmDeserializer_unpackU16(self, &u16Value);
-            if (rc != APX_NO_ERROR)
-            {
-               return rc;
-            }
-            dtl_sv_set_u32(state->value.sv, (uint32_t) u16Value);
-         }
-         else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
-         {
-            self->buf.pAdjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
-            uint32_t i;
-            if (state->dynLenType == APX_DYN_LEN_NONE)
-            {
-               state->arrayLen = state->maxArrayLen;
-            }
-            else
-            {
-               apx_error_t rc;
-               rc = apx_vmDeserializer_unpackDynArrayValue(self, state->dynLenType);
-               if (rc != APX_NO_ERROR)
-               {
-                  return rc;
-               }
-            }
-            for(i=0; i < state->arrayLen; i++)
-            {
-               uint16_t u16Value;
-               dtl_sv_t *childValue;
-               rc = apx_vmDeserializer_unpackU16(self, &u16Value);
-               if (rc != APX_NO_ERROR)
-               {
-                  return rc;
-               }
-               childValue = dtl_sv_make_u32((uint32_t) u16Value);
-               if (childValue == 0)
-               {
-                  return APX_MEM_ERROR;
-               }
-               dtl_av_push(state->value.av, (dtl_dv_t*) childValue, false);
-            }
-         }
-         else
-         {
-            return APX_DV_TYPE_ERROR;
-         }
-         apx_vmDeserializer_popState(self);
-         return APX_NO_ERROR;
-      }
-      return APX_NULL_PTR_ERROR;
+      return apx_vmDeserializer_unpackValueInternal(self, maxArrayLen, dynLenType, APX_VARIANT_U16);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -544,71 +503,39 @@ apx_error_t apx_vmDeserializer_unpackU32Value(apx_vmDeserializer_t *self, uint32
 {
    if (self != 0)
    {
-      const apx_size_t elemSize = UINT32_SIZE;
-      apx_vmReadState_t *state = self->state;
-      apx_error_t rc;
-      if (state != 0)
-      {
-         rc = apx_vmReadState_initValue(state, maxArrayLen > 0u? APX_VALUE_TYPE_ARRAY : APX_VALUE_TYPE_SCALAR, maxArrayLen, dynLenType);
-         if (rc != APX_NO_ERROR)
-         {
-            return rc;
-         }
-         if ( state->valueType == APX_VALUE_TYPE_SCALAR )
-         {
-            uint32_t u32Value;
-            rc = apx_vmDeserializer_unpackU32(self, &u32Value);
-            if (rc != APX_NO_ERROR)
-            {
-               return rc;
-            }
-            dtl_sv_set_u32(state->value.sv, u32Value);
-         }
-         else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
-         {
-            self->buf.pAdjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
-            uint32_t i;
-            if (state->dynLenType == APX_DYN_LEN_NONE)
-            {
-               state->arrayLen = state->maxArrayLen;
-            }
-            else
-            {
-               apx_error_t rc;
-               rc = apx_vmDeserializer_unpackDynArrayValue(self, state->dynLenType);
-               if (rc != APX_NO_ERROR)
-               {
-                  return rc;
-               }
-            }
-            for(i=0; i < state->arrayLen; i++)
-            {
-               uint32_t u32Value;
-               dtl_sv_t *childValue;
-               rc = apx_vmDeserializer_unpackU32(self, &u32Value);
-               if (rc != APX_NO_ERROR)
-               {
-                  return rc;
-               }
-               childValue = dtl_sv_make_u32(u32Value);
-               if (childValue == 0)
-               {
-                  return APX_MEM_ERROR;
-               }
-               dtl_av_push(state->value.av, (dtl_dv_t*) childValue, false);
-            }
-         }
-         else
-         {
-            return APX_DV_TYPE_ERROR;
-         }
-         apx_vmDeserializer_popState(self);
-         return APX_NO_ERROR;
-      }
-      return APX_NULL_PTR_ERROR;
+      return apx_vmDeserializer_unpackValueInternal(self, maxArrayLen, dynLenType, APX_VARIANT_U32);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+apx_error_t apx_vmDeserializer_unpackS8Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType)
+{
+   if (self != 0)
+   {
+      return apx_vmDeserializer_unpackValueInternal(self, maxArrayLen, dynLenType, APX_VARIANT_S8);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmDeserializer_unpackS16Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType)
+{
+   if (self != 0)
+   {
+      return apx_vmDeserializer_unpackValueInternal(self, maxArrayLen, dynLenType, APX_VARIANT_S16);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vmDeserializer_unpackS32Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType)
+{
+   if (self != 0)
+   {
+      return apx_vmDeserializer_unpackValueInternal(self, maxArrayLen, dynLenType, APX_VARIANT_S32);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+
 
 apx_error_t apx_vmDeserializer_unpackStrValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType)
 {
@@ -785,4 +712,297 @@ static void apx_vmDeserializer_popState(apx_vmDeserializer_t *self)
       self->state = state;
       apx_vmReadState_delete(childState); //reference count -1
    }
+}
+
+static apx_error_t apx_vmDeserializer_unpackValueInternal(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType, apx_vmVariant_t variant)
+{
+   apx_size_t elemSize = 0;
+   apx_vmReadState_t *state = self->state;
+
+   switch(variant)
+   {
+   case APX_VARIANT_U8:
+      elemSize = UINT8_SIZE;
+      break;
+   case APX_VARIANT_U16:
+      elemSize = UINT16_SIZE;
+      break;
+   case APX_VARIANT_U32:
+      elemSize = UINT32_SIZE;
+      break;
+   case APX_VARIANT_S8:
+      elemSize = SINT8_SIZE;
+      break;
+   case APX_VARIANT_S16:
+      elemSize = SINT16_SIZE;
+      break;
+   case APX_VARIANT_S32:
+      elemSize = SINT32_SIZE;
+      break;
+   }
+   if (elemSize == 0u)
+   {
+      return APX_UNSUPPORTED_ERROR;
+   }
+
+
+   if (state != 0)
+   {
+      apx_error_t rc = apx_vmReadState_initValue(state, maxArrayLen > 0u? APX_VALUE_TYPE_ARRAY : APX_VALUE_TYPE_SCALAR, maxArrayLen, dynLenType);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      if ( state->valueType == APX_VALUE_TYPE_SCALAR )
+      {
+         rc = APX_UNSUPPORTED_ERROR;
+         switch(variant)
+         {
+         case APX_VARIANT_U8:
+            rc = apx_vmDeserializer_unpackValueU8(self, &state->value.sv);
+            break;
+         case APX_VARIANT_U16:
+            rc = apx_vmDeserializer_unpackValueU16(self, &state->value.sv);
+            break;
+         case APX_VARIANT_U32:
+            rc = apx_vmDeserializer_unpackValueU32(self, &state->value.sv);
+            break;
+         case APX_VARIANT_S8:
+            rc = apx_vmDeserializer_unpackValueS8(self, &state->value.sv);
+            break;
+         case APX_VARIANT_S16:
+            rc = apx_vmDeserializer_unpackValueS16(self, &state->value.sv);
+            break;
+         case APX_VARIANT_S32:
+            rc = apx_vmDeserializer_unpackValueS32(self, &state->value.sv);
+            break;
+         }
+
+         if (rc != APX_NO_ERROR)
+         {
+            return rc;
+         }
+      }
+      else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
+      {
+         self->buf.pAdjustedNext = self->buf.pNext+elemSize*state->maxArrayLen;
+         uint32_t i;
+         if (state->dynLenType == APX_DYN_LEN_NONE)
+         {
+            state->arrayLen = state->maxArrayLen;
+         }
+         else
+         {
+            apx_error_t rc;
+            rc = apx_vmDeserializer_unpackDynArrayValue(self, state->dynLenType);
+            if (rc != APX_NO_ERROR)
+            {
+               return rc;
+            }
+         }
+         for(i=0; i < state->arrayLen; i++)
+         {
+            dtl_sv_t *childValue = (dtl_sv_t*) 0;
+            rc = APX_UNSUPPORTED_ERROR;
+
+            switch(variant)
+            {
+            case APX_VARIANT_U8:
+               rc = apx_vmDeserializer_unpackValueU8(self, &childValue);
+               break;
+            case APX_VARIANT_U16:
+               rc = apx_vmDeserializer_unpackValueU16(self, &childValue);
+               break;
+            case APX_VARIANT_U32:
+               rc = apx_vmDeserializer_unpackValueU32(self, &childValue);
+               break;
+            case APX_VARIANT_S8:
+               rc = apx_vmDeserializer_unpackValueS8(self, &childValue);
+               break;
+            case APX_VARIANT_S16:
+               rc = apx_vmDeserializer_unpackValueS16(self, &childValue);
+               break;
+            case APX_VARIANT_S32:
+               rc = apx_vmDeserializer_unpackValueS32(self, &childValue);
+               break;
+            }
+
+            if (rc != APX_NO_ERROR)
+            {
+               return rc;
+            }
+            assert(childValue != 0);
+            dtl_av_push(state->value.av, (dtl_dv_t*) childValue, false);
+         }
+      }
+      else
+      {
+         return APX_DV_TYPE_ERROR;
+      }
+      apx_vmDeserializer_popState(self);
+      return APX_NO_ERROR;
+   }
+   return APX_NULL_PTR_ERROR;
+
+}
+
+static apx_error_t apx_vmDeserializer_unpackValueU8(apx_vmDeserializer_t *self, dtl_sv_t **sv)
+{
+   if (sv != 0)
+   {
+      uint8_t u8Value;
+      apx_error_t rc = apx_vmDeserializer_unpackU8(self, &u8Value);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      if (*sv != 0)
+      {
+         dtl_sv_set_u32(*sv, (uint32_t) u8Value);
+      }
+      else
+      {
+         *sv = dtl_sv_make_u32((uint32_t) u8Value);
+         if (*sv == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_vmDeserializer_unpackValueU16(apx_vmDeserializer_t *self, dtl_sv_t **sv)
+{
+   if (sv != 0)
+   {
+      uint16_t u16Value;
+      apx_error_t rc = apx_vmDeserializer_unpackU16(self, &u16Value);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      if (*sv != 0)
+      {
+         dtl_sv_set_u32(*sv, (uint32_t) u16Value);
+      }
+      else
+      {
+         *sv = dtl_sv_make_u32((uint32_t) u16Value);
+         if (*sv == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+static apx_error_t apx_vmDeserializer_unpackValueU32(apx_vmDeserializer_t *self, dtl_sv_t **sv)
+{
+   if (sv != 0)
+   {
+      uint32_t u32Value;
+      apx_error_t rc = apx_vmDeserializer_unpackU32(self, &u32Value);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      if (*sv != 0)
+      {
+         dtl_sv_set_u32(*sv, u32Value);
+      }
+      else
+      {
+         *sv = dtl_sv_make_u32(u32Value);
+         if (*sv == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_vmDeserializer_unpackValueS8(apx_vmDeserializer_t *self, dtl_sv_t **sv)
+{
+   if (sv != 0)
+   {
+      int8_t s8Value;
+      apx_error_t rc = apx_vmDeserializer_unpackS8(self, &s8Value);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      if (*sv != 0)
+      {
+         dtl_sv_set_i32(*sv, (int32_t) s8Value);
+      }
+      else
+      {
+         *sv = dtl_sv_make_i32( (int32_t) s8Value);
+         if (*sv == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_vmDeserializer_unpackValueS16(apx_vmDeserializer_t *self, dtl_sv_t **sv)
+{
+   if (sv != 0)
+   {
+      int16_t s16Value;
+      apx_error_t rc = apx_vmDeserializer_unpackS16(self, &s16Value);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      if (*sv != 0)
+      {
+         dtl_sv_set_i32(*sv, (int32_t) s16Value);
+      }
+      else
+      {
+         *sv = dtl_sv_make_i32( (int32_t) s16Value);
+         if (*sv == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t apx_vmDeserializer_unpackValueS32(apx_vmDeserializer_t *self, dtl_sv_t **sv)
+{
+   if (sv != 0)
+   {
+      int32_t s32Value;
+      apx_error_t rc = apx_vmDeserializer_unpackS32(self, &s32Value);
+      if (rc != APX_NO_ERROR)
+      {
+         return rc;
+      }
+      if (*sv != 0)
+      {
+         dtl_sv_set_i32(*sv, s32Value);
+      }
+      else
+      {
+         *sv = dtl_sv_make_i32(s32Value);
+         if (*sv == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
