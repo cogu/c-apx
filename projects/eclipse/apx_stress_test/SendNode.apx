@@ -1,0 +1,4 @@
+APX/1.2
+N"SendNode"
+P"StressTest_rqst"L:=0xFFFFFFFF
+R"StressTest_rsp"L:=0xFFFFFFFF
