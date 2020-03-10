@@ -413,6 +413,12 @@ static apx_error_t apx_vm_executePackInstruction(apx_vm_t *self, uint8_t variant
       return apx_vmSerializer_packValueAsU16(&self->serializer, self->arrayLen, self->dynLenType);
    case APX_VARIANT_U32:
       return apx_vmSerializer_packValueAsU32(&self->serializer, self->arrayLen, self->dynLenType);
+   case APX_VARIANT_S8:
+      return apx_vmSerializer_packValueAsS8(&self->serializer, self->arrayLen, self->dynLenType);
+   case APX_VARIANT_S16:
+      return apx_vmSerializer_packValueAsS16(&self->serializer, self->arrayLen, self->dynLenType);
+   case APX_VARIANT_S32:
+      return apx_vmSerializer_packValueAsS32(&self->serializer, self->arrayLen, self->dynLenType);
    }
    return APX_NOT_IMPLEMENTED_ERROR;
 }
@@ -427,6 +433,12 @@ static apx_error_t apx_vm_executeUnpackInstruction(apx_vm_t *self, uint8_t varia
       return apx_vmDeserializer_unpackU16Value(&self->deserializer, self->arrayLen, self->dynLenType);
    case APX_VARIANT_U32:
       return apx_vmDeserializer_unpackU32Value(&self->deserializer, self->arrayLen, self->dynLenType);
+   case APX_VARIANT_S8:
+      return apx_vmDeserializer_unpackS8Value(&self->deserializer, self->arrayLen, self->dynLenType);
+   case APX_VARIANT_S16:
+      return apx_vmDeserializer_unpackS16Value(&self->deserializer, self->arrayLen, self->dynLenType);
+   case APX_VARIANT_S32:
+      return apx_vmDeserializer_unpackS32Value(&self->deserializer, self->arrayLen, self->dynLenType);
    }
    return APX_NOT_IMPLEMENTED_ERROR;
 }
