@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "CuTest.h"
 #include "soa.h"
 #ifdef MEM_LEAK_CHECK
@@ -165,7 +166,7 @@ static void test_free_3_at_beginning_then_allocate_5_more(CuTest* tc)
    int32_t i;
    void *ptr;
    void *allocated1[255];
-   void *allocated2[4];
+   void *allocated2[5];
    soa_fsa_init(&fsa1, sizeof(uint8_t), SOA_DEFAULT_NUM_BLOCKS);
    for(i=0; i<254; i++)
    {
@@ -180,7 +181,7 @@ static void test_free_3_at_beginning_then_allocate_5_more(CuTest* tc)
    {
       soa_fsa_free(&fsa1, allocated1[i]);
    }
-   for(i=0; i< 5; i++)
+   for(i=0; i < 5; i++)
    {
       ptr = soa_fsa_alloc(&fsa1);
       CuAssertPtrNotNull(tc, ptr);
