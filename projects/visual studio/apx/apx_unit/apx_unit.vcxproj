@@ -22,13 +22,13 @@
     <ProjectGuid>{2275CCE5-BA66-48A4-83CA-255648EDE5D9}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>apx_unit</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -219,6 +219,7 @@
     <ClCompile Include="..\..\..\..\util\src\soa.c" />
     <ClCompile Include="..\..\..\..\util\src\soa_chunk.c" />
     <ClCompile Include="..\..\..\..\util\src\soa_fsa.c" />
+    <ClCompile Include="..\..\..\..\util\test\testsuite_soa_fsa.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h" />

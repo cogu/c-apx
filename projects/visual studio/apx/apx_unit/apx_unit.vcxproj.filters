@@ -100,6 +100,9 @@
     <Filter Include="apx\client\src">
       <UniqueIdentifier>{dcfa5f03-11fa-482c-af1b-ffbdbb810094}</UniqueIdentifier>
     </Filter>
+    <Filter Include="util\test">
+      <UniqueIdentifier>{240f751d-d097-4be4-b5c0-5b1e8d7a97da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\apx\common\test\test_main.c">
@@ -305,6 +308,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\apx\client\test\testsuite_apx_sessionCmd.c">
       <Filter>apx\client\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\util\test\testsuite_soa_fsa.c">
+      <Filter>util\test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

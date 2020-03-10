@@ -21,7 +21,9 @@ typedef struct apx_msg_tag
    uint32_t msgData2; //generic uint32 value
    union msgData3_tag{
       void *ptr;                         //generic void* pointer value
+#if APX_SMALL_DATA_SIZE > 0
       uint8_t data[APX_SMALL_DATA_SIZE]; //port data (when port data length is small)
+#endif
    } msgData3;
 #ifndef APX_EMBEDDED
    void *msgData4;    //generic void* pointer value
