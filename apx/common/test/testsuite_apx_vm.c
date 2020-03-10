@@ -54,6 +54,12 @@ static void test_apx_vm_packU16(CuTest* tc);
 static void test_apx_vm_unpackU16(CuTest* tc);
 static void test_apx_vm_packU32(CuTest* tc);
 static void test_apx_vm_unpackU32(CuTest* tc);
+static void test_apx_vm_packS8(CuTest* tc);
+static void test_apx_vm_unpackS8(CuTest* tc);
+static void test_apx_vm_packS16(CuTest* tc);
+static void test_apx_vm_unpackS16(CuTest* tc);
+static void test_apx_vm_packS32(CuTest* tc);
+static void test_apx_vm_unpackS32(CuTest* tc);
 static void test_apx_vm_packU8FixArray(CuTest* tc);
 static void test_apx_vm_packU8DynArray(CuTest* tc);
 
@@ -77,6 +83,12 @@ CuSuite* testSuite_apx_vm(void)
    SUITE_ADD_TEST(suite, test_apx_vm_unpackU16);
    SUITE_ADD_TEST(suite, test_apx_vm_packU32);
    SUITE_ADD_TEST(suite, test_apx_vm_unpackU32);
+   SUITE_ADD_TEST(suite, test_apx_vm_packS8);
+   SUITE_ADD_TEST(suite, test_apx_vm_unpackS8);
+   SUITE_ADD_TEST(suite, test_apx_vm_packS16);
+   SUITE_ADD_TEST(suite, test_apx_vm_unpackS16);
+   SUITE_ADD_TEST(suite, test_apx_vm_packS32);
+   SUITE_ADD_TEST(suite, test_apx_vm_unpackS32);
    SUITE_ADD_TEST(suite, test_apx_vm_packU8FixArray);
    SUITE_ADD_TEST(suite, test_apx_vm_packU8DynArray);
 
@@ -432,8 +444,137 @@ static void test_apx_vm_unpackU32(CuTest* tc)
    adt_bytearray_delete(compiledProgram);
    apx_dataElement_delete(element);
    adt_bytes_delete(storedProgram);
+}
+
+static void test_apx_vm_packS8(CuTest* tc)
+{
+   adt_bytes_t *storedProgram;
+   apx_vm_t *vm = apx_vm_new();
+   adt_bytearray_t *compiledProgram = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   apx_dataElement_t *element = apx_dataElement_new(APX_BASE_TYPE_SINT8, NULL);
+   apx_compiler_t *compiler = apx_compiler_new();
+   dtl_sv_t *sv = dtl_sv_new();
+   uint8_t dataBuffer[SINT8_SIZE];
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_begin_packProgram(compiler, compiledProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, element));
+   apx_compiler_end(compiler);
+   apx_compiler_delete(compiler);
+   storedProgram = adt_bytearray_bytes(compiledProgram);
+   memset(dataBuffer, 0xff, sizeof(dataBuffer));
+
+   dtl_sv_set_i32(sv, -128);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 1u, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 0x80, dataBuffer[0]);
+
+   dtl_sv_set_i32(sv, -1);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 1u, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 0xff, dataBuffer[0]);
+
+   dtl_sv_set_i32(sv, 0);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 1u, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 0, dataBuffer[0]);
+
+   dtl_sv_set_i32(sv, 127);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, 1u, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 0x7f, dataBuffer[0]);
+
+   apx_vm_delete(vm);
+   adt_bytearray_delete(compiledProgram);
+   apx_dataElement_delete(element);
+   dtl_dec_ref(sv);
+   adt_bytes_delete(storedProgram);
+}
+
+static void test_apx_vm_unpackS8(CuTest* tc)
+{
+   adt_bytes_t *storedProgram;
+   apx_vm_t *vm = apx_vm_new();
+   adt_bytearray_t *compiledProgram = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   apx_dataElement_t *element = apx_dataElement_new(APX_BASE_TYPE_SINT16, NULL);
+   apx_compiler_t *compiler = apx_compiler_new();
+   dtl_sv_t *sv = dtl_sv_new();
+   uint8_t dataBuffer[SINT16_SIZE];
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_begin_packProgram(compiler, compiledProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, element));
+   apx_compiler_end(compiler);
+   apx_compiler_delete(compiler);
+   storedProgram = adt_bytearray_bytes(compiledProgram);
+   memset(dataBuffer, 0xff, sizeof(dataBuffer));
+
+   dtl_sv_set_i32(sv, -32768);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, UINT16_SIZE, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 0x00, dataBuffer[0]);
+   CuAssertUIntEquals(tc, 0x80, dataBuffer[1]);
+
+   dtl_sv_set_i32(sv, -1);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, UINT16_SIZE, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 0xff, dataBuffer[0]);
+   CuAssertUIntEquals(tc, 0xff, dataBuffer[1]);
+
+   dtl_sv_set_i32(sv, 0);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, UINT16_SIZE, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 0x00, dataBuffer[0]);
+   CuAssertUIntEquals(tc, 0x00, dataBuffer[1]);
+
+
+   dtl_sv_set_i32(sv, 32767);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setWriteBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_packValue(vm, (dtl_dv_t*) sv));
+   CuAssertUIntEquals(tc, UINT16_SIZE, apx_vm_getBytesWritten(vm));
+   CuAssertUIntEquals(tc, 0xff, dataBuffer[0]);
+   CuAssertUIntEquals(tc, 0x7f, dataBuffer[1]);
+
+   apx_vm_delete(vm);
+   adt_bytearray_delete(compiledProgram);
+   apx_dataElement_delete(element);
+   dtl_dec_ref(sv);
+   adt_bytes_delete(storedProgram);
+}
+
+static void test_apx_vm_packS16(CuTest* tc)
+{
 
 }
+
+static void test_apx_vm_unpackS16(CuTest* tc)
+{
+
+}
+
+static void test_apx_vm_packS32(CuTest* tc)
+{
+
+}
+
+static void test_apx_vm_unpackS32(CuTest* tc)
+{
+
+}
+
 
 static void test_apx_vm_packU8FixArray(CuTest* tc)
 {
