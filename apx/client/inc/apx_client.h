@@ -121,11 +121,15 @@ void *apx_client_getRequirePortHandleById(apx_client_t *self, const char *nodeNa
 
 /*** Port Data Write API ***/
 apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const dtl_dv_t *value);
+apx_error_t apx_client_writePortData_u8(apx_client_t *self, void *portHandle, uint8_t value);
 apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
+apx_error_t apx_client_writePortData_u32(apx_client_t *self, void *portHandle, uint32_t value);
 
 /*** Port Data Read API ***/
 apx_error_t apx_client_readPortData(apx_client_t *self, void *portHandle, dtl_dv_t **dv);
+apx_error_t apx_client_readPortData_u8(apx_client_t *self, void *portHandle, uint8_t *value);
 apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value);
+apx_error_t apx_client_readPortData_u32(apx_client_t *self, void *portHandle, uint32_t *value);
 
 #ifdef UNIT_TEST
 void apx_client_run(apx_client_t *self);
