@@ -49,6 +49,9 @@
 static void test_apx_vmSerializer_packU8(CuTest* tc);
 static void test_apx_vmSerializer_packU16LE(CuTest* tc);
 static void test_apx_vmSerializer_packU32LE(CuTest* tc);
+static void test_apx_vmSerializer_packS8(CuTest* tc);
+static void test_apx_vmSerializer_packS16(CuTest* tc);
+static void test_apx_vmSerializer_packS32(CuTest* tc);
 static void test_apx_vmSerializer_packFixedStr(CuTest* tc);
 static void test_apx_vmSerializer_packRecordU8(CuTest* tc);
 static void test_apx_vmSerializer_packRecordStrU32(CuTest* tc);
@@ -57,6 +60,10 @@ static void test_apx_vmSerializer_packU8Array(CuTest* tc);
 static void test_apx_vmSerializer_packU16LEArray(CuTest* tc);
 static void test_apx_vmSerializer_packU32LEArray(CuTest* tc);
 static void test_apx_vmSerializer_packDynU8Array(CuTest* tc);
+static void test_apx_vmSerializer_packS8Array(CuTest* tc);
+static void test_apx_vmSerializer_packS16LEArray(CuTest* tc);
+static void test_apx_vmSerializer_packS32LEArray(CuTest* tc);
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -73,6 +80,9 @@ CuSuite* testSuite_apx_vmSerializer(void)
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU8);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU16LE);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU32LE);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packS8);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packS16);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packS32);
 
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packFixedStr);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packRecordU8);
@@ -82,6 +92,9 @@ CuSuite* testSuite_apx_vmSerializer(void)
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU16LEArray);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packU32LEArray);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packDynU8Array);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packS8Array);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packS16LEArray);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packS32LEArray);
 
 
    return suite;
@@ -170,6 +183,79 @@ static void test_apx_vmSerializer_packU32LE(CuTest* tc)
    CuAssertUIntEquals(tc, 0xff, data[11]);
    CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR, apx_vmSerializer_packU32(st, (uint32_t) 0));
    CuAssertPtrEquals(tc, &data[12], apx_vmSerializer_getWritePtr(st));
+   apx_vmSerializer_delete(st);
+}
+
+static void test_apx_vmSerializer_packS8(CuTest* tc)
+{
+   uint8_t data[4];
+   memset(&data[0], 0, sizeof(data));
+   apx_vmSerializer_t *st = apx_vmSerializer_new();
+   CuAssertPtrNotNull(tc, st);
+   apx_vmSerializer_begin(st, &data[0], sizeof(data));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS8(st, (int8_t) -128));
+   CuAssertIntEquals(tc, 0x80, data[0]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS8(st, (int8_t) -1));
+   CuAssertIntEquals(tc, 0xff, data[1]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS8(st, (int8_t) 0));
+   CuAssertIntEquals(tc, 0x00, data[2]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS8(st, (int8_t) 127));
+   CuAssertIntEquals(tc, 0x7f, data[3]);
+   CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR, apx_vmSerializer_packS8(st, 1));
+   apx_vmSerializer_delete(st);
+}
+
+static void test_apx_vmSerializer_packS16(CuTest* tc)
+{
+   uint8_t data[4*UINT16_SIZE];
+   memset(&data[0], 0, sizeof(data));
+   apx_vmSerializer_t *st = apx_vmSerializer_new();
+   CuAssertPtrNotNull(tc, st);
+   apx_vmSerializer_begin(st, &data[0], sizeof(data));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS16(st, (int16_t) -32768));
+   CuAssertIntEquals(tc, 0x00, data[0]);
+   CuAssertIntEquals(tc, 0x80, data[1]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS16(st, (int16_t) -1));
+   CuAssertIntEquals(tc, 0xff, data[2]);
+   CuAssertIntEquals(tc, 0xff, data[3]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS16(st, (int16_t) 0));
+   CuAssertIntEquals(tc, 0x00, data[4]);
+   CuAssertIntEquals(tc, 0x00, data[5]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS16(st, (int16_t) 32767));
+   CuAssertIntEquals(tc, 0xff, data[6]);
+   CuAssertIntEquals(tc, 0x7f, data[7]);
+   CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR, apx_vmSerializer_packS16(st, (int16_t) 1));
+   apx_vmSerializer_delete(st);
+}
+
+static void test_apx_vmSerializer_packS32(CuTest* tc)
+{
+   uint8_t data[4*UINT32_SIZE];
+   memset(&data[0], 0, sizeof(data));
+   apx_vmSerializer_t *st = apx_vmSerializer_new();
+   CuAssertPtrNotNull(tc, st);
+   apx_vmSerializer_begin(st, &data[0], sizeof(data));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS32(st, (int32_t) -2147483648));
+   CuAssertIntEquals(tc, 0x00, data[0]);
+   CuAssertIntEquals(tc, 0x00, data[1]);
+   CuAssertIntEquals(tc, 0x00, data[2]);
+   CuAssertIntEquals(tc, 0x80, data[3]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS32(st, (int32_t) -1));
+   CuAssertIntEquals(tc, 0xff, data[4]);
+   CuAssertIntEquals(tc, 0xff, data[5]);
+   CuAssertIntEquals(tc, 0xff, data[6]);
+   CuAssertIntEquals(tc, 0xff, data[7]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS32(st, (int32_t) 0));
+   CuAssertIntEquals(tc, 0x00, data[8]);
+   CuAssertIntEquals(tc, 0x00, data[9]);
+   CuAssertIntEquals(tc, 0x00, data[10]);
+   CuAssertIntEquals(tc, 0x00, data[11]);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packS32(st, (int32_t) 2147483647));
+   CuAssertIntEquals(tc, 0xff, data[12]);
+   CuAssertIntEquals(tc, 0xff, data[13]);
+   CuAssertIntEquals(tc, 0xff, data[14]);
+   CuAssertIntEquals(tc, 0x7f, data[15]);
+   CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR, apx_vmSerializer_packS32(st, (int32_t) 1));
    apx_vmSerializer_delete(st);
 }
 
@@ -371,5 +457,77 @@ static void test_apx_vmSerializer_packDynU8Array(CuTest* tc)
    dtl_av_delete(av);
 }
 
+static void test_apx_vmSerializer_packS8Array(CuTest* tc)
+{
+   uint8_t packedData[4*UINT8_SIZE];
+   uint8_t verificationData[4*UINT8_SIZE] = {0x80, 0xff, 0x01, 0x7f};
+   dtl_av_t *av = dtl_av_new();
+   apx_vmSerializer_t *sr = apx_vmSerializer_new();
+
+   memset(&packedData[0], 0xff, sizeof(packedData));
+
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-128), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(127), false);
+
+   apx_vmSerializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_setValue(sr, (dtl_dv_t*) av));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsS8(sr, 4, APX_DYN_LEN_NONE));
+   CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(sr));
+   CuAssertIntEquals(tc, 0, memcmp(packedData, verificationData, sizeof(packedData)));
+
+   apx_vmSerializer_delete(sr);
+   dtl_dec_ref(av);
+}
+
+static void test_apx_vmSerializer_packS16LEArray(CuTest* tc)
+{
+   uint8_t packedData[4*UINT16_SIZE];
+   uint8_t verificationData[4*UINT16_SIZE] = {0x00, 0x80, 0xff, 0xff, 0x01, 0x00, 0xff, 0x7f};
+   dtl_av_t *av = dtl_av_new();
+   apx_vmSerializer_t *sr = apx_vmSerializer_new();
+
+   memset(&packedData[0], 0xff, sizeof(packedData));
+
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-32768), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(32767), false);
+
+   apx_vmSerializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_setValue(sr, (dtl_dv_t*) av));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsS16(sr, 4, APX_DYN_LEN_NONE));
+   CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(sr));
+   CuAssertIntEquals(tc, 0, memcmp(packedData, verificationData, sizeof(packedData)));
+
+   apx_vmSerializer_delete(sr);
+   dtl_dec_ref(av);
+
+}
+
+static void test_apx_vmSerializer_packS32LEArray(CuTest* tc)
+{
+   uint8_t packedData[4*UINT32_SIZE];
+   uint8_t verificationData[4*UINT32_SIZE] = {0x00, 0x00, 0x00, 0x80, 0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x7f};
+   dtl_av_t *av = dtl_av_new();
+   apx_vmSerializer_t *sr = apx_vmSerializer_new();
+
+   memset(&packedData[0], 0xff, sizeof(packedData));
+
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2147483648), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2147483647), false);
+
+   apx_vmSerializer_begin(sr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_setValue(sr, (dtl_dv_t*) av));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsS32(sr, 4, APX_DYN_LEN_NONE));
+   CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(sr));
+   CuAssertIntEquals(tc, 0, memcmp(packedData, verificationData, sizeof(packedData)));
+
+   apx_vmSerializer_delete(sr);
+   dtl_dec_ref(av);
+}
 
 

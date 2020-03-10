@@ -113,6 +113,9 @@ apx_error_t apx_vmSerializer_packNull(apx_vmSerializer_t *self, int32_t writeLen
 apx_error_t apx_vmSerializer_packValueAsU8(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmSerializer_packValueAsU16(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmSerializer_packValueAsS8(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmSerializer_packValueAsS16(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmSerializer_packValueAsS32(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 void apx_vmSerializer_adjustWritePtr(apx_vmSerializer_t *self);
 apx_error_t apx_vmSerializer_packValueAsFixedStr(apx_vmSerializer_t *self, int32_t writeLen, bool autoPopState);
 apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool autoPopState);
