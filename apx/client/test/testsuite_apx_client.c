@@ -67,7 +67,36 @@ static const char *m_apx_definition4 = "APX/1.2\n"
       "R\"U32Array\"L[3]:={0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF}\n"
       "\n";
 
-#define ARRAY_LEN 3
+static const char *m_apx_definition5 = "APX/1.2\n"
+      "N\"TestNode5\"\n"
+      "P\"S8Value\"c:=-1\n"
+      "P\"S16Value\"s:=-1\n"
+      "P\"S32Value\"l:=-1\n"
+      "\n";
+
+static const char *m_apx_definition6 = "APX/1.2\n"
+      "N\"TestNode6\"\n"
+      "R\"S8Value\"c:=-1\n"
+      "R\"S16Value\"s:=-1\n"
+      "R\"S32Value\"l:=-1\n"
+      "\n";
+
+static const char *m_apx_definition7 = "APX/1.2\n"
+      "N\"TestNode7\"\n"
+      "P\"S8Array\"c[4]:={-1, -1, -1, -1}\n"
+      "P\"S16Array\"s[4]:={-1, -1, -1, -1}\n"
+      "P\"S32Array\"l[4]:={-1, -1, -1, -1}\n"
+      "\n";
+
+static const char *m_apx_definition8 = "APX/1.2\n"
+      "N\"TestNode8\"\n"
+      "R\"S8Array\"c[4]:={-1, -1, -1, -1}\n"
+      "R\"S16Array\"s[4]:={-1, -1, -1, -1}\n"
+      "R\"S32Array\"l[4]:={-1, -1, -1, -1}\n"
+      "\n";
+
+#define UNSIGNED_ARRAY_LEN 3
+#define SIGNED_ARRAY_LEN   4
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -100,6 +129,22 @@ static void test_apx_client_writePortData_dtl_u16_fix_array(CuTest* tc);
 static void test_apx_client_readPortData_dtl_u16_fix_array(CuTest* tc);
 static void test_apx_client_writePortData_dtl_u32_fix_array(CuTest* tc);
 static void test_apx_client_readPortData_dtl_u32_fix_array(CuTest* tc);
+
+static void test_apx_client_writePortData_dtl_s8(CuTest* tc);
+static void test_apx_client_readPortData_dtl_S8(CuTest* tc);
+static void test_apx_client_writePortData_dtl_s16(CuTest* tc);
+static void test_apx_client_readPortData_dtl_S16(CuTest* tc);
+static void test_apx_client_writePortData_dtl_s32(CuTest* tc);
+static void test_apx_client_readPortData_dtl_S32(CuTest* tc);
+
+static void test_apx_client_writePortData_dtl_S8_fix_array(CuTest* tc);
+static void test_apx_client_readPortData_dtl_s8_fix_array(CuTest* tc);
+static void test_apx_client_writePortData_dtl_S16_fix_array(CuTest* tc);
+static void test_apx_client_readPortData_dtl_s16_fix_array(CuTest* tc);
+static void test_apx_client_writePortData_dtl_S32_fix_array(CuTest* tc);
+static void test_apx_client_readPortData_dtl_s32_fix_array(CuTest* tc);
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -136,6 +181,18 @@ CuSuite* testSuite_apx_client(void)
    SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_u16_fix_array);
    SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_u32_fix_array);
    SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_u32_fix_array);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_s8);
+   SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_S8);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_s16);
+   SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_S16);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_s32);
+   SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_S32);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_S8_fix_array);
+   SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_s8_fix_array);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_S16_fix_array);
+   SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_s16_fix_array);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_S32_fix_array);
+   SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_s32_fix_array);
 
    return suite;
 }
@@ -704,7 +761,7 @@ static void test_apx_client_writePortData_dtl_u8_fix_array(CuTest* tc)
    const uint32_t offset = 0u;
    apx_nodeInstance_t *nodeInstance;
    void *u8ArrayHandle;
-   uint8_t rawData[UINT8_SIZE*ARRAY_LEN] = {0, 0, 0};
+   uint8_t rawData[UINT8_SIZE*UNSIGNED_ARRAY_LEN] = {0, 0, 0};
    apx_client_t *client = apx_client_new();
    dtl_av_t *av = dtl_av_new();
 
@@ -712,7 +769,7 @@ static void test_apx_client_writePortData_dtl_u8_fix_array(CuTest* tc)
    u8ArrayHandle = apx_client_getProvidePortHandleById(client, NULL, 0u);
    CuAssertPtrNotNull(tc, u8ArrayHandle);
    nodeInstance = apx_client_getLastAttachedNode(client);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertUIntEquals(tc, 0xFF, rawData[0]);
    CuAssertUIntEquals(tc, 0xFF, rawData[1]);
    CuAssertUIntEquals(tc, 0xFF, rawData[2]);
@@ -720,7 +777,7 @@ static void test_apx_client_writePortData_dtl_u8_fix_array(CuTest* tc)
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0x12), false);
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0xff), false);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, u8ArrayHandle, (dtl_dv_t*) av));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertUIntEquals(tc, 0x0, rawData[0]);
    CuAssertUIntEquals(tc, 0x12, rawData[1]);
    CuAssertUIntEquals(tc, 0xff, rawData[2]);
@@ -734,7 +791,7 @@ static void test_apx_client_readPortData_dtl_u8_fix_array(CuTest* tc)
    const uint32_t offset = 0u;
    apx_nodeInstance_t *nodeInstance;
    void *u8ArrayHandle;
-   uint8_t rawData[UINT8_SIZE*ARRAY_LEN] = {0, 0, 0};
+   uint8_t rawData[UINT8_SIZE*UNSIGNED_ARRAY_LEN] = {0, 0, 0};
    apx_client_t *client = apx_client_new();
    dtl_dv_t *dv;
    dtl_av_t *av;
@@ -747,11 +804,11 @@ static void test_apx_client_readPortData_dtl_u8_fix_array(CuTest* tc)
    rawData[0] = 0x00;
    rawData[1] = 0x12;
    rawData[2] = 0xff;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, u8ArrayHandle, &dv));
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
    av = (dtl_av_t*) dv;
-   CuAssertIntEquals(tc, ARRAY_LEN, dtl_av_length(av));
+   CuAssertIntEquals(tc, UNSIGNED_ARRAY_LEN, dtl_av_length(av));
    sv = (dtl_sv_t*) dtl_av_value(av, 0);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
    CuAssertUIntEquals(tc, 0x00, dtl_sv_to_u32(sv, NULL));
@@ -769,10 +826,10 @@ static void test_apx_client_readPortData_dtl_u8_fix_array(CuTest* tc)
 
 static void test_apx_client_writePortData_dtl_u16_fix_array(CuTest* tc)
 {
-   const uint32_t offset = UINT8_SIZE*ARRAY_LEN;
+   const uint32_t offset = UINT8_SIZE*UNSIGNED_ARRAY_LEN;
    apx_nodeInstance_t *nodeInstance;
    void *u16ArrayHandle;
-   uint8_t rawData[UINT16_SIZE*ARRAY_LEN];
+   uint8_t rawData[UINT16_SIZE*UNSIGNED_ARRAY_LEN];
    apx_client_t *client = apx_client_new();
    dtl_av_t *av = dtl_av_new();
    memset(rawData, 0, sizeof(rawData));
@@ -781,7 +838,7 @@ static void test_apx_client_writePortData_dtl_u16_fix_array(CuTest* tc)
    u16ArrayHandle = apx_client_getProvidePortHandleById(client, NULL, 1u);
    CuAssertPtrNotNull(tc, u16ArrayHandle);
    nodeInstance = apx_client_getLastAttachedNode(client);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertUIntEquals(tc, 0xFF, rawData[0]);
    CuAssertUIntEquals(tc, 0xFF, rawData[1]);
    CuAssertUIntEquals(tc, 0xFF, rawData[2]);
@@ -792,7 +849,7 @@ static void test_apx_client_writePortData_dtl_u16_fix_array(CuTest* tc)
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0x1234), false);
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0xffff), false);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, u16ArrayHandle, (dtl_dv_t*) av));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertUIntEquals(tc, 0, rawData[0]);
    CuAssertUIntEquals(tc, 0, rawData[1]);
    CuAssertUIntEquals(tc, 0x34, rawData[2]);
@@ -809,10 +866,10 @@ static void test_apx_client_readPortData_dtl_u16_fix_array(CuTest* tc)
    dtl_dv_t *dv;
    dtl_av_t *av;
    dtl_sv_t *sv;
-   const uint32_t offset = UINT8_SIZE*ARRAY_LEN;
+   const uint32_t offset = UINT8_SIZE*UNSIGNED_ARRAY_LEN;
    apx_nodeInstance_t *nodeInstance;
    void *u16ArrayHandle;
-   uint8_t rawData[UINT16_SIZE*ARRAY_LEN];
+   uint8_t rawData[UINT16_SIZE*UNSIGNED_ARRAY_LEN];
    apx_client_t *client = apx_client_new();
    memset(rawData, 0, sizeof(rawData));
 
@@ -826,11 +883,11 @@ static void test_apx_client_readPortData_dtl_u16_fix_array(CuTest* tc)
    rawData[3] = 0x12;
    rawData[4] = 0xff;
    rawData[5] = 0xff;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, u16ArrayHandle, &dv));
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
    av = (dtl_av_t*) dv;
-   CuAssertIntEquals(tc, ARRAY_LEN, dtl_av_length(av));
+   CuAssertIntEquals(tc, UNSIGNED_ARRAY_LEN, dtl_av_length(av));
    sv = (dtl_sv_t*) dtl_av_value(av, 0);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
    CuAssertUIntEquals(tc, 0x0000, dtl_sv_to_u32(sv, NULL));
@@ -847,10 +904,10 @@ static void test_apx_client_readPortData_dtl_u16_fix_array(CuTest* tc)
 
 static void test_apx_client_writePortData_dtl_u32_fix_array(CuTest* tc)
 {
-   const uint32_t offset = UINT8_SIZE*ARRAY_LEN + UINT16_SIZE*ARRAY_LEN;
+   const uint32_t offset = UINT8_SIZE*UNSIGNED_ARRAY_LEN + UINT16_SIZE*UNSIGNED_ARRAY_LEN;
    apx_nodeInstance_t *nodeInstance;
    void *u32ArrayHandle;
-   uint8_t rawData[UINT32_SIZE*ARRAY_LEN];
+   uint8_t rawData[UINT32_SIZE*UNSIGNED_ARRAY_LEN];
    apx_client_t *client = apx_client_new();
    dtl_av_t *av = dtl_av_new();
    memset(rawData, 0, sizeof(rawData));
@@ -859,7 +916,7 @@ static void test_apx_client_writePortData_dtl_u32_fix_array(CuTest* tc)
    u32ArrayHandle = apx_client_getProvidePortHandleById(client, NULL, 2u);
    CuAssertPtrNotNull(tc, u32ArrayHandle);
    nodeInstance = apx_client_getLastAttachedNode(client);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertUIntEquals(tc, 0xFF, rawData[0]);
    CuAssertUIntEquals(tc, 0xFF, rawData[1]);
    CuAssertUIntEquals(tc, 0xFF, rawData[2]);
@@ -876,7 +933,7 @@ static void test_apx_client_writePortData_dtl_u32_fix_array(CuTest* tc)
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0x12345678), false);
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0xffffffff), false);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, u32ArrayHandle, (dtl_dv_t*) av));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertUIntEquals(tc, 0x00, rawData[0]);
    CuAssertUIntEquals(tc, 0x00, rawData[1]);
    CuAssertUIntEquals(tc, 0x00, rawData[2]);
@@ -899,10 +956,10 @@ static void test_apx_client_readPortData_dtl_u32_fix_array(CuTest* tc)
    dtl_dv_t *dv;
    dtl_av_t *av;
    dtl_sv_t *sv;
-   const uint32_t offset = UINT8_SIZE*ARRAY_LEN+UINT16_SIZE*ARRAY_LEN;
+   const uint32_t offset = UINT8_SIZE*UNSIGNED_ARRAY_LEN+UINT16_SIZE*UNSIGNED_ARRAY_LEN;
    apx_nodeInstance_t *nodeInstance;
    void *u32ArrayHandle;
-   uint8_t rawData[UINT32_SIZE*ARRAY_LEN];
+   uint8_t rawData[UINT32_SIZE*UNSIGNED_ARRAY_LEN];
    apx_client_t *client = apx_client_new();
    memset(rawData, 0, sizeof(rawData));
 
@@ -922,11 +979,11 @@ static void test_apx_client_readPortData_dtl_u32_fix_array(CuTest* tc)
    rawData[9] = 0xff;
    rawData[10] = 0xff;
    rawData[11] = 0xff;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*UNSIGNED_ARRAY_LEN));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, u32ArrayHandle, &dv));
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
    av = (dtl_av_t*) dv;
-   CuAssertIntEquals(tc, ARRAY_LEN, dtl_av_length(av));
+   CuAssertIntEquals(tc, UNSIGNED_ARRAY_LEN, dtl_av_length(av));
    sv = (dtl_sv_t*) dtl_av_value(av, 0);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
    CuAssertUIntEquals(tc, 0x00000000, dtl_sv_to_u32(sv, NULL));
@@ -936,6 +993,612 @@ static void test_apx_client_readPortData_dtl_u32_fix_array(CuTest* tc)
    sv = (dtl_sv_t*) dtl_av_value(av, 2);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
    CuAssertUIntEquals(tc, 0xffffffff, dtl_sv_to_u32(sv, NULL));
+
+   dtl_dv_dec_ref(dv);
+   apx_client_delete(client);
+}
+
+static void test_apx_client_writePortData_dtl_s8(CuTest* tc)
+{
+   const uint32_t offset = 0;
+   void *S8ValueHandle;
+   uint8_t rawData[UINT8_SIZE] = {0};
+   apx_nodeInstance_t *nodeInstance;
+   apx_client_t *client = apx_client_new();
+   dtl_sv_t *sv = dtl_sv_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition5));
+   S8ValueHandle = apx_client_getPortHandle(client, NULL, "S8Value");
+   nodeInstance = apx_client_getLastAttachedNode(client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE));
+   CuAssertUIntEquals(tc, 0xFF, rawData[0]);
+
+   dtl_sv_set_i32(sv, -128);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S8ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE));
+   CuAssertUIntEquals(tc, 0x80, rawData[0]);
+
+   dtl_sv_set_i32(sv, -1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S8ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE));
+   CuAssertUIntEquals(tc, 0xff, rawData[0]);
+
+   dtl_sv_set_i32(sv, 1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S8ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE));
+   CuAssertUIntEquals(tc, 0x01, rawData[0]);
+
+   dtl_sv_set_i32(sv, 127);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S8ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE));
+   CuAssertUIntEquals(tc, 0x7f, rawData[0]);
+
+   apx_client_delete(client);
+   dtl_dec_ref((dtl_dv_t*) sv);
+}
+
+static void test_apx_client_readPortData_dtl_S8(CuTest* tc)
+{
+   const uint32_t offset = 0u;
+   void *S8ValueHandle;
+   uint8_t rawData[UINT8_SIZE] = {0};
+   apx_nodeInstance_t *nodeInstance;
+   dtl_sv_t *sv = 0;
+   bool ok = false;
+   apx_client_t *client;
+
+   client = apx_client_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition6));
+   S8ValueHandle = apx_client_getPortHandle(client, NULL, "S8Value");
+   CuAssertPtrNotNull(tc, S8ValueHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S8ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x80, UINT8_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT8_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S8ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -128, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x01, UINT8_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT8_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S8ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 1, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x7f, UINT8_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT8_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S8ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 127, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+
+   apx_client_delete(client);
+}
+
+static void test_apx_client_writePortData_dtl_s16(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE;
+   void *S16ValueHandle;
+   uint8_t rawData[UINT16_SIZE] = {0};
+   apx_nodeInstance_t *nodeInstance;
+   apx_client_t *client = apx_client_new();
+   dtl_sv_t *sv = dtl_sv_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition5));
+   S16ValueHandle = apx_client_getPortHandle(client, NULL, "S16Value");
+   nodeInstance = apx_client_getLastAttachedNode(client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0xFF, rawData[0]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[1]);
+
+   dtl_sv_set_i32(sv, -32768);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S16ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0x00, rawData[0]);
+   CuAssertUIntEquals(tc, 0x80, rawData[1]);
+
+   dtl_sv_set_i32(sv, -1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S16ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0xff, rawData[0]);
+   CuAssertUIntEquals(tc, 0xff, rawData[1]);
+
+   dtl_sv_set_i32(sv, 1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S16ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0x01, rawData[0]);
+   CuAssertUIntEquals(tc, 0x00, rawData[1]);
+
+   dtl_sv_set_i32(sv, 32767);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S16ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE));
+   CuAssertUIntEquals(tc, 0xff, rawData[0]);
+   CuAssertUIntEquals(tc, 0x7f, rawData[1]);
+
+   apx_client_delete(client);
+   dtl_dec_ref((dtl_dv_t*) sv);
+}
+
+static void test_apx_client_readPortData_dtl_S16(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE;
+   void *S16ValueHandle;
+   uint8_t rawData[UINT16_SIZE] = {0};
+   apx_nodeInstance_t *nodeInstance;
+   dtl_sv_t *sv = 0;
+   bool ok = false;
+   apx_client_t *client;
+
+   client = apx_client_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition6));
+   S16ValueHandle = apx_client_getPortHandle(client, NULL, "S16Value");
+   CuAssertPtrNotNull(tc, S16ValueHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S16ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x8000, UINT16_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT16_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S16ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -32768, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x0001, UINT16_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT16_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S16ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 1, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x7fff, UINT16_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT16_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S16ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 32767, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+
+   apx_client_delete(client);
+}
+
+static void test_apx_client_writePortData_dtl_s32(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE+UINT16_SIZE;
+   void *S32ValueHandle;
+   uint8_t rawData[UINT32_SIZE] = {0};
+   apx_nodeInstance_t *nodeInstance;
+   apx_client_t *client = apx_client_new();
+   dtl_sv_t *sv = dtl_sv_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition5));
+   S32ValueHandle = apx_client_getPortHandle(client, NULL, "S32Value");
+   nodeInstance = apx_client_getLastAttachedNode(client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE));
+   CuAssertUIntEquals(tc, 0xFF, rawData[0]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[1]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[2]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[3]);
+
+   dtl_sv_set_i32(sv, -2147483648);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S32ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE));
+   CuAssertUIntEquals(tc, 0x00, rawData[0]);
+   CuAssertUIntEquals(tc, 0x00, rawData[1]);
+   CuAssertUIntEquals(tc, 0x00, rawData[2]);
+   CuAssertUIntEquals(tc, 0x80, rawData[3]);
+
+   dtl_sv_set_i32(sv, -1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S32ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE));
+   CuAssertUIntEquals(tc, 0xff, rawData[0]);
+   CuAssertUIntEquals(tc, 0xff, rawData[1]);
+   CuAssertUIntEquals(tc, 0xff, rawData[2]);
+   CuAssertUIntEquals(tc, 0xff, rawData[3]);
+
+   dtl_sv_set_i32(sv, 1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S32ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE));
+   CuAssertUIntEquals(tc, 0x01, rawData[0]);
+   CuAssertUIntEquals(tc, 0x00, rawData[1]);
+   CuAssertUIntEquals(tc, 0x00, rawData[2]);
+   CuAssertUIntEquals(tc, 0x00, rawData[3]);
+
+   dtl_sv_set_i32(sv, 2147483647);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S32ValueHandle, (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE));
+   CuAssertUIntEquals(tc, 0xff, rawData[0]);
+   CuAssertUIntEquals(tc, 0xff, rawData[1]);
+   CuAssertUIntEquals(tc, 0xff, rawData[2]);
+   CuAssertUIntEquals(tc, 0x7f, rawData[3]);
+
+   apx_client_delete(client);
+   dtl_dec_ref((dtl_dv_t*) sv);
+}
+
+static void test_apx_client_readPortData_dtl_S32(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE+UINT16_SIZE;
+   void *S32ValueHandle;
+   uint8_t rawData[UINT32_SIZE] = {0};
+   apx_nodeInstance_t *nodeInstance;
+   dtl_sv_t *sv = 0;
+   bool ok = false;
+   apx_client_t *client;
+
+   client = apx_client_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition6));
+   S32ValueHandle = apx_client_getPortHandle(client, NULL, "S32Value");
+   CuAssertPtrNotNull(tc, S32ValueHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S32ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x80000000, UINT32_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT32_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S32ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -2147483648, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x00000001, UINT32_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT32_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S32ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 1, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+   packLE(rawData, 0x7fffffff, UINT32_SIZE);
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, UINT32_SIZE);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S32ValueHandle, (dtl_dv_t**) &sv));
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 2147483647, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   dtl_dec_ref(sv);
+   sv = 0;
+   ok = false;
+
+
+   apx_client_delete(client);
+}
+
+static void test_apx_client_writePortData_dtl_S8_fix_array(CuTest* tc)
+{
+   const uint32_t offset = 0u;
+   apx_nodeInstance_t *nodeInstance;
+   void *S8ArrayHandle;
+   uint8_t rawData[UINT8_SIZE*SIGNED_ARRAY_LEN];
+   apx_client_t *client = apx_client_new();
+   dtl_av_t *av = dtl_av_new();
+
+   memset(&rawData[0], 0, sizeof(rawData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition7));
+   S8ArrayHandle = apx_client_getPortHandle(client, NULL, "S8Array");
+   CuAssertPtrNotNull(tc, S8ArrayHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertUIntEquals(tc, 0xFF, rawData[0]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[1]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[2]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[3]);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-128), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(0), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(127), false);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S8ArrayHandle, (dtl_dv_t*) av));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertUIntEquals(tc, 0x80, rawData[0]);
+   CuAssertUIntEquals(tc, 0xff, rawData[1]);
+   CuAssertUIntEquals(tc, 0x00, rawData[2]);
+   CuAssertUIntEquals(tc, 0x7f, rawData[3]);
+
+   apx_client_delete(client);
+   dtl_dec_ref(av);
+}
+
+static void test_apx_client_readPortData_dtl_s8_fix_array(CuTest* tc)
+{
+   const uint32_t offset = 0u;
+   apx_nodeInstance_t *nodeInstance;
+   void *S8ArrayHandle;
+   uint8_t rawData[UINT8_SIZE*SIGNED_ARRAY_LEN];
+   apx_client_t *client = apx_client_new();
+   dtl_dv_t *dv;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+
+   memset(rawData, 0, sizeof(rawData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition8));
+   S8ArrayHandle = apx_client_getPortHandle(client, NULL, "S8Array");
+   CuAssertPtrNotNull(tc, S8ArrayHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+   rawData[0] = 0x80;
+   rawData[1] = 0xff;
+   rawData[2] = 0x00;
+   rawData[3] = 0x7f;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S8ArrayHandle, &dv));
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
+   av = (dtl_av_t*) dv;
+   CuAssertIntEquals(tc, SIGNED_ARRAY_LEN, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -128, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 0, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 3);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 127, dtl_sv_to_i32(sv, NULL));
+
+   dtl_dv_dec_ref(dv);
+   apx_client_delete(client);
+}
+
+static void test_apx_client_writePortData_dtl_S16_fix_array(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE*SIGNED_ARRAY_LEN;
+   apx_nodeInstance_t *nodeInstance;
+   void *S16ArrayHandle;
+   uint8_t rawData[UINT16_SIZE*SIGNED_ARRAY_LEN];
+   apx_client_t *client = apx_client_new();
+   dtl_av_t *av = dtl_av_new();
+
+   memset(&rawData[0], 0, sizeof(rawData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition7));
+   S16ArrayHandle = apx_client_getPortHandle(client, NULL, "S16Array");
+   CuAssertPtrNotNull(tc, S16ArrayHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertUIntEquals(tc, 0xFF, rawData[0]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[1]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[2]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[3]);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-32768), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(0), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(32767), false);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S16ArrayHandle, (dtl_dv_t*) av));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertUIntEquals(tc, 0x00, rawData[0]);
+   CuAssertUIntEquals(tc, 0x80, rawData[1]);
+   CuAssertUIntEquals(tc, 0xff, rawData[2]);
+   CuAssertUIntEquals(tc, 0xff, rawData[3]);
+   CuAssertUIntEquals(tc, 0x00, rawData[4]);
+   CuAssertUIntEquals(tc, 0x00, rawData[5]);
+   CuAssertUIntEquals(tc, 0xff, rawData[6]);
+   CuAssertUIntEquals(tc, 0x7f, rawData[7]);
+
+   apx_client_delete(client);
+   dtl_dec_ref(av);
+}
+
+static void test_apx_client_readPortData_dtl_s16_fix_array(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE*SIGNED_ARRAY_LEN;
+   apx_nodeInstance_t *nodeInstance;
+   void *S16ArrayHandle;
+   uint8_t rawData[UINT16_SIZE*SIGNED_ARRAY_LEN];
+   apx_client_t *client = apx_client_new();
+   dtl_dv_t *dv;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+
+   memset(rawData, 0, sizeof(rawData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition8));
+   S16ArrayHandle = apx_client_getPortHandle(client, NULL, "S16Array");
+   CuAssertPtrNotNull(tc, S16ArrayHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+   rawData[0] = 0x00;
+   rawData[1] = 0x80;
+   rawData[2] = 0xff;
+   rawData[3] = 0xff;
+   rawData[4] = 0x00;
+   rawData[5] = 0x00;
+   rawData[6] = 0xff;
+   rawData[7] = 0x7f;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT16_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S16ArrayHandle, &dv));
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
+   av = (dtl_av_t*) dv;
+   CuAssertIntEquals(tc, SIGNED_ARRAY_LEN, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -32768, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 0, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 3);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 32767, dtl_sv_to_i32(sv, NULL));
+
+   dtl_dv_dec_ref(dv);
+   apx_client_delete(client);
+}
+
+static void test_apx_client_writePortData_dtl_S32_fix_array(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE*SIGNED_ARRAY_LEN+UINT16_SIZE*SIGNED_ARRAY_LEN;
+   apx_nodeInstance_t *nodeInstance;
+   void *S32ArrayHandle;
+   uint8_t rawData[UINT32_SIZE*SIGNED_ARRAY_LEN];
+   apx_client_t *client = apx_client_new();
+   dtl_av_t *av = dtl_av_new();
+
+   memset(&rawData[0], 0, sizeof(rawData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition7));
+   S32ArrayHandle = apx_client_getPortHandle(client, NULL, "S32Array");
+   CuAssertPtrNotNull(tc, S32ArrayHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertUIntEquals(tc, 0xFF, rawData[0]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[1]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[2]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[3]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[4]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[5]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[7]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[8]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[9]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[10]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[11]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[12]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[13]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[14]);
+   CuAssertUIntEquals(tc, 0xFF, rawData[15]);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2147483648), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(0), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2147483647), false);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S32ArrayHandle, (dtl_dv_t*) av));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertUIntEquals(tc, 0x00, rawData[0]);
+   CuAssertUIntEquals(tc, 0x00, rawData[1]);
+   CuAssertUIntEquals(tc, 0x00, rawData[2]);
+   CuAssertUIntEquals(tc, 0x80, rawData[3]);
+   CuAssertUIntEquals(tc, 0xff, rawData[4]);
+   CuAssertUIntEquals(tc, 0xff, rawData[5]);
+   CuAssertUIntEquals(tc, 0xff, rawData[6]);
+   CuAssertUIntEquals(tc, 0xff, rawData[7]);
+   CuAssertUIntEquals(tc, 0x00, rawData[8]);
+   CuAssertUIntEquals(tc, 0x00, rawData[9]);
+   CuAssertUIntEquals(tc, 0x00, rawData[10]);
+   CuAssertUIntEquals(tc, 0x00, rawData[11]);
+   CuAssertUIntEquals(tc, 0xff, rawData[12]);
+   CuAssertUIntEquals(tc, 0xff, rawData[13]);
+   CuAssertUIntEquals(tc, 0xff, rawData[14]);
+   CuAssertUIntEquals(tc, 0x7f, rawData[15]);
+
+   apx_client_delete(client);
+   dtl_dec_ref(av);
+}
+
+static void test_apx_client_readPortData_dtl_s32_fix_array(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE*SIGNED_ARRAY_LEN+UINT16_SIZE*SIGNED_ARRAY_LEN;
+   apx_nodeInstance_t *nodeInstance;
+   void *S32ArrayHandle;
+   uint8_t rawData[UINT32_SIZE*SIGNED_ARRAY_LEN];
+   apx_client_t *client = apx_client_new();
+   dtl_dv_t *dv;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+
+   memset(rawData, 0, sizeof(rawData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition8));
+   S32ArrayHandle = apx_client_getPortHandle(client, NULL, "S32Array");
+   CuAssertPtrNotNull(tc, S32ArrayHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+   rawData[0] = 0x00;
+   rawData[1] = 0x00;
+   rawData[2] = 0x00;
+   rawData[3] = 0x80;
+   rawData[4] = 0xff;
+   rawData[5] = 0xff;
+   rawData[6] = 0xff;
+   rawData[7] = 0xff;
+   rawData[8] = 0x00;
+   rawData[9] = 0x00;
+   rawData[10] = 0x00;
+   rawData[11] = 0x00;
+   rawData[12] = 0xff;
+   rawData[13] = 0xff;
+   rawData[14] = 0xff;
+   rawData[15] = 0x7f;
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_writeRequirePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE*SIGNED_ARRAY_LEN));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S32ArrayHandle, &dv));
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
+   av = (dtl_av_t*) dv;
+   CuAssertIntEquals(tc, SIGNED_ARRAY_LEN, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -2147483648, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 0, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 3);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
+   CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
+   CuAssertIntEquals(tc, 2147483647, dtl_sv_to_i32(sv, NULL));
 
    dtl_dv_dec_ref(dv);
    apx_client_delete(client);

@@ -94,7 +94,7 @@ OP CODES
    12: STR
    13: ZSTR (not yet decided if needed)
 
-2: ARRAY     : 6 variants
+2: ARRAY     : 3 variants
    0: U8
    1: U16
    2: U32
