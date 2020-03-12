@@ -189,7 +189,6 @@ void apx_serverSocketConnection_close(apx_serverSocketConnection_t *self)
 {
    if (self != 0)
    {
-      printf("[SERVER-SOCKET-CONNECTION] closing socket object\n");
       SOCKET_OBJECT_CLOSE(self->socketObject);
    }
 }
