@@ -177,6 +177,7 @@ static void apx_receive_connection_onRequirePortWrite(void *arg, apx_nodeInstanc
          if (value != 0)
          {
             printf("%s: %s\n", adt_str_cstr(port_name), adt_str_cstr(value));
+            fflush(stdout);
             adt_str_delete(value);
          }
       }
