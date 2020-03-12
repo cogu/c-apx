@@ -4,7 +4,7 @@
 * \date      2019-01-03
 * \brief     Unit Tests for apx_compiler
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -67,6 +67,7 @@ static void test_apx_compiler_compilePackDataElement_U8DynArrayU8(CuTest* tc);
 static void test_apx_compiler_compilePackDataElement_U8DynArrayU16(CuTest* tc);
 static void test_apx_compiler_compilePackDataElement_U8DynArrayU32(CuTest* tc);
 static void test_apx_compiler_compilePackDataElement_RecordContainingDynStrU8(CuTest* tc);
+static void test_apx_compiler_compilePackDataElement_RecordContainingU16AndU8Value(CuTest* tc);
 
 //Data unpacking
 static void test_apx_compiler_encodeUnpackProgramHeader(CuTest* tc);
@@ -87,6 +88,7 @@ static void test_apx_compiler_compileUnpackDataElement_U8FixArrayU32(CuTest* tc)
 static void test_apx_compiler_compileUnpackDataElement_U8DynArrayU8(CuTest* tc);
 static void test_apx_compiler_compileUnpackDataElement_U8DynArrayU16(CuTest* tc);
 static void test_apx_compiler_compileUnpackDataElement_U8DynArrayU32(CuTest* tc);
+static void test_apx_compiler_compileUnpackDataElement_RecordContainingU16AndU8Value(CuTest* tc);
 
 
 
@@ -120,6 +122,7 @@ CuSuite* testSuite_apx_compiler(void)
    SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_U8DynArrayU16);
    SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_U8DynArrayU32);
    SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_RecordContainingDynStrU8);
+   SUITE_ADD_TEST(suite, test_apx_compiler_compilePackDataElement_RecordContainingU16AndU8Value);
    SUITE_ADD_TEST(suite, test_apx_compiler_encodePackProgramHeader);
 
    SUITE_ADD_TEST(suite, test_apx_compiler_encodeUnpackProgramHeader);
@@ -140,6 +143,8 @@ CuSuite* testSuite_apx_compiler(void)
    SUITE_ADD_TEST(suite, test_apx_compiler_compileUnpackDataElement_U8DynArrayU8);
    SUITE_ADD_TEST(suite, test_apx_compiler_compileUnpackDataElement_U8DynArrayU16);
    SUITE_ADD_TEST(suite, test_apx_compiler_compileUnpackDataElement_U8DynArrayU32);
+   SUITE_ADD_TEST(suite, test_apx_compiler_compileUnpackDataElement_RecordContainingU16AndU8Value);
+
 
    return suite;
 }
@@ -537,6 +542,53 @@ static void test_apx_compiler_compilePackDataElement_RecordContainingDynStrU8(Cu
    adt_bytearray_delete(program);
 }
 
+static void test_apx_compiler_compilePackDataElement_RecordContainingU16AndU8Value(CuTest* tc)
+{
+   apx_dataElement_t *rootElem;
+   apx_compiler_t *compiler;
+   uint8_t *byteCodeCompiled;
+   apx_size_t elementPackLen;
+   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   uint8_t byteCodeExpected[15];
+   uint16_t i;
+
+   //DSG: {"DTCId"S"FTB"C}
+
+   memset(byteCodeExpected, 0, sizeof(byteCodeExpected));
+   byteCodeExpected[0] = apx_compiler_encodeInstruction(APX_OPCODE_PACK, APX_VARIANT_RECORD, APX_INST_NO_FLAG);
+   byteCodeExpected[1] = apx_compiler_encodeInstruction(APX_OPCODE_DATA_CTRL, APX_VARIANT_RECORD_SELECT, APX_INST_NO_FLAG);
+   strcpy((char*) &byteCodeExpected[2], "DTCId"); //code@2..7
+   byteCodeExpected[8] = apx_compiler_encodeInstruction(APX_OPCODE_PACK, APX_VARIANT_U16, APX_INST_NO_FLAG);
+   byteCodeExpected[9] = apx_compiler_encodeInstruction(APX_OPCODE_DATA_CTRL, APX_VARIANT_RECORD_SELECT, APX_LAST_FIELD_FLAG);
+   strcpy((char*) &byteCodeExpected[10], "FTB"); //code@10..13
+   byteCodeExpected[14] = apx_compiler_encodeInstruction(APX_OPCODE_PACK, APX_VARIANT_U8, APX_INST_NO_FLAG);
+
+   compiler = apx_compiler_new();
+   CuAssertPtrNotNull(tc, compiler);
+   rootElem = apx_dataElement_new(APX_BASE_TYPE_RECORD, 0);
+   apx_dataElement_appendChild(rootElem, apx_dataElement_new(APX_BASE_TYPE_UINT16, "DTCId"));
+   apx_dataElement_appendChild(rootElem, apx_dataElement_new(APX_BASE_TYPE_UINT8, "FTB"));
+
+   apx_compiler_begin(compiler, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compilePackDataElement(compiler, rootElem));
+   CuAssertIntEquals(tc, (int) sizeof(byteCodeExpected), adt_bytearray_length(program));
+   byteCodeCompiled = adt_bytearray_data(program);
+   for(i = 0; i < 15; i++)
+   {
+      char msg[16];
+      sprintf(msg, "i=%d", i);
+      CuAssertUIntEquals_Msg(tc, msg, byteCodeExpected[i], byteCodeCompiled[i]);
+   }
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(rootElem, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
+   apx_compiler_delete(compiler);
+   apx_dataElement_delete(rootElem);
+   adt_bytearray_delete(program);
+
+}
+
 static void test_apx_compiler_encodePackProgramHeader(CuTest* tc)
 {
    apx_compiler_t *compiler;
@@ -891,6 +943,7 @@ static void test_apx_compiler_compileUnpackDataElement_U8DynArrayU32(CuTest* tc)
    apx_dataElement_t *element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
    apx_compiler_t *compiler = apx_compiler_new();
    uint8_t *code;
+   apx_size_t elementPackLen;
    CuAssertPtrNotNull(tc, compiler);
    apx_dataElement_setArrayLen(element, arrayLen);
    apx_dataElement_setDynamicArray(element);
@@ -911,11 +964,58 @@ static void test_apx_compiler_compileUnpackDataElement_U8DynArrayU32(CuTest* tc)
    CuAssertUIntEquals(tc, 0x56, code[3]);
    CuAssertUIntEquals(tc, 0x34, code[4]);
    CuAssertUIntEquals(tc, 0x12, code[5]);
-   apx_size_t elementPackLen;
+
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(element, &elementPackLen));
    CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
 
    apx_compiler_delete(compiler);
    apx_dataElement_delete(element);
    adt_bytearray_delete(program);
+}
+
+static void test_apx_compiler_compileUnpackDataElement_RecordContainingU16AndU8Value(CuTest* tc)
+{
+   apx_dataElement_t *rootElem;
+   apx_compiler_t *compiler;
+   uint8_t *byteCodeCompiled;
+   apx_size_t elementPackLen;
+   adt_bytearray_t *program = adt_bytearray_new(APX_PROGRAM_GROW_SIZE);
+   uint8_t byteCodeExpected[15];
+   uint16_t i;
+
+   //DSG: {"DTCId"S"FTB"C}
+
+   memset(byteCodeExpected, 0, sizeof(byteCodeExpected));
+   byteCodeExpected[0] = apx_compiler_encodeInstruction(APX_OPCODE_UNPACK, APX_VARIANT_RECORD, APX_INST_NO_FLAG);
+   byteCodeExpected[1] = apx_compiler_encodeInstruction(APX_OPCODE_DATA_CTRL, APX_VARIANT_RECORD_SELECT, APX_INST_NO_FLAG);
+   strcpy((char*) &byteCodeExpected[2], "DTCId"); //code@2..7
+   byteCodeExpected[8] = apx_compiler_encodeInstruction(APX_OPCODE_UNPACK, APX_VARIANT_U16, APX_INST_NO_FLAG);
+   byteCodeExpected[9] = apx_compiler_encodeInstruction(APX_OPCODE_DATA_CTRL, APX_VARIANT_RECORD_SELECT, APX_LAST_FIELD_FLAG);
+   strcpy((char*) &byteCodeExpected[10], "FTB"); //code@10..13
+   byteCodeExpected[14] = apx_compiler_encodeInstruction(APX_OPCODE_UNPACK, APX_VARIANT_U8, APX_INST_NO_FLAG);
+
+   compiler = apx_compiler_new();
+   CuAssertPtrNotNull(tc, compiler);
+   rootElem = apx_dataElement_new(APX_BASE_TYPE_RECORD, 0);
+   apx_dataElement_appendChild(rootElem, apx_dataElement_new(APX_BASE_TYPE_UINT16, "DTCId"));
+   apx_dataElement_appendChild(rootElem, apx_dataElement_new(APX_BASE_TYPE_UINT8, "FTB"));
+
+   apx_compiler_begin(compiler, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_compiler_compileUnpackDataElement(compiler, rootElem));
+   CuAssertIntEquals(tc, (int) sizeof(byteCodeExpected), adt_bytearray_length(program));
+   byteCodeCompiled = adt_bytearray_data(program);
+   for(i = 0; i < 15; i++)
+   {
+      char msg[16];
+      sprintf(msg, "i=%d", i);
+      CuAssertUIntEquals_Msg(tc, msg, byteCodeExpected[i], byteCodeCompiled[i]);
+   }
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_dataElement_calcPackLen(rootElem, &elementPackLen));
+   CuAssertUIntEquals(tc, elementPackLen, *compiler->dataOffset);
+
+   apx_compiler_delete(compiler);
+   apx_dataElement_delete(rootElem);
+   adt_bytearray_delete(program);
+
 }

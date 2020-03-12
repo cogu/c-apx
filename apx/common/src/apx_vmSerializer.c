@@ -74,14 +74,20 @@ void apx_vmWriteState_create(apx_vmWriteState_t *self)
       self->maxArrayLen = 0u;
       self->dynLenType = APX_DYN_LEN_NONE;
       self->parent = (apx_vmWriteState_t*) 0;
-
+      self->recordKey = (adt_str_t*) 0;
+      self->isLastElement = false;
    }
 }
 
 void apx_vmWriteState_destroy(apx_vmWriteState_t *self)
 {
-   //Nothing yet to clean up
-   (void) self;
+   if (self != 0)
+   {
+      if(self->recordKey != 0)
+      {
+         adt_str_delete(self->recordKey);
+      }
+   }
 }
 
 apx_vmWriteState_t* apx_vmWriteState_new(void)
@@ -106,6 +112,34 @@ void apx_vmWriteState_delete(apx_vmWriteState_t *self)
 void apx_vmWriteState_vdelete(void *arg)
 {
    apx_vmWriteState_delete( (apx_vmWriteState_t*) arg );
+}
+
+apx_error_t apx_vmWriteState_setRecordKey_cstr(apx_vmWriteState_t *self, const char *key, bool isLastElement)
+{
+   if (self != 0)
+   {
+      adt_error_t rc;
+      if (self->recordKey == 0)
+      {
+         self->recordKey = adt_str_new();
+         if (self->recordKey == 0)
+         {
+            return APX_MEM_ERROR;
+         }
+      }
+      rc = adt_str_set_cstr(self->recordKey, key);
+      if (rc == ADT_MEM_ERROR)
+      {
+         return APX_MEM_ERROR;
+      }
+      else if (rc != ADT_NO_ERROR)
+      {
+         return APX_GENERIC_ERROR;
+      }
+      self->isLastElement = isLastElement;
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 //apx_vmSerializer_t
@@ -490,7 +524,7 @@ apx_error_t apx_vmSerializer_packValueAsFixedStr(apx_vmSerializer_t *self, int32
                apx_error_t result = apx_vmSerializer_packFixedStr(self, str, writeLen);
                if ( (result == APX_NO_ERROR) && (autoPopState) )
                {
-                  result = apx_vmSerializer_pop(self);
+                  result = apx_vmSerializer_popState(self);
                }
                adt_str_delete(str);
                return result;
@@ -518,7 +552,7 @@ apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool aut
                apx_error_t result = apx_vmSerializer_packBytes(self, bytes);
                if ( (result == APX_NO_ERROR) && (autoPopState) )
                {
-                  result = apx_vmSerializer_pop(self);
+                  result = apx_vmSerializer_popState(self);
                }
                return result;
             }
@@ -553,8 +587,34 @@ apx_error_t apx_vmSerializer_packNull(apx_vmSerializer_t *self, int32_t writeLen
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_vmSerializer_enterRecordValue(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType)
+{
+   if (self != 0)
+   {
+      if (self->hasValidWriteBuf)
+      {
+         if ( (arrayLen != 0) || (dynLenType != APX_DYN_LEN_NONE) )
+         {
+            return APX_NOT_IMPLEMENTED_ERROR;
+         }
+         else
+         {
+            //Not an array, verify that selected value is a record
+            if (self->state->valueType != APX_VALUE_TYPE_RECORD)
+            {
+               return APX_VALUE_ERROR;
+            }
+         }
 
-apx_error_t apx_vmSerializer_recordSelect_cstr(apx_vmSerializer_t *self, const char *key)
+         return APX_NO_ERROR;
+      }
+      return APX_MISSING_BUFFER_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+
+apx_error_t apx_vmSerializer_selectRecordElement_cstr(apx_vmSerializer_t *self, const char *key, bool isLastElement)
 {
    if ( (self != 0) && (key != 0) )
    {
@@ -567,7 +627,14 @@ apx_error_t apx_vmSerializer_recordSelect_cstr(apx_vmSerializer_t *self, const c
          }
          else
          {
-            apx_vmWriteState_t *childState = apx_vmWriteState_new();
+            apx_error_t rc;
+            apx_vmWriteState_t *childState;
+            rc = apx_vmWriteState_setRecordKey_cstr(self->state, key, isLastElement);
+            if (rc != APX_NO_ERROR)
+            {
+               return rc;
+            }
+            childState = apx_vmWriteState_new();
             if (childState == 0)
             {
                return APX_MEM_ERROR;
@@ -583,7 +650,7 @@ apx_error_t apx_vmSerializer_recordSelect_cstr(apx_vmSerializer_t *self, const c
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmSerializer_pop(apx_vmSerializer_t *self)
+apx_error_t apx_vmSerializer_popState(apx_vmSerializer_t *self)
 {
    if (self != 0)
    {
@@ -598,6 +665,17 @@ apx_error_t apx_vmSerializer_pop(apx_vmSerializer_t *self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_vmWriteState_t *apx_vmSerializer_getState(apx_vmSerializer_t *self)
+{
+   if (self != 0)
+   {
+      return self->state;
+   }
+   return (apx_vmWriteState_t*) 0;
+}
+
+
+#ifdef UNIT_TEST
 apx_size_t apx_vmSerializer_getBytesWritten(apx_vmSerializer_t *self)
 {
    apx_size_t retval = 0u;
@@ -607,6 +685,8 @@ apx_size_t apx_vmSerializer_getBytesWritten(apx_vmSerializer_t *self)
    }
    return retval;
 }
+
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
@@ -716,7 +796,7 @@ static apx_error_t apx_vmSerializer_packValueInternal(apx_vmSerializer_t *self, 
          {
             return rc;
          }
-         return apx_vmSerializer_pop(self);
+         return apx_vmSerializer_popState(self);
       }
       else if ( state->valueType == APX_VALUE_TYPE_ARRAY)
       {
@@ -772,7 +852,7 @@ static apx_error_t apx_vmSerializer_packValueInternal(apx_vmSerializer_t *self, 
                   return APX_VALUE_ERROR;
                }
             }
-            return apx_vmSerializer_pop(self);
+            return apx_vmSerializer_popState(self);
          }
          else
          {

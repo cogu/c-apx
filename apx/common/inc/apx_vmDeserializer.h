@@ -55,7 +55,7 @@ typedef struct apx_vmReadState_tag
    uint32_t maxArrayLen; //maximum array length of current object. This is only applicable for dynamic arrays
    apx_dynLenType_t dynLenType;
    adt_str_t *recordKey; //currently selected record key
-   bool isLastItem;
+   bool isLastElement;
 } apx_vmReadState_t;
 
 typedef struct apx_vmReadBuf_tag
@@ -110,18 +110,18 @@ apx_error_t apx_vmDeserializer_unpackFixedStr(apx_vmDeserializer_t *self, adt_st
 apx_error_t apx_vmDeserializer_unpackBytes(apx_vmDeserializer_t *self, adt_bytes_t **data, int32_t readLen);
 
 //high-level API
-apx_error_t apx_vmDeserializer_createRecordValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
-apx_error_t apx_vmDeserializer_setRecordKey_cstr(apx_vmDeserializer_t *self, const char *key);
+apx_error_t apx_vmDeserializer_enterRecordValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
+apx_error_t apx_vmDeserializer_selectRecordElement_cstr(apx_vmDeserializer_t *self, const char *key, bool isLastElement);
 apx_error_t apx_vmDeserializer_unpackU8Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmDeserializer_unpackU16Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmDeserializer_unpackU32Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmDeserializer_unpackS8Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmDeserializer_unpackS16Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmDeserializer_unpackS32Value(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
-
 apx_error_t apx_vmDeserializer_unpackStrValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmDeserializer_unpackBytesValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType);
 
+apx_vmReadState_t *apx_vmDeserializer_getState(apx_vmDeserializer_t *self);
 
 
 #endif //APX_VM_DESERIALIZER_H
