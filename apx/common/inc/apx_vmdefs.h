@@ -154,16 +154,17 @@ typedef uint8_t apx_vmVariant_t;
 
 
 
-#define APX_INST_SIZE 1u
-#define APX_INST_OPCODE_MASK 0x07u
-#define APX_INST_VARIANT_SHIFT 3u
-#define APX_INST_VARIANT_MASK 0xfu
-#define APX_INST_FLAG_MASK 0x01u
-#define APX_INST_FLAG_SHIFT 7u
-#define APX_INST_FLAG       0x01u
-#define APX_LAST_FIELD_FLAG APX_INST_FLAG
-#define APX_ARRAY_FLAG      APX_INST_FLAG
-#define APX_DYN_ARRAY_FLAG  APX_INST_FLAG
+#define APX_INST_SIZE                  1u
+#define APX_INST_OPCODE_MASK           0x07u
+#define APX_INST_VARIANT_SHIFT         3u
+#define APX_INST_VARIANT_MASK          0xfu
+#define APX_INST_FLAG_MASK             0x01u
+#define APX_INST_FLAG_SHIFT            7u
+#define APX_INST_FLAG                  0x01u
+#define APX_LAST_FIELD_FLAG            APX_INST_FLAG
+#define APX_ARRAY_FLAG                 APX_INST_FLAG
+#define APX_DYN_ARRAY_FLAG             APX_INST_FLAG
+#define APX_INST_NO_FLAG               0
 
 #define APX_VALUE_TYPE_NONE                0
 #define APX_VALUE_TYPE_SCALAR              1

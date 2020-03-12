@@ -43,7 +43,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_vmReadState_setRecordKey_cstr(apx_vmReadState_t *self, const char *key);
+static apx_error_t apx_vmReadState_setRecordKey_cstr(apx_vmReadState_t *self, const char *key, bool isLastElement);
 static apx_error_t apx_vmReadState_initValue(apx_vmReadState_t *self, apx_valueType_t valueType, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 static apx_error_t apx_vmDeserializer_unpackDynArrayValue(apx_vmDeserializer_t *self, apx_dynLenType_t dynLenType);
 static void apx_vmDeserializer_popState(apx_vmDeserializer_t *self);
@@ -74,7 +74,7 @@ void apx_vmReadState_create(apx_vmReadState_t *self)
    self->dynLenType = APX_DYN_LEN_NONE;
    self->parent = (apx_vmReadState_t*) 0;
    self->recordKey = (adt_str_t*) 0;
-   self->isLastItem = false;
+   self->isLastElement = false;
 }
 
 void apx_vmReadState_destroy(apx_vmReadState_t *self)
@@ -441,7 +441,7 @@ apx_error_t apx_vmDeserializer_unpackBytes(apx_vmDeserializer_t *self, adt_bytes
 }
 
 //High-level API
-apx_error_t apx_vmDeserializer_createRecordValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType)
+apx_error_t apx_vmDeserializer_enterRecordValue(apx_vmDeserializer_t *self, uint32_t maxArrayLen, apx_dynLenType_t dynLenType)
 {
    if ( self != 0 )
    {
@@ -454,7 +454,7 @@ apx_error_t apx_vmDeserializer_createRecordValue(apx_vmDeserializer_t *self, uin
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vmDeserializer_setRecordKey_cstr(apx_vmDeserializer_t *self, const char *key)
+apx_error_t apx_vmDeserializer_selectRecordElement_cstr(apx_vmDeserializer_t *self, const char *key, bool isLastElement)
 {
    if ( self != 0 )
    {
@@ -466,13 +466,14 @@ apx_error_t apx_vmDeserializer_setRecordKey_cstr(apx_vmDeserializer_t *self, con
          {
             return APX_MEM_ERROR;
          }
-         rc = apx_vmReadState_setRecordKey_cstr(self->state, key);
+         rc = apx_vmReadState_setRecordKey_cstr(self->state, key, isLastElement);
          if (rc != APX_NO_ERROR)
          {
             apx_vmReadState_delete(childState);
             return rc;
          }
          adt_stack_push(&self->stack, (void*) self->state);
+         childState->parent = self->state;
          self->state = childState;
          return APX_NO_ERROR;
       }
@@ -641,6 +642,15 @@ apx_error_t apx_vmDeserializer_unpackBytesValue(apx_vmDeserializer_t *self, uint
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_vmReadState_t *apx_vmDeserializer_getState(apx_vmDeserializer_t *self)
+{
+   if (self != 0)
+   {
+      return self->state;
+   }
+   return (apx_vmReadState_t*) 0;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
@@ -675,7 +685,7 @@ static apx_error_t apx_vmReadState_initValue(apx_vmReadState_t *self, apx_valueT
    return APX_NO_ERROR;
 }
 
-static apx_error_t apx_vmReadState_setRecordKey_cstr(apx_vmReadState_t *self, const char *key)
+static apx_error_t apx_vmReadState_setRecordKey_cstr(apx_vmReadState_t *self, const char *key, bool isLastElement)
 {
    if (self->recordKey != 0)
    {
@@ -684,6 +694,7 @@ static apx_error_t apx_vmReadState_setRecordKey_cstr(apx_vmReadState_t *self, co
       {
          return (apx_error_t) result;
       }
+      self->isLastElement = isLastElement;
       return APX_NO_ERROR;
    }
    return APX_NULL_PTR_ERROR;

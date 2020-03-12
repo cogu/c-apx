@@ -71,8 +71,10 @@ apx_error_t apx_vm_setReadBuffer(apx_vm_t *self, const uint8_t *buffer, uint32_t
 apx_error_t apx_vm_packValue(apx_vm_t *self, const dtl_dv_t *dv);
 apx_error_t apx_vm_unpackValue(apx_vm_t *self, dtl_dv_t **dv);
 apx_error_t apx_vm_writeNullValue(apx_vm_t *self);
+#ifdef UNIT_TEST
 apx_size_t apx_vm_getBytesWritten(apx_vm_t *self);
 apx_size_t apx_vm_getBytesRead(apx_vm_t *self);
+#endif
 
 //state-less functions
 apx_error_t apx_vm_decodeProgramHeader(const adt_bytes_t *program, uint8_t *majorVersion, uint8_t *minorVersion, uint8_t *progType, apx_size_t *maxDataSize);

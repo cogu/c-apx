@@ -65,6 +65,8 @@ static void test_apx_vmDeserializer_unpackS32LEArray(CuTest* tc);
 static void test_apx_vmDeserializer_unpackU8Record(CuTest* tc);
 static void test_apx_vmDeserializer_unpackRecordStrU32(CuTest* tc);
 static void test_apx_vmDeserializer_unpackBytesValue(CuTest* tc);
+static void test_apx_vmDeserializer_selectRecordElement(CuTest* tc);
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -95,6 +97,7 @@ CuSuite* testSuite_apx_vmDeserializer(void)
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackRecordStrU32);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackBytes);
    SUITE_ADD_TEST(suite, test_apx_vmDeserializer_unpackBytesValue);
+   SUITE_ADD_TEST(suite, test_apx_vmDeserializer_selectRecordElement);
 
    return suite;
 }
@@ -445,12 +448,12 @@ static void test_apx_vmDeserializer_unpackU8Record(CuTest* tc)
    dtl_sv_t *sv;
 
    apx_vmDeserializer_begin(ds, &packedData[0], sizeof(packedData));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_createRecordValue(ds, 0u, APX_DYN_LEN_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, keyRed));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_enterRecordValue(ds, 0u, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_selectRecordElement_cstr(ds, keyRed, false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(ds, 0, APX_DYN_LEN_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, keyGreen));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_selectRecordElement_cstr(ds, keyGreen, false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(ds, 0, APX_DYN_LEN_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, keyBlue));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_selectRecordElement_cstr(ds, keyBlue, true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU8Value(ds, 0, APX_DYN_LEN_NONE));
    dv = apx_vmDeserializer_getValue(ds, false);
    CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(dv));
@@ -481,10 +484,10 @@ static void test_apx_vmDeserializer_unpackRecordStrU32(CuTest* tc)
    dtl_sv_t *sv;
 
    apx_vmDeserializer_begin(ds, &packedData[0], sizeof(packedData));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_createRecordValue(ds, 0u, APX_DYN_LEN_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, key1));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_enterRecordValue(ds, 0u, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_selectRecordElement_cstr(ds, key1, false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackStrValue(ds, 12u, APX_DYN_LEN_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_setRecordKey_cstr(ds, key2));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_selectRecordElement_cstr(ds, key2, true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackU32Value(ds, 0, APX_DYN_LEN_NONE));
    CuAssertConstPtrEquals(tc, packedData+16, apx_vmDeserializer_getReadPtr(ds));
    dv = apx_vmDeserializer_getValue(ds, false);
@@ -545,4 +548,27 @@ static void test_apx_vmDeserializer_unpackBytesValue(CuTest* tc)
       CuAssertUIntEquals(tc, packedData[i], data[i]);
    }
    apx_vmDeserializer_delete(ds);
+}
+
+static void test_apx_vmDeserializer_selectRecordElement(CuTest* tc)
+{
+   uint8_t packedData[2*SINT8_SIZE];
+   apx_vmReadState_t *currentState;
+   apx_vmReadState_t *parentState;
+   apx_vmDeserializer_t *dsr = apx_vmDeserializer_new();
+
+
+   apx_vmDeserializer_begin(dsr, &packedData[0], sizeof(packedData));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_enterRecordValue(dsr, 0, APX_DYN_LEN_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_selectRecordElement_cstr(dsr, "First", false));
+   currentState = apx_vmDeserializer_getState(dsr);
+   CuAssertPtrNotNull(tc, currentState);
+   parentState = currentState->parent;
+   CuAssertPtrNotNull(tc, parentState);
+   CuAssertStrEquals(tc, "First", adt_str_cstr(parentState->recordKey));
+   CuAssertTrue(tc, !parentState->isLastElement);
+   CuAssertPtrEquals(tc, 0, currentState->value.dv);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(parentState->value.dv));
+
+   apx_vmDeserializer_delete(dsr);
 }
