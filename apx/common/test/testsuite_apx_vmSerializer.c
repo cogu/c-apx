@@ -52,7 +52,7 @@ static void test_apx_vmSerializer_packU32LE(CuTest* tc);
 static void test_apx_vmSerializer_packS8(CuTest* tc);
 static void test_apx_vmSerializer_packS16(CuTest* tc);
 static void test_apx_vmSerializer_packS32(CuTest* tc);
-static void test_apx_vmSerializer_packFixedStr(CuTest* tc);
+static void test_apx_vmSerializer_packValueAsString(CuTest* tc);
 static void test_apx_vmSerializer_packRecordU8(CuTest* tc);
 static void test_apx_vmSerializer_packRecordStrU32(CuTest* tc);
 static void test_apx_vmSerializer_packBytes(CuTest* tc);
@@ -85,7 +85,7 @@ CuSuite* testSuite_apx_vmSerializer(void)
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packS16);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packS32);
 
-   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packFixedStr);
+   SUITE_ADD_TEST(suite, test_apx_vmSerializer_packValueAsString);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packRecordU8);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packRecordStrU32);
    SUITE_ADD_TEST(suite, test_apx_vmSerializer_packBytes);
@@ -261,20 +261,21 @@ static void test_apx_vmSerializer_packS32(CuTest* tc)
    apx_vmSerializer_delete(st);
 }
 
-static void test_apx_vmSerializer_packFixedStr(CuTest* tc)
+static void test_apx_vmSerializer_packValueAsString(CuTest* tc)
 {
    uint8_t packedData[16]; //Assume that fixed string length is 16
    uint8_t verificationData[16] = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', 0u, 0u, 0u, 0u, 0u};
-   adt_str_t *str = adt_str_new_cstr("Hello World");
-   apx_vmSerializer_t *st = apx_vmSerializer_new();
+   dtl_sv_t *sv = dtl_sv_make_cstr("Hello World");
+   apx_vmSerializer_t *sr = apx_vmSerializer_new();
    memset(&packedData[0], 0xff, sizeof(packedData));
-   CuAssertPtrNotNull(tc, st);
-   apx_vmSerializer_begin(st, &packedData[0], sizeof(packedData));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packFixedStr(st, str, 16));
-   CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(st));
+   CuAssertPtrNotNull(tc, sr);
+   apx_vmSerializer_begin(sr, &packedData[0], sizeof(packedData));
+   apx_vmSerializer_setValue(sr, (dtl_dv_t*) sv);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsString(sr, 16, APX_DYN_LEN_NONE));
+   CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(sr));
    CuAssertIntEquals(tc, 0, memcmp(packedData, verificationData, sizeof(packedData)));
-   apx_vmSerializer_delete(st);
-   adt_str_delete(str);
+   apx_vmSerializer_delete(sr);
+   dtl_dec_ref(sv);
 }
 
 static void test_apx_vmSerializer_packRecordU8(CuTest* tc)
@@ -325,7 +326,7 @@ static void test_apx_vmSerializer_packRecordStrU32(CuTest* tc)
    apx_vmSerializer_begin(st, &packedData[0], sizeof(packedData));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_setValue(st, (dtl_dv_t*) hv));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_selectRecordElement_cstr(st, key1, false));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsFixedStr(st, 12, true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsString(st, 12, APX_DYN_LEN_NONE));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_selectRecordElement_cstr(st, key2, true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmSerializer_packValueAsU32(st, 0, APX_DYN_LEN_NONE));
    CuAssertPtrEquals(tc, packedData+sizeof(packedData), apx_vmSerializer_getWritePtr(st));

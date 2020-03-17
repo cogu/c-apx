@@ -119,7 +119,7 @@ apx_error_t apx_vmSerializer_packValueAsU32(apx_vmSerializer_t *self, uint32_t a
 apx_error_t apx_vmSerializer_packValueAsS8(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmSerializer_packValueAsS16(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmSerializer_packValueAsS32(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
-apx_error_t apx_vmSerializer_packValueAsFixedStr(apx_vmSerializer_t *self, int32_t writeLen, bool autoPopState);
+apx_error_t apx_vmSerializer_packValueAsString(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);
 apx_error_t apx_vmSerializer_packValueAsBytes(apx_vmSerializer_t *self, bool autoPopState);
 
 apx_error_t apx_vmSerializer_enterRecordValue(apx_vmSerializer_t *self, uint32_t arrayLen, apx_dynLenType_t dynLenType);

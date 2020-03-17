@@ -316,6 +316,8 @@ static void apx_vm_prepareForPackUnpackInstruction(apx_vm_t *self)
    self->arrayLen = 0u;
    self->isArray = false;
    self->dynLenType = APX_DYN_LEN_NONE;
+   self->arrayLen = 0u;
+   self->maxArrayLen = 0u;
 }
 
 static apx_error_t apx_vm_execProg(apx_vm_t *self)
@@ -415,25 +417,28 @@ static apx_error_t apx_vm_executePackInstruction(apx_vm_t *self, uint8_t variant
    switch(variant)
    {
    case APX_VARIANT_U8:
-      rc =  apx_vmSerializer_packValueAsU8(&self->serializer, self->arrayLen, self->dynLenType);
+      rc =  apx_vmSerializer_packValueAsU8(&self->serializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_U16:
-      rc = apx_vmSerializer_packValueAsU16(&self->serializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmSerializer_packValueAsU16(&self->serializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_U32:
-      rc = apx_vmSerializer_packValueAsU32(&self->serializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmSerializer_packValueAsU32(&self->serializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_S8:
-      rc = apx_vmSerializer_packValueAsS8(&self->serializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmSerializer_packValueAsS8(&self->serializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_S16:
-      rc = apx_vmSerializer_packValueAsS16(&self->serializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmSerializer_packValueAsS16(&self->serializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_S32:
-      rc = apx_vmSerializer_packValueAsS32(&self->serializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmSerializer_packValueAsS32(&self->serializer, self->maxArrayLen, self->dynLenType);
+      break;
+   case APX_VARIANT_STR:
+      rc = apx_vmSerializer_packValueAsString(&self->serializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_RECORD:
-      rc = apx_vmSerializer_enterRecordValue(&self->serializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmSerializer_enterRecordValue(&self->serializer, self->maxArrayLen, self->dynLenType);
       self->expectedNext = APX_OPCODE_DATA_CTRL;
       return rc; //Return early here since we already set expectedNexts
    default:
@@ -467,25 +472,28 @@ static apx_error_t apx_vm_executeUnpackInstruction(apx_vm_t *self, uint8_t varia
    switch(variant)
    {
    case APX_VARIANT_U8:
-      rc =  apx_vmDeserializer_unpackU8Value(&self->deserializer, self->arrayLen, self->dynLenType);
+      rc =  apx_vmDeserializer_unpackU8Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_U16:
-      rc = apx_vmDeserializer_unpackU16Value(&self->deserializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmDeserializer_unpackU16Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_U32:
-      rc = apx_vmDeserializer_unpackU32Value(&self->deserializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmDeserializer_unpackU32Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_S8:
-      rc = apx_vmDeserializer_unpackS8Value(&self->deserializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmDeserializer_unpackS8Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_S16:
-      rc = apx_vmDeserializer_unpackS16Value(&self->deserializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmDeserializer_unpackS16Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_S32:
-      rc = apx_vmDeserializer_unpackS32Value(&self->deserializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmDeserializer_unpackS32Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
+      break;
+   case APX_VARIANT_STR:
+      rc = apx_vmDeserializer_unpackStrValue(&self->deserializer, self->maxArrayLen, self->dynLenType);
       break;
    case APX_VARIANT_RECORD:
-      rc = apx_vmDeserializer_enterRecordValue(&self->deserializer, self->arrayLen, self->dynLenType);
+      rc = apx_vmDeserializer_enterRecordValue(&self->deserializer, self->maxArrayLen, self->dynLenType);
       self->expectedNext = APX_OPCODE_DATA_CTRL;
       return rc; //Return early here since we already set expectedNexts
    default:
@@ -536,7 +544,7 @@ static apx_error_t apx_vm_executeArrayInstruction(apx_vm_t *self, uint8_t varian
    }
    if (self->progNext+valueSize <= self->progEnd)
    {
-      self->arrayLen = unpackLE(self->progNext, valueSize);
+      self->maxArrayLen = unpackLE(self->progNext, valueSize);
       self->dynLenType = isDynamicArray? dynLenType : APX_DYN_LEN_NONE;
       self->progNext+=valueSize;
    }
