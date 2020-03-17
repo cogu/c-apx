@@ -48,28 +48,30 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_dataElement_pack_U8(CuTest* tc);
-static void test_apx_dataElement_pack_U16(CuTest* tc);
-static void test_apx_dataElement_pack_U32(CuTest* tc);
-static void test_apx_dataElement_pack_S8(CuTest* tc);
-static void test_apx_dataElement_pack_S16(CuTest* tc);
-static void test_apx_dataElement_pack_S32(CuTest* tc);
-static void test_apx_dataElement_pack_U8_array(CuTest* tc);
-static void test_apx_dataElement_pack_U16_array(CuTest* tc);
-static void test_apx_dataElement_pack_U32_array(CuTest* tc);
-static void test_apx_dataElement_pack_S8_array(CuTest* tc);
-static void test_apx_dataElement_pack_S16_array(CuTest* tc);
-static void test_apx_dataElement_pack_S32_array(CuTest* tc);
-static void test_apx_dataElement_pack_string(CuTest *tc);
-static void test_apx_dataElement_pack_pair(CuTest *tc);
-static void test_apx_dataElement_pack_nested(CuTest *tc);
-static void test_apx_dataElement_pack_record_array(CuTest *tc);
+
 static void test_apx_dataElement_create_typeReferenceId(CuTest *tc);
 static void test_apx_dataElement_create_typeReferenceName(CuTest *tc);
 static void test_apx_dataElement_create_typeReferencePtr(CuTest *tc);
 static void test_apx_dataElement_create_U8DynArrayU8(CuTest *tc);
 static void test_apx_dataElement_create_U8DynArrayU16(CuTest *tc);
 static void test_apx_dataElement_create_U8DynArrayU32(CuTest *tc);
+static void test_apx_dataElement_createProperInitValueU8(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueU16(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueU32(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueS8(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueS16(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueS32(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueU8Array(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueU16Array(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueU32Array(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueS8Array(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueS16Array(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueS32Array(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueString(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueRecord_U8(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueRecord_U16U8U8(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueRecord_U16ArrayU8Array(CuTest* tc);
+static void test_apx_dataElement_createProperInitValueRecord_StringU32(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -90,29 +92,29 @@ CuSuite* testSuite_apx_dataElement(void)
 {
    CuSuite* suite = CuSuiteNew();
 
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_U8);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_U16);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_U32);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_S8);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_S16);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_S32);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_U8_array);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_U16_array);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_U32_array);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_S8_array);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_S16_array);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_S32_array);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_string);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_pair);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_nested);
-   SUITE_ADD_TEST(suite, test_apx_dataElement_pack_record_array);
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferenceId);
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferenceName);
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_typeReferencePtr);
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_U8DynArrayU8);
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_U8DynArrayU16);
    SUITE_ADD_TEST(suite, test_apx_dataElement_create_U8DynArrayU32);
-
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueU8);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueU16);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueU32);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueS8);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueS16);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueS32);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueU8Array);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueU16Array);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueU32Array);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueS8Array);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueS16Array);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueS32Array);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueString);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueRecord_U8);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueRecord_U16U8U8);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueRecord_U16ArrayU8Array);
+   SUITE_ADD_TEST(suite, test_apx_dataElement_createProperInitValueRecord_StringU32);
 
    return suite;
 }
@@ -120,641 +122,6 @@ CuSuite* testSuite_apx_dataElement(void)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-static void test_apx_dataElement_pack_U8(CuTest* tc)
-{
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_sv_t *sv;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT8, 0);
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, 1);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   sv = dtl_sv_make_i32(10);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) sv);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 10);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_sv_delete(sv);
-}
-
-
-static void test_apx_dataElement_pack_U16(CuTest* tc)
-{
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_sv_t *sv;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT16, 0);
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint16_t));
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   sv = dtl_sv_make_i32(0x1234);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) sv);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 0x34);
-   CuAssertIntEquals(tc, pBegin[1], 0x12);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_sv_delete(sv);
-}
-
-static void test_apx_dataElement_pack_U32(CuTest* tc)
-{
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_sv_t *sv;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT32, 0);
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint32_t));
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   sv = dtl_sv_make_u32(0xFFFE1234);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) sv);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 0x34);
-   CuAssertIntEquals(tc, pBegin[1], 0x12);
-   CuAssertIntEquals(tc, pBegin[2], 0xFE);
-   CuAssertIntEquals(tc, pBegin[3], 0xFF);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_sv_delete(sv);
-}
-
-static void test_apx_dataElement_pack_S8(CuTest* tc)
-{
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_sv_t *sv;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_SINT8, 0);
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, 1);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   sv = dtl_sv_make_i32(-123);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) sv);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], ((uint8_t) -123));
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_sv_delete(sv);
-}
-
-static void test_apx_dataElement_pack_S16(CuTest* tc)
-{
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_sv_t *sv;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_SINT16, 0);
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint16_t));
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   sv = dtl_sv_make_i32(-1234);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) sv);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 0x2E);
-   CuAssertIntEquals(tc, pBegin[1], 0xFB);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_sv_delete(sv);
-}
-
-static void test_apx_dataElement_pack_S32(CuTest* tc)
-{
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_sv_t *sv;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT32, 0);
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint32_t));
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   sv = dtl_sv_make_i32(-12345678L);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) sv);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 0xB2);
-   CuAssertIntEquals(tc, pBegin[1], 0x9E);
-   CuAssertIntEquals(tc, pBegin[2], 0x43);
-   CuAssertIntEquals(tc, pBegin[3], 0xFF);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_sv_delete(sv);
-}
-
-static void test_apx_dataElement_pack_U8_array(CuTest* tc)
-{
-   const int arrayLen = 9;
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT8, 0);
-   apx_dataElement_setArrayLen(&dataElement, arrayLen);
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint8_t)*arrayLen);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(4), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(5), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(6), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(7), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(8), false);
-
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, 0, pResult); //one element still missing
-   CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_dataElement_getLastError(&dataElement));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(9), false);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 1);
-   CuAssertIntEquals(tc, pBegin[1], 2);
-   CuAssertIntEquals(tc, pBegin[2], 3);
-   CuAssertIntEquals(tc, pBegin[3], 4);
-   CuAssertIntEquals(tc, pBegin[4], 5);
-   CuAssertIntEquals(tc, pBegin[5], 6);
-   CuAssertIntEquals(tc, pBegin[6], 7);
-   CuAssertIntEquals(tc, pBegin[7], 8);
-   CuAssertIntEquals(tc, pBegin[8], 9);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-}
-
-static void test_apx_dataElement_pack_U16_array(CuTest* tc)
-{
-   const int arrayLen = 9;
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT16, 0);
-   apx_dataElement_setArrayLen(&dataElement, arrayLen);
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint16_t)*arrayLen);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(4), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(5), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(6), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(7), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(8), false);
-
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, 0, pResult); //one element still missing
-   CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_dataElement_getLastError(&dataElement));
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(9), false);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 1);
-   CuAssertIntEquals(tc, pBegin[1], 0);
-   CuAssertIntEquals(tc, pBegin[2], 2);
-   CuAssertIntEquals(tc, pBegin[3], 0);
-   CuAssertIntEquals(tc, pBegin[4], 3);
-   CuAssertIntEquals(tc, pBegin[5], 0);
-   CuAssertIntEquals(tc, pBegin[6], 4);
-   CuAssertIntEquals(tc, pBegin[7], 0);
-   CuAssertIntEquals(tc, pBegin[8], 5);
-   CuAssertIntEquals(tc, pBegin[9], 0);
-   CuAssertIntEquals(tc, pBegin[10], 6);
-   CuAssertIntEquals(tc, pBegin[11], 0);
-   CuAssertIntEquals(tc, pBegin[12], 7);
-   CuAssertIntEquals(tc, pBegin[13], 0);
-   CuAssertIntEquals(tc, pBegin[14], 8);
-   CuAssertIntEquals(tc, pBegin[15], 0);
-   CuAssertIntEquals(tc, pBegin[16], 9);
-   CuAssertIntEquals(tc, pBegin[17], 0);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-}
-
-static void test_apx_dataElement_pack_U32_array(CuTest* tc)
-{
-   const int arrayLen = 3;
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT32, 0);
-   apx_dataElement_setArrayLen(&dataElement, arrayLen);
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint32_t)*arrayLen);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(1), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(3), false);
-
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 1);
-   CuAssertIntEquals(tc, pBegin[1], 0);
-   CuAssertIntEquals(tc, pBegin[2], 0);
-   CuAssertIntEquals(tc, pBegin[3], 0);
-   CuAssertIntEquals(tc, pBegin[4], 2);
-   CuAssertIntEquals(tc, pBegin[5], 0);
-   CuAssertIntEquals(tc, pBegin[6], 0);
-   CuAssertIntEquals(tc, pBegin[7], 0);
-   CuAssertIntEquals(tc, pBegin[8], 3);
-   CuAssertIntEquals(tc, pBegin[9], 0);
-   CuAssertIntEquals(tc, pBegin[10], 0);
-   CuAssertIntEquals(tc, pBegin[11], 0);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-}
-
-static void test_apx_dataElement_pack_S8_array(CuTest* tc)
-{
-   const int arrayLen = 5;
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_SINT8, 0);
-   apx_dataElement_setArrayLen(&dataElement, arrayLen);
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint8_t)*arrayLen);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-4), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-5), false);
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 0xFF);
-   CuAssertIntEquals(tc, pBegin[1], 0xFE);
-   CuAssertIntEquals(tc, pBegin[2], 0xFD);
-   CuAssertIntEquals(tc, pBegin[3], 0xFC);
-   CuAssertIntEquals(tc, pBegin[4], 0xFB);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-}
-
-static void test_apx_dataElement_pack_S16_array(CuTest* tc)
-{
-   const int arrayLen = 5;
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT16, 0);
-   apx_dataElement_setArrayLen(&dataElement, arrayLen);
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint16_t)*arrayLen);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-4), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-5), false);
-
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 0xFF);
-   CuAssertIntEquals(tc, pBegin[1], 0xFF);
-   CuAssertIntEquals(tc, pBegin[2], 0xFE);
-   CuAssertIntEquals(tc, pBegin[3], 0xFF);
-   CuAssertIntEquals(tc, pBegin[4], 0xFD);
-   CuAssertIntEquals(tc, pBegin[5], 0xFF);
-   CuAssertIntEquals(tc, pBegin[6], 0xFC);
-   CuAssertIntEquals(tc, pBegin[7], 0xFF);
-   CuAssertIntEquals(tc, pBegin[8], 0xFB);
-   CuAssertIntEquals(tc, pBegin[9], 0xFF);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-}
-
-static void test_apx_dataElement_pack_S32_array(CuTest* tc)
-{
-   const int arrayLen = 3;
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_UINT32, 0);
-   apx_dataElement_setArrayLen(&dataElement, arrayLen);
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint32_t)*arrayLen);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-3), false);
-
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 0xFF);
-   CuAssertIntEquals(tc, pBegin[1], 0xFF);
-   CuAssertIntEquals(tc, pBegin[2], 0xFF);
-   CuAssertIntEquals(tc, pBegin[3], 0xFF);
-   CuAssertIntEquals(tc, pBegin[4], 0xFE);
-   CuAssertIntEquals(tc, pBegin[5], 0xFF);
-   CuAssertIntEquals(tc, pBegin[6], 0xFF);
-   CuAssertIntEquals(tc, pBegin[7], 0xFF);
-   CuAssertIntEquals(tc, pBegin[8], 0xFD);
-   CuAssertIntEquals(tc, pBegin[9], 0xFF);
-   CuAssertIntEquals(tc, pBegin[10], 0xFF);
-   CuAssertIntEquals(tc, pBegin[11], 0xFF);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-}
-
-static void test_apx_dataElement_pack_string(CuTest *tc)
-{
-   const int arrayLen = 13;
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_sv_t *sv;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_STRING, 0);
-   apx_dataElement_setArrayLen(&dataElement, arrayLen);
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint8_t)*arrayLen);
-
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-
-   sv = dtl_sv_make_cstr("");
-   memset(pBegin, 0,  sizeof(uint8_t)*arrayLen);
-
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) sv);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 0);
-   CuAssertIntEquals(tc, pBegin[1], 0);
-   CuAssertIntEquals(tc, pBegin[2], 0);
-   CuAssertIntEquals(tc, pBegin[3], 0);
-   CuAssertIntEquals(tc, pBegin[4], 0);
-   CuAssertIntEquals(tc, pBegin[5], 0);
-   CuAssertIntEquals(tc, pBegin[6], 0);
-   CuAssertIntEquals(tc, pBegin[7], 0);
-   CuAssertIntEquals(tc, pBegin[8], 0);
-   CuAssertIntEquals(tc, pBegin[9], 0);
-   CuAssertIntEquals(tc, pBegin[10], 0);
-   CuAssertIntEquals(tc, pBegin[11], 0);
-   CuAssertIntEquals(tc, pBegin[12], 0);
-   dtl_sv_set_cstr(sv, "Hello World!");
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) sv);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, 'H', pBegin[0]);
-   CuAssertIntEquals(tc, 'e', pBegin[1]);
-   CuAssertIntEquals(tc, 'l', pBegin[2]);
-   CuAssertIntEquals(tc, 'l', pBegin[3]);
-   CuAssertIntEquals(tc, 'o', pBegin[4]);
-   CuAssertIntEquals(tc, ' ', pBegin[5]);
-   CuAssertIntEquals(tc, 'W', pBegin[6]);
-   CuAssertIntEquals(tc, 'o', pBegin[7]);
-   CuAssertIntEquals(tc, 'r', pBegin[8]);
-   CuAssertIntEquals(tc, 'l', pBegin[9]);
-   CuAssertIntEquals(tc, 'd', pBegin[10]);
-   CuAssertIntEquals(tc, '!', pBegin[11]);
-   CuAssertIntEquals(tc, 0, pBegin[12]);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_sv_delete(sv);
-}
-
-static void test_apx_dataElement_pack_pair(CuTest *tc)
-{
-   apx_dataElement_t dataElement;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-
-   apx_dataElement_create(&dataElement, APX_BASE_TYPE_RECORD, 0);
-   apx_dataElement_appendChild(&dataElement, apx_dataElement_new(APX_BASE_TYPE_UINT16, 0));
-   apx_dataElement_appendChild(&dataElement, apx_dataElement_new(APX_BASE_TYPE_UINT16, 0));
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, sizeof(uint16_t)*2);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(7), false);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(15), false);
-
-   pResult = apx_dataElement_pack_dv(&dataElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, pBegin[0], 7);
-   CuAssertIntEquals(tc, pBegin[1], 0);
-   CuAssertIntEquals(tc, pBegin[2], 15);
-   CuAssertIntEquals(tc, pBegin[3], 0);
-   apx_dataElement_destroy(&dataElement);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-
-}
-
-static void test_apx_dataElement_pack_nested(CuTest *tc)
-{
-   apx_dataElement_t *rootElem;
-   apx_dataElement_t *childElem;
-   apx_dataElement_t *grandChildElem;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-   dtl_av_t *av1;
-
-   rootElem = apx_dataElement_new(APX_BASE_TYPE_RECORD, 0);
-   childElem = apx_dataElement_new(APX_BASE_TYPE_RECORD, 0);
-
-   apx_dataElement_appendChild(childElem, apx_dataElement_new(APX_BASE_TYPE_UINT8, 0));
-   grandChildElem = apx_dataElement_new(APX_BASE_TYPE_STRING, 0);
-   apx_dataElement_setArrayLen(grandChildElem, 9);
-   apx_dataElement_appendChild(childElem, grandChildElem);
-   apx_dataElement_appendChild(rootElem, apx_dataElement_new(APX_BASE_TYPE_UINT32, 0));
-   apx_dataElement_appendChild(rootElem, childElem);
-
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, 4+1+9);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av1 = dtl_av_new();
-   CuAssertPtrNotNull(tc, av1);
-   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_i32(3), false);
-   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_cstr("        "), false);
-   av = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_u32(0xFFFFFFFF), false);
-   dtl_av_push(av, (dtl_dv_t*) av1, false);
-
-   pResult = apx_dataElement_pack_dv(rootElem, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, 0xFF, pBegin[0]);
-   CuAssertIntEquals(tc, 0xFF, pBegin[1]);
-   CuAssertIntEquals(tc, 0xFF, pBegin[2]);
-   CuAssertIntEquals(tc, 0xFF, pBegin[3]);
-   CuAssertIntEquals(tc, 3, pBegin[4]);
-   CuAssertIntEquals(tc, ' ',pBegin[5]);
-   CuAssertIntEquals(tc, ' ',pBegin[6]);
-   CuAssertIntEquals(tc, ' ',pBegin[7]);
-   CuAssertIntEquals(tc, ' ',pBegin[8]);
-   CuAssertIntEquals(tc, ' ',pBegin[9]);
-   CuAssertIntEquals(tc, ' ',pBegin[10]);
-   CuAssertIntEquals(tc, ' ',pBegin[11]);
-   CuAssertIntEquals(tc, ' ',pBegin[12]);
-   CuAssertIntEquals(tc, '\0',pBegin[13]);
-   apx_dataElement_delete(rootElem);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-
-}
-
-static void test_apx_dataElement_pack_record_array(CuTest *tc)
-{
-   apx_dataElement_t *rootElement;
-   apx_dataElement_t *childElem;
-   adt_bytearray_t *array;
-   uint8_t *pBegin;
-   uint8_t *pEnd;
-   uint8_t *pResult;
-   dtl_av_t *av;
-   dtl_av_t *av1;
-   dtl_av_t *av12;
-   dtl_av_t *av2;
-   dtl_av_t *av22;
-
-   //DSG: {LC[3]}[2]
-   rootElement = apx_dataElement_new(APX_BASE_TYPE_RECORD, 0);
-   apx_dataElement_appendChild(rootElement, apx_dataElement_new(APX_BASE_TYPE_UINT32, 0));
-   childElem = apx_dataElement_new(APX_BASE_TYPE_UINT8, 0);
-   apx_dataElement_setArrayLen(childElem, 3);
-   apx_dataElement_appendChild(rootElement, childElem);
-   apx_dataElement_setArrayLen(rootElement, 2);
-
-   array = adt_bytearray_new(ADT_BYTE_ARRAY_DEFAULT_GROW_SIZE);
-   adt_bytearray_resize(array, (4+3)*2);
-   pBegin = adt_bytearray_data(array);
-   pEnd = pBegin + adt_bytearray_length(array);
-   av = dtl_av_new();
-   av1 = dtl_av_new();
-   av12 = dtl_av_new();
-   av2 = dtl_av_new();
-   av22 = dtl_av_new();
-   CuAssertPtrNotNull(tc, av);
-   CuAssertPtrNotNull(tc, av1);
-   CuAssertPtrNotNull(tc, av2);
-   CuAssertPtrNotNull(tc, av2);
-   CuAssertPtrNotNull(tc, av22);
-   //{{0x12345678, {1,2,3}}, {0x12345678, {4,5,6}}
-   dtl_av_push(av1, (dtl_dv_t*) dtl_sv_make_u32(0x12345678), false);
-   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(1), false);
-   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(2), false);
-   dtl_av_push(av12, (dtl_dv_t*) dtl_sv_make_i32(3), false);
-   dtl_av_push(av1, (dtl_dv_t*) av12, false);
-   dtl_av_push(av, (dtl_dv_t*) av1, false);
-   dtl_av_push(av2, (dtl_dv_t*) dtl_sv_make_u32(0x12345678), false);
-   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(4), false);
-   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(5), false);
-   dtl_av_push(av22, (dtl_dv_t*) dtl_sv_make_i32(6), false);
-   dtl_av_push(av2, (dtl_dv_t*) av22, false);
-   dtl_av_push(av, (dtl_dv_t*) av2, false);
-
-   pResult = apx_dataElement_pack_dv(rootElement, pBegin, pEnd, (dtl_dv_t*) av);
-   CuAssertPtrEquals(tc, pEnd, pResult);
-   CuAssertIntEquals(tc, 0x78, pBegin[0]);
-   CuAssertIntEquals(tc, 0x56, pBegin[1]);
-   CuAssertIntEquals(tc, 0x34, pBegin[2]);
-   CuAssertIntEquals(tc, 0x12, pBegin[3]);
-   CuAssertIntEquals(tc, 1, pBegin[4]);
-   CuAssertIntEquals(tc, 2, pBegin[5]);
-   CuAssertIntEquals(tc, 3, pBegin[6]);
-   CuAssertIntEquals(tc, 0x78, pBegin[7]);
-   CuAssertIntEquals(tc, 0x56, pBegin[8]);
-   CuAssertIntEquals(tc, 0x34, pBegin[9]);
-   CuAssertIntEquals(tc, 0x12, pBegin[10]);
-   CuAssertIntEquals(tc, 4, pBegin[11]);
-   CuAssertIntEquals(tc, 5, pBegin[12]);
-   CuAssertIntEquals(tc, 6, pBegin[13]);
-   apx_dataElement_delete(rootElement);
-   adt_bytearray_delete(array);
-   dtl_av_delete(av);
-}
 
 static void test_apx_dataElement_create_typeReferenceId(CuTest *tc)
 {
@@ -841,3 +208,638 @@ static void test_apx_dataElement_create_U8DynArrayU32(CuTest *tc)
 
 }
 
+static void test_apx_dataElement_createProperInitValueU8(CuTest* tc)
+{
+   apx_dataElement_t *element;
+   dtl_sv_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   CuAssertPtrNotNull(tc, element);
+   initValue = dtl_sv_make_u32(255);
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(properInitValue));
+   sv = (dtl_sv_t*) properInitValue;
+   CuAssertUIntEquals(tc,255, dtl_sv_to_u32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueU16(CuTest* tc)
+{
+   apx_dataElement_t *element;
+   dtl_sv_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT16, NULL);
+   CuAssertPtrNotNull(tc, element);
+   initValue = dtl_sv_make_u32(65535);
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(properInitValue));
+   sv = (dtl_sv_t*) properInitValue;
+   CuAssertUIntEquals(tc, 65535, dtl_sv_to_u32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueU32(CuTest* tc)
+{
+   apx_dataElement_t *element;
+   dtl_sv_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT32, NULL);
+   CuAssertPtrNotNull(tc, element);
+   initValue = dtl_sv_make_u32(0xffffffff);
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(properInitValue));
+   sv = (dtl_sv_t*) properInitValue;
+   CuAssertUIntEquals(tc, 0xffffffff, dtl_sv_to_u32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueS8(CuTest* tc)
+{
+   apx_dataElement_t *element;
+   dtl_sv_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_SINT8, NULL);
+   CuAssertPtrNotNull(tc, element);
+   initValue = dtl_sv_make_i32(-1);
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(properInitValue));
+   sv = (dtl_sv_t*) properInitValue;
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueS16(CuTest* tc)
+{
+   apx_dataElement_t *element;
+   dtl_sv_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_SINT16, NULL);
+   CuAssertPtrNotNull(tc, element);
+   initValue = dtl_sv_make_i32(-1);
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(properInitValue));
+   sv = (dtl_sv_t*) properInitValue;
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueS32(CuTest* tc)
+{
+   apx_dataElement_t *element;
+   dtl_sv_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_SINT32, NULL);
+   CuAssertPtrNotNull(tc, element);
+   initValue = dtl_sv_make_i32(-1);
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(properInitValue));
+   sv = (dtl_sv_t*) properInitValue;
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueU8Array(CuTest* tc)
+{
+   const int arrayLen = 3;
+   apx_dataElement_t *element;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT8, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0x12), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0xff), false);
+
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(properInitValue));
+   av = (dtl_av_t*) properInitValue;
+   CuAssertUIntEquals(tc, 3, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertUIntEquals(tc, 0, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0x12, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0xff, dtl_sv_to_u32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueU16Array(CuTest* tc)
+{
+   const int arrayLen = 3;
+   apx_dataElement_t *element;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT16, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0x1234), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0xffff), false);
+
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(properInitValue));
+   av = (dtl_av_t*) properInitValue;
+   CuAssertUIntEquals(tc, 3, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertUIntEquals(tc, 0, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0x1234, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0xffff, dtl_sv_to_u32(sv, NULL));
+
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueU32Array(CuTest* tc)
+{
+   const int arrayLen = 3;
+   apx_dataElement_t *element;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_UINT32, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0x12345678), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0xffffffff), false);
+
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(properInitValue));
+   av = (dtl_av_t*) properInitValue;
+   CuAssertUIntEquals(tc, 3, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertUIntEquals(tc, 0, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0x12345678, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0xffffffff, dtl_sv_to_u32(sv, NULL));
+
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueS8Array(CuTest* tc)
+{
+   const int arrayLen = 4;
+   apx_dataElement_t *element;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_SINT8, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(-128), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(0), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(127), false);
+
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(properInitValue));
+   av = (dtl_av_t*) properInitValue;
+   CuAssertUIntEquals(tc, 4, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertIntEquals(tc, -128, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, 0, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 3);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, 127, dtl_sv_to_i32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueS16Array(CuTest* tc)
+{
+   const int arrayLen = 4;
+   apx_dataElement_t *element;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_SINT16, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(-32768), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(0), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(32767), false);
+
+   CuAssertPtrNotNull(tc, initValue);
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(properInitValue));
+   av = (dtl_av_t*) properInitValue;
+   CuAssertUIntEquals(tc, 4, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertIntEquals(tc, -32768, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, 0, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 3);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, 32767, dtl_sv_to_i32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueS32Array(CuTest* tc)
+{
+   const int arrayLen = 4;
+   apx_dataElement_t *element;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+   element = apx_dataElement_new(APX_BASE_TYPE_SINT32, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_setArrayLen(element, arrayLen);
+
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(-2147483648), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(0), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_i32(2147483647), false);
+
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+
+   CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(properInitValue));
+   av = (dtl_av_t*) properInitValue;
+   CuAssertUIntEquals(tc, 4, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, -2147483648, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, -1, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, 0, dtl_sv_to_i32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 3);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, 2147483647, dtl_sv_to_i32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueString(CuTest* tc)
+{
+   const int arrayLen = 13;
+   apx_dataElement_t *element;
+   dtl_sv_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+
+   element = apx_dataElement_new(APX_BASE_TYPE_STRING, NULL);
+   apx_dataElement_setArrayLen(element, arrayLen);
+   initValue = dtl_sv_make_cstr("Hello World!");
+   CuAssertPtrNotNull(tc, initValue);
+
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(properInitValue));
+
+   sv = (dtl_sv_t*) properInitValue;
+   CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+   CuAssertStrEquals(tc, "Hello World!", dtl_sv_to_cstr(sv));
+
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+
+}
+
+static void test_apx_dataElement_createProperInitValueRecord_U8(CuTest* tc)
+{
+   apx_dataElement_t *element;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_hv_t *hv;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+
+
+   element = apx_dataElement_new(APX_BASE_TYPE_RECORD, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_appendChild(element, apx_dataElement_new(APX_BASE_TYPE_UINT8, "Item"));
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0xff), false);
+
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(properInitValue));
+   hv = (dtl_hv_t*) properInitValue;
+   CuAssertIntEquals(tc, 1, dtl_hv_length(hv));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "Item");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0xff, dtl_sv_to_u32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueRecord_U16U8U8(CuTest* tc)
+{
+   apx_dataElement_t *element;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_hv_t *hv;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+
+
+   element = apx_dataElement_new(APX_BASE_TYPE_RECORD, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_appendChild(element, apx_dataElement_new(APX_BASE_TYPE_UINT16, "Id"));
+   apx_dataElement_appendChild(element, apx_dataElement_new(APX_BASE_TYPE_UINT8, "FTB"));
+   apx_dataElement_appendChild(element, apx_dataElement_new(APX_BASE_TYPE_UINT8, "Status"));
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0xffff), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0xff), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0xff), false);
+
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(properInitValue));
+   hv = (dtl_hv_t*) properInitValue;
+   CuAssertIntEquals(tc, 3, dtl_hv_length(hv));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "Id");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0xffff, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "FTB");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0xff, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "Status");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0xff, dtl_sv_to_u32(sv, NULL));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+/**
+ * This tests init value for a sort of mapping object. The mapping consists of an U16 raw value table and an equally lengthed
+ * U8 lookup table (which contains the mapped values)
+ */
+static void test_apx_dataElement_createProperInitValueRecord_U16ArrayU8Array(CuTest* tc)
+{
+   const int32_t arrayLen = 6;
+   apx_dataElement_t *element;
+   apx_dataElement_t *innerElement;
+   dtl_av_t *initValue;
+   dtl_av_t *u16InnerInitValue;
+   dtl_av_t *u8InnerInitValue;
+   dtl_dv_t *properInitValue;
+   dtl_hv_t *hv;
+   dtl_av_t *av;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+
+
+   element = apx_dataElement_new(APX_BASE_TYPE_RECORD, NULL);
+   CuAssertPtrNotNull(tc, element);
+   innerElement = apx_dataElement_new(APX_BASE_TYPE_UINT16, "X-AXIS");
+   apx_dataElement_setArrayLen(innerElement, arrayLen);
+   apx_dataElement_appendChild(element, innerElement);
+   innerElement = apx_dataElement_new(APX_BASE_TYPE_UINT8, "Y-AXIS");
+   apx_dataElement_setArrayLen(innerElement, arrayLen);
+   apx_dataElement_appendChild(element, innerElement);
+   initValue = dtl_av_new();
+   u16InnerInitValue = dtl_av_new();
+   u8InnerInitValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   CuAssertPtrNotNull(tc, u16InnerInitValue);
+   CuAssertPtrNotNull(tc, u8InnerInitValue);
+   dtl_av_push(u16InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(0), false);
+   dtl_av_push(u16InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(1000), false);
+   dtl_av_push(u16InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(2000), false);
+   dtl_av_push(u16InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(3000), false);
+   dtl_av_push(u16InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(4000), false);
+   dtl_av_push(u16InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(6000), false);
+
+   dtl_av_push(u8InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(0), false);
+   dtl_av_push(u8InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(20), false);
+   dtl_av_push(u8InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(60), false);
+   dtl_av_push(u8InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(80), false);
+   dtl_av_push(u8InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(90), false);
+   dtl_av_push(u8InnerInitValue, (dtl_dv_t*) dtl_sv_make_u32(120), false);
+
+   dtl_av_push(initValue, (dtl_dv_t*) u16InnerInitValue, false);
+   dtl_av_push(initValue, (dtl_dv_t*) u8InnerInitValue, false);
+
+
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(properInitValue));
+   hv = (dtl_hv_t*) properInitValue;
+   CuAssertIntEquals(tc, 2, dtl_hv_length(hv));
+   av = (dtl_av_t*) dtl_hv_get_cstr(hv, "X-AXIS");
+   CuAssertPtrNotNull(tc, av);
+   CuAssertIntEquals(tc, arrayLen, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 1000, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 2000, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 3);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 3000, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 4);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 4000, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 5);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 6000, dtl_sv_to_u32(sv, NULL));
+
+   av = (dtl_av_t*) dtl_hv_get_cstr(hv, "Y-AXIS");
+   CuAssertPtrNotNull(tc, av);
+   CuAssertIntEquals(tc, arrayLen, dtl_av_length(av));
+   sv = (dtl_sv_t*) dtl_av_value(av, 0);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 1);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 20, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 2);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 60, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 3);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 80, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 4);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 90, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_av_value(av, 5);
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 120, dtl_sv_to_u32(sv, NULL));
+
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}
+
+static void test_apx_dataElement_createProperInitValueRecord_StringU32(CuTest* tc)
+{
+   const int32_t maxStrLen = 32;
+   apx_dataElement_t *element;
+   apx_dataElement_t *innerElement;
+   dtl_av_t *initValue;
+   dtl_dv_t *properInitValue;
+   dtl_hv_t *hv;
+   dtl_sv_t *sv;
+   apx_error_t result = APX_NO_ERROR;
+
+
+   element = apx_dataElement_new(APX_BASE_TYPE_RECORD, NULL);
+   CuAssertPtrNotNull(tc, element);
+   apx_dataElement_appendChild(element, apx_dataElement_new(APX_BASE_TYPE_UINT32, "UserId"));
+   innerElement = apx_dataElement_new(APX_BASE_TYPE_STRING, "UserName");
+   apx_dataElement_setArrayLen(innerElement, maxStrLen);
+   apx_dataElement_appendChild(element, innerElement);
+
+   initValue = dtl_av_new();
+   CuAssertPtrNotNull(tc, initValue);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_u32(0xffffffff), false);
+   dtl_av_push(initValue, (dtl_dv_t*) dtl_sv_make_cstr(""), false);
+
+   properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, (dtl_dv_t*) initValue, &result);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, properInitValue);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(properInitValue));
+   hv = (dtl_hv_t*) properInitValue;
+   CuAssertIntEquals(tc, 2, dtl_hv_length(hv));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "UserId");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_U32, dtl_sv_type(sv));
+   CuAssertUIntEquals(tc, 0xffffffff, dtl_sv_to_u32(sv, NULL));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "UserName");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+   CuAssertStrEquals(tc, "", dtl_sv_to_cstr(sv));
+   apx_dataElement_delete(element);
+   dtl_dec_ref(initValue);
+   dtl_dec_ref(properInitValue);
+}

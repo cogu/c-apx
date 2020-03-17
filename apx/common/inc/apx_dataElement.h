@@ -4,7 +4,7 @@
 * \date      2017-02-20
 * \brief     Data element data structure
 *
-* Copyright (c) 2017-2018 Conny Gustafsson
+* Copyright (c) 2017-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -76,7 +76,6 @@ void apx_dataElement_vdelete(void *arg);
 int8_t apx_dataElement_create(apx_dataElement_t *self, int8_t baseType, const char *name);
 void apx_dataElement_destroy(apx_dataElement_t *self);
 void apx_dataElement_initRecordType(apx_dataElement_t *self);
-uint8_t *apx_dataElement_pack_dv(apx_dataElement_t *self, uint8_t *pBegin, uint8_t *pEnd, dtl_dv_t *dv);
 apx_error_t apx_dataElement_setArrayLen(apx_dataElement_t *self, uint32_t arrayLen);
 uint32_t apx_dataElement_getArrayLen(apx_dataElement_t *self);
 apx_error_t apx_dataElement_setDynamicArray(apx_dataElement_t *self);
@@ -94,5 +93,8 @@ struct apx_datatype_tag *apx_dataElement_getTypeReferencePtr(apx_dataElement_t *
 apx_error_t apx_dataElement_calcPackLen(apx_dataElement_t *self, apx_size_t *packLen);
 apx_size_t apx_dataElement_getPackLen(apx_dataElement_t *self);
 apx_error_t apx_dataElement_getLastError(apx_dataElement_t *self);
+dtl_dv_t *apx_dataElement_makeProperInitValueFromDynamicValue(apx_dataElement_t *self, dtl_dv_t *dv, apx_error_t *errorCode);
+
+
 
 #endif //APX_DATAELEMENT_H

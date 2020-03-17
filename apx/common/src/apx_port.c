@@ -50,10 +50,6 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t apx_port_deriveProperInitValueFromElement(apx_dataElement_t *element, apx_portAttributes_t *attr);
-static dtl_dv_t *apx_port_makeScalarInitValue(apx_baseType_t baseType, dtl_sv_t *initValue, apx_error_t *errorCode);
-static dtl_dv_t *apx_port_makeArrayInitValue(apx_baseType_t baseType, uint32_t arrayLen, dtl_av_t *initArray, apx_error_t *errorCode);
-static dtl_dv_t *apx_port_makeU32InitValue(dtl_sv_t *initValue, apx_error_t *errorCode);
-static dtl_dv_t *apx_port_makeS32InitValue(dtl_sv_t *initValue, apx_error_t *errorCode);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -354,7 +350,27 @@ const char *apx_port_getName(const apx_port_t *self)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+static apx_error_t apx_port_deriveProperInitValueFromElement(apx_dataElement_t *element, apx_portAttributes_t *attr)
+{
+   if ( (element != 0) && (attr != 0) )
+   {
+      apx_error_t retval = APX_NO_ERROR;
+      dtl_dv_t *properInitValue = 0;
+      if (attr->initValue != 0)
+      {
+         properInitValue = apx_dataElement_makeProperInitValueFromDynamicValue(element, attr->initValue, &retval);
+         if (properInitValue != 0)
+         {
+            assert(retval == APX_NO_ERROR);
+            attr->properInitValue = properInitValue;
+         }
+      }
+      return retval;
+   }
+   return APX_NULL_PTR_ERROR;
+}
 
+#if 0
 static apx_error_t apx_port_deriveProperInitValueFromElement(apx_dataElement_t *element, apx_portAttributes_t *attr)
 {
    if ( (element != 0) && (attr != 0) )
@@ -365,14 +381,22 @@ static apx_error_t apx_port_deriveProperInitValueFromElement(apx_dataElement_t *
       {
          if (element->baseType == APX_BASE_TYPE_RECORD)
          {
-            retval = APX_NOT_IMPLEMENTED_ERROR;
+            if (dtl_dv_type(attr->initValue) == DTL_DV_ARRAY)
+            {
+               dtl_av_t *arrayInitValue = (dtl_av_t*) attr->initValue;
+               properInitValue = apx_dataElement_makeHashInitValueFromArray(element, arrayInitValue, &retval);
+            }
+            else
+            {
+               retval = APX_INIT_VALUE_ERROR;
+            }
          }
          else if (element->arrayLen == 0)
          {
             if (dtl_dv_type(attr->initValue) == DTL_DV_SCALAR)
             {
                dtl_sv_t *scalarInitValue = (dtl_sv_t*) attr->initValue;
-               properInitValue = apx_port_makeScalarInitValue(element->baseType, scalarInitValue, &retval);
+               properInitValue = apx_dataElement_makeScalarInitValue(element->baseType, scalarInitValue, &retval);
             }
          }
          else if (element->arrayLen > 0)
@@ -380,7 +404,7 @@ static apx_error_t apx_port_deriveProperInitValueFromElement(apx_dataElement_t *
             if (dtl_dv_type(attr->initValue) == DTL_DV_ARRAY)
             {
                dtl_av_t *arrayInitValue = (dtl_av_t*) attr->initValue;
-               properInitValue = apx_port_makeArrayInitValue(element->baseType, element->arrayLen, arrayInitValue, &retval);
+               properInitValue = apx_dataElement_makeArrayInitValue(element->baseType, element->arrayLen, arrayInitValue, &retval);
             }
             else
             {
@@ -397,151 +421,5 @@ static apx_error_t apx_port_deriveProperInitValueFromElement(apx_dataElement_t *
    }
    return APX_NULL_PTR_ERROR;
 }
+#endif
 
-static dtl_dv_t *apx_port_makeScalarInitValue(apx_baseType_t baseType, dtl_sv_t *initValue, apx_error_t *errorCode)
-{
-   if (initValue != 0 && (errorCode != 0))
-   {
-      switch(baseType)
-      {
-      case APX_BASE_TYPE_UINT8:
-         return apx_port_makeU32InitValue(initValue, errorCode);
-      case APX_BASE_TYPE_UINT16:
-         return apx_port_makeU32InitValue(initValue, errorCode);
-      case APX_BASE_TYPE_UINT32:
-         return apx_port_makeU32InitValue(initValue, errorCode);
-      case APX_BASE_TYPE_SINT8:
-         return apx_port_makeS32InitValue(initValue, errorCode);
-      case APX_BASE_TYPE_SINT16:
-         return apx_port_makeS32InitValue(initValue, errorCode);
-      case APX_BASE_TYPE_SINT32:
-         return apx_port_makeS32InitValue(initValue, errorCode);
-      default:
-         *errorCode = APX_NOT_IMPLEMENTED_ERROR;
-      }
-   }
-   return (dtl_dv_t*) 0;
-}
-
-static dtl_dv_t *apx_port_makeArrayInitValue(apx_baseType_t baseType, uint32_t arrayLen, dtl_av_t *initArray, apx_error_t *errorCode)
-{
-   if (initArray != 0 && (errorCode != 0) && (arrayLen<=INT32_MAX))
-   {
-      dtl_av_t *retval = (dtl_av_t*) 0;
-      int32_t initValueLen = dtl_av_length(initArray);
-      if ( ((int32_t) arrayLen) != initValueLen)
-      {
-         *errorCode = APX_LENGTH_ERROR;
-         return (dtl_dv_t*) retval;
-      }
-      retval = dtl_av_new();
-      if (retval != 0)
-      {
-         dtl_dv_t* (*make_func)(dtl_sv_t *initValue, apx_error_t *errorCode) = 0;
-         switch(baseType)
-         {
-         case APX_BASE_TYPE_UINT8:
-            make_func = apx_port_makeU32InitValue;
-            break;
-         case APX_BASE_TYPE_UINT16:
-            make_func = apx_port_makeU32InitValue;
-            break;
-         case APX_BASE_TYPE_UINT32:
-            make_func = apx_port_makeU32InitValue;
-            break;
-         case APX_BASE_TYPE_SINT8:
-            make_func = apx_port_makeS32InitValue;
-            break;
-         case APX_BASE_TYPE_SINT16:
-            make_func = apx_port_makeS32InitValue;
-            break;
-         case APX_BASE_TYPE_SINT32:
-            make_func = apx_port_makeS32InitValue;
-            break;
-         default:
-            *errorCode = APX_NOT_IMPLEMENTED_ERROR;
-         }
-         if (make_func != 0)
-         {
-            int32_t i;
-            for(i=0; i < (int32_t)arrayLen; i++)
-            {
-               dtl_dv_t *initValue;
-               dtl_dv_t *createdValue = (dtl_dv_t*) 0;
-               initValue = dtl_av_value(initArray, i);
-               if (initValue != 0)
-               {
-                  if (dtl_dv_type(initValue) == DTL_DV_SCALAR)
-                  {
-                     createdValue = make_func((dtl_sv_t*)initValue, errorCode);
-                     if (createdValue != 0)
-                     {
-                        dtl_av_push(retval, createdValue, false);
-                     }
-                  }
-               }
-               if ( (initValue == 0) || (createdValue == 0) )
-               {
-                  *errorCode = APX_INIT_VALUE_ERROR;
-                  dtl_dec_ref(retval);
-                  retval = (dtl_av_t*) 0;
-                  break;
-               }
-            }
-         }
-      }
-      else
-      {
-         *errorCode = APX_MEM_ERROR;
-      }
-      return (dtl_dv_t*) retval;
-   }
-   return (dtl_dv_t*) 0;
-}
-
-static dtl_dv_t* apx_port_makeU32InitValue(dtl_sv_t *initValue, apx_error_t *errorCode)
-{
-   dtl_sv_t *retval = 0;
-   if (errorCode != 0)
-   {
-      bool isOk;
-      uint32_t u32Value;
-      assert(initValue != 0);
-      assert(dtl_dv_type((dtl_dv_t*)initValue) == DTL_DV_SCALAR);
-
-      u32Value = dtl_sv_to_u32(initValue, &isOk);
-      if (isOk)
-      {
-         retval = dtl_sv_make_u32(u32Value);
-         *errorCode = APX_NO_ERROR;
-      }
-      else
-      {
-         *errorCode = APX_INIT_VALUE_ERROR;
-      }
-   }
-   return (dtl_dv_t*) retval;
-}
-
-static dtl_dv_t *apx_port_makeS32InitValue(dtl_sv_t *initValue, apx_error_t *errorCode)
-{
-   dtl_sv_t *retval = 0;
-   if (errorCode != 0)
-   {
-      bool isOk;
-      int32_t s32Value;
-      assert(initValue != 0);
-      assert(dtl_dv_type((dtl_dv_t*)initValue) == DTL_DV_SCALAR);
-      s32Value = dtl_sv_to_i32(initValue, &isOk);
-      if (isOk)
-      {
-         retval = dtl_sv_make_i32(s32Value);
-         *errorCode = APX_NO_ERROR;
-      }
-      else
-      {
-         *errorCode = APX_INIT_VALUE_ERROR;
-      }
-   }
-   return (dtl_dv_t*) retval;
-}

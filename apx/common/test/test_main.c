@@ -69,6 +69,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testsuite_apx_dataSignature());
    CuSuiteAddSuite(suite, testsuite_apx_datatype());
    CuSuiteAddSuite(suite, testSuite_apx_eventLoop());
+
    CuSuiteAddSuite(suite, testSuite_apx_node());
    CuSuiteAddSuite(suite, testSuite_apx_nodeData2());
    CuSuiteAddSuite(suite, testSuite_apx_nodeInfo());
@@ -109,16 +110,13 @@ void RunAllTests(void)
 
 // APX Server
    CuSuiteAddSuite(suite, testSuite_apx_serverSocketConnection());
-/*
+
+
 
 // APX Server Extensions
    CuSuiteAddSuite(suite, testsuite_apx_socketServerExtension());
+/*
    CuSuiteAddSuite(suite, testsuite_apx_serverTextLogExtension());
-
-
-   CuSuiteAddSuite(suite, testsuite_apx_dynamic_client());
-
-
 */
 
 // RemoteFile

@@ -41,6 +41,8 @@ static void test_apx_node_initValue_U32_array(CuTest* tc);
 static void test_apx_node_initValue_S8_array(CuTest* tc);
 static void test_apx_node_initValue_S16_array(CuTest* tc);
 static void test_apx_node_initValue_S32_array(CuTest* tc);
+static void test_apx_node_initValue_Record_U8(CuTest* tc);
+static void test_apx_node_initValue_Record_U32String(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -82,6 +84,8 @@ CuSuite* testSuite_apx_node(void)
    SUITE_ADD_TEST(suite, test_apx_node_initValue_S8_array);
    SUITE_ADD_TEST(suite, test_apx_node_initValue_S16_array);
    SUITE_ADD_TEST(suite, test_apx_node_initValue_S32_array);
+   SUITE_ADD_TEST(suite, test_apx_node_initValue_Record_U8);
+   SUITE_ADD_TEST(suite, test_apx_node_initValue_Record_U32String);
 
    return suite;
 }
@@ -324,7 +328,6 @@ static void test_apx_node_initValue_U8(CuTest* tc)
    CuAssertUIntEquals(tc, 0xff, dtl_sv_to_u32(sv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_U16(CuTest* tc)
@@ -360,8 +363,6 @@ static void test_apx_node_initValue_U16(CuTest* tc)
    CuAssertUIntEquals(tc, 0xffff, dtl_sv_to_u32(sv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
-
 }
 
 static void test_apx_node_initValue_U32(CuTest* tc)
@@ -397,8 +398,6 @@ static void test_apx_node_initValue_U32(CuTest* tc)
    CuAssertUIntEquals(tc, 0xffffffff, dtl_sv_to_u32(sv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
-
 }
 
 static void test_apx_node_initValue_S8(CuTest* tc)
@@ -451,7 +450,6 @@ static void test_apx_node_initValue_S8(CuTest* tc)
    CuAssertIntEquals(tc, 255, dtl_sv_to_i32(sv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_S16(CuTest* tc)
@@ -504,7 +502,6 @@ static void test_apx_node_initValue_S16(CuTest* tc)
    CuAssertIntEquals(tc, 32768, dtl_sv_to_i32(sv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_S32(CuTest* tc)
@@ -557,7 +554,6 @@ static void test_apx_node_initValue_S32(CuTest* tc)
    CuAssertIntEquals(tc, 2147483647, dtl_sv_to_i32(sv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_U8_array(CuTest* tc)
@@ -590,7 +586,6 @@ static void test_apx_node_initValue_U8_array(CuTest* tc)
    CuAssertUIntEquals(tc, 255, dtl_sv_to_u32((dtl_sv_t*) dv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_U16_array(CuTest* tc)
@@ -623,7 +618,6 @@ static void test_apx_node_initValue_U16_array(CuTest* tc)
    CuAssertUIntEquals(tc, 65535, dtl_sv_to_u32((dtl_sv_t*) dv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_U32_array(CuTest* tc)
@@ -656,7 +650,6 @@ static void test_apx_node_initValue_U32_array(CuTest* tc)
    CuAssertUIntEquals(tc, 0xffffffff, dtl_sv_to_u32((dtl_sv_t*) dv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_S8_array(CuTest* tc)
@@ -691,7 +684,6 @@ static void test_apx_node_initValue_S8_array(CuTest* tc)
    CuAssertIntEquals(tc, 127, dtl_sv_to_i32((dtl_sv_t*) dv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_S16_array(CuTest* tc)
@@ -726,7 +718,6 @@ static void test_apx_node_initValue_S16_array(CuTest* tc)
    CuAssertIntEquals(tc, 32767, dtl_sv_to_i32((dtl_sv_t*) dv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
 }
 
 static void test_apx_node_initValue_S32_array(CuTest* tc)
@@ -761,8 +752,62 @@ static void test_apx_node_initValue_S32_array(CuTest* tc)
    CuAssertIntEquals(tc, 2147483647, dtl_sv_to_i32((dtl_sv_t*) dv, NULL));
 
    apx_node_destroy(&node);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_getLastError(&node));
-
 }
 
+static void test_apx_node_initValue_Record_U8(CuTest* tc)
+{
+   apx_node_t node;
+   apx_port_t *port1;
+   int32_t lineNumber=1;
+   int32_t errorLine;
+   dtl_dv_t *initValue;
+   dtl_hv_t *hv;
+   dtl_sv_t *sv;
+   bool ok = false;
 
+   apx_node_create(&node,"Test");
+   port1 = apx_node_createRequirePort(&node,"RecordU8","{\"Items\"C}","={0}", lineNumber++);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_finalize(&node, &errorLine));
+   initValue = apx_port_getProperInitValue(port1);
+   CuAssertPtrNotNull(tc, initValue);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(initValue));
+   hv = (dtl_hv_t*) initValue;
+   CuAssertIntEquals(tc, 1, dtl_hv_length(hv));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "Items");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0u, dtl_sv_to_u32(sv, &ok));
+   CuAssertTrue(tc, ok);
+
+   apx_node_destroy(&node);
+}
+
+static void test_apx_node_initValue_Record_U32String(CuTest* tc)
+{
+   apx_node_t node;
+   apx_port_t *port1;
+   int32_t lineNumber=1;
+   int32_t errorLine;
+   dtl_dv_t *initValue;
+   dtl_hv_t *hv;
+   dtl_sv_t *sv;
+   bool ok = false;
+
+   apx_node_create(&node,"Test");
+   port1 = apx_node_createRequirePort(&node,"RecordU32Str","{\"UserId\"L\"UserName\"a[32]}","={0xffffffff, \"Guest\"}", lineNumber++);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_finalize(&node, &errorLine));
+   initValue = apx_port_getProperInitValue(port1);
+   CuAssertPtrNotNull(tc, initValue);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(initValue));
+   hv = (dtl_hv_t*) initValue;
+   CuAssertIntEquals(tc, 2, dtl_hv_length(hv));
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "UserId");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertUIntEquals(tc, 0xffffffff, dtl_sv_to_u32(sv, &ok));
+   CuAssertTrue(tc, ok);
+   sv = (dtl_sv_t*) dtl_hv_get_cstr(hv, "UserName");
+   CuAssertPtrNotNull(tc, sv);
+   CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+   CuAssertStrEquals(tc, "Guest", dtl_sv_to_cstr(sv));
+
+   apx_node_destroy(&node);
+}
