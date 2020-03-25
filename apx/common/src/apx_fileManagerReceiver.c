@@ -42,8 +42,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_fileManagerReceiver_startReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, uint8_t size, bool moreBit);
-static apx_error_t apx_fileManagerReceiver_continueReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, uint8_t size, bool moreBit);
+static apx_error_t apx_fileManagerReceiver_startReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit);
+static apx_error_t apx_fileManagerReceiver_continueReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -126,7 +126,7 @@ bool apx_fileManagerReceiver_isOngoing(apx_fileManagerReceiver_t *self)
    return false;
 }
 
-apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, uint8_t size, bool moreBit)
+apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit)
 {
    if ( (self != 0) && (data != 0) && (address < RMF_INVALID_ADDRESS) )
    {
@@ -198,7 +198,7 @@ apx_error_t apx_fileManagerReceiver_checkComplete(apx_fileManagerReceiver_t *sel
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_fileManagerReceiver_startReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, uint8_t size, bool moreBit)
+static apx_error_t apx_fileManagerReceiver_startReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit)
 {
    if (self != 0)
    {
@@ -222,7 +222,7 @@ static apx_error_t apx_fileManagerReceiver_startReception(apx_fileManagerReceive
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t apx_fileManagerReceiver_continueReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, uint8_t size, bool moreBit)
+static apx_error_t apx_fileManagerReceiver_continueReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit)
 {
    if (self != 0)
    {
