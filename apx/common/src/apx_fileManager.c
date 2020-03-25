@@ -243,7 +243,14 @@ apx_file_t *apx_fileManager_fileInfoNotify(apx_fileManager_t *self, const apx_fi
       apx_file_t *file = apx_fileManagerShared_createRemoteFile(&self->shared, fileInfo);
       if (file != 0)
       {
+         apx_error_t rc;
          apx_file_setFileManager(file, self);
+         rc = apx_fileManagerReceiver_reserve(&self->receiver, fileInfo->length);
+         if (rc != APX_NO_ERROR)
+         {
+            printf("[FILE-MANAGER] Failed to reserve memory for receive buffer, error code: %d\n", (int) rc);
+            return (apx_file_t*) 0;
+         }
       }
       return file;
    }
@@ -267,10 +274,16 @@ apx_error_t apx_fileManager_messageReceived(apx_fileManager_t *self, const uint8
             {
                if (completeMsg.startAddress == RMF_CMD_START_ADDR)
                {
+#if APX_DEBUG_ENABLE
+                  printf("[FILE-MANAGER] APX Command: len=%u\n", (unsigned int) completeMsg.msgSize);
+#endif
                   retval = apx_fileManager_processCmdMsg(self, completeMsg.msgBuf, completeMsg.msgSize);
                }
                else if (msg.address < RMF_CMD_START_ADDR)
                {
+#if APX_DEBUG_ENABLE
+                  printf("[FILE-MANAGER] Data Write: addr=0x%08X; len=%u\n", (unsigned int) completeMsg.startAddress, (unsigned int) completeMsg.msgSize);
+#endif
                   retval = apx_fileManager_processDataMsg(self, completeMsg.startAddress, completeMsg.msgBuf, completeMsg.msgSize);
                }
                else

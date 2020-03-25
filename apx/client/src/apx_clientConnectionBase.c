@@ -274,7 +274,7 @@ void apx_clientConnectionBaseInternal_headerAccepted(apx_clientConnectionBase_t 
    if (self != 0)
    {
 #if APX_DEBUG_ENABLE
-      printf("CLIENT-CONNECTION] Header accepted\n");
+      printf("[CLIENT-CONNECTION] Header accepted\n");
 #endif
       self->isAcknowledgeSeen = true;
       apx_fileManager_headerAccepted(&self->base.fileManager);
