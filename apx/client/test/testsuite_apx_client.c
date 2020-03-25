@@ -98,21 +98,25 @@ static const char *m_apx_definition8 = "APX/1.2\n"
 static const char *m_apx_definition9 = "APX/1.2\n"
       "N\"TestNode9\"\n"
       "P\"ColorSetting\"{\"Red\"C\"Green\"C\"Blue\"C}:={0,0,0}\n"
+      "P\"StringInRecord\"{\"UserName\"a[8]\"UserId\"L}:={\"Guest\", 0xffffffff}\n"
       "\n";
 
 static const char *m_apx_definition10 = "APX/1.2\n"
-      "N\"TestNode9\"\n"
+      "N\"TestNode10\"\n"
       "R\"ColorSetting\"{\"Red\"C\"Green\"C\"Blue\"C}:={0,0,0}\n"
+      "R\"StringInRecord\"{\"UserName\"a[8]\"UserId\"L}:={\"Guest\", 0xffffffff}\n"
       "\n";
 
 static const char *m_apx_definition11 = "APX/1.2\n"
       "N\"TestNode11\"\n"
       "P\"String16\"a[16]:=\"\"\n"
+      "P\"String8\"a[8]:=\"\342\204\203\"\n" //degrees Centigrade symbol U+2103
       "\n";
 
 static const char *m_apx_definition12 = "APX/1.2\n"
       "N\"TestNode12\"\n"
       "R\"String16\"a[16]:=\"\"\n"
+      "R\"String8\"a[8]:=\"\342\204\203\"\n" //degrees Centigrade symbol U+2103
       "\n";
 
 
@@ -169,6 +173,10 @@ static void test_apx_client_writePortData_dtl_record(CuTest* tc);
 static void test_apx_client_readPortData_dtl_record(CuTest* tc);
 static void test_apx_client_writePortData_dtl_string(CuTest* tc);
 static void test_apx_client_readPortData_dtl_string(CuTest* tc);
+static void test_apx_client_readPortData_dtl_string_unicode_init(CuTest* tc);
+static void test_apx_client_writePortData_dtl_string_inside_record(CuTest* tc);
+static void test_apx_client_readPortData_dtl_string_inside_record(CuTest* tc);
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -222,6 +230,10 @@ CuSuite* testSuite_apx_client(void)
    SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_record);
    SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_string);
    SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_string);
+   SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_string_unicode_init);
+   SUITE_ADD_TEST(suite, test_apx_client_writePortData_dtl_string_inside_record);
+   SUITE_ADD_TEST(suite, test_apx_client_readPortData_dtl_string_inside_record);
+
 
 
    return suite;
@@ -1843,11 +1855,159 @@ static void test_apx_client_readPortData_dtl_string(CuTest* tc)
    apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, dataSize);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, stringPortHandle, &dv));
    CuAssertPtrNotNull(tc, dv);
+   sv =(dtl_sv_t*) dv;
    CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
-   CuAssertStrEquals(tc, "", dtl_sv_to_cstr(sv));
+   CuAssertStrEquals(tc, "Test", dtl_sv_to_cstr(sv));
    dtl_dv_dec_ref(dv);
    dv = 0;
 
+
+   apx_client_delete(client);
+}
+
+static void test_apx_client_readPortData_dtl_string_unicode_init(CuTest* tc)
+{
+   void *stringPortHandle;
+   dtl_dv_t *dv;
+   dtl_sv_t *sv;
+   adt_str_t *str;
+   apx_client_t *client;
+
+
+   client = apx_client_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition12));
+   stringPortHandle = apx_client_getPortHandle(client, NULL, "String8");
+   CuAssertPtrNotNull(tc, stringPortHandle);
+
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, stringPortHandle, &dv));
+   CuAssertPtrNotNull(tc, dv);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
+   sv =(dtl_sv_t*) dv;
+   CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
+   str = dtl_sv_to_str(sv);
+   CuAssertPtrNotNull(tc, str);
+   CuAssertIntEquals(tc, 1, adt_str_length(str));
+   CuAssertStrEquals(tc, "\342\204\203", adt_str_cstr(str));
+   adt_str_delete(str);
+
+   dtl_dv_dec_ref(dv);
+   dv = 0;
+
+   apx_client_delete(client);
+}
+
+static void test_apx_client_writePortData_dtl_string_inside_record(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE*3;
+   const apx_size_t dataSize = UINT8_SIZE*8+UINT32_SIZE;
+   void *portHandle;
+   uint8_t rawData[UINT8_SIZE*8+UINT32_SIZE];
+   dtl_hv_t *hv = (dtl_hv_t*) 0;
+   apx_nodeInstance_t *nodeInstance;
+   memset(&rawData[0], 0, sizeof(rawData));
+   apx_client_t *client = apx_client_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition9));
+   portHandle = apx_client_getPortHandle(client, NULL, "StringInRecord");
+   CuAssertPtrNotNull(tc, portHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, dataSize));
+   CuAssertUIntEquals(tc, 'G', rawData[0]);
+   CuAssertUIntEquals(tc, 'u', rawData[1]);
+   CuAssertUIntEquals(tc, 'e', rawData[2]);
+   CuAssertUIntEquals(tc, 's', rawData[3]);
+   CuAssertUIntEquals(tc, 't', rawData[4]);
+   CuAssertUIntEquals(tc, 0x00, rawData[5]);
+   CuAssertUIntEquals(tc, 0x00, rawData[6]);
+   CuAssertUIntEquals(tc, 0x00, rawData[7]); //end of string
+   CuAssertUIntEquals(tc, 0xff, rawData[8]);
+   CuAssertUIntEquals(tc, 0xff, rawData[9]);
+   CuAssertUIntEquals(tc, 0xff, rawData[10]);
+   CuAssertUIntEquals(tc, 0xff, rawData[11]);
+
+   hv = dtl_hv_new();
+   CuAssertPtrNotNull(tc, hv);
+   dtl_hv_set_cstr(hv, "UserName", (dtl_dv_t*) dtl_sv_make_cstr("John Doe"), false);
+   dtl_hv_set_cstr(hv, "UserId", (dtl_dv_t*) dtl_sv_make_u32(1u), false);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, portHandle, (dtl_dv_t*) hv));
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, dataSize));
+   CuAssertUIntEquals(tc, 'J', rawData[0]);
+   CuAssertUIntEquals(tc, 'o', rawData[1]);
+   CuAssertUIntEquals(tc, 'h', rawData[2]);
+   CuAssertUIntEquals(tc, 'n', rawData[3]);
+   CuAssertUIntEquals(tc, ' ', rawData[4]);
+   CuAssertUIntEquals(tc, 'D', rawData[5]);
+   CuAssertUIntEquals(tc, 'o', rawData[6]);
+   CuAssertUIntEquals(tc, 'e', rawData[7]); //end of string
+   CuAssertUIntEquals(tc, 1u, rawData[8]);
+   CuAssertUIntEquals(tc, 0u, rawData[9]);
+   CuAssertUIntEquals(tc, 0u, rawData[10]);
+   CuAssertUIntEquals(tc, 0u, rawData[11]);
+
+   dtl_dec_ref(hv);
+
+   apx_client_delete(client);
+}
+
+static void test_apx_client_readPortData_dtl_string_inside_record(CuTest* tc)
+{
+   const uint32_t offset = UINT8_SIZE*3;
+   void *portHandle;
+   const apx_size_t dataSize = UINT8_SIZE*8+UINT32_SIZE;
+   uint8_t rawData[UINT8_SIZE*8+UINT32_SIZE];
+   apx_nodeInstance_t *nodeInstance;
+   dtl_dv_t *dv;
+   dtl_hv_t *hv;
+   dtl_sv_t *sv;
+   apx_client_t *client;
+
+
+   client = apx_client_new();
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_buildNode_cstr(client, m_apx_definition10));
+   portHandle = apx_client_getPortHandle(client, NULL, "StringInRecord");
+   CuAssertPtrNotNull(tc, portHandle);
+   nodeInstance = apx_client_getLastAttachedNode(client);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, portHandle, &dv));
+   CuAssertPtrNotNull(tc, dv);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(dv));
+   hv = (dtl_hv_t*) dv;
+   dv = dtl_hv_get_cstr(hv, "UserName");
+   CuAssertPtrNotNull(tc, dv);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
+   sv = (dtl_sv_t*) dv;
+   CuAssertStrEquals(tc, "Guest", dtl_sv_to_cstr(sv));
+   dtl_dec_ref(hv);
+   dv = 0;
+
+   memset(&rawData[0], 0, sizeof(rawData));
+   rawData[0]  = 'J';
+   rawData[1]  = 'o';
+   rawData[2]  = 'h';
+   rawData[3]  = 'n';
+   rawData[4]  = ' ';
+   rawData[5]  = 'D';
+   rawData[6]  = 'o';
+   rawData[7]  = 'e'; //end of string
+   rawData[8]  = 1u;
+   rawData[9]  = 0u;
+   rawData[10] = 0u;
+   rawData[11] = 0u;
+   apx_nodeInstance_writeRequirePortData(nodeInstance, rawData, offset, dataSize);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, portHandle, &dv));
+   CuAssertPtrNotNull(tc, dv);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(dv));
+   hv = (dtl_hv_t*) dv;
+   dv = dtl_hv_get_cstr(hv, "UserName");
+   CuAssertPtrNotNull(tc, dv);
+   CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
+   sv = (dtl_sv_t*) dv;
+   CuAssertStrEquals(tc, "John Doe", dtl_sv_to_cstr(sv));
+   dtl_dec_ref(hv);
+   dv = 0;
 
    apx_client_delete(client);
 }
