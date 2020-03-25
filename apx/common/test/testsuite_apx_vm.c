@@ -715,9 +715,9 @@ static void test_apx_vm_unpackRecordContainingU16AndU8Value(CuTest* tc)
    apx_compiler_end(compiler);
    apx_compiler_delete(compiler);
 
-   CuAssertUIntEquals(tc, 0x34, dataBuffer[0]);
-   CuAssertUIntEquals(tc, 0x12, dataBuffer[1]);
-   CuAssertUIntEquals(tc, 0x15, dataBuffer[2]);
+   dataBuffer[0] = 0x34;
+   dataBuffer[1] = 0x12;
+   dataBuffer[2] = 0x15;
    storedProgram = adt_bytearray_bytes(compiledProgram);
    CuAssertUIntEquals(tc, APX_NO_ERROR, apx_vm_selectProgram(vm, storedProgram));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_setReadBuffer(vm, dataBuffer, (apx_size_t) sizeof(dataBuffer)));
