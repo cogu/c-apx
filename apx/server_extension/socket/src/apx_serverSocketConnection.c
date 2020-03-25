@@ -278,25 +278,8 @@ static int32_t apx_serverSocketConnection_send(void *arg, int32_t offset, int32_
          //place header just before user data begin
          pBegin = sendBuffer+(self->base.base.numHeaderLen+offset-headerLen); //the part in the parenthesis is where the user data begins
          memcpy(pBegin, header, headerLen);
-         //printf("(%p) Sending %d+%d bytes\n", (void*)self, (int)headerLen, (int)msgLen);
-#if 0
-         if (self->debugMode >= APX_DEBUG_4_HIGH)
-         {
-            int i;
-            char msg[MAX_DEBUG_MSG_SIZE];
-            char *pMsg = &msg[0];
-            char *pMsgEnd = pMsg + MAX_DEBUG_MSG_SIZE;
-            pMsg += sprintf(msg, "(%p) Sending %d+%d bytes:", (void*)self, (int)headerLen, (int)msgLen);
-            for (i = 0; i < MAX_DEBUG_BYTES; i++)
-            {
-               if ((i >= msgLen + headerLen) || ( (pMsg + HEX_DATA_LEN) > pMsgEnd))
-               {
-                  break;
-               }
-               pMsg += sprintf(pMsg, " %02X", (int)pBegin[i]);
-            }
-            APX_LOG_DEBUG("[APX_SRV_CONNECTION] %s", msg);
-         }
+#if APX_DEBUG_ENABLE
+         printf("[SERVER-SOCKET] Sending %d+%d bytes\n", (int)headerLen, (int)msgLen);
 #endif
          SOCKET_SEND(self->socketObject, pBegin, msgLen+headerLen);
          return msgLen;
@@ -312,10 +295,14 @@ static int32_t apx_serverSocketConnection_send(void *arg, int32_t offset, int32_
 static int8_t apx_serverSocketConnection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
 {
    apx_serverSocketConnection_t *self = (apx_serverSocketConnection_t*) arg;
+   int retval = apx_serverConnectionBase_dataReceived(&self->base, dataBuf, dataLen, parseLen);
 #if APX_DEBUG_ENABLE
-   printf("[SERVER-SOCKET] Received %d bytes\n", (int) dataLen);
+   if (*parseLen > 0)
+   {
+      printf("[SERVER-SOCKET] Received %u bytes\n", (unsigned int) *parseLen);
+   }
 #endif
-   return apx_serverConnectionBase_dataReceived(&self->base, dataBuf, dataLen, parseLen);
+   return retval;
 }
 
 static void apx_serverSocketConnection_disconnected(void *arg)

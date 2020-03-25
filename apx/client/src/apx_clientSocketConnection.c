@@ -333,6 +333,9 @@ static int32_t apx_clientSocketConnection_send(void *arg, int32_t offset, int32_
          //place header just before user data begin
          pBegin = sendBuffer+(self->base.base.numHeaderLen+offset-headerLen); //the part in the parenthesis is where the user data begins
          memcpy(pBegin, header, headerLen);
+#if APX_DEBUG_ENABLE
+         printf("[CLIENT-CONNECTION] Sending %d+%d bytes\n", (int)headerLen, (int)msgLen);
+#endif
          result = SOCKET_SEND(self->socketObject, pBegin, msgLen+headerLen);
          if (result == 0)
          {
@@ -364,10 +367,14 @@ static void apx_clientSocketConnection_connected(void *arg, const char *addr, ui
 static int8_t apx_clientSocketConnection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
 {
    apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) arg;
+   int8_t retval = apx_clientConnectionBase_onDataReceived(&self->base, dataBuf, dataLen, parseLen);
 #if APX_DEBUG_ENABLE
-   printf("[CLIENT-SOCKET] Received %d bytes\n", (int) dataLen);
+   if (*parseLen > 0)
+   {
+      printf("[CLIENT-SOCKET] Received %u bytes\n", (unsigned int) *parseLen);
+   }
 #endif
-   return apx_clientConnectionBase_onDataReceived(&self->base, dataBuf, dataLen, parseLen);
+   return retval;
 }
 
 static void apx_clientSocketConnection_disconnected(void *arg)

@@ -409,7 +409,11 @@ static uint8_t apx_serverConnectionBase_parseMessage(apx_serverConnectionBase_t 
          }
          else
          {
-            apx_error_t errorCode = apx_connectionBase_processMessage(&self->base, pNext, msgLen);
+            apx_error_t errorCode;
+#if APX_DEBUG_ENABLE
+            printf("[SERVER-CONNECTION] Process message (%d+%d) bytes\n", (int) headerLen, (int) msgLen);
+#endif
+            errorCode = apx_connectionBase_processMessage(&self->base, pNext, msgLen);
             if (errorCode != APX_NO_ERROR)
             {
                printf("[SERVER-CONNECTION-BASE] apx_connectionBase_processMessage failed with %d\n", (int) errorCode);
@@ -498,12 +502,17 @@ static apx_error_t apx_serverConnectionBase_processNewDefinitionFile(apx_serverC
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
 static void apx_serverConnectionBase_definitionDataWriteNotify(apx_serverConnectionBase_t *self, apx_nodeInstance_t *nodeInstance, uint32_t offset, uint32_t len)
 {
    apx_programType_t errProgramType;
    apx_uniquePortId_t errPortId;
    apx_portCount_t numProvidePorts;
-   apx_error_t rc = apx_nodeManager_parseDefinition(&self->base.nodeManager, nodeInstance);
+   apx_error_t rc;
+#if APX_DEBUG_ENABLE
+   printf("Calling APX parser\n");
+#endif
+   rc = apx_nodeManager_parseDefinition(&self->base.nodeManager, nodeInstance);
    if (rc != APX_NO_ERROR )
    {
       printf("APX file parse failure (%d)\n", (int) rc);

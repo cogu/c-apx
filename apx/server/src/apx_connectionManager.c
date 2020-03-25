@@ -125,7 +125,7 @@ void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConne
 
       SPINLOCK_LEAVE(self->lock);
 #if (APX_DEBUG_ENABLE)
-      printf("[CONNECTION_MANAGER] New connection %d\n", (int) connectionId );
+      printf("[CONNECTION-MANAGER] New connection %d\n", (int) connectionId );
 #endif
    }
 }
@@ -257,11 +257,11 @@ THREAD_PROTO(cleanupTask,arg)
             break;
          }
 #if (APX_DEBUG_ENABLE)
-         //printf("[CONNECTION_MANAGER] Running cleanupTask\n");
+         //printf("[CONNECTION-MANAGER] Running cleanupTask\n");
 #endif
          apx_connectionManager_cleanupTask_run(self, numInactiveConnections);
 #if (APX_DEBUG_ENABLE)
-         //printf("[CONNECTION_MANAGER] Done running cleanupTask\n");
+         //printf("[CONNECTION-MANAGER] Done running cleanupTask\n");
 #endif
       }
    }
@@ -281,14 +281,14 @@ static void apx_connectionManager_cleanupTask_run(apx_connectionManager_t *self,
       if ( (apx_connectionBase_getNumPendingWorkerMessages(&serverConnection->base) == 0u) && (apx_connectionBase_getNumPendingEvents(&serverConnection->base) == 0u))
       {
 #if (APX_DEBUG_ENABLE)
-         printf("[CONNECTION_MANAGER] Cleaning up %d\n", (int) serverConnection->base.connectionId);
+         printf("[CONNECTION-MANAGER] Cleaning up %d\n", (int) serverConnection->base.connectionId);
 #endif
          adt_list_erase(&self->inactiveConnections, iter);
          apx_connectionBase_stop(&serverConnection->base);
          apx_connectionBase_close(&serverConnection->base);
          apx_connectionBase_delete(&serverConnection->base);
 #if (APX_DEBUG_ENABLE)
-         printf("[CONNECTION_MANAGER] Cleanup complete\n");
+         printf("[CONNECTION-MANAGER] Cleanup complete\n");
 #endif
       }
       SPINLOCK_LEAVE(self->lock);
