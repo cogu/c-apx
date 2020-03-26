@@ -173,7 +173,7 @@ static void apx_receive_connection_onRequirePortWrite(void *arg, apx_nodeInstanc
       MUTEX_UNLOCK(self->mutex);
       if ( (dv != 0) && (port_name != 0) )
       {
-         adt_str_t *value = dtl_json_dumps(dv, 0, true);
+         adt_str_t *value = dtl_json_dumps(dv, 0, false);
          if (value != 0)
          {
             printf("%s: %s\n", adt_str_cstr(port_name), adt_str_cstr(value));
