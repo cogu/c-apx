@@ -5,7 +5,7 @@ This is the C implementation of [APX](https://github.com/cogu/apx-doc).
 ## v0.2.x (Stable)
 
 All maintenance work for v0.2 is done on the [maintenance_0.2](https://github.com/cogu/c-apx/tree/maintenance_0.2) branch.
-Latest release is [v0.2.5](https://github.com/cogu/c-apx/releases/tag/v0.2.5).
+Latest release is [v0.2.6](https://github.com/cogu/c-apx/releases/tag/v0.2.6).
 
 ## v0.3.x (In development)
 
@@ -14,21 +14,27 @@ highly experimental.
 
 ### Current status of master branch (v0.3.0a)
 
-- apx-server should be considered "minimum viable product".
-- GCC support only (Visual Studio project is currently out of sync).
-- APX-ES is not yet supported (needs refactoring/rework).
-- Dynamic nodes only (code-generated nodes not yet implemented).
-- Limited data type support:
-  - uint8
-  - uint16
-  - uint32
-  - uint8 array (fixed length)
-  - uint16 array (fixed length)
-  - uint32 array (fixed length)
+- Full support for APX v1.2 specification.
+- APX server should have the same feature set as seen in [v0.2.6](https://github.com/cogu/c-apx/releases/tag/v0.2.6).
+- Linux and GCC support only (Visual Studio project on Windows needs update).
+- Dynamic clients is fully supported.
+- APX-ES clients not yet supported (needs rewrite from v0.2 to v0.3).
+- Static clients not yet supported (needs rewrite from v0.2 to v0.3).
+
+## Dynamic vs. Static Clients
+
+### Static Clients
+
+Static clients uses a code generator (see [Python APX](https://github.com/cogu/py-apx)) to generate C code from APX definitions files.
+The generated code is fast and integrates well with type definitions shared with an AUTOSAR RTE generator.
+
+### Dynamic Clients
+
+Dynamic clients parses an APX definition file in runtime and builds small byte code programs (in-memory) which then executes through a virtual machine (VM). This method has more flexibility since it doesn't require C code to be generated or compiled as an intermediate step.
 
 ## What is APX?
 
-APX is a software technology designed for the automotive industry. It is used to stream automotive signals in real-time
+APX is a software solution designed for the automotive industry. It is used to stream automotive signals in real-time
 to (or from) Linux or Windows systems. APX is designed to work well for high-frequency signal changes (low latency updates) over short distances (SPI buses, local area ethernet or local host).
 
 APX is a client-server solution. In a typical setup, one apx-server instance executes on Linux (or Windows).
