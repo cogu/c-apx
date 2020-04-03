@@ -33,7 +33,7 @@
 #include <string.h>
 #include "CuTest.h"
 #include "apx_dataElement.h"
-#include "apx_datatype.h"
+#include "apx_dataType.h"
 #include "adt_bytearray.h"
 
 #ifdef MEM_LEAK_CHECK

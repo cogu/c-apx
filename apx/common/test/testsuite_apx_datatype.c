@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <stddef.h>
 #include "CuTest.h"
-#include "apx_datatype.h"
+#include "apx_dataType.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
