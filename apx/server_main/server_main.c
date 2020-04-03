@@ -22,6 +22,9 @@
 #include "dtl_json.h"
 #include "extensions.h"
 #include "apx_eventListener.h"
+#ifdef USE_CONFIGURATION_FILE
+#include "apx_build_cfg.h"
+#endif
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -132,7 +135,7 @@ int main(int argc, char **argv)
          }
          if (m_shutdownTimer < SHUTDOWN_TIMER_WARN_THRESHOLD)
          {
-            char msg[20];
+            char msg[40];
             sprintf(msg, "Shutdown in %ds", m_shutdownTimer);
             apx_server_logEvent(&m_server, APX_LOG_LEVEL_INFO, "main", msg);
          }

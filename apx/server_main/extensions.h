@@ -30,7 +30,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx_socketServerExtension.h"
-#include "apx_serverTextLogExtension.h"
+//#include "apx_serverTextLogExtension.h"
 
 
 #endif //EXTENSIONS_H
