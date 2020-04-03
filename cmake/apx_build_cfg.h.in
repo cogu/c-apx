@@ -1,0 +1,4 @@
+#ifndef APX_VERSION_H
+#define APX_VERSION_H
+    #define SW_VERSION_LITERAL "@apx_VERSION_MAJOR@.@apx_VERSION_MINOR@.@apx_VERSION_PATCH@" "@apx_ALPHA_BUILD_STR@"
+#endif
