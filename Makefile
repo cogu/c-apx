@@ -1,7 +1,7 @@
 include config.inc
 CC ?= gcc
 
-CFLAGS += -Wall -O0 -g -DSW_VERSION_LITERAL=$(VERSION) -DADT_RBFH_ENABLE=1 -DPLATFORM_BYTE_ORDER=0
+CFLAGS += -Wall -O2 -DSW_VERSION_LITERAL=$(VERSION) -DADT_RBFH_ENABLE=1 -DPLATFORM_BYTE_ORDER=0
 CFLAGS += -DAPX_DEBUG_ENABLE=0
 
 LDFLAGS += -pthread
@@ -45,7 +45,7 @@ SHARED_SOURCES = \
 	apx/common/src/apx_connectionBase.c \
 	apx/common/src/apx_dataElement.c \
 	apx/common/src/apx_dataSignature.c \
-	apx/common/src/apx_datatype.c \
+	apx/common/src/apx_dataType.c \
 	apx/common/src/apx_event.c \
 	apx/common/src/apx_eventListener.c \
 	apx/common/src/apx_eventLoop.c \

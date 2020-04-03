@@ -33,7 +33,7 @@
 #include "apx_dataElement.h"
 #include "apx_error.h"
 #include "apx_types.h"
-#include "apx_datatype.h"
+#include "apx_dataType.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
