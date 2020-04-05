@@ -443,7 +443,7 @@ static void test_apx_client_writePortData_direct_u8(CuTest* tc)
 
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData_u8(client, U8ValueHandle, 0x12));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE));
-   CuAssertUIntEquals(tc, 0x00, rawData[1]);
+   CuAssertUIntEquals(tc, 0x12, rawData[0]);
 
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData_u8(client, U8ValueHandle, 0xff));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT8_SIZE));

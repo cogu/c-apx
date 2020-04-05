@@ -8,7 +8,11 @@
 #   include <stdlib.h>
 #   include <crtdbg.h>
 #endif
+# ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+# endif
 #include <Windows.h>
+#include <WinSock2.h>
 #else
 #include <unistd.h>
 #include <signal.h>
@@ -25,6 +29,8 @@
 #ifdef USE_CONFIGURATION_FILE
 #include "apx_build_cfg.h"
 #endif
+
+#pragma comment(lib, "ws2_32.lib")
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -38,13 +44,15 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+#ifndef _WIN32
 static void signal_handler_setup(void);
 void signal_handler(int signum);
+#endif
 static void printUsage(char *name);
 static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv);
 static apx_error_t register_extensions(apx_server_t *server, dtl_hv_t *config);
 #ifdef _WIN32
-static void init_wsa(void);
+static int init_wsa(void);
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -108,11 +116,13 @@ int main(int argc, char **argv)
 #ifdef _WIN32
    if (init_wsa() != 0)
    {
+      int err = WSAGetLastError();
       fprintf(stderr, "WSAStartup failed with error: %d\n", err);
       return 1;
    }
-#endif
+#else
    signal_handler_setup();
+#endif
    apx_server_create(&m_server);
    if (server_config != 0)
    {
@@ -165,6 +175,7 @@ void vfree(void *arg)
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
+#ifndef _WIN32
 static void signal_handler_setup(void)
 {
    if(signal (SIGINT, signal_handler) == SIG_IGN) {
@@ -180,10 +191,10 @@ void signal_handler(int signum)
    (void)signum;
    m_runFlag = false;
 }
-
+#endif
 
 static void printUsage(char *name)
-{   
+{
    printf("Usage:\n%s configFile.json\n",name);
 }
 
@@ -237,7 +248,7 @@ static apx_error_t register_extensions(apx_server_t *server, dtl_hv_t *config)
 }
 
 #ifdef _WIN32
-static int init_wsa(void);
+static int init_wsa(void)
 {
    WORD wVersionRequested;
    WSADATA wsaData;

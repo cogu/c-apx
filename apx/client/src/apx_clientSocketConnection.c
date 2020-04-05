@@ -198,7 +198,7 @@ apx_error_t apx_clientConnection_tcp_connect(apx_clientSocketConnection_t *self,
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
-
+# ifndef _WIN32
 apx_error_t apx_clientConnection_unix_connect(apx_clientSocketConnection_t *self, const char *socketPath)
 {
    if (self != 0)
@@ -229,8 +229,8 @@ apx_error_t apx_clientConnection_unix_connect(apx_clientSocketConnection_t *self
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
-
-#endif
+# endif // _WIN32
+#endif // UNIT_TEST
 
 
 

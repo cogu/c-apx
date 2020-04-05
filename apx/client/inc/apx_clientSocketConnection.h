@@ -61,7 +61,9 @@ apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE *socket
 apx_error_t apx_clientSocketConnection_connect(apx_clientSocketConnection_t *self);
 #else
 apx_error_t apx_clientConnection_tcp_connect(apx_clientSocketConnection_t *self, const char *address, uint16_t port);
+# ifndef _WIN32
 apx_error_t apx_clientConnection_unix_connect(apx_clientSocketConnection_t *self, const char *socketPath);
+# endif
 #endif
 
 #undef SOCKET_TYPE

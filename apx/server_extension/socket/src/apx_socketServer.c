@@ -155,6 +155,7 @@ void apx_socketServer_startTcpServer(apx_socketServer_t *self, uint16_t tcpPort,
    }
 }
 
+#ifndef _WIN32
 void apx_socketServer_startUnixServer(apx_socketServer_t *self, const char *filePath, const char *tag)
 {
    if ( (self != 0) && (filePath != 0))
@@ -180,13 +181,16 @@ void apx_socketServer_startUnixServer(apx_socketServer_t *self, const char *file
 //      apx_server_logEvent(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
    }
 }
+#endif
 
 void apx_socketServer_stopAll(apx_socketServer_t *self)
 {
    if (self != 0)
    {
       apx_socketServer_stopTcpServer(self);
+#ifndef _WIN32
       apx_socketServer_stopUnixServer(self);
+#endif
    }
 }
 
@@ -199,6 +203,7 @@ void apx_socketServer_stopTcpServer(apx_socketServer_t *self)
    }
 }
 
+#ifndef _WIN32
 void apx_socketServer_stopUnixServer(apx_socketServer_t *self)
 {
    if ( (self != 0) && (self->isUnixServerStarted) )
@@ -209,6 +214,7 @@ void apx_socketServer_stopUnixServer(apx_socketServer_t *self)
       self->isUnixServerStarted = false;
    }
 }
+#endif
 
 #ifdef UNIT_TEST
 void apx_socketServer_acceptTestSocket(apx_socketServer_t *self, testsocket_t *sock)

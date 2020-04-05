@@ -413,12 +413,12 @@ static void apx_fileManagerWorker_stopThread(apx_fileManagerWorker_t *self)
          result = WaitForSingleObject(self->workerThread, 5000);
          if (result == WAIT_TIMEOUT)
          {
-            APX_LOG_ERROR("[APX_FILE_MANAGER] timeout while joining workerThread");
+            fprintf(stderr, "[APX_FILE_MANAGER] timeout while joining workerThread");
          }
          else if (result == WAIT_FAILED)
          {
             DWORD lastError = GetLastError();
-            APX_LOG_ERROR("[APX_FILE_MANAGER]  joining workerThread failed with %d", (int)lastError);
+            fprintf(stderr, "[APX_FILE_MANAGER]  joining workerThread failed with %d", (int)lastError);
          }
          CloseHandle(self->workerThread);
          self->workerThread = INVALID_HANDLE_VALUE;

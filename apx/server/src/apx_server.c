@@ -660,7 +660,7 @@ static apx_error_t apx_server_startThread(apx_server_t *self)
    THREAD_CREATE(self->eventThread, threadTask, self, self->threadId);
    if(self->eventThread == INVALID_HANDLE_VALUE)
    {
-      self->eventThreadValid = false;
+      self->isEventThreadValid = false;
       return APX_THREAD_CREATE_ERROR;
    }
 #else
@@ -679,7 +679,7 @@ static apx_error_t apx_server_stopThread(apx_server_t *self)
    if (self->isEventThreadValid)
    {
 #ifdef _MSC_VER
-      result = WaitForSingleObject(self->eventThread, 5000);
+      DWORD result = WaitForSingleObject(self->eventThread, 5000);
       if (result == WAIT_TIMEOUT)
       {
          return APX_THREAD_JOIN_TIMEOUT_ERROR;
