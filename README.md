@@ -16,7 +16,7 @@ highly experimental.
 
 - Full support for APX v1.2 specification.
 - APX server should have the same feature set as seen in [v0.2.6](https://github.com/cogu/c-apx/releases/tag/v0.2.6).
-- Linux and GCC support only (Visual Studio project on Windows needs update).
+- Linux and Windows support when built using CMake.
 - Dynamic clients is fully supported.
 - APX-ES clients not yet supported (needs rewrite from v0.2 to v0.3).
 - Static clients not yet supported (needs rewrite from v0.2 to v0.3).
@@ -57,3 +57,49 @@ APX for embedded systems (APX-ES) is client source code written in C for very sm
 - It is intended to be MISRA-compliant (at some point).
 
 Note that APX-ES on master branch is not yet updated to work with the new v0.3.x code base (that work will start soon).
+
+## Building with CMake
+
+### Running unit tests (Linux with GCC)
+
+```bash
+mkdir UnitTest && cd UnitTest
+cmake -DUNIT_TEST=ON -DLEAK_CHECK=ON ..
+cmake --build .
+./bstr_unit
+```
+
+### Running unit tests (Windows with Visual Studio)
+
+Use a Visual Studio command prompt from the start menu, such as "x64 Native Tools Command Prompt for VS2019".
+It conveniently comes pre-installed with a version of CMake that generates Visual Studio projects by default.
+
+```cmd
+mkdir UnitTest && cd UnitTest
+cmake -DUNIT_TEST=ON -DLEAK_CHECK=ON ..
+cmake --build . --config Debug
+Debug\bstr_unit.exe
+```
+
+### Building and running default APX server (Linux)
+
+```bash
+mkdir Release && cd Release
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+./apx_server ../apx/config/apx_server_cfg.json
+```
+
+For faster build times, you can add `-GNinja` to the first cmake command as an option (if you have ninja-build installed).
+
+### Building and running default APX server (Windows)
+
+```cmd
+mkdir VisualStudio && cd VisualStudio
+cmake ..
+cmake --build . --config Release
+Release\apx_server.exe ../apx/config/apx_server_cfg.json
+```
+
+For faster build times, you can add `-GNinja` to the first cmake command as an option.
+Note that ninja-build comes pre-installed with Visual Studio 2019 native tools command prompt.
