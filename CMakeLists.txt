@@ -54,7 +54,7 @@ endif()
 if (UNIT_TEST)
     target_compile_definitions(remotefile PRIVATE UNIT_TEST)
 endif()
-target_link_libraries(remotefile cutil)
+target_link_libraries(remotefile PRIVATE cutil)
 target_include_directories(remotefile PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/remotefile/inc)
 ###
 
@@ -204,8 +204,8 @@ endif()
 if (UNIT_TEST)
     target_compile_definitions(apx_common PRIVATE UNIT_TEST)
 endif()
-target_link_libraries(apx_common adt bstr cutil dtl_json dtl_type msocket remotefile)
-target_include_directories(remotefile PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/common/inc)
+target_link_libraries(apx_common PUBLIC adt bstr cutil dtl_json dtl_type msocket remotefile)
+target_include_directories(apx_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/common/inc)
 ###
 
 ### Library apx_client_lib
@@ -243,18 +243,18 @@ set (APX_CLIENT_LIB_TEST_SUITE_LIST
 add_library(apx_client_lib ${APX_CLIENT_LIB_SOURCE_LIST} ${APX_CLIENT_LIB_HEADER_LIST})
 if (LEAK_CHECK)
     target_compile_definitions(apx_client_lib PRIVATE MEM_LEAK_CHECK)
-    target_link_libraries(apx_client_lib cutil)
+    target_link_libraries(apx_client_lib PRIVATE cutil)
 endif()
 if (UNIT_TEST)
     target_compile_definitions(apx_client_lib PRIVATE UNIT_TEST)
 endif()
-target_link_libraries(apx_client_lib adt apx_common msocket)
+target_link_libraries(apx_client_lib PRIVATE adt apx_common msocket)
 target_include_directories(apx_client_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/client/inc)
 ###
 
 ### Library apx_server_lib
 set (APX_SERVER_LIB_HEADER_LIST
-    apx/server/inc/apx_connectionManager.h    
+    apx/server/inc/apx_connectionManager.h
     apx/server/inc/apx_server.h
     apx/server/inc/apx_serverConnectionBase.h
     apx/server/inc/apx_serverExtension.h
@@ -264,7 +264,7 @@ if (UNIT_TEST)
 endif()
 
 set (APX_SERVER_LIB_SOURCE_LIST
-    apx/server/src/apx_connectionManager.c    
+    apx/server/src/apx_connectionManager.c
     apx/server/src/apx_server.c
     apx/server/src/apx_serverConnectionBase.c
     apx/server/src/apx_serverExtension.c
@@ -281,12 +281,12 @@ set (APX_SERVER_LIB_TEST_SUITE_LIST
 add_library(apx_server_lib ${APX_SERVER_LIB_SOURCE_LIST} ${APX_SERVER_LIB_HEADER_LIST})
 if (LEAK_CHECK)
     target_compile_definitions(apx_server_lib PRIVATE MEM_LEAK_CHECK)
-    target_link_libraries(apx_server_lib cutil)
+    target_link_libraries(apx_server_lib PRIVATE cutil)
 endif()
 if (UNIT_TEST)
     target_compile_definitions(apx_server_lib PRIVATE UNIT_TEST)
 endif()
-target_link_libraries(apx_server_lib adt apx_common msocket)
+target_link_libraries(apx_server_lib PUBLIC adt apx_common msocket remotefile dtl_type bstr)
 target_include_directories(apx_server_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/server/inc)
 ###
 
@@ -310,12 +310,13 @@ set (APX_SERVER_SOCKET_EXT_TEST_SUITE_LIST
 add_library(apx_server_socket_extension ${APX_SERVER_SOCKET_EXT_SOURCE_LIST} ${APX_SERVER_SOCKET_EXT_HEADER_LIST})
 if (LEAK_CHECK)
     target_compile_definitions(apx_server_socket_extension PRIVATE MEM_LEAK_CHECK)
-    target_link_libraries(apx_server_socket_extension cutil)
+    target_link_libraries(apx_server_socket_extension PRIVATE cutil)
 endif()
 if (UNIT_TEST)
+    target_link_libraries(apx_server_socket_extension PRIVATE msocket_testsocket)
     target_compile_definitions(apx_server_socket_extension PRIVATE UNIT_TEST)
 endif()
-target_link_libraries(apx_server_socket_extension adt apx_common apx_server_lib msocket_server)
+target_link_libraries(apx_server_socket_extension PRIVATE adt apx_common apx_server_lib msocket_server remotefile dtl_type bstr)
 target_include_directories(apx_server_socket_extension PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/server_extension/socket/inc)
 ###
 
@@ -371,14 +372,20 @@ endif()
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     add_executable(apx_server apx/server_main/server_main.c)
     target_link_libraries(apx_server PRIVATE
-    apx_common    
+    apx_common
     apx_server_lib
-    apx_server_socket_extension    
-    remotefile    
+    apx_server_socket_extension
+    remotefile
     Threads::Threads
     )
+    if (UNIT_TEST)
+        target_link_libraries(apx_server PRIVATE cutil)
+    endif()
+    if (LEAK_CHECK)
+        target_compile_definitions(apx_server PRIVATE MEM_LEAK_CHECK)
+    endif()
     target_include_directories(apx_server PRIVATE
-                    "${PROJECT_BINARY_DIR}"                    
+                    "${PROJECT_BINARY_DIR}"
                     )
     target_compile_definitions(apx_server PRIVATE USE_CONFIGURATION_FILE)
 endif()
