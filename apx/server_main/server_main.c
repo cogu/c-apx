@@ -154,6 +154,12 @@ int main(int argc, char **argv)
    return 0;
 }
 
+#ifdef MEM_LEAK_CHECK
+void vfree(void *arg)
+{
+   free(arg);
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
