@@ -14,5 +14,8 @@ steps:
   submodules: true
   
 - script: |
-    make
-  displayName: 'make'
+    mkdir UnitTest && cd UnitTest
+    cmake -DUNIT_TEST=ON -DLEAK_CHECK=ON ..
+    cmake --build .
+    ./apx_unit
+  displayName: 'UnitTest'
