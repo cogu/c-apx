@@ -2,6 +2,7 @@
 **/Debug/
 **/Release
 **/UnitTest
+**/VisualStudio
 **/build/
 **.vs/
 *.VC.db

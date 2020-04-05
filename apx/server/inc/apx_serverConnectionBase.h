@@ -29,15 +29,18 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+# endif
+#include <Windows.h>
+#else
+#include <pthread.h>
+#endif
 #include "apx_connectionBase.h"
 #include "adt_list.h"
 #include "adt_str.h"
 #include "apx_eventListener.h"
-#ifndef _WIN32
-#include <pthread.h>
-#else
-#include <Windows.h>
-#endif
 #include "osmacro.h"
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

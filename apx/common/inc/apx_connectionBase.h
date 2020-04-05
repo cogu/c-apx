@@ -29,12 +29,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
-#include "apx_fileManager.h"
-#include "apx_nodeManager.h"
-#include "apx_eventLoop.h"
-#include "apx_allocator.h"
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN
@@ -44,6 +38,12 @@
 # include <pthread.h>
 # include <semaphore.h>
 #endif
+#include "apx_types.h"
+#include "apx_error.h"
+#include "apx_fileManager.h"
+#include "apx_nodeManager.h"
+#include "apx_eventLoop.h"
+#include "apx_allocator.h"
 #include "osmacro.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -94,6 +94,9 @@ typedef struct apx_connectionBase_tag
    uint32_t totalBytesReceived;
    uint32_t totalBytesSent;
    apx_mode_t mode;
+#ifdef _WIN32
+   unsigned int threadId;
+#endif
 } apx_connectionBase_t;
 
 

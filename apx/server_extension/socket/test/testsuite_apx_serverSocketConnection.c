@@ -1,6 +1,14 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+# endif
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
 #include <stddef.h>
 #include <stdio.h>
 #include <assert.h>
@@ -13,11 +21,6 @@
 #include "testsocket_spy.h"
 #include "apx_fileManager.h"
 #include "numheader.h"
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
 #include "osmacro.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

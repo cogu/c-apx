@@ -58,7 +58,7 @@ typedef struct apx_connectionManager_tag
    bool cleanupThreadRunning; //when false it's time do shut down
    bool cleanupThreadValid; //true if cleanupThread is a valid variable
 #ifdef _MSC_VER
-   unsigned int threadId;
+   unsigned int cleanupThreadId;
 #endif
 } apx_connectionManager_t;
 

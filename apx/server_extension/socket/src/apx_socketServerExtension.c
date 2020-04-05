@@ -26,7 +26,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#ifdef _MSC_VER
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+# endif
 #include <Windows.h>
 #endif
 #include "apx_socketServerExtension.h"
@@ -110,12 +113,16 @@ static void apx_socketServerExtension_shutdown(void)
 static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg)
 {
    dtl_sv_t *svTcpPort;
+#ifndef _WIN32
    dtl_sv_t *svUnixFile;
+#endif
    dtl_sv_t *svTcpTag;
    dtl_sv_t *svUnixTag;
    bool conversionOk;
    svTcpPort = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-port");
+#ifndef _WIN32
    svUnixFile = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-file");
+#endif
    svTcpTag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-tag");
    svUnixTag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-tag");
    if (svTcpPort != 0)
@@ -131,6 +138,7 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
          apx_socketServer_startTcpServer(m_instance, tcpPort, tag);
       }
    }
+#ifndef _WIN32
    if (svUnixFile != 0)
    {
       const char *unixFilePath = dtl_sv_to_cstr(svUnixFile);
@@ -144,6 +152,7 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
          apx_socketServer_startUnixServer(m_instance, unixFilePath, tag);
       }
    }
+#endif
    return APX_NO_ERROR;
 }
 

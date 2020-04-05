@@ -66,7 +66,7 @@ Note that APX-ES on master branch is not yet updated to work with the new v0.3.x
 mkdir UnitTest && cd UnitTest
 cmake -DUNIT_TEST=ON -DLEAK_CHECK=ON ..
 cmake --build .
-./bstr_unit
+./apx_unit
 ```
 
 ### Running unit tests (Windows with Visual Studio)
@@ -78,7 +78,7 @@ It conveniently comes pre-installed with a version of CMake that generates Visua
 mkdir UnitTest && cd UnitTest
 cmake -DUNIT_TEST=ON -DLEAK_CHECK=ON ..
 cmake --build . --config Debug
-Debug\bstr_unit.exe
+Debug\apx_unit.exe
 ```
 
 ### Building and running default APX server (Linux)
@@ -90,7 +90,7 @@ cmake --build .
 ./apx_server ../apx/config/apx_server_cfg.json
 ```
 
-For faster build times, you can add `-GNinja` to the first cmake command as an option (if you have ninja-build installed).
+For faster build times, you can add `-GNinja` to the first cmake command line (if you have ninja-build installed).
 
 ### Building and running default APX server (Windows)
 
@@ -101,5 +101,5 @@ cmake --build . --config Release
 Release\apx_server.exe ../apx/config/apx_server_cfg.json
 ```
 
-For faster build times, you can add `-GNinja` to the first cmake command as an option.
+For faster build times, you can add `-DCMAKE_BUILD_TYPE=Release -GNinja` to the first cmake command line.
 Note that ninja-build comes pre-installed with Visual Studio 2019 native tools command prompt.
