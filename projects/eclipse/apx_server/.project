@@ -25,16 +25,6 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>Makefile</name>
-			<type>1</type>
-			<locationURI>PARENT-3-PROJECT_LOC/Makefile</locationURI>
-		</link>
-		<link>
-			<name>build</name>
-			<type>2</type>
-			<locationURI>PARENT-3-PROJECT_LOC/build</locationURI>
-		</link>
-		<link>
 			<name>adt/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/adt/inc</locationURI>
