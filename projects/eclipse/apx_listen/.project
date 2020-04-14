@@ -35,6 +35,16 @@
 			<locationURI>PARENT-3-PROJECT_LOC/adt/src</locationURI>
 		</link>
 		<link>
+			<name>app/inc</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/app/apx_listen/inc</locationURI>
+		</link>
+		<link>
+			<name>app/src</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/app/apx_listen/src</locationURI>
+		</link>
+		<link>
 			<name>bstr/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/bstr/inc</locationURI>

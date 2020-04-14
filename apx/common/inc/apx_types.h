@@ -169,5 +169,14 @@ typedef uint8_t apx_providePortDataState_t;
 #define APX_PROVIDE_PORT_DATA_STATE_CONNECTED                     ((apx_providePortDataState_t) 3u)
 #define APX_PROVIDE_PORT_DATA_STATE_DISCONNECTED                  ((apx_providePortDataState_t) 4u)
 
+// Shared library visibility
+
+# if __GNUC__ >= 4
+   #define DLL_PUBLIC __attribute__ ((visibility ("default")))
+   #define DLL_LOCAL  __attribute__ ((visibility ("hidden")))
+# else
+   #define DLL_PUBLIC
+   #define DLL_LOCAL
+# endif
 
 #endif //APX_TYPES_H
