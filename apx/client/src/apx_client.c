@@ -70,6 +70,7 @@ static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t 
 static void apx_client_attachLocalNodesToConnection(apx_client_t *self);
 static apx_error_t apx_client_verifySingleInstructionProgramFromPortRef(apx_portRef_t *portRef, uint8_t opcode, uint8_t variant);
 static apx_error_t apx_client_verifySingleInstructionProgram(const adt_bytes_t *program, uint8_t opcode, uint8_t variant);
+
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -133,7 +134,7 @@ void apx_client_destroy(apx_client_t *self)
    }
 }
 
-apx_client_t *apx_client_new(void)
+apx_client_t DLL_PUBLIC *apx_client_new(void)
 {
    apx_client_t *self = (apx_client_t*) malloc(sizeof(apx_client_t));
    if(self != 0)
@@ -148,7 +149,7 @@ apx_client_t *apx_client_new(void)
    return self;
 }
 
-void apx_client_delete(apx_client_t *self)
+void DLL_PUBLIC apx_client_delete(apx_client_t *self)
 {
    if (self != 0)
    {
@@ -157,7 +158,7 @@ void apx_client_delete(apx_client_t *self)
    }
 }
 
-void apx_client_vdelete(void *arg)
+void DLL_PUBLIC apx_client_vdelete(void *arg)
 {
    apx_client_delete((apx_client_t*) arg);
 }
@@ -251,6 +252,7 @@ void apx_client_disconnect(apx_client_t *self)
    if ( (self != 0) && (self->connection != 0))
    {
       apx_connectionBase_close(&self->connection->base);
+      apx_connectionBase_stop(&self->connection->base);
       SPINLOCK_ENTER(self->lock);
       self->isConnected = false;
       SPINLOCK_LEAVE(self->lock);
@@ -853,6 +855,7 @@ void apx_client_run(apx_client_t *self)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+
 static void apx_client_triggerConnectedEventOnListeners(apx_client_t *self, apx_clientConnectionBase_t *connection)
 {
    SPINLOCK_ENTER(self->eventListenerLock);

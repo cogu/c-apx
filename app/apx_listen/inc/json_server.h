@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_receive_connection.h
+* \file      json_server.h
 * \author    Conny Gustafsson
-* \date      2020-03-09
-* \brief     APX client connection that can listen to any value sent from APX server
+* \date      2020-03-07
+* \brief     Server that listens for messages forwarded by apx_control application
 *
 * Copyright (c) 2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -23,37 +23,29 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_RECEIVE_CONNECTION_H
-#define APX_RECEIVE_CONNECTION_H
+#ifndef MESSAGE_SERVER_H
+#define MESSAGE_SERVER_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_client.h"
-#include "adt_bytearray.h"
-#include <pthread.h>
-#include "osmacro.h"
-#include "adt_hash.h"
+#include "apx_error.h"
+#include "json_server_connection.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_receive_connection_tag
-{
-   apx_client_t *client;
-   MUTEX_T mutex;
-} apx_receive_connection_t;
+
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC VARIABLES
+//////////////////////////////////////////////////////////////////////////////
+
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_receive_connection_create(apx_receive_connection_t *self);
-void apx_receive_connection_destroy(apx_receive_connection_t *self);
-apx_receive_connection_t *apx_receive_connection_new(void);
-void apx_receive_connection_delete(apx_receive_connection_t *self);
+apx_error_t json_server_init(struct apx_connection_tag *apx_connection);
+void json_server_start(const char *socket_path);
+void json_server_cleanup_connection(json_server_connection_t *connection);
+void json_server_shutdown(void);
 
-apx_error_t apx_receive_connection_attachNode(apx_receive_connection_t *self, adt_str_t *apx_definition);
-int32_t apx_receive_connection_getLastErrorLine(apx_receive_connection_t *self);
-apx_nodeInstance_t *apx_receive_connection_getLastAttachedNode(apx_receive_connection_t *self);
-apx_error_t apx_receive_connection_connect_unix(apx_receive_connection_t *self, const char *socketPath);
-
-#endif //APX_RECEIVE_CONNECTION_H
+#endif //MESSAGE_SERVER_H
