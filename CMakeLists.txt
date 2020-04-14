@@ -327,9 +327,45 @@ add_subdirectory(cutil)
 add_subdirectory(dtl_json)
 add_subdirectory(dtl_type)
 add_subdirectory(msocket)
+add_subdirectory(app/apx_listen)
 ###
 
+## apx shared link library
+# add_library(apx SHARED
+#             ${ADT_SOURCE_LIST}
+#             ${ADT_HEADER_LIST}
+#             ${CUTIL_SOURCE_LIST}
+#             ${CUTIL_HEADER_LIST}
+#             ${RMF_SOURCE_LIST}
+#             ${RMF_HEADER_LIST}
+#             ${APX_COMMON_SOURCE_LIST}
+#             ${APX_COMMON_HEADER_LIST}
+#             ${APX_CLIENT_LIB_SOURCE_LIST}
+#             ${APX_CLIENT_LIB_HEADER_LIST}
+# )
 
+# target_compile_definitions(apx PRIVATE ADT_RBFH_ENABLE=1)
+# target_compile_options(apx PRIVATE -fvisibility=hidden)
+# target_link_libraries(apx PRIVATE Threads::Threads)
+
+# target_include_directories(apx PRIVATE
+# "${PROJECT_BINARY_DIR}"
+# "adt/inc"
+# "apx/common/inc"
+# "apx/client/inc"
+# "apx/server/inc"
+# "apx/server_extension/socket/inc"
+# "bstr/inc"
+# "cutil/inc"
+# "dtl_type/inc"
+# "dtl_json/inc"
+# "msocket/inc"
+# "remotefile/inc"
+# )
+
+
+
+###
 
 ### Executable apx_unit
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
