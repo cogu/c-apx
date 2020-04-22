@@ -66,6 +66,7 @@ apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_def
 int32_t apx_connection_getLastErrorLine(apx_connection_t *self);
 apx_nodeInstance_t *apx_connection_getLastAttachedNode(apx_connection_t *self);
 apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socketPath);
+apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port);
 apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const char *providePortName, dtl_dv_t *dv_value);
 
 #endif //APX_CONNECTION_H

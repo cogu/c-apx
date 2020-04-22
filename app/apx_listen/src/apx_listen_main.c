@@ -33,11 +33,12 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <signal.h>
-#include "argparse.h"
-#include "apx_types.h"
+#include <assert.h>
 #include "adt_str.h"
-#include "filestream.h"
 #include "apx_connection.h"
+#include "apx_util.h"
+#include "argparse.h"
+#include "filestream.h"
 #include "json_server.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -57,6 +58,8 @@ static void application_shutdown(void);
 static void application_cleanup(void);
 static void signal_handler_setup(void);
 static void signal_handler(int signum);
+static apx_error_t connect_to_apx_server(void);
+static apx_error_t start_json_message_server(void);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -67,8 +70,8 @@ static void signal_handler(int signum);
 //////////////////////////////////////////////////////////////////////////////
 
 /*** Argument variables ***/
-static const long bind_port_default = 5100;
-static const long connect_port_default = 5100;
+static const uint16_t bind_port_default = 5100;
+static const uint16_t connect_port_default = 5100;
 #ifdef _WIN32
 static const char *m_bind_address_default = "127.0.0.1";
 static const char *m_connect_address_default = "127.0.0.1";
@@ -77,12 +80,13 @@ static const char *m_bind_address_default = "/tmp/apx_listen.socket";
 static const char *m_connect_address_default = "/tmp/apx_server.socket";
 #endif
 static bool m_no_bind = false;
-static long m_bind_port;
-static long m_connect_port;
-static char *m_bind_address = (char*) 0;
-static char *m_connect_address = (char*) 0;
+static uint16_t m_bind_port;
+static uint16_t m_connect_port;
+static adt_str_t *m_bind_address = (adt_str_t*) 0;
+static adt_str_t *m_connect_address = (adt_str_t*) 0;
 static adt_str_t m_definition_file;
-
+static apx_resource_type_t m_bind_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
+static apx_resource_type_t m_connect_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
 
 /*** Other local variables***/
 static adt_str_t *m_apx_definition_str = (adt_str_t*) 0;
@@ -102,13 +106,19 @@ int main(int argc, char **argv)
    argparse_result_t result = argparse_exec(argc, (const char**) argv, argparse_cbk);
    if (result == ARGPARSE_SUCCESS)
    {
-      if (m_bind_address == 0)
+      if (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
       {
-         m_bind_address = (char*) m_bind_address_default;
+         uint16_t dummy_port;
+         m_bind_resource_type = apx_parse_resource_name(m_bind_address_default, &m_bind_address, &dummy_port);
+         (void) dummy_port;
+         assert( (m_bind_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_bind_resource_type != APX_RESOURCE_TYPE_ERROR) );
       }
-      if (m_connect_address == 0)
+      if (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
       {
-         m_connect_address = (char*) m_connect_address_default;
+         uint16_t dummy_port;
+         m_connect_resource_type = apx_parse_resource_name(m_connect_address_default, &m_connect_address, &dummy_port);
+         (void) dummy_port;
+         assert( (m_bind_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_bind_resource_type != APX_RESOURCE_TYPE_ERROR) );
       }
       if (adt_str_length(&m_definition_file) == 0)
       {
@@ -116,7 +126,7 @@ int main(int argc, char **argv)
       }
       else
       {
-         printf("Creating APX connection...");
+         printf("Initializing APX connection...");
          m_apx_connection = apx_connection_new();
          if (m_apx_connection != 0)
          {
@@ -163,8 +173,8 @@ int main(int argc, char **argv)
                         apx_nodeInstance_getName(nodeInstance),
                         (int) numProvidePorts, (int) numRequirePorts);
                }
-               printf("Connecting to APX server at %s...", m_connect_address);
-               rc = apx_connection_connect_unix(m_apx_connection, m_connect_address);
+               printf("Connecting to APX server at %s...", adt_str_cstr(m_connect_address));
+               rc = connect_to_apx_server();
                if (rc == APX_NO_ERROR)
                {
                   sigset_t mask, oldmask;
@@ -172,17 +182,27 @@ int main(int argc, char **argv)
                   if (!m_no_bind)
                   {
                      apx_error_t rc;
-                     printf("Creating JSON message server...");
+                     printf("Initializing JSON message server...");
                      rc = json_server_init(m_apx_connection);
                      if (rc == APX_NO_ERROR)
                      {
-                        json_server_start(m_bind_address);
+                        printf("OK\n");
+                     }
+                     else
+                     {
+                        printf("Failed (%d)\n", (int) rc);
+                        goto SHUTDOWN;
+                     }
+                     printf("Starting JSON message server at \"%s\"...", adt_str_cstr(m_bind_address));
+                     rc = start_json_message_server();
+                     if (rc == APX_NO_ERROR)
+                     {
                         printf("OK\n");
                         m_messageServerRunning = true;
                      }
                      else
                      {
-                        printf("Failed");
+                        printf("Failed (%d)\n", (int) rc);
                         goto SHUTDOWN;
                      }
                   }
@@ -200,7 +220,7 @@ int main(int argc, char **argv)
                }
                else
                {
-                  printf("Failed\n");
+                  printf("Failed (%d)\n", (int) rc);
                }
             }
          }
@@ -281,9 +301,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          if (strcmp(short_name,"p")==0)
          {
             lval = strtol(value, &end, 0);
-            if (end > value)
+            if ((end > value) && (lval <= UINT16_MAX))
             {
-               m_bind_port = lval;
+               m_bind_port = (uint16_t) lval;
             }
             else
             {
@@ -293,9 +313,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          else if (strcmp(short_name,"r")==0)
          {
             lval = strtol(value, &end, 0);
-            if (end > value)
+            if ( (end > value) && (lval <= UINT16_MAX))
             {
-               m_connect_port = lval;
+               m_connect_port = (uint16_t) lval;
             }
             else
             {
@@ -304,13 +324,21 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          }
          else if (strcmp(short_name,"b")==0)
          {
-            if (m_bind_address != 0) free(m_bind_address);
-            m_bind_address = STRDUP(value);
+            if (m_bind_address != 0) adt_str_delete(m_bind_address);
+            m_bind_resource_type = apx_parse_resource_name(value, &m_bind_address, &m_bind_port);
+            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) || (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            {
+               return ARGPARSE_VALUE_ERROR;
+            }
          }
          else if (strcmp(short_name,"c")==0)
          {
-            if (m_connect_address != 0) free(m_connect_address);
-            m_connect_address = STRDUP(value);
+            if (m_connect_address != 0) adt_str_delete(m_connect_address);
+            m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
+            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) || (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            {
+               return ARGPARSE_VALUE_ERROR;
+            }
          }
       }
       else if (long_name != 0)
@@ -320,9 +348,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          if (strcmp(long_name,"bind-port")==0)
          {
             lval = strtol(value, &end, 0);
-            if (end > value)
+            if ( (end > value) && (lval <= UINT16_MAX))
             {
-               m_bind_port = lval;
+               m_bind_port = (uint16_t) lval;
             }
             else
             {
@@ -332,9 +360,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          else if (strcmp(long_name,"connect-port")==0)
          {
             lval = strtol(value, &end, 0);
-            if (end > value)
+            if ( (end > value) && (lval <= UINT16_MAX))
             {
-               m_connect_port = lval;
+               m_connect_port = (uint16_t) lval;
             }
             else
             {
@@ -343,13 +371,21 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          }
          else if (strcmp(long_name,"bind")==0)
          {
-            if (m_bind_address != 0) free(m_bind_address);
-            m_bind_address = STRDUP(value);
+            if (m_bind_address != 0) adt_str_delete(m_bind_address);
+            m_bind_resource_type = apx_parse_resource_name(value, &m_bind_address, &m_bind_port);
+            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) || (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            {
+               return ARGPARSE_VALUE_ERROR;
+            }
          }
          else if (strcmp(long_name,"connect")==0)
          {
-            if (m_connect_address != 0) free(m_connect_address);
-            m_connect_address = STRDUP(value);
+            if (m_connect_address != 0) adt_str_delete(m_connect_address);
+            m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
+            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) || (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            {
+               return ARGPARSE_VALUE_ERROR;
+            }
          }
       }
       else
@@ -410,8 +446,8 @@ static void application_shutdown(void)
 static void application_cleanup(void)
 {
    adt_str_destroy(&m_definition_file);
-   if (m_bind_address != m_bind_address_default) free(m_bind_address);
-   if (m_connect_address != m_connect_address_default) free(m_connect_address);
+   if (m_bind_address) adt_str_delete(m_bind_address);
+   if (m_connect_address) adt_str_delete(m_connect_address);
    if (m_apx_definition_str != 0) adt_str_delete(m_apx_definition_str);
 }
 
@@ -429,4 +465,58 @@ static void signal_handler(int signum)
 {
    (void)signum;
    m_runFlag = 0;
+}
+
+static apx_error_t connect_to_apx_server(void)
+{
+   const char *connect_address = adt_str_cstr(m_connect_address);
+   switch(m_connect_resource_type)
+   {
+   case APX_RESOURCE_TYPE_UNKNOWN:
+      return APX_INVALID_ARGUMENT_ERROR;
+   case APX_RESOURCE_TYPE_IPV4:
+      return apx_connection_connect_tcp(m_apx_connection, connect_address, m_connect_port);
+   case APX_RESOURCE_TYPE_IPV6:
+      return APX_NOT_IMPLEMENTED_ERROR;
+   case APX_RESOURCE_TYPE_FILE:
+#ifdef _WIN32
+      printf("UNIX domain sockets not supported in Windows\n");
+      return APX_NOT_IMPLEMENTED_ERROR;
+#else
+      return apx_connection_connect_unix(m_apx_connection, connect_address);
+#endif
+   case APX_RESOURCE_TYPE_NAME:
+      if ( (strlen(connect_address) == 0) || (strcmp(connect_address, "localhost") == 0) )
+      {
+         return apx_connection_connect_tcp(m_apx_connection, "127.0.0.1", m_connect_port);
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t start_json_message_server(void)
+{
+   const char *bind_address = adt_str_cstr(m_bind_address);
+   switch(m_bind_resource_type)
+   {
+   case APX_RESOURCE_TYPE_UNKNOWN:
+      return APX_INVALID_ARGUMENT_ERROR;
+   case APX_RESOURCE_TYPE_IPV4:
+      return json_server_start_tcp(bind_address, m_bind_port);
+   case APX_RESOURCE_TYPE_IPV6:
+      return APX_NOT_IMPLEMENTED_ERROR;
+   case APX_RESOURCE_TYPE_FILE:
+#ifdef _WIN32
+      printf("UNIX domain sockets not supported in Windows\n");
+      return APX_NOT_IMPLEMENTED_ERROR;
+#else
+      return json_server_start_unix(bind_address);
+#endif
+   case APX_RESOURCE_TYPE_NAME:
+      if ( (strlen(bind_address) == 0) || (strcmp(bind_address, "localhost") == 0) )
+      {
+         return json_server_start_tcp("127.0.0.1", m_bind_port);
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }

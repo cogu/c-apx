@@ -37,6 +37,7 @@
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 #define ASCII_ZERO 0x30
+#define MAX_PORT_NUMBER 65535
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -166,6 +167,12 @@ apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, 
          }
       }
 
+      if ( parsed_port > MAX_PORT_NUMBER )
+      {
+         retval = APX_RESOURCE_TYPE_ERROR;
+      }
+
+
       if (parsed_name != 0)
       {
          if ( (retval != APX_RESOURCE_TYPE_UNKNOWN) && (retval != APX_RESOURCE_TYPE_ERROR) )
@@ -183,9 +190,10 @@ apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, 
          retval = APX_RESOURCE_TYPE_ERROR;
       }
 
+
       if ( (retval != APX_RESOURCE_TYPE_ERROR) && (port != 0) )
       {
-         *port = parsed_port;
+         *port = (uint16_t) parsed_port;
       }
    }
    return retval;

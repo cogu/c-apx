@@ -182,6 +182,15 @@ apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *sock
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port)
+{
+   if (self != 0)
+   {
+      return apx_client_connect_tcp(self->client, address, port);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const char *providePortName, dtl_dv_t *dv_value)
 {
    if ( (self != 0) && (providePortName != 0) && (dv_value != 0) )
