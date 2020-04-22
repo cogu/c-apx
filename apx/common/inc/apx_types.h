@@ -169,6 +169,15 @@ typedef uint8_t apx_providePortDataState_t;
 #define APX_PROVIDE_PORT_DATA_STATE_CONNECTED                     ((apx_providePortDataState_t) 3u)
 #define APX_PROVIDE_PORT_DATA_STATE_DISCONNECTED                  ((apx_providePortDataState_t) 4u)
 
+typedef uint8_t apx_resource_type_t;
+#define APX_RESOURCE_TYPE_UNKNOWN ((apx_resource_type_t) 0) //Unknown
+#define APX_RESOURCE_TYPE_IPV4    ((apx_resource_type_t) 1) //Seems to be an IPv4 address
+#define APX_RESOURCE_TYPE_IPV6    ((apx_resource_type_t) 2) //Seems to be an IPv6 address
+#define APX_RESOURCE_TYPE_FILE    ((apx_resource_type_t) 3) //Seems to be a unix file path)
+#define APX_RESOURCE_TYPE_NAME    ((apx_resource_type_t) 4) //Seems to be a name
+#define APX_RESOURCE_TYPE_ERROR   ((apx_resource_type_t) 5) //An error has occured
+
+
 // Shared library visibility
 
 # if __GNUC__ >= 4
