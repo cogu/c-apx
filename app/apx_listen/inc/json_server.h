@@ -44,7 +44,8 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t json_server_init(struct apx_connection_tag *apx_connection);
-void json_server_start(const char *socket_path);
+apx_error_t json_server_start_unix(const char *socket_path);
+apx_error_t json_server_start_tcp(const char *bind_address, uint16_t port);
 void json_server_cleanup_connection(json_server_connection_t *connection);
 void json_server_shutdown(void);
 
