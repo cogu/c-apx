@@ -18,11 +18,7 @@ set (APX_LISTEN_SOURCE_LIST
 
 add_executable(apx_listen ${APX_LISTEN_HEADER_LIST} ${APX_LISTEN_SOURCE_LIST})
 target_link_libraries(apx_listen PRIVATE
-    apx_common
-    apx_client_lib
-    remotefile
-    msocket
-    msocket_server
+    apx
     Threads::Threads
 )
 
