@@ -38,7 +38,6 @@
 #include "apx_connection.h"
 #include "apx_util.h"
 #include "argparse.h"
-#include "filestream.h"
 #include "json_server.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -71,7 +70,7 @@ static apx_error_t start_json_message_server(void);
 
 /*** Argument variables ***/
 static const uint16_t bind_port_default = 5100;
-static const uint16_t connect_port_default = 5100;
+static const uint16_t connect_port_default = 5000;
 #ifdef _WIN32
 static const char *m_bind_address_default = "127.0.0.1";
 static const char *m_connect_address_default = "127.0.0.1";
@@ -118,10 +117,11 @@ int main(int argc, char **argv)
          uint16_t dummy_port;
          m_connect_resource_type = apx_parse_resource_name(m_connect_address_default, &m_connect_address, &dummy_port);
          (void) dummy_port;
-         assert( (m_bind_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_bind_resource_type != APX_RESOURCE_TYPE_ERROR) );
+         assert( (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) );
       }
       if (adt_str_length(&m_definition_file) == 0)
       {
+         printf("Error: No definition file given\n");
          print_usage(argv[0]);
       }
       else
@@ -234,6 +234,7 @@ int main(int argc, char **argv)
    }
    else
    {
+      printf("Error parsing argument (%d)\n", (int) result);
       print_usage(argv[0]);
    }
 SHUTDOWN:
@@ -326,7 +327,8 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          {
             if (m_bind_address != 0) adt_str_delete(m_bind_address);
             m_bind_resource_type = apx_parse_resource_name(value, &m_bind_address, &m_bind_port);
-            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) || (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
+                 (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -335,7 +337,8 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          {
             if (m_connect_address != 0) adt_str_delete(m_connect_address);
             m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
-            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) || (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            if ( (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
+                 (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -373,7 +376,8 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          {
             if (m_bind_address != 0) adt_str_delete(m_bind_address);
             m_bind_resource_type = apx_parse_resource_name(value, &m_bind_address, &m_bind_port);
-            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) || (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
+                 (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -382,7 +386,8 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          {
             if (m_connect_address != 0) adt_str_delete(m_connect_address);
             m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
-            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) || (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            if ( (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
+                 (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
