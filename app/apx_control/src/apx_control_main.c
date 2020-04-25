@@ -48,11 +48,16 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+static int init_wsa(void);
+#endif
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value);
 static void print_usage(const char *arg0);
 static void application_cleanup(void);
+#ifndef _WIN32
 static void connect_and_send_message_unix(const char *socketPath);
-static void connect_and_send_message_tcp(const char *address, uint16_t port);
+#endif
+static void connect_and_send_message_tcp(const char *address, uint16_t port, uint8_t addressFamily);
 static apx_error_t read_message_from_file(const char *file_path);
 static adt_error_t build_json_message(const adt_str_t *name, const adt_str_t *value);
 
@@ -90,6 +95,15 @@ int main(int argc, char **argv)
    argparse_result_t result = argparse_exec(argc, (const char**) argv, argparse_cbk);
    if (result == ARGPARSE_SUCCESS)
    {
+#ifdef _WIN32
+      if (init_wsa() != 0)
+      {
+         int err = WSAGetLastError();
+         fprintf(stderr, "WSAStartup failed with error: %d\n", err);
+         retval = 1;
+         goto SHUTDOWN;
+      }
+#endif
       if (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
       {
          uint16_t dummy_port;
@@ -112,7 +126,7 @@ int main(int argc, char **argv)
             dtl_dv_t *dv = dtl_json_load_cstr(adt_str_cstr(m_message));
             if (dv == 0)
             {
-               fprintf(stderr, "Error: Failed to validate JSON data in file %s\n", input_file_path);
+               fprintf(stderr, "Error: JSON data validation error while parsing %s\n", input_file_path);
                retval = -1;
                goto SHUTDOWN;
             }
@@ -151,8 +165,10 @@ int main(int argc, char **argv)
          switch(m_connect_resource_type)
          {
          case APX_RESOURCE_TYPE_IPV4: //fall-trough
+            connect_and_send_message_tcp(address, m_connect_port, AF_INET);
+            break;
          case APX_RESOURCE_TYPE_IPV6:
-            connect_and_send_message_tcp(address, m_connect_port);
+            connect_and_send_message_tcp(address, m_connect_port, AF_INET6);
             break;
          case APX_RESOURCE_TYPE_FILE:
 #ifdef _WIN32
@@ -164,7 +180,7 @@ int main(int argc, char **argv)
          case APX_RESOURCE_TYPE_NAME:
             if ( (strlen(address) == 0) || (strcmp(address, "localhost") == 0) )
             {
-               connect_and_send_message_tcp("127.0.0.1", m_connect_port);
+               connect_and_send_message_tcp("127.0.0.1", m_connect_port, AF_INET);
             }
             else
             {
@@ -198,6 +214,17 @@ void vfree(void *arg)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+static int init_wsa(void)
+{
+   WORD wVersionRequested;
+   WSADATA wsaData;
+   int err;
+   wVersionRequested = MAKEWORD(2, 2);
+   err = WSAStartup(wVersionRequested, &wsaData);
+   return err;
+}
+#endif
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value)
 {
    if (value == 0)
@@ -261,6 +288,18 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
             {
                return ARGPARSE_VALUE_ERROR;
             }
+         }
+         else if (strcmp(short_name, "i") == 0)
+         {
+            m_input_file_path = adt_str_new_cstr(value);
+            if (m_input_file_path == 0)
+            {
+               return ARGPARSE_MEM_ERROR;
+            }
+         }
+         else
+         {
+            return ARGPARSE_PARSE_ERROR;
          }
       }
       else if (long_name != 0)
@@ -332,6 +371,7 @@ static void application_cleanup(void)
    if (m_input_file_path != 0) adt_str_delete(m_input_file_path);
 }
 
+#ifndef _WIN32
 static void connect_and_send_message_unix(const char *socketPath)
 {
    message_client_connection_t *connection = message_client_connection_new(AF_UNIX);
@@ -360,33 +400,37 @@ static void connect_and_send_message_unix(const char *socketPath)
       message_client_connection_delete(connection);
    }
 }
+#endif
 
-static void connect_and_send_message_tcp(const char *address, uint16_t port)
+static void connect_and_send_message_tcp(const char *address, uint16_t port, uint8_t addressFamily)
 {
-   message_client_connection_t *connection = message_client_connection_new(AF_UNIX);
-   assert(m_message != 0);
-   if (connection != 0)
+   if ((addressFamily == AF_INET) || (addressFamily == AF_INET6))
    {
-      adt_error_t rc = message_client_prepare_message(connection, m_message);
-      if (rc == ADT_NO_ERROR)
+      message_client_connection_t* connection = message_client_connection_new(addressFamily);
+      assert(m_message != 0);
+      if (connection != 0)
       {
-         int32_t result;
-         result = message_client_connect_tcp(connection, address, port);
-         if (result != 0)
+         adt_error_t rc = message_client_prepare_message(connection, m_message);
+         if (rc == ADT_NO_ERROR)
          {
-            printf("Failed to connect\n");
+            int32_t result;
+            result = message_client_connect_tcp(connection, address, port);
+            if (result != 0)
+            {
+               printf("Failed to connect\n");
+            }
+            result = message_client_wait_for_message_transmitted(connection);
+            if (result != 0)
+            {
+               printf("message_client_wait_for_message_transmitted failed with %d\n", (int)result);
+            }
          }
-         result = message_client_wait_for_message_transmitted(connection);
-         if (result != 0)
+         else
          {
-            printf("message_client_wait_for_message_transmitted failed with %d\n", (int) result);
+            printf("Failed to prepare data\n");
          }
+         message_client_connection_delete(connection);
       }
-      else
-      {
-         printf("Failed to prepare data\n");
-      }
-      message_client_connection_delete(connection);
    }
 }
 

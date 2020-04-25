@@ -16,7 +16,7 @@ highly experimental.
 
 - Full support for APX v1.2 specification.
 - APX server should have the same feature set as seen in [v0.2.6](https://github.com/cogu/c-apx/releases/tag/v0.2.6).
-- Linux and Windows support when built using CMake.
+- CMake build support for Linux and Windows.
 - Dynamic clients is fully supported.
 - APX-ES clients not yet supported (needs rewrite from v0.2 to v0.3).
 - Static clients not yet supported (needs rewrite from v0.2 to v0.3).
@@ -60,46 +60,48 @@ Note that APX-ES on master branch is not yet updated to work with the new v0.3.x
 
 ## Building with CMake
 
-### Running unit tests (Linux with GCC)
+CMake build has been tested for Windows (with Visual Studio) as well as Linux (with GCC).
 
-```bash
-mkdir UnitTest && cd UnitTest
-cmake -DUNIT_TEST=ON -DLEAK_CHECK=ON ..
-cmake --build .
-./apx_unit
+### Running unit tests (Linux)
+
+Configure:
+
+```sh
+cmake -S . -B build -DUNIT_TEST=ON
+```
+
+Build:
+
+```sh
+cmake --build build --target apx_unit
+```
+
+Run test cases:
+
+```cmd
+cd build && ctest
 ```
 
 ### Running unit tests (Windows with Visual Studio)
 
-Use a Visual Studio command prompt from the start menu, such as "x64 Native Tools Command Prompt for VS2019".
-It conveniently comes pre-installed with a version of CMake that generates Visual Studio projects by default.
+Use a command prompt provided by your Visual Studio installation.
+For example, I use "x64 Native Tools Command Prompt for VS2019" which is found on the start menu.
+It conveniently comes with CMake pre-installed which generates Visual Studio projects by default.
+
+Configure:
 
 ```cmd
-mkdir UnitTest && cd UnitTest
-cmake -DUNIT_TEST=ON -DLEAK_CHECK=ON ..
-cmake --build . --config Debug
-Debug\apx_unit.exe
+cmake -S . -B VisualStudio -DUNIT_TEST=ON
 ```
 
-### Building and running default APX server (Linux)
-
-```bash
-mkdir Release && cd Release
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-./apx_server ../apx/config/apx_server_cfg.json
-```
-
-For faster build times, you can add `-GNinja` to the first cmake command line (if you have ninja-build installed).
-
-### Building and running default APX server (Windows)
+Build:
 
 ```cmd
-mkdir VisualStudio && cd VisualStudio
-cmake ..
-cmake --build . --config Release
-Release\apx_server.exe ../apx/config/apx_server_cfg.json
+cmake --build VisualStudio --config Debug --target apx_unit
 ```
 
-For faster build times, you can add `-DCMAKE_BUILD_TYPE=Release -GNinja` to the first cmake command line.
-Note that ninja-build comes pre-installed with Visual Studio 2019 native tools command prompt.
+Run test cases:
+
+```cmd
+cd VisualStudio && ctest
+```

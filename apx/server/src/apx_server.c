@@ -11,6 +11,9 @@
 #include <malloc.h>
 #include <stdio.h> //DEBUG ONLY
 #include <assert.h>
+#ifdef _WIN32
+#include <process.h>
+#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

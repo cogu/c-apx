@@ -173,6 +173,7 @@ apx_nodeInstance_t *apx_connection_getLastAttachedNode(apx_connection_t *self)
    return (apx_nodeInstance_t*) 0;
 }
 
+#ifndef _WIN32
 apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socketPath)
 {
    if (self != 0)
@@ -181,6 +182,7 @@ apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *sock
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+#endif
 
 apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port)
 {
@@ -246,7 +248,7 @@ static void apx_connection_onRequirePortWrite(void *arg, apx_nodeInstance_t *nod
          adt_str_t *value = dtl_json_dumps(dv, 0, false);
          if (value != 0)
          {
-            printf("%s: %s\n", adt_str_cstr(port_name), adt_str_cstr(value));
+            printf("\"%s\": %s\n", adt_str_cstr(port_name), adt_str_cstr(value));
             fflush(stdout);
             adt_str_delete(value);
          }

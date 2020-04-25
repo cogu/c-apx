@@ -318,7 +318,7 @@ static int32_t apx_clientSocketConnection_send(void *arg, int32_t offset, int32_
             headerEnd = header+numheader_encode32(header, (uint32_t) sizeof(header), msgLen);
             if (headerEnd>header)
             {
-               headerLen=headerEnd-header;
+               headerLen=(uint8_t) (headerEnd-header);
             }
             else
             {

@@ -29,13 +29,15 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h> //DEBUG only
-
 #include "apx_connectionBase.h"
 #include "apx_portDataRef.h"
 #include "apx_nodeData.h"
 #include "apx_logging.h"
 #include "apx_portConnectorChangeTable.h"
 #include "apx_util.h"
+#ifdef _WIN32
+#include <process.h>
+#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

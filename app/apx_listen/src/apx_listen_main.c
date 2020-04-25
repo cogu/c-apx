@@ -31,8 +31,10 @@
 #include <stdlib.h>
 #include <malloc.h>
 #include <stdbool.h>
+#ifndef _WIN32
 #include <unistd.h>
 #include <signal.h>
+#endif
 #include <assert.h>
 #include "adt_str.h"
 #include "apx_connection.h"
@@ -56,8 +58,13 @@ static adt_str_t *read_definition_file(adt_str_t *path);
 static void print_usage(const char *arg0);
 static void application_shutdown(void);
 static void application_cleanup(void);
+#ifndef _WIN32
 static void signal_handler_setup(void);
 static void signal_handler(int signum);
+#else
+static int init_wsa(void);
+#endif
+static apx_error_t init_json_message_server(void);
 static apx_error_t connect_to_apx_server(void);
 static apx_error_t start_json_message_server(void);
 
@@ -106,6 +113,15 @@ int main(int argc, char **argv)
    argparse_result_t result = argparse_exec(argc, (const char**) argv, argparse_cbk);
    if (result == ARGPARSE_SUCCESS)
    {
+#ifdef _WIN32
+      if (init_wsa() != 0)
+      {
+         int err = WSAGetLastError();
+         fprintf(stderr, "WSAStartup failed with error: %d\n", err);
+         retval = 1;
+         goto SHUTDOWN;
+      }
+#endif
       if (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
       {
          uint16_t dummy_port;
@@ -178,13 +194,15 @@ int main(int argc, char **argv)
                rc = connect_to_apx_server();
                if (rc == APX_NO_ERROR)
                {
+#ifndef _WIN32
                   sigset_t mask, oldmask;
+#endif
                   printf("OK\n");
                   if (!m_no_bind)
                   {
                      apx_error_t rc;
                      printf("Initializing JSON message server...");
-                     rc = json_server_init(m_apx_connection);
+                     rc = init_json_message_server();
                      if (rc == APX_NO_ERROR)
                      {
                         printf("OK\n");
@@ -207,7 +225,12 @@ int main(int argc, char **argv)
                         goto SHUTDOWN;
                      }
                   }
-
+#ifdef _WIN32
+                  while(m_runFlag)
+                  {
+                     SLEEP(1);
+                  }
+#else
                   signal_handler_setup();
                   sigemptyset(&mask);
                   sigaddset(&mask, SIGINT);
@@ -218,6 +241,7 @@ int main(int argc, char **argv)
                      sigsuspend(&oldmask);
                   }
                   sigprocmask(SIG_UNBLOCK, &mask, NULL);
+#endif
                }
                else
                {
@@ -457,6 +481,7 @@ static void application_cleanup(void)
    if (m_apx_definition_str != 0) adt_str_delete(m_apx_definition_str);
 }
 
+#ifndef _WIN32
 static void signal_handler_setup(void)
 {
    if(signal (SIGINT, signal_handler) == SIG_IGN) {
@@ -472,6 +497,17 @@ static void signal_handler(int signum)
    (void)signum;
    m_runFlag = 0;
 }
+#else
+static int init_wsa(void)
+{
+   WORD wVersionRequested;
+   WSADATA wsaData;
+   int err;
+   wVersionRequested = MAKEWORD(2, 2);
+   err = WSAStartup(wVersionRequested, &wsaData);
+   return err;
+}
+#endif
 
 static apx_error_t connect_to_apx_server(void)
 {
@@ -500,6 +536,38 @@ static apx_error_t connect_to_apx_server(void)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+static apx_error_t init_json_message_server(void)
+{
+   uint8_t addressFamily = AF_UNSPEC;
+   const char* bind_address = adt_str_cstr(m_bind_address);
+   switch (m_bind_resource_type)
+   {
+   case APX_RESOURCE_TYPE_IPV4:
+      addressFamily = AF_INET;
+      break;
+   case APX_RESOURCE_TYPE_IPV6:
+      addressFamily = AF_INET6;
+      break;
+   case APX_RESOURCE_TYPE_FILE:
+#ifdef _WIN32
+      printf("UNIX domain sockets not supported in Windows\n");
+      return APX_NOT_IMPLEMENTED_ERROR;
+#else
+      addressFamily = AF_UNIX;
+#endif
+   case APX_RESOURCE_TYPE_NAME:
+      if ((strlen(bind_address) == 0) || (strcmp(bind_address, "localhost") == 0))
+      {
+         addressFamily = AF_INET;
+      }
+   }
+   if (addressFamily != AF_UNSPEC)
+   {
+      return json_server_init(m_apx_connection, addressFamily);
+   }
+   return APX_CONNECTION_ERROR;
+}
+
 static apx_error_t start_json_message_server(void)
 {
    const char *bind_address = adt_str_cstr(m_bind_address);
@@ -507,10 +575,9 @@ static apx_error_t start_json_message_server(void)
    {
    case APX_RESOURCE_TYPE_UNKNOWN:
       return APX_INVALID_ARGUMENT_ERROR;
-   case APX_RESOURCE_TYPE_IPV4:
-      return json_server_start_tcp(bind_address, m_bind_port);
+   case APX_RESOURCE_TYPE_IPV4: //fall-through
    case APX_RESOURCE_TYPE_IPV6:
-      return APX_NOT_IMPLEMENTED_ERROR;
+      return json_server_start_tcp(bind_address, m_bind_port);
    case APX_RESOURCE_TYPE_FILE:
 #ifdef _WIN32
       printf("UNIX domain sockets not supported in Windows\n");
