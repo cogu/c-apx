@@ -2,7 +2,7 @@
 * \file      message_client_connection.c
 * \author    Conny Gustafsson
 * \date      2020-03-08
-* \brief     Description
+* \brief     msocket connection that sends JSON data to to apx_sernder application
 *
 * Copyright (c) 2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -156,6 +156,15 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
       return ADT_NO_ERROR;
    }
    return ADT_INVALID_ARGUMENT_ERROR;
+}
+
+int32_t message_client_connect_tcp(message_client_connection_t *self, const char *address, uint16_t port)
+{
+   if (self != 0)
+   {
+      return (int32_t) msocket_connect(self->msocket, address, port);
+   }
+   return -1;
 }
 
 int32_t message_client_connect_unix(message_client_connection_t *self, const char *socketPath)
