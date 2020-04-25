@@ -29,11 +29,18 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+# endif
+#include <Windows.h>
+#else
+#include <pthread.h>
+#endif
 #include "apx_client.h"
 #include "adt_str.h"
 #include "adt_hash.h"
 #include "adt_ary.h"
-#include <pthread.h>
 #include "osmacro.h"
 #include "adt_hash.h"
 
@@ -65,7 +72,9 @@ void apx_connection_disconnect(apx_connection_t *self);
 apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_definition);
 int32_t apx_connection_getLastErrorLine(apx_connection_t *self);
 apx_nodeInstance_t *apx_connection_getLastAttachedNode(apx_connection_t *self);
+#ifndef _WIN32
 apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socketPath);
+#endif
 apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port);
 apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const char *providePortName, dtl_dv_t *dv_value);
 

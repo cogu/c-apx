@@ -29,11 +29,18 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+# endif
+#include <Windows.h>
+#else
+#include <pthread.h>
+#include <semaphore.h>
+#endif
 #include "msocket.h"
 #include "adt_str.h"
 #include "adt_bytearray.h"
-#include <pthread.h>
-#include <semaphore.h>
 #include "osmacro.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -56,7 +63,9 @@ void message_client_connection_delete(message_client_connection_t *self);
 
 adt_error_t message_client_prepare_message(message_client_connection_t *self, adt_str_t *message);
 int32_t message_client_connect_tcp(message_client_connection_t *self, const char *address, uint16_t port);
+#ifndef _WIN32
 int32_t message_client_connect_unix(message_client_connection_t *self, const char *socketPath);
+#endif
 int32_t message_client_wait_for_message_transmitted(message_client_connection_t *self);
 
 #endif //MESSAGE_CLIENT_CONNECTION_H

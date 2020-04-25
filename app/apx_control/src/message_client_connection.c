@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <malloc.h>
 #include <string.h>
+#include <stdio.h>
 #include "numheader.h"
 #include "message_client_connection.h"
 
@@ -167,6 +168,7 @@ int32_t message_client_connect_tcp(message_client_connection_t *self, const char
    return -1;
 }
 
+#ifndef _WIN32
 int32_t message_client_connect_unix(message_client_connection_t *self, const char *socketPath)
 {
    if (self != 0)
@@ -175,14 +177,30 @@ int32_t message_client_connect_unix(message_client_connection_t *self, const cha
    }
    return -1;
 }
+#endif
 
 int32_t message_client_wait_for_message_transmitted(message_client_connection_t *self)
 {
+   int32_t retval = 0;
    if (self != 0)
    {
-      return (int32_t) sem_wait(&self->messageTransmitted);
+#ifdef _WIN32
+      DWORD result = WaitForSingleObject(self->messageTransmitted, INFINITE);
+      if (result != WAIT_OBJECT_0)
+      {
+         DWORD lastError = GetLastError();
+         fprintf(stderr, "Semaphore wait failed with error %d\n", (int) lastError);
+         retval = -1;
+      }
+#else
+      retval = (int32_t) sem_wait(&self->messageTransmitted);
+#endif
    }
-   return -1;
+   else
+   {
+      retval = -1;
+   }
+   return retval;
 }
 
 //////////////////////////////////////////////////////////////////////////////

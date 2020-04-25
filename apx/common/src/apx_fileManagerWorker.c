@@ -28,6 +28,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <assert.h>
 #include <string.h>
+#ifdef _WIN32
+#include <process.h>
+#endif
 #include "apx_types.h"
 //BEGIN TEMPORARY INCLUDES
 #include <stdio.h>

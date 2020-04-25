@@ -16,9 +16,8 @@ if (LEAK_CHECK)
     message(STATUS "LEAK_CHECK=${LEAK_CHECK} (C-APX)")
 endif()
 
-if (UNIT_TEST)
-    message(STATUS "UNIT_TEST=${UNIT_TEST} (C-APX)")
-    set(BUILD_SHARED_LIB_DEFAULT OFF)
+if (UNIT_TEST OR MSVC)
+    set(BUILD_SHARED_LIB_DEFAULT OFF) #We still have some work to do before enabling DLL builds on Windows
 else()
     set(BUILD_SHARED_LIB_DEFAULT ON)
 endif()
@@ -36,6 +35,7 @@ if(BUILD_SHARED_LIBS)
 else()
     set(LIBRARY_TYPE STATIC)
 endif()
+message(STATUS "LIBRARY_TYPE=${LIBRARY_TYPE}")
 
 configure_file(cmake/apx_build_cfg.h.in apx_build_cfg.h)
 
@@ -348,6 +348,10 @@ endif()
 if (LEAK_CHECK)
     target_compile_definitions(apx PUBLIC MEM_LEAK_CHECK)
 endif()
+if(MSVC)
+    target_compile_definitions(apx PUBLIC _CRT_SECURE_NO_WARNINGS)
+endif()
+
 #Enable later once all needed symbols have been chosen for shared library export
 #target_compile_options(apx PRIVATE -fvisibility=hidden)
 

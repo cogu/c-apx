@@ -199,7 +199,7 @@ void apx_clientConnectionBase_setConnectionId(apx_clientConnectionBase_t *self, 
 {
    if (self != 0)
    {
-      return apx_connectionBase_setConnectionId(&self->base, connectionId);
+      apx_connectionBase_setConnectionId(&self->base, connectionId);
    }
 }
 

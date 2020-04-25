@@ -26,9 +26,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_connectionManager.h"
 #include <stdio.h>
 #include <errno.h>
+#include "apx_connectionManager.h"
+#ifdef _WIN32
+#include <process.h>
+#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

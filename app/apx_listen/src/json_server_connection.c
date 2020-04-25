@@ -141,7 +141,7 @@ static int8_t json_server_connection_data(void *arg, const uint8_t *dataBuf, uin
          {
             json_server_connection_process_message(self, pNext, pNext+msgSize);
             pNext += msgSize;
-            *parseLen = (pNext - dataBuf);
+            *parseLen = (uint32_t) (pNext - dataBuf);
          }
       }
       return 0;
