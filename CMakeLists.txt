@@ -400,6 +400,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             target_compile_definitions(apx_unit PRIVATE MEM_LEAK_CHECK)
             target_link_libraries(apx_unit PRIVATE cutil)
         endif()
+
+        enable_testing()
+        add_test(apx_test ${CMAKE_CURRENT_BINARY_DIR}/apx_unit)
+        set_tests_properties(apx_test PROPERTIES PASS_REGULAR_EXPRESSION "OK \\([0-9]+ tests\\)")
     endif()
 endif()
 ###

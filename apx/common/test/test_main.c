@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <malloc.h>
 #include "CuTest.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
