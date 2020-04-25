@@ -106,7 +106,7 @@ set (REMOTEFILE_TEST_SUITE
 )
 ###
 
-### Library apx_server_socket_extension
+### Library apx_srv_sock_ext
 set (APX_SERVER_SOCKET_EXTENSION_HEADERS
     apx/server_extension/socket/inc/apx_serverSocketConnection.h
     apx/server_extension/socket/inc/apx_socketServer.h
@@ -123,16 +123,16 @@ set (APX_SERVER_SOCKET_EXTENSION_TEST_SUITE
     apx/server_extension/socket/test/testsuite_apx_socketServerExtension.c
 )
 
-add_library(apx_server_socket_extension ${APX_SERVER_SOCKET_EXTENSION_HEADERS} ${APX_SERVER_SOCKET_EXTENSION_SOURCES})
+add_library(apx_srv_sock_ext ${LIBRARY_TYPE} ${APX_SERVER_SOCKET_EXTENSION_HEADERS} ${APX_SERVER_SOCKET_EXTENSION_SOURCES})
 if (LEAK_CHECK)
-    target_compile_definitions(apx_server_socket_extension PRIVATE MEM_LEAK_CHECK)
+    target_compile_definitions(apx_srv_sock_ext PRIVATE MEM_LEAK_CHECK)
 endif()
 if (UNIT_TEST)
-    target_link_libraries(apx_server_socket_extension PRIVATE msocket_testsocket)
-    target_compile_definitions(apx_server_socket_extension PRIVATE UNIT_TEST)
+    target_link_libraries(apx_srv_sock_ext PRIVATE msocket_testsocket)
+    target_compile_definitions(apx_srv_sock_ext PRIVATE UNIT_TEST)
 endif()
-target_link_libraries(apx_server_socket_extension PRIVATE apx)
-target_include_directories(apx_server_socket_extension PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/server_extension/socket/inc)
+target_link_libraries(apx_srv_sock_ext PRIVATE apx)
+target_include_directories(apx_srv_sock_ext PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/server_extension/socket/inc)
 ###
 
 ## Submodule include
@@ -143,6 +143,7 @@ add_subdirectory(dtl_json)
 add_subdirectory(dtl_type)
 add_subdirectory(msocket)
 add_subdirectory(app/apx_listen)
+add_subdirectory(app/apx_control)
 ###
 
 # apx library
@@ -384,7 +385,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         )
         target_link_libraries(apx_unit PRIVATE
             apx
-            apx_server_socket_extension
+            apx_srv_sock_ext
             msocket_testsocket
             cutest
             Threads::Threads
@@ -408,7 +409,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     add_executable(apx_server apx/server_main/server_main.c)
     target_link_libraries(apx_server PRIVATE
     apx
-    apx_server_socket_extension
+    apx_srv_sock_ext
     Threads::Threads
     )
     if (UNIT_TEST)

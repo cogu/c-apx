@@ -59,6 +59,8 @@
                                     									
                                     <listOptionValue builtIn="false" value="../../../../cutil/inc"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../../../../apx/common/inc"/>
+                                    									
                                     <listOptionValue builtIn="false" value="../../../../remotefile/inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../bstr/inc"/>
@@ -70,6 +72,8 @@
                                     <listOptionValue builtIn="false" value="../../../../dtl_json/inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="../../../../msocket/inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../../../../app/apx_control/inc"/>
                                     								
                                 </option>
                                 								
@@ -111,7 +115,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="remotefile/src/rmf.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="apx/src/apx_vmSerializer.c|apx/src/apx_vmDeserializer.c|apx/src/apx_vm.c|apx/src/apx_typeAttribute.c|apx/src/apx_stream.c|apx/src/apx_portSignatureMapEntry.c|apx/src/apx_portSignatureMap.c|apx/src/apx_portDataRef.c|apx/src/apx_portDataProps.c|apx/src/apx_portConnectorList.c|apx/src/apx_portConnectorChangeTable.c|apx/src/apx_portConnectorChangeRef.c|apx/src/apx_portConnectorChangeEntry.c|apx/src/apx_portAttributes.c|apx/src/apx_port.c|apx/src/apx_parser.c|apx/src/apx_nodeManager.c|apx/src/apx_nodeInstance.c|apx/src/apx_nodeInfo.c|apx/src/apx_nodeData.c|apx/src/apx_node.c|apx/src/apx_logEvent.c|apx/src/apx_fileMap.c|apx/src/apx_fileManagerWorker.c|apx/src/apx_fileManagerShared.c|apx/src/apx_fileManagerReceiver.c|apx/src/apx_fileManager.c|apx/src/apx_fileInfo.c|apx/src/apx_fileCache.c|apx/src/apx_file.c|apx/src/apx_eventLoop.c|apx/src/apx_eventListener.c|apx/src/apx_event.c|apx/src/apx_dataType.c|apx/src/apx_dataSignature.c|apx/src/apx_dataElement.c|apx/src/apx_connectionBase.c|apx/src/apx_compiler.c|apx/src/apx_bytePortMap.c|apx/src/apx_attributeParser.c|apx/src/apx_allocator.c|remotefile/src/rmf.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				
@@ -233,7 +237,7 @@
                     					
                     <sourceEntries>
                         						
-                        <entry excluding="remotefile/src/rmf.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                        <entry excluding="apx/src/apx_vmSerializer.c|apx/src/apx_vmDeserializer.c|apx/src/apx_vm.c|apx/src/apx_typeAttribute.c|apx/src/apx_stream.c|apx/src/apx_portSignatureMapEntry.c|apx/src/apx_portSignatureMap.c|apx/src/apx_portDataRef.c|apx/src/apx_portDataProps.c|apx/src/apx_portConnectorList.c|apx/src/apx_portConnectorChangeTable.c|apx/src/apx_portConnectorChangeRef.c|apx/src/apx_portConnectorChangeEntry.c|apx/src/apx_portAttributes.c|apx/src/apx_port.c|apx/src/apx_parser.c|apx/src/apx_nodeManager.c|apx/src/apx_nodeInstance.c|apx/src/apx_nodeInfo.c|apx/src/apx_nodeData.c|apx/src/apx_node.c|apx/src/apx_logEvent.c|apx/src/apx_fileMap.c|apx/src/apx_fileManagerWorker.c|apx/src/apx_fileManagerShared.c|apx/src/apx_fileManagerReceiver.c|apx/src/apx_fileManager.c|apx/src/apx_fileInfo.c|apx/src/apx_fileCache.c|apx/src/apx_file.c|apx/src/apx_eventLoop.c|apx/src/apx_eventListener.c|apx/src/apx_event.c|apx/src/apx_dataType.c|apx/src/apx_dataSignature.c|apx/src/apx_dataElement.c|apx/src/apx_connectionBase.c|apx/src/apx_compiler.c|apx/src/apx_bytePortMap.c|apx/src/apx_attributeParser.c|apx/src/apx_allocator.c|remotefile/src/rmf.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                         					
                     </sourceEntries>
                     				

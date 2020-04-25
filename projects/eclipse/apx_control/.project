@@ -35,6 +35,26 @@
 			<locationURI>PARENT-3-PROJECT_LOC/adt/src</locationURI>
 		</link>
 		<link>
+			<name>app/inc</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/app/apx_control/inc</locationURI>
+		</link>
+		<link>
+			<name>app/src</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/app/apx_control/src</locationURI>
+		</link>
+		<link>
+			<name>apx/inc</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/common/inc</locationURI>
+		</link>
+		<link>
+			<name>apx/src</name>
+			<type>2</type>
+			<locationURI>PARENT-3-PROJECT_LOC/apx/common/src</locationURI>
+		</link>
+		<link>
 			<name>bstr/inc</name>
 			<type>2</type>
 			<locationURI>PARENT-3-PROJECT_LOC/bstr/inc</locationURI>
@@ -87,12 +107,12 @@
 		<link>
 			<name>remotefile/inc</name>
 			<type>2</type>
-			<location>/home/cogu/repo/c-apx/remotefile/inc</location>
+			<locationURI>PARENT-3-PROJECT_LOC/remotefile/inc</locationURI>
 		</link>
 		<link>
 			<name>remotefile/src</name>
 			<type>2</type>
-			<location>/home/cogu/repo/c-apx/remotefile/src</location>
+			<locationURI>PARENT-3-PROJECT_LOC/remotefile/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

@@ -39,6 +39,7 @@
 #include "apx_util.h"
 #include "argparse.h"
 #include "json_server.h"
+#include "filestream.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
