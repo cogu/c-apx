@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 
-project(apx_control LANGUAGES C VERSION 0.1.0)
+project(apx_control LANGUAGES C)
 
 set (APX_CONTROL_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/message_client_connection.h
@@ -21,4 +21,10 @@ target_link_libraries(apx_control PRIVATE
 target_include_directories(apx_control PRIVATE
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
+)
+
+install(
+  TARGETS apx_control
+  RUNTIME DESTINATION bin
+  COMPONENT App
 )

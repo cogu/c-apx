@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 
-project(apx_listen LANGUAGES C VERSION 0.1.0)
+project(apx_listen LANGUAGES C)
 
 set (APX_LISTEN_HEADER_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/inc/apx_connection.h
@@ -25,4 +25,10 @@ target_link_libraries(apx_listen PRIVATE
 target_include_directories(apx_listen PRIVATE
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
+)
+
+install(
+  TARGETS apx_listen
+  RUNTIME DESTINATION bin
+  COMPONENT App
 )
