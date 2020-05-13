@@ -187,7 +187,6 @@ void apx_fileManager_stop(apx_fileManager_t *self)
       SPINLOCK_ENTER(self->lock);
       rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
-      SPINLOCK_ENTER(self->sendLock); // Block new work from arriving
       SEMAPHORE_POST(self->semaphore);
       self->workerThreadValid = false;
 #ifdef _MSC_VER
@@ -218,7 +217,6 @@ void apx_fileManager_stop(apx_fileManager_t *self)
          APX_LOG_ERROR("[APX_FILE_MANAGER] pthread_join attempted on pthread_self()\n");
       }
 #endif
-      SPINLOCK_LEAVE(self->sendLock);
    }
 }
 
@@ -405,7 +403,7 @@ const char *apx_fileManager_modeString(apx_fileManager_t *self)
 
 void apx_fileManager_onConnected(apx_fileManager_t *self)
 {
-   if (self != 0)
+   if ((self != 0) && (self->workerThreadValid))
    {
       apx_msg_t msg = {RMF_MSG_CONNECT, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
       SPINLOCK_ENTER(self->lock);
@@ -417,7 +415,7 @@ void apx_fileManager_onConnected(apx_fileManager_t *self)
 
 void apx_fileManager_onDisconnected(apx_fileManager_t *self)
 {
-   if (self != 0)
+   if ((self != 0) && (self->workerThreadValid))
    {
       apx_msg_t msg = {RMF_MSG_DISCONNECT, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
       SPINLOCK_ENTER(self->lock);
@@ -429,7 +427,7 @@ void apx_fileManager_onDisconnected(apx_fileManager_t *self)
 
 void apx_fileManager_triggerFileUpdatedEvent(apx_fileManager_t *self, apx_file_t *file, uint32_t offset, uint32_t length)
 {
-   if (self !=0 )
+   if ((self !=0) && (self->workerThreadValid))
    {
       apx_msg_t msg = {RMF_MSG_WRITE_NOTIFY, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
       msg.msgData1 = (uint32_t) offset;
@@ -444,7 +442,7 @@ void apx_fileManager_triggerFileUpdatedEvent(apx_fileManager_t *self, apx_file_t
 
 void apx_fileManager_triggerFileWriteCmdEvent(apx_fileManager_t *self, apx_file_t *file, const uint8_t *data, apx_offset_t offset, apx_size_t length)
 {
-   if (self !=0 )
+   if ((self !=0) && (self->workerThreadValid))
    {
       uint8_t *dataCopy;
       apx_msg_t msg = {RMF_MSG_FILE_WRITE, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
