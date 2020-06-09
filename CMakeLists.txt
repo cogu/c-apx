@@ -11,6 +11,7 @@ include(adt/cmake/UnitTest.cmake)
 include(cmake/SetEnv.cmake)
 
 option(apx_ALPHA_BUILD "Is this an alpha build?" ON)
+option(BUILD_DEFAULT_SERVER "Build default APX server?" ON)
 
 if (LEAK_CHECK)
     message(STATUS "LEAK_CHECK=${LEAK_CHECK} (C-APX)")
@@ -133,6 +134,13 @@ if (UNIT_TEST)
 endif()
 target_link_libraries(apx_srv_sock_ext PRIVATE apx)
 target_include_directories(apx_srv_sock_ext PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/server_extension/socket/inc)
+
+install(
+  TARGETS apx_srv_sock_ext
+  LIBRARY DESTINATION lib
+  COMPONENT Server
+)
+
 ###
 
 ## Submodule include
@@ -144,6 +152,9 @@ add_subdirectory(dtl_type)
 add_subdirectory(msocket)
 add_subdirectory(app/apx_listen)
 add_subdirectory(app/apx_control)
+if(BUILD_DEFAULT_SERVER)
+    add_subdirectory(app/apx_server)
+endif()
 ###
 
 # apx library
@@ -293,9 +304,6 @@ set (REMOTEFILE_SOURCES
     remotefile/src/rmf.c
 )
 
-
-
-
 get_directory_property(ADT_HEADER_LIST DIRECTORY adt DEFINITION ADT_HEADER_LIST)
 get_directory_property(ADT_SOURCE_LIST DIRECTORY adt DEFINITION ADT_SOURCE_LIST)
 get_directory_property(BSTR_HEADER_LIST DIRECTORY bstr DEFINITION BSTR_HEADER_LIST)
@@ -372,6 +380,11 @@ target_include_directories(apx PUBLIC
 "${CMAKE_CURRENT_SOURCE_DIR}/remotefile/inc"
 )
 
+install(
+  TARGETS apx
+  LIBRARY DESTINATION lib
+)
+
 ###
 
 ### Executable apx_unit
@@ -409,26 +422,5 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         add_test(apx_test ${CMAKE_CURRENT_BINARY_DIR}/apx_unit)
         set_tests_properties(apx_test PROPERTIES PASS_REGULAR_EXPRESSION "OK \\([0-9]+ tests\\)")
     endif()
-endif()
-###
-
-### Executable apx_server
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    add_executable(apx_server apx/server_main/server_main.c)
-    target_link_libraries(apx_server PRIVATE
-    apx
-    apx_srv_sock_ext
-    Threads::Threads
-    )
-    if (UNIT_TEST)
-        target_link_libraries(apx_server PRIVATE cutil)
-    endif()
-    if (LEAK_CHECK)
-        target_compile_definitions(apx_server PRIVATE MEM_LEAK_CHECK)
-    endif()
-    target_include_directories(apx_server PRIVATE
-                    "${PROJECT_BINARY_DIR}"
-                    )
-    target_compile_definitions(apx_server PRIVATE USE_CONFIGURATION_FILE)
 endif()
 ###
