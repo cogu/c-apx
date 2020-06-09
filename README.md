@@ -64,44 +64,110 @@ CMake build has been tested for Windows (with Visual Studio) as well as Linux (w
 
 ### Running unit tests (Linux)
 
-Configure:
+**Configure:**
 
 ```sh
 cmake -S . -B build -DUNIT_TEST=ON
 ```
 
-Build:
+**Build:**
 
 ```sh
 cmake --build build --target apx_unit
 ```
 
-Run test cases:
+**Run test cases:**
 
 ```cmd
 cd build && ctest
 ```
 
-### Running unit tests (Windows with Visual Studio)
+### Running unit tests (Windows and Visual Studio)
 
-Use a command prompt provided by your Visual Studio installation.
-For example, I use "x64 Native Tools Command Prompt for VS2019" which is found on the start menu.
-It conveniently comes with CMake pre-installed which generates Visual Studio projects by default.
+Launch "x64 Native Tools Command Prompt for Visual Studio 2019" in start menu.
 
-Configure:
+**Configure:**
 
 ```cmd
 cmake -S . -B VisualStudio -DUNIT_TEST=ON
 ```
 
-Build:
+**Build:**
 
 ```cmd
 cmake --build VisualStudio --config Debug --target apx_unit
 ```
 
-Run test cases:
+**Run test cases:**
 
 ```cmd
 cd VisualStudio && ctest
+```
+
+### Building APX Binaries (Linux)
+
+**Configure:**
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+```
+
+Option 1: If you're going to run install target and want the binaries to end up in `/usr/bin` instead of `/usr/local/bin`:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr
+```
+
+Option 2: if you have ninja-build installed (recommended) remember to add the `-GNinja` argument during configuration.
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -GNinja
+```
+
+**Build binaries:**
+
+CMake 3.14
+
+```sh
+cmake --build build --target apx_server
+cmake --build build --target apx_listen
+cmake --build build --target apx_control
+```
+
+CMake 3.15 or newer
+
+```sh
+cmake --build build --target apx_server apx_listen apx_control
+```
+
+**Install binaries:**
+
+Also builds binaries if not previously built.
+
+```sh
+sudo cmake --build build --target install
+```
+
+### Building APX Binaries (Windows and Visual Studio)
+
+Launch "x64 Native Tools Command Prompt for Visual Studio 2019" in start menu.
+
+**Configure:**
+
+```cmd
+cmake -S . -B VisualStudio
+```
+
+**Build binaries:**
+
+```cmd
+cmake --build VisualStudio --config Release --target apx_server apx_listen apx_control
+```
+
+**Install binaries:**
+
+Run with admininistrative privilege.
+
+```cmd
+cmake --build build --target install
 ```
