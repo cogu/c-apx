@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.10)
 
 
 project(apx LANGUAGES C VERSION 0.3.0)
@@ -134,6 +134,7 @@ if (UNIT_TEST)
 endif()
 target_link_libraries(apx_srv_sock_ext PRIVATE apx)
 target_include_directories(apx_srv_sock_ext PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/server_extension/socket/inc)
+set_target_properties(apx_srv_sock_ext PROPERTIES VERSION ${apx_VERSION} SOVERSION ${apx_VERSION_MAJOR})
 
 install(
   TARGETS apx_srv_sock_ext
@@ -379,6 +380,8 @@ target_include_directories(apx PUBLIC
 "${CMAKE_CURRENT_SOURCE_DIR}/msocket/inc"
 "${CMAKE_CURRENT_SOURCE_DIR}/remotefile/inc"
 )
+
+set_target_properties(apx PROPERTIES VERSION ${apx_VERSION} SOVERSION ${apx_VERSION_MAJOR})
 
 install(
   TARGETS apx
