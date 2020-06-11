@@ -42,6 +42,7 @@
 #include "argparse.h"
 #include "json_server.h"
 #include "filestream.h"
+#include "apx_build_cfg.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -49,12 +50,14 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+#define APP_NAME "apx_node"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value);
 static adt_str_t *read_definition_file(adt_str_t *path);
+static void print_version(void);
 static void print_usage(const char *arg0);
 static void application_shutdown(void);
 static void application_cleanup(void);
@@ -87,6 +90,8 @@ static const char *m_bind_address_default = "/tmp/apx_listen.socket";
 static const char *m_connect_address_default = "/tmp/apx_server.socket";
 #endif
 static bool m_no_bind = false;
+static bool m_display_help = false;
+static bool m_display_version = false;
 static uint16_t m_bind_port;
 static uint16_t m_connect_port;
 static adt_str_t *m_bind_address = (adt_str_t*) 0;
@@ -136,10 +141,21 @@ int main(int argc, char **argv)
          (void) dummy_port;
          assert( (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) );
       }
+      if (m_display_version)
+      {
+         print_version();
+      }
+      if (m_display_help)
+      {
+         print_usage(argv[0]);
+      }
       if (adt_str_length(&m_definition_file) == 0)
       {
-         printf("Error: No definition file given\n");
-         print_usage(argv[0]);
+         if (!m_display_version && !m_display_help)
+         {
+            printf("Error: No definition file given\n");
+            print_usage(argv[0]);
+         }
       }
       else
       {
@@ -290,6 +306,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          }
          else if( (strcmp(short_name,"h")==0) )
          {
+            m_display_help = true;
             return ARGPARSE_SUCCESS;
          }
          else
@@ -306,11 +323,17 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          }
          else if ( (strcmp(long_name,"help")==0) )
          {
+            m_display_help = true;
+            return ARGPARSE_SUCCESS;
+         }
+         else if ( (strcmp(long_name,"version")==0) )
+         {
+            m_display_version = true;
             return ARGPARSE_SUCCESS;
          }
          else if ( (strcmp(long_name,"no-bind")==0) )
          {
-            m_no_bind=true;
+            m_no_bind = true;
          }
          else
          {
@@ -449,10 +472,16 @@ static adt_str_t *read_definition_file(adt_str_t *path)
    return (adt_str_t*) 0;
 }
 
+static void print_version(void)
+{
+   printf("%s %s\n", APP_NAME, SW_VERSION_LITERAL);
+}
+
 static void print_usage(const char *arg0)
 {
-   printf("%s [-b --bind bind_path] [-p --bind-port port]\n"
-              "[-c --connect connect_path] [-r --connect-port connect_port]\n"
+   printf("%s [-b --bind bind_path] [-p --bind-port port] [--no-bind] "
+              "[-c --connect connect_path] [-r --connect-port connect_port] "
+              "[--version] "
               "definition_file\n", arg0);
 }
 

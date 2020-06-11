@@ -37,6 +37,7 @@
 #include "argparse.h"
 #include "dtl_json.h"
 #include "filestream.h"
+#include "apx_build_cfg.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -44,6 +45,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+#define APP_NAME "apx_control"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -52,6 +54,7 @@
 static int init_wsa(void);
 #endif
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value);
+static void print_version(void);
 static void print_usage(const char *arg0);
 static void application_cleanup(void);
 #ifndef _WIN32
@@ -76,6 +79,8 @@ static const char *m_connect_address_default = "127.0.0.1";
 #else
 static const char *m_connect_address_default = "/tmp/apx_listen.socket";
 #endif
+static bool m_display_help = false;
+static bool m_display_version = false;
 static uint16_t m_pos_arg_count = 0u;
 static uint16_t m_connect_port;
 static adt_str_t *m_connect_address = (adt_str_t*) 0;
@@ -104,95 +109,109 @@ int main(int argc, char **argv)
          goto SHUTDOWN;
       }
 #endif
-      if (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
+      if (m_display_version)
       {
-         uint16_t dummy_port;
-         m_connect_resource_type = apx_parse_resource_name(m_connect_address_default, &m_connect_address, &dummy_port);
-         (void) dummy_port;
-         assert( (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) );
+         print_version();
       }
-      if (m_input_file_path != 0)
+      if (m_display_help)
       {
-         apx_error_t result;
-         const char *input_file_path = adt_str_cstr(m_input_file_path);
-         result = read_message_from_file(input_file_path);
-
-         if (result != APX_NO_ERROR)
-         {
-            fprintf(stderr, "Error: Failed to read contents of file %s\n", input_file_path);
-         }
-         else
-         {
-            dtl_dv_t *dv = dtl_json_load_cstr(adt_str_cstr(m_message));
-            if (dv == 0)
-            {
-               fprintf(stderr, "Error: JSON data validation error while parsing %s\n", input_file_path);
-               retval = -1;
-               goto SHUTDOWN;
-            }
-            else
-            {
-               dtl_dec_ref(dv);
-            }
-         }
+         print_usage(argv[0]);
       }
       else
       {
-         if (m_name != 0)
+         if (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
          {
-            if (m_value == 0)
+            uint16_t dummy_port;
+            m_connect_resource_type = apx_parse_resource_name(m_connect_address_default, &m_connect_address, &dummy_port);
+            (void) dummy_port;
+            assert( (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) );
+         }
+         if (m_input_file_path != 0)
+         {
+            apx_error_t result;
+            const char *input_file_path = adt_str_cstr(m_input_file_path);
+            result = read_message_from_file(input_file_path);
+
+            if (result != APX_NO_ERROR)
             {
-               printf("Error: missing value argument\n");
-               print_usage(argv[0]);
-               goto SHUTDOWN;
+               fprintf(stderr, "Error: Failed to read contents of file %s\n", input_file_path);
             }
             else
             {
-               adt_error_t result = build_json_message(m_name, m_value);
-               if (result != ADT_NO_ERROR)
+               dtl_dv_t *dv = dtl_json_load_cstr(adt_str_cstr(m_message));
+               if (dv == 0)
                {
+                  fprintf(stderr, "Error: JSON data validation error while parsing %s\n", input_file_path);
                   retval = -1;
                   goto SHUTDOWN;
                }
+               else
+               {
+                  dtl_dec_ref(dv);
+               }
             }
          }
-      }
-      if ( (m_message != 0) && (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) )
-      {
-         const char *address;
-         address = adt_str_cstr(m_connect_address);
-         assert(address != 0);
-         switch(m_connect_resource_type)
+         else
          {
-         case APX_RESOURCE_TYPE_IPV4: //fall-trough
-            connect_and_send_message_tcp(address, m_connect_port, AF_INET);
-            break;
-         case APX_RESOURCE_TYPE_IPV6:
-            connect_and_send_message_tcp(address, m_connect_port, AF_INET6);
-            break;
-         case APX_RESOURCE_TYPE_FILE:
-#ifdef _WIN32
-            printf("UNIX domain socket path not supported in Windows\n");
-#else
-            connect_and_send_message_unix(address);
-#endif
-            break;
-         case APX_RESOURCE_TYPE_NAME:
-            if ( (strlen(address) == 0) || (strcmp(address, "localhost") == 0) )
+            if (m_name != 0)
             {
-               connect_and_send_message_tcp("127.0.0.1", m_connect_port, AF_INET);
+               if (m_value == 0)
+               {
+                  printf("Error: missing value argument\n");
+                  print_usage(argv[0]);
+                  goto SHUTDOWN;
+               }
+               else
+               {
+                  adt_error_t result = build_json_message(m_name, m_value);
+                  if (result != ADT_NO_ERROR)
+                  {
+                     retval = -1;
+                     goto SHUTDOWN;
+                  }
+               }
             }
-            else
-            {
-               fprintf(stderr, "Error: Unsupported connection name \"%s\"\n", address);
-               retval = -1;
-            }
-            break;
          }
-      }
-      else if (m_message == 0)
-      {
-         printf("No message to send\n");
+         if ( (m_message != 0) && (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) )
+         {
+            const char *address;
+            address = adt_str_cstr(m_connect_address);
+            assert(address != 0);
+            switch(m_connect_resource_type)
+            {
+            case APX_RESOURCE_TYPE_IPV4: //fall-trough
+               connect_and_send_message_tcp(address, m_connect_port, AF_INET);
+               break;
+            case APX_RESOURCE_TYPE_IPV6:
+               connect_and_send_message_tcp(address, m_connect_port, AF_INET6);
+               break;
+            case APX_RESOURCE_TYPE_FILE:
+   #ifdef _WIN32
+               printf("UNIX domain socket path not supported in Windows\n");
+   #else
+               connect_and_send_message_unix(address);
+   #endif
+               break;
+            case APX_RESOURCE_TYPE_NAME:
+               if ( (strlen(address) == 0) || (strcmp(address, "localhost") == 0) )
+               {
+                  connect_and_send_message_tcp("127.0.0.1", m_connect_port, AF_INET);
+               }
+               else
+               {
+                  fprintf(stderr, "Error: Unsupported connection name \"%s\"\n", address);
+                  retval = -1;
+               }
+               break;
+            }
+         }
+         else if (m_message == 0)
+         {
+            if (!m_display_version && !m_display_help)
+            {
+               printf("No message to send\n");
+            }
+         }
       }
    }
    else
@@ -238,6 +257,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          }
          else if( (strcmp(short_name,"h")==0) )
          {
+            m_display_help = true;
             return ARGPARSE_SUCCESS;
          }
          else
@@ -253,6 +273,12 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          }
          else if ( (strcmp(long_name,"help")==0) )
          {
+            m_display_help = true;
+            return ARGPARSE_SUCCESS;
+         }
+         else if ( (strcmp(long_name,"version")==0) )
+         {
+            m_display_version = true;
             return ARGPARSE_SUCCESS;
          }
          else
@@ -355,13 +381,18 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
    return ARGPARSE_SUCCESS;
 }
 
-
+static void print_version(void)
+{
+   printf("%s %s\n", APP_NAME, SW_VERSION_LITERAL);
+}
 
 static void print_usage(const char *arg0)
 {
-   printf("%s [-i file_name]\n"
-          "[-c --connect connect_path] [-p --port connect_port]\n"
-          "[name value]", arg0);
+   printf("%s [-i json_file] "
+          "[-c --connect connect_path] [-p --port connect_port] "
+          "[--version] "
+          "[name value]\n"
+          , arg0);
 }
 
 static void application_cleanup(void)
@@ -385,12 +416,15 @@ static void connect_and_send_message_unix(const char *socketPath)
          result = message_client_connect_unix(connection, socketPath);
          if (result != 0)
          {
-            printf("Failed to connect\n");
+            printf("Failed to connect at %s\n", socketPath);
          }
-         result = message_client_wait_for_message_transmitted(connection);
-         if (result != 0)
+         else
          {
-            printf("message_client_wait_for_message_transmitted failed with %d\n", (int) result);
+            result = message_client_wait_for_message_transmitted(connection);
+            if (result != 0)
+            {
+               printf("message_client_wait_for_message_transmitted failed with %d\n", (int) result);
+            }
          }
       }
       else
@@ -417,12 +451,15 @@ static void connect_and_send_message_tcp(const char *address, uint16_t port, uin
             result = message_client_connect_tcp(connection, address, port);
             if (result != 0)
             {
-               printf("Failed to connect\n");
+               printf("Failed to connect at %s:%d\n", address, (int) port);
             }
-            result = message_client_wait_for_message_transmitted(connection);
-            if (result != 0)
+            else
             {
-               printf("message_client_wait_for_message_transmitted failed with %d\n", (int)result);
+               result = message_client_wait_for_message_transmitted(connection);
+               if (result != 0)
+               {
+                  printf("message_client_wait_for_message_transmitted failed with %d\n", (int)result);
+               }
             }
          }
          else
