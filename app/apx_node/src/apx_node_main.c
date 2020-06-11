@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_listen_main.c
+* \file      apx_node_main.c
 * \author    Conny Gustafsson
 * \date      2020-04-12
-* \brief     apx_listen console application
+* \brief     apx_node console application
 *
 * Copyright (c) 2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -86,7 +86,7 @@ static const uint16_t connect_port_default = 5000;
 static const char *m_bind_address_default = "127.0.0.1";
 static const char *m_connect_address_default = "127.0.0.1";
 #else
-static const char *m_bind_address_default = "/tmp/apx_listen.socket";
+static const char *m_bind_address_default = "/tmp/apx_node.socket";
 static const char *m_connect_address_default = "/tmp/apx_server.socket";
 #endif
 static bool m_no_bind = false;
