@@ -7,15 +7,13 @@ This is the C implementation of [APX](https://github.com/cogu/apx-doc).
 All maintenance work for v0.2 is done on the [maintenance_0.2](https://github.com/cogu/c-apx/tree/maintenance_0.2) branch.
 Latest release is [v0.2.6](https://github.com/cogu/c-apx/releases/tag/v0.2.6).
 
-## v0.3.x (In development)
+## v0.3.x (Stable)
 
-All development work for v0.3 is done on the master branch. As such, the master branch should for now be considered
-highly experimental.
+All development work for v0.3 is done on the master branch. Latest release is v0.3.0.
 
-### Current status of master branch (v0.3.0a)
+### Current status of master branch (v0.3.0)
 
-- Full support for APX v1.2 specification.
-- APX server should have the same feature set as seen in [v0.2.6](https://github.com/cogu/c-apx/releases/tag/v0.2.6).
+- Full support for APX v1.2 specification (Same as c-apx v0.2).
 - CMake build support for Linux and Windows.
 - Dynamic clients is fully supported.
 - APX-ES clients not yet supported (needs rewrite from v0.2 to v0.3).
@@ -126,18 +124,18 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -GNinja
 
 **Build binaries:**
 
-CMake 3.14
+CMake 3.10 or newer
 
 ```sh
 cmake --build build --target apx_server
-cmake --build build --target apx_listen
+cmake --build build --target apx_node
 cmake --build build --target apx_control
 ```
 
 CMake 3.15 or newer
 
 ```sh
-cmake --build build --target apx_server apx_listen apx_control
+cmake --build build --target apx_server apx_node apx_control
 ```
 
 **Install binaries:**
@@ -161,7 +159,7 @@ cmake -S . -B VisualStudio
 **Build binaries:**
 
 ```cmd
-cmake --build VisualStudio --config Release --target apx_server apx_listen apx_control
+cmake --build VisualStudio --config Release --target apx_server apx_node apx_control
 ```
 
 **Install binaries:**
@@ -169,5 +167,5 @@ cmake --build VisualStudio --config Release --target apx_server apx_listen apx_c
 Run with admininistrative privilege.
 
 ```cmd
-cmake --build build --target install
+cmake --build VisualStudio --target install
 ```
