@@ -1,10 +1,11 @@
-# apx_listen
+# apx_node
 
 ## Synopsis
 
 ```text
-apx_listen [-b --bind bind_path] [-p --bind-port port]
+apx_node   [-b --bind bind_path] [-p --bind-port port] [--no-bind]
            [-c --connect connect_path] [-r --connect-port connect_port]
+           [--version] [--help]
            file
 ```
 
@@ -57,7 +58,7 @@ file     path to an APX definition file (.apx)
 ### Linux Defaults
 
 ```text
---bind-path     /tmp/apx_listen.socket
+--bind-path     /tmp/apx_node.socket
 --connect-path  /tmp/apx_server.socket
 --bind-port     5100
 --connect-port  5000
@@ -75,7 +76,7 @@ file     path to an APX definition file (.apx)
 ## Example Usage
 
 ```bash
-apx_listen -b /tmp/vehicle.socket -c /tmp/apx_server.socket vehicle.apx
-apx_listen -b /tmp/vehicle.socket -c 192.168.1.19 vehicle.apx
-apx_listen -p 5101 -r 5001 vehicle.apx
+apx_node -b /tmp/vehicle.socket -c /tmp/apx_server.socket vehicle.apx
+apx_node -b /tmp/vehicle.socket -c 192.168.1.19 vehicle.apx
+apx_node -p 5101 -r 5001 vehicle.apx
 ```
