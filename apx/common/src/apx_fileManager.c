@@ -429,14 +429,29 @@ void apx_fileManager_triggerFileUpdatedEvent(apx_fileManager_t *self, apx_file_t
 {
    if ((self !=0) && (self->workerThreadValid))
    {
+      uint8_t writeNotifyCmdEventResult;
       apx_msg_t msg = {RMF_MSG_WRITE_NOTIFY, 0, 0, {0}, 0 }; //{msgType,  msgData1, msgData2, msgData3.ptr, msgData4}
       msg.msgData1 = (uint32_t) offset;
       msg.msgData2 = (uint32_t) length;
       msg.msgData3.ptr = file; //sent from node in nodeDataPtr
       SPINLOCK_ENTER(self->lock);
-      rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
+      writeNotifyCmdEventResult = rbfs_insert(&self->ringbuffer,(const uint8_t*) &msg);
       SPINLOCK_LEAVE(self->lock);
-      SEMAPHORE_POST(self->semaphore);
+      if (writeNotifyCmdEventResult == E_BUF_OK)
+      {
+         SEMAPHORE_POST(self->semaphore);
+      }
+      else
+      {
+         if (writeNotifyCmdEventResult == E_BUF_OVERFLOW)
+         {
+            APX_LOG_ERROR("[APX_REMOTE_FILE] ringbuffer full. FileUpdatedEvent lost");
+         }
+         else
+         {
+            APX_LOG_ERROR("[APX_REMOTE_FILE] ringbuffer error. FileUpdatedEvent lost");
+         }
+      }
    }
 }
 
@@ -467,11 +482,11 @@ void apx_fileManager_triggerFileWriteCmdEvent(apx_fileManager_t *self, apx_file_
             apx_allocator_free(&self->allocator, dataCopy, length);
             if (fileWriteCmdEventResult == E_BUF_OVERFLOW)
             {
-               APX_LOG_WARNING("[APX_REMOTE_FILE] ringbuffer full. FileWriteCmdEvent lost");
+               APX_LOG_ERROR("[APX_REMOTE_FILE] ringbuffer full. FileWriteCmdEvent lost");
             }
             else
             {
-               APX_LOG_WARNING("[APX_REMOTE_FILE] ringbuffer error. FileWriteCmdEvent lost");
+               APX_LOG_ERROR("[APX_REMOTE_FILE] ringbuffer error. FileWriteCmdEvent lost");
             }
          }
          else
