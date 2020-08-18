@@ -83,6 +83,7 @@ void apx_serverConnection_destroy(apx_serverConnection_t *self)
 {
    if (self != 0)
    {
+      apx_fileManager_stop(&self->fileManager);
       apx_fileManager_destroy(&self->fileManager);
       adt_bytearray_destroy(&self->sendBuffer);
 #ifdef UNIT_TEST
