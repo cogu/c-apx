@@ -131,6 +131,7 @@ static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket
          memset(&handlerTable,0,sizeof(handlerTable));
          handlerTable.tcp_data = apx_server_data;
          handlerTable.tcp_disconnected = apx_server_disconnected;
+         //Setup reception handler
          msocket_sethandler(msocket, &handlerTable, newConnection);
 
          if (msocket->addressFamily == AF_INET)
@@ -145,11 +146,10 @@ static void apx_server_accept(void *arg,msocket_server_t *srv,msocket_t *msocket
          {
             apx_serverConnection_setDebugMode(newConnection, self->debugMode);
          }
-         //now that the handler is setup, start the internal listening thread in the msocket
-         msocket_start_io(msocket);
-         //attach the filemanager to our nodemanager and trigger the new connection to send
-         // the greeting message (in case there is any to be sent)
+         //Setup transmission handler and start server file manager
          apx_serverConnection_start(newConnection);
+         //now that both handlers have been setup, start the internal listening thread in the msocket
+         msocket_start_io(msocket);
          MUTEX_UNLOCK(self->mutex);
       }
       else
