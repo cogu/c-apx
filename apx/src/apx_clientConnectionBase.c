@@ -474,7 +474,7 @@ static apx_error_t apx_clientConnectionBase_processNewRequirePortDataFile(apx_cl
       if (file != 0)
       {
          apx_nodeInstance_registerRequirePortFileHandler(nodeInstance, file);
-         apx_nodeInstance_setRequirePortDataState(nodeInstance, APX_PROVIDE_PORT_DATA_STATE_WAITING_FOR_FILE_DATA);
+         apx_nodeInstance_setRequirePortDataState(nodeInstance, APX_REQUIRE_PORT_DATA_STATE_WAITING_FOR_FILE_DATA);
          return apx_fileManager_requestOpenFile(&self->base.fileManager, fileInfo->address);
       }
    }
