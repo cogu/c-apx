@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "CuTest.h"
-#include "apx_attributeParser.h"
+#include "apx/attribute_parser.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -212,9 +212,8 @@ static void test_apx_attributesParser_parse(CuTest* tc)
          sv = (dtl_sv_t*) dv;
          CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(sv));
          cstr = dtl_sv_to_cstr(sv);
-         CuAssertUIntEquals(tc, 0, strlen(cstr));
+         CuAssertUIntEquals(tc, 0, (unsigned int) strlen(cstr));
       }
-
    }
    apx_portAttributes_destroy(&attr);
 
@@ -675,7 +674,7 @@ static void test_apx_attributeParser_parseInitValueSignedInt(CuTest* tc)
    sv = (dtl_sv_t*) initValue;
    CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
    s32Value = dtl_sv_to_i32(sv, NULL);
-   CuAssertIntEquals(tc, -2147483648, s32Value);
+   CuAssertIntEquals(tc, INT32_MIN, s32Value);
    dtl_dec_ref(sv);
 
    apx_attributeParser_destroy(&parser);

@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_connectionBase.h
+* \file      apx_connection_base.h
 * \author    Conny Gustafsson
 * \date      2018-12-09
 * \brief     Base class for all connections (client and server)
@@ -38,12 +38,12 @@
 # include <pthread.h>
 # include <semaphore.h>
 #endif
-#include "apx_types.h"
-#include "apx_error.h"
-#include "apx_fileManager.h"
-#include "apx_nodeManager.h"
-#include "apx_eventLoop.h"
-#include "apx_allocator.h"
+#include "apx/types.h"
+#include "apx/error.h"
+#include "apx/file_manager.h"
+#include "apx/node_manager.h"
+#include "apx/event_loop.h"
+#include "apx/allocator.h"
 #include "osmacro.h"
 
 //////////////////////////////////////////////////////////////////////////////

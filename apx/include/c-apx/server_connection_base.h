@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_serverConnectionBase.h
+* \file      server_connection_base.h
 * \author    Conny Gustafsson
 * \date      2018-09-26
 * \brief     Base class for all APX server connections
@@ -37,10 +37,10 @@
 #else
 #include <pthread.h>
 #endif
-#include "apx_connectionBase.h"
+#include "apx/connection_base.h"
 #include "adt_list.h"
 #include "adt_str.h"
-#include "apx_eventListener.h"
+#include "apx/event_listener.h"
 #include "osmacro.h"
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_fileManagerReceiver.c
+* \file      file_manager_receiver.c
 * \author    Conny Gustafsson
 * \date      2020-02-08
-* \brief     Description
+* \brief     Receive buffer mechanism for file manager
 *
 * Copyright (c) 2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -29,7 +29,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
-#include "apx_fileManagerReceiver.h"
+#include "apx/file_manager_receiver.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

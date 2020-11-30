@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileManager.h
+* \file      apx_file_manager.h
 * \author    Conny Gustafsson
 * \date      2020-01-22
 * \brief     APX file manager
@@ -29,13 +29,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
-#include "apx_file.h"
-#include "apx_fileManagerDefs.h"
-#include "apx_fileManagerShared.h"
-#include "apx_fileManagerWorker.h"
-#include "apx_fileManagerReceiver.h"
+#include "apx/types.h"
+#include "apx/error.h"
+#include "apx/file.h"
+#include "apx/file_manager_defs.h"
+#include "apx/file_manager_shared.h"
+#include "apx/file_manager_worker.h"
+#include "apx/file_manager_receiver.h"
 #include "adt_bytearray.h"
 
 //////////////////////////////////////////////////////////////////////////////

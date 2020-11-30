@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_parser.h
+* \file      parser.h
 * \author    Conny Gustafsson
 * \date      2017-02-20
 * \brief     APX parser
 *
-* Copyright (c) 2017-2018 Conny Gustafsson
+* Copyright (c) 2017-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,9 +30,9 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
-#include "apx_node.h"
+#include "apx/node.h"
 #include "adt_ary.h"
-#include "apx_error.h"
+#include "apx/error.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

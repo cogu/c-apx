@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_clientInternal.h
+* \file      apx_client_internal.h
 * \author    Conny Gustafsson
 * \date      2019-01-15
-* \brief     apx_client internal API (Implemented by apx_client.c)
+* \brief     Private API used internally by c-apx
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,8 +29,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_client.h"
-#include "apx_nodeInstance.h"
+#include "apx/client.h"
+#include "apx/node_instance.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

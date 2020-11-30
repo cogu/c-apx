@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileManagerWorker.h
+* \file      file_manager_worker.h
 * \author    Conny Gustafsson
 * \date      2020-01-22
 * \brief     APX file manager worker
@@ -29,13 +29,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_fileManagerDefs.h"
-#include "apx_fileManagerShared.h"
-#include "apx_transmitHandler.h"
-#include "apx_error.h"
-#include "apx_file.h"
-#include "apx_event.h"
-#include "apx_msg.h"
+#include "apx/file_manager_defs.h"
+#include "apx/file_manager_shared.h"
+#include "apx/transmit_handler.h"
+#include "apx/error.h"
+#include "apx/file.h"
+#include "apx/event.h"
+#include "apx/msg.h"
 #ifndef ADT_RBFS_ENABLE
 #define ADT_RBFS_ENABLE 1
 #endif

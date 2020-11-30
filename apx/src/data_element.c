@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_dataElement.c
+* \file      apx_data_element.c
 * \author    Conny Gustafsson
 * \date      2017-02-20
-* \brief     Data element data structure
+* \brief     Data element (parse tree) data structure
 *
 * Copyright (c) 2017-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -30,10 +30,10 @@
 #include <malloc.h>
 #include <assert.h>
 #include <string.h>
-#include "apx_dataElement.h"
-#include "apx_error.h"
-#include "apx_types.h"
-#include "apx_dataType.h"
+#include "apx/data_element.h"
+#include "apx/error.h"
+#include "apx/types.h"
+#include "apx/data_type.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

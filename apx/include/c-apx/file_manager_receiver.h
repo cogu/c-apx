@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileManagerReceiver.h
+* \file      file_manager_receiver.h
 * \author    Conny Gustafsson
 * \date      2020-02-08
 * \brief     Receive buffer mechanism for file manager
@@ -29,8 +29,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
+#include "apx/types.h"
+#include "apx/error.h"
 #include "rmf.h"
 
 //////////////////////////////////////////////////////////////////////////////

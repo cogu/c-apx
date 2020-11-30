@@ -8,10 +8,10 @@
 #include <string.h>
 #include <string.h>
 #include "CuTest.h"
-#include "apx_fileManagerWorker.h"
-#include "apx_fileMap.h"
-#include "rmf.h"
-#include "apx_file.h"
+#include "apx/file_manager_worker.h"
+#include "apx/file_map.h"
+#include "apx/rmf.h"
+#include "apx/file.h"
 #include "adt_bytearray.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

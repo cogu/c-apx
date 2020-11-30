@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_clientSocketConnection.h
+* \file      apx_client_socket_connection.h
 * \author    Conny Gustafsson
 * \date      2018-12-31
-* \brief     Client socket connection. Inherits from apx_clientConnectionBase_t (which in turn inherits from base class apx_connectionBase_t)
+* \brief     Client socket connection class
 *
-* Copyright (c) 2018-2019 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,7 +30,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_bytearray.h"
-#include "apx_clientConnectionBase.h"
+#include "apx/client_connection_base.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

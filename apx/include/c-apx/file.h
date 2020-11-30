@@ -29,10 +29,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
-#include "apx_fileInfo.h"
-#include "apx_eventListener.h"
+#include "apx/types.h"
+#include "apx/error.h"
+#include "apx/file_info.h"
+#include "apx/event_listener.h"
 #include "adt_list.h"
 
 #ifndef APX_EMBEDDED

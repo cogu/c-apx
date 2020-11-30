@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_compiler.h
+* \file      compiler.h
 * \author    Conny Gustafsson
 * \date      2019-01-03
 * \brief     APX bytecode compiler
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,13 +29,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
-#include "apx_node.h"
-#include "apx_dataElement.h"
+#include "apx/types.h"
+#include "apx/error.h"
+#include "apx/node.h"
+#include "apx/data_element.h"
 #include "adt_bytearray.h"
 #include "adt_stack.h"
-#include "apx_vmdefs.h"
+#include "apx/vm_defs.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

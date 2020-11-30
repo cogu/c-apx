@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_portConnectorList.c
+* \file      port_connector_list.c
 * \author    Conny Gustafsson
 * \date      2018-12-07
 * \brief     Internal lookup table for port subscriptions
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -27,7 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
-#include "apx_portConnectorList.h"
+#include "apx/port_connector_list.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

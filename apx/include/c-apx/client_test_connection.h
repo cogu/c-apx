@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_clientTestConnection.h
+* \file      client_test_connection.h
 * \author    Conny Gustafsson
 * \date      2018-01-15
-* \brief     Test connection for APX clients
+* \brief     Unit Test connection for APX clients
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,9 +30,9 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdbool.h>
-#include "apx_error.h"
-#include "apx_clientConnectionBase.h"
-#include "rmf.h"
+#include "apx/error.h"
+#include "apx/client_connection_base.h"
+#include "apx/rmf.h"
 #include "adt_bytearray.h"
 #include "adt_ary.h"
 

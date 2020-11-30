@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "CuTest.h"
-#include "rmf.h"
+#include "apx/rmf.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

@@ -29,8 +29,7 @@
 #include <malloc.h>
 #include <assert.h>
 #include <string.h>
-#include "apx_vm.h"
-#include "apx_vmSerializer.h"
+#include "apx/vm.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

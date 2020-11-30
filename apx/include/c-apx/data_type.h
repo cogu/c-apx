@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_datatype.h
+* \file      datatype.h
 * \author    Conny Gustafsson
 * \date      2017-02-20
 * \brief     APX datatype class
 *
-* Copyright (c) 2017-2018 Conny Gustafsson
+* Copyright (c) 2017-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,9 +30,9 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
-#include "apx_dataSignature.h"
-#include "apx_typeAttribute.h"
-#include "apx_error.h"
+#include "apx/data_signature.h"
+#include "apx/type_attribute.h"
+#include "apx/error.h"
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////

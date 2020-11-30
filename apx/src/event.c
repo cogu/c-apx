@@ -1,10 +1,10 @@
 /*****************************************************************************
 * \file      apx_event.c
 * \author    Conny Gustafsson
-* \date      2018-12-16
-* \brief     Description
+* \date      2018-10-15
+* \brief     Maps all APX event listeners event data into a common data structure
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -27,7 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
-#include "apx_event.h"
+#include "apx/event.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES

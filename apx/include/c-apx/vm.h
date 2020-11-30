@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_vm.h
+* \file      vm.h
 * \author    Conny Gustafsson
-* \date      2019-02-24
+* \date      2020-02-24
 * \brief     APX virtual machine (implements v2 of APX byte code language)
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,12 +29,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_vmdefs.h"
+#include "apx/types.h"
+#include "apx/vm_defs.h"
 #include "adt_bytearray.h"
-#include "apx_error.h"
-#include "apx_vmSerializer.h"
-#include "apx_vmDeserializer.h"
+#include "apx/error.h"
+#include "apx/vm_serializer.h"
+#include "apx/vm_deserializer.h"
 #include "dtl_type.h"
 
 //////////////////////////////////////////////////////////////////////////////

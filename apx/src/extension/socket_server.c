@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_socketServer.c
+* \file      socket_server.c
 * \author    Conny Gustafsson
 * \date      2019-09-07
-* \brief     Description
+* \brief     Socket server for apx_server
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,10 +30,10 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include "apx_types.h"
-#include "apx_socketServer.h"
-#include "apx_server.h"
-#include "apx_serverSocketConnection.h"
+#include "apx/types.h"
+#include "apx/extension/socket_server.h"
+#include "apx/server.h"
+#include "apx/extension/server_socket_connection.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

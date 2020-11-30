@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_portConnectorList.h
+* \file      portConnectorList.h
 * \author    Conny Gustafsson
 * \date      2018-12-07
 * \brief     Internal lookup table for port subscriptions
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,8 +30,8 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_ary.h"
-#include "apx_error.h"
-#include "apx_portDataRef.h"
+#include "apx/error.h"
+#include "apx/port_data_ref.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES

@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_portConnectorChangeEntry.c
+* \file      port_connector_change_entry.h
 * \author    Conny Gustafsson
 * \date      2019-01-23
 * \brief     APX port connection change information (for one port)
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_portConnectorChangeEntry.h"
+#include "apx/port_connector_change_entry.h"
 #include <stdlib.h>
 #include <assert.h>
 

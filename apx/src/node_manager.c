@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_nodeManager.c
+* \file      node_manager.c
 * \author    Conny Gustafsson
 * \date      2019-12-29
 * \brief     Manager for apx_nodeInstance objects
@@ -31,7 +31,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include <stdio.h>
-#include "apx_nodeManager.h"
+#include "apx/node_manager.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

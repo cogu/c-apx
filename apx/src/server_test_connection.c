@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_serverTestConnection.c
+* \file      server_test_connection.c
 * \author    Conny Gustafsson
 * \date      2018-12-09
-* \brief     Programmable server connection for the purpose of unit testing
+* \brief     Server unit test connection
 *
 * Copyright (c) 2018-2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <stdio.h> //debug only
-#include "apx_serverTestConnection.h"
+#include "apx/server_test_connection.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

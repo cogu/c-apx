@@ -1,28 +1,3 @@
-/*****************************************************************************
-* \file      testsuite_apx_vmDeserializer.c
-* \author    Conny Gustafsson
-* \date      2019-10-03
-* \brief     Test suite for apx_vmDeserializer
-*
-* Copyright (c) 2019 Conny Gustafsson
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*
-******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
@@ -31,9 +6,10 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
+#include <limits.h>
 #include "CuTest.h"
-#include "apx_vmDeserializer.h"
-#include "apx_vmdefs.h"
+#include "apx/vm_deserializer.h"
+#include "apx/vm_defs.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -208,7 +184,7 @@ static void test_apx_vmDeserializer_unpackS32LE(CuTest* tc)
    CuAssertIntEquals(tc, APX_MISSING_BUFFER_ERROR, apx_vmDeserializer_unpackS32(dsr, &s32Value));
    apx_vmDeserializer_begin(dsr, &data[0], sizeof(data));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackS32(dsr, &s32Value));
-   CuAssertIntEquals(tc, -2147483648, s32Value);
+   CuAssertIntEquals(tc, INT32_MIN , s32Value);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackS32(dsr, &s32Value));
    CuAssertIntEquals(tc, -1, s32Value);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vmDeserializer_unpackS32(dsr, &s32Value));
@@ -411,7 +387,7 @@ static void test_apx_vmDeserializer_unpackS32LEArray(CuTest* tc)
 {
    const uint32_t arrayLen = 4u;
    uint8_t packedData[SINT32_SIZE*4] = {0x00, 0x00, 0x00, 0x80, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x7f};
-   int32_t expectedValues[4] = {-2147483648, -1, 0, 2147483647};
+   int32_t expectedValues[4] = {INT32_MIN, -1, 0, 2147483647};
    dtl_dv_t *dv = 0;
    dtl_av_t *av;
    uint32_t i;

@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portSignatureMap.h
+* \file      port_signature_entry.h
 * \author    Conny Gustafsson
 * \date      2020-02-18
 * \brief     An element in an apx_portSignatureMap_t
@@ -30,8 +30,8 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_list.h"
-#include "apx_types.h"
-#include "apx_portDataRef.h"
+#include "apx/types.h"
+#include "apx/port_data_ref.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

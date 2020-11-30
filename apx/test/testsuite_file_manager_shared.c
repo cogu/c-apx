@@ -7,8 +7,8 @@
 #include <stddef.h>
 #include <string.h>
 #include "CuTest.h"
-#include "apx_fileManagerShared.h"
-#include "apx_eventListener.h"
+#include "apx/file_manager_shared.h"
+#include "apx/event_listener.h"
 #include "adt_bytearray.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

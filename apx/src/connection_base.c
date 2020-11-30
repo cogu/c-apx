@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_connectionBase.c
+* \file      apx_connection_base.h
 * \author    Conny Gustafsson
 * \date      2018-12-09
 * \brief     Base class for all connections (client and server)
 *
-* Copyright (c) 2018-2020 Conny Gustafsson
+* Copyright (c) 2018 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,12 +29,12 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h> //DEBUG only
-#include "apx_connectionBase.h"
-#include "apx_portDataRef.h"
-#include "apx_nodeData.h"
-#include "apx_logging.h"
-#include "apx_portConnectorChangeTable.h"
-#include "apx_util.h"
+#include "apx/connection_base.h"
+#include "apx/port_data_ref.h"
+#include "apx/node_data.h"
+#include "apx/logging.h"
+#include "apx/port_connector_change_table.h"
+#include "apx/util.h"
 #ifdef _WIN32
 #include <process.h>
 #endif

@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_nodeManager.h
+* \file      node_manager.h
 * \author    Conny Gustafsson
 * \date      2019-12-29
 * \brief     Manager for apx_nodeInstance objects
@@ -29,10 +29,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_nodeInstance.h"
-#include "apx_parser.h"
-#include "apx_stream.h"
-#include "apx_error.h"
+#include "apx/node_instance.h"
+#include "apx/parser.h"
+#include "apx/stream.h"
+#include "apx/error.h"
 #include "adt_hash.h"
 
 #ifdef _WIN32

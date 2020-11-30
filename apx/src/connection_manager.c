@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_connectionManager.c
+* \file      connection_manager.c
 * \author    Conny Gustafsson
 * \date      2018-12-28
-* \brief     APX server connection manager
+* \brief     Server connection manager
 *
 * Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include <errno.h>
-#include "apx_connectionManager.h"
+#include "apx/connection_manager.h"
 #ifdef _WIN32
 #include <process.h>
 #endif

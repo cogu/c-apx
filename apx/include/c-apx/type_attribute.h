@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_typeAttribute.h
+* \file      type_attribute.h
 * \author    Conny Gustafsson
 * \date      2018-09-11
-* \brief     APX type attribute class
+* \brief     APX (parse tree) type definition
 *
 * Copyright (c) 2018 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -30,7 +30,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
-#include "apx_error.h"
+#include "apx/error.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portSignatureMap.c
+* \file      port_signature_map.c
 * \author    Conny Gustafsson
 * \date      2020-02-18
 * \brief     Port signature map
@@ -30,8 +30,8 @@
 #include <string.h>
 #include <malloc.h>
 #include <stdio.h> //DEBUG ONLY
-#include "apx_portSignatureMap.h"
-#include "apx_nodeInstance.h"
+#include "apx/port_signature_map.h"
+#include "apx/node_instance.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

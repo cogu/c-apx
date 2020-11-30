@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_nodeInstance.h
+* \file      node_instance.h
 * \author    Conny Gustafsson
 * \date      2019-12-02
 * \brief     Parent container for all things node-related.
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,17 +29,17 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_node.h"
-#include "apx_nodeInfo.h"
-#include "apx_nodeData.h"
-#include "apx_portDataRef.h"
-#include "apx_portConnectorList.h"
-#include "apx_eventListener.h"
-#include "apx_file.h"
-#include "apx_error.h"
-#include "apx_parser.h"
-#include "apx_portConnectorChangeTable.h"
+#include "apx/types.h"
+#include "apx/node.h"
+#include "apx/node_info.h"
+#include "apx/node_data.h"
+#include "apx/port_data_ref.h"
+#include "apx/port_connector_list.h"
+#include "apx/event_listener.h"
+#include "apx/file.h"
+#include "apx/error.h"
+#include "apx/parser.h"
+#include "apx/port_connector_change_table.h"
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN

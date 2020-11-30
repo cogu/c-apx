@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_eventListener.h
+* \file      apx_event_listener.h
 * \author    Conny Gustafsson
 * \date      2020-01-03
 * \brief     Event listener API
@@ -29,7 +29,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
+#include "apx/types.h"
 
 //forward declarations
 struct apx_serverConnectionBase_tag;

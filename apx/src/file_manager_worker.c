@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileManagerWorker.c
+* \file      file_manager_worker.c
 * \author    Conny Gustafsson
 * \date      2020-01-23
 * \brief     APX Filemanager worker
@@ -31,11 +31,11 @@
 #ifdef _WIN32
 #include <process.h>
 #endif
-#include "apx_types.h"
+#include "apx/types.h"
 //BEGIN TEMPORARY INCLUDES
 #include <stdio.h>
 //END TEMPORARY INCLUDES
-#include "apx_fileManagerWorker.h"
+#include "apx/file_manager_worker.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -240,7 +240,7 @@ apx_error_t apx_fileManagerWorker_sendConstData(apx_fileManagerWorker_t *self, u
       apx_msg_t msg = {APX_MSG_SEND_FILE_CONST_DATA, 0, 0, {0}, 0};
       msg.msgData1 = address;
       msg.msgData2 = len;
-      msg.msgData3.ptr = readFunc;
+      msg.msgData3.ptr = (void*) readFunc;
       msg.msgData4 = arg;
       SPINLOCK_ENTER(self->lock);
       adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
@@ -607,7 +607,7 @@ static apx_error_t workerThread_sendFileConstData(apx_fileManagerWorker_t *self,
       uint32_t address = msg->msgData1;
       uint32_t dataSize = msg->msgData2;
       void *arg = msg->msgData4;
-      apx_file_read_const_data_func *readFunc = msg->msgData3.ptr;
+      apx_file_read_const_data_func *readFunc = (apx_file_read_const_data_func*) msg->msgData3.ptr;
       uint32_t offset;
       file = apx_fileManagerShared_findFileByAddress(self->shared, address & RMF_ADDRESS_MASK_INTERNAL);
       if (file == 0)

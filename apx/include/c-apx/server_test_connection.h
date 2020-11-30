@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_serverTestConnection.h
+* \file      server_test_connection.h
 * \author    Conny Gustafsson
 * \date      2018-12-09
-* \brief     Description
+* \brief     Server unit test connection
 *
 * Copyright (c) 2018-2019 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -30,11 +30,11 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdbool.h>
-#include "apx_error.h"
-#include "apx_serverConnectionBase.h"
+#include "apx/error.h"
+#include "apx/server_connection_base.h"
 #include "adt_bytearray.h"
 #include "adt_ary.h"
-#include "apx_fileInfo.h"
+#include "apx/file_info.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_serverExtension.h
+* \file      server_extension.h
 * \author    Conny Gustafsson
 * \date      2019-09-05
-* \brief     APX Server Extension data structure
+* \brief     APX server extension data structure
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,8 +29,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
+#include "apx/types.h"
+#include "apx/error.h"
 #include "dtl_type.h"
 
 //////////////////////////////////////////////////////////////////////////////

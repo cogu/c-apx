@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_socketServerExtension.c
+* \file      apx_socket_server_extension.c
 * \author    Conny Gustafsson
 * \date      2019-09-04
 * \brief     APX socket server extension (TCP+UNIX)
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -32,9 +32,9 @@
 # endif
 #include <Windows.h>
 #endif
-#include "apx_socketServerExtension.h"
-#include "apx_socketServer.h"
-#include "apx_server.h"
+#include "apx/extension/socket_server_extension.h"
+#include "apx/extension/socket_server.h"
+#include "apx/server.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

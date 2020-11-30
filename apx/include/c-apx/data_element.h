@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_dataElement.h
+* \file      apx_data_element.h
 * \author    Conny Gustafsson
 * \date      2017-02-20
 * \brief     Data element data structure
@@ -32,8 +32,8 @@
 #include <stdint.h>
 #include "adt_ary.h"
 #include "dtl_type.h"
-#include "apx_error.h"
-#include "apx_types.h"
+#include "apx/error.h"
+#include "apx/types.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_serverTextLog.c
+* \file      server_text_log.c
 * \author    Conny Gustafsson
 * \date      2019-09-12
 * \brief     Server text log
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -32,11 +32,11 @@
 
 
 #include "adt_str.h"
-#include "apx_serverTextLog.h"
-#include "apx_eventListener.h"
-#include "apx_serverConnectionBase.h"
-#include "apx_portConnectorChangeTable.h"
-#include "apx_server.h"
+#include "apx/extension/server_text_log.h"
+#include "apx/event_listener.h"
+#include "apx/server_connection_base.h"
+#include "apx/port_connector_change_table.h"
+#include "apx/server.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

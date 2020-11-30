@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileManager.c
+* \file      file_manager.c
 * \author    Conny Gustafsson
 * \date      2020-01-27
 * \brief     New APX file manager
@@ -29,9 +29,9 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h> //DEBUG only
-#include "apx_connectionBase.h"
-#include "apx_portDataRef.h"
-#include "apx_nodeData.h"
+#include "apx/connection_base.h"
+#include "apx/port_data_ref.h"
+#include "apx/node_data.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

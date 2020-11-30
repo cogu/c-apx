@@ -29,12 +29,12 @@
 #include <malloc.h>
 #include <string.h>
 #include <errno.h>
-#include "apx_error.h"
-#include "apx_file.h"
+#include "apx/error.h"
+#include "apx/file.h"
 #include "bstr.h"
-#include "apx_eventListener.h"
-#include "apx_nodeData.h"
-#include "apx_fileManager.h"
+#include "apx/event_listener.h"
+#include "apx/node_data.h"
+#include "apx/file_manager.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

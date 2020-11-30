@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_dataSignature.c
+* \file      data_signature.h
 * \author    Conny Gustafsson
 * \date      2017-02-20
 * \brief     Data Signature (DSG) container and parser logic
 *
-* Copyright (c) 2017-2019 Conny Gustafsson
+* Copyright (c) 2017-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -33,14 +33,14 @@
 #include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
-#include "apx_cfg.h"
-#include "apx_dataSignature.h"
+#include "apx/cfg.h"
+#include "apx/data_signature.h"
 #include "bstr.h"
 #include "adt_ary.h"
 #include "adt_hash.h"
 #include "adt_str.h"
-#include "apx_types.h"
-#include "apx_dataType.h"
+#include "apx/types.h"
+#include "apx/data_type.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

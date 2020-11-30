@@ -1,8 +1,9 @@
 /*****************************************************************************
-* \file      apx_serverSocketConnection.h
+* \file      server_socket_connection.h
 * \author    Conny Gustafsson
 * \date      2018-09-26
-* \brief     Server socket connection. Inherits from apx_serverConnectionBase_t (which in turn uses base class apx_connectionBase_t)
+* \brief     Server socket connection. 
+*            Inherits from apx_serverConnectionBase_t
 *
 * Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -30,7 +31,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_bytearray.h"
-#include "apx_serverConnectionBase.h"
+#include "apx/server_connection_base.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

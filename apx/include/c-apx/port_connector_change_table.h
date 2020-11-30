@@ -1,8 +1,9 @@
 /*****************************************************************************
-* \file      apx_portConnectorChangeTable.h
+* \file      port_connector_change_table.h
 * \author    Conny Gustafsson
 * \date      2019-01-31
-* \brief     A list of apx_portConnectionChangeEntry_t. Used to track changes in port connectors on one side of a node (Require or Provide)
+* \brief     A list of apx_portConnectionChangeEntry_t. 
+*            Used to track changes in port connectors on one side of a node (Require or Provide)
 *
 * Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -29,9 +30,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_error.h"
-#include "apx_portConnectorChangeTable.h"
-#include "apx_portConnectorChangeEntry.h"
+#include "apx/error.h"
+#include "apx/port_connector_change_table.h"
+#include "apx/port_connector_change_entry.h"
 #include "adt_ary.h"
 
 //////////////////////////////////////////////////////////////////////////////

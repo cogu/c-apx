@@ -1,11 +1,11 @@
 /*****************************************************************************
-* \file      apx_nodeInfo.c
+* \file      node_info.c
 * \author    Conny Gustafsson
 * \date      2019-11-25
 * \brief     Static information about an APX node.
-*            This a post-processed version based on information from the APX definition parse tree.
+*            This a post-processed version based on information from the APX-node parse tree.
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,10 +30,10 @@
 #include <malloc.h>
 #include <assert.h>
 #include <string.h>
-#include "apx_node.h"
-#include "apx_parser.h"
-#include "apx_nodeInfo.h"
-#include "apx_vm.h"
+#include "apx/node.h"
+#include "apx/parser.h"
+#include "apx/node_info.h"
+#include "apx/vm.h"
 #include "bstr.h"
 #include <stdio.h> //DEBUG ONLY
 #ifdef MEM_LEAK_CHECK

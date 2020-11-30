@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_client.c
+* \file      client.c
 * \author    Conny Gustafsson
 * \date      2017-02-20
 * \brief     APX client class
@@ -31,23 +31,22 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include "apx_client.h"
-#include "apx_clientInternal.h"
-#include "apx_clientConnectionBase.h"
-#include "apx_clientSocketConnection.h"
-#include "apx_nodeManager.h"
-#include "apx_fileManager.h"
-#include "apx_parser.h"
-#include "apx_nodeInstance.h"
+#include "apx/client.h"
+#include "apx/client_internal.h"
+#include "apx/client_connection_base.h"
+#include "apx/client_socket_connection.h"
+#include "apx/node_manager.h"
+#include "apx/file_manager.h"
+#include "apx/parser.h"
+#include "apx/node_instance.h"
+#include "apx/vm.h"
 #include "msocket.h"
 #include "adt_ary.h"
 #include "adt_list.h"
 #include "adt_hash.h"
-#include "apx_eventListener.h"
-#include "apx_compiler.h"
+#include "apx/event_listener.h"
+#include "apx/compiler.h"
 #include "pack.h"
-#include "apx_vm.h"
-
 #ifdef UNIT_TEST
 #include "testsocket.h"
 #endif
