@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileInfo.c
+* \file      file_info.c
 * \author    Conny Gustafsson
 * \date      2020-01-03
 * \brief     Disposable file info data structure
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <string.h>
-#include "apx_fileInfo.h"
+#include "apx/file_info.h"
 #include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

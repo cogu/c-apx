@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_clientConnectionBase.h
+* \file      client_connection_base.h
 * \author    Conny Gustafsson
 * \date      2018-12-31
 * \brief     Base class for client connections
@@ -29,7 +29,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_connectionBase.h"
+#include "apx/connection_base.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

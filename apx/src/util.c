@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_util.c
+* \file      util.c
 * \author    Conny Gustafsson
 * \date      2020-02-17
 * \brief     Various APX-related utility functions
@@ -31,7 +31,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "apx_util.h"
+#include "apx/util.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES

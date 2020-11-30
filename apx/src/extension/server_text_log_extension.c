@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_serverTextEventLogExtension.c
+* \file      server_text_event_log_extension.c
 * \author    Conny Gustafsson
 * \date      2019-09-08
 * \brief     Text log extension for APX server
@@ -27,15 +27,12 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
-#include "apx_serverTextLogExtension.h"
-#include "apx_serverTextLog.h"
-#include "apx_server.h"
+#include "apx/extension/server_text_log_extension.h"
+#include "apx/extension/server_text_log.h"
+#include "apx/server.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
-
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES

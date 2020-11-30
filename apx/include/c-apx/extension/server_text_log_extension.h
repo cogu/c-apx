@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_serverTextLogExtension.h
+* \file      server_text_log_extension.h
 * \author    Conny Gustafsson
 * \date      2019-09-08
 * \brief     Text log extension for APX server
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,7 +29,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_serverExtension.h"
+#include "apx/server_extension.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

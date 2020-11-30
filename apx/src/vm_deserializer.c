@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_vmDeserializer.c
+* \file      vm_deserializer.c
 * \author    Conny Gustafsson
 * \date      2019-10-03
 * \brief     APX port data deserializer
@@ -29,8 +29,8 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
-#include "apx_vmDeserializer.h"
-#include "apx_vmdefs.h"
+#include "apx/vm_deserializer.h"
+#include "apx/vm_defs.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

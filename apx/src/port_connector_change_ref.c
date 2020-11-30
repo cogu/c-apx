@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portConnectorChangeRef.c
+* \file      port_connector_change_ref.c
 * \author    Conny Gustafsson
 * \date      2020-03-03
 * \brief     Simple struct containing two pointers
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <string.h>
-#include "apx_portConnectorChangeRef.h"
+#include "apx/port_connector_change_ref.h"
 #include "bstr.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

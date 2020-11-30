@@ -1,37 +1,12 @@
-/*****************************************************************************
-* \file      testsuite_apx_client.c
-* \author    Conny Gustafsson
-* \date      2020-01-27
-* \brief     Unit tests for apx_client_t
-*
-* Copyright (c) 2020 Conny Gustafsson
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*
-******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
-#include "apx_client.h"
-#include "apx_clientEventListenerSpy.h"
+#include "apx/client.h"
+#include "client_event_listener_spy.h"
 #include "CuTest.h"
 #include "pack.h"
-#include "apx_util.h"
+#include "apx/util.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -1265,7 +1240,7 @@ static void test_apx_client_writePortData_dtl_s32(CuTest* tc)
    CuAssertUIntEquals(tc, 0xFF, rawData[2]);
    CuAssertUIntEquals(tc, 0xFF, rawData[3]);
 
-   dtl_sv_set_i32(sv, -2147483648);
+   dtl_sv_set_i32(sv, INT32_MIN);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_writePortData(client, S32ValueHandle, (dtl_dv_t*) sv));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeInstance_readProvidePortData(nodeInstance, &rawData[0], offset, UINT32_SIZE));
    CuAssertUIntEquals(tc, 0x00, rawData[0]);
@@ -1331,7 +1306,7 @@ static void test_apx_client_readPortData_dtl_S32(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_readPortData(client, S32ValueHandle, (dtl_dv_t**) &sv));
    CuAssertPtrNotNull(tc, sv);
    CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
-   CuAssertIntEquals(tc, -2147483648, dtl_sv_to_i32(sv, &ok));
+   CuAssertIntEquals(tc, INT32_MIN, dtl_sv_to_i32(sv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dec_ref(sv);
    sv = 0;
@@ -1561,7 +1536,7 @@ static void test_apx_client_writePortData_dtl_S32_fix_array(CuTest* tc)
    CuAssertUIntEquals(tc, 0xFF, rawData[13]);
    CuAssertUIntEquals(tc, 0xFF, rawData[14]);
    CuAssertUIntEquals(tc, 0xFF, rawData[15]);
-   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-2147483648), false);
+   dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(INT32_MIN), false);
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(-1), false);
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(0), false);
    dtl_av_push(av, (dtl_dv_t*) dtl_sv_make_i32(2147483647), false);
@@ -1628,7 +1603,7 @@ static void test_apx_client_readPortData_dtl_s32_fix_array(CuTest* tc)
    sv = (dtl_sv_t*) dtl_av_value(av, 0);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
    CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));
-   CuAssertIntEquals(tc, -2147483648, dtl_sv_to_i32(sv, NULL));
+   CuAssertIntEquals(tc, INT32_MIN, dtl_sv_to_i32(sv, NULL));
    sv = (dtl_sv_t*) dtl_av_value(av, 1);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type( (dtl_dv_t*) sv));
    CuAssertIntEquals(tc, DTL_SV_I32, dtl_sv_type(sv));

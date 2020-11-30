@@ -6,12 +6,12 @@
 #include <assert.h>
 #include "CuTest.h"
 #include "pack.h"
-#include "apx_clientSocketConnection.h"
-#include "apx_client.h"
+#include "apx/client_socket_connection.h"
+#include "apx/client.h"
 #include "testsocket_spy.h"
-#include "apx_fileManager.h"
-#include "apx_test_nodes.h"
-#include "rmf.h"
+#include "apx/file_manager.h"
+#include "test_nodes.h"
+#include "apx/rmf.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

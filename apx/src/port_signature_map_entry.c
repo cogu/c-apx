@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portSignatureMap.h
+* \file      port_signature_entry.c
 * \author    Conny Gustafsson
 * \date      2020-02-18
 * \brief     An element in an apx_portSignatureMap_t
@@ -28,12 +28,12 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <assert.h>
-#include "apx_error.h"
-#include "apx_portSignatureMapEntry.h"
-#include "apx_nodeInstance.h"
-#include "apx_portConnectorChangeTable.h"
-#include "apx_nodeData.h"
-#include "apx_port.h"
+#include "apx/error.h"
+#include "apx/port_signature_map_entry.h"
+#include "apx/node_instance.h"
+#include "apx/port_connector_change_table.h"
+#include "apx/node_data.h"
+#include "apx/port.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

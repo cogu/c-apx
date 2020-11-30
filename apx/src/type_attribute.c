@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_typeAttribute.c
+* \file      type_attribute.c
 * \author    Conny Gustafsson
 * \date      2018-09-11
-* \brief     APX type attribute class
+* \brief     Parse tree APX type attribute
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -26,8 +26,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_typeAttribute.h"
-#include "apx_types.h"
+#include "apx/type_attribute.h"
+#include "apx/types.h"
 #include <string.h>
 #include <malloc.h>
 #ifdef MEM_LEAK_CHECK

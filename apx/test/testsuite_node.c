@@ -7,8 +7,8 @@
 #include <stddef.h>
 #include <string.h>
 #include "CuTest.h"
-#include "apx_node.h"
-#include "apx_error.h"
+#include "apx/node.h"
+#include "apx/error.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -527,7 +527,7 @@ static void test_apx_node_initValue_S32(CuTest* tc)
    CuAssertPtrNotNull(tc, initValue);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(initValue));
    dtl_sv_t *sv = (dtl_sv_t*) initValue;
-   CuAssertIntEquals(tc, -2147483648, dtl_sv_to_i32(sv, NULL));
+   CuAssertIntEquals(tc, INT32_MIN, dtl_sv_to_i32(sv, NULL));
 
    initValue = apx_port_getProperInitValue(port2);
    CuAssertPtrNotNull(tc, initValue);
@@ -740,7 +740,7 @@ static void test_apx_node_initValue_S32_array(CuTest* tc)
    CuAssertIntEquals(tc, 4, dtl_av_length(av));
    dv = dtl_av_value(av, 0);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
-   CuAssertIntEquals(tc, -2147483648, dtl_sv_to_i32((dtl_sv_t*) dv, NULL));
+   CuAssertIntEquals(tc, INT32_MIN, dtl_sv_to_i32((dtl_sv_t*) dv, NULL));
    dv = dtl_av_value(av, 1);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
    CuAssertIntEquals(tc, 0, dtl_sv_to_i32((dtl_sv_t*) dv, NULL));

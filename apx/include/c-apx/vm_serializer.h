@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_vmSerializer.h
+* \file      apx_vm_serializer.h
 * \author    Conny Gustafsson
 * \date      2019-08-11
 * \brief     APX port data serializer
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -32,8 +32,8 @@
 #include "adt_stack.h"
 #include "dtl_type.h"
 #include "adt_str.h"
-#include "apx_error.h"
-#include "apx_vmdefs.h"
+#include "apx/error.h"
+#include "apx/vm_defs.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

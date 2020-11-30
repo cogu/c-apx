@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_nodeData.h
+* \file      node_data.h
 * \author    Conny Gustafsson
 * \date      2019-12-02
 * \brief     Container for data in an APX node that changes over time (port values, port connection count etc.)
@@ -29,8 +29,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
+#include "apx/types.h"
+#include "apx/error.h"
 #ifndef APX_EMBEDDED
 #  ifndef _WIN32
      //Linux-based system

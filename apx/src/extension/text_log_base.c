@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_textLogBase.c
+* \file      text_log_base.c
 * \author    Conny Gustafsson
 * \date      2019-09-12
 * \brief     Base class for text-based event loggers
@@ -27,7 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
-#include "apx_textLogBase.h"
+#include "apx/extension/text_log_base.h"
 #if !defined(_WIN32) && !defined(__CYGWIN__)
 #include <syslog.h>
 #endif

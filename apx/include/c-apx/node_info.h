@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_nodeInfo.h
+* \file      node_info.h
 * \author    Conny Gustafsson
 * \date      2019-11-25
 * \brief     Static information about an APX node.
@@ -30,12 +30,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
-#include "apx_portDataProps.h"
-#include "apx_bytePortMap.h"
+#include "apx/types.h"
+#include "apx/error.h"
+#include "apx/port_data_props.h"
+#include "apx/byte_port_map.h"
 #include "adt_bytes.h"
-#include "apx_compiler.h"
+#include "apx/compiler.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

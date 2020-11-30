@@ -31,9 +31,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
 #include <stdbool.h>
-#include "apx_error.h"
-#include "apx_clientConnectionBase.h"
-#include "apx_nodeInstance.h"
+#include "apx/error.h"
+#include "apx/client_connection_base.h"
+#include "apx/node_instance.h"
 
 
 //////////////////////////////////////////////////////////////////////////////

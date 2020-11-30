@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_nodeData.c
+* \file      node_data.c
 * \author    Conny Gustafsson
 * \date      2019-12-02
 * \brief     Container for data in an APX node that changes over time (port values, port connection count etc.)
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,8 +29,8 @@
 #include <string.h>
 #include <malloc.h>
 #include <assert.h>
-#include "apx_nodeData.h"
-#include "apx_nodeInstance.h"
+#include "apx/node_data.h"
+#include "apx/node_instance.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

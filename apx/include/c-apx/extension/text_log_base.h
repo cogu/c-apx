@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_textLogBase.h
+* \file      apx_text_log_base.h
 * \author    Conny Gustafsson
 * \date      2019-09-12
 * \brief     Base class for text-based event loggers
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "osmacro.h"
-#include "apx_types.h"
+#include "apx/types.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

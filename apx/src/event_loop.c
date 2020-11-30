@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_eventLoop.c
+* \file      event_loop.c
 * \author    Conny Gustafsson
 * \date      2018-10-15
 * \brief     APX event loop
@@ -28,10 +28,10 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <assert.h>
-#include "apx_eventLoop.h"
-#include "apx_event.h"
-#include "apx_logging.h"
-#include "apx_fileManager.h"
+#include "apx/event_loop.h"
+#include "apx/event.h"
+#include "apx/logging.h"
+#include "apx/file_manager.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

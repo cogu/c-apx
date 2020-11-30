@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileInfo.h
+* \file      apx_file_info.h
 * \author    Conny Gustafsson
 * \date      2020-01-03
 * \brief     Disposable file info data structure
@@ -29,8 +29,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
+#include "apx/types.h"
+#include "apx/error.h"
 #include "rmf.h"
 
 //////////////////////////////////////////////////////////////////////////////

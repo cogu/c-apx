@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_serverConnectionBase.c
+* \file      server_connection_base.h
 * \author    Conny Gustafsson
 * \date      2018-09-26
 * \brief     Base class for all APX server connections
@@ -30,19 +30,19 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h> //debug only
-#include "apx_serverConnectionBase.h"
+#include "apx/server_connection_base.h"
 #include "bstr.h"
-#include "numheader.h"
-#include "apx_fileManager.h"
-#include "apx_eventListener.h"
-#include "apx_logging.h"
-#include "apx_file.h"
-#include "apx_nodeData.h"
-#include "rmf.h"
-#include "apx_server.h"
-#include "apx_portConnectorChangeTable.h"
-#include "apx_portConnectorChangeRef.h"
-#include "apx_util.h"
+#include "apx/numheader.h"
+#include "apx/file_manager.h"
+#include "apx/event_listener.h"
+//#include "apx/logging.h"
+#include "apx/file.h"
+#include "apx/node_data.h"
+#include "apx/rmf.h"
+#include "apx/server.h"
+#include "apx/port_connector_change_table.h"
+#include "apx/port_connector_change_ref.h"
+#include "apx/util.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

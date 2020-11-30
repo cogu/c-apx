@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_bytePortMap.h
+* \file      byte_port_map.h
 * \author    Conny Gustafsson
 * \date      2018-10-09
 * \brief     Byte offset to port id map
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,9 +29,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_portDataProps.h"
-#include "apx_error.h"
+#include "apx/types.h"
+#include "apx/port_data_props.h"
+#include "apx/error.h"
 
 
 //////////////////////////////////////////////////////////////////////////////

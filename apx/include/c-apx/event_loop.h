@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_eventLoop.h
+* \file      apx_event_loop.h
 * \author    Conny Gustafsson
 * \date      2018-10-15
 * \brief     APX event loop
@@ -29,10 +29,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_error.h"
-#include "apx_eventListener.h"
-#include "apx_event.h"
+#include "apx/types.h"
+#include "apx/error.h"
+#include "apx/event_listener.h"
+#include "apx/event.h"
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN

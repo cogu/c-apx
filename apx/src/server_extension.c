@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_serverExtension.c
+* \file      server_extension.c
 * \author    Conny Gustafsson
-* \date      my_date
-* \brief     Description
+* \date      2019-09-05
+* \brief     APX server extension data structure
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <string.h>
-#include "apx_serverExtension.h"
+#include "apx/server_extension.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portSignatureMap.h
+* \file      port_signature_map.h
 * \author    Conny Gustafsson
 * \date      2020-02-18
 * \brief     Port signature map
@@ -30,9 +30,9 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_hash.h"
-#include "apx_types.h"
-#include "apx_error.h"
-#include "apx_portSignatureMapEntry.h"
+#include "apx/types.h"
+#include "apx/error.h"
+#include "apx/port_signature_map_entry.h"
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////

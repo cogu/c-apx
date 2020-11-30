@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileManagerShared.c
+* \file      file_manager_shared.c
 * \author    Conny Gustafsson
 * \date      2020-01-23
 * \brief     APX Filemanager shared data
@@ -30,7 +30,7 @@
 #if APX_DEBUG_ENABLE
 #include <stdio.h>
 #endif
-#include "apx_fileManagerShared.h"
+#include "apx/file_manager_shared.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

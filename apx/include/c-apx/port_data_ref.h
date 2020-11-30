@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_portRef.h
+* \file      port_data_ref.h
 * \author    Conny Gustafsson
 * \date      2019-12-02
 * \brief     Collects all useful information about a specific port into a single container
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2019-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -29,9 +29,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_event.h"
-#include "apx_portDataProps.h"
+#include "apx/types.h"
+#include "apx/event.h"
+#include "apx/port_data_props.h"
 #include <stdbool.h>
 
 

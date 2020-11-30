@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_portConnectorChangeRef.h
+* \file      port_connector_change_ref.h
 * \author    Conny Gustafsson
 * \date      2020-03-03
 * \brief     Simple struct containing two pointers
@@ -29,9 +29,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_nodeInstance.h"
-#include "apx_portConnectorChangeTable.h"
+#include "apx/types.h"
+#include "apx/node_instance.h"
+#include "apx/port_connector_change_table.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES

@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_bytePortMap.c
+* \file      byte_port_map.c
 * \author    Conny Gustafsson
 * \date      2018-10-09
 * \brief     Byte offset to port id map
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <assert.h>
-#include "apx_bytePortMap.h"
+#include "apx/byte_port_map.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

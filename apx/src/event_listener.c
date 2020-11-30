@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_eventListener.c
+* \file      event_listener.c
 * \author    Conny Gustafsson
 * \date      2020-01-03
 * \brief     Event listener API
@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_eventListener.h"
+#include "apx/event_listener.h"
 #include <malloc.h>
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

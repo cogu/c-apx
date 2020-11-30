@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_portDataProps.c
+* \file      port_data_props.c
 * \author    Conny Gustafsson
-* \date      2018-10-08
+* \date      2018-11-25
 * \brief     Port data properties, a combination of apx_dataElement_t and apx_portAttributes_t
 *
-* Copyright (c) 2018-2019 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -27,8 +27,8 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
-#include "apx_error.h"
-#include "apx_portDataProps.h"
+#include "apx/error.h"
+#include "apx/port_data_props.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

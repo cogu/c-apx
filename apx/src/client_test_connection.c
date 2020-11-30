@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_clientTestConnection.c
+* \file      client_test_connection.c
 * \author    Conny Gustafsson
-* \date      2019-01-09
-* \brief     Test connection for APX clients
+* \date      2018-01-15
+* \brief     Unit Test connection for APX clients
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -28,8 +28,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <stdio.h> //debug only
-#include "apx_clientTestConnection.h"
-#include "apx_clientInternal.h"
+#include "apx/client_test_connection.h"
+#include "apx/client_internal.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

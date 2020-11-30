@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_clientConnectionBase.c
+* \file      client_connection_base.c
 * \author    Conny Gustafsson
 * \date      2018-12-31
 * \brief     Base class for client connections
 *
-* Copyright (c) 2018-2019 Conny Gustafsson
+* Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,13 +30,13 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h> //debug only
-#include "apx_clientConnectionBase.h"
+#include "apx/client_connection_base.h"
 #include "bstr.h"
-#include "numheader.h"
-#include "apx_logging.h"
-#include "apx_file.h"
-#include "rmf.h"
-#include "apx_clientInternal.h"
+#include "apx/numheader.h"
+//#include "apx/logging.h"
+#include "apx/file.h"
+#include "apx/rmf.h"
+#include "apx/client_internal.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #else

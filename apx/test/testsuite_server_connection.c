@@ -1,28 +1,3 @@
-/*****************************************************************************
-* \file      testsuite_apx_serverConnection.c
-* \author    Conny Gustafsson
-* \date      2020-01-02
-* \brief     Unit Tests for server connection
-*
-* Copyright (c) 2020 Conny Gustafsson
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*
-******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
@@ -31,13 +6,13 @@
 #include <string.h>
 #include <malloc.h>
 #include <assert.h>
-#include "numheader.h"
+#include "apx/numheader.h"
 #include "CuTest.h"
-#include "apx_server.h"
-#include "apx_serverTestConnection.h"
-#include "apx_connectionEventSpy.h"
-#include "apx_transmitHandlerSpy.h"
-#include "apx_nodeManager.h"
+#include "connection_event_spy.h"
+#include "transmit_handler_spy.h"
+#include "apx/server.h"
+#include "apx/server_test_connection.h"
+#include "apx/node_manager.h"
 #include "pack.h"
 
 #ifdef MEM_LEAK_CHECK

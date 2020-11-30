@@ -7,8 +7,8 @@
 #include <stddef.h>
 #include <string.h>
 #include "CuTest.h"
-#include "apx_allocator.h"
-#include "apx_parser.h"
+#include "apx/allocator.h"
+#include "apx/parser.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

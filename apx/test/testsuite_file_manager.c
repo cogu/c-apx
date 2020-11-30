@@ -7,13 +7,13 @@
 #include <stddef.h>
 #include <string.h>
 #include "CuTest.h"
-#include "apx_fileManager.h"
-#include "apx_eventListener.h"
-#include "apx_file.h"
-#include "apx_transmitHandlerSpy.h"
-#include "apx_connectionEventSpy.h"
-#include "apx_nodeData.h"
-#include "apx_serverTestConnection.h"
+#include "transmit_handler_spy.h"
+#include "connection_event_spy.h"
+#include "apx/file_manager.h"
+#include "apx/event_listener.h"
+#include "apx/file.h"
+#include "apx/node_data.h"
+#include "apx/server_test_connection.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

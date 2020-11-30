@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      apx_parser.c
+* \file      parser.c
 * \author    Conny Gustafsson
 * \date      2017-02-20
-* \brief     Description
+* \brief     APX parser
 *
-* Copyright (c) 2017-2018 Conny Gustafsson
+* Copyright (c) 2017-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,11 +30,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "filestream.h"
-#include "apx_parser.h"
-#include "apx_stream.h"
-#include "apx_logging.h"
-#include "apx_node.h"
-#include "apx_error.h"
+#include "apx/parser.h"
+#include "apx/stream.h"
+//#include "apx/logging.h"
+#include "apx/node.h"
+#include "apx/error.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

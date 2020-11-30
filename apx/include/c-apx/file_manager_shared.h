@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_fileManagerShared.h
+* \file      apx_file_manager_shared.h
 * \author    Conny Gustafsson
 * \date      2020-01-23
 * \brief     APX Filemanager shared data
@@ -29,12 +29,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_types.h"
-#include "apx_fileMap.h"
-#include "apx_fileManagerDefs.h"
-#include "apx_file.h"
-#include "apx_fileInfo.h"
-#include "apx_error.h"
+#include "apx/types.h"
+#include "apx/file_map.h"
+#include "apx/file_manager_defs.h"
+#include "apx/file.h"
+#include "apx/file_info.h"
+#include "apx/error.h"
 #include "rmf.h"
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN

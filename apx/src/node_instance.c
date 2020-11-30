@@ -1,5 +1,5 @@
 /*****************************************************************************
-* \file      apx_nodeInstance.c
+* \file      node_instance.c
 * \author    Conny Gustafsson
 * \date      2019-12-02
 * \brief     Parent container for all things node-related.
@@ -29,10 +29,11 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h> //DEBUG ONLY
-#include "apx_nodeInstance.h"
-#include "apx_connectionBase.h"
-#include "apx_util.h"
-#include "rmf.h"
+#include "apx/node_instance.h"
+#include "apx/connection_base.h"
+#include "apx/util.h"
+#include "apx/rmf.h"
+#include "apx/error.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"

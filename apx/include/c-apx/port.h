@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      apx_port.h
+* \file      port.h
 * \author    Conny Gustafsson
 * \date      2017-02-20
-* \brief     APX port class
+* \brief     Parse tree APX port
 *
 * Copyright (c) 2017-2018 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -29,10 +29,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_dataSignature.h"
-#include "apx_portAttributes.h"
-#include "apx_error.h"
-#include "apx_types.h"
+#include "apx/data_signature.h"
+#include "apx/port_attributes.h"
+#include "apx/error.h"
+#include "apx/types.h"
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
