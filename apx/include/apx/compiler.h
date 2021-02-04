@@ -31,10 +31,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/types.h"
 #include "apx/error.h"
-#include "apx/node.h"
-#include "apx/data_element.h"
-#include "adt_bytearray.h"
-#include "adt_stack.h"
+#include "apx/port.h"
+#include "apx/program.h"
 #include "apx/vm_defs.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -44,13 +42,12 @@
 
 typedef struct apx_compiler_tag
 {
-   apx_program_t *program; //program buffer
-   adt_stack_t offsetStack; //strong references to apx_size_t
-   apx_size_t *dataOffset;
-   bool hasHeader;
+   apx_program_t* program; //Strong reference
+   apx_error_t last_error;
+   bool has_dynamic_data;
 }apx_compiler_t;
 
-#define APX_PROGRAM_GROW_DEFAULT 128
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
@@ -59,18 +56,6 @@ void apx_compiler_create(apx_compiler_t *self);
 void apx_compiler_destroy(apx_compiler_t *self);
 apx_compiler_t* apx_compiler_new(void);
 void apx_compiler_delete(apx_compiler_t *self);
-void apx_compiler_begin(apx_compiler_t *self, adt_bytearray_t *buffer);
-apx_error_t apx_compiler_begin_packProgram(apx_compiler_t *self, adt_bytearray_t *buffer);
-apx_error_t apx_compiler_begin_unpackProgram(apx_compiler_t *self, adt_bytearray_t *buffer);
-void apx_compiler_end(apx_compiler_t *self);
-
-
-apx_error_t apx_compiler_compilePackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement);
-apx_error_t apx_compiler_compileUnpackDataElement(apx_compiler_t *self, apx_dataElement_t *dataElement);
-
-apx_error_t apx_compiler_encodePackProgramHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
-apx_error_t apx_compiler_encodeUnpackProgramHeader(apx_compiler_t *self, uint8_t majorVersion, uint8_t minorVersion, apx_size_t dataSize);
-uint8_t apx_compiler_encodeInstruction(uint8_t opCode, uint8_t variant, uint8_t flags);
-
+apx_program_t* apx_compiler_compile_port(apx_compiler_t* self, apx_port_t* port, apx_programType_t program_type, apx_error_t* error_code);
 
 #endif //APX_COMPILER_H

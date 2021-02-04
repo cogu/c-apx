@@ -31,40 +31,37 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/types.h"
 #include "apx/error.h"
-#include "rmf.h"
+#include "remotefile.h"
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_fileManagerReceiver_tag
 {
-   uint8_t *receiveBuf;        //Receive buffer
-   apx_size_t receiveBufSize;  //Allocated size of receiveBuf
-   apx_size_t receiveBufPos;   //current write position (and length) of receive buffer
-   uint32_t startAddress;      //StartAddress of write, When value is RMF_INVALID_ADDRESS it means no reception is currently taking place
-   bool isFragmentedWrite;     //True as long as moreBit is true
+   uint8_t *buf_data;
+   apx_size_t buf_size;
+   apx_size_t buf_pos;
+   uint32_t start_address;
 } apx_fileManagerReceiver_t;
 
-typedef struct apx_fileManagerReception_tag
+typedef struct apx_fileManagerReceptionResult_tag
 {
-   uint32_t startAddress;
-   const uint8_t *msgBuf;
-   apx_size_t msgSize;
-} apx_fileManagerReception_t;
+   bool is_complete;
+   uint32_t address;
+   uint8_t const* data;
+   apx_size_t size;
+} apx_fileManagerReceptionResult_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_fileManagerReceiver_create(apx_fileManagerReceiver_t *self);
+apx_error_t apx_fileManagerReceiver_create(apx_fileManagerReceiver_t *self);
 void apx_fileManagerReceiver_destroy(apx_fileManagerReceiver_t *self);
 void apx_fileManagerReceiver_reset(apx_fileManagerReceiver_t *self);
 apx_error_t apx_fileManagerReceiver_reserve(apx_fileManagerReceiver_t *self, apx_size_t size);
-bool apx_fileManagerReceiver_isOngoing(apx_fileManagerReceiver_t *self);
-apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit);
-uint32_t apx_fileManagerReceiver_getAddress(apx_fileManagerReceiver_t *self);
-apx_size_t apx_fileManagerReceiver_getSize(apx_fileManagerReceiver_t *self, apx_size_t *size);
-apx_error_t apx_fileManagerReceiver_checkComplete(apx_fileManagerReceiver_t *self, apx_fileManagerReception_t *reception);
-
+apx_size_t apx_fileManagerReceiver_buffer_size(apx_fileManagerReceiver_t const* self);
+apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, apx_fileManagerReceptionResult_t *result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
 
 #endif //APX_FILEMANAGER_RECEIVER_H

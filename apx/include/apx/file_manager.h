@@ -4,7 +4,7 @@
 * \date      2020-01-22
 * \brief     APX file manager
 *
-* Copyright (c) 2020 Conny Gustafsson
+* Copyright (c) 2020-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -32,7 +32,7 @@
 #include "apx/types.h"
 #include "apx/error.h"
 #include "apx/file.h"
-#include "apx/file_manager_defs.h"
+//#include "apx/file_manager_defs.h"
 #include "apx/file_manager_shared.h"
 #include "apx/file_manager_worker.h"
 #include "apx/file_manager_receiver.h"
@@ -42,7 +42,6 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 //forward declaration
-struct apx_connectionBase_tag;
 
 
 typedef struct apx_fileManager_tag
@@ -50,7 +49,7 @@ typedef struct apx_fileManager_tag
    apx_fileManagerShared_t shared;
    apx_fileManagerWorker_t worker;
    apx_fileManagerReceiver_t receiver;
-   struct apx_connectionBase_tag *parentConnection;
+   apx_mode_t mode;
 }apx_fileManager_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -60,39 +59,26 @@ typedef struct apx_fileManager_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileManager_create(apx_fileManager_t *self, uint8_t mode, struct apx_connectionBase_tag *parentConnection);
-void apx_fileManager_destroy(apx_fileManager_t *self);
-
-void apx_fileManager_start(apx_fileManager_t *self);
-void apx_fileManager_stop(apx_fileManager_t *self);
-
-
-apx_file_t* apx_fileManager_findFileByAddress(apx_fileManager_t *self, uint32_t address);
-apx_file_t* apx_fileManager_findRemoteFileByName(apx_fileManager_t *self, const char *name);
-void apx_fileManager_setTransmitHandler(apx_fileManager_t *self, apx_transmitHandler_t *handler);
-void apx_fileManager_copyTransmitHandler(apx_fileManager_t *self, apx_transmitHandler_t *handler);
-void apx_fileManager_headerReceived(apx_fileManager_t *self);
-void apx_fileManager_headerAccepted(apx_fileManager_t *self);
-apx_error_t apx_fileManager_requestOpenFile(apx_fileManager_t *self, uint32_t address);
-void apx_fileManager_setConnectionId(apx_fileManager_t *self, uint32_t connectionId);
-int32_t apx_fileManager_getNumLocalFiles(apx_fileManager_t *self);
-int32_t apx_fileManager_getNumRemoteFiles(apx_fileManager_t *self);
-uint16_t apx_fileManager_getNumPendingWorkerMessages(apx_fileManager_t *self);
-
-//Actions triggered by remote side
-apx_error_t apx_fileManager_messageReceived(apx_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
-apx_file_t *apx_fileManager_fileInfoNotify(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo);
-
-//Actions triggered on local side
-apx_error_t apx_fileManager_writeConstData(apx_fileManager_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg);
-apx_error_t apx_fileManager_writeDynamicData(apx_fileManager_t *self, uint32_t address, apx_size_t len, uint8_t *data);
-apx_file_t *apx_fileManager_createLocalFile(apx_fileManager_t *self, const apx_fileInfo_t *fileInfo);
-apx_error_t apx_fileManager_sendFileInfo(apx_fileManager_t *self, apx_fileInfo_t *fileInfo);
-void apx_fileManager_disconnectNotify(apx_fileManager_t *self);
-
+apx_error_t apx_fileManager_create(apx_fileManager_t* self, uint8_t mode, apx_connectionInterface_t const* parent_connection, apx_allocator_t* allocator);
+void apx_fileManager_destroy(apx_fileManager_t* self);
+void apx_fileManager_start(apx_fileManager_t* self);
+void apx_fileManager_stop(apx_fileManager_t* self);
+void apx_fileManager_connected(apx_fileManager_t* self);
+void apx_fileManager_disconnected(apx_fileManager_t* self);
+apx_file_t* apx_fileManager_create_local_file(apx_fileManager_t* self, rmf_fileInfo_t const* file_info);
+apx_error_t apx_fileManager_publish_local_file(apx_fileManager_t* self, rmf_fileInfo_t const* file_info);
+apx_file_t* apx_fileManager_find_file_by_address(apx_fileManager_t* self, uint32_t address);
+apx_file_t* apx_fileManager_find_local_file_by_name(apx_fileManager_t* self, char const* name);
+apx_file_t* apx_fileManager_find_remote_file_by_name(apx_fileManager_t* self, char const* name);
+apx_error_t apx_fileManager_message_received(apx_fileManager_t* self, uint8_t const* msg_data, apx_size_t msg_len);
+apx_error_t apx_fileManager_send_local_const_data(apx_fileManager_t* self, uint32_t address, uint8_t const* data, apx_size_t size);
+apx_error_t apx_fileManager_send_local_data(apx_fileManager_t* self, uint32_t address, uint8_t* data, apx_size_t size); //file_manager takes ownership of data when called
+apx_error_t apx_fileManager_send_open_file_request(apx_fileManager_t* self, uint32_t address);
+apx_error_t apx_fileManager_send_error_code(apx_fileManager_t* self, apx_error_t error_code);
+uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self);
 #ifdef UNIT_TEST
-bool apx_fileManager_run(apx_fileManager_t *self);
-int32_t apx_fileManager_numPendingMessages(apx_fileManager_t *self);
+bool apx_fileManager_run(apx_fileManager_t* self);
+apx_size_t apx_fileManager_num_pending_commands(apx_fileManager_t* self);
 #endif
 
 #endif //APX_FILE_MANAGER_H

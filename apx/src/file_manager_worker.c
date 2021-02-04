@@ -4,7 +4,7 @@
 * \date      2020-01-23
 * \brief     APX Filemanager worker
 *
-* Copyright (c) 2020 Conny Gustafsson
+* Copyright (c) 2020-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -28,13 +28,10 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <assert.h>
 #include <string.h>
+#include <malloc.h>
 #ifdef _WIN32
 #include <process.h>
 #endif
-#include "apx/types.h"
-//BEGIN TEMPORARY INCLUDES
-#include <stdio.h>
-//END TEMPORARY INCLUDES
 #include "apx/file_manager_worker.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -44,30 +41,28 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+/*
 #ifdef UNIT_TEST
 #define DYN_STATIC
 #else
 #define DYN_STATIC static
 #endif
-
+*/
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static int32_t apx_fileManagerWorker_calcFileInfoMsgSize(const struct apx_fileInfo_tag *fileInfo);
-static int32_t apx_fileManagerWorker_serializeFileInfo(uint8_t *bufData, int32_t bufLen, const apx_fileInfo_t *fileInfo);
+static bool process_single_command(apx_fileManagerWorker_t* self, apx_command_t const* cmd);
+static apx_error_t run_send_acknowledge(apx_fileManagerWorker_t* self);
+static apx_error_t run_publish_local_file(apx_fileManagerWorker_t* self, rmf_fileInfo_t* file);
+static apx_error_t run_send_local_const_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
+static apx_error_t run_send_local_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t* data, uint32_t size);
+static apx_error_t run_open_remote_file(apx_fileManagerWorker_t* self, uint32_t address);
+static apx_error_t apx_fileManagerWorker_process_ringbuffer_error(adt_buf_err_t error_code);
 #ifndef UNIT_TEST
-static apx_error_t apx_fileManagerWorker_starThread(apx_fileManagerWorker_t *self);
-
-static void apx_fileManagerWorker_stopThread(apx_fileManagerWorker_t *self);
-static THREAD_PROTO(workerThread,arg);
+static apx_error_t start_worker_thread(apx_fileManagerWorker_t* self);
+static apx_error_t stop_worker_thread(apx_fileManagerWorker_t* self);
+static THREAD_PROTO(worker_main, arg);
 #endif
-static bool workerThread_processMessage(apx_fileManagerWorker_t *self, apx_msg_t *msg);
-static void workerThread_sendFileInfo(apx_fileManagerWorker_t *self, apx_msg_t *msg);
-static void workerThread_sendFileOpen(apx_fileManagerWorker_t *self, apx_msg_t *msg);
-static void workerThread_sendAcknowledge(apx_fileManagerWorker_t *self);
-static apx_error_t workerThread_sendFileConstData(apx_fileManagerWorker_t *self, apx_msg_t *msg);
-static apx_error_t workerThread_sendFileDynData(apx_fileManagerWorker_t *self, apx_msg_t *msg);
-static apx_error_t apx_fileManagerWorker_processRingBufErrorCode(adt_buf_err_t errorCode);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -76,33 +71,28 @@ static apx_error_t apx_fileManagerWorker_processRingBufErrorCode(adt_buf_err_t e
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared_t *shared, apx_mode_t mode)
+
+apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t* self, apx_fileManagerShared_t* shared, apx_mode_t mode)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      adt_buf_err_t bufResult;
-
-      bufResult = adt_rbfh_create(&self->messages, (uint8_t) RMF_MSG_SIZE);
-
-      if (bufResult != BUF_E_OK)
+      adt_buf_err_t buf_result = adt_rbfh_create(&self->queue, (uint8_t) APX_COMMAND_SIZE);
+      if (buf_result != BUF_E_OK)
       {
          return APX_MEM_ERROR;
       }
-
       self->mode = mode;
       self->shared = shared;
+      self->worker_thread_valid = false;
       MUTEX_INIT(self->mutex);
-      SPINLOCK_INIT(self->lock);
+      (void)SPINLOCK_INIT(self->queue_lock);
       SEMAPHORE_CREATE(self->semaphore);
 #ifdef _WIN32
-      self->workerThread = INVALID_HANDLE_VALUE;
+      self->worker_thread = INVALID_HANDLE_VALUE;
+      self->worker_thread_id = 0u;
 #else
-      self->workerThread = 0;
+      self->worker_thread = 0;
 #endif
-      self->workerThreadValid=false;
-      self->numHeaderSize = 0u;
-
-      apx_fileManagerWorker_setTransmitHandler(self, 0);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -110,355 +100,439 @@ apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_file
 
 void apx_fileManagerWorker_destroy(apx_fileManagerWorker_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (self->workerThreadValid == true)
+      if (self->worker_thread_valid == true)
       {
-         //apx_fileManagerWorker_stop(self);
+#ifndef UNIT_TEST
+         stop_worker_thread(self);
+#endif
       }
       MUTEX_DESTROY(self->mutex);
-      SPINLOCK_DESTROY(self->lock);
+      SPINLOCK_DESTROY(self->queue_lock);
       SEMAPHORE_DESTROY(self->semaphore);
-      adt_rbfh_destroy(&self->messages);
+      adt_rbfh_destroy(&self->queue);
    }
 }
 
-apx_error_t apx_fileManagerWorker_start(apx_fileManagerWorker_t *self)
+#ifdef UNIT_TEST
+bool apx_fileManagerWorker_run(apx_fileManagerWorker_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-#ifndef UNIT_TEST
-      return apx_fileManagerWorker_starThread(self);
-#else
-      return APX_NO_ERROR;
-#endif
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-void apx_fileManagerWorker_stop(apx_fileManagerWorker_t *self)
-{
-   if (self != 0)
-   {
-#ifndef UNIT_TEST
-      apx_fileManagerWorker_stopThread(self);
-#endif
-   }
-}
-
-
-
-
-//Direct API
-
-void apx_fileManagerWorker_setTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler)
-{
-   if (self != 0)
-   {
-      SPINLOCK_ENTER(self->lock);
-      if (handler == 0)
+      apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(self->shared);
+      if ( connection != NULL )
       {
-         memset(&self->transmitHandler, 0, sizeof(apx_transmitHandler_t));
+         assert(connection->transmit_begin != NULL);
+         connection->transmit_begin(connection->arg);
       }
-      else
+      while (adt_rbfh_length(&self->queue) > 0)
       {
-         memcpy(&self->transmitHandler, handler, sizeof(apx_transmitHandler_t));
+         apx_command_t cmd;
+         bool result;
+         adt_rbfh_remove(&self->queue, (uint8_t*)&cmd);
+         result = process_single_command(self, &cmd);
+         if (!result)
+         {
+            if (connection != NULL)
+            {
+               assert(connection->transmit_end != NULL);
+               connection->transmit_end(connection->arg);
+            }
+            return result;
+         }
       }
-      SPINLOCK_LEAVE(self->lock);
+      if (connection != NULL)
+      {
+         assert(connection->transmit_end != NULL);
+         connection->transmit_end(connection->arg);
+      }
+      return true;
    }
+   return false;
 }
 
-void apx_fileManagerWorker_copyTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler)
+uint16_t apx_fileManagerWorker_num_pending_commands(apx_fileManagerWorker_t* self)
 {
-   if ( (self != 0) && (handler != 0) )
-   {
-      memcpy(handler, &self->transmitHandler, sizeof(apx_transmitHandler_t));
-   }
-}
-
-
-void apx_fileManagerWorker_setNumHeaderSize(apx_fileManagerWorker_t *self, uint8_t bits)
-{
-   if (self != 0 && ( (bits == 16u) || (bits == 32u) ) )
-   {
-      self->numHeaderSize = bits;
-   }
-}
-
-uint16_t apx_fileManagerWorker_getNumPendingMessages(apx_fileManagerWorker_t *self)
-{
-   if (self != 0)
+   if (self != NULL)
    {
       uint16_t retval;
-      SPINLOCK_ENTER(self->lock);
-      retval = adt_rbfh_length(&self->messages);
-      SPINLOCK_LEAVE(self->lock);
+      SPINLOCK_ENTER(self->queue_lock);
+      retval = adt_rbfh_length(&self->queue);
+      SPINLOCK_LEAVE(self->queue_lock);
       return retval;
    }
    return 0u;
 }
 
-//Message API
-
-
-
-
-void apx_fileManagerWorker_sendFileInfoMsg(apx_fileManagerWorker_t *self, apx_fileInfo_t *fileInfo)
+#else
+apx_error_t apx_fileManagerWorker_start(apx_fileManagerWorker_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      apx_msg_t msg = {APX_MSG_SEND_FILEINFO, 0, 0, {0}, 0};
-      msg.msgData3.ptr = (void*) fileInfo;
-      SPINLOCK_ENTER(self->lock);
-      adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
-      SPINLOCK_LEAVE(self->lock);
-   #ifndef UNIT_TEST
-      SEMAPHORE_POST(self->semaphore);
-   #endif
-   }
-}
-
-void apx_fileManagerWorker_sendFileOpenMsg(apx_fileManagerWorker_t *self, uint32_t address)
-{
-   if (self != 0)
-   {
-      apx_msg_t msg = {APX_MSG_SEND_FILE_OPEN, 0, 0, {0}, 0};
-      msg.msgData1 = address;
-      SPINLOCK_ENTER(self->lock);
-      adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
-      SPINLOCK_LEAVE(self->lock);
-   #ifndef UNIT_TEST
-      SEMAPHORE_POST(self->semaphore);
-   #endif
-   }
-}
-
-apx_error_t apx_fileManagerWorker_sendConstData(apx_fileManagerWorker_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg)
-{
-   if ( (self != 0) && (readFunc != 0) )
-   {
-      apx_msg_t msg = {APX_MSG_SEND_FILE_CONST_DATA, 0, 0, {0}, 0};
-      msg.msgData1 = address;
-      msg.msgData2 = len;
-      msg.msgData3.ptr = (void*) readFunc;
-      msg.msgData4 = arg;
-      SPINLOCK_ENTER(self->lock);
-      adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
-      SPINLOCK_LEAVE(self->lock);
-   #ifndef UNIT_TEST
-      SEMAPHORE_POST(self->semaphore);
-   #endif
-      return APX_NO_ERROR;
+      return start_worker_thread(self);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManagerWorker_sendDynamicData(apx_fileManagerWorker_t *self, uint32_t address, uint32_t len, uint8_t *data)
+void apx_fileManagerWorker_stop(apx_fileManagerWorker_t* self)
 {
-   if ( (self != 0) && (data != 0) )
+   if (self != NULL)
    {
-      adt_buf_err_t result;
-      apx_msg_t msg = {APX_MSG_SEND_FILE_DYN_DATA, 0, 0, {0}, 0};
-      msg.msgData1 = address;
-      msg.msgData2 = len;
-      msg.msgData3.ptr = data;
-      SPINLOCK_ENTER(self->lock);
-      result = adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
-      SPINLOCK_LEAVE(self->lock);
-      if (result == BUF_E_OK)
-      {
+      stop_worker_thread(self);
+   }
+}
+#endif
+
+//Command API
+
+apx_error_t apx_fileManagerWorker_preare_acknowledge(apx_fileManagerWorker_t* self)
+{
+   if (self != NULL)
+   {
+      adt_buf_err_t rc;
+      apx_command_t cmd = { APX_CMD_SEND_ACKNOWLEDGE, 0, 0, {0}, 0 };
+      SPINLOCK_ENTER(self->queue_lock);
+      rc = adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
+      SPINLOCK_LEAVE(self->queue_lock);
 #ifndef UNIT_TEST
-         SEMAPHORE_POST(self->semaphore);
+      SEMAPHORE_POST(self->semaphore);
 #endif
-      }
-      else
-      {
-         return apx_fileManagerWorker_processRingBufErrorCode(result);
-      }
-      return APX_NO_ERROR;
+      return apx_fileManagerWorker_process_ringbuffer_error(rc);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManagerWorker_sendHeaderAckMsg(apx_fileManagerWorker_t *self)
+apx_error_t apx_fileManagerWorker_prepare_publish_local_file(apx_fileManagerWorker_t* self, rmf_fileInfo_t* file_info)
 {
-   if ( (self != 0) )
+   if (self != NULL)
    {
-      adt_buf_err_t result;
-      apx_msg_t msg = {APX_MSG_SEND_ACKNOWLEDGE, 0, 0, {0}, 0};
-      SPINLOCK_ENTER(self->lock);
-      result = adt_rbfh_insert(&self->messages, (const uint8_t*) &msg);
-      SPINLOCK_LEAVE(self->lock);
-      if (result == BUF_E_OK)
-      {
+      adt_buf_err_t rc;
+      apx_command_t cmd = { APX_CMD_PUBLISH_LOCAL_FILE, 0, 0, {0}, 0 };
+      cmd.data3.ptr = (void*)file_info;
+      SPINLOCK_ENTER(self->queue_lock);
+      rc = adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
+      SPINLOCK_LEAVE(self->queue_lock);
 #ifndef UNIT_TEST
-         SEMAPHORE_POST(self->semaphore);
+      SEMAPHORE_POST(self->semaphore);
 #endif
-      }
-      else
-      {
-         return apx_fileManagerWorker_processRingBufErrorCode(result);
-      }
-      return APX_NO_ERROR;
+      return apx_fileManagerWorker_process_ringbuffer_error(rc);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-
-//UNIT TEST API
-
-#ifdef UNIT_TEST
-bool apx_fileManagerWorker_run(apx_fileManagerWorker_t *self)
+apx_error_t apx_fileManagerWorker_prepare_send_local_const_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t const* data, uint32_t size)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      while (adt_rbfh_length(&self->messages) > 0)
-      {
-         apx_msg_t msg;
-         adt_rbfh_remove(&self->messages,(uint8_t*) &msg);
-         return workerThread_processMessage(self, &msg);
-      }
-   }
-   return false;
-}
-
-int32_t apx_fileManagerWorker_numPendingMessages(apx_fileManagerWorker_t *self)
-{
-   if (self != 0)
-   {
-      return (int32_t) adt_rbfh_length(&self->messages);
-   }
-   return -1;
-}
+      adt_buf_err_t rc;
+      apx_command_t cmd;
+      apx_build_command_with_ptr(&cmd, APX_CMD_SEND_LOCAL_CONST_DATA, address, size, (void*) data, NULL);
+      SPINLOCK_ENTER(self->queue_lock);
+      rc = adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
+      SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+      SEMAPHORE_POST(self->semaphore);
 #endif
+      return apx_fileManagerWorker_process_ringbuffer_error(rc);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_fileManagerWorker_prepare_send_local_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t* data, uint32_t size)
+{
+   if (self != NULL)
+   {
+      adt_buf_err_t rc;
+      apx_command_t cmd;
+      apx_build_command_with_ptr(&cmd, APX_CMD_SEND_LOCAL_DATA, address, size, data, NULL); //TODO: Implement small data support
+      SPINLOCK_ENTER(self->queue_lock);
+      rc = adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
+      SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+      SEMAPHORE_POST(self->semaphore);
+#endif
+      return apx_fileManagerWorker_process_ringbuffer_error(rc);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_fileManagerWorker_prepare_send_open_file_request(apx_fileManagerWorker_t* self, uint32_t address)
+{
+   if (self != NULL)
+   {
+      adt_buf_err_t rc;
+      apx_command_t cmd = { APX_CMD_OPEN_REMOTE_FILE, 0, 0, {0}, 0 };
+      cmd.data1 = address;
+      SPINLOCK_ENTER(self->queue_lock);
+      rc = adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
+      SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+      SEMAPHORE_POST(self->semaphore);
+#endif
+      return apx_fileManagerWorker_process_ringbuffer_error(rc);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static int32_t apx_fileManagerWorker_calcFileInfoMsgSize(const struct apx_fileInfo_tag *fileInfo)
+static bool process_single_command(apx_fileManagerWorker_t* self, apx_command_t const* cmd)
 {
-   int32_t msgLen = RMF_CMD_ADDRESS_LEN+RMF_CMD_FILE_INFO_BASE_SIZE+1; //add 1 to fit string null terminator
-   msgLen+=strlen(fileInfo->name);
-   return msgLen;
+   apx_error_t result = APX_NO_ERROR;
+   assert((self != NULL) && (cmd != NULL));
+#if APX_DEBUG_ENABLE
+   printf("Processing command\n");
+#endif
+   switch (cmd->cmd_type)
+   {
+   case APX_CMD_EXIT:
+      return false;
+   case APX_CMD_SEND_ACKNOWLEDGE:
+      result = run_send_acknowledge(self);
+      break;
+   case APX_CMD_SEND_ERROR_CODE:
+      //TODO: Implement
+      break;
+   case APX_CMD_PUBLISH_LOCAL_FILE:
+      result = run_publish_local_file(self, (rmf_fileInfo_t*)cmd->data3.ptr);
+      break;
+   case APX_CMD_REVOKE_LOCAL_FILE:
+      //TODO: Implement
+      break;
+   case APX_CMD_OPEN_REMOTE_FILE:
+      result = run_open_remote_file(self, cmd->data1);
+      break;
+   case APX_CMD_CLOSE_REMOTE_FILE:
+      //TODO: Implement
+      break;
+   case APX_CMD_SEND_LOCAL_CONST_DATA:
+      result = run_send_local_const_data(self, cmd->data1, (uint8_t const*)cmd->data3.ptr, cmd->data2);
+      break;
+   case APX_CMD_SEND_LOCAL_DATA:
+      result = run_send_local_data(self, cmd->data1, (uint8_t*)cmd->data3.ptr, cmd->data2);
+      break;
+   default:
+      return false;
+   }
+   if (result != APX_NO_ERROR)
+   {
+      //TODO: error handling
+   }
+   return true;
 }
 
-static int32_t apx_fileManagerWorker_serializeFileInfo(uint8_t *bufData, int32_t bufLen, const apx_fileInfo_t *fileInfo)
+static apx_error_t run_send_acknowledge(apx_fileManagerWorker_t* self)
 {
-   if ((bufData != 0) && (bufLen > 0) && (fileInfo != 0))
+   uint8_t buffer[RMF_CMD_TYPE_SIZE];
+   apx_size_t const encoded_size = rmf_encode_acknowledge_cmd(buffer, (apx_size_t)sizeof(buffer));
+   apx_error_t retval = APX_NO_ERROR;
+   if (encoded_size == 0u)
    {
-      int32_t msgLen = apx_fileManagerWorker_calcFileInfoMsgSize(fileInfo);
-      if (msgLen<=bufLen)
+      retval = APX_BUFFER_BOUNDARY_ERROR;
+   }
+   else
+   {
+      apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(self->shared);
+      if (connection != NULL)
       {
-         int32_t result;
-         result = rmf_packHeader(bufData, bufLen, RMF_CMD_START_ADDR, false);
-         if (result > 0)
-         {
-            rmf_fileInfo_t rmfInfo;
-            apx_fileInfo_fillRmfInfo(fileInfo, &rmfInfo);
-            bufData+=result;
-            bufLen-=result;
-            result = rmf_serialize_cmdFileInfo(bufData, bufLen, &rmfInfo);
-            if (result > 0)
-            {
-               result = msgLen;
-            }
-         }
-         return result;
+         int32_t bytes_available = 0;
+         retval = connection->transmit_data_message(connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
       }
       else
       {
-         return -1;
+         retval = APX_NOT_CONNECTED_ERROR;
       }
    }
-   return -1;
+   return retval;
 }
 
+static apx_error_t run_publish_local_file(apx_fileManagerWorker_t* self, rmf_fileInfo_t* file_info)
+{
+   uint8_t buffer[RMF_FILE_INFO_HEADER_SIZE + RMF_FILE_NAME_MAX_SIZE + 1] ; //add 1 byte for null-terminator
+   apx_size_t const encoded_size = rmf_encode_publish_file_cmd(buffer, (apx_size_t)sizeof(buffer), file_info);
+   apx_error_t retval = APX_NO_ERROR;
+   if (encoded_size == 0u)
+   {
+      retval = APX_BUFFER_BOUNDARY_ERROR;
+   }
+   else
+   {
+      apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(self->shared);
+      if (connection != NULL)
+      {
+         int32_t bytes_available = 0;
+         retval = connection->transmit_data_message(connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+      }
+      else
+      {
+         retval = APX_NOT_CONNECTED_ERROR;
+      }
+   }
+   rmf_fileInfo_delete(file_info);
+   return retval;
+}
 
+static apx_error_t run_send_local_const_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t const* data, uint32_t size)
+{
+   apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(self->shared);
+   apx_error_t retval = APX_NO_ERROR;
+   if (connection != NULL)
+   {
+      int32_t bytes_available = 0;
+      retval = connection->transmit_data_message(connection->arg, address, false, data, (int32_t)size, &bytes_available);
+   }
+   else
+   {
+      retval = APX_NOT_CONNECTED_ERROR;
+   }
+   return retval;
+}
+
+static apx_error_t run_send_local_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t* data, uint32_t size)
+{
+   apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(self->shared);
+   apx_error_t retval = APX_NO_ERROR;
+   if (connection != NULL)
+   {
+      int32_t bytes_available = 0;
+      retval = connection->transmit_data_message(connection->arg, address, false, data, (int32_t)size, &bytes_available);
+   }
+   else
+   {
+      retval = APX_NOT_CONNECTED_ERROR;
+   }
+   free(data);
+   return retval;
+}
+
+static apx_error_t run_open_remote_file(apx_fileManagerWorker_t* self, uint32_t address)
+{
+   uint8_t buffer[RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE]; //add 1 byte for null-terminator
+   apx_size_t const encoded_size = rmf_encode_open_file_cmd(buffer, (apx_size_t)sizeof(buffer), address);
+   apx_error_t retval = APX_NO_ERROR;
+   if (encoded_size == 0u)
+   {
+      retval = APX_BUFFER_BOUNDARY_ERROR;
+   }
+   else
+   {
+      apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(self->shared);
+      if (connection != NULL)
+      {
+         int32_t bytes_available = 0;
+         retval = connection->transmit_data_message(connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+      }
+      else
+      {
+         retval = APX_NOT_CONNECTED_ERROR;
+      }
+   }
+   return retval;
+}
+
+static apx_error_t apx_fileManagerWorker_process_ringbuffer_error(adt_buf_err_t error_code)
+{
+   apx_error_t retval = APX_NO_ERROR;
+   if (error_code == BUF_E_OVERFLOW)
+   {
+      retval = APX_BUFFER_FULL_ERROR;
+   }
+   else if (error_code == BUF_E_NOT_OK)
+   {
+      retval = APX_MEM_ERROR;
+   }
+   return retval;
+}
 
 #ifndef UNIT_TEST
-static apx_error_t apx_fileManagerWorker_starThread(apx_fileManagerWorker_t *self)
+static apx_error_t start_worker_thread(apx_fileManagerWorker_t* self)
 {
-   if( self->workerThreadValid == false ){
-      self->workerThreadValid = true;
+   assert(self != NULL);
+   if (self->worker_thread_valid == false) {
+      self->worker_thread_valid = true;
 #ifdef _WIN32
-      THREAD_CREATE(self->workerThread, workerThread, self, self->threadId);
-      if(self->workerThread == INVALID_HANDLE_VALUE){
-         self->workerThreadValid = false;
-         return -1;
+      THREAD_CREATE(self->worker_thread, worker_main, self, self->worker_thread_id);
+      if (self->worker_thread == INVALID_HANDLE_VALUE)
+      {
+         self->worker_thread_valid = false;
+         return APX_THREAD_CREATE_ERROR;
       }
 #else
-      int rc = THREAD_CREATE(self->workerThread, workerThread, self);
-      if(rc != 0){
-         self->workerThreadValid = false;
-         return -1;
+      int rc = THREAD_CREATE(self->worker_thread, thread_main, self);
+      if (rc != 0)
+      {
+         self->worker_thread_valid = false;
+         return APX_THREAD_CREATE_ERROR;
       }
 #endif
       return APX_NO_ERROR;
    }
-   return -1;
+   return APX_INVALID_STATE_ERROR;
 }
 
-static void apx_fileManagerWorker_stopThread(apx_fileManagerWorker_t *self)
+static apx_error_t stop_worker_thread(apx_fileManagerWorker_t* self)
 {
-   if ( self->workerThreadValid == true )
+   if (self->worker_thread_valid == true)
    {
-   #ifdef _MSC_VER
-         DWORD result;
-   #endif
-         apx_msg_t msg = {APX_MSG_EXIT,0,0,{0}}; //{msgType, sender, msgData1, msgData2, msgData3}
-         SPINLOCK_ENTER(self->lock);
-         adt_rbfh_insert(&self->messages,(const uint8_t*) &msg);
-         SPINLOCK_LEAVE(self->lock);
-         SEMAPHORE_POST(self->semaphore);
-   #ifdef _MSC_VER
-         result = WaitForSingleObject(self->workerThread, 5000);
-         if (result == WAIT_TIMEOUT)
-         {
-            fprintf(stderr, "[APX_FILE_MANAGER] timeout while joining workerThread");
-         }
-         else if (result == WAIT_FAILED)
-         {
-            DWORD lastError = GetLastError();
-            fprintf(stderr, "[APX_FILE_MANAGER]  joining workerThread failed with %d", (int)lastError);
-         }
-         CloseHandle(self->workerThread);
-         self->workerThread = INVALID_HANDLE_VALUE;
-   #else
-         if (pthread_equal(pthread_self(), self->workerThread) == 0)
-         {
-            void *status;
-            int s = pthread_join(self->workerThread, &status);
-            if (s != 0)
-            {
-               printf("[APX_FILE_MANAGER] pthread_join error %d\n", s);
-            }
-         }
-         else
-         {
-            printf("[APX_FILE_MANAGER] pthread_join attempted on pthread_self()\n");
-         }
-   #endif
-   self->workerThreadValid = false;
-   }
-}
-
-static THREAD_PROTO(workerThread,arg)
-{
-   if(arg!=0)
-   {
-      apx_msg_t msg;
-      apx_fileManagerWorker_t *self;
-      uint32_t messages_processed=0;
-      bool isRunning=true;
-
-      self = (apx_fileManagerWorker_t*) arg;
-
-      while(isRunning == true)
+#ifdef _WIN32
+      DWORD result;
+#endif
+      apx_command_t cmd = { APX_CMD_EXIT, 0, 0, {0}, NULL };
+      SPINLOCK_ENTER(self->queue_lock);
+      adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
+      SPINLOCK_LEAVE(self->queue_lock);
+      SEMAPHORE_POST(self->semaphore);
+#ifdef _WIN32
+      result = WaitForSingleObject(self->worker_thread, 5000);
+      if (result == WAIT_TIMEOUT)
       {
-         //printf("[%u] Waiting for semaphore\n", fmid);
-#ifdef _MSC_VER
+         return APX_THREAD_JOIN_TIMEOUT_ERROR;
+      }
+      else if (result == WAIT_FAILED)
+      {
+         return APX_THREAD_JOIN_ERROR;
+      }
+      CloseHandle(self->worker_thread);
+      self->worker_thread = INVALID_HANDLE_VALUE;
+#else
+      if (pthread_equal(pthread_self(), self->worker_thread) == 0)
+      {
+         void* status;
+         int s = pthread_join(self->workerThread, &status);
+         if (s != 0)
+         {
+            return APX_THREAD_JOIN_ERROR;
+         }
+      }
+      else
+      {
+         //pthread_join attempted from pthread_self. This is not allowed
+         return APX_INTERNAL_ERROR;
+      }
+#endif
+      self->worker_thread_valid = false;
+   }
+   return APX_NO_ERROR;
+}
+
+static THREAD_PROTO(worker_main, arg)
+{
+   if (arg != 0)
+   {
+      apx_fileManagerWorker_t* self;
+      bool is_running = true;
+
+      self = (apx_fileManagerWorker_t*)arg;
+
+      while (is_running)
+      {
+         apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(self->shared);
+
+#ifdef _WIN32
          DWORD result = WaitForSingleObject(self->semaphore, INFINITE);
          if (result == WAIT_OBJECT_0)
 #else
@@ -467,280 +541,52 @@ static THREAD_PROTO(workerThread,arg)
          if (result == 0)
 #endif
          {
-            //printf("[%u] Semaphore wait success\n", fmid);
-            SPINLOCK_ENTER(self->lock);
-            adt_rbfh_remove(&self->messages,(uint8_t*) &msg);
-            SPINLOCK_LEAVE(self->lock);
-            if (!workerThread_processMessage(self, &msg))
+            uint16_t queue_length = 0u;
+            SPINLOCK_ENTER(self->queue_lock);
+            queue_length = adt_rbfh_length(&self->queue);
+            SPINLOCK_LEAVE(self->queue_lock);
+            if (queue_length > 0)
             {
-               isRunning = false;
+               if (connection != NULL)
+               {
+                  assert(connection->transmit_begin != NULL);
+                  connection->transmit_begin(connection->arg);
+               }
+               while (queue_length > 0)
+               {
+                  apx_command_t cmd;
+                  bool rc;
+                  SPINLOCK_ENTER(self->queue_lock);
+                  adt_rbfh_remove(&self->queue, (uint8_t*)&cmd);
+                  SPINLOCK_LEAVE(self->queue_lock);
+                  rc = process_single_command(self, &cmd);
+                  if (!rc)
+                  {
+                     if (connection != NULL)
+                     {
+                        assert(connection->transmit_end != NULL);
+                        connection->transmit_end(connection->arg);
+                     }
+                     is_running = false;
+                     break;
+                  }
+                  SPINLOCK_ENTER(self->queue_lock);
+                  queue_length = adt_rbfh_length(&self->queue);
+                  SPINLOCK_LEAVE(self->queue_lock);
+               }
+               if (connection != NULL)
+               {
+                  assert(connection->transmit_end != NULL);
+                  connection->transmit_end(connection->arg);
+               }
             }
-            messages_processed++;
          }
          else
          {
-            printf("Failed to wait for semaphore\n");
+            THREAD_RETURN(APX_SEMAPHORE_ERROR);
          }
       }
-      //printf("[%u]: messages_processed: %u\n",fmid, messages_processed);
    }
-   THREAD_RETURN(0);
+   THREAD_RETURN(APX_NO_ERROR);
 }
 #endif //UNIT_TEST
-
-static bool workerThread_processMessage(apx_fileManagerWorker_t *self, apx_msg_t *msg)
-{
-   bool retval = true;
-   uint32_t connectionId = apx_fileManagerShared_getConnectionId(self->shared);
-   if (self->transmitHandler.send != 0)
-   {
-      apx_error_t rc;
-      switch(msg->msgType)
-      {
-      case APX_MSG_EXIT:
-         retval = false;
-         break;
-      case APX_MSG_SEND_FILEINFO:
-         workerThread_sendFileInfo(self, msg);
-         break;
-      case APX_MSG_SEND_ACKNOWLEDGE:
-         workerThread_sendAcknowledge(self);
-         break;
-      case APX_MSG_SEND_FILE_OPEN:
-         workerThread_sendFileOpen(self, msg);
-         break;
-      case APX_MSG_SEND_FILE_CLOSE:
-         break;
-      case APX_MSG_SEND_FILE_CONST_DATA:
-         rc = workerThread_sendFileConstData(self, msg);
-         if (rc != APX_NO_ERROR)
-         {
-            printf("[WORKER] workerThread_sendFileConstData failed with error: %d\n", (int) rc);
-         }
-         break;
-      case APX_MSG_SEND_FILE_DYN_DATA:
-         rc = workerThread_sendFileDynData(self, msg);
-         if (rc != APX_NO_ERROR)
-         {
-            printf("[WORKER] workerThread_sendFileDyntData failed with error: %d\n", (int) rc);
-         }
-         break;
-      case APX_MSG_SEND_FILE_DATA_DIRECT:
-         break;
-      case APX_MSG_SEND_ERROR_CODE:
-         break;
-      default:
-         printf("[APX_FILE_MANAGER_WORKER(%u)]: Unknown message type: %u\n", connectionId, msg->msgType);
-         assert(0);
-      }
-   }
-   return retval;
-}
-
-static void workerThread_sendFileInfo(apx_fileManagerWorker_t *self, apx_msg_t *msg)
-{
-   int32_t msgSize;
-   uint8_t *msgBuf;
-   apx_fileInfo_t *fileInfo = (apx_fileInfo_t*) msg->msgData3.ptr;
-   assert(fileInfo != 0);
-   msgSize = apx_fileManagerWorker_calcFileInfoMsgSize(fileInfo);
-   assert(self->transmitHandler.getSendBuffer != 0);
-   assert(self->transmitHandler.send != 0);
-   if (apx_fileManagerShared_isConnected(self->shared) )
-   {
-      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-      if (msgBuf != 0)
-      {
-         int32_t result = apx_fileManagerWorker_serializeFileInfo(msgBuf, msgSize, fileInfo);
-         if (result > 0)
-         {
-            self->transmitHandler.send(self->transmitHandler.arg, 0, result);
-         }
-      }
-   }
-   apx_fileInfo_delete(fileInfo);
-}
-
-static void workerThread_sendFileOpen(apx_fileManagerWorker_t *self, apx_msg_t *msg)
-{
-   const int32_t msgSize = RMF_CMD_ADDRESS_LEN+RMF_CMD_FILE_OPEN_LEN;
-   uint8_t *msgBuf;
-   apx_file_t *file;
-   uint32_t address = msg->msgData1;
-   file = apx_fileManagerShared_findFileByAddress(self->shared, address);
-   if (file != 0)
-   {
-      apx_file_open(file);
-      assert(self->transmitHandler.getSendBuffer != 0);
-      assert(self->transmitHandler.send != 0);
-      if (apx_fileManagerShared_isConnected(self->shared) )
-      {
-         msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-         if (msgBuf != 0)
-         {
-            int32_t result = rmf_packHeader(msgBuf, msgSize, RMF_CMD_START_ADDR, false);
-            if (result == RMF_CMD_ADDRESS_LEN)
-            {
-               rmf_cmdOpenFile_t cmd;
-               msgBuf+=RMF_CMD_ADDRESS_LEN;
-               cmd.address = address & RMF_ADDRESS_MASK_INTERNAL;
-               result = rmf_serialize_cmdOpenFile(msgBuf, RMF_CMD_FILE_OPEN_LEN, &cmd);
-               if (result == RMF_CMD_FILE_OPEN_LEN)
-               {
-                  self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
-               }
-            }
-         }
-      }
-   }
-}
-
-static apx_error_t workerThread_sendFileConstData(apx_fileManagerWorker_t *self, apx_msg_t *msg)
-{
-   if ( (self != 0) && (msg != 0) )
-   {
-      int32_t headerSize;
-      int32_t msgSize;
-      uint8_t *msgBuf;
-      apx_file_t *file;
-      uint32_t startAddress;
-      uint32_t address = msg->msgData1;
-      uint32_t dataSize = msg->msgData2;
-      void *arg = msg->msgData4;
-      apx_file_read_const_data_func *readFunc = (apx_file_read_const_data_func*) msg->msgData3.ptr;
-      uint32_t offset;
-      file = apx_fileManagerShared_findFileByAddress(self->shared, address & RMF_ADDRESS_MASK_INTERNAL);
-      if (file == 0)
-      {
-         return APX_FILE_NOT_FOUND_ERROR;
-      }
-      if (apx_file_isOpen(file) == false)
-      {
-         return APX_FILE_NOT_OPEN_ERROR;
-      }
-      startAddress =  apx_file_getStartAddress(file);
-      assert(address >= startAddress);
-      offset = address - startAddress;
-      assert(offset+dataSize <= apx_file_getFileSize(file));
-      assert(self->transmitHandler.getSendBuffer != 0);
-      assert(self->transmitHandler.send != 0);
-      assert(readFunc != 0);
-      headerSize = (address <= RMF_DATA_LOW_MAX_ADDR)? RMF_LOW_ADDRESS_SIZE : RMF_HIGH_ADDRESS_SIZE;
-      msgSize = headerSize + dataSize;
-      if (apx_fileManagerShared_isConnected(self->shared) )
-      {
-         msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-         if (msgBuf != 0)
-         {
-            int32_t result = rmf_packHeader(msgBuf, msgSize, address, false);
-            if (result == headerSize)
-            {
-
-               apx_error_t rc = readFunc(arg, file, offset, &msgBuf[headerSize], dataSize);
-               if (rc == APX_NO_ERROR)
-               {
-                  result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
-   #if APX_DEBUG_ENABLE
-                  printf("[WORKER] Bytes transmitted: %d\n", result);
-   #endif
-                  if (result != msgSize)
-                  {
-                     return APX_TRANSMIT_ERROR;
-                  }
-               }
-               else
-               {
-                  return rc;
-               }
-            }
-         }
-         else
-         {
-            return APX_MISSING_BUFFER_ERROR;
-         }
-      }
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-static apx_error_t workerThread_sendFileDynData(apx_fileManagerWorker_t *self, apx_msg_t *msg)
-{
-   if ( (self != 0) && (msg != 0) )
-   {
-      int32_t headerSize;
-      int32_t msgSize;
-      uint8_t *msgBuf;
-      uint32_t address = msg->msgData1;
-      uint32_t dataSize = msg->msgData2;
-      uint8_t *dataPtr = (uint8_t*) msg->msgData3.ptr;
-      headerSize = (address <= RMF_DATA_LOW_MAX_ADDR)? RMF_LOW_ADDRESS_SIZE : RMF_HIGH_ADDRESS_SIZE;
-      msgSize = headerSize + dataSize;
-      assert(self->shared != 0);
-      if (apx_fileManagerShared_isConnected(self->shared) )
-      {
-         msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-         if (msgBuf != 0)
-         {
-            int32_t result = rmf_packHeader(msgBuf, msgSize, address, false);
-            if (result == headerSize)
-            {
-               memcpy(&msgBuf[headerSize], dataPtr, dataSize);
-               assert(self->shared != 0);
-               apx_fileManagerShared_freeAllocatedMemory(self->shared, dataPtr, dataSize);
-               result = self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
-   #if APX_DEBUG_ENABLE
-//               printf("[WORKER] Bytes transmitted: %d/%d \n", result, msgSize);
-   #endif
-               if (result != msgSize)
-               {
-                  return APX_TRANSMIT_ERROR;
-               }
-            }
-         }
-         else
-         {
-            return APX_MISSING_BUFFER_ERROR;
-         }
-      }
-      else
-      {
-         apx_fileManagerShared_freeAllocatedMemory(self->shared, dataPtr, dataSize);
-      }
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-static void workerThread_sendAcknowledge(apx_fileManagerWorker_t *self)
-{
-   const int32_t msgSize = RMF_CMD_ADDRESS_LEN+RMF_CMD_ACK_LEN;
-   uint8_t *msgBuf;
-   assert(self->transmitHandler.getSendBuffer != 0);
-   assert(self->transmitHandler.send != 0);
-   if (apx_fileManagerShared_isConnected(self->shared) )
-   {
-      msgBuf = self->transmitHandler.getSendBuffer(self->transmitHandler.arg, msgSize);
-      if (msgBuf != 0)
-      {
-         int32_t result = rmf_packHeader(msgBuf, msgSize, RMF_CMD_START_ADDR, false);
-         if (result == RMF_CMD_ADDRESS_LEN)
-         {
-            result = rmf_serialize_acknowledge(msgBuf+RMF_CMD_ADDRESS_LEN, RMF_CMD_ACK_LEN);
-            if (result == RMF_CMD_ACK_LEN)
-            {
-               self->transmitHandler.send(self->transmitHandler.arg, 0, msgSize);
-            }
-         }
-      }
-   }
-}
-
-static apx_error_t apx_fileManagerWorker_processRingBufErrorCode(adt_buf_err_t errorCode)
-{
-   if (errorCode == BUF_E_OVERFLOW)
-   {
-      return APX_BUFFER_FULL_ERROR;
-   }
-   return APX_MEM_ERROR;
-}

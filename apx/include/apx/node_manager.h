@@ -4,7 +4,7 @@
 * \date      2019-12-29
 * \brief     Manager for apx_nodeInstance objects
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -31,9 +31,11 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/node_instance.h"
 #include "apx/parser.h"
-#include "apx/stream.h"
+#include "apx/compiler.h"
 #include "apx/error.h"
+#include "apx/file_info.h"
 #include "adt_hash.h"
+
 
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
@@ -48,41 +50,46 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
-
+struct apx_connectionBase_tag;
+struct apx_nodeInstance_tag;
 
 typedef struct apx_nodeManager_tag
 {
    apx_parser_t parser;
-   apx_istream_t apx_istream; //helper structure for parser
-   adt_hash_t nodeInstanceMap; //references to apx_nodeInstance objects. Key is the node name, value is of type apx_nodeInstance_t*
-   SPINLOCK_T lock; //locking mechanism
-   apx_nodeInstance_t *lastAttached; //weak reference
+   apx_compiler_t compiler;
+   apx_istream_t stream;
+   adt_hash_t instance_map; //strong references to apx_nodeInstance objects. Key is the node name, value is of type apx_nodeInstance_t*
+   apx_nodeInstance_t *last_attached; //weak reference
    apx_mode_t mode;
+   struct apx_connectionBase_tag* parent_connection; //Weak reference
+   MUTEX_T lock; //locking mechanism
 } apx_nodeManager_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_nodeManager_create(apx_nodeManager_t *self, apx_mode_t mode, bool useWeakRef); //defaultValue for useWeakRef=false
+void apx_nodeManager_create(apx_nodeManager_t *self, apx_mode_t mode);
 void apx_nodeManager_destroy(apx_nodeManager_t *self);
-apx_nodeManager_t *apx_nodeManager_new(apx_mode_t mode, bool useWeakRef);
+apx_nodeManager_t *apx_nodeManager_new(apx_mode_t mode);
 void apx_nodeManager_delete(apx_nodeManager_t *self);
 
-/********** Client mode API  ************/
-apx_error_t apx_nodeManager_buildNode_cstr(apx_nodeManager_t *self, const char *definition_text); //used when useWeakRef: false
-apx_error_t apx_nodeManager_attachNode(apx_nodeManager_t *self, apx_nodeInstance_t *nodeInstance); //Used when useWeakRef: true
+//client-side API (ALso used for unit tests)
+apx_error_t apx_nodeManager_build_node(apx_nodeManager_t* self, char const* definition_text);
 
-/********** Server mode API  ************/
-apx_nodeInstance_t *apx_nodeManager_createNode(apx_nodeManager_t *self, const char *nodeName);
-apx_error_t apx_nodeManager_parseDefinition(apx_nodeManager_t *self, apx_nodeInstance_t *nodeInstance);
+//server-side API
+apx_error_t apx_nodeManager_init_node_from_file_info(apx_nodeManager_t* self, rmf_fileInfo_t const* file_info, bool* file_open_request);
+apx_error_t apx_nodeManager_build_node_from_data(apx_nodeManager_t* self, apx_nodeInstance_t* node_instance);
 
-/********** Utility functions  ************/
-apx_nodeInstance_t *apx_nodeManager_find(apx_nodeManager_t *self, const char *name);
-int32_t apx_nodeManager_length(apx_nodeManager_t *self);
-int32_t apx_nodeManager_keys(apx_nodeManager_t *self, adt_ary_t* array);
-int32_t apx_nodeManager_values(apx_nodeManager_t *self, adt_ary_t* array);
-apx_nodeInstance_t *apx_nodeManager_getLastAttached(apx_nodeManager_t *self);
-int32_t apx_nodeManager_getLastErrorLine(apx_nodeManager_t *self);
-
+//common API
+struct apx_nodeInstance_tag* apx_nodeManager_get_last_attached(apx_nodeManager_t const* self);
+apx_size_t apx_nodeManager_length(apx_nodeManager_t const* self);
+adt_ary_t* apx_nodeManager_get_nodes(apx_nodeManager_t* self);
+struct apx_nodeInstance_tag* apx_nodeManager_find(apx_nodeManager_t const* self, char const* name);
+void apx_nodeManager_set_connection(apx_nodeManager_t* self, struct apx_connectionBase_tag* connection);
+struct apx_connectionBase_tag* apx_nodeManager_get_connection(apx_nodeManager_t const* self);
+apx_error_t apx_nodeManager_on_definition_data_written(apx_nodeManager_t* self, struct apx_nodeInstance_tag* node_instance, uint32_t offset, apx_size_t size);
+void apx_nodeManager_on_require_port_data_written(apx_nodeManager_t* self, struct apx_nodeInstance_tag* node_instance, uint32_t offset, apx_size_t size);
+void apx_nodeManager_on_provide_port_data_written(apx_nodeManager_t* self, struct apx_nodeInstance_tag* node_instance, uint32_t offset, apx_size_t size);
+int32_t apx_nodeManager_values(apx_nodeManager_t* self, adt_ary_t* array);
 
 #endif //APX_NODE_INSTANCE_MANAGER_H

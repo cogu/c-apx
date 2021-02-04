@@ -38,17 +38,17 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_portConnectorChangeRef_tag
 {
-   bool isConnectorChangeTableWeakRef;
-   apx_nodeInstance_t *nodeInstance;
-   apx_portConnectorChangeTable_t *connectorChanges;
+   bool is_connector_changes_weak_ref;
+   apx_nodeInstance_t *node_instance;
+   apx_portConnectorChangeTable_t *connector_changes;
 } apx_portConnectorChangeRef_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portConnectorChangeRef_create(apx_portConnectorChangeRef_t *self, apx_nodeInstance_t *nodeInstance, apx_portConnectorChangeTable_t *connectorChanges);
+void apx_portConnectorChangeRef_create(apx_portConnectorChangeRef_t *self, apx_nodeInstance_t * node_instance, apx_portConnectorChangeTable_t * connector_changes);
 void apx_portConnectorChangeRef_destroy(apx_portConnectorChangeRef_t *self);
-apx_portConnectorChangeRef_t *apx_portConnectorChangeRef_new(apx_nodeInstance_t *nodeInstance, apx_portConnectorChangeTable_t *connectorChanges);
+apx_portConnectorChangeRef_t *apx_portConnectorChangeRef_new(apx_nodeInstance_t * node_instance, apx_portConnectorChangeTable_t * connector_changes);
 void apx_portConnectorChangeRef_delete(apx_portConnectorChangeRef_t *self);
 void apx_portConnectorChangeRef_vdelete(void *arg);
 

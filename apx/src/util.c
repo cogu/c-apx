@@ -199,6 +199,35 @@ apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, 
    return retval;
 }
 
+apx_error_t convert_from_adt_to_apx_error(adt_error_t error_code)
+{
+   apx_error_t retval;
+   switch (error_code)
+   {
+   case ADT_NO_ERROR:
+      retval = APX_NO_ERROR;
+      break;
+   case ADT_INVALID_ARGUMENT_ERROR:
+      retval = APX_INVALID_ARGUMENT_ERROR;
+      break;
+   case ADT_MEM_ERROR:
+      retval = APX_MEM_ERROR;
+      break;
+   case ADT_INDEX_OUT_OF_BOUNDS_ERROR:
+      retval = APX_INVALID_ARGUMENT_ERROR;
+      break;
+   case ADT_LENGTH_ERROR:
+      retval = APX_LENGTH_ERROR;
+      break;
+   case ADT_NOT_IMPLEMENTED_ERROR:
+      retval = APX_NOT_IMPLEMENTED_ERROR;
+      break;
+   default:
+      retval = APX_INTERNAL_ERROR;
+   }
+   return retval;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////

@@ -1,3 +1,7 @@
+#if !defined(MEM_LEAK_CHECK) && defined(_WIN32)
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#endif
 #include <stdio.h>
 #include <malloc.h>
 #include "CuTest.h"
@@ -7,54 +11,47 @@
 
 /** RemoteFile **/
 CuSuite* testSuite_remotefile(void);
+CuSuite* testSuite_file_info(void);
 
 
 /** APX Common **/
 CuSuite* testSuite_apx_allocator(void);
 CuSuite* testsuite_apx_attributesParser(void);
-CuSuite* testSuite_apx_bytePortMap(void);
-CuSuite* testSuite_apx_compiler(void);
+CuSuite* testSuite_apx_computation(void);
 CuSuite* testSuite_apx_dataElement(void);
-CuSuite* testsuite_apx_dataSignature(void);
-CuSuite* testsuite_apx_datatype(void);
-CuSuite* testSuite_apx_eventLoop(void);
-CuSuite* testSuite_apx_file2(void);
-CuSuite* testSuite_apx_fileManagerShared(void);
-CuSuite* testSuite_apx_fileManagerWorker(void);
-CuSuite* testSuite_apx_fileManagerReceiver(void);
-CuSuite* testSuite_apx_fileManager(void);
-CuSuite* testSuite_apx_fileMap(void);
-CuSuite* testSuite_apx_node(void);
-CuSuite* testSuite_apx_nodeData2(void);
-CuSuite* testSuite_apx_nodeManager(void);
-CuSuite* testSuite_apx_nodeInfo(void);
-CuSuite* testSuite_apx_nodeInstance(void);
+CuSuite* testSuite_apx_signatureParser(void);
 CuSuite* testSuite_apx_parser(void);
-CuSuite* testsuite_apx_port(void);
+CuSuite* testSuite_program(void);
+CuSuite* testSuite_apx_compiler_pack(void);
+CuSuite* testSuite_apx_compiler_unpack(void);
+CuSuite* testSuite_apx_vm_serializer(void);
+CuSuite* testSuite_apx_vm_deserializer(void);
+CuSuite* testsuite_decoder(void);
+CuSuite* testSuite_apx_vm(void);
+CuSuite* testSuite_apx_node(void);
+CuSuite* testSuite_apx_nodeData(void);
+CuSuite* testSuite_apx_nodeManager_client_mode(void);
+CuSuite* testSuite_apx_nodeManager_server_mode(void);
+CuSuite* testSuite_apx_file(void);
+CuSuite* testSuite_apx_fileMap(void);
+CuSuite* testSuite_apx_fileManagerReceiver(void);
+CuSuite* testSuite_apx_util(void);
 CuSuite* testSuite_apx_portConnectorChangeEntry(void);
 CuSuite* testSuite_apx_portConnectorChangeTable(void);
 CuSuite* testSuite_apx_portSignatureMap(void);
-CuSuite* testSuite_apx_vm(void);
-CuSuite* testSuite_apx_vmSerializer(void);
-CuSuite* testSuite_apx_vmDeserializer(void);
-CuSuite* testSuite_apx_connectionBase(void);
-CuSuite* testSuite_apx_util(void);
 
-/** APX Server **/
-CuSuite* testSuite_apx_serverConnection(void);
-CuSuite* testSuite_apx_dataRouting(void);
-
-
-/** APX Server Extensions **/
-CuSuite* testSuite_apx_serverSocketConnection(void);
-CuSuite* testsuite_apx_socketServerExtension(void);
-CuSuite* testsuite_apx_serverTextLogExtension(void);
-
-/** APX Client **/
+//Client
+CuSuite* testSuite_apx_clientTestConnection(void);
 CuSuite* testSuite_apx_client_socketConnection(void);
-CuSuite* testSuite_apx_client_testConnection(void);
-CuSuite* testsuite_apx_dynamic_client(void);
 CuSuite* testSuite_apx_client(void);
+
+//Server
+CuSuite* testSuite_apx_serverConnection(void);
+CuSuite* testSuite_apx_server(void);
+
+//Server extensions
+CuSuite* testsuite_apx_socketServerExtension(void);
+CuSuite* testSuite_apx_socketServerConnection(void);
 
 void RunAllTests(void)
 {
@@ -65,67 +62,47 @@ void RunAllTests(void)
 
    CuSuiteAddSuite(suite, testSuite_apx_allocator());
    CuSuiteAddSuite(suite, testsuite_apx_attributesParser());
-   CuSuiteAddSuite(suite, testSuite_apx_bytePortMap());
-   CuSuiteAddSuite(suite, testSuite_apx_compiler());
    CuSuiteAddSuite(suite, testSuite_apx_dataElement());
-   CuSuiteAddSuite(suite, testsuite_apx_dataSignature());
-   CuSuiteAddSuite(suite, testsuite_apx_datatype());
-   CuSuiteAddSuite(suite, testSuite_apx_eventLoop());
-
-   CuSuiteAddSuite(suite, testSuite_apx_node());
-   CuSuiteAddSuite(suite, testSuite_apx_nodeData2());
-   CuSuiteAddSuite(suite, testSuite_apx_nodeInfo());
-   CuSuiteAddSuite(suite, testSuite_apx_nodeInstance());
+   CuSuiteAddSuite(suite, testSuite_apx_signatureParser());
    CuSuiteAddSuite(suite, testSuite_apx_parser());
-   CuSuiteAddSuite(suite, testsuite_apx_port());
+   CuSuiteAddSuite(suite, testSuite_program());
+   CuSuiteAddSuite(suite, testSuite_apx_compiler_pack());
+   CuSuiteAddSuite(suite, testSuite_apx_compiler_unpack());
+   CuSuiteAddSuite(suite, testSuite_apx_vm_serializer());
+   CuSuiteAddSuite(suite, testSuite_apx_vm_deserializer());
+   CuSuiteAddSuite(suite, testsuite_decoder());
    CuSuiteAddSuite(suite, testSuite_apx_vm());
-   CuSuiteAddSuite(suite, testSuite_apx_nodeManager());
-   CuSuiteAddSuite(suite, testSuite_apx_connectionBase());
-
-
-   CuSuiteAddSuite(suite, testSuite_apx_file2());
+   CuSuiteAddSuite(suite, testSuite_apx_node());
+   CuSuiteAddSuite(suite, testSuite_apx_nodeData());
+   CuSuiteAddSuite(suite, testSuite_apx_computation());
+   CuSuiteAddSuite(suite, testSuite_apx_nodeManager_client_mode());
+   CuSuiteAddSuite(suite, testSuite_apx_nodeManager_server_mode());
+   CuSuiteAddSuite(suite, testSuite_apx_file());
    CuSuiteAddSuite(suite, testSuite_apx_fileMap());
-   CuSuiteAddSuite(suite, testSuite_apx_vmSerializer());
-   CuSuiteAddSuite(suite, testSuite_apx_vmDeserializer());
-
-   //File Manager
-   CuSuiteAddSuite(suite, testSuite_apx_fileManagerShared());
-   CuSuiteAddSuite(suite, testSuite_apx_fileManagerWorker());
    CuSuiteAddSuite(suite, testSuite_apx_fileManagerReceiver());
-   CuSuiteAddSuite(suite, testSuite_apx_fileManager());
-
-   //Routing Tables
    CuSuiteAddSuite(suite, testSuite_apx_portConnectorChangeEntry());
    CuSuiteAddSuite(suite, testSuite_apx_portConnectorChangeTable());
    CuSuiteAddSuite(suite, testSuite_apx_portSignatureMap());
 
+   //Client
+   CuSuiteAddSuite(suite, testSuite_apx_clientTestConnection());
+   CuSuiteAddSuite(suite, testSuite_apx_client_socketConnection());
+   CuSuiteAddSuite(suite, testSuite_apx_client());
+
+   //Server
+   CuSuiteAddSuite(suite, testSuite_apx_serverConnection());
+   CuSuiteAddSuite(suite, testSuite_apx_server());
+
+   //Server extensions
+   CuSuiteAddSuite(suite, testsuite_apx_socketServerExtension());
+   CuSuiteAddSuite(suite, testSuite_apx_socketServerConnection());
+
+   // RemoteFile
+   CuSuiteAddSuite(suite, testSuite_remotefile());
+   CuSuiteAddSuite(suite, testSuite_file_info());
+
    //Util
    CuSuiteAddSuite(suite, testSuite_apx_util());
-
-
-   // APX Server
-   CuSuiteAddSuite(suite, testSuite_apx_serverConnection());
-   CuSuiteAddSuite(suite, testSuite_apx_dataRouting());
-
-   // APX Client
-   CuSuiteAddSuite(suite, testSuite_apx_client());
-   CuSuiteAddSuite(suite, testSuite_apx_client_testConnection());
-   CuSuiteAddSuite(suite, testSuite_apx_client_socketConnection());
-
-
-// APX Server
-   CuSuiteAddSuite(suite, testSuite_apx_serverSocketConnection());
-
-
-
-// APX Server Extensions
-   CuSuiteAddSuite(suite, testsuite_apx_socketServerExtension());
-/*
-   CuSuiteAddSuite(suite, testsuite_apx_serverTextLogExtension());
-*/
-
-// RemoteFile
-   CuSuiteAddSuite(suite, testSuite_remotefile());
 
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);
@@ -133,11 +110,14 @@ void RunAllTests(void)
    printf("%s\n", output->buffer);
    CuSuiteDelete(suite);
    CuStringDelete(output);
-   
+
 }
 
 int main(void)
 {
+#if !defined(MEM_LEAK_CHECK) && defined(_WIN32)
+   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
    RunAllTests();
    return 0;
 }

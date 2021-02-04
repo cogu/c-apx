@@ -4,7 +4,7 @@
 * \date      2017-02-20
 * \brief     APX server class
 *
-* Copyright (c) 2017-2020 Conny Gustafsson
+* Copyright (c) 2017-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -33,8 +33,8 @@
 #include "apx/log_event.h"
 #include <string.h>
 #include <malloc.h>
-#include <stdio.h> //DEBUG ONLY
 #include <assert.h>
+#include <stdio.h> //DEBUG ONLY
 #ifdef _WIN32
 #include <process.h>
 #endif
@@ -50,17 +50,17 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serverConnectionBase_t *newConnection);
-static void apx_server_triggerConnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *connection);
-static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
-static void apx_server_triggerLogEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
-static void apx_server_initExtensions(apx_server_t *self);
-static void apx_server_shutdownExtensions(apx_server_t *self);
-static void apx_server_handleEvent(void *arg, apx_event_t *event);
+static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serverConnection_t *new_connection);
+static void apx_server_trigger_connected_event(apx_server_t *self, apx_serverConnection_t * server_connection);
+static void apx_server_trigger_disconnected_event(apx_server_t *self, apx_serverConnection_t *server_connection);
+static void apx_server_trigger_log_event(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
+static void apx_server_init_extensions(apx_server_t *self);
+static void apx_server_shutdown_extensions(apx_server_t *self);
+static void apx_server_handle_event(void *arg, apx_event_t *event);
 #ifndef UNIT_TEST
-static apx_error_t apx_server_startThread(apx_server_t *self);
-static apx_error_t apx_server_stopThread(apx_server_t *self);
-static THREAD_PROTO(threadTask,arg);
+static apx_error_t apx_server_start_thread(apx_server_t *self);
+static apx_error_t apx_server_stop_thread(apx_server_t *self);
+static THREAD_PROTO(thread_task,arg);
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -77,51 +77,51 @@ static THREAD_PROTO(threadTask,arg);
 //////////////////////////////////////////////////////////////////////////////
 void apx_server_create(apx_server_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      adt_list_create(&self->serverEventListeners, apx_serverEventListener_vdelete);
-      apx_portSignatureMap_create(&self->portSignatureMap);
-      apx_connectionManager_create(&self->connectionManager);
-      adt_list_create(&self->extensionManager, apx_serverExtension_vdelete);
-      adt_ary_create(&self->modifiedNodes, (void(*)(void*)) 0);
-      soa_init(&self->soa);
-      apx_eventLoop_create(&self->eventLoop);
-      self->isEventThreadValid = false;
-      MUTEX_INIT(self->eventLoopLock);
-      MUTEX_INIT(self->globalLock);
-      SPINLOCK_INIT(self->eventListenerLock);
-#ifdef _MSC_VER
-      self->threadId = 0u;
+      adt_list_create(&self->server_event_listeners, apx_serverEventListener_vdelete);
+      apx_portSignatureMap_create(&self->port_signature_map);
+      apx_connectionManager_create(&self->connection_manager);
+      adt_list_create(&self->extension_manager, apx_serverExtension_vdelete);
+      adt_ary_create(&self->modified_nodes, (void(*)(void*)) 0);
+      soa_init(&self->allocator);
+      apx_eventLoop_create(&self->event_loop);
+      self->is_event_thread_valid = false;
+      MUTEX_INIT(self->event_loop_lock);
+      MUTEX_INIT(self->global_lock);
+      MUTEX_INIT(self->event_listener_lock);
+#ifdef _WIN32
+      self->thread_id = 0u;
 #endif
    }
 }
 
 void apx_server_destroy(apx_server_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_server_stop(self);
-      MUTEX_LOCK(self->globalLock);
-      soa_destroy(&self->soa);
-      adt_list_destroy(&self->extensionManager);
-      adt_ary_destroy(&self->modifiedNodes);
-      SPINLOCK_ENTER(self->eventListenerLock);
-      adt_list_destroy(&self->serverEventListeners);
-      SPINLOCK_LEAVE(self->eventListenerLock);
-      apx_connectionManager_destroy(&self->connectionManager);
-      apx_portSignatureMap_destroy(&self->portSignatureMap);
-      MUTEX_UNLOCK(self->globalLock);
-      apx_eventLoop_destroy(&self->eventLoop);
-      MUTEX_DESTROY(self->eventLoopLock);
-      MUTEX_DESTROY(self->globalLock);
-      SPINLOCK_DESTROY(self->eventListenerLock);
+      MUTEX_LOCK(self->global_lock);
+      soa_destroy(&self->allocator);
+      adt_list_destroy(&self->extension_manager);
+      adt_ary_destroy(&self->modified_nodes);
+      MUTEX_LOCK(self->event_listener_lock);
+      adt_list_destroy(&self->server_event_listeners);
+      MUTEX_UNLOCK(self->event_listener_lock);
+      apx_connectionManager_destroy(&self->connection_manager);
+      apx_portSignatureMap_destroy(&self->port_signature_map);
+      MUTEX_UNLOCK(self->global_lock);
+      apx_eventLoop_destroy(&self->event_loop);
+      MUTEX_DESTROY(self->event_loop_lock);
+      MUTEX_DESTROY(self->global_lock);
+      MUTEX_DESTROY(self->event_listener_lock);
    }
 }
 
 apx_server_t *apx_server_new(void)
 {
    apx_server_t *self = (apx_server_t*) malloc(sizeof(apx_server_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_server_create(self);
    }
@@ -130,7 +130,7 @@ apx_server_t *apx_server_new(void)
 
 void apx_server_delete(apx_server_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_server_destroy(self);
       free(self);
@@ -142,12 +142,12 @@ void apx_server_start(apx_server_t *self)
 
    if( self != 0 )
    {
-      apx_server_initExtensions(self);
+      apx_server_init_extensions(self);
 #ifndef UNIT_TEST
-      apx_connectionManager_start(&self->connectionManager);
-      if (self->isEventThreadValid == false)
+      apx_connectionManager_start(&self->connection_manager);
+      if (self->is_event_thread_valid == false)
       {
-         apx_server_startThread(self);
+         apx_server_start_thread(self);
       }
 #endif
    }
@@ -159,47 +159,43 @@ void apx_server_stop(apx_server_t *self)
    {
 
 #ifndef UNIT_TEST
-      apx_connectionManager_stop(&self->connectionManager);
+      apx_connectionManager_stop(&self->connection_manager);
 #endif
-      apx_server_shutdownExtensions(self);
+      apx_server_shutdown_extensions(self);
 #ifndef UNIT_TEST
-      apx_eventLoop_exit(&self->eventLoop);
-      if (self->isEventThreadValid)
+      apx_eventLoop_exit(&self->event_loop);
+      if (self->is_event_thread_valid)
       {
-         apx_server_stopThread(self);
+         apx_server_stop_thread(self);
       }
 #endif
    }
 }
 
-
-
-
-
-void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener)
+void* apx_server_register_event_listener(apx_server_t* self, apx_serverEventListener_t* event_listener)
 {
-   if ( (self != 0) && (eventListener != 0))
+   if ( (self != NULL) && (event_listener != NULL))
    {
-      void *handle = (void*) apx_serverEventListener_clone(eventListener);
+      void *handle = (void*) apx_serverEventListener_clone(event_listener);
       if (handle != 0)
       {
-         SPINLOCK_ENTER(self->eventListenerLock);
-         adt_list_insert(&self->serverEventListeners, handle);
-         SPINLOCK_LEAVE(self->eventListenerLock);
+         MUTEX_LOCK(self->event_listener_lock);
+         adt_list_insert(&self->server_event_listeners, handle);
+         MUTEX_UNLOCK(self->event_listener_lock);
       }
       return handle;
    }
    return (void*) 0;
 }
 
-void apx_server_unregisterEventListener(apx_server_t *self, void *handle)
+void apx_server_unregister_event_listener(apx_server_t *self, void *handle)
 {
-   if ( (self != 0) && (handle != 0))
+   if ( (self != NULL) && (handle != 0))
    {
       bool isFound;
-      SPINLOCK_ENTER(self->eventListenerLock);
-      isFound = adt_list_remove(&self->serverEventListeners, handle);
-      SPINLOCK_LEAVE(self->eventListenerLock);
+      MUTEX_LOCK(self->event_listener_lock);
+      isFound = adt_list_remove(&self->server_event_listeners, handle);
+      MUTEX_UNLOCK(self->event_listener_lock);
       if (isFound == true)
       {
          apx_serverEventListener_vdelete(handle);
@@ -207,34 +203,40 @@ void apx_server_unregisterEventListener(apx_server_t *self, void *handle)
    }
 }
 
-void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
+void apx_server_accept_connection(apx_server_t* self, apx_serverConnection_t* server_connection)
 {
-   if ( (self != 0) && (serverConnection != 0))
+   if ( (self != NULL) && (server_connection != NULL))
    {
-      apx_server_attach_and_start_connection(self, serverConnection);
+      apx_server_attach_and_start_connection(self, server_connection);
    }
 }
 
-void apx_server_detachConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
+apx_error_t apx_server_detach_connection(apx_server_t* self, apx_serverConnection_t* server_connection)
 {
-   if ( (self != 0) && (serverConnection != 0))
+   if ( (self != NULL) && (server_connection != NULL))
    {
-      apx_connectionManager_detach(&self->connectionManager, serverConnection);
-      apx_serverConnectionBase_disconnectNotify(serverConnection);
-      apx_server_triggerDisconnectedEvent(self, serverConnection);
+      apx_error_t result;
+      apx_connectionManager_detach(&self->connection_manager, server_connection);
+      result = apx_serverConnection_disconnected_notification(server_connection);
+      if (result == APX_NO_ERROR)
+      {
+         apx_server_trigger_disconnected_event(self, server_connection);
+      }
+      return result;
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_server_addExtension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
+apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_serverExtensionHandler_t* handler, dtl_dv_t* config)
 {
-   if ( (self != 0) && (handler != 0) )
+   if ( (self != NULL) && (handler != 0) )
    {
       apx_serverExtension_t *extension = apx_serverExtension_new(name, handler, config);
       if (extension == 0)
       {
          return APX_MEM_ERROR;
       }
-      adt_list_insert(&self->extensionManager, (void*) extension);
+      adt_list_insert(&self->extension_manager, (void*) extension);
       if (config != 0)
       {
          dtl_dv_inc_ref(config);
@@ -244,9 +246,9 @@ apx_error_t apx_server_addExtension(apx_server_t *self, const char *name, apx_se
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg)
+void apx_server_log_event(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
 {
-   if ( (self != 0) && (level <= APX_MAX_LOG_LEVEL) && (msg != 0) )
+   if ( (self != NULL) && (level <= APX_MAX_LOG_LEVEL) && (msg != 0) )
    {
       apx_event_t event;
       char *labelStr = 0;
@@ -264,9 +266,9 @@ void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *l
          {
             labelSize = APX_LOG_LABEL_MAX_LEN;
          }
-         MUTEX_LOCK(self->eventLoopLock);
-         labelStr = soa_alloc(&self->soa, labelSize+1);
-         MUTEX_UNLOCK(self->eventLoopLock);
+         MUTEX_LOCK(self->event_loop_lock);
+         labelStr = soa_alloc(&self->allocator, labelSize+1);
+         MUTEX_UNLOCK(self->event_loop_lock);
          if (labelStr == 0)
          {
             adt_str_delete(msgStr);
@@ -277,64 +279,64 @@ void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *l
       }
       memset(&event, 0, sizeof(event));
       apx_logEvent_pack(&event, level, labelStr, msgStr);
-      apx_eventLoop_append(&self->eventLoop, &event);
+      apx_eventLoop_append(&self->event_loop, &event);
    }
 }
 
 /**
  * Acquires the server global lock
  */
-void apx_server_takeGlobalLock(apx_server_t *self)
+void apx_server_take_global_lock(apx_server_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      MUTEX_LOCK(self->globalLock);
+      MUTEX_LOCK(self->global_lock);
    }
 }
 
 /**
  * Releases the server global lock
  */
-void apx_server_releaseGlobalLock(apx_server_t *self)
+void apx_server_release_global_lock(apx_server_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      MUTEX_UNLOCK(self->globalLock);
+      MUTEX_UNLOCK(self->global_lock);
    }
 }
 
-apx_error_t apx_server_connectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+apx_error_t apx_server_connect_node_instance_provide_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
 {
-   if ( (self != 0) && (nodeInstance != 0) )
+   if ( (self != NULL) && (node_instance != 0) )
    {
-      return apx_portSignatureMap_connectProvidePorts(&self->portSignatureMap, nodeInstance);
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-apx_error_t apx_server_connectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
-{
-   if ( (self != 0) && (nodeInstance != 0) )
-   {
-      return apx_portSignatureMap_connectRequirePorts(&self->portSignatureMap, nodeInstance);
+      return apx_portSignatureMap_connect_provide_ports(&self->port_signature_map, node_instance);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_server_disconnectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+apx_error_t apx_server_connect_node_instance_require_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
 {
-   if ( (self != 0) && (nodeInstance != 0) )
+   if ( (self != NULL) && (node_instance != 0) )
    {
-      return apx_portSignatureMap_disconnectProvidePorts(&self->portSignatureMap, nodeInstance);
+      return apx_portSignatureMap_connect_require_ports(&self->port_signature_map, node_instance);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_server_disconnectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+apx_error_t apx_server_disconnect_node_instance_provide_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
 {
-   if ( (self != 0) && (nodeInstance != 0) )
+   if ( (self != NULL) && (node_instance != 0) )
    {
-      return apx_portSignatureMap_disconnectRequirePorts(&self->portSignatureMap, nodeInstance);
+      return apx_portSignatureMap_disconnect_provide_ports(&self->port_signature_map, node_instance);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_server_disconnect_node_instance_require_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
+{
+   if ( (self != NULL) && (node_instance != 0) )
+   {
+      return apx_portSignatureMap_disconnect_require_ports(&self->port_signature_map, node_instance);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -342,32 +344,29 @@ apx_error_t apx_server_disconnectNodeInstanceRequirePorts(apx_server_t *self, ap
 /**
  * Is is assumed that the server global lock is held by the caller of this function
  */
-apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *requireNodeInstance, apx_portConnectorChangeTable_t *connectorChanges)
+apx_error_t apx_server_process_require_port_connector_changes(apx_server_t* self, apx_nodeInstance_t* require_node_instance, apx_portConnectorChangeTable_t* connector_changes)
 {
-   if ( (requireNodeInstance != 0) && (connectorChanges != 0 ) )
+   if ( (self != NULL) && (require_node_instance != NULL) && (connector_changes != NULL) )
    {
-      apx_portCount_t numRequirePorts;
-      apx_portId_t requirePortId;
-//      apx_requirePortDataState_t requirePortState;
-//      requirePortState = apx_nodeInstance_getRequirePortDataState(requireNodeInstance);
-      numRequirePorts = apx_nodeInstance_getNumRequirePorts(requireNodeInstance);
-      assert(connectorChanges->numPorts == numRequirePorts);
-      for (requirePortId = 0u; requirePortId < numRequirePorts; requirePortId++)
+      apx_size_t num_require_ports;
+      apx_portId_t port_id;
+      num_require_ports = apx_nodeInstance_get_num_require_ports(require_node_instance);
+      assert(connector_changes->num_ports == num_require_ports);
+      for (port_id = 0u; port_id < num_require_ports; port_id++)
       {
-         apx_portRef_t *requirePortRef;
+         apx_portInstance_t *require_port;
          apx_portConnectorChangeEntry_t *entry;
-         requirePortRef = apx_nodeInstance_getRequirePortRef(requireNodeInstance, requirePortId);
-         entry = apx_portConnectorChangeTable_getEntry(connectorChanges, requirePortId);
-         assert(requirePortRef != 0);
-         assert(entry != 0);
+         require_port = apx_nodeInstance_get_require_port(require_node_instance, port_id);
+         entry = apx_portConnectorChangeTable_get_entry(connector_changes, port_id);
+         assert( (require_port != NULL) && (entry != NULL));
          if (entry->count > 0)
          {
             if (entry->count == 1)
             {
                apx_error_t rc;
-               apx_portRef_t *providePortRef = entry->data.portRef;
-               assert(providePortRef != 0);
-               rc = apx_nodeInstance_handleRequirePortWasConnectedToProvidePort(requirePortRef, providePortRef);
+               apx_portInstance_t *provide_port = entry->data.port_instance;
+               assert(provide_port != NULL);
+               rc = apx_nodeInstance_handle_require_port_connected_to_provide_port(require_port, provide_port);
                if (rc != APX_NO_ERROR)
                {
                   return rc;
@@ -388,34 +387,34 @@ apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, ap
 /**
  * Is is assumed that the server global lock is held by the caller of this function
  */
-apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *provideNodeInstance, apx_portConnectorChangeTable_t *connectorChanges)
+apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self, apx_nodeInstance_t* provide_node_instance, apx_portConnectorChangeTable_t* connector_changes)
 {
-   if ( (provideNodeInstance != 0) && (connectorChanges != 0 ) )
+   if ((self != NULL) && (provide_node_instance != NULL) && (connector_changes != NULL))
    {
-      apx_portCount_t numProvidePorts;
-      apx_portId_t providePortId;
-      numProvidePorts = apx_nodeInstance_getNumProvidePorts(provideNodeInstance);
-      assert(connectorChanges->numPorts == numProvidePorts);
-      apx_nodeInstance_lockPortConnectorTable(provideNodeInstance);
-      for (providePortId = 0u; providePortId < numProvidePorts; providePortId++)
+      apx_portCount_t num_provide_ports;
+      apx_portId_t port_id;
+      num_provide_ports = apx_nodeInstance_get_num_provide_ports(provide_node_instance);
+      assert(connector_changes->num_ports == num_provide_ports);
+      apx_nodeInstance_lock_port_connector_table(provide_node_instance);
+      for (port_id = 0u; port_id < num_provide_ports; port_id++)
       {
-         apx_portRef_t *providePortRef;
+         apx_portInstance_t *provide_port;
          apx_portConnectorChangeEntry_t *entry;
-         entry = apx_portConnectorChangeTable_getEntry(connectorChanges, providePortId);
-         providePortRef = apx_nodeInstance_getProvidePortRef(provideNodeInstance, providePortId);
+         entry = apx_portConnectorChangeTable_get_entry(connector_changes, port_id);
+         provide_port = apx_nodeInstance_get_provide_port(provide_node_instance, port_id);
          assert(entry != 0);
-         assert(providePortRef != 0);
+         assert(provide_port != 0);
          if (entry->count > 0)
          {
             if (entry->count == 1)
             {
                apx_error_t rc;
-               apx_portRef_t *requirePortRef = entry->data.portRef;
-               assert(requirePortRef != 0);
-               rc = apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(providePortRef, requirePortRef);
+               apx_portInstance_t *require_port = entry->data.port_instance;
+               assert(require_port != 0);
+               rc = apx_nodeInstance_handle_provide_port_connected_to_require_port(provide_port, require_port);
                if (rc != APX_NO_ERROR)
                {
-                  apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+                  apx_nodeInstance_unlock_port_connector_table(provide_node_instance);
                   return rc;
                }
             }
@@ -425,19 +424,19 @@ apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, ap
                for(i=0; i < entry->count; i++)
                {
                   apx_error_t rc;
-                  apx_portRef_t *requirePortRef = adt_ary_value(entry->data.array, i);
-                  assert(requirePortRef != 0);
-                  rc = apx_nodeInstance_handleProvidePortWasConnectedToRequirePort(providePortRef, requirePortRef);
+                  apx_portInstance_t *require_port = adt_ary_value(entry->data.array, i);
+                  assert(require_port != 0);
+                  rc = apx_nodeInstance_handle_provide_port_connected_to_require_port(provide_port, require_port);
                   if (rc != APX_NO_ERROR)
                   {
-                     apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+                     apx_nodeInstance_unlock_port_connector_table(provide_node_instance);
                      return rc;
                   }
                }
             }
          }
       }
-      apx_nodeInstance_unlockPortConnectorTable(provideNodeInstance);
+      apx_nodeInstance_unlock_port_connector_table(provide_node_instance);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -446,11 +445,11 @@ apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, ap
 /**
  * Note: Should only be used when caller holds globalLock
  */
-apx_error_t apx_server_insertModifiedNode(apx_server_t *self, apx_nodeInstance_t *nodeInstance)
+apx_error_t apx_server_insert_modified_node_instance(apx_server_t* self, apx_nodeInstance_t* node_instance)
 {
-   if (self != 0)
+   if ( (self != NULL) && (node_instance != NULL))
    {
-      adt_error_t rc = adt_ary_push_unique(&self->modifiedNodes, (void*) nodeInstance);
+      adt_error_t rc = adt_ary_push_unique(&self->modified_nodes, (void*)node_instance);
       if (rc == ADT_MEM_ERROR)
       {
          return APX_MEM_ERROR;
@@ -467,11 +466,11 @@ apx_error_t apx_server_insertModifiedNode(apx_server_t *self, apx_nodeInstance_t
 /**
  * Note: Should only be used when caller holds globalLock
  */
-adt_ary_t *apx_server_getModifiedNodes(const apx_server_t *self)
+adt_ary_t* apx_server_get_modified_node_instance(const apx_server_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      return (adt_ary_t*) &self->modifiedNodes;
+      return (adt_ary_t*) &self->modified_nodes;
    }
    return (adt_ary_t*) 0;
 }
@@ -479,51 +478,50 @@ adt_ary_t *apx_server_getModifiedNodes(const apx_server_t *self)
 /**
  * Note: Should only be used when caller holds globalLock
  */
-void apx_server_clearPortConnectorChanges(apx_server_t *self)
+void apx_server_clear_port_connector_changes(apx_server_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       int32_t i;
-      int32_t numNodes = adt_ary_length(&self->modifiedNodes);
-      for(i=0; i<numNodes; i++)
+      int32_t num_nodes = adt_ary_length(&self->modified_nodes);
+      for(i=0; i < num_nodes; i++)
       {
-         apx_nodeInstance_t *nodeInstance = (apx_nodeInstance_t*) adt_ary_value(&self->modifiedNodes, i);
-         assert(nodeInstance != 0);
-         apx_nodeInstance_clearProvidePortConnectorChanges(nodeInstance, true);
-         apx_nodeInstance_clearRequirePortConnectorChanges(nodeInstance, true);
+         apx_nodeInstance_t *node_instance = (apx_nodeInstance_t*) adt_ary_value(&self->modified_nodes, i);
+         assert(node_instance != NULL);
+         apx_nodeInstance_clear_provide_port_connector_changes(node_instance, true);
+         apx_nodeInstance_clear_require_port_connector_changes(node_instance, true);
       }
-      if (numNodes > 0)
+      if (num_nodes > 0)
       {
-         adt_ary_clear(&self->modifiedNodes);
+         adt_ary_clear(&self->modified_nodes);
       }
    }
 }
-
 
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      apx_eventLoop_runAll(&self->eventLoop, apx_server_handleEvent, (void*) self);
-      apx_connectionManager_run(&self->connectionManager);
+      apx_eventLoop_runAll(&self->event_loop, apx_server_handle_event, (void*) self);
+      apx_connectionManager_run(&self->connection_manager);
    }
 }
 
-apx_serverConnectionBase_t *apx_server_getLastConnection(apx_server_t *self)
+apx_serverConnection_t* apx_server_get_last_connection(apx_server_t const* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      return apx_connectionManager_getLastConnection(&self->connectionManager);
+      return apx_connectionManager_get_last_connection(&self->connection_manager);
    }
-   return (apx_serverConnectionBase_t*) 0;
+   return (apx_serverConnection_t*) 0;
 }
 
-apx_portSignatureMap_t *apx_server_getPortSignatureMap(apx_server_t *self)
+apx_portSignatureMap_t* apx_server_get_port_signature_map(apx_server_t const* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      return &self->portSignatureMap;
+      return (apx_portSignatureMap_t*) &self->port_signature_map;
    }
    return (apx_portSignatureMap_t*) 0;
 }
@@ -534,60 +532,63 @@ apx_portSignatureMap_t *apx_server_getPortSignatureMap(apx_server_t *self)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serverConnectionBase_t *newConnection)
+
+static void apx_server_attach_and_start_connection(apx_server_t* self, apx_serverConnection_t* new_connection)
 {
-   if (apx_connectionManager_getNumConnections(&self->connectionManager) < APX_SERVER_MAX_CONCURRENT_CONNECTIONS)
+   if (apx_connectionManager_get_num_connections(&self->connection_manager) < APX_SERVER_MAX_CONCURRENT_CONNECTIONS)
    {
-      apx_connectionManager_attach(&self->connectionManager, newConnection);
-      apx_serverConnectionBase_setServer(newConnection, self);
-      apx_server_triggerConnectedEvent(self, newConnection);
-      apx_connectionBase_start(&newConnection->base);
+      apx_connectionManager_attach(&self->connection_manager, new_connection);
+      apx_serverConnection_set_server(new_connection, self);
+      apx_server_trigger_connected_event(self, new_connection);
+      apx_connectionBase_start(&new_connection->base);
    }
    else
    {
       printf("[SERVER] Concurrent connection limit exceeded\n");
    }
 }
-
-static void apx_server_triggerConnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
+static void apx_server_trigger_connected_event(apx_server_t* self, apx_serverConnection_t* server_connection)
 {
-   assert(self != 0);
-   assert(serverConnection != 0);
-   SPINLOCK_ENTER(self->eventListenerLock);
-   adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
+   assert(self != NULL);
+   assert(server_connection != NULL);
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
    while(iter != 0)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->serverConnect1 != 0) )
+      if ( (listener != 0) && (listener->serverConnect1 != NULL) )
       {
-         listener->serverConnect1(listener->arg, serverConnection);
+         listener->serverConnect1(listener->arg, server_connection);
       }
       iter = adt_list_iter_next(iter);
    }
-   SPINLOCK_LEAVE(self->eventListenerLock);
+   MUTEX_UNLOCK(self->event_listener_lock);
 }
 
-static void apx_server_triggerDisconnectedEvent(apx_server_t *self, apx_serverConnectionBase_t *serverConnection)
+static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_serverConnection_t* server_connection)
 {
-   assert(self != 0);
-   assert(serverConnection != 0);
-   SPINLOCK_ENTER(self->eventListenerLock);
-   adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
+   assert(self != NULL);
+   assert(server_connection != NULL);
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
    while(iter != 0)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->serverDisconnect1 != 0) )
+      if ( (listener != 0) && (listener->serverDisconnect1 != NULL) )
       {
-         listener->serverDisconnect1(listener->arg, serverConnection);
+         listener->serverDisconnect1(listener->arg, server_connection);
       }
       iter = adt_list_iter_next(iter);
    }
-   SPINLOCK_LEAVE(self->eventListenerLock);
+   MUTEX_UNLOCK(self->event_listener_lock);
 }
 
-static void apx_server_triggerLogEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg)
+static void apx_server_trigger_log_event(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
 {
-   adt_list_elem_t *iter = adt_list_iter_first(&self->serverEventListeners);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
+   (void)level;
+   (void)label;
+   (void)msg;
    while(iter != 0)
    {
 /*
@@ -601,11 +602,11 @@ static void apx_server_triggerLogEvent(apx_server_t *self, apx_logLevel_t level,
    }
 }
 
-static void apx_server_initExtensions(apx_server_t *self)
+static void apx_server_init_extensions(apx_server_t* self)
 {
-   if  (self != 0)
+   if  (self != NULL)
    {
-      adt_list_elem_t *iter = adt_list_iter_first(&self->extensionManager);
+      adt_list_elem_t *iter = adt_list_iter_first(&self->extension_manager);
       while(iter != 0)
       {
          apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
@@ -629,12 +630,11 @@ static void apx_server_initExtensions(apx_server_t *self)
    }
 }
 
-
-static void apx_server_shutdownExtensions(apx_server_t *self)
+static void apx_server_shutdown_extensions(apx_server_t* self)
 {
-   if  (self != 0)
+   if  (self != NULL)
    {
-      adt_list_elem_t *iter = adt_list_iter_first(&self->extensionManager);
+      adt_list_elem_t *iter = adt_list_iter_first(&self->extension_manager);
       while(iter != 0)
       {
         apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
@@ -647,10 +647,10 @@ static void apx_server_shutdownExtensions(apx_server_t *self)
    }
 }
 
-static void apx_server_handleEvent(void *arg, apx_event_t *event)
+static void apx_server_handle_event(void* arg, apx_event_t* event)
 {
    apx_server_t *self = (apx_server_t*) arg;
-   if ( (self != 0) && (event != 0) )
+   if ( (self != NULL) && (event != NULL) )
    {
       apx_logLevel_t level;
       size_t labelSize;
@@ -665,10 +665,10 @@ static void apx_server_handleEvent(void *arg, apx_event_t *event)
          if (label != 0)
          {
             labelSize = strlen(label);
-            apx_server_triggerLogEvent(self, level, label, msg);
-            MUTEX_LOCK(self->eventLoopLock);
-            soa_free(&self->soa, label, labelSize+1);
-            MUTEX_UNLOCK(self->eventLoopLock);
+            apx_server_trigger_log_event(self, level, label, msg);
+            MUTEX_LOCK(self->event_loop_lock);
+            soa_free(&self->allocator, label, labelSize+1);
+            MUTEX_UNLOCK(self->event_loop_lock);
          }
          else
          {
@@ -680,33 +680,34 @@ static void apx_server_handleEvent(void *arg, apx_event_t *event)
    }
 }
 #ifndef UNIT_TEST
-static apx_error_t apx_server_startThread(apx_server_t *self)
+
+static apx_error_t apx_server_start_thread(apx_server_t* self);
 {
-   self->isEventThreadValid = true;
+   self->is_event_thread_valid = true;
 #ifdef _MSC_VER
-   THREAD_CREATE(self->eventThread, threadTask, self, self->threadId);
-   if(self->eventThread == INVALID_HANDLE_VALUE)
+   THREAD_CREATE(self->event_thread, thread_task, self, self->thread_id);
+   if(self->event_thread == INVALID_HANDLE_VALUE)
    {
-      self->isEventThreadValid = false;
+      self->is_event_thread_valid = false;
       return APX_THREAD_CREATE_ERROR;
    }
 #else
-   int rc = THREAD_CREATE(self->eventThread,threadTask,self);
+   int rc = THREAD_CREATE(self->event_thread, thread_task, self);
    if(rc != 0)
    {
-      self->isEventThreadValid = false;
+      self->is_event_thread_valid = false;
       return APX_THREAD_CREATE_ERROR;
    }
 #endif
    return APX_NO_ERROR;
 }
 
-static apx_error_t apx_server_stopThread(apx_server_t *self)
+static apx_error_t apx_server_stop_thread(apx_server_t* self)
 {
-   if (self->isEventThreadValid)
+   if (self->is_event_thread_valid)
    {
 #ifdef _MSC_VER
-      DWORD result = WaitForSingleObject(self->eventThread, 5000);
+      DWORD result = WaitForSingleObject(self->event_thread, 5000);
       if (result == WAIT_TIMEOUT)
       {
          return APX_THREAD_JOIN_TIMEOUT_ERROR;
@@ -715,13 +716,13 @@ static apx_error_t apx_server_stopThread(apx_server_t *self)
       {
          return APX_THREAD_JOIN_ERROR;
       }
-      CloseHandle(self->eventThread);
-      self->eventThread = INVALID_HANDLE_VALUE;
+      CloseHandle(self->event_thread);
+      self->event_thread = INVALID_HANDLE_VALUE;
 #else
-      if(pthread_equal(pthread_self(),self->eventThread) == 0)
+      if(pthread_equal(pthread_self(),self->event_thread) == 0)
       {
          void *status;
-         int s = pthread_join(self->eventThread, &status);
+         int s = pthread_join(self->event_thread, &status);
          if (s != 0)
          {
             return APX_THREAD_JOIN_ERROR;
@@ -732,17 +733,17 @@ static apx_error_t apx_server_stopThread(apx_server_t *self)
          return APX_THREAD_JOIN_ERROR;
       }
 #endif
-   self->isEventThreadValid = false;
+   self->is_event_thread_valid = false;
    }
    return APX_NO_ERROR;
 }
 
-static THREAD_PROTO(threadTask,arg)
+static THREAD_PROTO(thread_task, arg)
 {
    apx_server_t *self = (apx_server_t*) arg;
-   if (self != 0)
+   if (self != NULL)
    {
-      apx_eventLoop_run(&self->eventLoop, apx_server_handleEvent, (void*) self);
+      apx_eventLoop_run(&self->event_loop, apx_server_handleEvent, (void*) self);
    }
    THREAD_RETURN(0);
 }

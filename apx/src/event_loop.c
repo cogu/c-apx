@@ -192,6 +192,7 @@ void apx_eventLoop_runAll(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHa
 
 static void apx_eventLoop_processEvent(apx_eventLoop_t *self, apx_event_t *event, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg)
 {
+   (void)self;
    if(eventHandler != 0)
    {
       eventHandler(eventHandlerArg, event);

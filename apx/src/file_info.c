@@ -28,8 +28,11 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <string.h>
+#include <assert.h>
 #include "apx/file_info.h"
+#include "apx/util.h"
 #include "bstr.h"
+#include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -53,258 +56,446 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileInfo_create(apx_fileInfo_t *self, uint32_t address, uint32_t length, const char *name, uint16_t fileType, uint16_t digestType, const uint8_t *digestData)
-{
-   if ( (self != 0) && (name != 0) )
-   {
-      apx_fileInfo_setAddress(self, address);
-      self->length = length;
-      self->fileType = fileType;
-      self->digestType = digestType;
-      self->name = STRDUP(name);
 
-      if (self->name == 0)
+rmf_fileInfo_t* rmf_fileInfo_make_empty(void)
+{
+   return rmf_fileInfo_new(RMF_INVALID_ADDRESS, 0u, NULL, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+}
+
+rmf_fileInfo_t* rmf_fileInfo_make_fixed(char const* name, uint32_t size, uint32_t address)
+{
+   return rmf_fileInfo_new(address, size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+}
+
+rmf_fileInfo_t* rmf_fileInfo_make_fixed_with_digest(char const* name, uint32_t size, uint32_t address, rmf_digestType_t digest_type, uint8_t const* digest_data)
+{
+   return rmf_fileInfo_new(address, size, name, RMF_FILE_TYPE_FIXED, digest_type, digest_data);
+}
+
+apx_error_t rmf_fileInfo_create(rmf_fileInfo_t* self, uint32_t address, uint32_t size, const char* name, rmf_fileType_t file_type, rmf_digestType_t digest_type, const uint8_t* digest_data)
+{
+   if ( self != NULL)
+   {
+      adt_error_t result;
+      self->address = address;
+      self->size = size;
+      self->rmf_file_type = file_type;
+      self->digest_type = digest_type;
+      adt_str_create(&self->name);
+      if (name != NULL)
       {
-         return APX_MEM_ERROR;
-      }
-      if (digestData != 0)
-      {
-         self->digestData = (uint8_t*) malloc(RMF_DIGEST_SIZE);
-         if (self->digestData == 0)
+         result = adt_str_set_cstr(&self->name, name);
+         if (result != ADT_NO_ERROR)
          {
-            return APX_MEM_ERROR;
+            return convert_from_adt_to_apx_error(result);
          }
-         memcpy(self->digestData, digestData, RMF_DIGEST_SIZE);
       }
-      else
-      {
-         self->digestData = (uint8_t*) 0;
-      }
-      return APX_NO_ERROR;
+      return rmf_fileInfo_set_digest_data(self, digest_type, digest_data);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileInfo_create_rmf(apx_fileInfo_t *self, const rmf_fileInfo_t *fileInfo, bool isRemoteAddress)
+apx_error_t rmf_fileInfo_create_copy(rmf_fileInfo_t* self, rmf_fileInfo_t const* other)
 {
-   if (fileInfo != 0)
+   if (self != NULL)
    {
-      uint32_t address;
-      const uint8_t *digestData = (const uint8_t*) 0;
-      uint32_t addressFlag = isRemoteAddress? RMF_REMOTE_ADDRESS_BIT : 0u;
-      address  = (fileInfo->address & RMF_ADDRESS_MASK) | addressFlag;
-      if (fileInfo->digestType != RMF_DIGEST_TYPE_NONE)
+      adt_error_t result;
+      self->address = other->address;
+      self->size = other->size;
+      self->rmf_file_type = other->rmf_file_type;
+      self->digest_type = other->digest_type;
+      adt_str_create(&self->name);
+      result = adt_str_set(&self->name, &other->name);
+      if (result != ADT_NO_ERROR)
       {
-         digestData = &fileInfo->digestData[0];
+         return convert_from_adt_to_apx_error(result);
       }
-      return apx_fileInfo_create(self, address, fileInfo->length, &fileInfo->name[0], fileInfo->fileType, fileInfo->digestType, digestData);
+      return rmf_fileInfo_set_digest_data(self, other->digest_type, &other->digest_data[0]);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_fileInfo_destroy(apx_fileInfo_t *self)
+void rmf_fileInfo_destroy(rmf_fileInfo_t *self)
 {
    if (self != 0)
    {
-      if (self->name != 0)
-      {
-         free(self->name);
-      }
-      if (self->digestData != 0)
-      {
-         free(self->digestData);
-      }
+      adt_str_destroy(&self->name);
    }
 }
 
-apx_fileInfo_t* apx_fileInfo_new(uint32_t address, uint32_t length, const char *name, uint16_t fileType, uint16_t digestType, const uint8_t *digestData)
+rmf_fileInfo_t* rmf_fileInfo_new(uint32_t address, uint32_t size, const char* name, rmf_fileType_t file_type, rmf_digestType_t digest_type, const uint8_t* digest_data)
 {
-   apx_fileInfo_t *self = (apx_fileInfo_t*) malloc(sizeof(apx_fileInfo_t));
+   rmf_fileInfo_t *self = (rmf_fileInfo_t*) malloc(sizeof(rmf_fileInfo_t));
    if (self != 0)
    {
-      apx_error_t rc = apx_fileInfo_create(self, address, length, name, fileType, digestType, digestData);
+      apx_error_t rc = rmf_fileInfo_create(self, address, size, name, file_type, digest_type, digest_data);
       if (rc != APX_NO_ERROR)
       {
          free(self);
-         self = (apx_fileInfo_t*) 0;
+         self = (rmf_fileInfo_t*) 0;
       }
    }
    return self;
 }
 
-apx_fileInfo_t* apx_fileInfo_new_rmf(rmf_fileInfo_t *fileInfo, bool isRemoteAddress)
+void rmf_fileInfo_delete(rmf_fileInfo_t* self)
 {
-   if (fileInfo != 0)
+   if (self != 0)
    {
-      apx_fileInfo_t *self = (apx_fileInfo_t*) malloc(sizeof(apx_fileInfo_t));
+      rmf_fileInfo_destroy(self);
+      free(self);
+   }
+}
+
+void rmf_fileInfo_vdelete(void* arg)
+{
+   rmf_fileInfo_delete((rmf_fileInfo_t*)arg);
+}
+
+const char* rmf_fileInfo_name(rmf_fileInfo_t const* self)
+{
+   if (self != NULL)
+   {
+      return adt_str_cstr((adt_str_t*)&self->name);
+   }
+   return NULL;
+}
+
+uint32_t rmf_fileInfo_address(rmf_fileInfo_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->address;
+   }
+   return RMF_INVALID_ADDRESS;
+}
+
+uint32_t rmf_fileInfo_size(rmf_fileInfo_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->size;
+   }
+   return 0u;
+}
+
+rmf_fileType_t rmf_fileInfo_rmf_file_type(rmf_fileInfo_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->rmf_file_type;
+   }
+   return RMF_FILE_TYPE_FIXED;
+}
+
+rmf_digestType_t rmf_fileInfo_digest_type(rmf_fileInfo_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->digest_type;
+   }
+   return RMF_DIGEST_TYPE_NONE;
+}
+
+uint8_t const* rmf_fileInfo_digest_data(rmf_fileInfo_t const* self)
+{
+   if (self != NULL)
+   {
+      return &self->digest_data[0];
+   }
+   return NULL;
+}
+
+apx_error_t rmf_fileInfo_assign(rmf_fileInfo_t *self, const rmf_fileInfo_t *other)
+{
+   if ( (self != NULL) && (other != NULL) )
+   {
+      adt_error_t result;
+      self->address = other->address;
+      self->size = other->size;
+      self->rmf_file_type = other->rmf_file_type;
+      self->digest_type = other->digest_type;
+      result = adt_str_set(&self->name, &other->name);
+      if (result != ADT_NO_ERROR)
+      {
+         return convert_from_adt_to_apx_error(result);
+      }
+      return rmf_fileInfo_set_digest_data(self, other->digest_type, &other->digest_data[0]);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+rmf_fileInfo_t* rmf_fileInfo_clone(const rmf_fileInfo_t *other)
+{
+   if (other != 0)
+   {
+      rmf_fileInfo_t *self = (rmf_fileInfo_t*) malloc(sizeof(rmf_fileInfo_t));
       if (self != 0)
       {
-         apx_error_t rc = apx_fileInfo_create_rmf(self, fileInfo, isRemoteAddress);
+         apx_error_t rc = rmf_fileInfo_create(self, other->address, other->size, adt_str_cstr((adt_str_t*)&other->name),
+            other->rmf_file_type, other->digest_type, other->digest_data);
          if (rc != APX_NO_ERROR)
          {
             free(self);
-            self = (apx_fileInfo_t*) 0;
+            self = (rmf_fileInfo_t*) 0;
          }
       }
       return self;
    }
-   return (apx_fileInfo_t*) 0;
+   return (rmf_fileInfo_t*) 0;
 }
 
-apx_error_t apx_fileInfo_assign(apx_fileInfo_t *self, const apx_fileInfo_t *other)
+void rmf_fileInfo_set_address(rmf_fileInfo_t *self, uint32_t address)
 {
-   if ( (self != 0) && (other != 0) )
+   if (self != NULL)
    {
-      apx_fileInfo_setAddress(self, other->address);
-      self->length = other->length;
-      self->fileType = other->fileType;
-      self->digestType = other->digestType;
-      self->name = (char*) 0;
-      self->digestData = (uint8_t*) 0;
-      if (other->name != 0)
+      self->address = address;
+   }
+}
+
+bool rmf_fileInfo_is_remote_address(rmf_fileInfo_t const* self)
+{
+   if (self != 0)
+   {
+      return ((self->address != RMF_INVALID_ADDRESS) && ((self->address & RMF_REMOTE_ADDRESS_BIT) != 0u));
+   }
+   return false;
+}
+
+bool rmf_fileInfo_name_ends_with(rmf_fileInfo_t const* self, const char* suffix)
+{
+   if ( (self != NULL) && (suffix != NULL) && (adt_str_size(&self->name)>0u) )
+   {
+      size_t str_len = adt_str_length(&self->name);
+      size_t suffix_len = strlen(suffix);
+      return (str_len >= suffix_len) && (strcmp(adt_str_cstr((adt_str_t*)&self->name) + (str_len-suffix_len), suffix) == 0);
+   }
+   return false;
+}
+
+char* rmf_fileInfo_base_name(rmf_fileInfo_t const* self)
+{
+   if ( (self != NULL))
+   {
+      char const* name = adt_str_cstr((adt_str_t*)&self->name);
+      char *dot = strchr(name, '.');
+      if (dot != 0)
       {
-         self->name = STRDUP(other->name);
-         if (self->name == 0)
+         return bstr_make_cstr((const uint8_t*) name, (const uint8_t*) dot);
+      }
+   }
+   return (char*) 0;
+}
+
+void rmf_fileInfo_copy_base_name(rmf_fileInfo_t const* self, char* dest, uint32_t max_dest_len)
+{
+   if ( (self != NULL) && (max_dest_len > 1))
+   {
+      char const* name = adt_str_cstr((adt_str_t*)&self->name);
+      char *dot = strchr(name, '.');
+      if (dot != 0)
+      {
+         uint32_t len = (uint32_t) (dot - name);
+         if (max_dest_len < len)
          {
-            return APX_MEM_ERROR;
+            strncpy(dest, name, max_dest_len -1);
+            dest[max_dest_len -1] = '\0';
+         }
+         else
+         {
+            strncpy(dest, name, len);
+            dest[len] = '\0';
          }
       }
-      if(other->digestData != 0)
+   }
+}
+
+uint32_t rmf_fileInfo_address_without_flags(rmf_fileInfo_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->address & APX_ADDRESS_MASK_INTERNAL;
+   }
+   return RMF_INVALID_ADDRESS;
+}
+
+bool rmf_fileInfo_address_in_range(rmf_fileInfo_t const* self, uint32_t address)
+{
+   if (self != NULL)
+   {
+      uint32_t address_without_flags = self->address & APX_ADDRESS_MASK_INTERNAL;
+      return ((address_without_flags <= address) && (address < (address_without_flags + self->size)));
+   }
+   return false;
+}
+
+apx_error_t rmf_fileInfo_set_digest_data(rmf_fileInfo_t* self, rmf_digestType_t digest_type, const uint8_t* digest_data)
+{
+   if (self != NULL)
+   {
+      if (digest_type != RMF_DIGEST_TYPE_NONE)
       {
-         self->digestData = (uint8_t*) malloc(RMF_DIGEST_SIZE);
-         if (self->digestData == 0)
+         if (digest_data == NULL)
          {
-            return APX_MEM_ERROR;
+            return APX_INVALID_ARGUMENT_ERROR;
          }
-         memcpy(self->digestData, other->digestData, RMF_DIGEST_SIZE);
+         size_t size = (digest_type == RMF_DIGEST_TYPE_SHA1) ? RMF_SHA1_SIZE : RMF_SHA256_SIZE;
+         memcpy(&self->digest_data[0], digest_data, size);
+      }
+      else
+      {
+         memset(&self->digest_data[0], 0, sizeof(self->digest_data));
       }
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_fileInfo_t* apx_fileInfo_clone(const apx_fileInfo_t *other)
+//stateless functions
+apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_fileInfo_t const* file)
 {
-   if (other != 0)
+   if ((buf != NULL) && (file != NULL))
    {
-      apx_fileInfo_t *self = (apx_fileInfo_t*) malloc(sizeof(apx_fileInfo_t));
-      if (self != 0)
+      const char* name = rmf_fileInfo_name(file);
+      apx_size_t const name_size = (apx_size_t)strlen(name);
+      apx_size_t const required_size = RMF_FILE_INFO_HEADER_SIZE + name_size + 1u; //Add 1 for null-terminator
+      uint8_t* p = buf;
+      uint8_t const* digest_data = rmf_fileInfo_digest_data(file);
+      if (required_size > buf_size)
       {
-         apx_error_t rc = apx_fileInfo_create(self, other->address, other->length, other->name, other->fileType, other->digestType, other->digestData);
-         if (rc != APX_NO_ERROR)
+         return 0u;
+      }
+      if (digest_data == NULL)
+      {
+         return 0;
+      }
+      packLE(p, RMF_CMD_PUBLISH_FILE_MSG, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_fileInfo_address_without_flags(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_fileInfo_size(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, (uint32_t)rmf_fileInfo_rmf_file_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      packLE(p, (uint32_t)rmf_fileInfo_digest_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      switch (rmf_fileInfo_digest_type(file))
+      {
+      case RMF_DIGEST_TYPE_NONE:
+         memset(p, 0, RMF_SHA256_SIZE);
+         break;
+      case RMF_DIGEST_TYPE_SHA1:
+         memcpy(p, digest_data, RMF_SHA1_SIZE);
+         memset(p + RMF_SHA1_SIZE, 0, RMF_SHA256_SIZE - RMF_SHA1_SIZE);
+         break;
+      case RMF_DIGEST_TYPE_SHA256:
+         memcpy(p, digest_data, RMF_SHA256_SIZE);
+         break;
+      }
+      p += RMF_SHA256_SIZE;
+      assert((p + name_size + 1) == buf + required_size);
+      memcpy(p, name, name_size); p += name_size;
+      *p = 0u;
+      return required_size;
+   }
+   return 0u;
+}
+
+apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, rmf_fileInfo_t* file_info)
+{
+   if ((buf != NULL) && (file_info != NULL))
+   {
+      uint8_t const* next = buf;
+      uint8_t const* end = buf + buf_size;
+      if ((next + RMF_FILE_INFO_HEADER_SIZE) < end)
+      {
+         uint32_t const cmd_type = unpackLE(next, UINT32_SIZE); next += UINT32_SIZE;
+         uint16_t value1;
+         uint16_t value2;
+         if (cmd_type != RMF_CMD_PUBLISH_FILE_MSG)
          {
-            free(self);
-            self = (apx_fileInfo_t*) 0;
+            //Invalid command type
+            return 0u;
          }
-      }
-      return self;
-   }
-   return (apx_fileInfo_t*) 0;
-}
-
-void apx_fileInfo_setAddress(apx_fileInfo_t *self, uint32_t address)
-{
-   self->address = address;
-   self->addressWithoutFlags = address & RMF_ADDRESS_MASK_INTERNAL;
-}
-
-void apx_fileInfo_delete(apx_fileInfo_t *self)
-{
-   if (self != 0)
-   {
-      apx_fileInfo_destroy(self);
-      free(self);
-   }
-}
-
-void apx_fileInfo_vdelete(void *arg)
-{
-   apx_fileInfo_delete((apx_fileInfo_t*) arg);
-}
-
-void apx_fileInfo_fillRmfInfo(const apx_fileInfo_t *self, rmf_fileInfo_t *rmfInfo)
-{
-   if ( (self != 0) && (rmfInfo != 0) )
-   {
-      rmfInfo->address = self->address;
-      rmfInfo->fileType = self->fileType;
-      rmfInfo->length = self->length;
-      rmfInfo->digestType = self->digestType;
-      if (self->name != 0)
-      {
-         strcpy(&rmfInfo->name[0], self->name);
-      }
-      else
-      {
-         memset(&rmfInfo->name[0], 0, RMF_MAX_FILE_NAME+1);
-      }
-      if (self->digestData != 0)
-      {
-         memcpy(&rmfInfo->digestData[0], self->digestData, RMF_DIGEST_SIZE);
-      }
-      else
-      {
-         memset(&rmfInfo->digestData[0], 0, RMF_DIGEST_SIZE);
-      }
-   }
-}
-
-bool apx_fileInfo_isRemoteAddress(apx_fileInfo_t *self)
-{
-   if (self != 0)
-   {
-      return ( (self->address != RMF_INVALID_ADDRESS) &&  ( (self->address & RMF_REMOTE_ADDRESS_BIT) != 0u) );
-   }
-   return false;
-}
-
-
-bool apx_fileInfo_nameEndsWith(const apx_fileInfo_t *self, const char* suffix)
-{
-   if ( (self != 0) && (suffix != 0) && (self->name != 0) )
-   {
-      size_t str_len = strlen(self->name);
-      size_t suffix_len = strlen(suffix);
-      return (str_len >= suffix_len) && (strcmp(self->name + (str_len-suffix_len), suffix) == 0);
-   }
-   return false;
-}
-
-char *apx_fileInfo_getBaseName(const apx_fileInfo_t *self)
-{
-   if ( (self != 0) && (self->name != 0))
-   {
-      char *dot = strchr(self->name, '.');
-      if (dot != 0)
-      {
-         return bstr_make_cstr((const uint8_t*) self->name, (const uint8_t*) dot);
-      }
-   }
-   return (char*) 0;
-}
-
-void apx_fileInfo_copyBaseName(const apx_fileInfo_t *self, char *dest, uint32_t maxDestLen)
-{
-   if ( (self != 0) && (self->name != 0) && (maxDestLen > 1))
-   {
-      char *dot = strchr(self->name, '.');
-      if (dot != 0)
-      {
-         //uint32_t len = (uint32_t) strlen(dot);
-         uint32_t len = (uint32_t) (dot - self->name);
-         if (maxDestLen < len)
+         file_info->address = unpackLE(next, (uint8_t)UINT32_SIZE); next += UINT32_SIZE;
+         file_info->size = unpackLE(next, (uint8_t)UINT32_SIZE); next += UINT32_SIZE;
+         value1 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE); next += sizeof(uint16_t);
+         value2 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE); next += sizeof(uint16_t);
+         memcpy(&file_info->digest_data[0], next, RMF_SHA256_SIZE); next += RMF_SHA256_SIZE;
+         if (!rmf_value_to_file_type(value1, &file_info->rmf_file_type))
          {
-            strncpy(dest, self->name, maxDestLen-1);
-            dest[maxDestLen-1] = '\0';
+            return 0u;
+         }
+         if (!rmf_value_to_digest_type(value1, &file_info->digest_type))
+         {
+            return 0u;
+         }
+         uint8_t const* result = bstr_while_predicate(next, end, bstr_pred_is_not_zero);
+         if ((result > next) && (result < end))
+         {
+            adt_str_set_bstr(&file_info->name, next, result);
          }
          else
          {
-            strncpy(dest, self->name, len);
-            dest[len] = '\0';
+            //null-terminator not found within message buffer
+            return 0u;
          }
+         return (apx_size_t)(result - buf);
       }
    }
+   return 0u;
 }
+
+bool rmf_value_to_file_type(uint16_t value, rmf_fileType_t* file_type)
+{
+   if (file_type != NULL)
+   {
+      switch (value)
+      {
+      case RMF_U16_FILE_TYPE_FIXED:
+         *file_type = RMF_FILE_TYPE_FIXED;
+         break;
+      case RMF_U16_FILE_TYPE_DYNAMIC8:
+         *file_type = RMF_FILE_TYPE_DYNAMIC8;
+         break;
+      case RMF_U16_FILE_TYPE_DYNAMIC16:
+         *file_type = RMF_FILE_TYPE_DYNAMIC16;
+         break;
+      case RMF_U16_FILE_TYPE_DYNAMIC32:
+         *file_type = RMF_FILE_TYPE_DYNAMIC32;
+         break;
+      case RMF_U16_FILE_TYPE_DEVICE:
+         *file_type = RMF_FILE_TYPE_DEVICE;
+         break;
+      case RMF_U16_FILE_TYPE_STREAM:
+         *file_type = RMF_FILE_TYPE_STREAM;
+         break;
+      default:
+         return false;
+      }
+      return true;
+   }
+   return false;
+}
+
+bool rmf_value_to_digest_type(uint16_t value, rmf_digestType_t* digest_type)
+{
+   if (digest_type != NULL)
+   {
+      switch (value)
+      {
+      case RMF_U16_DIGEST_TYPE_NONE:
+         *digest_type = RMF_DIGEST_TYPE_NONE;
+         break;
+      case RMF_U16_DIGEST_TYPE_SHA1:
+         *digest_type = RMF_DIGEST_TYPE_SHA1;
+         break;
+      case RMF_U16_DIGEST_TYPE_SHA256:
+         *digest_type = RMF_DIGEST_TYPE_SHA256;
+         break;
+      default:
+         return false;
+      }
+      return true;
+   }
+   return false;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

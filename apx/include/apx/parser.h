@@ -30,61 +30,58 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
-#include "apx/node.h"
-#include "adt_ary.h"
 #include "apx/error.h"
+#include "apx/stream.h"
+#include "apx/node.h"
+#include "apx/data_element.h"
+#include "apx/port_attribute.h"
+#include "apx/type_attribute.h"
+#include "apx/attribute_parser.h"
+#include "apx/signature_parser.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+typedef uint8_t apx_definition_section_t;
+#define APX_DEFINITION_SECTION_VERSION ((apx_definition_section_t) 0u)
+#define APX_DEFINITION_SECTION_NODE    ((apx_definition_section_t) 1u)
+#define APX_DEFINITION_SECTION_TYPE    ((apx_definition_section_t) 2u)
+#define APX_DEFINITION_SECTION_PORT    ((apx_definition_section_t) 3u)
+
+typedef struct apx_parse_state_tag
+{
+   apx_definition_section_t accept_next;
+   int32_t major_version;
+   int32_t minor_version;
+   uint32_t lineno;
+   apx_node_t* node; //Strong reference
+   apx_dataElement_t* data_element; //Weak reference
+   apx_dataType_t* data_type; //Weak reference
+   apx_port_t* port; //Weak reference
+} apx_parse_state_t;
+
 typedef struct apx_parser_tag
 {
-   adt_ary_t nodeList;
-   apx_node_t *currentNode;
-   apx_error_t lastErrorType;
-   int32_t lastErrorLine;
-   int16_t majorVersion;
-   int16_t minorVersion;
-}apx_parser_t;
+   apx_istream_t* stream;
+   apx_error_t last_error;
+   int32_t last_error_line;
+   apx_parse_state_t state;
+   apx_attributeParser_t attribute_parser;
+   apx_signatureParser_t signature_parser;
+} apx_parser_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_parser_create(apx_parser_t *self);
+void apx_parser_create(apx_parser_t *self, apx_istream_t *stream);
 void apx_parser_destroy(apx_parser_t *self);
-apx_parser_t* apx_parser_new(void);
+apx_parser_t* apx_parser_new(apx_istream_t* stream);
 void apx_parser_delete(apx_parser_t *self);
-int32_t apx_parser_getNumNodes(apx_parser_t *self);
-apx_node_t *apx_parser_getNode(apx_parser_t *self, int32_t index);
-apx_error_t apx_parser_getLastError(apx_parser_t *self);
-int32_t apx_parser_getErrorLine(apx_parser_t *self);
-void apx_parser_clearNodes(apx_parser_t *self);
-#if defined(_WIN32) || defined(__GNUC__)
-apx_node_t *apx_parser_parseFile(apx_parser_t *self, const char *filename);
-#endif
-apx_node_t *apx_parser_parseString(apx_parser_t *self, const char *data);
-apx_node_t *apx_parser_parseBuffer(apx_parser_t *self, const uint8_t *buf, apx_size_t len);
+apx_node_t *apx_parser_take_last_node(apx_parser_t *self);
+apx_error_t apx_parser_get_last_error(apx_parser_t *self);
+int32_t apx_parser_get_error_line(apx_parser_t *self);
+apx_error_t apx_parser_parse_cstr(apx_parser_t *self, const char *apx_text);
+apx_error_t apx_parser_parse_bstr(apx_parser_t* self, uint8_t const* begin, uint8_t const* end);
 
-//event handlers
-void apx_parser_open(apx_parser_t *self);
-void apx_parser_close(apx_parser_t *self);
-bool apx_parser_header(apx_parser_t *self, int16_t majorVersion, int16_t minorVersion);
-void apx_parser_node(apx_parser_t *self, const char *name, int32_t lineNumber); //N"<name>"
-int32_t apx_parser_datatype(apx_parser_t *self, const char *name, const char *dsg, const char *attr, int32_t lineNumber);
-int32_t apx_parser_require(apx_parser_t *self, const char *name, const char *dsg, const char *attr, int32_t lineNumber);
-int32_t apx_parser_provide(apx_parser_t *self, const char *name, const char *dsg, const char *attr, int32_t lineNumber);
-void apx_parser_node_end(apx_parser_t *self);
-void apx_parser_parse_error(apx_parser_t *self, apx_error_t errorType, int32_t errorLine);
-
-//void event handlers
-void apx_parser_vopen(void *arg);
-void apx_parser_vclose(void *arg);
-bool apx_parser_vheader(void *arg, int16_t majorVersion, int16_t minorVersion);
-void apx_parser_vnode(void *arg, const char *name, int32_t lineNumber); //N"<name>"
-int32_t apx_parser_vdatatype(void *arg, const char *name, const char *dsg, const char *attr, int32_t lineNumber);
-int32_t apx_parser_vrequire(void *arg, const char *name, const char *dsg, const char *attr, int32_t lineNumber);
-int32_t apx_parser_vprovide(void *arg, const char *name, const char *dsg, const char *attr, int32_t lineNumber);
-void apx_parser_vnode_end(void *arg);
-void apx_parser_vparse_error(void *arg, apx_error_t errorType, int32_t errorLine);
 
 #endif //APX_PARSER_H

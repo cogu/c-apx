@@ -2,7 +2,7 @@
 * \file      type_attribute.h
 * \author    Conny Gustafsson
 * \date      2018-09-11
-* \brief     APX (parse tree) type definition
+* \brief     APX type attributes
 *
 * Copyright (c) 2018 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -29,24 +29,31 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stdint.h>
+#include "apx/types.h"
 #include "apx/error.h"
+#include "adt_ary.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_typeAttribute_tag
+//Forward declarations
+struct apx_computation_tag;
+
+typedef struct apx_typeAttributes_tag
 {
-   char *rawString;
-}apx_typeAttribute_t;
+   adt_ary_t computations;
+} apx_typeAttributes_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_typeAttribute_create(apx_typeAttribute_t *self, const char *attr);
-void apx_typeAttribute_destroy(apx_typeAttribute_t *self);
-apx_typeAttribute_t *apx_typeAttribute_new(const char *attr);
-void apx_typeAttribute_delete(apx_typeAttribute_t *self);
-const char *apx_typeAttribute_cstr(apx_typeAttribute_t *self);
+void apx_typeAttributes_create(apx_typeAttributes_t *self);
+void apx_typeAttributes_destroy(apx_typeAttributes_t *self);
+apx_typeAttributes_t *apx_typeAttributes_new(void);
+void apx_typeAttributes_delete(apx_typeAttributes_t *self);
+
+void apx_typeAttributes_append_computation(apx_typeAttributes_t* self, struct apx_computation_tag* computation);
+int32_t apx_typeAttributes_num_computations(apx_typeAttributes_t* self);
+struct apx_computation_tag* apx_typeAttributes_get_computation(apx_typeAttributes_t* self, int32_t index);
 
 #endif //APX_TYPE_ATTRIBUTE_H
