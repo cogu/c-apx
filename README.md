@@ -11,9 +11,9 @@ Latest release is [v0.2.6](https://github.com/cogu/c-apx/releases/tag/v0.2.6).
 
 All development work for v0.3 is done on the master branch. Latest release is v0.3.0.
 
-### Current status of master branch (v0.3.0)
+### Current status of master branch (v0.3.1a)
 
-- Full support for APX v1.2 specification (Same as c-apx v0.2).
+- Experimental support for new APX IDL v1.3 (specification work is ongoing).
 - CMake build support for Linux and Windows.
 - Dynamic clients is fully supported.
 - APX-ES clients not yet supported (needs rewrite from v0.2 to v0.3).
@@ -60,46 +60,28 @@ Note that APX-ES on master branch is not yet updated to work with the new v0.3.x
 
 CMake build has been tested for Windows (with Visual Studio) as well as Linux (with GCC).
 
-### Running unit tests (Linux)
+For Windows, use a "Native tools command prompt" provided by your Visual Studio installation. It comes with a cmake binary that
+by default chooses the right version of Visusl Studio compiler.
 
-**Configure:**
+### Running unit tests (Linux GCC and Windows VS2019)
+
+Configure:
 
 ```sh
 cmake -S . -B build -DUNIT_TEST=ON
 ```
 
-**Build:**
+Build:
 
 ```sh
 cmake --build build --target apx_unit
 ```
 
-**Run test cases:**
+Run test cases:
 
 ```cmd
-cd build && ctest
-```
-
-### Running unit tests (Windows and Visual Studio)
-
-Launch "x64 Native Tools Command Prompt for Visual Studio 2019" in start menu.
-
-**Configure:**
-
-```cmd
-cmake -S . -B VisualStudio -DUNIT_TEST=ON
-```
-
-**Build:**
-
-```cmd
-cmake --build VisualStudio --config Debug --target apx_unit
-```
-
-**Run test cases:**
-
-```cmd
-cd VisualStudio && ctest
+cd build
+ctest
 ```
 
 ### Building APX Binaries (Linux)
