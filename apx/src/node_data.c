@@ -2,9 +2,9 @@
 * \file      node_data.c
 * \author    Conny Gustafsson
 * \date      2019-12-02
-* \brief     Container for data in an APX node that changes over time (port values, port connection count etc.)
+* \brief     Container for dynamic data of an APX node
 *
-* Copyright (c) 2019-2020 Conny Gustafsson
+* Copyright (c) 2019-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -52,95 +52,87 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 ////////////////// Constructor/Destructor //////////////////
-void apx_nodeData_create(apx_nodeData_t *self, apx_nodeDataBuffers_t *buffers)
+apx_error_t apx_nodeData_create(apx_nodeData_t *self, apx_nodeDataBuffers_t *buffers)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (buffers != 0)
+      if (buffers != NULL)
       {
-         self->isWeakref = true;
-         self->definitionDataBuf = buffers->definitionDataBuf;
-         self->requirePortDataBuf = buffers->requirePortPortDataBuf;
-         self->providePortDataBuf = buffers->providePortDataBuf;
-         self->definitionDataLen = buffers->definitionDataLen;
-         self->requirePortDataLen = buffers->requirePortDataLen;
-         self->providePortDataLen = buffers->providePortDataLen;
-         self->requirePortConnectionCount = buffers->requirePortConnectionCount;
-         self->providePortConnectionCount = buffers->providePortConnectionCount;
-         self->numRequirePorts = buffers->numRequirePorts;
-         self->numProvidePorts = buffers->numProvidePorts;
-         self->definitionChecksumType = buffers->definitionChecksumType;
-         memcpy(&self->definitionChecksumData[0], &buffers->definitionChecksumData[0], APX_CHECKSUMLEN_SHA256);
+         self->is_weak_ref = true;
+         self->definition_data = buffers->definition_data;
+         self->require_port_data = buffers->require_port_data;
+         self->provide_port_data = buffers->provide_port_data;
+         self->definition_data_size = buffers->definition_data_size;
+         self->require_port_data_size = buffers->require_port_data_size;
+         self->provide_port_data_size = buffers->provide_port_data_size;
+         self->require_port_connection_count = buffers->require_port_connection_count;
+         self->provide_port_connection_count = buffers->provide_port_connection_count;
+         self->num_require_ports = buffers->num_require_ports;
+         self->num_provide_ports = buffers->num_provide_ports;
+         apx_nodeData_set_checksum_data(self, buffers->checksum_type, &buffers->checksum_data[0]);
       }
       else
       {
-         self->isWeakref = false;
-         self->definitionDataBuf = (uint8_t*) 0;
-         self->requirePortDataBuf = (uint8_t*) 0;
-         self->providePortDataBuf = (uint8_t*) 0;
-         self->definitionDataLen = 0u;
-         self->requirePortDataLen = 0u;
-         self->providePortDataLen = 0u;
-         self->requirePortConnectionCount = 0u;
-         self->providePortConnectionCount = 0u;
-         self->numRequirePorts = 0u;
-         self->numProvidePorts = 0u;
-         self->definitionChecksumType = APX_CHECKSUM_NONE;
-         memset(&self->definitionChecksumData[0], 0, APX_CHECKSUMLEN_SHA256);
+         self->is_weak_ref = false;
+         self->definition_data = NULL;
+         self->require_port_data = NULL;
+         self->provide_port_data = NULL;
+         self->definition_data_size = 0u;
+         self->require_port_data_size = 0u;
+         self->provide_port_data_size = 0u;
+         self->require_port_connection_count = NULL;
+         self->provide_port_connection_count = NULL;
+         self->num_require_ports = 0u;
+         self->num_provide_ports = 0u;
+         self->checksum_type = RMF_DIGEST_TYPE_NONE;
+         memset(&self->checksum_data[0], 0, sizeof(self->checksum_data));
       }
-      self->portConnectionsTotal  = 0u;
-      self->parent = (apx_nodeInstance_t*) 0;
 #ifndef APX_EMBEDDED
-      SPINLOCK_INIT(self->requirePortDataLock);
-      SPINLOCK_INIT(self->providePortDataLock);
-      SPINLOCK_INIT(self->definitionDataLock);
-      SPINLOCK_INIT(self->internalLock);
+      MUTEX_INIT(self->lock);
 #endif
    }
+   return APX_NO_ERROR;
 }
 
 void apx_nodeData_destroy(apx_nodeData_t *self)
 {
-   if ( (self != 0)  )
+   if ( (self != NULL)  )
    {
 #ifndef APX_EMBEDDED
-      if (!self->isWeakref)
+      if (!self->is_weak_ref)
       {
-         if (self->definitionDataBuf != 0)
+         if (self->definition_data != 0)
          {
-            free(self->definitionDataBuf);
+            free(self->definition_data);
          }
-         if (self->requirePortDataBuf != 0)
+         if (self->require_port_data != 0)
          {
-            free(self->requirePortDataBuf);
+            free(self->require_port_data);
          }
-         if (self->providePortDataBuf != 0)
+         if (self->provide_port_data != 0)
          {
-            free(self->providePortDataBuf);
+            free(self->provide_port_data);
          }
-         if (self->requirePortConnectionCount != 0)
+         if (self->require_port_connection_count != 0)
          {
-            free(self->requirePortConnectionCount);
+            free(self->require_port_connection_count);
          }
-         if (self->providePortConnectionCount != 0)
+         if (self->provide_port_connection_count != 0)
          {
-            free(self->providePortConnectionCount);
+            free(self->provide_port_connection_count);
          }
       }
-      SPINLOCK_DESTROY(self->requirePortDataLock);
-      SPINLOCK_DESTROY(self->providePortDataLock);
-      SPINLOCK_DESTROY(self->definitionDataLock);
-      SPINLOCK_DESTROY(self->internalLock);
+      MUTEX_DESTROY(self->lock);
 #endif
    }
 }
-#ifndef APX_EMBEDDED
+
 apx_nodeData_t *apx_nodeData_new(void)
 {
    apx_nodeData_t *self = (apx_nodeData_t*) malloc(sizeof(apx_nodeData_t));
    if (self != 0)
    {
-      apx_nodeData_create(self, (apx_nodeDataBuffers_t*) 0);
+      apx_nodeData_create(self, (apx_nodeDataBuffers_t*) NULL);
    }
    return self;
 }
@@ -157,529 +149,350 @@ void apx_nodeData_vdelete(void *arg)
 {
    apx_nodeData_delete((apx_nodeData_t*) arg);
 }
-#endif
 
-////////////////// Data Buffer API //////////////////
-
-#ifndef APX_EMBEDDED
-apx_error_t apx_nodeData_createDefinitionBuffer(apx_nodeData_t *self, apx_size_t bufferLen)
+////////////////// Data API //////////////////
+apx_size_t apx_nodeData_definition_data_size(apx_nodeData_t const* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      uint8_t *definitionDataBuf = (uint8_t*) malloc(bufferLen);
-      if (definitionDataBuf == 0)
+      return self->definition_data_size;
+   }
+   return 0u;
+}
+apx_size_t apx_nodeData_provide_port_data_size(apx_nodeData_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->provide_port_data_size;
+   }
+   return 0u;
+}
+
+apx_size_t apx_nodeData_require_port_data_size(apx_nodeData_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->require_port_data_size;
+   }
+   return 0u;
+}
+
+apx_size_t apx_nodeData_num_provide_ports(apx_nodeData_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->num_provide_ports;
+   }
+   return 0u;
+}
+
+apx_size_t apx_nodeData_num_require_ports(apx_nodeData_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->num_require_ports;
+   }
+   return 0u;
+}
+
+apx_error_t apx_nodeData_create_definition_data(apx_nodeData_t* self, uint8_t const* init_data, apx_size_t data_size)
+{
+   if (self != NULL)
+   {
+      if (self->is_weak_ref)
       {
-         return APX_MEM_ERROR;
+         return APX_UNSUPPORTED_ERROR;
       }
-      self->definitionDataBuf = definitionDataBuf;
-      self->definitionDataLen = bufferLen;
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-#endif
-
-void apx_nodeData_lockDefinitionData(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-#ifndef APX_EMBEDDED
-   SPINLOCK_ENTER(self->definitionDataLock);
-#endif
-   }
-}
-
-void apx_nodeData_unlockDefinitionData(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->definitionDataLock);
-#endif
-   }
-}
-
-const uint8_t *apx_nodeData_getDefinitionDataBuf(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-      return self->definitionDataBuf;
-   }
-   return (const uint8_t*) 0;
-}
-
-
-apx_size_t apx_nodeData_getDefinitionDataLen(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-      return self->definitionDataLen;
-   }
-   return (apx_size_t) 0u;
-}
-
-uint8_t apx_nodeData_getDefinitionChecksumType(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-      return self->definitionChecksumType;
-   }
-   return (uint8_t) APX_CHECKSUM_NONE;
-}
-
-const uint8_t* apx_nodeData_getDefinitionChecksumData(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-      return (const uint8_t*) &self->definitionChecksumData;
-   }
-   return (const uint8_t*) 0;
-}
-
-apx_error_t apx_nodeData_writeDefinitionData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, uint32_t len)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   if (self != 0)
-   {
-      apx_nodeData_lockDefinitionData(self);
-      if ( (offset+len) > self->definitionDataLen)
+      if (data_size > 0u)
       {
-         retval = APX_INVALID_ARGUMENT_ERROR;
-      }
-      else
-      {
-         memcpy(&self->definitionDataBuf[offset], src, len);
-      }
-      apx_nodeData_unlockDefinitionData(self);
-   }
-   else
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   return retval;
-}
-
-apx_error_t apx_nodeData_readDefinitionData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, uint32_t len)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   if( (self != 0) && (dest != 0) )
-   {
-      apx_nodeData_lockDefinitionData(self);
-      if ( (offset+len) > self->definitionDataLen)
-      {
-         retval = APX_INVALID_ARGUMENT_ERROR;
-      }
-      else
-      {
-         memcpy(dest, &self->definitionDataBuf[offset], len);
-      }
-      apx_nodeData_unlockDefinitionData(self);
-   }
-   else
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   return retval;
-}
-
-apx_error_t apx_nodeData_setDefinitionChecksumData(apx_nodeData_t *self, uint8_t checksumType, uint8_t *checksumData)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   if ( (self != 0) && (checksumType <= APX_CHECKSUM_SHA256) && (checksumData != 0) )
-   {
-      apx_nodeData_lockDefinitionData(self);
-      if (checksumType == APX_CHECKSUM_SHA256)
-      {
-         self->definitionChecksumType = checksumType;
-         memcpy(&self->definitionChecksumData[0], checksumData, APX_CHECKSUMLEN_SHA256);
-      }
-      else
-      {
-         retval = APX_INVALID_ARGUMENT_ERROR;
-      }
-      apx_nodeData_unlockDefinitionData(self);   }
-   else
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   return retval;
-}
-
-#ifndef APX_EMBEDDED
-apx_error_t apx_nodeData_createRequirePortBuffer(apx_nodeData_t *self, apx_size_t bufferLen)
-{
-   if (self != 0)
-   {
-      uint8_t *requirePortDataBuf = (uint8_t*) malloc(bufferLen);
-      if (requirePortDataBuf == 0)
-      {
-         return APX_MEM_ERROR;
-      }
-      self->requirePortDataBuf = requirePortDataBuf;
-      self->requirePortDataLen = bufferLen;
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-#endif
-
-apx_size_t apx_nodeData_getRequirePortDataLen(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-      return self->requirePortDataLen;
-   }
-   return (apx_size_t) 0u;
-}
-
-apx_error_t apx_nodeData_writeRequirePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, apx_size_t len)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   if (self != 0)
-   {
-#ifndef APX_EMBEDDED
-   SPINLOCK_ENTER(self->requirePortDataLock);
-#endif
-   if ( (offset+len) > self->requirePortDataLen)
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   else
-   {
-      memcpy(&self->requirePortDataBuf[offset], src, len);
-   }
-#ifndef APX_EMBEDDED
-   SPINLOCK_LEAVE(self->requirePortDataLock);
-#endif
-   }
-   else
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   return retval;
-}
-
-apx_error_t apx_nodeData_readRequirePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, apx_size_t len)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   if( (self != 0) && (dest != 0) )
-   {
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->requirePortDataLock);
-#endif
-      if ( (offset+len) > self->requirePortDataLen)
-      {
-         retval = APX_INVALID_ARGUMENT_ERROR;
-      }
-      else
-      {
-         memcpy(dest, &self->requirePortDataBuf[offset], len);
-      }
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->requirePortDataLock);
-#endif
-   }
-   else
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   return retval;
-}
-
-#ifndef APX_EMBEDDED
-apx_error_t apx_nodeData_createProvidePortBuffer(apx_nodeData_t *self, apx_size_t bufferLen)
-{
-   if (self != 0)
-   {
-      uint8_t *providePortDataBuf = (uint8_t*) malloc(bufferLen);
-      if (providePortDataBuf == 0)
-      {
-         return APX_MEM_ERROR;
-      }
-      self->providePortDataBuf = providePortDataBuf;
-      self->providePortDataLen = bufferLen;
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-#endif
-
-apx_size_t apx_nodeData_getProvidePortDataLen(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-      return self->providePortDataLen;
-   }
-   return (apx_size_t) 0u;
-}
-
-apx_error_t apx_nodeData_writeProvidePortData(apx_nodeData_t *self, const uint8_t *src, uint32_t offset, apx_size_t len)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   if (self != 0)
-   {
-#ifndef APX_EMBEDDED
-   SPINLOCK_ENTER(self->providePortDataLock);
-#endif
-   if ( (offset+len) > self->providePortDataLen)
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   else
-   {
-      memcpy(&self->providePortDataBuf[offset], src, len);
-   }
-#ifndef APX_EMBEDDED
-   SPINLOCK_LEAVE(self->providePortDataLock);
-#endif
-   }
-   else
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   return retval;
-}
-
-apx_error_t apx_nodeData_readProvidePortData(apx_nodeData_t *self, uint8_t *dest, uint32_t offset, apx_size_t len)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   if( (self != 0) && (dest != 0) )
-   {
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->providePortDataLock);
-#endif
-      if ( (offset+len) > self->providePortDataLen)
-      {
-         retval = APX_INVALID_ARGUMENT_ERROR;
-      }
-      else
-      {
-         memcpy(dest, &self->providePortDataBuf[offset], len);
-      }
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->providePortDataLock);
-#endif
-   }
-   else
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   return retval;
-}
-
-/**
- * Internal write function used by APX server
- */
-apx_error_t apx_nodeData_updatePortDataDirect(apx_nodeData_t *destNodeData, const struct apx_portDataProps_tag *destDatProps,
-      apx_nodeData_t *srcNodeData, const struct apx_portDataProps_tag *srcDataProps)
-{
-   if ( (destNodeData != 0) && (destDatProps != 0) && (srcNodeData != 0) && (srcDataProps != 0) && (destDatProps->dataSize == srcDataProps->dataSize) )
-   {
-      if ( apx_portDataProps_isPlainOldData(destDatProps) )
-      {
-         assert(destNodeData->requirePortDataBuf != 0);
-         assert(srcNodeData->providePortDataBuf != 0);
-#ifndef APX_EMBEDDED
-         SPINLOCK_ENTER(destNodeData->requirePortDataLock);
-         SPINLOCK_ENTER(srcNodeData->providePortDataLock);
-#endif
-
-         memcpy(&destNodeData->requirePortDataBuf[destDatProps->offset], &srcNodeData->providePortDataBuf[srcDataProps->offset], srcDataProps->dataSize);
-
-#ifndef APX_EMBEDDED
-         SPINLOCK_LEAVE(srcNodeData->providePortDataLock);
-         SPINLOCK_LEAVE(destNodeData->requirePortDataLock);
-#endif
+         MUTEX_LOCK(self->lock);
+         self->definition_data = (uint8_t*)malloc(data_size);
+         if (self->definition_data == NULL)
+         {
+            MUTEX_UNLOCK(self->lock);
+            return APX_MEM_ERROR;
+         }
+         self->definition_data_size = data_size;
+         if (init_data != NULL)
+         {
+            memcpy(self->definition_data, init_data, data_size);
+         }
+         else
+         {
+            memset(self->definition_data, 0, data_size);
+         }
+         MUTEX_UNLOCK(self->lock);
          return APX_NO_ERROR;
       }
-      else
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_nodeData_create_provide_port_data(apx_nodeData_t* self, apx_size_t num_ports, uint8_t const* init_data, apx_size_t data_size)
+{
+   if (self != NULL)
+   {
+      if (self->is_weak_ref)
       {
-         //Complex data types not yet supported
-         return APX_NOT_IMPLEMENTED_ERROR;
+         return APX_UNSUPPORTED_ERROR;
+      }
+      if (data_size > 0u)
+      {
+         MUTEX_LOCK(self->lock);
+         self->provide_port_data = (uint8_t*)malloc(data_size);
+         if (self->provide_port_data == NULL)
+         {
+            MUTEX_UNLOCK(self->lock);
+            return APX_MEM_ERROR;
+         }
+         self->num_provide_ports = num_ports;
+         self->provide_port_data_size = data_size;
+         if (init_data != NULL)
+         {
+            memcpy(self->provide_port_data, init_data, data_size);
+         }
+         else
+         {
+            memset(self->provide_port_data, 0, data_size);
+         }
+         MUTEX_UNLOCK(self->lock);
+         return APX_NO_ERROR;
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-////////////////// NodeInstance (parent) API //////////////////
-
-void apx_nodeData_setNodeInstance(apx_nodeData_t *self, struct apx_nodeInstance_tag *node)
+apx_error_t apx_nodeData_create_require_port_data(apx_nodeData_t* self, apx_size_t num_ports, uint8_t const* init_data, apx_size_t data_size)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      self->parent = node;
-   }
-}
-
-struct apx_nodeInstance_tag *apx_nodeData_getNodeInstance(apx_nodeData_t *self)
-{
-   if (self != 0)
-   {
-      return self->parent;
-   }
-   return (struct apx_nodeInstance_tag*) 0;
-}
-
-////////////////// Port Connection Count API //////////////////
-#ifndef APX_EMBEDDED
-apx_error_t apx_nodeData_createRequirePortConnectionCountBuffer(apx_nodeData_t *self, apx_portCount_t numRequirePorts)
-{
-   if (self != 0)
-   {
-      apx_connectionCount_t *connectionCountBuf = (apx_connectionCount_t*) malloc(numRequirePorts*sizeof(apx_connectionCount_t));
-      if (connectionCountBuf == 0)
+      if (self->is_weak_ref)
       {
-         return APX_MEM_ERROR;
+         return APX_UNSUPPORTED_ERROR;
       }
-      self->requirePortConnectionCount = connectionCountBuf;
-      self->numRequirePorts = numRequirePorts;
+      if (data_size > 0u)
+      {
+         MUTEX_LOCK(self->lock);
+         self->require_port_data = (uint8_t*)malloc(data_size);
+         if (self->require_port_data == NULL)
+         {
+            MUTEX_UNLOCK(self->lock);
+            return APX_MEM_ERROR;
+         }
+         self->num_require_ports = num_ports;
+         self->require_port_data_size = data_size;
+         if (init_data != NULL)
+         {
+            memcpy(self->require_port_data, init_data, data_size);
+         }
+         else
+         {
+            memset(self->require_port_data, 0, data_size);
+         }
+         MUTEX_UNLOCK(self->lock);
+         return APX_NO_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_nodeData_write_definition_data(apx_nodeData_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > self->definition_data_size)
+      {
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
+      }
+      memcpy(self->definition_data + offset, src, size);
+      MUTEX_UNLOCK(self->lock);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeData_createProvidePortConnectionCountBuffer(apx_nodeData_t *self, apx_portCount_t numProvidePorts)
+apx_error_t apx_nodeData_write_provide_port_data(apx_nodeData_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      apx_connectionCount_t *connectionCountBuf = (apx_connectionCount_t*) malloc(numProvidePorts*sizeof(apx_connectionCount_t));
-      if (connectionCountBuf == 0)
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > self->provide_port_data_size)
       {
-         return APX_MEM_ERROR;
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
       }
-      self->providePortConnectionCount = connectionCountBuf;
-      self->numProvidePorts = numProvidePorts;
+      memcpy(self->provide_port_data + offset, src, size);
+      MUTEX_UNLOCK(self->lock);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-#endif //APX_EMBEDDED
-
-apx_connectionCount_t apx_nodeData_getRequirePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId)
+apx_error_t apx_nodeData_read_provide_port_data(apx_nodeData_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size)
 {
-   apx_connectionCount_t retval = 0;
-   if ( (self != 0) && (self->requirePortConnectionCount != 0) && (portId < self->numRequirePorts) )
+   if (self != NULL)
    {
-      retval = self->requirePortConnectionCount[portId];
-   }
-   return retval;
-}
-
-
-apx_connectionCount_t apx_nodeData_getProvidePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId)
-{
-   apx_connectionCount_t retval = 0;
-   if ( (self != 0) && (self->providePortConnectionCount != 0) && (portId < self->numProvidePorts) )
-   {
-      retval = self->providePortConnectionCount[portId];
-   }
-   return retval;
-}
-
-void apx_nodeData_incRequirePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId)
-{
-   if ( (self != 0) && (self->requirePortConnectionCount != 0) && (portId < self->numRequirePorts) )
-   {
-      if (self->requirePortConnectionCount[portId] < APX_CONNECTION_COUNT_MAX)
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > self->provide_port_data_size)
       {
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->internalLock);
-#endif
-         self->requirePortConnectionCount[portId]++;
-         self->portConnectionsTotal++;
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->internalLock);
-#endif
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
       }
+      memcpy(dest, self->provide_port_data + offset, size);
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_nodeData_incProvidePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId)
+apx_error_t apx_nodeData_write_require_port_data(apx_nodeData_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
 {
-   if ( (self != 0) && (self->providePortConnectionCount != 0) && (portId < self->numProvidePorts) )
+   if (self != NULL)
    {
-      if (self->providePortConnectionCount[portId] < APX_CONNECTION_COUNT_MAX)
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > self->require_port_data_size)
       {
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->internalLock);
-#endif
-         self->providePortConnectionCount[portId]++;
-         self->portConnectionsTotal++;
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->internalLock);
-#endif
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
       }
+      memcpy(self->require_port_data + offset, src, size);
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_nodeData_decRequirePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId)
+apx_error_t apx_nodeData_read_require_port_data(apx_nodeData_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size)
 {
-   if ( (self != 0) && (self->requirePortConnectionCount != 0) && (portId < self->numRequirePorts) )
+   if (self != NULL)
    {
-      if (self->requirePortConnectionCount[portId] > 0u)
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > self->require_port_data_size)
       {
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->internalLock);
-#endif
-         self->requirePortConnectionCount[portId]--;
-         self->portConnectionsTotal--;
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->internalLock);
-#endif
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
       }
+      memcpy(dest, self->require_port_data + offset, size);
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_nodeData_decProvidePortConnectionCount(apx_nodeData_t *self, apx_portId_t portId)
+uint8_t const* apx_nodeData_get_definition_data(apx_nodeData_t const* self)
 {
-   if ( (self != 0) && (self->providePortConnectionCount != 0) && (portId < self->numProvidePorts) )
+   if (self != NULL)
    {
-      if (self->providePortConnectionCount[portId] > 0u)
+      return self->definition_data;
+   }
+   return NULL;
+}
+
+uint8_t const* apx_nodeData_get_provide_port_data(apx_nodeData_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->provide_port_data;
+   }
+   return NULL;
+}
+
+uint8_t const* apx_nodeData_get_require_port_data(apx_nodeData_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->require_port_data;
+   }
+   return NULL;
+}
+
+uint8_t* apx_nodeData_take_definition_data_snapshot(apx_nodeData_t* self)
+{
+   if (self != NULL)
+   {
+      uint8_t* snapshot = NULL;
+      MUTEX_LOCK(self->lock);
+      if (self->definition_data != NULL)
       {
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->internalLock);
-#endif
-         self->providePortConnectionCount[portId]--;
-         self->portConnectionsTotal--;
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->internalLock);
-#endif
+         snapshot = (uint8_t*)malloc(self->definition_data_size);
+         if (snapshot != NULL)
+         {
+            memcpy(snapshot, self->definition_data, self->definition_data_size);
+         }
       }
+      MUTEX_UNLOCK(self->lock);
+      return snapshot;
    }
+   return NULL;
 }
 
-uint32_t apx_nodeData_getPortConnectionsTotal(apx_nodeData_t *self)
+uint8_t* apx_nodeData_take_provide_port_data_snapshot(apx_nodeData_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      uint32_t retval;
-#ifndef APX_EMBEDDED
-      SPINLOCK_ENTER(self->internalLock);
-#endif
-      retval = self->portConnectionsTotal;
-#ifndef APX_EMBEDDED
-      SPINLOCK_LEAVE(self->internalLock);
-#endif
-      return retval;
+      uint8_t* snapshot = NULL;
+      MUTEX_LOCK(self->lock);
+      if (self->provide_port_data != NULL)
+      {
+         snapshot = (uint8_t*)malloc(self->provide_port_data_size);
+         if (snapshot != NULL)
+         {
+            memcpy(snapshot, self->provide_port_data, self->provide_port_data_size);
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+      return snapshot;
    }
-   return 0;
+   return NULL;
 }
 
-////////////////// Utility Functions //////////////////
-const char *apx_nodeData_getName(apx_nodeData_t *self)
+uint8_t* apx_nodeData_take_require_port_data_snapshot(apx_nodeData_t* self)
 {
-   return "Unkown";
+   if (self != NULL)
+   {
+      uint8_t* snapshot = NULL;
+      MUTEX_LOCK(self->lock);
+      if (self->require_port_data != NULL)
+      {
+         snapshot = (uint8_t*)malloc(self->require_port_data_size);
+         if (snapshot != NULL)
+         {
+            memcpy(snapshot, self->require_port_data, self->require_port_data_size);
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+      return snapshot;
+   }
+   return NULL;
 }
 
-bool apx_nodeData_isComplete(apx_nodeData_t *self)
+void apx_nodeData_set_checksum_data(apx_nodeData_t* self, rmf_digestType_t checksum_type, uint8_t const* checksum_data)
 {
-   return false;
+   if ((self != NULL) && (checksum_data))
+   {
+      self->checksum_type = checksum_type;
+      memcpy(&self->checksum_data[0], checksum_data, sizeof(self->checksum_data));
+   }
 }
 
-uint32_t apx_nodeData_getConnectionId(apx_nodeData_t *self)
+rmf_digestType_t apx_nodeData_get_checksum_type(apx_nodeData_t const* self)
 {
-   return 0;
+   if (self != NULL)
+   {
+      return self->checksum_type;
+   }
+   return RMF_DIGEST_TYPE_NONE;
+}
+
+const uint8_t* apx_nodeData_get_checksum_data(apx_nodeData_t const* self)
+{
+   if (self != NULL)
+   {
+      return &self->checksum_data[0];
+   }
+   return NULL;
 }
 
 

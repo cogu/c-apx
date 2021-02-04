@@ -1,10 +1,10 @@
 /*****************************************************************************
 * \file      log_event.c
 * \author    Conny Gustafsson
-* \date      2019 - 09 - 10
+* \date      2019-09-10
 * \brief     APX log event
 *
-*Copyright(c) 2019 - 2020 Conny Gustafsson
+*Copyright(c) 2019-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this softwareand associated documentation files(the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to

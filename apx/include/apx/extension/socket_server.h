@@ -4,7 +4,7 @@
 * \date      2019-09-07
 * \brief     Socket server for apx_server
 *
-* Copyright (c) 2019-2020 Conny Gustafsson
+* Copyright (c) 2019-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -45,15 +45,15 @@ struct apx_server_tag;
 
 typedef struct apx_socketServer_tag
 {
-   uint16_t tcpPort; //TCP port for tcpServer
-   char *unixServerFile; //path to socket file for unix domain sockets (used for localServer)
-   msocket_server_t tcpServer; //tcp server
-   msocket_server_t unixServer; //unix domain socket server
+   uint16_t tcp_port; //TCP port for tcpServer
+   char *unix_server_file; //path to socket file for unix domain sockets (used for localServer)
+   msocket_server_t tcp_server; //tcp server
+   msocket_server_t unix_server; //unix domain socket server
    struct apx_server_tag *parent; //parent server
-   char *tcpConnectionTag; //Optional tag to set on new TCP connections
-   char *unixConnectionTag; //Optional tag to set on new Unix socket connections
-   bool isTcpServerStarted;
-   bool isUnixServerStarted;
+   char *tcp_connection_tag; //Optional tag to set on new TCP connections
+   char *unix_connection_tag; //Optional tag to set on new Unix socket connections
+   bool is_tcp_server_started;
+   bool is_unix_server_started;
 } apx_socketServer_t;
 
 #define APX_SOCKET_SERVER_LABEL "SOCKET"
@@ -66,14 +66,14 @@ void apx_socketServer_destroy(apx_socketServer_t *self);
 apx_socketServer_t* apx_socketServer_new(struct apx_server_tag *apx_server);
 void apx_socketServer_delete(apx_socketServer_t *self);
 
-void apx_socketServer_startTcpServer(apx_socketServer_t *self, uint16_t tcpPort, const char *tag);
+void apx_socketServer_start_tcp_server(apx_socketServer_t *self, uint16_t tcp_port, const char *tag);
 #ifndef _WIN32
-void apx_socketServer_startUnixServer(apx_socketServer_t *self, const char *filePath, const char *tag);
-void apx_socketServer_stopUnixServer(apx_socketServer_t *self);
+void apx_socketServer_start_unix_server(apx_socketServer_t *self, const char *file_path, const char *tag);
+void apx_socketServer_stop_unix_server(apx_socketServer_t *self);
 #endif
-void apx_socketServer_stopAll(apx_socketServer_t *self);
-void apx_socketServer_stopTcpServer(apx_socketServer_t *self);
+void apx_socketServer_stop_all(apx_socketServer_t *self);
+void apx_socketServer_stop_tcp_server(apx_socketServer_t *self);
 
-void apx_socketServer_acceptTestSocket(apx_socketServer_t *self, testsocket_t *sock);
+void apx_socketServer_accept_testsocket(apx_socketServer_t *self, testsocket_t *sock);
 
 #endif //APX_SOCKET_SERVER_H

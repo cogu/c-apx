@@ -4,7 +4,7 @@
 * \date      2018-12-09
 * \brief     Base class for all connections (client and server)
 *
-* Copyright (c) 2018 Conny Gustafsson
+* Copyright (c) 2018-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -44,6 +44,7 @@
 #include "apx/node_manager.h"
 #include "apx/event_loop.h"
 #include "apx/allocator.h"
+#include "apx/connection_interface.h"
 #include "osmacro.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -53,49 +54,45 @@
 struct apx_nodeData_tag;
 struct apx_portConnectionTable_tag;
 struct apx_file_tag;
-struct apx_fileInfo_tag;
-struct apx_transmitHandler_tag;
+struct rmf_fileInfo_tag;
 
 
-typedef void (apx_fileInfoNotifyFunc)(void *arg, const struct apx_fileInfo_tag *fileInfo);
-typedef apx_error_t (apx_fillTransmitHandlerFunc)(void *arg, struct apx_transmitHandler_tag *handler);
-typedef void (apx_nodeFileWriteNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
-typedef void (apx_nodeFileOpenNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
-typedef void (apx_portConnectorChangeCreateNotifyFunc)(void *arg, apx_nodeInstance_t *nodeInstance, apx_portType_t portType);
+typedef void (apx_fileInfoNotifyFunc)(void *arg, const struct rmf_fileInfo_tag *fileInfo);
+typedef void (apx_nodeFileWriteNotifyFunc)(void *arg, apx_nodeInstance_t * node_instance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
+typedef void (apx_nodeFileOpenNotifyFunc)(void *arg, apx_nodeInstance_t * node_instance, apx_fileType_t fileType);
+typedef void (apx_portConnectorChangeCreateNotifyFunc)(void *arg, apx_nodeInstance_t * node_instance, apx_portType_t portType);
+typedef void (apx_nodeCreatedFunc)(void* arg, apx_nodeInstance_t* node_instance);
 
 typedef struct apx_connectionBaseVTable_tag
 {
-   apx_voidPtrFunc *destructor;
-   apx_voidPtrFunc *start;
-   apx_voidPtrFunc *close;
-   apx_fileInfoNotifyFunc *fileInfoNotify;
-   apx_nodeFileWriteNotifyFunc *nodeFileWriteNotify;
-   apx_nodeFileOpenNotifyFunc *nodeFileOpenNotify;
-   apx_fillTransmitHandlerFunc *fillTransmitHandler;
-   apx_portConnectorChangeCreateNotifyFunc *portConnectorChangeCreateNotify;
+   apx_void_ptr_func_t* destructor;
+   apx_void_ptr_func_t* start;
+   apx_void_ptr_func_t* close;
+   apx_nodeCreatedFunc* node_created_notification;
+   apx_portConnectorChangeCreateNotifyFunc* port_connector_change_notify;
 } apx_connectionBaseVTable_t;
 
 typedef struct apx_connectionBase_tag
 {
-   apx_fileManager_t fileManager;
-   apx_nodeManager_t nodeManager;
-   apx_eventLoop_t eventLoop;
+   apx_fileManager_t file_manager;
+   apx_nodeManager_t* node_manager;
+   apx_eventLoop_t event_loop;
    apx_allocator_t allocator;
-   adt_list_t connectionEventListeners; //weak references to apx_connectionEventListener_t
-   //adt_list_t fileEventListeners; //weak references to apx_fileEventListener_t
-   MUTEX_T eventListenerMutex; //thread-protection for nodeDataEventListeners
-   uint32_t connectionId;
-   uint8_t numHeaderLen; //0, 2 or 4
+   adt_list_t connection_event_listeners; //weak references to apx_connectionEventListener_t
    apx_connectionBaseVTable_t vtable;
-   THREAD_T workerThread;
-   bool workerThreadValid;
-   apx_eventHandlerFunc_t *eventHandler;
-   void *eventHandlerArg;
-   uint32_t totalBytesReceived;
-   uint32_t totalBytesSent;
+   apx_connectionInterface_t connection_interface;
+   MUTEX_T event_listener_mutex; //thread-protection for connection_event_listeners
+   THREAD_T event_loop_thread;
+   apx_eventHandlerFunc_t *event_handler;
+   void *event_handler_arg;
+   uint32_t total_bytes_received;
+   uint32_t total_bytes_sent;
+   uint32_t connection_id;
+   apx_size_t num_header_size; //UINT16_SIZE or UINT32_SIZE
    apx_mode_t mode;
+   bool event_loop_thread_valid;
 #ifdef _WIN32
-   unsigned int threadId;
+   unsigned int thread_id;
 #endif
 } apx_connectionBase_t;
 
@@ -103,81 +100,38 @@ typedef struct apx_connectionBase_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_voidPtrFunc *destructor, apx_voidPtrFunc *start, apx_voidPtrFunc *close, apx_fillTransmitHandlerFunc *fillTransmitHandler);
-apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mode, apx_connectionBaseVTable_t *vtable);
+void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t *self, apx_void_ptr_func_t *destructor, apx_void_ptr_func_t *start, apx_void_ptr_func_t *close);
+apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mode, apx_connectionBaseVTable_t* base_connection_vtable, apx_connectionInterface_t* connection_interface);
 void apx_connectionBase_destroy(apx_connectionBase_t *self);
 void apx_connectionBase_delete(apx_connectionBase_t *self);
 void apx_connectionBase_vdelete(void *arg);
-apx_fileManager_t *apx_connectionBase_getFileManager(apx_connectionBase_t *self);
-void apx_connectionBase_setEventHandler(apx_connectionBase_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);
+apx_fileManager_t *apx_connectionBase_get_file_manager(apx_connectionBase_t const* self);
+void apx_connectionBase_set_event_handler(apx_connectionBase_t* self, apx_eventHandlerFunc_t* event_handler, void* event_handler_arg);
 void apx_connectionBase_start(apx_connectionBase_t *self);
 void apx_connectionBase_stop(apx_connectionBase_t *self);
 void apx_connectionBase_close(apx_connectionBase_t *self);
-void apx_connectionBase_attachNodeInstance(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance);
-apx_error_t apx_connectionBase_processMessage(apx_connectionBase_t *self, const uint8_t *msgBuf, int32_t msgLen);
-uint8_t *apx_connectionBase_alloc(apx_connectionBase_t *self, size_t size);
-void apx_connectionBase_free(apx_connectionBase_t *self, uint8_t *ptr, size_t size);
+void apx_connectionBase_attach_node_manager(apx_connectionBase_t* self, apx_nodeManager_t* node_manager);
+apx_nodeManager_t* apx_connectionBase_get_node_manager(apx_connectionBase_t const* self);
+apx_connectionInterface_t const* apx_connectionBase_get_connection(apx_connectionBase_t const* self);
+apx_error_t apx_connectionBase_message_received(apx_connectionBase_t *self, const uint8_t *data, apx_size_t size);
+uint16_t apx_connectionBase_get_num_pending_events(apx_connectionBase_t *self);
+uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t *self);
 
+//uint8_t *apx_connectionBase_alloc(apx_connectionBase_t *self, size_t size);
+//void apx_connectionBase_free(apx_connectionBase_t *self, uint8_t *ptr, size_t size);
+
+
+//Virtual function call-points
+void apx_connectionBase_node_created_notification(apx_connectionBase_t const* self, apx_nodeInstance_t* node_instance);
 
 /*** Internal Callback API ***/
 
-//Callbacks triggered due to events happening remotely
-apx_error_t apx_connectionBase_fileInfoNotify(apx_connectionBase_t *self, const rmf_fileInfo_t *remoteFileInfo);
-apx_error_t apx_connectionBase_fileOpenNotify(apx_connectionBase_t *self, uint32_t address);
-apx_error_t apx_connectionBase_fileWriteNotify(apx_connectionBase_t *self, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t len);
-apx_error_t apx_connectionBase_nodeInstanceFileWriteNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
-apx_error_t apx_connectionBase_nodeInstanceFileOpenNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_fileType_t fileType);
-
-
 //Callbacks triggered due to events happening locally
-apx_error_t apx_connectionBase_updateProvidePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, const uint8_t *data, uint32_t offset, uint32_t len);
-apx_error_t apx_connectionBase_updateRequirePortDataDirect(apx_connectionBase_t *self, apx_file_t *file, const uint8_t *data, uint32_t offset, uint32_t len);
-void apx_connectionBase_disconnectNotify(apx_connectionBase_t *self);
-void apx_connectionBase_triggerRemoteFileHeaderCompleteEvent(apx_connectionBase_t *self);
-void apx_connectionBase_portConnectorChangeCreateNotify(apx_connectionBase_t *self, apx_nodeInstance_t *nodeInstance, apx_portType_t portType);
+void apx_connectionBase_disconnect_notification(apx_connectionBase_t *self);
 
-//void apx_connectionBase_emitFileManagerPreStartEvent(apx_connectionBase_t *self);
-//void apx_connectionBase_emitFileManagerPostStopEvent(apx_connectionBase_t *self);
-//void apx_connectionBase_emitFileCreatedEvent(apx_connectionBase_t *self, struct apx_file_tag *file, const void *caller);
-
-void apx_connectionBase_emitFileRevokedEvent(apx_connectionBase_t *self, struct apx_file_tag *file, const void *caller);
-void apx_connectionBase_emitFileOpenedEvent(apx_connectionBase_t *self, struct apx_file_tag *file, const void *caller);
-void apx_connectionBase_emitRemoteFileWrittenType1(apx_connectionBase_t *self, struct apx_file_tag *remoteFile, struct apx_file_tag *file, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit);
-void apx_connectionBase_emitNodeComplete(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData);
-void apx_connectionBase_emitHeaderAccepted(apx_connectionBase_t *self);
-void apx_connectionBase_emitGenericEvent(apx_connectionBase_t *self, apx_event_t *event);
-
-
-/*** Utility functions ***/
-void apx_connectionBase_defaultEventHandler(apx_connectionBase_t *self, apx_event_t *event);
-void apx_connectionBase_setConnectionId(apx_connectionBase_t *self, uint32_t connectionId);
-uint32_t apx_connectionBase_getConnectionId(apx_connectionBase_t *self);
-void apx_connectionBase_getTransmitHandler(apx_connectionBase_t *self, apx_transmitHandler_t *transmitHandler);
-uint16_t apx_connectionBase_getNumPendingEvents(apx_connectionBase_t *self);
-uint16_t apx_connectionBase_getNumPendingWorkerMessages(apx_connectionBase_t *self);
-
-/*** Event triggering API ***/
-
-void* apx_connectionBase_registerEventListener(apx_connectionBase_t *self, apx_connectionEventListener_t *listener);
-void apx_connectionBase_unregisterEventListener(apx_connectionBase_t *self, void *handle);
-
-void apx_connectionBase_triggerDefinitionDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
-void apx_connectionBase_triggerInPortDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
-void apx_connectionBase_triggerOutPortDataWritten(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
-
-void apx_connectionBase_triggerRequirePortsConnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
-void apx_connectionBase_triggerProvidePortsConnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
-void apx_connectionBase_triggerRequirePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
-void apx_connectionBase_triggerProvidePortsDisconnected(apx_connectionBase_t *self, struct apx_nodeData_tag *nodeData, struct apx_portConnectionTable_tag *portConnectionTable);
-
-
-/*** Event handler API ***/
-
-void apx_connectionBase_onFileCreated(apx_connectionBase_t *self, apx_connectionBase_t *connection, struct apx_fileInfo_tag *fileInfo, void *caller);
-void apx_connectionBase_onHeaderAccepted(apx_connectionBase_t *self, apx_connectionBase_t *connection);
 
 #ifdef UNIT_TEST
-void apx_connectionBase_runAll(apx_connectionBase_t *self);
+void apx_connectionBase_run(apx_connectionBase_t *self);
 #endif
 
 

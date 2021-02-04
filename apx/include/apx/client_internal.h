@@ -44,9 +44,9 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 //Client internal API (do not call as end-user)
-void apx_clientInternal_onConnect(apx_client_t *self, apx_clientConnectionBase_t *connection);
-void apx_clientInternal_onDisconnect(apx_client_t *self, apx_clientConnectionBase_t *connection);
-void apx_clientInternal_requirePortDataWriteNotify(apx_client_t *self, apx_clientConnectionBase_t *connection, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len);
+void apx_clientInternal_onConnect(apx_client_t *self, apx_clientConnection_t *connection);
+void apx_clientInternal_onDisconnect(apx_client_t *self, apx_clientConnection_t *connection);
+void apx_clientInternal_requirePortDataWriteNotify(apx_client_t *self, apx_clientConnection_t *connection, apx_nodeInstance_t *nodeInstance, uint32_t offset, const uint8_t *data, uint32_t len);
 
 
 #endif //APX_CLIENT_INTERNAL_H

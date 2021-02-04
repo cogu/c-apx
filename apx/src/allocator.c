@@ -117,6 +117,8 @@ void apx_allocator_start(apx_allocator_t *self)
    {
       apx_allocator_startThread(self);
    }
+#else
+   (void)self;
 #endif
 }
 
@@ -145,8 +147,10 @@ void apx_allocator_stop(apx_allocator_t *self)
       }
       else if (result == WAIT_FAILED)
       {
+# ifndef UNIT_TEST
          DWORD lastError = GetLastError();
-         APX_LOG_ERROR("[APX_ALLOCATOR]  joining workerThread failed with %d", (int)lastError);         
+         APX_LOG_ERROR("[APX_ALLOCATOR]  joining workerThread failed with %d", (int)lastError);
+# endif
       }
       CloseHandle(self->workerThread);
       self->workerThread = INVALID_HANDLE_VALUE;

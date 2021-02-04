@@ -1,9 +1,0 @@
-Instruction                                             Data state after executing instruction
-------------------------------------------------------------------------------------------------
-
-PACK(ARRAY_VARIANT | ARRAY_FLAG)                        
-U8_DYN_ARRAY
-array_mark_i:                                           | i=0, arrayLen=<any number between 1-255>, av[i]
-PACK(STR_VARIANT | ARRAY_FLAG)                          
-U8_DYN_ARRAY
-ARRAY_NEXT                                              | i++, av[i], goto array_mark_i

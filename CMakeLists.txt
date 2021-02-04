@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 
-project(apx LANGUAGES C VERSION 0.3.0)
+project(apx LANGUAGES C VERSION 0.3.1)
 
 set(ADT_RBFH_ENABLE ON CACHE BOOL "This must always be enabled in c-apx" FORCE)
 
@@ -10,7 +10,7 @@ include(adt/cmake/LeakCheck.cmake)
 include(adt/cmake/UnitTest.cmake)
 include(cmake/SetEnv.cmake)
 
-option(apx_ALPHA_BUILD "Is this an alpha build?" OFF)
+option(apx_ALPHA_BUILD "Is this an alpha build?" ON)
 option(BUILD_DEFAULT_SERVER "Build default APX server?" ON)
 
 if (LEAK_CHECK)
@@ -45,83 +45,57 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
 ### apx unit tests
-set (APX_COMMON_TEST_UTIL
-    apx/common/test/apx_connectionEventSpy.c
-    apx/common/test/apx_connectionEventSpy.h
-    apx/common/test/apx_test_nodes.c
-    apx/common/test/apx_test_nodes.h
-    apx/common/test/apx_transmitHandlerSpy.c
-    apx/common/test/apx_transmitHandlerSpy.h
-)
 
 set (APX_COMMON_TEST_SUITE
-    apx/common/test/testsuite_apx_allocator.c
-    apx/common/test/testsuite_apx_attributeParser.c
-    apx/common/test/testsuite_apx_bytePortMap.c
-    apx/common/test/testsuite_apx_compiler.c
-    apx/common/test/testsuite_apx_connectionBase.c
-    apx/common/test/testsuite_apx_dataElement.c
-    apx/common/test/testsuite_apx_dataSignature.c
-    apx/common/test/testsuite_apx_datatype.c
-    apx/common/test/testsuite_apx_eventLoop.c
-    apx/common/test/testsuite_apx_file.c
-    apx/common/test/testsuite_apx_fileManager.c
-    apx/common/test/testsuite_apx_fileManagerReceiver.c
-    apx/common/test/testsuite_apx_fileManagerShared.c
-    apx/common/test/testsuite_apx_fileManagerWorker.c
-    apx/common/test/testsuite_apx_fileMap.c
-    apx/common/test/testsuite_apx_node.c
-    apx/common/test/testsuite_apx_nodeData.c
-    apx/common/test/testsuite_apx_nodeInfo.c
-    apx/common/test/testsuite_apx_nodeInstance.c
-    apx/common/test/testsuite_apx_nodeManager.c
-    apx/common/test/testsuite_apx_parser.c
-    apx/common/test/testsuite_apx_port.c
-    apx/common/test/testsuite_apx_portConnectionChangeEntry.c
-    apx/common/test/testsuite_apx_portConnectorChangeTable.c
-    apx/common/test/testsuite_apx_portSignatureMap.c
-    apx/common/test/testsuite_apx_util.c
-    apx/common/test/testsuite_apx_vm.c
-    apx/common/test/testsuite_apx_vmDeserializer.c
-    apx/common/test/testsuite_apx_vmSerializer.c
-)
-
-set (APX_CLIENT_TEST_UTIL
-    apx/client/test/apx_clientEventListenerSpy.h
-    apx/client/test/apx_clientEventListenerSpy.c
-)
-
-set (APX_CLIENT_TEST_SUITE
-    apx/client/test/testsuite_apx_client_socketConnection.c
-    apx/client/test/testsuite_apx_client_testConnection.c
-    apx/client/test/testsuite_apx_client.c
-)
-
-set (APX_SERVER_TEST_SUITE
-    apx/server/test/testsuite_apx_dataRouting.c
-    apx/server/test/testsuite_apx_serverConnection.c
-)
-
-set (REMOTEFILE_TEST_SUITE
-    remotefile/test/testsuite_remotefile.c
-)
-###
-
-### Library apx_srv_sock_ext
-set (APX_SERVER_SOCKET_EXTENSION_HEADERS
-    apx/server_extension/socket/inc/apx_serverSocketConnection.h
-    apx/server_extension/socket/inc/apx_socketServer.h
-    apx/server_extension/socket/inc/apx_socketServerExtension.h
-)
-set (APX_SERVER_SOCKET_EXTENSION_SOURCES
-    apx/server_extension/socket/src/apx_serverSocketConnection.c
-    apx/server_extension/socket/src/apx_socketServer.c
-    apx/server_extension/socket/src/apx_socketServerExtension.c
+    apx/test/testsuite_allocator.c
+    apx/test/testsuite_attribute_parser.c
+    apx/test/testsuite_client_socket_connection.c
+    apx/test/testsuite_client_test_connection.c
+    apx/test/testsuite_client.c
+    apx/test/testsuite_compiler_pack.c
+    apx/test/testsuite_compiler_unpack.c
+    apx/test/testsuite_computation.c
+    apx/test/testsuite_data_element.c
+    apx/test/testsuite_decoder.c    
+    apx/test/testsuite_file_info.c
+    apx/test/testsuite_file_manager_receiver.c
+    apx/test/testsuite_file_map.c
+    apx/test/testsuite_file.c
+    apx/test/testsuite_node_data.c
+    apx/test/testsuite_node_manager_client.c
+    apx/test/testsuite_node_manager_server.c
+    apx/test/testsuite_node.c
+    apx/test/testsuite_parser.c
+    apx/test/testsuite_port_connection_change_entry.c
+    apx/test/testsuite_port_connector_change_table.c
+    apx/test/testsuite_port_signature_map.c
+    apx/test/testsuite_program.c
+    apx/test/testsuite_remotefile.c
+    apx/test/testsuite_server_connection.c
+    apx/test/testsuite_server.c
+    apx/test/testsuite_signature_parser.c
+    apx/test/testsuite_util.c
+    apx/test/testsuite_vm_deserializer.c
+    apx/test/testsuite_vm_serializer.c
+    apx/test/testsuite_vm.c
 )
 
 set (APX_SERVER_SOCKET_EXTENSION_TEST_SUITE
-    apx/server_extension/socket/test/testsuite_apx_serverSocketConnection.c
-    apx/server_extension/socket/test/testsuite_apx_socketServerExtension.c
+    apx/test/extension/testsuite_apx_server_socket_connection.c
+    apx/test/extension/testsuite_apx_socket_server_extension.c
+)
+
+#Library apx_srv_sock_ext
+set (APX_SERVER_SOCKET_EXTENSION_HEADERS
+    apx/include/apx/extension/socket_server_connection.h
+    apx/include/apx/extension/socket_server_extension.h
+    apx/include/apx/extension/socket_server.h
+)
+
+set (APX_SERVER_SOCKET_EXTENSION_SOURCES
+    apx/src/extension/socket_server_connection.c
+    apx/src/extension/socket_server_extension.c
+    apx/src/extension/socket_server.c
 )
 
 add_library(apx_srv_sock_ext ${LIBRARY_TYPE} ${APX_SERVER_SOCKET_EXTENSION_HEADERS} ${APX_SERVER_SOCKET_EXTENSION_SOURCES})
@@ -133,7 +107,7 @@ if (UNIT_TEST)
     target_compile_definitions(apx_srv_sock_ext PRIVATE UNIT_TEST)
 endif()
 target_link_libraries(apx_srv_sock_ext PRIVATE apx)
-target_include_directories(apx_srv_sock_ext PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/server_extension/socket/inc)
+target_include_directories(apx_srv_sock_ext PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/include)
 set_target_properties(apx_srv_sock_ext PROPERTIES VERSION ${apx_VERSION} SOVERSION ${apx_VERSION_MAJOR})
 
 install(
@@ -151,158 +125,144 @@ add_subdirectory(cutil)
 add_subdirectory(dtl_json)
 add_subdirectory(dtl_type)
 add_subdirectory(msocket)
-add_subdirectory(app/apx_node)
-add_subdirectory(app/apx_control)
-if(BUILD_DEFAULT_SERVER)
-    add_subdirectory(app/apx_server)
-endif()
+#add_subdirectory(app/apx_node) CG-20210204: Temporary disable while apx_client class is being upgraded
+#add_subdirectory(app/apx_control) CG-20210204: Temporary disable while apx_client class is being upgraded
+#if(BUILD_DEFAULT_SERVER)
+#    add_subdirectory(app/apx_server) CG-20210204: Temporary disable while apx_server app is being upgraded
+#endif()
 ###
 
 # apx library
 
 set (APX_COMMON_HEADERS
-    apx/common/inc/apx_allocator.h
-    apx/common/inc/apx_attributeParser.h
-    apx/common/inc/apx_bytePortMap.h
-    apx/common/inc/apx_cfg.h
-    apx/common/inc/apx_compiler.h
-    apx/common/inc/apx_connectionBase.h
-    apx/common/inc/apx_dataElement.h
-    apx/common/inc/apx_dataSignature.h
-    apx/common/inc/apx_dataType.h
-    apx/common/inc/apx_error.h
-    apx/common/inc/apx_event.h
-    apx/common/inc/apx_eventListener.h
-    apx/common/inc/apx_eventLoop.h
-    apx/common/inc/apx_file.h
-    apx/common/inc/apx_fileCache.h
-    apx/common/inc/apx_fileInfo.h
-    apx/common/inc/apx_fileManager.h
-    apx/common/inc/apx_fileManagerDefs.h
-    apx/common/inc/apx_fileManagerReceiver.h
-    apx/common/inc/apx_fileManagerShared.h
-    apx/common/inc/apx_fileManagerWorker.h
-    apx/common/inc/apx_fileMap.h
-    apx/common/inc/apx_logEvent.h
-    apx/common/inc/apx_msg.h
-    apx/common/inc/apx_node.h
-    apx/common/inc/apx_nodeData.h
-    apx/common/inc/apx_nodeInfo.h
-    apx/common/inc/apx_nodeInstance.h
-    apx/common/inc/apx_nodeManager.h
-    apx/common/inc/apx_parser.h
-    apx/common/inc/apx_port.h
-    apx/common/inc/apx_portAttributes.h
-    apx/common/inc/apx_portConnectorChangeEntry.h
-    apx/common/inc/apx_portConnectorChangeRef.h
-    apx/common/inc/apx_portConnectorChangeTable.h
-    apx/common/inc/apx_portConnectorList.h
-    apx/common/inc/apx_portDataProps.h
-    apx/common/inc/apx_portDataRef.h
-    apx/common/inc/apx_portSignatureMap.h
-    apx/common/inc/apx_portSignatureMapEntry.h
-    apx/common/inc/apx_stream.h
-    apx/common/inc/apx_transmitHandler.h
-    apx/common/inc/apx_typeAttribute.h
-    apx/common/inc/apx_types.h
-    apx/common/inc/apx_util.h
-    apx/common/inc/apx_vm.h
-    apx/common/inc/apx_vmdefs.h
-    apx/common/inc/apx_vmDeserializer.h
-    apx/common/inc/apx_vmSerializer.h
+    apx/include/apx/allocator.h
+    apx/include/apx/attribute_parser.h
+    apx/include/apx/byte_port_map.h
+    apx/include/apx/cfg.h
+    apx/include/apx/client_connection.h
+    apx/include/apx/client_internal.h
+    apx/include/apx/client_test_connection.h
+    apx/include/apx/client.h
+    apx/include/apx/command.h
+    apx/include/apx/compiler.h
+    apx/include/apx/computation.h
+    apx/include/apx/connection_base.h
+    apx/include/apx/connection_interface.h
+    apx/include/apx/connection_manager.h
+    apx/include/apx/data_element.h
+    apx/include/apx/data_signature.h
+    apx/include/apx/data_type.h
+    apx/include/apx/decoder.h
+    apx/include/apx/deserializer.h
+    apx/include/apx/error.h
+    apx/include/apx/event_listener.h
+    apx/include/apx/event_loop.h
+    apx/include/apx/event.h
+    apx/include/apx/file_info.h
+    apx/include/apx/file_manager_defs.h        
+    apx/include/apx/file_manager_receiver.h
+    apx/include/apx/file_manager_shared.h
+    apx/include/apx/file_manager_worker.h
+    apx/include/apx/file_manager.h
+    apx/include/apx/file_map.h
+    apx/include/apx/file.h
+    apx/include/apx/log_event.h    
+    apx/include/apx/node_cache.h
+    apx/include/apx/node_data.h
+    apx/include/apx/node_instance.h
+    apx/include/apx/node_manager.h    
+    apx/include/apx/node.h
+    apx/include/apx/numheader.h
+    apx/include/apx/parser_base.h
+    apx/include/apx/parser.h    
+    apx/include/apx/port_attribute.h
+    apx/include/apx/port_connector_change_entry.h
+    apx/include/apx/port_connector_change_ref.h
+    apx/include/apx/port_connector_change_table.h
+    apx/include/apx/port_connector_list.h    
+    apx/include/apx/port_instance.h
+    apx/include/apx/port_signature_map_entry.h
+    apx/include/apx/port_signature_map.h    
+    apx/include/apx/port.h
+    apx/include/apx/program.h
+    apx/include/apx/remotefile_cfg.h
+    apx/include/apx/remotefile.h
+    apx/include/apx/serializer.h
+    apx/include/apx/server_connection.h
+    apx/include/apx/server_extension.h
+    apx/include/apx/server_test_connection.h    
+    apx/include/apx/server.h
+    apx/include/apx/signature_parser.h
+    apx/include/apx/socket_client_connection.h
+    apx/include/apx/stream.h    
+    apx/include/apx/type_attribute.h
+    apx/include/apx/types.h
+    apx/include/apx/util.h
+    apx/include/apx/vm_common.h
+    apx/include/apx/vm_defs.h
+    apx/include/apx/vm.h    
 )
 
 set (APX_COMMON_SOURCES
-    apx/common/src/apx_allocator.c
-    apx/common/src/apx_attributeParser.c
-    apx/common/src/apx_bytePortMap.c
-    apx/common/src/apx_compiler.c
-    apx/common/src/apx_connectionBase.c
-    apx/common/src/apx_dataElement.c
-    apx/common/src/apx_dataSignature.c
-    apx/common/src/apx_dataType.c
-    apx/common/src/apx_event.c
-    apx/common/src/apx_eventListener.c
-    apx/common/src/apx_eventLoop.c
-    apx/common/src/apx_file.c
-    apx/common/src/apx_fileCache.c
-    apx/common/src/apx_fileInfo.c
-    apx/common/src/apx_fileManager.c
-    apx/common/src/apx_fileManagerReceiver.c
-    apx/common/src/apx_fileManagerShared.c
-    apx/common/src/apx_fileManagerWorker.c
-    apx/common/src/apx_fileMap.c
-    apx/common/src/apx_logEvent.c
-    apx/common/src/apx_node.c
-    apx/common/src/apx_nodeData.c
-    apx/common/src/apx_nodeInfo.c
-    apx/common/src/apx_nodeInstance.c
-    apx/common/src/apx_nodeManager.c
-    apx/common/src/apx_parser.c
-    apx/common/src/apx_port.c
-    apx/common/src/apx_portAttributes.c
-    apx/common/src/apx_portConnectorChangeEntry.c
-    apx/common/src/apx_portConnectorChangeRef.c
-    apx/common/src/apx_portConnectorChangeTable.c
-    apx/common/src/apx_portConnectorList.c
-    apx/common/src/apx_portDataProps.c
-    apx/common/src/apx_portDataRef.c
-    apx/common/src/apx_portSignatureMap.c
-    apx/common/src/apx_portSignatureMapEntry.c
-    apx/common/src/apx_stream.c
-    apx/common/src/apx_typeAttribute.c
-    apx/common/src/apx_util.c
-    apx/common/src/apx_vm.c
-    apx/common/src/apx_vmDeserializer.c
-    apx/common/src/apx_vmSerializer.c
-)
-
-set (APX_CLIENT_HEADERS
-    apx/client/inc/apx_client.h
-    apx/client/inc/apx_clientConnectionBase.h
-    apx/client/inc/apx_clientInternal.h
-    apx/client/inc/apx_clientSocketConnection.h
-)
-set (APX_CLIENT_SOURCES
-    apx/client/src/apx_client.c
-    apx/client/src/apx_clientConnectionBase.c
-    apx/client/src/apx_clientSocketConnection.c
-)
-
-if (UNIT_TEST)
-    list(APPEND APX_CLIENT_HEADERS apx/client/inc/apx_clientTestConnection.h)
-    list(APPEND APX_CLIENT_SOURCES apx/client/src/apx_clientTestConnection.c)
-endif()
-
-
-set (APX_SERVER_HEADERS
-    apx/server/inc/apx_connectionManager.h
-    apx/server/inc/apx_server.h
-    apx/server/inc/apx_serverConnectionBase.h
-    apx/server/inc/apx_serverExtension.h
-)
-
-set (APX_SERVER_SOURCES
-    apx/server/src/apx_connectionManager.c
-    apx/server/src/apx_server.c
-    apx/server/src/apx_serverConnectionBase.c
-    apx/server/src/apx_serverExtension.c
-)
-
-if (UNIT_TEST)
-    list(APPEND APX_SERVER_HEADERS apx/server/inc/apx_serverTestConnection.h)
-    list(APPEND APX_SERVER_SOURCES apx/server/src/apx_serverTestConnection.c)
-endif()
-
-set (REMOTEFILE_HEADERS
-    remotefile/inc/numheader.h
-    remotefile/inc/rmf_cfg.h
-    remotefile/inc/rmf.h
-)
-
-set (REMOTEFILE_SOURCES
-    remotefile/src/numheader.c
-    remotefile/src/rmf.c
+    apx/src/allocator.c
+    apx/src/attribute_parser.c
+    apx/src/byte_port_map.c
+    apx/src/compiler.c
+    apx/src/client_connection.c
+    apx/src/client_test_connection.c
+    apx/src/client.c
+    apx/src/command.c
+    apx/src/compiler.c
+    apx/src/computation.c
+    apx/src/connection_base.c
+    apx/src/connection_interface.c
+    apx/src/connection_manager.c
+    apx/src/data_element.c
+    apx/src/data_signature.c
+    apx/src/data_type.c
+    apx/src/decoder.c
+    apx/src/deserializer.c
+    apx/src/event_listener.c
+    apx/src/event_loop.c
+    apx/src/file_info.c
+    apx/src/file.c
+    apx/src/file_manager_receiver.c
+    apx/src/file_manager_shared.c
+    apx/src/file_manager_worker.c
+    apx/src/file_manager.c
+    apx/src/file_map.c
+    apx/src/log_event.c
+    apx/src/node_cache.c
+    apx/src/node_data.c
+    apx/src/node_instance.c
+    apx/src/node_manager.c
+    apx/src/node.c
+    apx/src/numheader.c
+    apx/src/parser_base.c
+    apx/src/parser.c
+    apx/src/port_attribute.c
+    apx/src/port_connector_change_entry.c
+    apx/src/port_connector_change_ref.c
+    apx/src/port_connector_change_table.c
+    apx/src/port_connector_list.c
+    apx/src/port_instance.c
+    apx/src/port_signature_map_entry.c
+    apx/src/port_signature_map.c
+    apx/src/port.c
+    apx/src/program.c
+    apx/src/remotefile.c
+    apx/src/serializer.c
+    apx/src/server_connection.c
+    apx/src/server_extension.c
+    apx/src/server_test_connection.c
+    apx/src/server.c
+    apx/src/signature_parser.c
+    apx/src/socket_client_connection.c
+    apx/src/stream.c
+    apx/src/type_attribute.c
+    apx/src/util.c
+    apx/src/vm.c
+    apx/src/vm_common.c
 )
 
 get_directory_property(ADT_HEADER_LIST DIRECTORY adt DEFINITION ADT_HEADER_LIST)
@@ -327,10 +287,6 @@ add_library(apx ${LIBRARY_TYPE}
             ${ADT_SOURCE_LIST}
             ${APX_COMMON_HEADERS}
             ${APX_COMMON_SOURCES}
-            ${APX_CLIENT_HEADERS}
-            ${APX_CLIENT_SOURCES}
-            ${APX_SERVER_HEADERS}
-            ${APX_SERVER_SOURCES}
             ${BSTR_HEADER_LIST}
             ${BSTR_SOURCE_LIST}
             ${CUTIL_HEADER_LIST}
@@ -343,8 +299,6 @@ add_library(apx ${LIBRARY_TYPE}
             ${MSOCKET_SOURCES}
             ${MSOCKET_SERVER_HEADERS}
             ${MSOCKET_SERVER_SOURCES}
-            ${REMOTEFILE_HEADERS}
-            ${REMOTEFILE_SOURCES}
 )
 
 target_compile_definitions(apx PUBLIC ADT_RBFH_ENABLE=1)
@@ -369,16 +323,12 @@ target_link_libraries(apx PRIVATE Threads::Threads)
 target_include_directories(apx PUBLIC
 "${PROJECT_BINARY_DIR}"
 "${CMAKE_CURRENT_SOURCE_DIR}/adt/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/apx/common/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/apx/client/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/apx/server/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/apx/server_extension/socket/inc"
+"${CMAKE_CURRENT_SOURCE_DIR}/apx/include"
 "${CMAKE_CURRENT_SOURCE_DIR}/bstr/inc"
 "${CMAKE_CURRENT_SOURCE_DIR}/cutil/inc"
 "${CMAKE_CURRENT_SOURCE_DIR}/dtl_type/inc"
 "${CMAKE_CURRENT_SOURCE_DIR}/dtl_json/inc"
 "${CMAKE_CURRENT_SOURCE_DIR}/msocket/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/remotefile/inc"
 )
 
 set_target_properties(apx PROPERTIES VERSION ${apx_VERSION} SOVERSION ${apx_VERSION_MAJOR})
@@ -394,13 +344,8 @@ install(
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     if (UNIT_TEST)
         add_executable(apx_unit
-            apx/common/test/test_main.c
-            ${REMOTEFILE_TEST_SUITE}
+            apx/test/test_main.c
             ${APX_COMMON_TEST_SUITE}
-            ${APX_CLIENT_TEST_SUITE}
-            ${APX_SERVER_TEST_SUITE}
-            ${APX_COMMON_TEST_UTIL}
-            ${APX_CLIENT_TEST_UTIL}
             ${APX_SERVER_SOCKET_EXTENSION_TEST_SUITE}
         )
         target_link_libraries(apx_unit PRIVATE
@@ -412,7 +357,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         )
         target_include_directories(apx_unit PRIVATE
                                 "${PROJECT_BINARY_DIR}"
-                                "${CMAKE_CURRENT_SOURCE_DIR}/apx/common/test"
+                                "${CMAKE_CURRENT_SOURCE_DIR}/apx/test"
                                 )
         target_compile_definitions(apx_unit PRIVATE UNIT_TEST)
 

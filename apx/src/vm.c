@@ -43,12 +43,23 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_vm_prepareForPackUnpackInstruction(apx_vm_t *self);
-static apx_error_t apx_vm_execProg(apx_vm_t *self);
-static apx_error_t apx_vm_executePackInstruction(apx_vm_t *self, uint8_t variant);
-static apx_error_t apx_vm_executeUnpackInstruction(apx_vm_t *self, uint8_t variant);
-static apx_error_t apx_vm_executeArrayInstruction(apx_vm_t *self, uint8_t variant, bool isDynamicArray);
-static apx_error_t apx_vm_executeDataControlInstruction(apx_vm_t *self, uint8_t variant, bool isLastElement);
+static bool is_pack_prog(apx_vm_t* self);
+static apx_error_t run_pack_program(apx_vm_t* self);
+static apx_error_t run_unpack_program(apx_vm_t* self);
+static apx_error_t run_pack_instruction(apx_vm_t* self);
+static apx_error_t run_unpack_instruction(apx_vm_t* self);
+static apx_error_t run_range_check_pack_int32(apx_vm_t* self);
+static apx_error_t run_range_check_pack_uint32(apx_vm_t* self);
+static apx_error_t run_range_check_pack_int64(apx_vm_t* self);
+static apx_error_t run_range_check_pack_uint64(apx_vm_t* self);
+static apx_error_t run_range_check_unpack_int32(apx_vm_t* self);
+static apx_error_t run_range_check_unpack_uint32(apx_vm_t* self);
+static apx_error_t run_range_check_unpack_int64(apx_vm_t* self);
+static apx_error_t run_range_check_unpack_uint64(apx_vm_t* self);
+static apx_error_t run_pack_record_select(apx_vm_t* self);
+static apx_error_t run_unpack_record_select(apx_vm_t* self);
+static apx_error_t run_array_next(apx_vm_t* self);
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -56,546 +67,490 @@ static apx_error_t apx_vm_executeDataControlInstruction(apx_vm_t *self, uint8_t 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_vm_create(apx_vm_t *self)
+apx_error_t apx_vm_create(apx_vm_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      apx_vmSerializer_create(&self->serializer);
-      apx_vmDeserializer_create(&self->deserializer);
-      self->progBegin = (uint8_t*) 0;
-      self->progEnd = (uint8_t*) 0;
-      self->progNext = (uint8_t*) 0;
-      self->progDataSize = 0u;
-      self->progType = 0u;
-      self->expectedNext = APX_OPCODE_INVALID;
-      self->arrayLen = 0u;
-      self->isArray = false;
-      self->dynLenType = APX_DYN_LEN_NONE;
+      apx_error_t result = apx_vm_serializer_create(&self->serializer);
+      if (result == APX_NO_ERROR)
+      {
+         result = apx_vm_deserializer_create(&self->deserializer);
+      }
+      apx_vm_decoder_create(&self->decoder);
+      memset(&self->program_header, 0, sizeof(self->program_header));
+      return result;
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_vm_destroy(apx_vm_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      apx_vmSerializer_destroy(&self->serializer);
-      apx_vmDeserializer_destroy(&self->deserializer);
+      apx_vm_serializer_destroy(&self->serializer);
+      apx_vm_deserializer_destroy(&self->deserializer);
+      apx_vm_decoder_destroy(&self->decoder);
    }
 }
 
 apx_vm_t* apx_vm_new(void)
 {
    apx_vm_t *self = (apx_vm_t*) malloc(sizeof(apx_vm_t));
-   if (self != 0)
+   if (self != NULL)
    {
-      apx_vm_create(self);
+      apx_error_t result = apx_vm_create(self);
+      if (result != APX_NO_ERROR)
+      {
+         free(self);
+         self = NULL;
+      }
    }
    return self;
 }
 
 void apx_vm_delete(apx_vm_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_vm_destroy(self);
       free(self);
    }
 }
 
+
+
 /**
  * Accepts a byte-code program by parsing the program header to see if its valid.
  * Returns APX_NO_ERROR on success
  */
-apx_error_t apx_vm_selectProgram(apx_vm_t *self, const adt_bytes_t *program)
+apx_error_t apx_vm_select_program(apx_vm_t* self, apx_program_t const* program)
 {
-   if ( (self != 0) && (program != 0) )
+   if ( (self != NULL) && (program != NULL) )
    {
-      uint8_t majorVersion = 0u;
-      uint8_t minorVersion = 0u;
-      apx_error_t rc;
-      uint32_t programLength = adt_bytes_length(program);
-      if (programLength < APX_VM_HEADER_SIZE)
+      uint8_t const* program_begin = adt_bytearray_data(program);
+      uint32_t const program_size = adt_bytearray_length(program);
+      apx_error_t result = apx_vm_decoder_select_program(&self->decoder,program_begin, program_size);
+      if (result == APX_NO_ERROR)
       {
-         return APX_LENGTH_ERROR;
+         result = apx_vm_decoder_parse_program_header(&self->decoder, &self->program_header);
       }
-      rc = apx_vm_decodeProgramHeader(program, &majorVersion, &minorVersion, &self->progType, &self->progDataSize);
-      if (rc != APX_NO_ERROR)
-      {
-         return rc;
-      }
-      if( (majorVersion == APX_VM_MAJOR_VERSION) && (minorVersion == APX_VM_MINOR_VERSION) )
-      {
-         self->progBegin = adt_bytes_constData(program);
-         self->progEnd = self->progBegin+programLength;
-      }
-      else
-      {
-         return APX_UNSUPPORTED_ERROR;
-      }
-      return APX_NO_ERROR;
+      return result;
+
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-uint8_t apx_vm_getProgType(apx_vm_t *self)
+apx_error_t apx_vm_set_write_buffer(apx_vm_t* self, uint8_t* data, uint32_t size)
 {
    if (self != 0)
    {
-      return self->progType;
-   }
-   return 0u;
-}
-
-apx_size_t apx_vm_getProgDataSize(apx_vm_t *self)
-{
-   if (self != 0)
-   {
-      return self->progDataSize;
-   }
-   return 0u;
-}
-
-apx_error_t apx_vm_setWriteBuffer(apx_vm_t *self, uint8_t *buffer, uint32_t bufSize)
-{
-   if (self != 0)
-   {
-      return apx_vmSerializer_begin(&self->serializer, buffer, bufSize);
+      return apx_vm_serializer_set_write_buffer(&self->serializer, data, size);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_setReadBuffer(apx_vm_t *self, const uint8_t *buffer, uint32_t bufSize)
+apx_error_t apx_vm_set_read_buffer(apx_vm_t* self, uint8_t const* data, uint32_t size)
 {
    if (self != 0)
    {
-      return apx_vmDeserializer_begin(&self->deserializer, buffer, bufSize);
+      return apx_vm_deserializer_set_read_buffer(&self->deserializer, data, size);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_packValue(apx_vm_t *self, const dtl_dv_t *dv)
+
+
+apx_error_t apx_vm_pack_value(apx_vm_t* self, dtl_dv_t const* dv)
 {
    if (self != 0)
    {
-      self->progNext = self->progBegin + APX_VM_HEADER_SIZE;
-      if ( (self->progNext == 0) || (self->progNext >= self->progEnd) || (self->progType != APX_VM_HEADER_PACK_PROG))
+      apx_error_t retval = APX_NO_ERROR;
+      if (self->program_header.program_type != APX_PACK_PROGRAM)
       {
          return APX_INVALID_PROGRAM_ERROR;
       }
-      else
+      retval = apx_vm_serializer_set_value_dv(&self->serializer, dv);
+      if (retval == APX_NO_ERROR)
       {
-         apx_error_t rc = apx_vmSerializer_setValue(&self->serializer, dv);
-         if (rc == APX_NO_ERROR)
-         {
-            return apx_vm_execProg(self);
-         }
-         else
-         {
-            return rc;
-         }
+         retval = run_pack_program(self);
       }
+      return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_unpackValue(apx_vm_t *self, dtl_dv_t **dv)
+apx_error_t apx_vm_unpack_value(apx_vm_t* self, dtl_dv_t** dv)
 {
-   if ( (self != 0) && (dv != 0) )
+   if ( (self != NULL) && (dv != NULL) )
    {
-      self->progNext = self->progBegin + APX_VM_HEADER_SIZE;
-      if ( (self->progNext == 0) || (self->progNext >= self->progEnd) || (self->progType != APX_VM_HEADER_UNPACK_PROG))
+      if (self->program_header.program_type != APX_UNPACK_PROGRAM)
       {
          return APX_INVALID_PROGRAM_ERROR;
       }
-      else
+      apx_error_t retval = run_unpack_program(self);
+      if (retval == APX_NO_ERROR)
       {
-         apx_error_t rc = apx_vm_execProg(self);
-         if (rc == APX_NO_ERROR)
+         switch (apx_vm_deserializer_value_type(&self->deserializer))
          {
-            *dv = apx_vmDeserializer_getValue(&self->deserializer, true);
+         case DTL_DV_SCALAR:
+            *dv = (dtl_dv_t*) apx_vm_deserializer_take_sv(&self->deserializer);
+            break;
+         case DTL_DV_ARRAY:
+            *dv = (dtl_dv_t*) apx_vm_deserializer_take_av(&self->deserializer);
+            break;
+         case DTL_DV_HASH:
+            *dv = (dtl_dv_t*) apx_vm_deserializer_take_hv(&self->deserializer);
+            break;
+         default:
+            retval = APX_VALUE_TYPE_ERROR;
          }
-         else
-         {
-            *dv = (dtl_dv_t*) 0;
-         }
-         return rc;
       }
+      return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
-
-apx_error_t apx_vm_writeNullValue(apx_vm_t *self)
+size_t apx_vm_get_bytes_written(apx_vm_t* self)
 {
+   size_t retval = 0u;
    if (self != 0)
    {
-      if ( (self->progDataSize > 0) && (self->dynLenType == APX_DYN_LEN_NONE) )
-      {
-         return apx_vmSerializer_packNull(&self->serializer, self->progDataSize);
-      }
-      return APX_VALUE_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-#ifdef UNIT_TEST
-apx_size_t apx_vm_getBytesWritten(apx_vm_t *self)
-{
-   apx_size_t retval = 0u;
-   if (self != 0)
-   {
-      retval = apx_vmSerializer_getBytesWritten(&self->serializer);
+      retval = apx_vm_serializer_bytes_written(&self->serializer);
    }
    return retval;
 }
 
-apx_size_t apx_vm_getBytesRead(apx_vm_t *self)
+size_t apx_vm_get_bytes_read(apx_vm_t* self)
 {
-   apx_size_t retval = 0u;
+   size_t retval = 0u;
    if (self != 0)
    {
-      retval = apx_vmDeserializer_getBytesRead(&self->deserializer);
+      retval = apx_vm_deserializer_bytes_read(&self->deserializer);
    }
    return retval;
-}
-#endif
-
-//state-less functions
-apx_error_t apx_vm_decodeProgramHeader(const adt_bytes_t *program, uint8_t *majorVersion, uint8_t *minorVersion, uint8_t *progType, apx_size_t *dataSize)
-{
-   if ( (program != 0) && (majorVersion != 0) && (minorVersion != 0) && (dataSize != 0) )
-   {
-      if (adt_bytes_length(program) >= APX_VM_HEADER_SIZE)
-      {
-         const uint8_t *pNext = adt_bytes_constData(program);
-         if (*pNext++ != APX_VM_MAGIC_NUMBER)
-         {
-            return APX_UNEXPECTED_DATA_ERROR;
-         }
-         *majorVersion = *pNext++;
-         *minorVersion = *pNext++;
-         *progType = *pNext++;
-         *dataSize = (apx_size_t) unpackLE(pNext, UINT32_SIZE);
-         return APX_NO_ERROR;
-      }
-      else
-      {
-         return APX_LENGTH_ERROR;
-      }
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-apx_error_t apx_vm_decodeProgramDataProps(const adt_bytes_t *program, apx_size_t *dataSize, uint8_t *dataFlags)
-{
-   uint8_t majorVersion;
-   uint8_t minorVersion;
-   uint8_t progType;
-   (void) dataFlags;
-   return apx_vm_decodeProgramHeader(program, &majorVersion, &minorVersion, &progType, dataSize);
-}
-
-apx_error_t apx_vm_decodeInstruction(uint8_t instruction, uint8_t *opcode, uint8_t *variant, uint8_t *flags)
-{
-   if ( (opcode != 0) && (variant != 0) && (flags != 0) )
-   {
-      *opcode = instruction & APX_INST_OPCODE_MASK;
-      *variant = (instruction >> APX_INST_VARIANT_SHIFT) & APX_INST_VARIANT_MASK;
-      *flags = (instruction >> APX_INST_FLAG_SHIFT) & APX_INST_FLAG_MASK;
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_vm_prepareForPackUnpackInstruction(apx_vm_t *self)
+
+static bool is_pack_prog(apx_vm_t* self)
 {
-   self->arrayLen = 0u;
-   self->isArray = false;
-   self->dynLenType = APX_DYN_LEN_NONE;
-   self->arrayLen = 0u;
-   self->maxArrayLen = 0u;
+   return self->program_header.program_type == APX_PACK_PROGRAM;
 }
 
-static apx_error_t apx_vm_execProg(apx_vm_t *self)
+static apx_error_t run_pack_program(apx_vm_t* self)
 {
-   apx_error_t retval = APX_NO_ERROR;
-   assert( (self->progType == APX_VM_HEADER_PACK_PROG) || (self->progType == APX_VM_HEADER_UNPACK_PROG));
-   self->expectedNext = (self->progType == APX_VM_HEADER_PACK_PROG)? APX_OPCODE_PACK : APX_OPCODE_UNPACK;
-   while(self->progNext < self->progEnd)
+   assert(self != NULL);
+   apx_operationType_t operation_type = APX_OPERATION_TYPE_PROGRAM_END;
+   do
    {
-      apx_error_t rc;
-      uint8_t opcode, variant, flags;
-      uint8_t instruction = *self->progNext++;
+      apx_error_t result = apx_vm_decoder_parse_next_operation(&self->decoder, &operation_type);
+      if (result != APX_NO_ERROR)
+      {
+         return result;
+      }
+      switch (operation_type)
+      {
+      case APX_OPERATION_TYPE_UNPACK:
+         return APX_INVALID_INSTRUCTION_ERROR;
+      case APX_OPERATION_TYPE_PACK:
+         result = run_pack_instruction(self);
+         break;
+      case APX_OPERATION_TYPE_RANGE_CHECK_INT32:
+         result = run_range_check_pack_int32(self);
+         break;
+      case APX_OPERATION_TYPE_RANGE_CHECK_UINT32:
+         result = run_range_check_pack_uint32(self);
+         break;
+      case APX_OPERATION_TYPE_RANGE_CHECK_INT64:
+         result = run_range_check_pack_int64(self);
+         break;
+      case APX_OPERATION_TYPE_RANGE_CHECK_UINT64:
+         result = run_range_check_pack_uint64(self);
+         break;
+      case APX_OPERATION_TYPE_RECORD_SELECT:
+         result = run_pack_record_select(self);
+         break;
+      case APX_OPERATION_TYPE_ARRAY_NEXT:
+         result = run_array_next(self);
+         break;
+      case APX_OPERATION_TYPE_PROGRAM_END:
+         break;
+      }
+      if (result != APX_NO_ERROR)
+      {
+         return result;
+      }
+   } while (operation_type != APX_OPERATION_TYPE_PROGRAM_END);
+   return APX_NO_ERROR;
+}
 
-      (void) apx_vm_decodeInstruction(instruction, &opcode, &variant, &flags);
-      if (opcode != self->expectedNext)
+static apx_error_t run_unpack_program(apx_vm_t* self)
+{
+   assert(self != NULL);
+   apx_operationType_t operation_type = APX_OPERATION_TYPE_PROGRAM_END;
+   do
+   {
+      apx_error_t result = apx_vm_decoder_parse_next_operation(&self->decoder, &operation_type);
+      if (result != APX_NO_ERROR)
       {
-         retval = APX_INVALID_STATE_ERROR;
+         return result;
+      }
+      switch (operation_type)
+      {
+      case APX_OPERATION_TYPE_UNPACK:
+         result = run_unpack_instruction(self);
+      case APX_OPERATION_TYPE_PACK:
+         return APX_INVALID_INSTRUCTION_ERROR;
+         break;
+      case APX_OPERATION_TYPE_RANGE_CHECK_INT32:
+         result = run_range_check_unpack_int32(self);
+         break;
+      case APX_OPERATION_TYPE_RANGE_CHECK_UINT32:
+         result = run_range_check_unpack_uint32(self);
+         break;
+      case APX_OPERATION_TYPE_RANGE_CHECK_INT64:
+         result = run_range_check_unpack_int64(self);
+         break;
+      case APX_OPERATION_TYPE_RANGE_CHECK_UINT64:
+         result = run_range_check_unpack_uint64(self);
+         break;
+      case APX_OPERATION_TYPE_RECORD_SELECT:
+         result = APX_NOT_IMPLEMENTED_ERROR;
+         break;
+      case APX_OPERATION_TYPE_ARRAY_NEXT:
+         result = APX_NOT_IMPLEMENTED_ERROR;
+         break;
+      case APX_OPERATION_TYPE_PROGRAM_END:
          break;
       }
-      switch(opcode)
+      if (result != APX_NO_ERROR)
       {
-      case APX_OPCODE_PACK:
-         apx_vm_prepareForPackUnpackInstruction(self);
-         if (flags & APX_ARRAY_FLAG)
-         {
-            if (self->progNext < self->progEnd)
-            {
-               uint8_t opcode2, variant2, flags2;
-               instruction = *self->progNext++;
-               (void) apx_vm_decodeInstruction(instruction, &opcode2, &variant2, &flags2);
-               if (opcode2 != APX_OPCODE_ARRAY)
-               {
-                  rc = APX_INVALID_INSTRUCTION_ERROR;
-                  break;
-               }
-               rc = apx_vm_executeArrayInstruction(self, variant2, (flags2 & APX_DYN_ARRAY_FLAG) != 0);
-               if (rc != APX_NO_ERROR)
-               {
-                  break;
-               }
-            }
-            else
-            {
-               rc = APX_INVALID_PROGRAM_ERROR;
-               break;
-            }
-         }
-         rc = apx_vm_executePackInstruction(self, variant);
-         break;
-      case APX_OPCODE_UNPACK:
-         apx_vm_prepareForPackUnpackInstruction(self);
-         if (flags & APX_ARRAY_FLAG)
-         {
-            if (self->progNext < self->progEnd)
-            {
-               uint8_t opcode2, variant2, flags2;
-               instruction = *self->progNext++;
-               (void) apx_vm_decodeInstruction(instruction, &opcode2, &variant2, &flags2);
-               if (opcode2 != APX_OPCODE_ARRAY)
-               {
-                  rc = APX_INVALID_INSTRUCTION_ERROR;
-                  break;
-               }
-               rc = apx_vm_executeArrayInstruction(self, variant2, flags2 & APX_DYN_ARRAY_FLAG);
-               if (rc != APX_NO_ERROR)
-               {
-                  break;
-               }
-            }
-            else
-            {
-               rc = APX_INVALID_PROGRAM_ERROR;
-               break;
-            }
-         }
-         rc = apx_vm_executeUnpackInstruction(self, variant);
-         break;
-      case APX_OPCODE_DATA_CTRL:
-         rc = apx_vm_executeDataControlInstruction(self, variant, (flags & APX_LAST_FIELD_FLAG) != 0 );
-         break;
-      case APX_OPCODE_FLOW_CTRL:
-         rc = APX_NOT_IMPLEMENTED_ERROR;
-         break;
+         return result;
       }
-      if (rc != APX_NO_ERROR)
+   } while (operation_type != APX_OPERATION_TYPE_PROGRAM_END);
+   return APX_NO_ERROR;
+}
+
+static apx_error_t run_pack_instruction(apx_vm_t* self)
+{
+   apx_error_t retval = APX_NOT_IMPLEMENTED_ERROR;
+   apx_packUnpackOperationInfo_t operation;
+   apx_sizeType_t dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_vm_decoder_get_pack_unpack_info(&self->decoder, &operation);
+   if (operation.is_dynamic_array)
+   {
+      dynamic_size_type = apx_vm_size_to_size_type(operation.array_length);
+   }
+   switch (operation.type_code)
+   {
+   case APX_TYPE_CODE_UINT8:
+      retval = apx_vm_serializer_pack_uint8(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_UINT16:
+      retval = apx_vm_serializer_pack_uint16(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_UINT32:
+      retval = apx_vm_serializer_pack_uint32(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_UINT64:
+      retval = apx_vm_serializer_pack_uint64(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_INT8:
+      retval = apx_vm_serializer_pack_int8(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_INT16:
+      retval = apx_vm_serializer_pack_int16(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_INT32:
+      retval = apx_vm_serializer_pack_int32(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_INT64:
+      retval = apx_vm_serializer_pack_int64(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_CHAR:
+      retval = apx_vm_serializer_pack_char(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_CHAR8:
+      retval = apx_vm_serializer_pack_char8(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_BOOL:
+      retval = apx_vm_serializer_pack_bool(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_BYTE:
+      retval = apx_vm_serializer_pack_byte(&self->serializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_RECORD:
+      retval = apx_vm_serializer_pack_record(&self->serializer, operation.array_length, dynamic_size_type);
+      if (operation.array_length > 0u)
       {
-         retval = rc;
-         break;
+         apx_vm_decoder_save_program_position(&self->decoder);
       }
+      break;
    }
    return retval;
 }
 
-static apx_error_t apx_vm_executePackInstruction(apx_vm_t *self, uint8_t variant)
+static apx_error_t run_unpack_instruction(apx_vm_t* self)
 {
-   apx_error_t rc;
-   switch(variant)
+   apx_error_t retval = APX_NOT_IMPLEMENTED_ERROR;
+   apx_packUnpackOperationInfo_t operation;
+   apx_sizeType_t dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_vm_decoder_get_pack_unpack_info(&self->decoder, &operation);
+   if (operation.is_dynamic_array)
    {
-   case APX_VARIANT_U8:
-      rc =  apx_vmSerializer_packValueAsU8(&self->serializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_U16:
-      rc = apx_vmSerializer_packValueAsU16(&self->serializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_U32:
-      rc = apx_vmSerializer_packValueAsU32(&self->serializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_S8:
-      rc = apx_vmSerializer_packValueAsS8(&self->serializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_S16:
-      rc = apx_vmSerializer_packValueAsS16(&self->serializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_S32:
-      rc = apx_vmSerializer_packValueAsS32(&self->serializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_STR:
-      rc = apx_vmSerializer_packValueAsString(&self->serializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_RECORD:
-      rc = apx_vmSerializer_enterRecordValue(&self->serializer, self->maxArrayLen, self->dynLenType);
-      self->expectedNext = APX_OPCODE_DATA_CTRL;
-      return rc; //Return early here since we already set expectedNexts
-   default:
-      rc = APX_NOT_IMPLEMENTED_ERROR;
+      dynamic_size_type = apx_vm_size_to_size_type(operation.array_length);
    }
-   if (rc != APX_NO_ERROR)
+   switch (operation.type_code)
    {
-      return rc;
-   }
-   else
-   {
-      apx_vmWriteState_t *state = apx_vmSerializer_getState(&self->serializer);
-      if ( (state->valueType == APX_VALUE_TYPE_RECORD) )
+   case APX_TYPE_CODE_UINT8:
+      retval = apx_vm_deserializer_unpack_uint8(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_UINT16:
+      retval = apx_vm_deserializer_unpack_uint16(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_UINT32:
+      retval = apx_vm_deserializer_unpack_uint32(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_UINT64:
+      retval = apx_vm_deserializer_unpack_uint64(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_INT8:
+      retval = apx_vm_deserializer_unpack_int8(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_INT16:
+      retval = apx_vm_deserializer_unpack_int16(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_INT32:
+      retval = apx_vm_deserializer_unpack_int32(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_INT64:
+      retval = apx_vm_deserializer_unpack_int64(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_CHAR:
+      retval = apx_vm_deserializer_unpack_char(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_CHAR8:
+      retval = apx_vm_deserializer_unpack_char8(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_BOOL:
+      retval = apx_vm_deserializer_unpack_bool(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_BYTE:
+      retval = apx_vm_deserializer_unpack_byte(&self->deserializer, operation.array_length, dynamic_size_type);
+      break;
+   case APX_TYPE_CODE_RECORD:
+      retval = apx_vm_deserializer_unpack_record(&self->deserializer, operation.array_length, dynamic_size_type);
+      if (operation.array_length > 0u)
       {
-         if (!state->isLastElement)
-         {
-            self->expectedNext = APX_OPCODE_DATA_CTRL;
-         }
-         else
-         {
-            self->expectedNext = APX_OPCODE_INVALID;
-         }
+         apx_vm_decoder_save_program_position(&self->decoder);
       }
+      break;
    }
-   return rc;
+   return retval;
 }
 
-static apx_error_t apx_vm_executeUnpackInstruction(apx_vm_t *self, uint8_t variant)
+static apx_error_t run_range_check_pack_int32(apx_vm_t* self)
 {
-   apx_error_t rc;
-   switch(variant)
-   {
-   case APX_VARIANT_U8:
-      rc =  apx_vmDeserializer_unpackU8Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_U16:
-      rc = apx_vmDeserializer_unpackU16Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_U32:
-      rc = apx_vmDeserializer_unpackU32Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_S8:
-      rc = apx_vmDeserializer_unpackS8Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_S16:
-      rc = apx_vmDeserializer_unpackS16Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_S32:
-      rc = apx_vmDeserializer_unpackS32Value(&self->deserializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_STR:
-      rc = apx_vmDeserializer_unpackStrValue(&self->deserializer, self->maxArrayLen, self->dynLenType);
-      break;
-   case APX_VARIANT_RECORD:
-      rc = apx_vmDeserializer_enterRecordValue(&self->deserializer, self->maxArrayLen, self->dynLenType);
-      self->expectedNext = APX_OPCODE_DATA_CTRL;
-      return rc; //Return early here since we already set expectedNexts
-   default:
-      rc = APX_NOT_IMPLEMENTED_ERROR;
-   }
-   if (rc != APX_NO_ERROR)
-   {
-      return rc;
-   }
-   else
-   {
-      apx_vmReadState_t *state = apx_vmDeserializer_getState(&self->deserializer);
-      if ( (state->valueType == APX_VALUE_TYPE_RECORD) )
-      {
-         if (!state->isLastElement)
-         {
-            self->expectedNext = APX_OPCODE_DATA_CTRL;
-         }
-         else
-         {
-            self->expectedNext = APX_OPCODE_INVALID;
-         }
-      }
-   }
-   return rc;
+   apx_rangeCheckInt32OperationInfo_t info = { 0,0 };
+   apx_vm_decoder_range_check_info_int32(&self->decoder, &info);
+   return apx_vm_serializer_check_value_range_int32(&self->serializer, info.lower_limit, info.upper_limit);
 }
 
-static apx_error_t apx_vm_executeArrayInstruction(apx_vm_t *self, uint8_t variant, bool isDynamicArray)
+static apx_error_t run_range_check_pack_uint32(apx_vm_t* self)
 {
-   uint8_t valueSize = 0;
-   apx_dynLenType_t dynLenType = APX_DYN_LEN_NONE;
-   switch(variant)
+   apx_rangeCheckUInt32OperationInfo_t info = { 0,0 };
+   apx_vm_decoder_range_check_info_uint32(&self->decoder, &info);
+   return apx_vm_serializer_check_value_range_uint32(&self->serializer, info.lower_limit, info.upper_limit);
+}
+
+static apx_error_t run_range_check_pack_int64(apx_vm_t* self)
+{
+   apx_rangeCheckInt64OperationInfo_t info = { 0,0 };
+   apx_vm_decoder_range_check_info_int64(&self->decoder, &info);
+   return apx_vm_serializer_check_value_range_int64(&self->serializer, info.lower_limit, info.upper_limit);
+}
+
+static apx_error_t run_range_check_pack_uint64(apx_vm_t* self)
+{
+   apx_rangeCheckUInt64OperationInfo_t info = { 0,0 };
+   apx_vm_decoder_range_check_info_uint64(&self->decoder, &info);
+   return apx_vm_serializer_check_value_range_uint64(&self->serializer, info.lower_limit, info.upper_limit);
+}
+
+static apx_error_t run_range_check_unpack_int32(apx_vm_t* self)
+{
+   apx_rangeCheckInt32OperationInfo_t info = { 0,0 };
+   apx_vm_decoder_range_check_info_int32(&self->decoder, &info);
+   return apx_vm_deserializer_check_value_range_int32(&self->deserializer, info.lower_limit, info.upper_limit);
+}
+
+static apx_error_t run_range_check_unpack_uint32(apx_vm_t* self)
+{
+   apx_rangeCheckUInt32OperationInfo_t info = { 0,0 };
+   apx_vm_decoder_range_check_info_uint32(&self->decoder, &info);
+   return apx_vm_deserializer_check_value_range_uint32(&self->deserializer, info.lower_limit, info.upper_limit);
+}
+
+static apx_error_t run_range_check_unpack_int64(apx_vm_t* self)
+{
+   apx_rangeCheckInt64OperationInfo_t info = { 0,0 };
+   apx_vm_decoder_range_check_info_int64(&self->decoder, &info);
+   return apx_vm_deserializer_check_value_range_int64(&self->deserializer, info.lower_limit, info.upper_limit);
+}
+
+static apx_error_t run_range_check_unpack_uint64(apx_vm_t* self)
+{
+   apx_rangeCheckUInt64OperationInfo_t info = { 0,0 };
+   apx_vm_decoder_range_check_info_uint64(&self->decoder, &info);
+   return apx_vm_deserializer_check_value_range_uint64(&self->deserializer, info.lower_limit, info.upper_limit);
+}
+
+static apx_error_t run_pack_record_select(apx_vm_t* self)
+{
+   char const* field_name = apx_vm_decoder_get_field_name(&self->decoder);
+   bool is_last_field = apx_vm_decoder_is_last_field(&self->decoder);
+   assert(field_name != NULL);
+   return apx_vm_serializer_record_select(&self->serializer, field_name, is_last_field);
+}
+
+static apx_error_t run_unpack_record_select(apx_vm_t* self)
+{
+   char const* field_name = apx_vm_decoder_get_field_name(&self->decoder);
+   bool is_last_field = apx_vm_decoder_is_last_field(&self->decoder);
+   assert(field_name != NULL);
+   return apx_vm_deserializer_record_select(&self->deserializer, field_name, is_last_field);
+
+}
+
+static apx_error_t run_array_next(apx_vm_t* self)
+{
+   bool is_last_index = false;
+   apx_error_t result = APX_NO_ERROR;
+   if (is_pack_prog(self))
    {
-   case APX_VARIANT_U8:
-      valueSize = UINT8_SIZE;
-      dynLenType = APX_DYN_LEN_U8;
-      break;
-   case APX_VARIANT_U16:
-      valueSize = UINT16_SIZE;
-      dynLenType = APX_DYN_LEN_U16;
-      break;
-   case APX_VARIANT_U32:
-      valueSize = UINT32_SIZE;
-      dynLenType = APX_DYN_LEN_U32;
-      break;
-   default:
-      return APX_INVALID_INSTRUCTION_ERROR;
-   }
-   if (self->progNext+valueSize <= self->progEnd)
-   {
-      self->maxArrayLen = unpackLE(self->progNext, valueSize);
-      self->dynLenType = isDynamicArray? dynLenType : APX_DYN_LEN_NONE;
-      self->progNext+=valueSize;
+      result = apx_vm_serializer_array_next(&self->serializer, &is_last_index);
    }
    else
    {
-      return APX_INVALID_INSTRUCTION_ERROR;
+      result = apx_vm_deserializer_array_next(&self->deserializer, &is_last_index);
+   }
+   if (result != APX_NO_ERROR)
+   {
+      return result;
+   }
+   if (!is_last_index)
+   {
+      if (apx_vm_decoder_has_saved_program_position(&self->decoder))
+      {
+         apx_vm_decoder_recall_program_position(&self->decoder);
+      }
+      else
+      {
+         return APX_INVALID_INSTRUCTION_ERROR;
+      }
    }
    return APX_NO_ERROR;
 }
 
-static apx_error_t apx_vm_executeDataControlInstruction(apx_vm_t *self, uint8_t variant, bool isLastElement)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   assert(self != 0);
-   if (variant == APX_VARIANT_RECORD_SELECT)
-   {
-      assert(self->progNext != 0);
-      assert(self->progEnd != 0);
-      if (self->progNext < self->progEnd)
-      {
-         size_t nameSize;
-         const char *elementName = (const char*) self->progNext;
-         nameSize = strlen(elementName);
-         if (nameSize > 0)
-         {
-            if (self->progType == APX_VM_HEADER_PACK_PROG)
-            {
-               retval = apx_vmSerializer_selectRecordElement_cstr(&self->serializer, elementName, isLastElement);
-            }
-            else
-            {
-               retval = apx_vmDeserializer_selectRecordElement_cstr(&self->deserializer, elementName, isLastElement);
-            }
-            if (retval == APX_NO_ERROR)
-            {
-               self->progNext += (nameSize + 1); //Skip one past the null-byte
-               self->expectedNext = (self->progType == APX_VM_HEADER_PACK_PROG)? APX_OPCODE_PACK : APX_OPCODE_UNPACK;
-            }
-         }
-         else
-         {
-            retval = APX_INVALID_NAME_ERROR;
-         }
-      }
-      else
-      {
-         retval = APX_INVALID_INSTRUCTION_ERROR;
-      }
-   }
-   else
-   {
-      retval = APX_INVALID_INSTRUCTION_ERROR;
-   }
-   return retval;
-}

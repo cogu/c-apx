@@ -4,7 +4,7 @@
 * \date      2018-12-28
 * \brief     Server connection manager
 *
-* Copyright (c) 2018-2020 Conny Gustafsson
+* Copyright (c) 2018-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -30,7 +30,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/types.h"
-#include "apx/server_connection_base.h"
+#include "apx/server_connection.h"
 #include "adt_list.h"
 #include "adt_set.h"
 #ifdef _MSC_VER
@@ -49,16 +49,16 @@
 typedef struct apx_connectionManager_tag
 {
    SPINLOCK_T lock; //thread lock
-   adt_u32Set_t connectionIdSet; //used to keep track of which connection IDs are in use
-   adt_list_t activeConnections; //linked list of strong references to apx_serverBaseConnection_t
-   adt_list_t inactiveConnections; //These are connections waiting to be cleaned up
-   uint32_t nextConnectionId;
-   uint32_t numConnections;
-   THREAD_T cleanupThread; //garbage collector thread
-   bool cleanupThreadRunning; //when false it's time do shut down
-   bool cleanupThreadValid; //true if cleanupThread is a valid variable
+   adt_u32Set_t connection_id_set; //used to keep track of which connection IDs are in use
+   adt_list_t active_connections; //Strong references to apx_serverConnection_t
+   adt_list_t inactive_connections; //Strong references to apx_serverConnection_t
+   uint32_t next_connection_id;
+   uint32_t num_connections;
+   THREAD_T cleanup_thread; //garbage collector thread
+   bool cleanup_thread_running; //when false it's time do shut down
+   bool cleanup_thread_valid; //true if cleanup_thread is a valid variable
 #ifdef _MSC_VER
-   unsigned int cleanupThreadId;
+   unsigned int cleanup_thread_id;
 #endif
 } apx_connectionManager_t;
 
@@ -69,10 +69,10 @@ void apx_connectionManager_create(apx_connectionManager_t *self);
 void apx_connectionManager_destroy(apx_connectionManager_t *self);
 void apx_connectionManager_start(apx_connectionManager_t *self);
 void apx_connectionManager_stop(apx_connectionManager_t *self);
-void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConnectionBase_t *connection);
-void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConnectionBase_t *connection);
-apx_serverConnectionBase_t* apx_connectionManager_getLastConnection(apx_connectionManager_t *self);
-uint32_t apx_connectionManager_getNumConnections(apx_connectionManager_t *self);
+void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConnection_t *connection);
+void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConnection_t *connection);
+apx_serverConnection_t* apx_connectionManager_get_last_connection(apx_connectionManager_t const* self);
+uint32_t apx_connectionManager_get_num_connections(apx_connectionManager_t *self);
 #ifdef UNIT_TEST
 void apx_connectionManager_run(apx_connectionManager_t *self);
 #endif

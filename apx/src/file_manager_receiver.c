@@ -4,7 +4,7 @@
 * \date      2020-02-08
 * \brief     Receive buffer mechanism for file manager
 *
-* Copyright (c) 2020 Conny Gustafsson
+* Copyright (c) 2020-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -42,8 +42,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_fileManagerReceiver_startReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit);
-static apx_error_t apx_fileManagerReceiver_continueReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit);
+static apx_error_t start_new_reception(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
+static apx_error_t continue_reception(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
+static void process_more_bit(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, bool more_bit);
+
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -56,200 +58,177 @@ static apx_error_t apx_fileManagerReceiver_continueReception(apx_fileManagerRece
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_fileManagerReceiver_create(apx_fileManagerReceiver_t *self)
+apx_error_t apx_fileManagerReceiver_create(apx_fileManagerReceiver_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      self->receiveBuf = (uint8_t*) 0;
-      self->receiveBufSize = 0u;
-      self->receiveBufPos = 0u;
-      self->startAddress = RMF_INVALID_ADDRESS;
-      self->isFragmentedWrite = false;
+      self->buf_data = NULL;
+      self->buf_size = 0u;
+      self->buf_pos = 0u;
+      self->start_address = RMF_INVALID_ADDRESS;
+      return apx_fileManagerReceiver_reserve(self, RMF_CMD_AREA_SIZE);
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_fileManagerReceiver_destroy(apx_fileManagerReceiver_t *self)
+void apx_fileManagerReceiver_destroy(apx_fileManagerReceiver_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (self->receiveBuf != 0)
+      if (self->buf_data != 0)
       {
-         free(self->receiveBuf);
+         free(self->buf_data);
       }
    }
 }
 
-void apx_fileManagerReceiver_reset(apx_fileManagerReceiver_t *self)
+void apx_fileManagerReceiver_reset(apx_fileManagerReceiver_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      self->startAddress = RMF_INVALID_ADDRESS;
-      self->receiveBufPos = 0u;
-      self->isFragmentedWrite = false;
+      self->buf_pos = 0u;
+      self->start_address = RMF_INVALID_ADDRESS;
    }
 }
 
-apx_error_t apx_fileManagerReceiver_reserve(apx_fileManagerReceiver_t *self, apx_size_t size)
+apx_error_t apx_fileManagerReceiver_reserve(apx_fileManagerReceiver_t* self, apx_size_t size)
 {
-   if ( (self != 0) && (size > 0) )
+   if ( (self != NULL) && (size > 0u) )
    {
       if (size > APX_MAX_FILE_SIZE)
       {
          return APX_FILE_TOO_LARGE_ERROR;
       }
-      if (size > self->receiveBufSize)
+      if (size > self->buf_size)
       {
-         uint8_t *oldBuf = self->receiveBuf;
-         if (oldBuf != 0)
+         uint8_t *old_data = self->buf_data;
+         if (old_data != NULL)
          {
-            free(oldBuf);
+            free(old_data);
          }
-         self->receiveBuf = (uint8_t*) malloc(size);
-         if (self->receiveBuf == 0)
+         self->buf_data = (uint8_t*) malloc(size);
+         if (self->buf_data == NULL)
          {
             return APX_MEM_ERROR;
          }
-         self->receiveBufSize = size;
+         self->buf_size = size;
       }
-      apx_fileManagerReceiver_reset(self);
+      //apx_fileManagerReceiver_reset(self);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-bool apx_fileManagerReceiver_isOngoing(apx_fileManagerReceiver_t *self)
+apx_size_t apx_fileManagerReceiver_buffer_size(apx_fileManagerReceiver_t const* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      return self->isFragmentedWrite;
-   }
-   return false;
-}
-
-apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit)
-{
-   if ( (self != 0) && (data != 0) && (address < RMF_INVALID_ADDRESS) )
-   {
-      if (size > APX_MAX_FILE_SIZE)
-      {
-         return APX_FILE_TOO_LARGE_ERROR;
-      }
-      if (self->startAddress == RMF_INVALID_ADDRESS)
-      {
-         return apx_fileManagerReceiver_startReception(self, address, data, size, moreBit);
-      }
-      else
-      {
-         return apx_fileManagerReceiver_continueReception(self, address, data, size, moreBit);
-      }
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
-/**
- * Returns the start address of last write
- */
-uint32_t apx_fileManagerReceiver_getAddress(apx_fileManagerReceiver_t *self)
-{
-   if (self != 0)
-   {
-      return self->startAddress;
-   }
-   return RMF_INVALID_ADDRESS;
-}
-
-apx_size_t apx_fileManagerReceiver_getSize(apx_fileManagerReceiver_t *self, apx_size_t *size)
-{
-   if (self != 0)
-   {
-      return self->receiveBufPos;
+      return self->buf_size;
    }
    return 0u;
 }
 
-/**
- * Fills in all relevant info from last write if the write is completed.
- * Returns APX_NO_ERROR on success.
- * Returns APX_DATA_NOT_PROCESSED_ERROR in case the write is still ongoing.
- * Return APX_INVALID_ADDRESS_ERROR in case no write has been done since last reset.
- */
-apx_error_t apx_fileManagerReceiver_checkComplete(apx_fileManagerReceiver_t *self, apx_fileManagerReception_t *reception)
+apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
 {
-   if ( (self != 0) && (reception != 0) )
+   if ( (self != NULL) && (result != NULL) && (data != NULL) && (address < RMF_INVALID_ADDRESS) )
    {
-      if (self->isFragmentedWrite)
+      apx_error_t retval = APX_NO_ERROR;
+      if (size > APX_MAX_FILE_SIZE)
       {
-         return APX_DATA_NOT_COMPLETE_ERROR;
+         retval = APX_FILE_TOO_LARGE_ERROR;
       }
-      if (self->startAddress == RMF_INVALID_ADDRESS)
+      else
       {
-         return APX_INVALID_ADDRESS_ERROR;
+         result->is_complete = false;
+         result->address = RMF_INVALID_ADDRESS;
+         result->data = NULL;
+         result->size = 0u;
+
+         if (self->start_address == RMF_INVALID_ADDRESS)
+         {
+            retval = start_new_reception(self, result, address, data, size, more_bit);
+         }
+         else
+         {
+            retval = continue_reception(self, result, address, data, size, more_bit);
+         }
       }
-      reception->startAddress = self->startAddress;
-      reception->msgBuf = self->receiveBuf;
-      reception->msgSize = self->receiveBufPos;
-      apx_fileManagerReceiver_reset(self);
-      return APX_NO_ERROR;
+      return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
-
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_fileManagerReceiver_startReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit)
+
+static apx_error_t start_new_reception(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
 {
-   if (self != 0)
+   assert(data != NULL);
+   apx_error_t retval = APX_NO_ERROR;
+   if ( (self->buf_size == 0u) || (self->buf_data == NULL))
    {
-      if (self->receiveBufSize == 0)
-      {
-         return APX_MISSING_BUFFER_ERROR;
-      }
-      if (size > self->receiveBufSize)
-      {
-         return APX_BUFFER_FULL_ERROR;
-      }
-      if (size > 0)
-      {
-         memcpy(&self->receiveBuf[0u], data, size);
-         self->receiveBufPos = size;
-      }
-      self->startAddress = address;
-      self->isFragmentedWrite = moreBit;
-      return APX_NO_ERROR;
+      retval = APX_MISSING_BUFFER_ERROR;
    }
-   return APX_INVALID_ARGUMENT_ERROR;
+   else if (size > self->buf_size)
+   {
+      retval = APX_BUFFER_FULL_ERROR;
+   }
+   else
+   {
+      if (size > 0u)
+      {
+         memcpy(self->buf_data, data, size);
+         self->buf_pos = size;
+      }
+      self->start_address = address;
+      process_more_bit(self, result, more_bit);
+      retval = APX_NO_ERROR;
+   }
+   return retval;
 }
 
-static apx_error_t apx_fileManagerReceiver_continueReception(apx_fileManagerReceiver_t *self, uint32_t address, const uint8_t *data, apx_size_t size, bool moreBit)
+static apx_error_t continue_reception(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
 {
-   if (self != 0)
+   apx_error_t retval = APX_NO_ERROR;
+   assert( (self->start_address != RMF_INVALID_ADDRESS) && (data != NULL));
+   uint32_t expected_address = (self->start_address + (uint32_t)self->buf_pos);
+   if (expected_address != address)
    {
-      assert(self->startAddress != RMF_INVALID_ADDRESS);
-      uint32_t expectedAddress = (self->startAddress + self->receiveBufPos);
-      if (expectedAddress != address)
-      {
-         return APX_INVALID_ADDRESS_ERROR; //Not the address we expected to resume writing
-      }
-      if (self->receiveBufSize == 0)
-      {
-         return APX_MISSING_BUFFER_ERROR;
-      }
-      if ( (self->receiveBufPos + size) > self->receiveBufSize)
-      {
-         return APX_BUFFER_FULL_ERROR;
-      }
-      if (size > 0)
-      {
-         memcpy(&self->receiveBuf[self->receiveBufPos], data, size);
-         self->receiveBufPos += size;
-      }
-      self->isFragmentedWrite = moreBit;
-      return APX_NO_ERROR;
+      retval = APX_INVALID_ADDRESS_ERROR;
    }
-   return APX_INVALID_ARGUMENT_ERROR;
+   if (retval == APX_NO_ERROR)
+   {
+      if ((self->buf_size == 0u) || (self->buf_data == NULL))
+      {
+         retval = APX_MISSING_BUFFER_ERROR;
+      }
+      else if ((self->buf_pos + size) > self->buf_size)
+      {
+         retval = APX_BUFFER_FULL_ERROR;
+      }
+      else
+      {
+         if (size > 0u)
+         {
+            memcpy(self->buf_data + self->buf_pos, data, size);
+            self->buf_pos += size;
+         }
+         process_more_bit(self, result, more_bit);
+         retval = APX_NO_ERROR;
+      }
+   }
+   return retval;
 }
 
-
-
+static void process_more_bit(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, bool more_bit)
+{
+   if (!more_bit)
+   {
+      result->is_complete = true;
+      result->address = self->start_address;
+      result->data = self->buf_data;
+      result->size = self->buf_pos;
+      apx_fileManagerReceiver_reset(self);
+   }
+}

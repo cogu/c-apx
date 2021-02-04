@@ -4,7 +4,7 @@
 * \date      2017-02-20
 * \brief     APX server class
 *
-* Copyright (c) 2017-2020 Conny Gustafsson
+* Copyright (c) 2017-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -39,11 +39,11 @@
 #endif
 #include "apx/port_signature_map.h"
 #include "apx/server_extension.h"
-#include "apx/port_signature_map.h"
 #include "apx/event_listener.h"
 #include "apx/connection_manager.h"
 #include "apx/event_loop.h"
 #include "apx/node_instance.h"
+#include "apx/port_connector_change_table.h"
 #include "soa.h"
 #include "adt_str.h"
 #include "adt_ary.h"
@@ -57,23 +57,23 @@
 
 typedef struct apx_server_tag
 {
-   adt_list_t serverEventListeners; //weak references to apx_serverEventListener_t
-   apx_portSignatureMap_t portSignatureMap; //This is the global map that is used to build all port connectors.
-                                            //Any access to this structure must be protected by acquiring the globalLock.
-   apx_connectionManager_t connectionManager; //server connections
-   adt_list_t extensionManager; //TODO: replace with extensionManager class
-   adt_ary_t modifiedNodes; //weak references to apx_nodeInstance_t. Used to keep track of which nodes have modified port connectors.
-   THREAD_T eventThread; //local worker thread (for playing server-global events such as log events)
-   bool isEventThreadValid; //true if workerThread is a valid variable
-   soa_t soa; //small object allocator
-   apx_eventLoop_t eventLoop; //event loop used by workerThread
-   MUTEX_T eventLoopLock; //for protecting the event loop
-   MUTEX_T globalLock; //Protects the portSignatureMap and connectionManager
-                       //synchronize data routing execution as well as
-                       //controlling access to the global portSignatureMap.
-   SPINLOCK_T eventListenerLock; //Used to protect access to serverEventListeners
-#ifdef _MSC_VER
-   unsigned int threadId;
+   adt_list_t server_event_listeners;          //weak references to apx_serverEventListener_t
+   apx_portSignatureMap_t port_signature_map;  //This is the global map that is used to build all port connectors.
+                                               //Any access to this structure must be protected by acquiring the globalLock.
+   apx_connectionManager_t connection_manager; //server connections
+   adt_list_t extension_manager;               //TODO: replace with extensionManager class
+   adt_ary_t modified_nodes;                   //Weak references to apx_nodeInstance_t. Used to keep track of which nodes have modified port connectors.
+   THREAD_T event_thread;                      //Local worker thread (for playing server-global events such as log events)
+   bool is_event_thread_valid;                 //True if event_thread is a valid variable
+   soa_t allocator;                            //small object allocator
+   apx_eventLoop_t event_loop;                  //Event loop used by event_thread
+   MUTEX_T event_loop_lock;                    //For protecting the event loop
+   MUTEX_T global_lock;                        //1. Protects the port_signature_map and connection_manager
+                                               //2. Synchronize data routing
+                                               //3. Controlling access to the global port_signature_map.
+   MUTEX_T event_listener_lock;
+#ifdef _WIN32
+   unsigned int thread_id;
 #endif
 } apx_server_t;
 
@@ -91,29 +91,29 @@ apx_server_t *apx_server_new(void);
 void apx_server_delete(apx_server_t *self);
 void apx_server_start(apx_server_t *self);
 void apx_server_stop(apx_server_t *self);
-void* apx_server_registerEventListener(apx_server_t *self, apx_serverEventListener_t *eventListener);
-void apx_server_unregisterEventListener(apx_server_t *self, void *handle);
-void apx_server_acceptConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
-void apx_server_detachConnection(apx_server_t *self, apx_serverConnectionBase_t *serverConnection);
-apx_error_t apx_server_addExtension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
-void apx_server_logEvent(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
-void apx_server_takeGlobalLock(apx_server_t *self);
-void apx_server_releaseGlobalLock(apx_server_t *self);
-apx_error_t apx_server_connectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
-apx_error_t apx_server_connectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
-apx_error_t apx_server_disconnectNodeInstanceProvidePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
-apx_error_t apx_server_disconnectNodeInstanceRequirePorts(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
-apx_error_t apx_server_processRequirePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *requireNodeInstance, apx_portConnectorChangeTable_t *connectorChanges);
-apx_error_t apx_server_processProvidePortConnectorChanges(apx_server_t *self, apx_nodeInstance_t *provideNodeInstance, apx_portConnectorChangeTable_t *connectorChanges);
-apx_error_t apx_server_insertModifiedNode(apx_server_t *self, apx_nodeInstance_t *nodeInstance);
-adt_ary_t *apx_server_getModifiedNodes(const apx_server_t *self);
-void apx_server_clearPortConnectorChanges(apx_server_t *self);
+void* apx_server_register_event_listener(apx_server_t *self, apx_serverEventListener_t *event_listener);
+void apx_server_unregister_event_listener(apx_server_t *self, void *handle);
+void apx_server_accept_connection(apx_server_t *self, apx_serverConnection_t *server_connection);
+apx_error_t apx_server_detach_connection(apx_server_t *self, apx_serverConnection_t *server_connection);
+apx_error_t apx_server_add_extension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
+void apx_server_log_event(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
+void apx_server_take_global_lock(apx_server_t *self);
+void apx_server_release_global_lock(apx_server_t *self);
+apx_error_t apx_server_connect_node_instance_provide_ports(apx_server_t *self, apx_nodeInstance_t *node_instance);
+apx_error_t apx_server_connect_node_instance_require_ports(apx_server_t *self, apx_nodeInstance_t *node_instance);
+apx_error_t apx_server_disconnect_node_instance_provide_ports(apx_server_t *self, apx_nodeInstance_t *node_instance);
+apx_error_t apx_server_disconnect_node_instance_require_ports(apx_server_t *self, apx_nodeInstance_t *node_instance);
+apx_error_t apx_server_process_require_port_connector_changes(apx_server_t *self, apx_nodeInstance_t *require_node_instance, apx_portConnectorChangeTable_t *connector_changes);
+apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t *self, apx_nodeInstance_t *provide_node_instance, apx_portConnectorChangeTable_t *connector_changes);
+apx_error_t apx_server_insert_modified_node_instance(apx_server_t *self, apx_nodeInstance_t *node_instance);
+adt_ary_t *apx_server_get_modified_node_instance(const apx_server_t *self);
+void apx_server_clear_port_connector_changes(apx_server_t *self);
 
 
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self);
-apx_serverConnectionBase_t *apx_server_getLastConnection(apx_server_t *self);
-apx_portSignatureMap_t *apx_server_getPortSignatureMap(apx_server_t *self);
+apx_serverConnection_t *apx_server_get_last_connection(apx_server_t const*self);
+apx_portSignatureMap_t *apx_server_get_port_signature_map(apx_server_t const*self);
 #endif
 
 

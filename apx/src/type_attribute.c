@@ -2,7 +2,7 @@
 * \file      type_attribute.c
 * \author    Conny Gustafsson
 * \date      2018-09-11
-* \brief     Parse tree APX type attribute
+* \brief     Parse tree: APX type attributes
 *
 * Copyright (c) 2018-2020 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -26,10 +26,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/type_attribute.h"
-#include "apx/types.h"
 #include <string.h>
 #include <malloc.h>
+#include "apx/type_attribute.h"
+#include "apx/computation.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -49,59 +49,68 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_typeAttribute_create(apx_typeAttribute_t *self, const char *attr)
-{
-   if (self != 0)
-   {
-      self->rawString = (attr!=0)? STRDUP(attr) : 0;
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
 
-void apx_typeAttribute_destroy(apx_typeAttribute_t *self)
+void apx_typeAttributes_create(apx_typeAttributes_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (self->rawString != 0)
-      {
-         free(self->rawString);
-      }
+      adt_ary_create(&self->computations, apx_computation_vdelete);
    }
 }
 
-apx_typeAttribute_t *apx_typeAttribute_new(const char *attr)
+void apx_typeAttributes_destroy(apx_typeAttributes_t* self)
 {
-   apx_typeAttribute_t *self = (apx_typeAttribute_t*) malloc(sizeof(apx_typeAttribute_t));
    if (self != 0)
    {
-      apx_error_t errorCode = apx_typeAttribute_create(self, attr);
-      if (errorCode != APX_NO_ERROR)
-      {
-         free(self);
-         self = (apx_typeAttribute_t*) 0;
-      }
+      adt_ary_destroy(&self->computations);
+   }
+}
+
+apx_typeAttributes_t* apx_typeAttributes_new()
+{
+   apx_typeAttributes_t *self = (apx_typeAttributes_t*) malloc(sizeof(apx_typeAttributes_t));
+   if (self != 0)
+   {
+      apx_typeAttributes_create(self);
    }
    return self;
 }
 
-void apx_typeAttribute_delete(apx_typeAttribute_t *self)
+void apx_typeAttributes_delete(apx_typeAttributes_t* self)
 {
    if (self != 0)
    {
-      apx_typeAttribute_destroy(self);
+      apx_typeAttributes_destroy(self);
       free(self);
    }
 }
 
-const char *apx_typeAttribute_cstr(apx_typeAttribute_t *self)
+void apx_typeAttributes_append_computation(apx_typeAttributes_t* self, struct apx_computation_tag* computation)
 {
-   if (self != 0)
+   if ( (self != NULL) && (computation != NULL) )
    {
-      return self->rawString;
+      adt_ary_push(&self->computations, (void*)computation);
    }
-   return (const char*) 0;
 }
+
+int32_t apx_typeAttributes_num_computations(apx_typeAttributes_t* self)
+{
+   if (self != NULL)
+   {
+      return adt_ary_length(&self->computations);
+   }
+   return -1;
+}
+
+apx_computation_t* apx_typeAttributes_get_computation(apx_typeAttributes_t* self, int32_t index)
+{
+   if (self != NULL)
+   {
+      return adt_ary_value(&self->computations, index);
+   }
+   return NULL;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

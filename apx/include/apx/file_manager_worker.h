@@ -4,7 +4,7 @@
 * \date      2020-01-22
 * \brief     APX file manager worker
 *
-* Copyright (c) 2020 Conny Gustafsson
+* Copyright (c) 2020-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -31,16 +31,15 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/file_manager_defs.h"
 #include "apx/file_manager_shared.h"
-#include "apx/transmit_handler.h"
 #include "apx/error.h"
 #include "apx/file.h"
 #include "apx/event.h"
-#include "apx/msg.h"
+#include "apx/command.h"
+#include "apx/file_info.h"
 #ifndef ADT_RBFS_ENABLE
 #define ADT_RBFS_ENABLE 1
 #endif
 #include "adt_ringbuf.h"
-#include "rmf.h"
 #ifndef _WIN32
 #include <semaphore.h>
 #endif
@@ -52,18 +51,16 @@
 
 typedef struct apx_fileManagerWorker_tag
 {
-   apx_fileManagerShared_t *shared; //weak reference (do not delete on destruction)
+   apx_fileManagerShared_t *shared; //weak reference
    MUTEX_T mutex; //for locking variables in this object
-   SPINLOCK_T lock; //used exclusively by workerThread message queue
-   THREAD_T workerThread; //local transmit thread
-   SEMAPHORE_T semaphore; //thread semaphore
-   adt_rbfh_t messages; //pending actions
-   bool workerThreadValid; //Differences in Linux and Windows doesn't make it obvious if workerThread is valid without this flag
-   apx_transmitHandler_t transmitHandler;
-   int8_t numHeaderSize; //Number of bits used in numHeader (16 or 32)
+   SPINLOCK_T queue_lock; //used exclusively by workerThread command queue
+   THREAD_T worker_thread; //local transmit thread
+   SEMAPHORE_T semaphore; //queue semaphore
+   adt_rbfh_t queue; //pending actions
+   bool worker_thread_valid; //is worker_thread handle valid (required to support both Windows and Linux)
    apx_mode_t mode; //server or client mode?
 #ifdef _WIN32
-   unsigned int threadId;
+   unsigned int worker_thread_id;
 #endif
 } apx_fileManagerWorker_t;
 
@@ -76,26 +73,19 @@ typedef struct apx_fileManagerWorker_tag
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared_t *shared, apx_mode_t mode);
 void apx_fileManagerWorker_destroy(apx_fileManagerWorker_t *self);
-apx_error_t apx_fileManagerWorker_start(apx_fileManagerWorker_t *self);
-void apx_fileManagerWorker_stop(apx_fileManagerWorker_t *self);
-
-//Direct API
-void apx_fileManagerWorker_setTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler);
-void apx_fileManagerWorker_copyTransmitHandler(apx_fileManagerWorker_t *self, apx_transmitHandler_t *handler);
-void apx_fileManagerWorker_setNumHeaderSize(apx_fileManagerWorker_t *self, uint8_t bits);
-uint16_t apx_fileManagerWorker_getNumPendingMessages(apx_fileManagerWorker_t *self);
-
-//Message API
-void apx_fileManagerWorker_sendFileInfoMsg(apx_fileManagerWorker_t *self, apx_fileInfo_t *fileInfo);
-void apx_fileManagerWorker_sendFileOpenMsg(apx_fileManagerWorker_t *self, uint32_t address);
-apx_error_t apx_fileManagerWorker_sendHeaderAckMsg(apx_fileManagerWorker_t *self);
-apx_error_t apx_fileManagerWorker_sendConstData(apx_fileManagerWorker_t *self, uint32_t address, uint32_t len, apx_file_read_const_data_func *readFunc, void *arg);
-apx_error_t apx_fileManagerWorker_sendDynamicData(apx_fileManagerWorker_t *self, uint32_t address, uint32_t len, uint8_t *data);
-
-//UNIT TEST API
+uint16_t apx_fileManagerWorker_num_pending_commands(apx_fileManagerWorker_t* self);
 #ifdef UNIT_TEST
-bool apx_fileManagerWorker_run(apx_fileManagerWorker_t *self);
-int32_t apx_fileManagerWorker_numPendingMessages(apx_fileManagerWorker_t *self);
+bool apx_fileManagerWorker_run(apx_fileManagerWorker_t* self);
+#else
+apx_error_t apx_fileManagerWorker_start(apx_fileManagerWorker_t* self);
+void apx_fileManagerWorker_stop(apx_fileManagerWorker_t* self);
 #endif
+
+//Command API
+apx_error_t apx_fileManagerWorker_preare_acknowledge(apx_fileManagerWorker_t* self);
+apx_error_t apx_fileManagerWorker_prepare_publish_local_file(apx_fileManagerWorker_t* self, rmf_fileInfo_t* file_info); //ownership is taken of the file_info object
+apx_error_t apx_fileManagerWorker_prepare_send_local_const_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
+apx_error_t apx_fileManagerWorker_prepare_send_local_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t* data, uint32_t size);
+apx_error_t apx_fileManagerWorker_prepare_send_open_file_request(apx_fileManagerWorker_t* self, uint32_t address);
 
 #endif //APX_FILE_MANAGER_WORKER_H

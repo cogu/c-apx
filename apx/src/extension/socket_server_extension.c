@@ -4,7 +4,7 @@
 * \date      2019-09-04
 * \brief     APX socket server extension (TCP+UNIX)
 *
-* Copyright (c) 2019-2020 Conny Gustafsson
+* Copyright (c) 2019-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -59,15 +59,15 @@ static apx_socketServer_t *m_instance = (apx_socketServer_t*) 0; //singleton
 apx_error_t apx_socketServerExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
    apx_serverExtensionHandler_t handler = {apx_socketServerExtension_init, apx_socketServerExtension_shutdown};
-   return apx_server_addExtension(apx_server, "SOCKET", &handler, config);
+   return apx_server_add_extension(apx_server, "SOCKET", &handler, config);
 }
 
 #ifdef UNIT_TEST
-void apx_socketServerExtension_acceptTestSocket(testsocket_t *sock)
+void apx_socketServerExtension_accept_testsocket(testsocket_t *sock)
 {
    if (m_instance != 0)
    {
-      apx_socketServer_acceptTestSocket(m_instance, sock);
+      apx_socketServer_accept_testsocket(m_instance, sock);
    }
 }
 #endif
@@ -93,7 +93,7 @@ static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_ser
          }
          else
          {
-            return APX_DV_TYPE_ERROR;
+            return APX_VALUE_TYPE_ERROR;
          }
       }
    }
@@ -104,7 +104,7 @@ static void apx_socketServerExtension_shutdown(void)
 {
    if (m_instance != 0)
    {
-      apx_socketServer_stopAll(m_instance);
+      apx_socketServer_stop_all(m_instance);
       apx_socketServer_delete(m_instance);
       m_instance = (apx_socketServer_t*) 0;
    }
@@ -112,44 +112,46 @@ static void apx_socketServerExtension_shutdown(void)
 
 static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg)
 {
-   dtl_sv_t *svTcpPort;
+   dtl_sv_t *sv_tcp_port;
 #ifndef _WIN32
-   dtl_sv_t *svUnixFile;
+   dtl_sv_t *sv_unix_uile;
 #endif
-   dtl_sv_t *svTcpTag;
-   dtl_sv_t *svUnixTag;
-   bool conversionOk;
-   svTcpPort = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-port");
+   dtl_sv_t *sv_tcp_tag;
+   dtl_sv_t *sv_unix_tag;
+   bool conversion_ok;
+
+   (void)server;
+   sv_tcp_port = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-port");
 #ifndef _WIN32
    svUnixFile = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-file");
 #endif
-   svTcpTag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-tag");
-   svUnixTag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-tag");
-   if (svTcpPort != 0)
+   sv_tcp_tag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-tag");
+   sv_unix_tag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-tag");
+   if (sv_tcp_port != 0)
    {
-      uint16_t tcpPort = (uint16_t) dtl_sv_to_u32(svTcpPort, &conversionOk);
-      if (conversionOk && (tcpPort>=TCP_USER_PORT_BEGIN) && (tcpPort <= TCP_USER_PORT_END) )
+      uint16_t tcp_port = (uint16_t) dtl_sv_to_u32(sv_tcp_port, &conversion_ok);
+      if (conversion_ok && (tcp_port >=TCP_USER_PORT_BEGIN) && (tcp_port <= TCP_USER_PORT_END) )
       {
          const char *tag = "";
-         if (svTcpTag != 0)
+         if (sv_tcp_tag != NULL)
          {
-            tag = dtl_sv_to_cstr(svTcpTag);
+            tag = dtl_sv_to_cstr(sv_tcp_tag, &conversion_ok);
          }
-         apx_socketServer_startTcpServer(m_instance, tcpPort, tag);
+         apx_socketServer_start_tcp_server(m_instance, tcp_port, tag);
       }
    }
 #ifndef _WIN32
-   if (svUnixFile != 0)
+   if (sv_unix_uile != 0)
    {
-      const char *unixFilePath = dtl_sv_to_cstr(svUnixFile);
-      if (strlen(unixFilePath) > 0)
+      const char *unix_file_path = dtl_sv_to_cstr(sv_unix_uile);
+      if (strlen(unix_file_path) > 0)
       {
          const char *tag = "";
-         if (svUnixTag != 0)
+         if (sv_unix_tag != 0)
          {
-            tag = dtl_sv_to_cstr(svUnixTag);
+            tag = dtl_sv_to_cstr(svUnixTag, &conversion_ok);
          }
-         apx_socketServer_startUnixServer(m_instance, unixFilePath, tag);
+         apx_socketServer_start_unix_server(m_instance, unix_file_path, tag);
       }
    }
 #endif

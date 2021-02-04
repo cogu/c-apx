@@ -32,8 +32,8 @@
 #include "apx/types.h"
 
 //forward declarations
-struct apx_serverConnectionBase_tag;
-struct apx_clientConnectionBase_tag;
+struct apx_serverConnection_tag;
+struct apx_clientConnection_tag;
 struct apx_portConnectionTable_tag;
 struct rmf_fileInfo_tag;
 struct apx_fileInfo_tag;
@@ -56,16 +56,16 @@ typedef void (clientRequirePortWriteFuncType1)(void *arg, struct apx_nodeInstanc
 typedef struct apx_clientEventListener_tag
 {
    void *arg;
-   void (*clientConnect1)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);
-   void (*clientDisconnect1)(void *arg, struct apx_clientConnectionBase_tag *clientConnection);
+   void (*clientConnect1)(void *arg, struct apx_clientConnection_tag *clientConnection);
+   void (*clientDisconnect1)(void *arg, struct apx_clientConnection_tag *clientConnection);
    clientRequirePortWriteFuncType1 *requirePortWrite1;
 } apx_clientEventListener_t;
 
 typedef struct apx_serverEventListener_tag
 {
    void *arg;
-   void (*serverConnect1)(void *arg, struct apx_serverConnectionBase_tag *connection);
-   void (*serverDisconnect1)(void *arg, struct apx_serverConnectionBase_tag *connection);
+   void (*serverConnect1)(void *arg, struct apx_serverConnection_tag *connection);
+   void (*serverDisconnect1)(void *arg, struct apx_serverConnection_tag *connection);
 } apx_serverEventListener_t;
 
 typedef struct apx_connectionEventListener_tag

@@ -2,9 +2,9 @@
 * \file      portConnectorList.h
 * \author    Conny Gustafsson
 * \date      2018-12-07
-* \brief     Internal lookup table for port subscriptions
+* \brief     Container for port connectors from P-Port perspective
 *
-* Copyright (c) 2018-2020 Conny Gustafsson
+* Copyright (c) 2018-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -23,15 +23,15 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_PORT_TRIGGER_LIST_H
-#define APX_PORT_TRIGGER_LIST_H
+#ifndef APX_PORT_CONNECTOR_LIST_H
+#define APX_PORT_CONNECTOR_LIST_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_ary.h"
 #include "apx/error.h"
-#include "apx/port_data_ref.h"
+#include "apx/port_instance.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -42,7 +42,7 @@
  */
 typedef struct apx_portConnectorList_tag
 {
-   adt_ary_t requirePortData; //weak references to apx_portRef_t
+   adt_ary_t require_ports; //weak references to apx_portInstance_t
 } apx_portConnectorList_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -60,10 +60,10 @@ void apx_portConnectorList_destroy(apx_portConnectorList_t *self);
 apx_portConnectorList_t* apx_portConnectorList_new(void);
 void apx_portConnectorList_delete(apx_portConnectorList_t *self);
 
-apx_error_t apx_portConnectorList_insert(apx_portConnectorList_t *self, apx_portRef_t *portData);
-void apx_portConnectorList_remove(apx_portConnectorList_t *self, apx_portRef_t *portData);
+apx_error_t apx_portConnectorList_insert(apx_portConnectorList_t *self, apx_portInstance_t* port_instance);
+void apx_portConnectorList_remove(apx_portConnectorList_t *self, apx_portInstance_t* port_instance);
 void apx_portConnectorList_clear(apx_portConnectorList_t *self);
 int32_t apx_portConnectorList_length(apx_portConnectorList_t *self);
-apx_portRef_t *apx_portConnectorList_get(apx_portConnectorList_t *self, int32_t index);
+apx_portInstance_t*apx_portConnectorList_get(apx_portConnectorList_t *self, int32_t index);
 
-#endif //APX_PORT_TRIGGER_LIST_H
+#endif //APX_PORT_CONNECTOR_LIST_H

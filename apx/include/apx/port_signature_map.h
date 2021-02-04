@@ -4,7 +4,7 @@
 * \date      2020-02-18
 * \brief     Port signature map
 *
-* Copyright (c) 2020 Conny Gustafsson
+* Copyright (c) 2020-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -41,7 +41,7 @@ struct apx_nodeInstance_tag;
 
 typedef struct apx_portSignatureMap_tag
 {
-   adt_hash_t internalMap; //strong references to apx_portSignatureMapEntry_t. The hash key is the portSignature string.
+   adt_hash_t internal_map; //strong references to apx_portSignatureMapEntry_t. The hash key is the portSignature string.
 } apx_portSignatureMap_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -54,10 +54,10 @@ void apx_portSignatureMap_delete(apx_portSignatureMap_t *self);
 
 apx_portSignatureMapEntry_t *apx_portSignatureMap_find(apx_portSignatureMap_t *self, const char *portSignature);
 int32_t apx_portSignatureMap_length(apx_portSignatureMap_t *self);
-apx_error_t apx_portSignatureMap_connectProvidePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
-apx_error_t apx_portSignatureMap_connectRequirePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
-apx_error_t apx_portSignatureMap_disconnectProvidePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
-apx_error_t apx_portSignatureMap_disconnectRequirePorts(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *nodeInstance);
+apx_error_t apx_portSignatureMap_connect_provide_ports(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *node_instance);
+apx_error_t apx_portSignatureMap_connect_require_ports(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *node_instance);
+apx_error_t apx_portSignatureMap_disconnect_provide_ports(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *node_instance);
+apx_error_t apx_portSignatureMap_disconnect_require_ports(apx_portSignatureMap_t *self, struct apx_nodeInstance_tag *node_instance);
 
 
 #endif //APX_PORT_SIGNATURE_MAP_H

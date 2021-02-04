@@ -4,7 +4,7 @@
 * \date      2017-02-20
 * \brief     APX client class
 *
-* Copyright (c) 2017-2020 Conny Gustafsson
+* Copyright (c) 2017-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -32,7 +32,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "apx/error.h"
-#include "apx/client_connection_base.h"
+#include "apx/client_connection.h"
 #include "apx/node_instance.h"
 
 
@@ -67,13 +67,13 @@ struct testsocket_tag;
 
 typedef struct apx_client_tag
 {
-   apx_clientConnectionBase_t *connection; //message connection
-   struct adt_list_tag *eventListeners; //weak references to apx_clientEventListener_t
-   struct apx_nodeManager_tag *nodeManager;
-   struct apx_vm_tag *vm;
-   SPINLOCK_T lock;
-   SPINLOCK_T eventListenerLock;
-   bool isConnected;
+   apx_clientConnection_t *connection; //message connection
+   struct adt_list_tag *event_listeners; //weak references to apx_clientEventListener_t
+   struct apx_nodeManager_tag *node_manager; //strong reference
+   struct apx_vm_tag *vm; //strong refence
+   MUTEX_T lock;
+   MUTEX_T event_listener_lock;
+   bool is_connected;
 } apx_client_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -100,36 +100,36 @@ apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socketPath);
 #endif
 void apx_client_disconnect(apx_client_t *self);
 
-void* apx_client_registerEventListener(apx_client_t *self, struct apx_clientEventListener_tag *listener);
-void apx_client_unregisterEventListener(apx_client_t *self, void *handle);
+void* apx_client_register_event_listener(apx_client_t *self, struct apx_clientEventListener_tag *listener);
+void apx_client_unregister_event_listener(apx_client_t *self, void *handle);
 
-int32_t apx_client_getNumAttachedNodes(apx_client_t *self);
-int32_t apx_client_getNumEventListeners(apx_client_t *self);
-void apx_client_attachConnection(apx_client_t *self, apx_clientConnectionBase_t *connection);
-apx_clientConnectionBase_t *apx_client_getConnection(apx_client_t *self);
+int32_t apx_client_get_num_attached_nodes(apx_client_t *self);
+int32_t apx_client_get_num_event_listeners(apx_client_t *self);
+void apx_client_attach_connection(apx_client_t *self, apx_clientConnection_t *connection);
+apx_clientConnection_t *apx_client_get_connection(apx_client_t *self);
 
-apx_error_t apx_client_buildNode_cstr(apx_client_t *self, const char *definition_text);
-int32_t apx_client_getLastErrorLine(apx_client_t *self);
-apx_nodeInstance_t *apx_client_getLastAttachedNode(apx_client_t *self);
-struct apx_fileManager_tag *apx_client_getFileManager(apx_client_t *self);
-struct apx_nodeManager_tag *apx_client_getNodeManager(apx_client_t *self);
+apx_error_t apx_client_build_node(apx_client_t *self, const char *definition_text);
+int32_t apx_client_get_last_error_line(apx_client_t *self);
+apx_nodeInstance_t *apx_client_get_last_attached_node(apx_client_t *self);
+struct apx_fileManager_tag *apx_client_get_file_manager(apx_client_t *self);
+struct apx_nodeManager_tag *apx_client_get_node_manager(apx_client_t *self);
 
 /*** Port Handle API ***/
-void *apx_client_getPortHandle(apx_client_t *self, const char *nodeName, const char *portName);
-void *apx_client_getProvidePortHandleById(apx_client_t *self, const char *nodeName, apx_portId_t providePortId);
-void *apx_client_getRequirePortHandleById(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId);
+void *apx_client_get_port_handle(apx_client_t *self, const char *nodeName, const char *portName);
+void *apx_client_get_provide_port_handle_by_id(apx_client_t *self, const char *nodeName, apx_portId_t providePortId);
+void *apx_client_get_require_port_handle_by_id(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId);
 
 /*** Port Data Write API ***/
-apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const dtl_dv_t *value);
-apx_error_t apx_client_writePortData_u8(apx_client_t *self, void *portHandle, uint8_t value);
-apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
-apx_error_t apx_client_writePortData_u32(apx_client_t *self, void *portHandle, uint32_t value);
+//apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const dtl_dv_t *value);
+//apx_error_t apx_client_writePortData_u8(apx_client_t *self, void *portHandle, uint8_t value);
+//apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
+//apx_error_t apx_client_writePortData_u32(apx_client_t *self, void *portHandle, uint32_t value);
 
 /*** Port Data Read API ***/
-apx_error_t apx_client_readPortData(apx_client_t *self, void *portHandle, dtl_dv_t **dv);
-apx_error_t apx_client_readPortData_u8(apx_client_t *self, void *portHandle, uint8_t *value);
-apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value);
-apx_error_t apx_client_readPortData_u32(apx_client_t *self, void *portHandle, uint32_t *value);
+//apx_error_t apx_client_readPortData(apx_client_t *self, void *portHandle, dtl_dv_t **dv);
+//apx_error_t apx_client_readPortData_u8(apx_client_t *self, void *portHandle, uint8_t *value);
+//apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value);
+//apx_error_t apx_client_readPortData_u32(apx_client_t *self, void *portHandle, uint32_t *value);
 
 #ifdef UNIT_TEST
 void apx_client_run(apx_client_t *self);
