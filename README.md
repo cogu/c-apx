@@ -134,13 +134,13 @@ Launch "x64 Native Tools Command Prompt for Visual Studio 2019" in start menu.
 **Configure:**
 
 ```cmd
-cmake -S . -B VisualStudio
+cmake -S . -B build
 ```
 
 **Build binaries:**
 
 ```cmd
-cmake --build VisualStudio --config Release --target apx_server apx_node apx_control
+cmake --build build --config Release --target apx_server apx_node apx_control
 ```
 
 **Install binaries:**
@@ -148,5 +148,5 @@ cmake --build VisualStudio --config Release --target apx_server apx_node apx_con
 Run with admininistrative privilege.
 
 ```cmd
-cmake --build VisualStudio --target install
+cmake --build build --target install
 ```

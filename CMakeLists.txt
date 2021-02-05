@@ -56,7 +56,7 @@ set (APX_COMMON_TEST_SUITE
     apx/test/testsuite_compiler_unpack.c
     apx/test/testsuite_computation.c
     apx/test/testsuite_data_element.c
-    apx/test/testsuite_decoder.c    
+    apx/test/testsuite_decoder.c
     apx/test/testsuite_file_info.c
     apx/test/testsuite_file_manager_receiver.c
     apx/test/testsuite_file_map.c
@@ -127,9 +127,9 @@ add_subdirectory(dtl_type)
 add_subdirectory(msocket)
 #add_subdirectory(app/apx_node) CG-20210204: Temporary disable while apx_client class is being upgraded
 #add_subdirectory(app/apx_control) CG-20210204: Temporary disable while apx_client class is being upgraded
-#if(BUILD_DEFAULT_SERVER)
-#    add_subdirectory(app/apx_server) CG-20210204: Temporary disable while apx_server app is being upgraded
-#endif()
+if(BUILD_DEFAULT_SERVER)
+    add_subdirectory(app/apx_server)
+endif()
 ###
 
 # apx library
@@ -159,30 +159,30 @@ set (APX_COMMON_HEADERS
     apx/include/apx/event_loop.h
     apx/include/apx/event.h
     apx/include/apx/file_info.h
-    apx/include/apx/file_manager_defs.h        
+    apx/include/apx/file_manager_defs.h
     apx/include/apx/file_manager_receiver.h
     apx/include/apx/file_manager_shared.h
     apx/include/apx/file_manager_worker.h
     apx/include/apx/file_manager.h
     apx/include/apx/file_map.h
     apx/include/apx/file.h
-    apx/include/apx/log_event.h    
+    apx/include/apx/log_event.h
     apx/include/apx/node_cache.h
     apx/include/apx/node_data.h
     apx/include/apx/node_instance.h
-    apx/include/apx/node_manager.h    
+    apx/include/apx/node_manager.h
     apx/include/apx/node.h
     apx/include/apx/numheader.h
     apx/include/apx/parser_base.h
-    apx/include/apx/parser.h    
+    apx/include/apx/parser.h
     apx/include/apx/port_attribute.h
     apx/include/apx/port_connector_change_entry.h
     apx/include/apx/port_connector_change_ref.h
     apx/include/apx/port_connector_change_table.h
-    apx/include/apx/port_connector_list.h    
+    apx/include/apx/port_connector_list.h
     apx/include/apx/port_instance.h
     apx/include/apx/port_signature_map_entry.h
-    apx/include/apx/port_signature_map.h    
+    apx/include/apx/port_signature_map.h
     apx/include/apx/port.h
     apx/include/apx/program.h
     apx/include/apx/remotefile_cfg.h
@@ -190,17 +190,17 @@ set (APX_COMMON_HEADERS
     apx/include/apx/serializer.h
     apx/include/apx/server_connection.h
     apx/include/apx/server_extension.h
-    apx/include/apx/server_test_connection.h    
+    apx/include/apx/server_test_connection.h
     apx/include/apx/server.h
     apx/include/apx/signature_parser.h
     apx/include/apx/socket_client_connection.h
-    apx/include/apx/stream.h    
+    apx/include/apx/stream.h
     apx/include/apx/type_attribute.h
     apx/include/apx/types.h
     apx/include/apx/util.h
     apx/include/apx/vm_common.h
     apx/include/apx/vm_defs.h
-    apx/include/apx/vm.h    
+    apx/include/apx/vm.h
 )
 
 set (APX_COMMON_SOURCES
@@ -215,7 +215,6 @@ set (APX_COMMON_SOURCES
     apx/src/compiler.c
     apx/src/computation.c
     apx/src/connection_base.c
-    apx/src/connection_interface.c
     apx/src/connection_manager.c
     apx/src/data_element.c
     apx/src/data_signature.c
