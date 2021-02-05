@@ -162,12 +162,12 @@ void apx_socketServer_start_unix_server(apx_socketServer_t *self, const char *fi
    {
       //char msg[APX_MAX_LOG_LEN];
       msocket_handler_t server_handler;
-      self->unixServerFile = STRDUP(file_path);
+      self->unix_server_file = STRDUP(file_path);
       if (tag != 0)
       {
          self->unix_connection_tag = STRDUP(tag);
       }
-      memset(&serverHandler,0,sizeof(server_handler));
+      memset(&server_handler,0,sizeof(server_handler));
 #ifndef UNIT_TEST
       serverHandler.tcp_accept = apx_socketServer_unix_accept;
 #endif

@@ -941,6 +941,7 @@ static void state_set_value(apx_vm_writeState_t* self, dtl_dv_t const* dv)
    state_reset(self, dtl_dv_type(dv));
    switch (self->value_type)
    {
+   case DTL_DV_INVALID:
    case DTL_DV_NULL:
       self->value.dv = NULL;
       break;

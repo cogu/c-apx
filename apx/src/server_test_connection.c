@@ -29,6 +29,7 @@
 #include <malloc.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include "apx/server_test_connection.h"
 #include "apx/numheader.h"
 #ifdef MEM_LEAK_CHECK

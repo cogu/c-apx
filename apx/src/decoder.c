@@ -370,7 +370,7 @@ static apx_error_t decode_array_size(apx_vm_decoder_t* self)
          }
          else
          {
-            APX_INVALID_INSTRUCTION_ERROR;
+            return APX_INVALID_INSTRUCTION_ERROR;
          }
       }
       return APX_NO_ERROR;
@@ -390,7 +390,7 @@ static apx_error_t decode_range_check_uint32(apx_vm_decoder_t* self, uint8_t var
       }
       else
       {
-         APX_INVALID_INSTRUCTION_ERROR;
+         return APX_INVALID_INSTRUCTION_ERROR;
       }
       result = apx_vm_parse_uint32_by_variant(self->program_next, self->program_end, variant, &self->range_check_uint32_info.upper_limit);
       if ((result > self->program_next) && (self->program_next <= self->program_end))
@@ -399,7 +399,7 @@ static apx_error_t decode_range_check_uint32(apx_vm_decoder_t* self, uint8_t var
       }
       else
       {
-         APX_INVALID_INSTRUCTION_ERROR;
+    	  return APX_INVALID_INSTRUCTION_ERROR;
       }
       return APX_NO_ERROR;
    }
@@ -418,7 +418,7 @@ static apx_error_t decode_range_check_uint64(apx_vm_decoder_t* self, uint8_t var
       }
       else
       {
-         APX_INVALID_INSTRUCTION_ERROR;
+         return APX_INVALID_INSTRUCTION_ERROR;
       }
       result = apx_vm_parse_uint64_by_variant(self->program_next, self->program_end, variant, &self->range_check_uint64_info.upper_limit);
       if ((result > self->program_next) && (self->program_next <= self->program_end))
@@ -427,7 +427,7 @@ static apx_error_t decode_range_check_uint64(apx_vm_decoder_t* self, uint8_t var
       }
       else
       {
-         APX_INVALID_INSTRUCTION_ERROR;
+    	  return APX_INVALID_INSTRUCTION_ERROR;
       }
       return APX_NO_ERROR;
    }
@@ -446,7 +446,7 @@ static apx_error_t decode_range_check_int32(apx_vm_decoder_t* self, uint8_t vari
       }
       else
       {
-         APX_INVALID_INSTRUCTION_ERROR;
+    	  return APX_INVALID_INSTRUCTION_ERROR;
       }
       result = apx_vm_parse_int32_by_variant(self->program_next, self->program_end, variant, &self->range_check_int32_info.upper_limit);
       if ((result > self->program_next) && (self->program_next <= self->program_end))
@@ -455,7 +455,7 @@ static apx_error_t decode_range_check_int32(apx_vm_decoder_t* self, uint8_t vari
       }
       else
       {
-         APX_INVALID_INSTRUCTION_ERROR;
+         return APX_INVALID_INSTRUCTION_ERROR;
       }
       return APX_NO_ERROR;
    }
@@ -474,7 +474,7 @@ static apx_error_t decode_range_check_int64(apx_vm_decoder_t* self, uint8_t vari
       }
       else
       {
-         APX_INVALID_INSTRUCTION_ERROR;
+    	  return APX_INVALID_INSTRUCTION_ERROR;
       }
       result = apx_vm_parse_int64_by_variant(self->program_next, self->program_end, variant, &self->range_check_int64_info.upper_limit);
       if ((result > self->program_next) && (self->program_next <= self->program_end))
@@ -483,7 +483,7 @@ static apx_error_t decode_range_check_int64(apx_vm_decoder_t* self, uint8_t vari
       }
       else
       {
-         APX_INVALID_INSTRUCTION_ERROR;
+    	  return APX_INVALID_INSTRUCTION_ERROR;
       }
       return APX_NO_ERROR;
    }

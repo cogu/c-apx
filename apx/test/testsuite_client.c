@@ -14,6 +14,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+
 static const char *m_apx_definition1 = "APX/1.2\n"
       "N\"TestNode1\"\n"
       "P\"U8Value\"C:=0xff\n"
@@ -27,7 +28,7 @@ static const char *m_apx_definition2 = "APX/1.2\n"
       "R\"U16Value\"S:=0xffff\n"
       "R\"U32Value\"L:=0xffffffff\n"
       "\n";
-
+/*
 static const char *m_apx_definition3 = "APX/1.2\n"
       "N\"TestNode3\"\n"
       "P\"U8Array\"C[3]:={0xFF, 0xFF, 0xFF}\n"
@@ -93,7 +94,7 @@ static const char *m_apx_definition12 = "APX/1.2\n"
       "R\"String16\"a[16]:=\"\"\n"
       "R\"String8\"a[8]:=\"\342\204\203\"\n" //degrees Centigrade symbol U+2103
       "\n";
-
+*/
 
 #define UNSIGNED_ARRAY_LEN 3
 #define SIGNED_ARRAY_LEN   4

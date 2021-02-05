@@ -421,7 +421,7 @@ apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, 
          {
             return 0u;
          }
-         if (!rmf_value_to_digest_type(value1, &file_info->digest_type))
+         if (!rmf_value_to_digest_type(value2, &file_info->digest_type))
          {
             return 0u;
          }

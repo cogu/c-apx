@@ -379,8 +379,8 @@ apx_error_t apx_nodeInstance_create_require_port(apx_nodeInstance_t* self, apx_p
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_alloc_init_data_memory(apx_nodeInstance_t* self, uint8_t const** provide_port_data,
-   apx_size_t* provide_port_data_size, uint8_t const** require_port_data, apx_size_t* require_port_data_size)
+apx_error_t apx_nodeInstance_alloc_init_data_memory(apx_nodeInstance_t* self, uint8_t** provide_port_data,
+   apx_size_t* provide_port_data_size, uint8_t** require_port_data, apx_size_t* require_port_data_size)
 {
    if ( (self != NULL) && (provide_port_data != NULL) && (provide_port_data_size != NULL) &&
       (require_port_data != NULL) && (require_port_data_size != NULL))
