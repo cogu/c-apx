@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.14)
 
 project(apx_server LANGUAGES C)
 
-add_executable(apx_server src/server_main.c)
+add_executable(apx_server
+  src/server_main.c
+  src/extensions_cfg.h
+  src/extensions_cfg.c
+)
 
 target_link_libraries(apx_server PRIVATE
 apx
