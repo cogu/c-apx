@@ -120,8 +120,8 @@ apx_error_t apx_nodeInstance_create_provide_port(apx_nodeInstance_t* self, apx_p
    apx_program_t const* pack_program, uint32_t data_offset, uint32_t* data_size);
 apx_error_t apx_nodeInstance_create_require_port(apx_nodeInstance_t* self, apx_portId_t port_id, char const* name,
    apx_program_t const* pack_program, apx_program_t const* unpack_program, uint32_t data_offset, uint32_t* data_size);
-apx_error_t apx_nodeInstance_alloc_init_data_memory(apx_nodeInstance_t* self, uint8_t const** provide_port_data,
-   apx_size_t* provide_port_data_size, uint8_t const** require_port_data, apx_size_t* require_port_data_size);
+apx_error_t apx_nodeInstance_alloc_init_data_memory(apx_nodeInstance_t* self, uint8_t** provide_port_data,
+   apx_size_t* provide_port_data_size, uint8_t** require_port_data, apx_size_t* require_port_data_size);
 apx_error_t apx_nodeInstance_init_node_data(apx_nodeInstance_t* self, uint8_t const* definition_data, apx_size_t definition_size);
 apx_error_t apx_nodeInstance_finalize_node_data(apx_nodeInstance_t* self);
 bool apx_nodeInstance_has_provide_port_data(apx_nodeInstance_t const* self);

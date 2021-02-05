@@ -301,6 +301,7 @@ static apx_error_t run_unpack_program(apx_vm_t* self)
       {
       case APX_OPERATION_TYPE_UNPACK:
          result = run_unpack_instruction(self);
+         break;
       case APX_OPERATION_TYPE_PACK:
          return APX_INVALID_INSTRUCTION_ERROR;
          break;
@@ -317,10 +318,10 @@ static apx_error_t run_unpack_program(apx_vm_t* self)
          result = run_range_check_unpack_uint64(self);
          break;
       case APX_OPERATION_TYPE_RECORD_SELECT:
-         result = APX_NOT_IMPLEMENTED_ERROR;
+    	  result = run_unpack_record_select(self);
          break;
       case APX_OPERATION_TYPE_ARRAY_NEXT:
-         result = APX_NOT_IMPLEMENTED_ERROR;
+         result = run_array_next(self);
          break;
       case APX_OPERATION_TYPE_PROGRAM_END:
          break;

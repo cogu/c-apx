@@ -527,7 +527,7 @@ static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *sel
    }
    MUTEX_UNLOCK(self->event_listener_lock);
 }
-
+/*
 static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t *self, apx_nodeInstance_t *nodeInstance, apx_portId_t requirePortId, void *portHandle)
 {
    MUTEX_LOCK(self->event_listener_lock);
@@ -543,6 +543,7 @@ static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t 
    }
    MUTEX_UNLOCK(self->event_listener_lock);
 }
+*/
 
 static void apx_client_attach_local_nodes_to_connection(apx_client_t *self)
 {

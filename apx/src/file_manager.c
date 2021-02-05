@@ -51,7 +51,6 @@ static apx_error_t process_file_write_message(apx_fileManager_t* self, uint32_t 
 static apx_error_t process_open_file_request(apx_fileManager_t* self, uint32_t start_address);
 static apx_error_t process_close_file_request(apx_fileManager_t* self, uint32_t start_address);
 static apx_error_t process_remote_file_published(apx_fileManager_t* self, rmf_fileInfo_t const* file_info);
-static void apx_fileManager_header_received(apx_fileManager_t* self);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -477,13 +476,4 @@ static apx_error_t process_remote_file_published(apx_fileManager_t* self, rmf_fi
    }
    assert(connection->remote_file_published_notification != NULL);
    return connection->remote_file_published_notification(connection->arg, file);
-}
-
-/**
- * Server Mode
- */
-static void apx_fileManager_header_received(apx_fileManager_t* self)
-{
-   (void)self;
-   //apx_fileManagerWorker_send_header_acknowledge(&self->worker);
 }

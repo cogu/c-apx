@@ -91,7 +91,7 @@ void apx_connectionManager_start(apx_connectionManager_t *self)
 #ifdef _WIN32
       THREAD_CREATE(self->cleanup_thread, cleanup_task, (void*) self, self->cleanup_thread_id);
 #else
-      THREAD_CREATE(self->cleanupThread, cleanupTask, (void*) self);
+      THREAD_CREATE(self->cleanup_thread, cleanup_task, (void*) self);
 #endif
    }
 }
@@ -110,7 +110,7 @@ void apx_connectionManager_stop(apx_connectionManager_t *self)
       WaitForSingleObject( self->cleanup_thread, INFINITE );
       CloseHandle( self->cleanup_thread );
 #else
-      pthread_join(self->cleanupThread, &result);
+      pthread_join(self->cleanup_thread, &result);
 #endif
       self->cleanup_thread_valid = false;
    }

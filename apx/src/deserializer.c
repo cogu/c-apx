@@ -91,8 +91,8 @@ static apx_error_t deserializer_unpack_record_value(apx_vm_deserializer_t* self)
 static apx_error_t deserializer_unpack_array_of_scalar(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_unpack_string(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_unpack_byte_array_internal(apx_vm_deserializer_t* self);
-static apx_error_t deserializer_unpack_scalar_value_internal(apx_vm_deserializer_t* self);
-static apx_error_t deserializer_unpack_char_string(apx_vm_deserializer_t* self, adt_str_t const* str, uint32_t max_target_size);
+//static apx_error_t deserializer_unpack_scalar_value_internal(apx_vm_deserializer_t* self);
+//static apx_error_t deserializer_unpack_char_string(apx_vm_deserializer_t* self, adt_str_t const* str, uint32_t max_target_size);
 static apx_error_t deserializer_pop_state(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_enter_new_child_state(apx_vm_deserializer_t* self);
 
@@ -842,6 +842,7 @@ static void state_clear_value(apx_vm_readState_t* self)
    assert(self != NULL);
    switch (self->value_type)
    {
+   case DTL_DV_INVALID:
    case DTL_DV_NULL:
       //Already cleared
       break;
@@ -1216,6 +1217,7 @@ static apx_error_t state_create_child_value_from_child_state(apx_vm_readState_t*
    }
    switch (child_state->value_type)
    {
+   case DTL_DV_INVALID:
    case DTL_DV_NULL:
       return APX_VALUE_TYPE_ERROR;
    case DTL_DV_SCALAR:
@@ -1237,6 +1239,7 @@ static apx_error_t state_push_value_from_child_state(apx_vm_readState_t* self, a
    assert(self->value_type == DTL_DV_ARRAY);
    switch (child_state->value_type)
    {
+   case DTL_DV_INVALID:
    case DTL_DV_NULL:
       return APX_VALUE_TYPE_ERROR;
    case DTL_DV_SCALAR:

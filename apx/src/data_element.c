@@ -810,7 +810,7 @@ apx_error_t apx_dataElement_derive_data_element(apx_dataElement_t const* self, a
       if (data_type != NULL)
       {
          retval = apx_dataType_derive_data_element(data_type, data_element, parent);
-         (data_element != NULL);
+         assert(*data_element != NULL);
       }
       else
       {

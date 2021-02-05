@@ -103,7 +103,7 @@ apx_file_t* apx_fileManagerShared_create_remote_file(apx_fileManagerShared_t* se
    return NULL;
 }
 
-int32_t apx_fileManagerShared_get_num_local_files(apx_fileManagerShared_t const* self)
+int32_t apx_fileManagerShared_get_num_local_files(apx_fileManagerShared_t* self)
 {
    if (self != NULL)
    {
@@ -116,7 +116,7 @@ int32_t apx_fileManagerShared_get_num_local_files(apx_fileManagerShared_t const*
    return -1;
 }
 
-int32_t apx_fileManagerShared_get_num_remote_files(apx_fileManagerShared_t const* self)
+int32_t apx_fileManagerShared_get_num_remote_files(apx_fileManagerShared_t* self)
 {
    if (self != NULL)
    {
@@ -187,7 +187,7 @@ void apx_fileManagerShared_set_connection_id(apx_fileManagerShared_t* self, uint
    }
 }
 
-uint32_t apx_fileManagerShared_get_connection_id(apx_fileManagerShared_t const* self)
+uint32_t apx_fileManagerShared_get_connection_id(apx_fileManagerShared_t* self)
 {
    if (self != NULL)
    {
@@ -195,6 +195,7 @@ uint32_t apx_fileManagerShared_get_connection_id(apx_fileManagerShared_t const* 
       MUTEX_LOCK(self->lock);
       retval = self->connection_id;
       MUTEX_UNLOCK(self->lock);
+      return retval;
    }
    return APX_INVALID_CONNECTION_ID;
 }

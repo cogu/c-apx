@@ -133,6 +133,7 @@ CuSuite* testSuite_apx_vm_serializer(void)
    SUITE_ADD_TEST(suite, test_range_check_int32_array_with_mixed_value_types);
    SUITE_ADD_TEST(suite, test_range_check_int32_array_with_out_of_range_value);
    SUITE_ADD_TEST(suite, test_range_check_uint64_value);
+   SUITE_ADD_TEST(suite, test_range_check_int64_value);
    SUITE_ADD_TEST(suite, test_pack_int8_from_int32_value);
    SUITE_ADD_TEST(suite, test_pack_int8_from_value_out_of_range_returns_range_error);
    SUITE_ADD_TEST(suite, test_pack_int8_array);

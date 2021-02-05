@@ -28,6 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <assert.h>
+#include <string.h>
 #include "apx/client_test_connection.h"
 //#include "apx/client_internal.h"
 #include "apx/numheader.h"
