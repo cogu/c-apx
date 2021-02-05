@@ -63,7 +63,7 @@ CMake build has been tested for Windows (with Visual Studio) as well as Linux (w
 For Windows, use a "Native tools command prompt" provided by your Visual Studio installation. It comes with a cmake binary that
 by default chooses the right version of Visusl Studio compiler.
 
-### Running unit tests (Linux GCC and Windows VS2019)
+### Running unit tests (Linux and Windows)
 
 Configure:
 
@@ -80,8 +80,7 @@ cmake --build build --target apx_unit
 Run test cases:
 
 ```cmd
-cd build
-ctest
+cd build && ctest
 ```
 
 ### Building APX Binaries (Linux)
