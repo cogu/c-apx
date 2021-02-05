@@ -65,7 +65,7 @@ struct msocket_server_tag;
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock);
-#ifndef UNIT_TEST
+#if !defined(UNIT_TEST) && !defined(_WIN32)
 static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock);
 #endif
 
@@ -155,7 +155,7 @@ void apx_socketServer_start_tcp_server(apx_socketServer_t *self, uint16_t tcp_po
    }
 }
 
-#ifndef _WIN32
+#if !defined(UNIT_TEST) && !defined(_WIN32)
 void apx_socketServer_start_unix_server(apx_socketServer_t *self, const char *file_path, const char *tag)
 {
    if ( (self != 0) && (file_path != 0))
@@ -203,7 +203,7 @@ void apx_socketServer_stop_tcp_server(apx_socketServer_t *self)
    }
 }
 
-#ifndef _WIN32
+#if !defined(UNIT_TEST) && !defined(_WIN32)
 void apx_socketServer_stop_unix_server(apx_socketServer_t *self)
 {
    if ( (self != 0) && (self->is_unix_server_started) )
@@ -250,7 +250,7 @@ static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *sr
    }
 }
 
-#ifndef UNIT_TEST
+#if !defined(UNIT_TEST) && !defined(_WIN32)
 static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock)
 {
    apx_socketServer_t *self = (apx_socketServer_t*) arg;
@@ -261,9 +261,9 @@ static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *s
    {
       apx_socketServerConnection_t * new_connection = apx_socketServerConnection_new(sock);
       ///TODO: Add support for connection tag
-      if (newConnection != 0)
+      if (new_connection != 0)
       {
-         apx_server_acceptConnection(self->parent, (apx_serverConnection_t*)new_connection);
+         apx_server_accept_connection(self->parent, (apx_serverConnection_t*)new_connection);
       }
       else
       {

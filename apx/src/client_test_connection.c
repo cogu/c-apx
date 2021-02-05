@@ -390,7 +390,9 @@ void apx_clientTestConnection_run(apx_clientTestConnection_t* self)
 {
    if (self != NULL)
    {
+#ifdef UNIT_TEST
       apx_clientConnection_run(&self->base);
+#endif
    }
 }
 

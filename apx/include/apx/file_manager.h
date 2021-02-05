@@ -78,7 +78,6 @@ apx_error_t apx_fileManager_send_error_code(apx_fileManager_t* self, apx_error_t
 uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self);
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t* self);
-apx_size_t apx_fileManager_num_pending_commands(apx_fileManager_t* self);
 #endif
 
 #endif //APX_FILE_MANAGER_H

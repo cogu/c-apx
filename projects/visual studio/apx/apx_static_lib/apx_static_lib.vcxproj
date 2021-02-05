@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{3c934a48-e5b7-4cbc-9e26-c605e3bc36b2}</ProjectGuid>
-    <RootNamespace>apxunit</RootNamespace>
+    <ProjectGuid>{6ae3b614-5f71-4a38-af99-896b9bf05eac}</ProjectGuid>
+    <RootNamespace>apxstaticlib</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -30,7 +30,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -40,7 +40,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
@@ -78,13 +78,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>apx_static</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -114,16 +115,17 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;ADT_RBFH_ENABLE=1;UNIT_TEST;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;ADT_RBFH_ENABLE=1;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\cutil\cutest;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx\include</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <LanguageStandard_C>Default</LanguageStandard_C>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -142,156 +144,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\adt\src\adt_ary.c" />
-    <ClCompile Include="..\..\..\..\adt\src\adt_bytearray.c" />
-    <ClCompile Include="..\..\..\..\adt\src\adt_bytes.c" />
-    <ClCompile Include="..\..\..\..\adt\src\adt_hash.c" />
-    <ClCompile Include="..\..\..\..\adt\src\adt_list.c" />
-    <ClCompile Include="..\..\..\..\adt\src\adt_ringbuf.c" />
-    <ClCompile Include="..\..\..\..\adt\src\adt_set.c" />
-    <ClCompile Include="..\..\..\..\adt\src\adt_stack.c" />
-    <ClCompile Include="..\..\..\..\adt\src\adt_str.c" />
-    <ClCompile Include="..\..\..\..\apx\src\allocator.c" />
-    <ClCompile Include="..\..\..\..\apx\src\attribute_parser.c" />
-    <ClCompile Include="..\..\..\..\apx\src\byte_port_map.c" />
-    <ClCompile Include="..\..\..\..\apx\src\client.c" />
-    <ClCompile Include="..\..\..\..\apx\src\client_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\src\socket_client_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\src\client_test_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\src\command.c" />
-    <ClCompile Include="..\..\..\..\apx\src\compiler.c" />
-    <ClCompile Include="..\..\..\..\apx\src\computation.c" />
-    <ClCompile Include="..\..\..\..\apx\src\connection_base.c" />
-    <ClCompile Include="..\..\..\..\apx\src\connection_manager.c" />
-    <ClCompile Include="..\..\..\..\apx\src\data_element.c" />
-    <ClCompile Include="..\..\..\..\apx\src\data_signature.c" />
-    <ClCompile Include="..\..\..\..\apx\src\data_type.c" />
-    <ClCompile Include="..\..\..\..\apx\src\decoder.c" />
-    <ClCompile Include="..\..\..\..\apx\src\deserializer.c" />
-    <ClCompile Include="..\..\..\..\apx\src\event.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\event_listener.c" />
-    <ClCompile Include="..\..\..\..\apx\src\event_loop.c" />
-    <ClCompile Include="..\..\..\..\apx\src\extension\socket_server_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log_extension.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\extension\socket_server.c" />
-    <ClCompile Include="..\..\..\..\apx\src\extension\socket_server_extension.c" />
-    <ClCompile Include="..\..\..\..\apx\src\extension\text_log_base.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file.c" />
-    <ClCompile Include="..\..\..\..\apx\src\node_cache.c" />
-    <ClCompile Include="..\..\..\..\apx\src\file_info.c" />
-    <ClCompile Include="..\..\..\..\apx\src\file_manager.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file_manager_receiver.c" />
-    <ClCompile Include="..\..\..\..\apx\src\file_manager_shared.c" />
-    <ClCompile Include="..\..\..\..\apx\src\file_manager_worker.c" />
-    <ClCompile Include="..\..\..\..\apx\src\file_map.c" />
-    <ClCompile Include="..\..\..\..\apx\src\log_event.c" />
-    <ClCompile Include="..\..\..\..\apx\src\node.c" />
-    <ClCompile Include="..\..\..\..\apx\src\node_data.c" />
-    <ClCompile Include="..\..\..\..\apx\src\node_instance.c" />
-    <ClCompile Include="..\..\..\..\apx\src\node_manager.c" />
-    <ClCompile Include="..\..\..\..\apx\src\numheader.c" />
-    <ClCompile Include="..\..\..\..\apx\src\parser.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\parser_base.c" />
-    <ClCompile Include="..\..\..\..\apx\src\port.c" />
-    <ClCompile Include="..\..\..\..\apx\src\port_attribute.c" />
-    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_entry.c" />
-    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_ref.c" />
-    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_table.c" />
-    <ClCompile Include="..\..\..\..\apx\src\port_connector_list.c" />
-    <ClCompile Include="..\..\..\..\apx\src\port_instance.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_signature_map.c" />
-    <ClCompile Include="..\..\..\..\apx\src\port_signature_map_entry.c" />
-    <ClCompile Include="..\..\..\..\apx\src\program.c" />
-    <ClCompile Include="..\..\..\..\apx\src\remotefile.c" />
-    <ClCompile Include="..\..\..\..\apx\src\serializer.c" />
-    <ClCompile Include="..\..\..\..\apx\src\server.c" />
-    <ClCompile Include="..\..\..\..\apx\src\server_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\src\server_extension.c" />
-    <ClCompile Include="..\..\..\..\apx\src\server_test_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\src\signature_parser.c" />
-    <ClCompile Include="..\..\..\..\apx\src\stream.c" />
-    <ClCompile Include="..\..\..\..\apx\src\type_attribute.c" />
-    <ClCompile Include="..\..\..\..\apx\src\util.c" />
-    <ClCompile Include="..\..\..\..\apx\src\vm.c" />
-    <ClCompile Include="..\..\..\..\apx\src\vm_common.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_allocator.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_attribute_parser.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_client.c" />
-    <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_socket_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_text_log.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_socket_server_extension.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_compiler_unpack.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_computation.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_decoder.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_file_info.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_node_manager_server.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_program.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_server.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_signature_parser.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_serializer.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_client_socket_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_client_test_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_compiler_pack.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_data_element.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_file.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_file_manager_receiver.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_file_map.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_node.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_node_data.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_node_manager_client.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_parser.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_port_connection_change_entry.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_port_connector_change_table.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_port_signature_map.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_remotefile.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_server_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_util.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_deserializer.c" />
-    <ClCompile Include="..\..\..\..\apx\test\test_main.c" />
-    <ClCompile Include="..\..\..\..\bstr\src\bstr.c" />
-    <ClCompile Include="..\..\..\..\cutil\cutest\CuTest.c" />
-    <ClCompile Include="..\..\..\..\cutil\src\argparse.c" />
-    <ClCompile Include="..\..\..\..\cutil\src\CMemLeak.c" />
-    <ClCompile Include="..\..\..\..\cutil\src\filestream.c" />
-    <ClCompile Include="..\..\..\..\cutil\src\pack.c" />
-    <ClCompile Include="..\..\..\..\cutil\src\sha256.c" />
-    <ClCompile Include="..\..\..\..\cutil\src\soa.c" />
-    <ClCompile Include="..\..\..\..\cutil\src\soa_chunk.c" />
-    <ClCompile Include="..\..\..\..\cutil\src\soa_fsa.c" />
-    <ClCompile Include="..\..\..\..\dtl_json\src\dtl_json_reader.c" />
-    <ClCompile Include="..\..\..\..\dtl_json\src\dtl_json_writer.c" />
-    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_av.c" />
-    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_dv.c" />
-    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_hv.c" />
-    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_sv.c" />
-    <ClCompile Include="..\..\..\..\msocket\src\msocket.c" />
-    <ClCompile Include="..\..\..\..\msocket\src\msocket_adt.c" />
-    <ClCompile Include="..\..\..\..\msocket\src\msocket_server.c" />
-    <ClCompile Include="..\..\..\..\msocket\src\osutil.c" />
-    <ClCompile Include="..\..\..\..\msocket\src\testsocket.c" />
-    <ClCompile Include="..\..\..\..\msocket\src\testsocket_spy.c" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h" />
     <ClInclude Include="..\..\..\..\adt\inc\adt_bytearray.h" />
     <ClInclude Include="..\..\..\..\adt\inc\adt_bytes.h" />
@@ -309,8 +161,8 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\client.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_internal.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\socket_client_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_test_connection.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\command.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\compiler.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\computation.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\connection_base.h" />
@@ -320,18 +172,12 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\data_signature.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\data_type.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\decoder.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\deserializer.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\error.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\event.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\event_listener.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\event_loop.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server_connection.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_text_log.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_text_log_extension.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server_extension.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\text_log_base.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\file.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\node_cache.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\file_info.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\file_manager.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\file_manager_defs.h" />
@@ -339,10 +185,9 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\file_manager_shared.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\file_manager_worker.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\file_map.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\logging.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\log_event.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\command.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\node.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\node_cache.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\node_data.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\node_instance.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\node_manager.h" />
@@ -361,11 +206,13 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\program.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\remotefile.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\remotefile_cfg.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\serializer.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\server.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\server_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\server_extension.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\server_test_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\signature_parser.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\socket_client_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\stream.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\types.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\type_attribute.h" />
@@ -373,12 +220,7 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\vm.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\vm_common.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\vm_defs.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\deserializer.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\serializer.h" />
     <ClInclude Include="..\..\..\..\bstr\inc\bstr.h" />
-    <ClInclude Include="..\..\..\..\cutil\cutest\CuTest.h" />
-    <ClInclude Include="..\..\..\..\cutil\inc\argparse.h" />
-    <ClInclude Include="..\..\..\..\cutil\inc\CMemLeak.h" />
     <ClInclude Include="..\..\..\..\cutil\inc\filestream.h" />
     <ClInclude Include="..\..\..\..\cutil\inc\pack.h" />
     <ClInclude Include="..\..\..\..\cutil\inc\sha256.h" />
@@ -397,8 +239,92 @@
     <ClInclude Include="..\..\..\..\msocket\inc\msocket_server.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\osmacro.h" />
     <ClInclude Include="..\..\..\..\msocket\inc\osutil.h" />
-    <ClInclude Include="..\..\..\..\msocket\inc\testsocket.h" />
-    <ClInclude Include="..\..\..\..\msocket\inc\testsocket_spy.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\adt\src\adt_ary.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_bytearray.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_bytes.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_hash.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_list.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_ringbuf.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_set.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_stack.c" />
+    <ClCompile Include="..\..\..\..\adt\src\adt_str.c" />
+    <ClCompile Include="..\..\..\..\apx\src\allocator.c" />
+    <ClCompile Include="..\..\..\..\apx\src\attribute_parser.c" />
+    <ClCompile Include="..\..\..\..\apx\src\byte_port_map.c" />
+    <ClCompile Include="..\..\..\..\apx\src\client.c" />
+    <ClCompile Include="..\..\..\..\apx\src\client_connection.c" />
+    <ClCompile Include="..\..\..\..\apx\src\client_test_connection.c" />
+    <ClCompile Include="..\..\..\..\apx\src\command.c" />
+    <ClCompile Include="..\..\..\..\apx\src\compiler.c" />
+    <ClCompile Include="..\..\..\..\apx\src\computation.c" />
+    <ClCompile Include="..\..\..\..\apx\src\connection_base.c" />
+    <ClCompile Include="..\..\..\..\apx\src\connection_manager.c" />
+    <ClCompile Include="..\..\..\..\apx\src\data_element.c" />
+    <ClCompile Include="..\..\..\..\apx\src\data_signature.c" />
+    <ClCompile Include="..\..\..\..\apx\src\data_type.c" />
+    <ClCompile Include="..\..\..\..\apx\src\decoder.c" />
+    <ClCompile Include="..\..\..\..\apx\src\deserializer.c" />
+    <ClCompile Include="..\..\..\..\apx\src\event.c" />
+    <ClCompile Include="..\..\..\..\apx\src\event_listener.c" />
+    <ClCompile Include="..\..\..\..\apx\src\event_loop.c" />
+    <ClCompile Include="..\..\..\..\apx\src\file.c" />
+    <ClCompile Include="..\..\..\..\apx\src\file_info.c" />
+    <ClCompile Include="..\..\..\..\apx\src\file_manager.c" />
+    <ClCompile Include="..\..\..\..\apx\src\file_manager_receiver.c" />
+    <ClCompile Include="..\..\..\..\apx\src\file_manager_shared.c" />
+    <ClCompile Include="..\..\..\..\apx\src\file_manager_worker.c" />
+    <ClCompile Include="..\..\..\..\apx\src\file_map.c" />
+    <ClCompile Include="..\..\..\..\apx\src\log_event.c" />
+    <ClCompile Include="..\..\..\..\apx\src\node.c" />
+    <ClCompile Include="..\..\..\..\apx\src\node_cache.c" />
+    <ClCompile Include="..\..\..\..\apx\src\node_data.c" />
+    <ClCompile Include="..\..\..\..\apx\src\node_instance.c" />
+    <ClCompile Include="..\..\..\..\apx\src\node_manager.c" />
+    <ClCompile Include="..\..\..\..\apx\src\numheader.c" />
+    <ClCompile Include="..\..\..\..\apx\src\parser.c" />
+    <ClCompile Include="..\..\..\..\apx\src\parser_base.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port_attribute.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_entry.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_ref.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_table.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port_connector_list.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port_instance.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port_signature_map.c" />
+    <ClCompile Include="..\..\..\..\apx\src\port_signature_map_entry.c" />
+    <ClCompile Include="..\..\..\..\apx\src\program.c" />
+    <ClCompile Include="..\..\..\..\apx\src\remotefile.c" />
+    <ClCompile Include="..\..\..\..\apx\src\serializer.c" />
+    <ClCompile Include="..\..\..\..\apx\src\server.c" />
+    <ClCompile Include="..\..\..\..\apx\src\server_connection.c" />
+    <ClCompile Include="..\..\..\..\apx\src\server_extension.c" />
+    <ClCompile Include="..\..\..\..\apx\src\server_test_connection.c" />
+    <ClCompile Include="..\..\..\..\apx\src\signature_parser.c" />
+    <ClCompile Include="..\..\..\..\apx\src\socket_client_connection.c" />
+    <ClCompile Include="..\..\..\..\apx\src\stream.c" />
+    <ClCompile Include="..\..\..\..\apx\src\type_attribute.c" />
+    <ClCompile Include="..\..\..\..\apx\src\util.c" />
+    <ClCompile Include="..\..\..\..\apx\src\vm.c" />
+    <ClCompile Include="..\..\..\..\apx\src\vm_common.c" />
+    <ClCompile Include="..\..\..\..\bstr\src\bstr.c" />
+    <ClCompile Include="..\..\..\..\cutil\src\filestream.c" />
+    <ClCompile Include="..\..\..\..\cutil\src\pack.c" />
+    <ClCompile Include="..\..\..\..\cutil\src\sha256.c" />
+    <ClCompile Include="..\..\..\..\cutil\src\soa.c" />
+    <ClCompile Include="..\..\..\..\cutil\src\soa_chunk.c" />
+    <ClCompile Include="..\..\..\..\cutil\src\soa_fsa.c" />
+    <ClCompile Include="..\..\..\..\dtl_json\src\dtl_json_reader.c" />
+    <ClCompile Include="..\..\..\..\dtl_json\src\dtl_json_writer.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_av.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_dv.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_hv.c" />
+    <ClCompile Include="..\..\..\..\dtl_type\src\dtl_sv.c" />
+    <ClCompile Include="..\..\..\..\msocket\src\msocket.c" />
+    <ClCompile Include="..\..\..\..\msocket\src\msocket_adt.c" />
+    <ClCompile Include="..\..\..\..\msocket\src\msocket_server.c" />
+    <ClCompile Include="..\..\..\..\msocket\src\osutil.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

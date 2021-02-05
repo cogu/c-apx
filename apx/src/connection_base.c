@@ -201,8 +201,7 @@ void apx_connectionBase_start(apx_connectionBase_t* self)
    if (self != NULL)
    {
 #ifndef UNIT_TEST
-      apx_connectionBase_start_worker_thread(self);
-      apx_fileManager_start(&self->fileManager);
+      apx_fileManager_start(&self->file_manager);
       if (self->vtable.start != NULL)
       {
          self->vtable.start((void*)self);
@@ -217,7 +216,6 @@ void apx_connectionBase_stop(apx_connectionBase_t* self)
    {
 #ifndef UNIT_TEST
       apx_fileManager_stop(&self->file_manager);
-      apx_connectionBase_stop_worker_thread(self);
 #endif
    }
 }

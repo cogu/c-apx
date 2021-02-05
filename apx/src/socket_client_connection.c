@@ -183,7 +183,7 @@ apx_error_t apx_clientConnection_tcp_connect(apx_clientSocketConnection_t *self,
          if (result != 0)
          {
             msocket_delete(socketObject);
-            self->socketObject = (SOCKET_TYPE*) 0;
+            self->socket_object = (SOCKET_TYPE*) 0;
             retval = APX_CONNECTION_ERROR;
          }
          else

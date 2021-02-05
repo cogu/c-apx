@@ -115,6 +115,19 @@ void apx_fileManagerWorker_destroy(apx_fileManagerWorker_t *self)
    }
 }
 
+uint16_t apx_fileManagerWorker_num_pending_commands(apx_fileManagerWorker_t* self)
+{
+   if (self != NULL)
+   {
+      uint16_t retval;
+      SPINLOCK_ENTER(self->queue_lock);
+      retval = adt_rbfh_length(&self->queue);
+      SPINLOCK_LEAVE(self->queue_lock);
+      return retval;
+   }
+   return 0u;
+}
+
 #ifdef UNIT_TEST
 bool apx_fileManagerWorker_run(apx_fileManagerWorker_t* self)
 {
@@ -150,19 +163,6 @@ bool apx_fileManagerWorker_run(apx_fileManagerWorker_t* self)
       return true;
    }
    return false;
-}
-
-uint16_t apx_fileManagerWorker_num_pending_commands(apx_fileManagerWorker_t* self)
-{
-   if (self != NULL)
-   {
-      uint16_t retval;
-      SPINLOCK_ENTER(self->queue_lock);
-      retval = adt_rbfh_length(&self->queue);
-      SPINLOCK_LEAVE(self->queue_lock);
-      return retval;
-   }
-   return 0u;
 }
 
 #else

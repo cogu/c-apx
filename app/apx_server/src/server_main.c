@@ -21,11 +21,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "apx_server.h"
-#include "apx_types.h"
+#include "apx/server.h"
+#include "apx/types.h"
 #include "dtl_json.h"
-#include "extensions.h"
-#include "apx_eventListener.h"
+#include "extensions_cfg.h"
+#include "apx/event_listener.h"
 #ifdef USE_CONFIGURATION_FILE
 #include "apx_build_cfg.h"
 #endif
@@ -50,7 +50,6 @@ void signal_handler(int signum);
 #endif
 static void printUsage(char *name);
 static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv);
-static apx_error_t register_extensions(apx_server_t *server, dtl_hv_t *config);
 #ifdef _WIN32
 static int init_wsa(void);
 #endif
@@ -58,7 +57,7 @@ static int init_wsa(void);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-int8_t g_debug; // Global so apx_logging can use it from everywhere
+//int8_t g_debug; // Global so apx_logging can use it from everywhere
 int m_runFlag = 1;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -75,8 +74,7 @@ int main(int argc, char **argv)
    apx_error_t result;
    dtl_hv_t *server_config = (dtl_hv_t*) 0;
 
-   m_shutdownTimer = SHUTDOWN_TIMER_INIT;
-   g_debug = 0;
+   m_shutdownTimer = SHUTDOWN_TIMER_INIT;   
    m_runFlag = 1;
 
    if (argc < 2u)
@@ -130,7 +128,7 @@ int main(int argc, char **argv)
       extension_config = dtl_hv_get_cstr(server_config, "extension");
       if ( (extension_config != 0) && (dtl_dv_type(extension_config) == DTL_DV_HASH) )
       {
-         register_extensions(&m_server, (dtl_hv_t*) extension_config);
+         register_apx_server_extensions(&m_server, (dtl_hv_t*) extension_config);
       }
    }
    apx_server_start(&m_server);
@@ -147,7 +145,7 @@ int main(int argc, char **argv)
          {
             char msg[40];
             sprintf(msg, "Shutdown in %ds", m_shutdownTimer);
-            apx_server_logEvent(&m_server, APX_LOG_LEVEL_INFO, "main", msg);
+            apx_server_log_event(&m_server, APX_LOG_LEVEL_INFO, "main", msg);
          }
       }
    }
@@ -216,7 +214,7 @@ static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv)
             else
             {
                dtl_dec_ref(json_data);
-               return APX_DV_TYPE_ERROR;
+               return APX_VALUE_TYPE_ERROR;
             }
             return APX_NO_ERROR;
          }
@@ -230,22 +228,6 @@ static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t register_extensions(apx_server_t *server, dtl_hv_t *config)
-{
-   apx_error_t result;
- /*  result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, APX_SERVER_TEXTLOG_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
-*/
-   result = apx_socketServerExtension_register(server, dtl_hv_get_cstr(config, APX_SOCKET_SERVER_EXT_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
-   return APX_NO_ERROR;
-}
 
 #ifdef _WIN32
 static int init_wsa(void)

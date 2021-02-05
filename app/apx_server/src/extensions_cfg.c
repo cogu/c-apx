@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      connection_interface.c
+* \file      file.c
 * \author    Conny Gustafsson
 * \date      2021-01-01
-* \brief     Abstract connection interface
+* \brief     Description
 *
 * Copyright (c) 2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -26,6 +26,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "extensions_cfg.h"
+#include "apx/extension/socket_server_extension.h"
+//#include "apx_serverTextLogExtension.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -39,6 +42,23 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+apx_error_t register_apx_server_extensions(apx_server_t* server, dtl_hv_t* config)
+{
+   apx_error_t result;
+   /*  result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, APX_SERVER_TEXTLOG_CFG_KEY));
+     if (result != APX_NO_ERROR)
+     {
+        return result;
+     }
+  */
+   result = apx_socketServerExtension_register(server, dtl_hv_get_cstr(config, APX_SOCKET_SERVER_EXT_CFG_KEY));
+   if (result != APX_NO_ERROR)
+   {
+      return result;
+   }
+   return APX_NO_ERROR;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

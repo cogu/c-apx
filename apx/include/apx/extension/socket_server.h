@@ -67,13 +67,13 @@ apx_socketServer_t* apx_socketServer_new(struct apx_server_tag *apx_server);
 void apx_socketServer_delete(apx_socketServer_t *self);
 
 void apx_socketServer_start_tcp_server(apx_socketServer_t *self, uint16_t tcp_port, const char *tag);
-#ifndef _WIN32
+#if !defined(UNIT_TEST) && !defined(_WIN32)
 void apx_socketServer_start_unix_server(apx_socketServer_t *self, const char *file_path, const char *tag);
 void apx_socketServer_stop_unix_server(apx_socketServer_t *self);
 #endif
 void apx_socketServer_stop_all(apx_socketServer_t *self);
 void apx_socketServer_stop_tcp_server(apx_socketServer_t *self);
-
+#ifdef UNIT_TEST
 void apx_socketServer_accept_testsocket(apx_socketServer_t *self, testsocket_t *sock);
-
+#endif
 #endif //APX_SOCKET_SERVER_H
