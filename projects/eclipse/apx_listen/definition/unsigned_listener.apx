@@ -1,9 +1,0 @@
-APX/1.2
-N"apx_listener"
-R"VehicleMode"C(0,15):=15
-R"VehicleSpeed"S:=65535
-R"UserId"L:=0xFFFFFFFF
-R"U8Array"C[3]:={0,0,0}
-R"U16Array"S[3]:={0,0,0}
-R"U32Array"L[3]:={0,0,0}
-
