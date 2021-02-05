@@ -681,7 +681,7 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
 }
 #ifndef UNIT_TEST
 
-static apx_error_t apx_server_start_thread(apx_server_t* self);
+static apx_error_t apx_server_start_thread(apx_server_t* self)
 {
    self->is_event_thread_valid = true;
 #ifdef _MSC_VER
@@ -743,7 +743,7 @@ static THREAD_PROTO(thread_task, arg)
    apx_server_t *self = (apx_server_t*) arg;
    if (self != NULL)
    {
-      apx_eventLoop_run(&self->event_loop, apx_server_handleEvent, (void*) self);
+      apx_eventLoop_run(&self->event_loop, apx_server_handle_event, (void*) self);
    }
    THREAD_RETURN(0);
 }

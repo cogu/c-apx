@@ -396,7 +396,9 @@ void apx_serverTestConnection_run(apx_serverTestConnection_t* self)
 {
    if (self != NULL)
    {
+#ifdef UNIT_TEST
       apx_serverConnection_run(&self->base);
+#endif
    }
 }
 

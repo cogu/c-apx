@@ -1,10 +1,10 @@
 /*****************************************************************************
-* \file      extensions.h
+* \file      extensions_cfg.h
 * \author    Conny Gustafsson
 * \date      2019-09-12
 * \brief     Description
 *
-* Copyright (c) 2019 Conny Gustafsson
+* Copyright (c) 2019-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -23,14 +23,19 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef EXTENSIONS_H
-#define EXTENSIONS_H
+#ifndef EXTENSIONS_CFG_H
+#define EXTENSIONS_CFG_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx_socketServerExtension.h"
-//#include "apx_serverTextLogExtension.h"
+#include "apx/server.h"
+#include "dtl_type.h"
 
+//////////////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTION PROTOTYPES
+//////////////////////////////////////////////////////////////////////////////
+
+apx_error_t register_apx_server_extensions(apx_server_t* server, dtl_hv_t* config);
 
 #endif //EXTENSIONS_H

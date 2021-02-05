@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="server">
+      <UniqueIdentifier>{237113d1-ee65-48ee-b56d-63df7e6cce0c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\app\apx_server\src\server_main.c">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\app\apx_server\src\extensions_cfg.c">
+      <Filter>server</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\app\apx_server\src\extensions_cfg.h">
+      <Filter>server</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

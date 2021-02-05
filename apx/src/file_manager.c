@@ -293,6 +293,7 @@ uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self
    return 0u;
 }
 
+
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t* self)
 {
@@ -303,14 +304,6 @@ bool apx_fileManager_run(apx_fileManager_t* self)
    return false;
 }
 
-apx_size_t apx_fileManager_num_pending_commands(apx_fileManager_t* self)
-{
-   if (self != NULL)
-   {
-      return apx_fileManagerWorker_num_pending_commands(&self->worker);
-   }
-   return 0;
-}
 #endif
 
 

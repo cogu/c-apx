@@ -292,7 +292,7 @@ static void connection_close(apx_socketServerConnection_t* self)
 {
    if (self != NULL)
    {
-      SOCKET_OBJECT_CLOSE(self->socketObject);
+      SOCKET_OBJECT_CLOSE(self->socket_object);
    }
 }
 

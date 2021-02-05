@@ -287,10 +287,10 @@ static THREAD_PROTO(threadTask,arg)
          if (result == 0)
 #endif
          {
-            bool result;
+            bool processing_result;
             messages_processed++;
-            result = apx_allocator_processEvent(self);
-            if (!result)
+            processing_result = apx_allocator_processEvent(self);
+            if (!processing_result)
             {
                break;
             }
