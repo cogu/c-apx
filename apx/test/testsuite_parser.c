@@ -85,7 +85,7 @@ CuSuite* testSuite_apx_parser(void)
    SUITE_ADD_TEST(suite, test_parse_char8_provide_port);
    SUITE_ADD_TEST(suite, test_parse_record_inside_record_type_reference_require_port);
    SUITE_ADD_TEST(suite, test_parse_array_of_records);
-   //SUITE_ADD_TEST(suite, test_parse_array_of_records_type_reference_require_port);
+   SUITE_ADD_TEST(suite, test_parse_array_of_records_type_reference_require_port);
 
    return suite;
 }
