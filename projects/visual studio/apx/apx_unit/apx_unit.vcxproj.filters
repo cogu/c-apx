@@ -351,9 +351,6 @@
     <ClCompile Include="..\..\..\..\apx\test\testsuite_util.c">
       <Filter>apx\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm.c">
-      <Filter>apx\test</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_deserializer.c">
       <Filter>apx\test</Filter>
     </ClCompile>
@@ -468,6 +465,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\apx\src\server_connection.c">
       <Filter>apx\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_pack.c">
+      <Filter>apx\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_unpack.c">
+      <Filter>apx\test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

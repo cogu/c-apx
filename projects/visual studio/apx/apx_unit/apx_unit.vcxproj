@@ -265,8 +265,9 @@
     <ClCompile Include="..\..\..\..\apx\test\testsuite_remotefile.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_server_connection.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_util.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm.c" />
+    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_pack.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_deserializer.c" />
+    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_unpack.c" />
     <ClCompile Include="..\..\..\..\apx\test\test_main.c" />
     <ClCompile Include="..\..\..\..\bstr\src\bstr.c" />
     <ClCompile Include="..\..\..\..\cutil\cutest\CuTest.c" />
