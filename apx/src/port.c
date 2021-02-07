@@ -339,6 +339,10 @@ static apx_error_t derive_data_element(apx_port_t* self, apx_dataElement_t** dat
    if (apx_dataElement_get_type_code(*data_element) == APX_TYPE_CODE_REF_PTR)
    {
       apx_dataType_t* data_type = apx_dataElement_get_type_ref_ptr(*data_element);
+      if (parent != NULL)
+      {
+         *parent = *data_element;
+      }
       if (data_type != NULL)
       {
          retval = apx_dataType_derive_data_element(data_type, data_element, parent);

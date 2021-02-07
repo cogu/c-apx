@@ -217,10 +217,6 @@ apx_error_t apx_dataType_derive_data_element(apx_dataType_t* self, struct apx_da
       uint16_t reference_follow_count = 0u;
       apx_typeCode_t type_code;
       *data_element = apx_dataType_get_data_element(self);
-      if (parent != NULL)
-      {
-         *parent = NULL;
-      }
 
       do
       {
