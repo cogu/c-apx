@@ -250,7 +250,7 @@ void apx_fileManagerShared_disconnected(apx_fileManagerShared_t* self)
       self->is_connected = false;
       MUTEX_UNLOCK(self->lock);
 #if APX_DEBUG_ENABLE
-      printf("[%u] Disabled transmit handler\n", (unsigned int) self->connection_id);
+      printf("[FILE-MANAGER %u] Disabled transmit handler\n", (unsigned int) self->connection_id);
 #endif
    }
 }

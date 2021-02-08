@@ -1,0 +1,9 @@
+APX/1.2
+N"apx_sender"
+P"VehicleMode"C(0,15):=15
+P"VehicleSpeed"S:=65535
+P"UserId"L:=0xFFFFFFFF
+P"U8Array"C[3]:={0,0,0}
+P"U16Array"S[3]:={0,0,0}
+P"U32Array"L[3]:={0,0,0}
+

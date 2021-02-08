@@ -374,7 +374,7 @@ static apx_error_t parser_on_close(void* arg)
       }
       else
       {
-         return APX_NO_ERROR;
+         return self->last_error;
       }
    }
    return APX_NULL_PTR_ERROR;
@@ -637,7 +637,7 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t* self, uint8_t co
                if (rc != APX_NO_ERROR)
                {
                   apx_port_delete(self->state.port);
-                  return apx_signatureParser_get_last_error(&self->signature_parser, NULL);
+                  return rc;
                }
                apx_dataSignature_set_element(&self->state.port->data_signature, self->state.data_element);
                self->state.data_element = NULL;
@@ -654,7 +654,7 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t* self, uint8_t co
                   if (rc != APX_NO_ERROR)
                   {
                      apx_port_delete(self->state.port);
-                     return apx_signatureParser_get_last_error(&self->signature_parser, NULL);
+                     return rc;
                   }
                }
                else
@@ -671,7 +671,7 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t* self, uint8_t co
                if (rc != APX_NO_ERROR)
                {
                   apx_port_delete(self->state.port);
-                  return apx_signatureParser_get_last_error(&self->signature_parser, NULL);
+                  return rc;
                }
                apx_dataSignature_set_element(&self->state.port->data_signature, self->state.data_element);
                self->state.data_element = NULL;

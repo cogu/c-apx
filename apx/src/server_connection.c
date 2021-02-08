@@ -246,7 +246,7 @@ void apx_serverConnection_set_connection_id(apx_serverConnection_t* self, uint32
 {
    if (self != NULL)
    {
-      self->base.connection_id = connection_id;
+      apx_connectionBase_set_connection_id(&self->base, connection_id);
    }
 }
 
@@ -274,23 +274,6 @@ void apx_serverConnection_require_port_data_written(apx_serverConnection_t* self
       (void)node_instance;
       (void)offset;
       (void)size;
-      /*
-      if (m_parent_client != nullptr)
-      {
-         std::size_t end_offset = offset + size;
-         while (offset < end_offset)
-         {
-            port_id_t port_id = node_instance->lookup_require_port_id(offset);
-            if (port_id >= node_instance->get_num_require_ports())
-            {
-               break;
-            }
-            PortInstance* port_instance = node_instance->get_require_port(port_id);
-            offset += port_instance->data_size();
-            m_parent_client->on_require_port_written(port_instance);
-         }
-      }
-      */
    }
 }
 
@@ -463,6 +446,11 @@ static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const*
       {
          uint8_t const* msg_data = result;
          msg_end = msg_data + msg_size;
+#if APX_DEBUG_ENABLE
+         apx_size_t const header_size = (apx_size_t)(msg_data - begin);
+         printf("[SERVER-CONNECTION %d]: Received message: (%d+%d) bytes\n", (int)self->base.connection_id, (int)header_size, (int)msg_size);
+#endif
+
          if (msg_end <= end)
          {
             if (self->is_greeting_accepted)
@@ -614,7 +602,7 @@ static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ar
          }
          else
          {
-            printf("[SERVER-CONNECTION-BASE] apx_server_disconnect_node_instance_require_ports failed with %d\n", (int)result);
+            fprintf(stderr, "[SERVER-CONNECTION] apx_server_disconnect_node_instance_require_ports failed with %d\n", (int)result);
          }
       }
       if (provide_port_data_state == APX_DATA_STATE_CONNECTED)
@@ -626,7 +614,7 @@ static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ar
          }
          else
          {
-            printf("[SERVER-CONNECTION-BASE] apx_server_disconnect_node_instance_provide_ports failed with %d\n", (int)result);
+            fprintf(stderr, "[SERVER-CONNECTION] apx_server_disconnect_node_instance_provide_ports failed with %d\n", (int)result);
          }
       }
    }
@@ -699,7 +687,7 @@ static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instanc
                return APX_MEM_ERROR;
             }
             rc = adt_ary_push(requester_change_array, (void*)ref);
-            if (rc != ADT_MEM_ERROR)
+            if (rc != ADT_NO_ERROR)
             {
                return convert_from_adt_to_apx_error(rc);
             }

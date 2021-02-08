@@ -217,10 +217,11 @@ apx_portInstance_t* apx_portSignatureMapEntry_get_preferred_provider(apx_portSig
    return (apx_portInstance_t*) 0;
 }
 
-void apx_portSignatureMapEntry_notify_require_ports_about_provide_port_change(apx_portSignatureMapEntry_t* self, apx_portInstance_t* provide_port, apx_portConnectorEvent_t event_type)
+apx_error_t apx_portSignatureMapEntry_notify_require_ports_about_provide_port_change(apx_portSignatureMapEntry_t* self, apx_portInstance_t* provide_port, apx_portConnectorEvent_t event_type)
 {
    if ( (self != NULL) && (provide_port != NULL) && ( (event_type == APX_PORT_CONNECTED_EVENT) || (event_type == APX_PORT_DISCONNECTED_EVENT) ) )
    {
+      apx_error_t retval = APX_NO_ERROR;
       if (adt_list_length(&self->require_ports) > 0)
       {
          adt_list_elem_t *iter;
@@ -247,17 +248,27 @@ void apx_portSignatureMapEntry_notify_require_ports_about_provide_port_change(ap
             assert(require_port_change_table != 0);
             require_port_change_entry = apx_portConnectorChangeTable_get_entry(require_port_change_table, apx_portInstance_port_id(require_port));
             assert(require_port_change_entry != 0);
-            action_func(require_port_change_entry, provide_port);
-            action_func(provide_port_change_entry, require_port);
+            retval = action_func(require_port_change_entry, provide_port);
+            if (retval == APX_NO_ERROR)
+            {
+               retval = action_func(provide_port_change_entry, require_port);
+            }
+            if (retval != APX_NO_ERROR)
+            {
+               break;
+            }
          }
       }
+      return retval;
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_portSignatureMapEntry_notify_provide_ports_about_require_port_change(apx_portSignatureMapEntry_t* self, apx_portInstance_t* require_port, apx_portConnectorEvent_t event_type)
+apx_error_t apx_portSignatureMapEntry_notify_provide_ports_about_require_port_change(apx_portSignatureMapEntry_t* self, apx_portInstance_t* require_port, apx_portConnectorEvent_t event_type)
 {
    if ( (self != NULL) && (require_port != NULL) && ( (event_type == APX_PORT_CONNECTED_EVENT) || (event_type == APX_PORT_DISCONNECTED_EVENT) ) )
    {
+      apx_error_t retval = APX_NO_ERROR;
       if (adt_list_length(&self->provide_ports) > 0)
       {
          adt_list_elem_t *iter;
@@ -284,11 +295,21 @@ void apx_portSignatureMapEntry_notify_provide_ports_about_require_port_change(ap
             assert(provide_port_change_table != 0);
             provide_port_change_entry = apx_portConnectorChangeTable_get_entry(provide_port_change_table, apx_portInstance_port_id(provide_port));
             assert(provide_port_change_entry != 0);
-            action_func(require_port_change_entry, provide_port);
-            action_func(provide_port_change_entry, require_port);
+            retval = action_func(require_port_change_entry, provide_port);
+            if (retval == APX_NO_ERROR)
+            {
+               retval = action_func(provide_port_change_entry, require_port);
+            }
+            if (retval != APX_NO_ERROR)
+            {
+               break;
+            }
+
          }
       }
+      return retval;
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 

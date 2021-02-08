@@ -30,17 +30,16 @@
 #include <string.h>
 #include <malloc.h>
 #include "apx_connection.h"
-#include "apx_eventListener.h"
+#include "apx/event_listener.h"
 #include "dtl_json.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_connection_onConnect(void *arg, apx_clientConnectionBase_t *clientConnection);
-static void apx_connection_onDisconnect(void *arg, apx_clientConnectionBase_t *clientConnection);
-static void apx_connection_onRequirePortWrite(void *arg, apx_nodeInstance_t *nodeInstance, apx_portId_t requirePortId, void *portHandle);
-static apx_error_t apx_connection_prepareProvidePorts(apx_connection_t *self, apx_nodeInstance_t *nodeInstance);
-static apx_error_t apx_connection_prepareRequirePorts(apx_connection_t *self, apx_nodeInstance_t *nodeInstance);
+static void apx_connection_on_connect(void *arg, apx_clientConnection_t *client_connection);
+static void apx_connection_on_disconnect(void *arg, apx_clientConnection_t *client_connection);
+static void apx_connection_on_require_port_write(void* arg, struct apx_portInstance_tag* port_instance, uint8_t const* data, apx_size_t size);
+static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t *self, apx_nodeInstance_t *node_instance);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -59,19 +58,17 @@ apx_error_t apx_connection_create(apx_connection_t *self)
    {
       apx_clientEventListener_t listener;
       self->client = apx_client_new();
-      if (self->client == 0)
+      if (self->client == NULL)
       {
          return APX_MEM_ERROR;
       }
       memset(&listener, 0, sizeof(listener));
       listener.arg = (void*) self;
-      listener.clientConnect1 = apx_connection_onConnect;
-      listener.clientDisconnect1 = apx_connection_onDisconnect;
-      listener.requirePortWrite1 = apx_connection_onRequirePortWrite;
-      apx_client_registerEventListener(self->client, &listener);
-      adt_hash_create(&self->providePortLookupTable, (void (*)(void*)) 0);
-      adt_ary_create(&self->requirePortLookupTable, (void (*)(void*)) 0);
-      adt_ary_create(&self->requirePortNames, adt_str_vdelete);
+      listener.client_connect1 = apx_connection_on_connect;
+      listener.client_disconnect1 = apx_connection_on_disconnect;
+      listener.require_port_write1 = apx_connection_on_require_port_write;
+      apx_client_register_event_listener(self->client, &listener);
+      adt_hash_create(&self->provide_port_lookup_table, NULL);
       MUTEX_INIT(self->mutex);
       return APX_NO_ERROR;
    }
@@ -87,9 +84,7 @@ void apx_connection_destroy(apx_connection_t *self)
       {
          apx_client_delete(self->client);
       }
-      adt_hash_destroy(&self->providePortLookupTable);
-      adt_ary_destroy(&self->requirePortLookupTable);
-      adt_ary_destroy(&self->requirePortNames);
+      adt_hash_destroy(&self->provide_port_lookup_table);
       MUTEX_UNLOCK(self->mutex);
       MUTEX_DESTROY(self->mutex);
    }
@@ -132,17 +127,13 @@ apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_def
    if ( (self != 0) && (apx_definition != 0) )
    {
       MUTEX_LOCK(self->mutex);
-      apx_error_t retval = apx_client_buildNode_cstr(self->client, adt_str_cstr(apx_definition));
+      apx_error_t retval = apx_client_build_node(self->client, adt_str_cstr(apx_definition));
       if (retval == APX_NO_ERROR)
       {
-         apx_nodeInstance_t *nodeInstance = apx_client_getLastAttachedNode(self->client);
+         apx_nodeInstance_t *nodeInstance = apx_client_get_last_attached_node(self->client);
          if (nodeInstance != 0)
          {
-            retval = apx_connection_prepareProvidePorts(self, nodeInstance);
-            if (retval == APX_NO_ERROR)
-            {
-               retval = apx_connection_prepareRequirePorts(self, nodeInstance);
-            }
+            retval = apx_connection_prepare_provide_ports(self, nodeInstance);
          }
          else
          {
@@ -159,7 +150,7 @@ int32_t apx_connection_getLastErrorLine(apx_connection_t *self)
 {
    if (self != 0)
    {
-      return apx_client_getLastErrorLine(self->client);
+      return apx_client_get_error_line(self->client);
    }
    return -1;
 }
@@ -168,7 +159,7 @@ apx_nodeInstance_t *apx_connection_getLastAttachedNode(apx_connection_t *self)
 {
    if (self != 0)
    {
-      return apx_client_getLastAttachedNode(self->client);
+      return apx_client_get_last_attached_node(self->client);
    }
    return (apx_nodeInstance_t*) 0;
 }
@@ -199,13 +190,13 @@ apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const ch
    {
       apx_error_t result;
       MUTEX_LOCK(self->mutex);
-      void *portHandle = adt_hash_value(&self->providePortLookupTable, providePortName);
-      if (portHandle == 0)
+      apx_portInstance_t *port_instance = (apx_portInstance_t*) adt_hash_value(&self->provide_port_lookup_table, providePortName);
+      if (port_instance == 0)
       {
          MUTEX_UNLOCK(self->mutex);
          return APX_INVALID_NAME_ERROR;
       }
-      result = apx_client_writePortData(self->client, portHandle, dv_value);
+      result = apx_client_write_port_data(self->client, port_instance, dv_value);
       MUTEX_UNLOCK(self->mutex);
       return result;
    }
@@ -216,39 +207,45 @@ apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const ch
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void apx_connection_onConnect(void *arg, apx_clientConnectionBase_t *clientConnection)
+static void apx_connection_on_connect(void* arg, apx_clientConnection_t* client_connection)
 {
+   (void)arg;
+   (void*)client_connection;
    printf("[APX-CONNECTION] connected to APX server\n");
 }
 
-static void apx_connection_onDisconnect(void *arg, apx_clientConnectionBase_t *clientConnection)
+static void apx_connection_on_disconnect(void* arg, apx_clientConnection_t* client_connection)
 {
+   (void)arg;
+   (void*)client_connection;
    printf("[APX-CONNECTION] Disconnected from APX server\n");
 }
 
-static void apx_connection_onRequirePortWrite(void *arg, apx_nodeInstance_t *nodeInstance, apx_portId_t requirePortId, void *portHandle)
+static void apx_connection_on_require_port_write(void* arg, struct apx_portInstance_tag* port_instance, uint8_t const* data, apx_size_t size)
 {
-   apx_connection_t *self = (apx_connection_t*) arg;
-   if (self != 0)
+   apx_connection_t* self = (apx_connection_t*)arg;
+   (void)data;
+   (void)size;
+   if ( (self != NULL) && (port_instance != NULL) )
    {
       apx_error_t result;
-      adt_str_t *port_name;
-      dtl_dv_t *dv = 0;
+      char const* port_name;
+      dtl_dv_t* dv = 0;
       MUTEX_LOCK(self->mutex);
-      result = apx_client_readPortData(self->client, portHandle, &dv);
+      result = apx_client_read_port_data(self->client, port_instance, &dv);
       if (result != APX_NO_ERROR)
       {
-         printf("apx_client_readPortData failed with error code %d\n", (int) result);
+         printf("apx_client_read_port_data failed with error code %d\n", (int)result);
          return;
       }
-      port_name = apx_nodeInstance_getRequirePortName(nodeInstance, requirePortId);
+      port_name = apx_portInstance_name(port_instance);
       MUTEX_UNLOCK(self->mutex);
-      if ( (dv != 0) && (port_name != 0) )
+      if ((dv != 0) && (port_name != 0))
       {
-         adt_str_t *value = dtl_json_dumps(dv, 0, false);
+         adt_str_t* value = dtl_json_dumps(dv, 0, false);
          if (value != 0)
          {
-            printf("\"%s\": %s\n", adt_str_cstr(port_name), adt_str_cstr(value));
+            printf("\"%s\": %s\n", port_name, adt_str_cstr(value));
             fflush(stdout);
             adt_str_delete(value);
          }
@@ -257,33 +254,32 @@ static void apx_connection_onRequirePortWrite(void *arg, apx_nodeInstance_t *nod
       {
          dtl_dec_ref(dv);
       }
-      if (port_name != 0)
-      {
-         adt_str_delete(port_name);
-      }
    }
 }
 
-static apx_error_t apx_connection_prepareProvidePorts(apx_connection_t *self, apx_nodeInstance_t *nodeInstance)
+static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t* self, apx_nodeInstance_t* node_instance)
 {
    apx_error_t retval = APX_NO_ERROR;
-   if ( (self != 0) && (nodeInstance != 0) )
+   if ( (self != NULL) && (node_instance != NULL) )
    {
-      apx_portCount_t numProvidePorts;
-      apx_portId_t portId;
-      numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
-      for(portId = 0; portId < numProvidePorts; portId++)
+      apx_portCount_t num_provide_ports;
+      apx_portId_t port_id;
+      num_provide_ports = apx_nodeInstance_get_num_provide_ports(node_instance);
+      for(port_id = 0; port_id < num_provide_ports; port_id++)
       {
-         adt_str_t *portName;
-         void *portHandle = apx_nodeInstance_getProvidePortHandle(nodeInstance, portId);
-         portName = apx_nodeInstance_getProvidePortName(nodeInstance, portId);
-         if ( (portName == 0) || (portHandle == 0) )
+         char const *port_name = NULL;
+         apx_portInstance_t *port_instance = apx_nodeInstance_get_provide_port(node_instance, port_id);
+         if (port_instance != NULL)
+         {
+            port_name = apx_portInstance_name(port_instance);
+         }
+         
+         if ( port_name == NULL)
          {
             retval = APX_NULL_PTR_ERROR;
             break;
          }
-         adt_hash_set(&self->providePortLookupTable, adt_str_cstr(portName), portHandle);
-         adt_str_delete(portName);
+         adt_hash_set(&self->provide_port_lookup_table, port_name, (void*) port_instance);         
       }
    }
    else
@@ -292,64 +288,3 @@ static apx_error_t apx_connection_prepareProvidePorts(apx_connection_t *self, ap
    }
    return retval;
 }
-
-static apx_error_t apx_connection_prepareRequirePorts(apx_connection_t *self, apx_nodeInstance_t *nodeInstance)
-{
-   apx_error_t retval = APX_NO_ERROR;
-   if ( (self != 0) && (nodeInstance != 0) )
-   {
-      apx_portCount_t numRequirePorts;
-      numRequirePorts = apx_nodeInstance_getNumRequirePorts(nodeInstance);
-      if (numRequirePorts > 0)
-      {
-         adt_error_t rc;
-         rc = adt_ary_resize(&self->requirePortLookupTable, (int32_t) numRequirePorts);
-         if (rc != ADT_NO_ERROR)
-         {
-            if (rc == ADT_MEM_ERROR)
-            {
-               retval = APX_MEM_ERROR;
-            }
-            else
-            {
-               retval = APX_GENERIC_ERROR;
-            }
-         }
-         rc = adt_ary_resize(&self->requirePortNames, (int32_t) numRequirePorts);
-         if (rc != ADT_NO_ERROR)
-         {
-            if (rc == ADT_MEM_ERROR)
-            {
-               retval = APX_MEM_ERROR;
-            }
-            else
-            {
-               retval = APX_GENERIC_ERROR;
-            }
-         }
-         if (retval == APX_NO_ERROR)
-         {
-            apx_portId_t portId;
-            for(portId = 0; portId < numRequirePorts; portId++)
-            {
-               adt_str_t *portName;
-               void *portHandle = apx_nodeInstance_getRequirePortHandle(nodeInstance, portId);
-               portName = apx_nodeInstance_getRequirePortName(nodeInstance, portId);
-               if ( (portName == 0) || (portHandle == 0) )
-               {
-                  retval = APX_NULL_PTR_ERROR;
-                  break;
-               }
-               (void) adt_ary_set(&self->requirePortLookupTable, (int32_t) portId, portHandle);
-               (void) adt_ary_set(&self->requirePortNames, (int32_t) portId, portName);
-            }
-         }
-      }
-   }
-   else
-   {
-      retval = APX_INVALID_ARGUMENT_ERROR;
-   }
-   return retval;
-}
-

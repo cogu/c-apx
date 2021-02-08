@@ -59,8 +59,7 @@ apx_nodeManager_t* apx_clientConnection_get_node_manager(apx_clientConnection_t*
 void apx_clientConnection_require_port_data_written(apx_clientConnection_t* self, apx_nodeInstance_t* node_instance, apx_size_t offset, apx_size_t size);
 apx_error_t apx_clientConnection_attach_node_instance(apx_clientConnection_t* self, apx_nodeInstance_t* node_instance);
 int apx_clientConnection_on_data_received(apx_clientConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len);
-
-
+void apx_clientConnection_set_client(apx_clientConnection_t* self, struct apx_client_tag* client);
 
 // ClientConnection API
 apx_fileManager_t *apx_clientConnection_get_file_manager(apx_clientConnection_t *self);
@@ -68,7 +67,7 @@ void apx_clientConnection_start(apx_clientConnection_t *self);
 void apx_clientConnection_close(apx_clientConnection_t *self);
 uint32_t apx_clientConnection_get_total_bytes_received(apx_clientConnection_t *self);
 uint32_t apx_clientConnection_get_total_bytes_sent(apx_clientConnection_t *self);
-
+void apx_clientConnection_vrequire_port_write_notification(void* arg, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size);
 
 //ConnectionInterface API
 apx_error_t apx_clientConnection_vremote_file_published_notification(void* arg, apx_file_t* file);

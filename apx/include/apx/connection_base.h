@@ -62,6 +62,7 @@ typedef void (apx_nodeFileWriteNotifyFunc)(void *arg, apx_nodeInstance_t * node_
 typedef void (apx_nodeFileOpenNotifyFunc)(void *arg, apx_nodeInstance_t * node_instance, apx_fileType_t fileType);
 typedef void (apx_portConnectorChangeCreateNotifyFunc)(void *arg, apx_nodeInstance_t * node_instance, apx_portType_t portType);
 typedef void (apx_nodeCreatedFunc)(void* arg, apx_nodeInstance_t* node_instance);
+typedef void (apx_requirePortWriteNotificationFunc)(void* arg, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size);
 
 typedef struct apx_connectionBaseVTable_tag
 {
@@ -70,6 +71,7 @@ typedef struct apx_connectionBaseVTable_tag
    apx_void_ptr_func_t* close;
    apx_nodeCreatedFunc* node_created_notification;
    apx_portConnectorChangeCreateNotifyFunc* port_connector_change_notify;
+   apx_requirePortWriteNotificationFunc* require_port_write_notification;
 } apx_connectionBaseVTable_t;
 
 typedef struct apx_connectionBase_tag
@@ -116,6 +118,7 @@ apx_connectionInterface_t const* apx_connectionBase_get_connection(apx_connectio
 apx_error_t apx_connectionBase_message_received(apx_connectionBase_t *self, const uint8_t *data, apx_size_t size);
 uint16_t apx_connectionBase_get_num_pending_events(apx_connectionBase_t *self);
 uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t *self);
+void apx_connectionBase_set_connection_id(apx_connectionBase_t* self, uint32_t connection_id);
 
 //uint8_t *apx_connectionBase_alloc(apx_connectionBase_t *self, size_t size);
 //void apx_connectionBase_free(apx_connectionBase_t *self, uint8_t *ptr, size_t size);
@@ -123,6 +126,7 @@ uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t
 
 //Virtual function call-points
 void apx_connectionBase_node_created_notification(apx_connectionBase_t const* self, apx_nodeInstance_t* node_instance);
+void apx_connectionBase_require_port_write_notification(apx_connectionBase_t const* self, apx_portInstance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size);
 
 /*** Internal Callback API ***/
 

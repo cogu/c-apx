@@ -88,8 +88,9 @@ struct apx_nodeInstance_tag* apx_nodeManager_find(apx_nodeManager_t const* self,
 void apx_nodeManager_set_connection(apx_nodeManager_t* self, struct apx_connectionBase_tag* connection);
 struct apx_connectionBase_tag* apx_nodeManager_get_connection(apx_nodeManager_t const* self);
 apx_error_t apx_nodeManager_on_definition_data_written(apx_nodeManager_t* self, struct apx_nodeInstance_tag* node_instance, uint32_t offset, apx_size_t size);
-void apx_nodeManager_on_require_port_data_written(apx_nodeManager_t* self, struct apx_nodeInstance_tag* node_instance, uint32_t offset, apx_size_t size);
-void apx_nodeManager_on_provide_port_data_written(apx_nodeManager_t* self, struct apx_nodeInstance_tag* node_instance, uint32_t offset, apx_size_t size);
+void apx_nodeManager_on_require_port_written(apx_nodeManager_t* self, apx_portInstance_t *port_instance, uint8_t const* raw_data, apx_size_t data_size);
+void apx_nodeManager_on_provide_port_written(apx_nodeManager_t* self, apx_portInstance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size);
 int32_t apx_nodeManager_values(apx_nodeManager_t* self, adt_ary_t* array);
+int32_t apx_nodeManager_get_error_line(apx_nodeManager_t* self);
 
 #endif //APX_NODE_INSTANCE_MANAGER_H

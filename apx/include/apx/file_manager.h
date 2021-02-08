@@ -76,6 +76,7 @@ apx_error_t apx_fileManager_send_local_data(apx_fileManager_t* self, uint32_t ad
 apx_error_t apx_fileManager_send_open_file_request(apx_fileManager_t* self, uint32_t address);
 apx_error_t apx_fileManager_send_error_code(apx_fileManager_t* self, apx_error_t error_code);
 uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self);
+void apx_fileManager_set_connection_id(apx_fileManager_t* self, uint32_t connection_id);
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t* self);
 #endif

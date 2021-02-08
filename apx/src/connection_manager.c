@@ -282,7 +282,7 @@ static void apx_connectionManager_cleanup_task_main(apx_connectionManager_t *sel
       if ( (apx_connectionBase_get_num_pending_worker_commands(&serverConnection->base) == 0u) && (apx_connectionBase_get_num_pending_events(&serverConnection->base) == 0u))
       {
 #if (APX_DEBUG_ENABLE)
-         printf("[CONNECTION-MANAGER] Cleaning up %d\n", (int) serverConnection->base.connectionId);
+         printf("[CONNECTION-MANAGER] Cleaning up %d\n", (int) serverConnection->base.connection_id);
 #endif
          adt_list_erase(&self->inactive_connections, iter);
          apx_connectionBase_stop(&serverConnection->base);

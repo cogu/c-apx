@@ -105,6 +105,8 @@ void json_server_shutdown(void)
 //////////////////////////////////////////////////////////////////////////////
 static void json_server_accept(void *arg, struct msocket_server_tag *srv, struct msocket_t *msocket)
 {
+   (void)arg;
+   (void)srv;
    if (m_apx_connection != 0)
    {
       json_server_connection_t *connection = json_server_connection_new(msocket, m_apx_connection);

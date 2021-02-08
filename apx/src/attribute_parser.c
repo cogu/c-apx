@@ -523,6 +523,11 @@ static uint8_t const* apx_attributeParser_parse_single_port_attribute(apx_attrib
          next = NULL;
       }
    }
+   else
+   {
+      apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+      next = NULL;
+   }
    return next;
 
 }

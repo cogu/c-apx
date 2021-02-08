@@ -285,7 +285,7 @@ static bool process_single_command(apx_fileManagerWorker_t* self, apx_command_t 
    apx_error_t result = APX_NO_ERROR;
    assert((self != NULL) && (cmd != NULL));
 #if APX_DEBUG_ENABLE
-   printf("Processing command\n");
+   printf("[FILE-MANAGER-WORKER %d] Processing command: %d\n", (int)apx_fileManagerShared_get_connection_id(self->shared), (int)cmd->cmd_type);
 #endif
    switch (cmd->cmd_type)
    {
