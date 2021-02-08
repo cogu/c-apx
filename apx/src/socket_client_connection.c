@@ -200,21 +200,21 @@ apx_error_t apx_clientConnection_tcp_connect(apx_clientSocketConnection_t *self,
    return APX_INVALID_ARGUMENT_ERROR;
 }
 # ifndef _WIN32
-apx_error_t apx_clientConnection_unix_connect(apx_clientSocketConnection_t *self, const char *socketPath)
+apx_error_t apx_clientConnection_unix_connect(apx_clientSocketConnection_t *self, const char *socket_path)
 {
    if (self != 0)
    {
       apx_error_t retval = APX_NO_ERROR;
-      msocket_t *socketObject = msocket_new(AF_LOCAL);
-      if (socketObject != 0)
+      msocket_t *socket_object = msocket_new(AF_LOCAL);
+      if (socket_object != 0)
       {
          int8_t result = 0;
-         register_msocket_handler(self, socketObject);
-         result = msocket_unix_connect(socketObject, socketPath);
+         register_msocket_handler(self, socket_object);
+         result = msocket_unix_connect(socket_object, socket_path);
          if (result != 0)
          {
-            msocket_delete(socketObject);
-            self->socketObject = (SOCKET_TYPE*) 0;
+            msocket_delete(socket_object);
+            self->socket_object = (SOCKET_TYPE*) 0;
             retval = APX_CONNECTION_ERROR;
          }
          else

@@ -63,7 +63,7 @@ apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE * socke
 #ifndef UNIT_TEST
 apx_error_t apx_clientConnection_tcp_connect(apx_clientSocketConnection_t *self, const char *address, uint16_t port);
 # ifndef _WIN32
-apx_error_t apx_clientConnection_unix_connect(apx_clientSocketConnection_t *self, const char *socketPath);
+apx_error_t apx_clientConnection_unix_connect(apx_clientSocketConnection_t *self, const char *socket_path);
 # endif
 #endif
 

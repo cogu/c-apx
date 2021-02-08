@@ -323,6 +323,11 @@ endif()
 if(APX_DEBUG)
     target_compile_definitions(apx PUBLIC APX_DEBUG_ENABLE=1)
 endif()
+if(MSVC)
+  target_compile_options(apx PRIVATE /W4)
+else()
+  target_compile_options(apx PRIVATE -Wall)
+endif()
 
 #Enable later once all needed symbols have been chosen for shared library export
 #target_compile_options(apx PRIVATE -fvisibility=hidden)

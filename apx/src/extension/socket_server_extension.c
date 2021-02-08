@@ -153,7 +153,9 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
              {
                 tag = dtl_sv_to_cstr(sv_unix_tag, &conversion_ok);
              }
+#ifndef UNIT_TEST
              apx_socketServer_start_unix_server(m_instance, unix_file_path, tag);
+#endif
           }
       }
    }
