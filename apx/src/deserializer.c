@@ -82,7 +82,7 @@ static void read_buffer_reset(apx_vm_readBuffer_t* self, uint8_t const* data, si
 static bool read_buffer_is_valid(apx_vm_readBuffer_t* self);
 
 //apx_vm_deserializer_t API
-static void deserializer_reset(apx_vm_deserializer_t* self);
+//static void deserializer_reset(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_prepare_for_buffer_read(apx_vm_deserializer_t* self, apx_typeCode_t type_code, uint32_t element_size);
 apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
 static apx_error_t deserializer_prepare_for_array(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
@@ -1296,6 +1296,7 @@ static bool queued_read_state_is_active(apx_vm_queuedReadState_t* self)
 
 
 //apx_vm_deserializer_t
+/*
 static void deserializer_reset(apx_vm_deserializer_t* self)
 {
    if (self != NULL)
@@ -1310,6 +1311,7 @@ static void deserializer_reset(apx_vm_deserializer_t* self)
       state_clear_value(self->state);
    }
 }
+*/
 
 static apx_error_t deserializer_prepare_for_buffer_read(apx_vm_deserializer_t* self, apx_typeCode_t type_code, uint32_t element_size)
 {

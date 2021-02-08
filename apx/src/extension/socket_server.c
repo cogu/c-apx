@@ -133,19 +133,19 @@ void apx_socketServer_start_tcp_server(apx_socketServer_t *self, uint16_t tcp_po
    if (self != 0)
    {
       //char msg[80];
-      msocket_handler_t serverHandler;
+      msocket_handler_t server_handler;
       self->tcp_port = tcp_port;
       if (tag != 0)
       {
          self->tcp_connection_tag = STRDUP(tag);
       }
-      memset(&serverHandler,0,sizeof(serverHandler));
+      memset(&server_handler,0,sizeof(server_handler));
 #ifndef UNIT_TEST
-      serverHandler.tcp_accept = apx_socketServer_tcp_accept;
+      server_handler.tcp_accept = apx_socketServer_tcp_accept;
 #endif
       msocket_server_create(&self->tcp_server, AF_INET, NULL);
       msocket_server_disable_cleanup(&self->tcp_server); //we will use our own garbage collector
-      msocket_server_sethandler(&self->tcp_server, &serverHandler, self);
+      msocket_server_sethandler(&self->tcp_server, &server_handler, self);
       msocket_server_start(&self->tcp_server, NULL, 0, self->tcp_port);
       self->is_tcp_server_started = true;
       printf("Listening on TCP port %d\n", (int) self->tcp_port);
@@ -169,7 +169,7 @@ void apx_socketServer_start_unix_server(apx_socketServer_t *self, const char *fi
       }
       memset(&server_handler,0,sizeof(server_handler));
 #ifndef UNIT_TEST
-      serverHandler.tcp_accept = apx_socketServer_unix_accept;
+      server_handler.tcp_accept = apx_socketServer_unix_accept;
 #endif
       msocket_server_create(&self->unix_server, AF_LOCAL, NULL);
       msocket_server_disable_cleanup(&self->unix_server); //we will use our own garbage collector
@@ -188,7 +188,7 @@ void apx_socketServer_stop_all(apx_socketServer_t *self)
    if (self != 0)
    {
       apx_socketServer_stop_tcp_server(self);
-#ifndef _WIN32
+#if !defined(UNIT_TEST) && !defined(_WIN32)
       apx_socketServer_stop_unix_server(self);
 #endif
    }

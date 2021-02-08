@@ -221,7 +221,7 @@ apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socketPath)
       if (socketConnection != 0)
       {
          apx_error_t result;
-         apx_client_attachConnection(self, (apx_clientConnection_t*) socketConnection);
+         apx_client_attach_connection(self, (apx_clientConnection_t*) socketConnection);
          result = apx_clientConnection_unix_connect(socketConnection, socketPath);
          if (result == APX_NO_ERROR)
          {

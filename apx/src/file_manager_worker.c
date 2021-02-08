@@ -462,7 +462,7 @@ static apx_error_t start_worker_thread(apx_fileManagerWorker_t* self)
          return APX_THREAD_CREATE_ERROR;
       }
 #else
-      int rc = THREAD_CREATE(self->worker_thread, thread_main, self);
+      int rc = THREAD_CREATE(self->worker_thread, worker_main, self);
       if (rc != 0)
       {
          self->worker_thread_valid = false;
@@ -502,7 +502,7 @@ static apx_error_t stop_worker_thread(apx_fileManagerWorker_t* self)
       if (pthread_equal(pthread_self(), self->worker_thread) == 0)
       {
          void* status;
-         int s = pthread_join(self->workerThread, &status);
+         int s = pthread_join(self->worker_thread, &status);
          if (s != 0)
          {
             return APX_THREAD_JOIN_ERROR;
