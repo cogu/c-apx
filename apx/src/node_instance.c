@@ -73,6 +73,8 @@ static apx_error_t remove_provide_port_connector(apx_nodeInstance_t* self, apx_p
 static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_t* self, uint32_t provide_data_offset, const uint8_t* provide_data, apx_size_t provide_data_size);
 static apx_error_t route_provide_port_data_to_require_port(apx_portInstance_t* provide_port, apx_portInstance_t* require_port, bool do_remote_routing);
 static apx_error_t remote_route_require_port_data(apx_nodeInstance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size);
+static apx_error_t remote_route_provide_port_data(apx_nodeInstance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size);
+static apx_error_t remote_route_data_to_file(apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
 static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -797,6 +799,15 @@ void apx_nodeInstance_set_server(apx_nodeInstance_t* self, struct apx_server_tag
    }
 }
 
+apx_error_t apx_nodeInstance_write_provide_port_data(apx_nodeInstance_t* self, apx_size_t offset, uint8_t* data, apx_size_t size)
+{
+   if (self != NULL)
+   {
+      return remote_route_provide_port_data(self, offset, data, size);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 // FileNotificationHandler API
 
 apx_error_t apx_nodeInstance_vfile_open_notify(void* arg, apx_file_t* file)
@@ -1371,13 +1382,13 @@ static apx_error_t apx_nodeInstance_attach_to_file_manager_client_mode(apx_nodeI
       result = create_provide_port_data_file_info(self, &file_info);
       if (result == APX_NO_ERROR)
       {
-         apx_file_t* provide_port_data_file = apx_fileManager_create_local_file(file_manager, &file_info);
+         self->provide_port_data_file = apx_fileManager_create_local_file(file_manager, &file_info);
          rmf_fileInfo_destroy(&file_info);
-         if (provide_port_data_file == NULL)
+         if (self->provide_port_data_file == NULL)
          {
             return APX_FILE_CREATE_ERROR;
          }
-         set_file_notification_handler(self, provide_port_data_file);
+         set_file_notification_handler(self, self->provide_port_data_file);
       }
       else
       {
@@ -1653,24 +1664,55 @@ static apx_error_t remote_route_require_port_data(apx_nodeInstance_t* self, uint
 {
    apx_file_t* file = self->require_port_data_file;
    apx_error_t retval = apx_nodeData_write_require_port_data(self->node_data, offset, data, size);
-   if (file != NULL)
+   if ((retval == APX_NO_ERROR) && (file != NULL))
    {
-      apx_fileManager_t* file_manager = apx_file_get_file_manager(file);
-      if (apx_file_is_open(self->require_port_data_file) && (file_manager != NULL))
+      retval = remote_route_data_to_file(file, offset, data, size);
+   }
+   return retval;
+}
+
+static apx_error_t remote_route_provide_port_data(apx_nodeInstance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size)
+{
+   apx_file_t* file = self->provide_port_data_file;
+   apx_error_t retval = apx_nodeData_write_provide_port_data(self->node_data, offset, data, size);
+   if ((retval == APX_NO_ERROR) && (file != NULL))
+   {
+      retval = remote_route_data_to_file(file, offset, data, size);
+   }
+   return retval;
+}
+
+static apx_error_t remote_route_data_to_file(apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
+{
+   apx_error_t retval = APX_NO_ERROR;
+   assert(file != NULL);
+
+   apx_fileManager_t* file_manager = apx_file_get_file_manager(file);
+   if (file_manager == NULL)
+   {
+      retval = APX_NULL_PTR_ERROR;
+   }
+   if (retval == APX_NO_ERROR)
+   {
+      if (!apx_file_is_open(file))
       {
-         uint8_t* allocated_buffer;
-         uint32_t address = apx_file_get_address_without_flags(file) + offset;
-         //TODO: use small object allocator later on
-         allocated_buffer = (uint8_t*) malloc(size);
-         if (allocated_buffer == NULL)
-         {
-            retval = APX_MEM_ERROR;
-         }
-         else
-         {
-            memcpy(allocated_buffer, data, size);
-            retval = apx_fileManager_send_local_data(file_manager, address, allocated_buffer, size);
-         }
+         retval = APX_FILE_NOT_OPEN_ERROR;
+      }
+   }
+   if (retval == APX_NO_ERROR)
+   {
+      uint8_t* allocated_buffer;
+      uint32_t address = apx_file_get_address_without_flags(file) + offset;
+      //TODO: use small object allocator later on
+      allocated_buffer = (uint8_t*)malloc(size);
+      if (allocated_buffer == NULL)
+      {
+         retval = APX_MEM_ERROR;
+      }
+      else
+      {
+         memcpy(allocated_buffer, data, size);
+         retval = apx_fileManager_send_local_data(file_manager, address, allocated_buffer, size);
       }
    }
    return retval;

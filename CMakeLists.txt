@@ -78,7 +78,8 @@ set (APX_COMMON_TEST_SUITE
     apx/test/testsuite_util.c
     apx/test/testsuite_vm_deserializer.c
     apx/test/testsuite_vm_serializer.c
-    apx/test/testsuite_vm.c
+    apx/test/testsuite_vm_pack.c
+    apx/test/testsuite_vm_unpack.c
 )
 
 set (APX_SERVER_SOCKET_EXTENSION_TEST_SUITE
@@ -129,10 +130,12 @@ add_subdirectory(cutil)
 add_subdirectory(dtl_json)
 add_subdirectory(dtl_type)
 add_subdirectory(msocket)
+if (NOT UNIT_TEST)
 add_subdirectory(app/apx_node)
-#add_subdirectory(app/apx_control) CG-20210204: Temporary disable while apx_client class is being upgraded
+add_subdirectory(app/apx_control)
 if(BUILD_DEFAULT_SERVER)
     add_subdirectory(app/apx_server)
+endif()
 endif()
 ###
 

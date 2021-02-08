@@ -32,12 +32,14 @@
 #include <assert.h>
 #include "adt_str.h"
 #include "message_client_connection.h"
-#include "apx_error.h"
-#include "apx_util.h"
+#include "apx/error.h"
+#include "apx/util.h"
 #include "argparse.h"
 #include "dtl_json.h"
 #include "filestream.h"
+#ifdef USE_CONFIGURATION_FILE
 #include "apx_build_cfg.h"
+#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -128,7 +130,6 @@ int main(int argc, char **argv)
          }
          if (m_input_file_path != 0)
          {
-            apx_error_t result;
             const char *input_file_path = adt_str_cstr(m_input_file_path);
             result = read_message_from_file(input_file_path);
 
@@ -163,7 +164,7 @@ int main(int argc, char **argv)
                }
                else
                {
-                  adt_error_t result = build_json_message(m_name, m_value);
+                  result = build_json_message(m_name, m_value);
                   if (result != ADT_NO_ERROR)
                   {
                      retval = -1;

@@ -450,7 +450,6 @@ apx_error_t apx_client_write_port_data(apx_client_t* self, apx_portInstance_t* p
       uint8_t stack_buffer[MAX_STACK_BUFFER_SIZE];
       apx_error_t result;
       uint8_t* write_buffer;
-      apx_nodeData_t* node_data = NULL;
       bool is_heap_allocated_buffer = false;
       uint32_t const data_size = apx_portInstance_data_size(port_instance);
       uint32_t const offset = apx_portInstance_data_offset(port_instance);
@@ -478,11 +477,6 @@ apx_error_t apx_client_write_port_data(apx_client_t* self, apx_portInstance_t* p
          write_buffer = &stack_buffer[0];
       }
       assert(write_buffer != NULL);
-      node_data = apx_nodeInstance_get_node_data(apx_portInstance_parent(port_instance));
-      if (node_data == NULL)
-      {
-         return APX_NULL_PTR_ERROR;
-      }
       MUTEX_LOCK(self->lock);
       if (self->vm == NULL)
       {
@@ -507,7 +501,7 @@ apx_error_t apx_client_write_port_data(apx_client_t* self, apx_portInstance_t* p
       MUTEX_UNLOCK(self->lock);
       if (result == APX_NO_ERROR)
       {
-         result = apx_nodeData_write_provide_port_data(node_data, offset, write_buffer, data_size);
+         result = apx_nodeInstance_write_provide_port_data(apx_portInstance_parent(port_instance), offset, write_buffer, data_size);
       }
       if (is_heap_allocated_buffer) free(write_buffer);
       return result;

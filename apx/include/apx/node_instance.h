@@ -150,6 +150,7 @@ apx_error_t apx_nodeInstance_attach_to_file_manager(apx_nodeInstance_t* self, st
 apx_error_t apx_nodeInstance_remote_file_published_notification(apx_nodeInstance_t* self, apx_file_t* file);
 void apx_nodeInstance_set_server(apx_nodeInstance_t* self, struct apx_server_tag* server);
 apx_portInstance_t* apx_nodeInstance_find_port_by_name(apx_nodeInstance_t const* self, char const* name);
+apx_error_t apx_nodeInstance_write_provide_port_data(apx_nodeInstance_t* self, apx_size_t offset, uint8_t* data, apx_size_t size);
 
 // FileNotificationHandler API
 apx_error_t apx_nodeInstance_vfile_open_notify(void* arg, apx_file_t* file);
