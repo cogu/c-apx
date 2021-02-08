@@ -37,7 +37,7 @@
 #else
 #include <pthread.h>
 #endif
-#include "apx_client.h"
+#include "apx/client.h"
 #include "adt_str.h"
 #include "adt_hash.h"
 #include "adt_ary.h"
@@ -50,9 +50,7 @@
 typedef struct apx_connection_tag
 {
    apx_client_t *client;
-   adt_hash_t providePortLookupTable; //Key is provide port name, value is port handle (void*) (weak references)
-   adt_ary_t requirePortLookupTable; //Value is port handle, index is portId (weak references)
-   adt_ary_t requirePortNames; //Name of each require port. Strong reference to adt_str_t.
+   adt_hash_t provide_port_lookup_table; //Key is provide port name, value is port instance (apx_portInstance_t*) (weak references)
    MUTEX_T mutex;
 } apx_connection_t;
 

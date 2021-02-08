@@ -46,6 +46,8 @@ static void test_parse_char8_provide_port(CuTest* tc);
 static void test_parse_record_inside_record_type_reference_require_port(CuTest* tc);
 static void test_parse_array_of_records(CuTest* tc);
 static void test_parse_array_of_records_type_reference_require_port(CuTest* tc);
+static void test_apx_parser_provide_port_with_invalid_attribute_string(CuTest* tc);
+static void test_apx_parser_provide_port_with_invalid_data_signature(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -86,6 +88,8 @@ CuSuite* testSuite_apx_parser(void)
    SUITE_ADD_TEST(suite, test_parse_record_inside_record_type_reference_require_port);
    SUITE_ADD_TEST(suite, test_parse_array_of_records);
    SUITE_ADD_TEST(suite, test_parse_array_of_records_type_reference_require_port);
+   SUITE_ADD_TEST(suite, test_apx_parser_provide_port_with_invalid_attribute_string);
+   SUITE_ADD_TEST(suite, test_apx_parser_provide_port_with_invalid_data_signature);
 
    return suite;
 }
@@ -100,7 +104,7 @@ static void test_parse_empty_node(CuTest* tc)
       "N\"EmptyNode\"\n";
    apx_parser_t parser;
    apx_istream_t stream;
-   apx_node_t *node;
+   apx_node_t* node;
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
    CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text));
@@ -962,3 +966,35 @@ static void test_parse_array_of_records_type_reference_require_port(CuTest* tc)
 
 }
 
+static void test_apx_parser_provide_port_with_invalid_attribute_string(CuTest* tc)
+{
+   apx_parser_t parser;
+   apx_istream_t stream;
+   const char* apx_text = "APX/1.2\n"
+      "N\"test\"\n"
+      "P\"VehicleSpeed\"S:abcd\n";
+
+   apx_istream_create(&stream);
+   apx_parser_create(&parser, &stream);
+   CuAssertUIntEquals(tc, APX_PARSE_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+   CuAssertIntEquals(tc, 3, apx_parser_get_error_line(&parser));
+   apx_parser_destroy(&parser);
+   apx_istream_destroy(&stream);
+}
+
+static void test_apx_parser_provide_port_with_invalid_data_signature(CuTest* tc)
+{
+   apx_parser_t parser;
+   apx_istream_t stream;
+   const char* apx_text = "APX/1.2\n"
+      "N\"test\"\n"
+      "P\"Signal1\"{\"User\"L:=0\n" //missing terminating '}' character
+      "R\"Signal2\"S:=0";
+
+   apx_istream_create(&stream);
+   apx_parser_create(&parser, &stream);
+   CuAssertUIntEquals(tc, APX_PARSE_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+   CuAssertIntEquals(tc, 3, apx_parser_get_error_line(&parser));
+   apx_parser_destroy(&parser);
+   apx_istream_destroy(&stream);
+}

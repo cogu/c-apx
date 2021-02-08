@@ -287,20 +287,20 @@ apx_error_t apx_nodeManager_on_definition_data_written(apx_nodeManager_t* self, 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_nodeManager_on_require_port_data_written(apx_nodeManager_t* self, struct apx_nodeInstance_tag* node_instance, uint32_t offset, apx_size_t size)
+void apx_nodeManager_on_require_port_written(apx_nodeManager_t* self, apx_portInstance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size)
 {
-   (void)self;
-   (void)node_instance;
-   (void)offset;
-   (void)size;
+   if (self != NULL)
+   {
+      apx_connectionBase_require_port_write_notification(self->parent_connection, port_instance, raw_data, data_size);
+   }
 }
 
-void apx_nodeManager_on_provide_port_data_written(apx_nodeManager_t* self, struct apx_nodeInstance_tag* node_instance, uint32_t offset, apx_size_t size)
+void apx_nodeManager_on_provide_port_written(apx_nodeManager_t* self, apx_portInstance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size)
 {
    (void)self;
-   (void)node_instance;
-   (void)offset;
-   (void)size;
+   (void)port_instance;
+   (void)raw_data;
+   (void)data_size;
 }
 
 int32_t apx_nodeManager_values(apx_nodeManager_t* self, adt_ary_t* array)
@@ -312,6 +312,15 @@ int32_t apx_nodeManager_values(apx_nodeManager_t* self, adt_ary_t* array)
       retval = adt_hash_values(&self->instance_map, array);
       MUTEX_UNLOCK(self->lock);
       return retval;
+   }
+   return -1;
+}
+
+int32_t apx_nodeManager_get_error_line(apx_nodeManager_t* self)
+{
+   if (self != NULL)
+   {
+      return apx_parser_get_error_line(&self->parser);
    }
    return -1;
 }

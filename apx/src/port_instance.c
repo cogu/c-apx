@@ -223,7 +223,7 @@ apx_program_t const* apx_portInstance_unpack_program(apx_portInstance_t* self)
 {
    if (self != NULL)
    {
-      return self->pack_program;
+      return self->unpack_program;
    }
    return NULL;
 }

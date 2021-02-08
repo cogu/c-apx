@@ -200,6 +200,16 @@ void apx_connectionBase_start(apx_connectionBase_t* self)
 {
    if (self != NULL)
    {
+#if APX_DEBUG_ENABLE
+      if (self->mode == APX_SERVER_MODE)
+      {
+         printf("[BASE-CONNECTION %u] Starting connection\n", (int)self->connection_id);
+      }
+      else
+      {
+         printf("[BASE-CONNECTION] Starting connection\n");
+      }
+#endif
 #ifndef UNIT_TEST
       apx_fileManager_start(&self->file_manager);
       if (self->vtable.start != NULL)
@@ -214,6 +224,9 @@ void apx_connectionBase_stop(apx_connectionBase_t* self)
 {
    if (self != NULL)
    {
+#if APX_DEBUG_ENABLE
+      printf("[BASE-CONNECTION] Stopping connection\n");
+#endif
 #ifndef UNIT_TEST
       apx_fileManager_stop(&self->file_manager);
 #endif
@@ -264,17 +277,6 @@ apx_error_t apx_connectionBase_message_received(apx_connectionBase_t* self, cons
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_connectionBase_node_created_notification(apx_connectionBase_t const* self, apx_nodeInstance_t* node_instance)
-{
-   if ( (self != NULL) && (node_instance != NULL) )
-   {
-      if ((self->vtable.node_created_notification != NULL))
-      {
-         self->vtable.node_created_notification((void*)self, node_instance);
-      }
-   }
-}
-
 uint16_t apx_connectionBase_get_num_pending_events(apx_connectionBase_t* self)
 {
    if (self != NULL)
@@ -293,6 +295,41 @@ uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t
    }
    return 0u;
 }
+
+void apx_connectionBase_set_connection_id(apx_connectionBase_t* self, uint32_t connection_id)
+{
+   if (self != NULL)
+   {
+      self->connection_id = connection_id;
+      apx_fileManager_set_connection_id(&self->file_manager, connection_id);
+   }
+}
+
+//Virtual function call-points
+
+void apx_connectionBase_node_created_notification(apx_connectionBase_t const* self, apx_nodeInstance_t* node_instance)
+{
+   if ( (self != NULL) && (node_instance != NULL))
+   {
+      if ((self->vtable.node_created_notification != NULL))
+      {
+         self->vtable.node_created_notification((void*)self, node_instance);
+      }
+   }
+}
+
+void apx_connectionBase_require_port_write_notification(apx_connectionBase_t const* self, apx_portInstance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size)
+{
+   if ((self != NULL) && (port_instance != NULL))
+   {
+      if ((self->vtable.require_port_write_notification != NULL))
+      {
+         self->vtable.require_port_write_notification((void*)self, port_instance, raw_data, data_size);
+      }
+   }
+}
+
+
 
 /*** Internal Callback API ***/
 

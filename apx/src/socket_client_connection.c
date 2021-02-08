@@ -496,6 +496,9 @@ static void send_packet(apx_clientSocketConnection_t* self)
    if ((self->socket_object != NULL) && (self->pending_bytes > 0u))
    {
       uint8_t const* data = adt_bytearray_const_data(&self->send_buffer);
+#if APX_DEBUG_ENABLE
+      printf("[SOCKET-CLIENT-CONNECTION] Sending %d bytes\n", (int)self->pending_bytes);
+#endif
       SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
       adt_bytearray_clear(&self->send_buffer);
       self->pending_bytes = 0u;

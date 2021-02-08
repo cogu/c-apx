@@ -73,6 +73,7 @@ static apx_error_t remove_provide_port_connector(apx_nodeInstance_t* self, apx_p
 static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_t* self, uint32_t provide_data_offset, const uint8_t* provide_data, apx_size_t provide_data_size);
 static apx_error_t route_provide_port_data_to_require_port(apx_portInstance_t* provide_port, apx_portInstance_t* require_port, bool do_remote_routing);
 static apx_error_t remote_route_require_port_data(apx_nodeInstance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size);
+static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -823,6 +824,10 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_get_require_port_connector_chan
       if ((self->require_port_changes == NULL) && (auto_create))
       {
          self->require_port_changes = apx_portConnectorChangeTable_new(self->num_require_ports);
+         if ((self->require_port_changes != NULL) && (self->server != NULL))
+         {
+            apx_server_insert_modified_node_instance(self->server, self);
+         }
       }
       return self->require_port_changes;
    }
@@ -836,6 +841,10 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_get_provide_port_connector_chan
       if ((self->provide_port_changes == NULL) && (auto_create))
       {
          self->provide_port_changes = apx_portConnectorChangeTable_new(self->num_provide_ports);
+         if ((self->provide_port_changes != NULL) && (self->server != NULL))
+         {
+            apx_server_insert_modified_node_instance(self->server, self);
+         }
       }
       return self->provide_port_changes;
    }
@@ -879,6 +888,7 @@ apx_error_t apx_nodeInstance_handle_require_ports_disconnected(apx_nodeInstance_
          require_port = apx_nodeInstance_get_require_port(self, require_port_id);
          assert(require_port != NULL);
          assert(entry != NULL);
+         assert(entry->count <= 0);
          if (entry->count == -1)
          {
             apx_error_t result;
@@ -1281,10 +1291,10 @@ static apx_error_t process_remote_write_require_port_data(apx_nodeInstance_t* se
       self->require_port_data_state = APX_DATA_STATE_CONNECTED;
    }
    apx_error_t retval = apx_nodeData_write_require_port_data(self->node_data, offset, data, size);
-   if (retval == APX_NO_ERROR)
+   if ( (retval == APX_NO_ERROR) && (self->mode == APX_CLIENT_MODE) )
    {
       assert(self->parent != NULL);
-      apx_nodeManager_on_require_port_data_written(self->parent, self, offset, size);
+      retval = trigger_require_port_write_callbacks(self, offset, data, size);
    }
    return retval;
 }
@@ -1661,6 +1671,43 @@ static apx_error_t remote_route_require_port_data(apx_nodeInstance_t* self, uint
             memcpy(allocated_buffer, data, size);
             retval = apx_fileManager_send_local_data(file_manager, address, allocated_buffer, size);
          }
+      }
+   }
+   return retval;
+}
+
+static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
+{
+   apx_error_t retval = APX_NO_ERROR;
+   assert((self != NULL) && (data != NULL));
+   apx_size_t end_offset = offset + size;
+   if (self->byte_port_map == NULL)
+   {
+      return APX_NULL_PTR_ERROR;
+   }
+   while (offset < end_offset)
+   {
+      apx_portId_t port_id = apx_bytePortMap_lookup(self->byte_port_map, offset);
+      if (port_id != APX_INVALID_PORT_ID)
+      {
+         apx_portInstance_t* port_instance = apx_nodeInstance_get_require_port(self, port_id);
+         if (port_instance != NULL)
+         {
+            uint32_t const port_data_size = apx_portInstance_data_size(port_instance);
+            apx_nodeManager_on_require_port_written(self->parent, port_instance, data, port_data_size);
+            offset += port_data_size;
+            data += port_data_size;
+         }
+         else
+         {
+            retval = APX_INVALID_WRITE_ERROR;
+            break;
+         }
+      }
+      else
+      {
+         retval = APX_INVALID_WRITE_ERROR;
+         break;
       }
    }
    return retval;

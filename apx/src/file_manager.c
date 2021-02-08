@@ -99,7 +99,12 @@ void apx_fileManager_start(apx_fileManager_t *self)
    if (self != NULL)
    {
 #ifndef UNIT_TEST
-      apx_fileManagerWorker_start(&self->worker);
+      apx_error_t result = apx_fileManagerWorker_start(&self->worker);
+# if (APX_DEBUG_ENABLE)
+      printf("[FILE-MANAGER %d] Worker thread started. Result: %d\n", (int)apx_fileManagerShared_get_connection_id(&self->shared), (int)result);
+# else
+      (void)result; //TODO: Check result?
+# endif
 #endif
    }
 }
@@ -109,7 +114,13 @@ void apx_fileManager_stop(apx_fileManager_t *self)
    if (self != NULL)
    {
 #ifndef UNIT_TEST
+# if (APX_DEBUG_ENABLE)
+      printf("[FILE-MANAGER %d] Stopping worker thread\n", (int)apx_fileManagerShared_get_connection_id(&self->shared));
+# endif
       apx_fileManagerWorker_stop(&self->worker);
+# if (APX_DEBUG_ENABLE)
+      printf("[FILE-MANAGER %d] Worker thread stopped\n", (int)apx_fileManagerShared_get_connection_id(&self->shared));
+# endif
 #endif
    }
 }
@@ -293,6 +304,13 @@ uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self
    return 0u;
 }
 
+void apx_fileManager_set_connection_id(apx_fileManager_t* self, uint32_t connection_id)
+{
+   if (self != NULL)
+   {
+      apx_fileManagerShared_set_connection_id(&self->shared, connection_id);
+   }
+}
 
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t* self)

@@ -31,10 +31,11 @@
 #include <string.h>
 #include <stdio.h>
 #include "apx/client_connection.h"
-#include "bstr.h"
 #include "apx/numheader.h"
 #include "apx/file.h"
 #include "apx/remotefile.h"
+#include "apx/client.h"
+#include "apx/client_internal.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #else
@@ -71,6 +72,7 @@ apx_error_t apx_clientConnection_create(apx_clientConnection_t* self, apx_connec
       apx_error_t error_code;
       //init non-overridable virtual functions
       base_connection_vtable->node_created_notification = NULL; //Only used in server mode
+      base_connection_vtable->require_port_write_notification = apx_clientConnection_vrequire_port_write_notification;
       connection_interface->remote_file_published_notification = apx_clientConnection_vremote_file_published_notification;
       connection_interface->remote_file_write_notification = apx_clientConnection_vremote_file_write_notification;
       error_code = apx_connectionBase_create(&self->base, APX_CLIENT_MODE, base_connection_vtable, connection_interface);
@@ -159,25 +161,21 @@ void apx_clientConnection_connected_notification(apx_clientConnection_t* self)
    {
       self->is_greeting_accepted = false;
       send_greeting_header(self);
+      if (self->client != NULL)
+      {
+         apx_clientInternal_connect_notification(self->client, self);
+      }
    }
-/*
-   if (m_parent_client != nullptr)
-   {
-      m_parent_client->on_connection_connected(this);
-   }
-*/
 }
 
 void apx_clientConnection_disconnected_notification(apx_clientConnection_t* self)
 {
    if (self != NULL)
    {
-/*
-      if (m_parent_client != nullptr)
+      if (self->client != NULL)
       {
-         m_parent_client->on_connection_disconnected(this);
+         apx_clientInternal_disconnect_notification(self->client, self);
       }
-*/
    }
 }
 
@@ -196,6 +194,14 @@ apx_nodeManager_t* apx_clientConnection_get_node_manager(apx_clientConnection_t*
       return apx_connectionBase_get_node_manager(&self->base);
    }
    return NULL;
+}
+
+void apx_clientConnection_set_client(apx_clientConnection_t* self, struct apx_client_tag* client)
+{
+   if (self != NULL)
+   {
+      self->client = client;
+   }
 }
 
 int apx_clientConnection_on_data_received(apx_clientConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len)
@@ -236,33 +242,6 @@ int apx_clientConnection_on_data_received(apx_clientConnection_t* self, uint8_t 
    return -1;
 }
 
-void apx_clientConnection_require_port_data_written(apx_clientConnection_t* self, apx_nodeInstance_t* node_instance, apx_size_t offset, apx_size_t size)
-{
-   if (self != NULL)
-   {
-      (void)node_instance;
-      (void)offset;
-      (void)size;
-      /*
-      if (m_parent_client != nullptr)
-      {
-         std::size_t end_offset = offset + size;
-         while (offset < end_offset)
-         {
-            port_id_t port_id = node_instance->lookup_require_port_id(offset);
-            if (port_id >= node_instance->get_num_require_ports())
-            {
-               break;
-            }
-            PortInstance* port_instance = node_instance->get_require_port(port_id);
-            offset += port_instance->data_size();
-            m_parent_client->on_require_port_written(port_instance);
-         }
-      }
-      */
-   }
-}
-
 apx_error_t apx_clientConnection_attach_node_instance(apx_clientConnection_t* self, apx_nodeInstance_t* node_instance)
 {
    if ((self != NULL) && (node_instance != NULL))
@@ -272,6 +251,15 @@ apx_error_t apx_clientConnection_attach_node_instance(apx_clientConnection_t* se
       return apx_nodeInstance_attach_to_file_manager(node_instance, file_manager);
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+void apx_clientConnection_vrequire_port_write_notification(void* arg, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size)
+{
+   apx_clientConnection_t* self = (apx_clientConnection_t*)arg;
+   if ( (self != NULL) && (port_instance != NULL) && (self->client != NULL))
+   {
+      apx_clientInternal_require_port_write_notification(self->client, self, port_instance, data, size);
+   }
 }
 
 //ConnectionInterface API
@@ -328,6 +316,9 @@ static apx_error_t remote_file_published_notification(apx_clientConnection_t* se
 {
    if ((self != NULL) && (file != NULL))
    {
+#if APX_DEBUG_ENABLE
+      printf("[CLIENT-CONNECTION] remote_file_published_notification: \"%s\"(%d)\n", apx_file_get_name(file), apx_file_get_apx_file_type(file));
+#endif
       if (apx_file_get_apx_file_type(file) == APX_REQUIRE_PORT_DATA_FILE_TYPE)
       {
          return process_new_require_port_data_file(self, file);
@@ -344,11 +335,19 @@ static apx_error_t process_new_require_port_data_file(apx_clientConnection_t* se
    char* base_name = rmf_fileInfo_base_name(apx_file_get_file_info(file));
    if (base_name != NULL)
    {
+      assert(self->base.node_manager != NULL);
       apx_nodeInstance_t* node_instance = apx_nodeManager_find(self->base.node_manager, base_name);
-      free(base_name);
       if (node_instance != NULL)
       {
+         free(base_name);
          return apx_nodeInstance_remote_file_published_notification(node_instance, file);
+      }
+      else
+      {
+#if APX_DEBUG_ENABLE
+         printf("Node not found: \"%s\"\n", base_name);
+#endif
+        free(base_name);
       }
    }
    else
@@ -390,6 +389,10 @@ static uint8_t const* parse_message(apx_clientConnection_t* self, uint8_t const*
       {
          uint8_t const* msg_data = result;
          msg_end = msg_data + msg_size;
+#if APX_DEBUG_ENABLE
+         apx_size_t const header_size = (apx_size_t)(msg_data - begin);
+         printf("[CLIENT-CONNECTION]: Received message: (%d+%d) bytes\n", (int)header_size, (int)msg_size);
+#endif
          if (msg_end <= end)
          {
             if (self->is_greeting_accepted)

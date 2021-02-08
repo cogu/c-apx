@@ -34,7 +34,8 @@
 #include "apx/error.h"
 #include "apx/client_connection.h"
 #include "apx/node_instance.h"
-
+#include "apx/event_listener.h"
+#include "apx/port_instance.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -44,7 +45,6 @@
 struct adt_ary_tag;
 struct adt_list_tag;
 struct adt_hash_tag;
-struct apx_clientEventListener_tag;
 struct apx_fileManager_tag;
 struct apx_nodeManager_tag;
 struct apx_vm_tag;
@@ -109,24 +109,24 @@ void apx_client_attach_connection(apx_client_t *self, apx_clientConnection_t *co
 apx_clientConnection_t *apx_client_get_connection(apx_client_t *self);
 
 apx_error_t apx_client_build_node(apx_client_t *self, const char *definition_text);
-int32_t apx_client_get_last_error_line(apx_client_t *self);
+int32_t apx_client_get_error_line(apx_client_t *self);
 apx_nodeInstance_t *apx_client_get_last_attached_node(apx_client_t *self);
 struct apx_fileManager_tag *apx_client_get_file_manager(apx_client_t *self);
 struct apx_nodeManager_tag *apx_client_get_node_manager(apx_client_t *self);
 
 /*** Port Handle API ***/
-void *apx_client_get_port_handle(apx_client_t *self, const char *nodeName, const char *portName);
-void *apx_client_get_provide_port_handle_by_id(apx_client_t *self, const char *nodeName, apx_portId_t providePortId);
-void *apx_client_get_require_port_handle_by_id(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId);
+apx_portInstance_t* apx_client_get_port_instance_by_name(apx_client_t *self, const char *node_name, const char *port_name);
+apx_portInstance_t* apx_client_get_provide_port_instance_by_id(apx_client_t *self, const char *node_name, apx_portId_t port_id);
+apx_portInstance_t* apx_client_get_require_port_instance_by_id(apx_client_t *self, const char *node_name, apx_portId_t port_id);
 
 /*** Port Data Write API ***/
-//apx_error_t apx_client_writePortData(apx_client_t *self, void *portHandle, const dtl_dv_t *value);
+apx_error_t apx_client_write_port_data(apx_client_t *self, apx_portInstance_t* port_instance, const dtl_dv_t *value);
 //apx_error_t apx_client_writePortData_u8(apx_client_t *self, void *portHandle, uint8_t value);
 //apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
 //apx_error_t apx_client_writePortData_u32(apx_client_t *self, void *portHandle, uint32_t value);
 
 /*** Port Data Read API ***/
-//apx_error_t apx_client_readPortData(apx_client_t *self, void *portHandle, dtl_dv_t **dv);
+apx_error_t apx_client_read_port_data(apx_client_t *self, apx_portInstance_t* port_instance, dtl_dv_t **dv);
 //apx_error_t apx_client_readPortData_u8(apx_client_t *self, void *portHandle, uint8_t *value);
 //apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value);
 //apx_error_t apx_client_readPortData_u32(apx_client_t *self, void *portHandle, uint32_t *value);

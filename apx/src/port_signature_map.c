@@ -284,32 +284,35 @@ static apx_error_t apx_portSignatureMap_disconnect_provide_ports_internal(apx_po
 
 static apx_error_t apx_portSignatureMap_remove(apx_portSignatureMap_t* self, const char* port_signature, apx_portInstance_t* port_instance)
 {
+   apx_error_t retval = APX_NO_ERROR;
    apx_portSignatureMapEntry_t *entry;
    assert(self != NULL);
    assert(port_signature != NULL);
    assert(strlen(port_signature) > 0);
    assert(port_instance != NULL);
    entry = apx_portSignatureMap_find(self, port_signature);
-   if (entry == 0)
+   if (entry == NULL)
    {
-      return APX_NOT_FOUND_ERROR;
-   }
-   assert(entry != 0);
-   if (apx_portInstance_port_type(port_instance) == APX_PROVIDE_PORT)
-   {
-      apx_portSignatureMapEntry_detach_provide_port(entry, port_instance);
-      apx_portSignatureMapEntry_notify_require_ports_about_provide_port_change(entry, port_instance, APX_PORT_DISCONNECTED_EVENT);
+      retval = APX_NOT_FOUND_ERROR;
    }
    else
    {
-      apx_portSignatureMapEntry_detach_require_port(entry, port_instance);
-      apx_portSignatureMapEntry_notify_provide_ports_about_require_port_change(entry, port_instance, APX_PORT_DISCONNECTED_EVENT);
+      if (apx_portInstance_port_type(port_instance) == APX_PROVIDE_PORT)
+      {
+         apx_portSignatureMapEntry_detach_provide_port(entry, port_instance);
+         retval = apx_portSignatureMapEntry_notify_require_ports_about_provide_port_change(entry, port_instance, APX_PORT_DISCONNECTED_EVENT);
+      }
+      else
+      {
+         apx_portSignatureMapEntry_detach_require_port(entry, port_instance);
+         retval = apx_portSignatureMapEntry_notify_provide_ports_about_require_port_change(entry, port_instance, APX_PORT_DISCONNECTED_EVENT);
+      }
+      if (apx_portSignatureMapEntry_is_empty(entry))
+      {
+         apx_portSignatureMap_delete_entry(self, port_signature);
+      }
    }
-   if (apx_portSignatureMapEntry_is_empty(entry))
-   {
-      apx_portSignatureMap_delete_entry(self, port_signature);
-   }
-   return APX_NO_ERROR;
+   return retval;
 }
 
 static void apx_portSignatureMap_delete_entry(apx_portSignatureMap_t* self, const char* port_signature)

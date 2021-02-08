@@ -38,11 +38,13 @@
 #include <assert.h>
 #include "adt_str.h"
 #include "apx_connection.h"
-#include "apx_util.h"
+#include "apx/util.h"
 #include "argparse.h"
 #include "json_server.h"
 #include "filestream.h"
+#ifdef USE_CONFIGURATION_FILE
 #include "apx_build_cfg.h"
+#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -193,18 +195,18 @@ int main(int argc, char **argv)
             }
             else
             {
-               apx_nodeInstance_t *nodeInstance;
-               apx_portCount_t numProvidePorts;
-               apx_portCount_t numRequirePorts;
+               apx_nodeInstance_t *node_instance;
+               apx_portCount_t num_provide_ports;
+               apx_portCount_t num_require_ports;
                printf("OK\n");
-               nodeInstance = apx_connection_getLastAttachedNode(m_apx_connection);
-               if (nodeInstance != 0)
+               node_instance = apx_connection_getLastAttachedNode(m_apx_connection);
+               if (node_instance != 0)
                {
-                  numProvidePorts = apx_nodeInstance_getNumProvidePorts(nodeInstance);
-                  numRequirePorts = apx_nodeInstance_getNumRequirePorts(nodeInstance);
+                  num_provide_ports = apx_nodeInstance_get_num_provide_ports(node_instance);
+                  num_require_ports = apx_nodeInstance_get_num_require_ports(node_instance);
                   printf("\t%s: Provide-Ports: %d, Require-Ports: %d\n",
-                        apx_nodeInstance_getName(nodeInstance),
-                        (int) numProvidePorts, (int) numRequirePorts);
+                        apx_nodeInstance_get_name(node_instance),
+                        (int) num_provide_ports, (int) num_require_ports);
                }
                printf("Connecting to APX server at %s...", adt_str_cstr(m_connect_address));
                rc = connect_to_apx_server();
@@ -215,8 +217,7 @@ int main(int argc, char **argv)
 #endif
                   printf("OK\n");
                   if (!m_no_bind)
-                  {
-                     apx_error_t rc;
+                  {                     
                      printf("Initializing JSON message server...");
                      rc = init_json_message_server();
                      if (rc == APX_NO_ERROR)

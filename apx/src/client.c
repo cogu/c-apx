@@ -64,6 +64,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, apx_clientConnection_t *connection);
 static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *self, apx_clientConnection_t *connection);
+static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self, apx_clientConnection_t* connection, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size);
 static void apx_client_attach_local_nodes_to_connection(apx_client_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -317,11 +318,10 @@ void apx_client_attach_connection(apx_client_t *self, apx_clientConnection_t *co
    if ( (self != NULL) && (connection != 0) )
    {
       self->connection = connection;
-      if (connection->client != self)
-      {
-         connection->client = self;
-      }
-      apx_client_attach_local_nodes_to_connection(self);
+      apx_clientConnection_set_client(connection, self);
+      apx_clientConnection_attach_node_manager(connection, self->node_manager);
+      apx_client_attach_local_nodes_to_connection(self); //TODO: This should not be necessary as an explicit step.
+                                                         // Merge functionality with call to to apx_clientConnection_attach_node_manager
    }
 }
 
@@ -343,11 +343,11 @@ apx_error_t apx_client_build_node(apx_client_t *self, const char *definition_tex
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-int32_t apx_client_get_last_error_line(apx_client_t *self)
+int32_t apx_client_get_error_line(apx_client_t *self)
 {
    if (self != NULL)
    {
-      return -1;
+      return apx_nodeManager_get_error_line(self->node_manager);
    }
    return -1;
 }
@@ -380,93 +380,238 @@ struct apx_nodeManager_tag *apx_client_get_node_manager(apx_client_t *self)
 }
 
 /*** Port Handle API ***/
-void *apx_client_get_port_handle(apx_client_t *self, const char *nodeName, const char *portName)
+apx_portInstance_t* apx_client_get_port_instance_by_name(apx_client_t* self, const char* node_name, const char* port_name)
 {
-   if ( (self != NULL) && (portName != NULL))
+   if ( (self != NULL) && (port_name != NULL))
    {
-      apx_nodeInstance_t *nodeInstance = 0;
-      if (nodeName == 0)
+      apx_nodeInstance_t *node_instance = 0;
+      if (node_name == NULL)
       {
-         nodeInstance = apx_client_get_last_attached_node(self);
+         node_instance = apx_client_get_last_attached_node(self);
       }
       else
       {
-         nodeInstance = apx_nodeManager_find(self->node_manager, nodeName);
+         node_instance = apx_nodeManager_find(self->node_manager, node_name);
       }
-      if (nodeInstance != 0)
+      if (node_instance != 0)
       {
-         return (void*) apx_nodeInstance_find_port_by_name(nodeInstance, portName);
+         return (void*) apx_nodeInstance_find_port_by_name(node_instance, port_name);
       }
    }
    return NULL;
 }
 
-void *apx_client_get_provide_port_handle_by_id(apx_client_t *self, const char *nodeName, apx_portId_t providePortId)
+apx_portInstance_t* apx_client_get_provide_port_instance_by_id(apx_client_t* self, const char* node_name, apx_portId_t port_id)
 {
-   if ( (self != NULL) && (providePortId >= 0))
+   if ( (self != NULL) && (port_id >= 0))
    {
-      apx_nodeInstance_t *nodeInstance = 0;
-      if (nodeName == 0)
+      apx_nodeInstance_t *node_instance = 0;
+      if (node_name == NULL)
       {
-         nodeInstance = apx_client_get_last_attached_node(self);
+         node_instance = apx_client_get_last_attached_node(self);
       }
       else
       {
-         nodeInstance = apx_nodeManager_find(self->node_manager, nodeName);
+         node_instance = apx_nodeManager_find(self->node_manager, node_name);
       }
-      if (nodeInstance != 0)
+      if (node_instance != 0)
       {
-         return (void*)apx_nodeInstance_get_provide_port(nodeInstance, providePortId);
+         return (void*)apx_nodeInstance_get_provide_port(node_instance, port_id);
       }
    }
    return (void*) NULL;
 }
 
-void *apx_client_get_require_port_handle_by_id(apx_client_t *self, const char *nodeName, apx_portId_t requirePortId)
+apx_portInstance_t* apx_client_get_require_port_instance_by_id(apx_client_t* self, const char* node_name, apx_portId_t port_id)
 {
-   if ( (self != NULL) && (requirePortId >= 0))
+   if ( (self != NULL) && (port_id >= 0))
    {
-      apx_nodeInstance_t *nodeInstance = 0;
-      if (nodeName == 0)
+      apx_nodeInstance_t *node_instance = 0;
+      if (node_name == 0)
       {
-         nodeInstance = apx_client_get_last_attached_node(self);
+         node_instance = apx_client_get_last_attached_node(self);
       }
       else
       {
-         nodeInstance = apx_nodeManager_find(self->node_manager, nodeName);
+         node_instance = apx_nodeManager_find(self->node_manager, node_name);
       }
-      if (nodeInstance != 0)
+      if (node_instance != 0)
       {
-         return (void*)apx_nodeInstance_get_require_port(nodeInstance, requirePortId);
+         return (void*)apx_nodeInstance_get_require_port(node_instance, port_id);
       }
    }
    return (void*) 0;
 }
-/////////////////////// BEGIN CLIENT INTERNAL API /////////////////////
-void apx_clientInternal_onConnect(apx_client_t *self, apx_clientConnection_t *connection)
+
+apx_error_t apx_client_write_port_data(apx_client_t* self, apx_portInstance_t* port_instance, const dtl_dv_t* dv)
 {
-   if ( (self != NULL) && (connection != 0) )
+   if ((self != NULL) && (port_instance != NULL) && (dv != NULL))
+   {
+      uint8_t stack_buffer[MAX_STACK_BUFFER_SIZE];
+      apx_error_t result;
+      uint8_t* write_buffer;
+      apx_nodeData_t* node_data = NULL;
+      bool is_heap_allocated_buffer = false;
+      uint32_t const data_size = apx_portInstance_data_size(port_instance);
+      uint32_t const offset = apx_portInstance_data_offset(port_instance);
+      apx_program_t const* pack_program = apx_portInstance_pack_program(port_instance);
+
+      if (apx_portInstance_port_type(port_instance) != APX_PROVIDE_PORT)
+      {
+         return APX_INVALID_PORT_HANDLE_ERROR;
+      }
+      if (pack_program == NULL)
+      {
+         return APX_INVALID_PROGRAM_ERROR;
+      }
+      if (data_size > MAX_STACK_BUFFER_SIZE)
+      {
+         write_buffer = (uint8_t*)malloc(data_size);
+         if (write_buffer == NULL)
+         {
+            return APX_MEM_ERROR;
+         }
+         is_heap_allocated_buffer = true;
+      }
+      else
+      {
+         write_buffer = &stack_buffer[0];
+      }
+      assert(write_buffer != NULL);
+      node_data = apx_nodeInstance_get_node_data(apx_portInstance_parent(port_instance));
+      if (node_data == NULL)
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+      MUTEX_LOCK(self->lock);
+      if (self->vm == NULL)
+      {
+         self->vm = apx_vm_new();
+         if (self->vm == NULL)
+         {
+            MUTEX_UNLOCK(self->lock);
+            if (is_heap_allocated_buffer) free(write_buffer);
+            return APX_MEM_ERROR;
+         }
+      }
+      assert(self->vm != NULL);
+      result = apx_vm_select_program(self->vm, pack_program);
+      if (result == APX_NO_ERROR)
+      {
+         result = apx_vm_set_write_buffer(self->vm, write_buffer, data_size);
+      }
+      if (result == APX_NO_ERROR)
+      {
+         result = apx_vm_pack_value(self->vm, dv);
+      }
+      MUTEX_UNLOCK(self->lock);
+      if (result == APX_NO_ERROR)
+      {
+         result = apx_nodeData_write_provide_port_data(node_data, offset, write_buffer, data_size);
+      }
+      if (is_heap_allocated_buffer) free(write_buffer);
+      return result;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_client_read_port_data(apx_client_t* self, apx_portInstance_t* port_instance, dtl_dv_t** dv)
+{
+   if ((self != NULL) && (port_instance != NULL) && (dv != NULL))
+   {
+      uint8_t stack_buffer[MAX_STACK_BUFFER_SIZE];
+      apx_error_t result;
+      uint8_t* read_buffer;
+      apx_nodeData_t* node_data = NULL;
+      bool is_heap_allocated_buffer = false;
+      uint32_t const data_size = apx_portInstance_data_size(port_instance);
+      uint32_t const offset = apx_portInstance_data_offset(port_instance);
+      apx_program_t const* unpack_program = apx_portInstance_unpack_program(port_instance);
+
+      if (apx_portInstance_port_type(port_instance) != APX_REQUIRE_PORT)
+      {
+         return APX_INVALID_PORT_HANDLE_ERROR;
+      }
+      if (unpack_program == NULL)
+      {
+         return APX_INVALID_PROGRAM_ERROR;
+      }
+      if (data_size > MAX_STACK_BUFFER_SIZE)
+      {
+         read_buffer = (uint8_t*)malloc(data_size);
+         if (read_buffer == NULL)
+         {
+            return APX_MEM_ERROR;
+         }
+         is_heap_allocated_buffer = true;
+      }
+      else
+      {
+         read_buffer = &stack_buffer[0];
+      }
+      assert(read_buffer != NULL);
+      node_data = apx_nodeInstance_get_node_data(apx_portInstance_parent(port_instance));
+      if (node_data == NULL)
+      {
+         return APX_NULL_PTR_ERROR;
+      }
+      result = apx_nodeData_read_require_port_data(node_data, offset, read_buffer, data_size);
+      if (result != APX_NO_ERROR)
+      {
+         return result;
+      }
+      MUTEX_LOCK(self->lock);
+      if (self->vm == NULL)
+      {
+         self->vm = apx_vm_new();
+         if (self->vm == NULL)
+         {
+            MUTEX_UNLOCK(self->lock);
+            if (is_heap_allocated_buffer) free(read_buffer);
+            return APX_MEM_ERROR;
+         }
+      }
+      assert(self->vm != NULL);
+      result = apx_vm_select_program(self->vm, unpack_program);
+      if (result == APX_NO_ERROR)
+      {
+         result = apx_vm_set_read_buffer(self->vm, read_buffer, data_size);
+      }
+      if (result == APX_NO_ERROR)
+      {
+         result = apx_vm_unpack_value(self->vm, dv);
+      }
+      MUTEX_UNLOCK(self->lock);
+      if (is_heap_allocated_buffer) free(read_buffer);
+      return result;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+/////////////////////// BEGIN CLIENT INTERNAL API /////////////////////
+
+void apx_clientInternal_connect_notification(apx_client_t* self, apx_clientConnection_t* connection)
+{
+   if ((self != NULL) && (connection != NULL))
    {
       apx_client_trigger_connected_event_on_listeners(self, connection);
    }
 }
 
-void apx_clientInternal_onDisconnect(apx_client_t *self, apx_clientConnection_t *connection)
+void apx_clientInternal_disconnect_notification(apx_client_t* self, apx_clientConnection_t* connection)
 {
-   if ( (self != NULL) && (connection != 0) )
+   if ((self != NULL) && (connection != 0))
    {
       apx_client_trigger_disconnected_event_on_listeners(self, connection);
    }
 }
 
-void apx_clientInternal_requirePortDataWriteNotify(apx_client_t* self, apx_clientConnection_t* connection, apx_nodeInstance_t* nodeInstance, uint32_t offset, const uint8_t* data, uint32_t len)
+void apx_clientInternal_require_port_write_notification(apx_client_t* self, apx_clientConnection_t* connection, apx_portInstance_t* port_instance, const uint8_t* data, apx_size_t size)
 {
-   (void)self;
-   (void)connection;
-   (void)nodeInstance;
-   (void)offset;
-   (void)data;
-   (void)len;
+   if ((self != NULL) && (connection != 0))
+   {
+      apx_client_trigger_port_write_event_on_listeners(self, connection, port_instance, data, size);
+   }
 }
 
 /////////////////////// END CLIENT INTERNAL API /////////////////////
@@ -503,9 +648,9 @@ static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, 
    while(iter != 0)
    {
       apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->clientConnect1 != 0))
+      if ( (listener != 0) && (listener->client_connect1 != 0))
       {
-         listener->clientConnect1(listener->arg, connection);
+         listener->client_connect1(listener->arg, connection);
       }
       iter = adt_list_iter_next(iter);
    }
@@ -519,31 +664,32 @@ static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *sel
    while(iter != 0)
    {
       apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->clientDisconnect1 != 0))
+      if ( (listener != 0) && (listener->client_disconnect1 != 0))
       {
-         listener->clientDisconnect1(listener->arg, connection);
+         listener->client_disconnect1(listener->arg, connection);
       }
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->event_listener_lock);
 }
-/*
-static void apx_client_triggerRequirePortDataWriteEventOnListeners(apx_client_t *self, apx_nodeInstance_t *nodeInstance, apx_portId_t requirePortId, void *portHandle)
+
+static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self, apx_clientConnection_t* connection, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size)
 {
+   (void)connection;
    MUTEX_LOCK(self->event_listener_lock);
    adt_list_elem_t *iter = adt_list_iter_first(self->event_listeners);
    while(iter != 0)
    {
       apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->requirePortWrite1 != 0))
+      if ( (listener != 0) && (listener->require_port_write1 != 0))
       {
-         listener->requirePortWrite1(listener->arg, nodeInstance, requirePortId, portHandle);
+         listener->require_port_write1(listener->arg, port_instance, data, size);
       }
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->event_listener_lock);
 }
-*/
+
 
 static void apx_client_attach_local_nodes_to_connection(apx_client_t *self)
 {
@@ -564,7 +710,3 @@ static void apx_client_attach_local_nodes_to_connection(apx_client_t *self)
       }
    }
 }
-
-
-
-

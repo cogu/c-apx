@@ -47,7 +47,6 @@ typedef struct apx_portInstance_tag
    apx_program_t const* unpack_program; //strong reference
    char *name; //strong reference
    apx_dataElement_t* effective_data_element; //Weak reference
-
    //Members that does not require serialization
    struct apx_nodeInstance_tag* parent;
    apx_portType_t port_type;
