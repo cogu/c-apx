@@ -295,14 +295,6 @@ void apx_nodeManager_on_require_port_written(apx_nodeManager_t* self, apx_portIn
    }
 }
 
-void apx_nodeManager_on_provide_port_written(apx_nodeManager_t* self, apx_portInstance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size)
-{
-   (void)self;
-   (void)port_instance;
-   (void)raw_data;
-   (void)data_size;
-}
-
 int32_t apx_nodeManager_values(apx_nodeManager_t* self, adt_ary_t* array)
 {
    if ((self != 0) && (array != 0))

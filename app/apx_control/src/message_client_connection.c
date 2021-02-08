@@ -30,7 +30,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h>
-#include "numheader.h"
+#include "apx/numheader.h"
 #include "message_client_connection.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -210,25 +210,26 @@ int32_t message_client_wait_for_message_transmitted(message_client_connection_t 
 static void message_client_connection_onConnect(void *arg, const char *addr, uint16_t port)
 {
    message_client_connection_t *self = (message_client_connection_t*) arg;
+   (void)port;
+   (void)addr;
    if (self != 0 )
    {
       if (self->pendingMessage != 0)
       {
          const char *data = (const char*) adt_bytearray_data(self->pendingMessage);
          uint32_t size = adt_bytearray_length(self->pendingMessage);
+#if APX_DEBUG_ENABLE
+         printf("[APX_CONTROL] Message transmitted\n");
+#endif
          msocket_send(self->msocket, data, size);
          SEMAPHORE_POST(self->messageTransmitted);
+
       }
    }
 }
 
 static void message_client_connection_onDisconnect(void *arg)
 {
+   (void)arg;
    printf("[APX_CONTROL] disconnected\n");
 }
-/*
-static int8_t message_client_connection_onData(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
-{
-
-}
-*/

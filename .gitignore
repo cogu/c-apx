@@ -10,3 +10,4 @@
 CMemLeak.txt
 **/language.settings.xml
 massif.out.*
+**/*.vcxproj.user
