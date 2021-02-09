@@ -1,23 +1,25 @@
 # APX for C
 
-This is the C implementation of [APX](https://github.com/cogu/apx-doc).
+This is the C implementation of [APX](https://cogu.github.com/apx).
 
 ## v0.2.x (Stable)
 
 All maintenance work for v0.2 is done on the [maintenance_0.2](https://github.com/cogu/c-apx/tree/maintenance_0.2) branch.
-Latest release is [v0.2.6](https://github.com/cogu/c-apx/releases/tag/v0.2.6).
+Latest release is [v0.2.8](https://github.com/cogu/c-apx/releases/tag/v0.2.8).
 
-## v0.3.x (Stable)
+## v0.3.x (Experimental)
 
-All development work for v0.3 is done on the master branch. Latest release is v0.3.0.
+A brand new implementation is being developed on master branch. Its current state is experimental at best.
 
-### Current status of master branch (v0.3.1a)
-
-- Experimental support for new APX IDL v1.3 (specification work is ongoing).
-- CMake build support for Linux and Windows.
-- Dynamic clients is fully supported.
+- New APX server and client with support for APX IDL v1.3 (upcoming specification).
+  - Native support for TCP/IP and UNIX sockets.
+  - Extend the server with custom extensions to allow new connection types.
+- Dynamic client fully supported.
 - APX-ES clients not yet supported (needs rewrite from v0.2 to v0.3).
 - Static clients not yet supported (needs rewrite from v0.2 to v0.3).
+- CMake build support for Linux and Windows.
+- Visual Studio 2019 projects for Windows.
+- Eclipse projects for Linux.
 
 ## Dynamic vs. Static Clients
 
@@ -25,10 +27,13 @@ All development work for v0.3 is done on the master branch. Latest release is v0
 
 Static clients uses a code generator (see [Python APX](https://github.com/cogu/py-apx)) to generate C code from APX definitions files.
 The generated code is fast and integrates well with type definitions shared with an AUTOSAR RTE generator.
+Statically generated clients are supposed to be used together with APX-ES in order to run on small devices that run an RTOS.
 
 ### Dynamic Clients
 
 Dynamic clients parses an APX definition file in runtime and builds small byte code programs (in-memory) which then executes through a virtual machine (VM). This method has more flexibility since it doesn't require C code to be generated or compiled as an intermediate step.
+Caching mechanisms are currently being developed for C and C++ (More information later).
+Dynamic clients is best used on Windows and Linux systems.
 
 ## What is APX?
 
@@ -42,7 +47,7 @@ sent from client output (or provide) port(s) to client input (or require) port(s
 
 ## Where can APX be used?
 
-APX can be integrated on systems that run AUTOSAR classic (see APX-ES) as well as on any Linux or Windows system.
+APX can be integrated on systems that run AUTOSAR classic (see APX-ES) as well as any Linux or Windows systems.
 
 APX clients can be implemented in any programming language and can run on any platform. The APX protocol is designed to work well on small embedded systems (where RAM and ROM availability is a usual constraint).
 
@@ -50,7 +55,7 @@ APX clients can be implemented in any programming language and can run on any pl
 
 APX for embedded systems (APX-ES) is client source code written in C for very small devices.
 
-- It does not require an operating system (Using a small RTOS is recomended)
+- It does not require an operating system (Using a small RTOS is recommended)
 - It does not require any heap memory.
 - It is intended to be MISRA-compliant (at some point).
 
@@ -105,18 +110,8 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -GNinja
 
 **Build binaries:**
 
-CMake 3.10 or newer
-
 ```sh
-cmake --build build --target apx_server
-cmake --build build --target apx_node
-cmake --build build --target apx_control
-```
-
-CMake 3.15 or newer
-
-```sh
-cmake --build build --target apx_server apx_node apx_control
+cmake --build build
 ```
 
 **Install binaries:**
@@ -129,7 +124,7 @@ sudo cmake --build build --target install
 
 ### Building APX Binaries (Windows and Visual Studio)
 
-Launch "x64 Native Tools Command Prompt for Visual Studio 2019" in start menu.
+Launch "x64 Native Tools Command Prompt for Visual Studio 2019" from start menu.
 
 **Configure:**
 
@@ -140,7 +135,7 @@ cmake -S . -B build
 **Build binaries:**
 
 ```cmd
-cmake --build build --config Release --target apx_server apx_node apx_control
+cmake --build build --config Release
 ```
 
 **Install binaries:**
