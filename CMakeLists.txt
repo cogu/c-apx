@@ -10,7 +10,7 @@ include(adt/cmake/LeakCheck.cmake)
 include(adt/cmake/UnitTest.cmake)
 include(cmake/SetEnv.cmake)
 
-option(apx_ALPHA_BUILD "Is this an alpha build?" ON)
+option(apx_ALPHA_BUILD "Is this an alpha build?" OFF)
 option(BUILD_DEFAULT_SERVER "Build default APX server?" ON)
 option(APX_DEBUG "Enable debug-level printouts?" OFF)
 
