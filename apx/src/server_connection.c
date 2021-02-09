@@ -646,7 +646,7 @@ static apx_error_t gather_provide_port_connector_changes(adt_ary_t* node_instanc
                return APX_MEM_ERROR;
             }
             rc = adt_ary_push(provider_change_array, (void*)ref);
-            if (rc != ADT_MEM_ERROR)
+            if (rc != ADT_NO_ERROR)
             {
                return convert_from_adt_to_apx_error(rc);
             }
