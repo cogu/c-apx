@@ -1164,7 +1164,18 @@ static uint8_t const* apx_attributeParser_parse_upper_limit(uint8_t const* begin
       }
       else
       {
-         range->upper.u32 = tmp;
+         if (range->is_signed_range)
+         {
+            if (tmp >= 0x80000000UL)
+            {
+               return NULL; //value out of range
+            }
+            range->upper.i32 = (int32_t)tmp;
+         }
+         else
+         {
+            range->upper.u32 = tmp;
+         }
       }
    }
    else
