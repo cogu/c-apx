@@ -87,13 +87,10 @@ void apx_event_fillFileCreatedEvent(apx_event_t *event, struct apx_connectionBas
 {
    if (event != 0)
    {
-      if (event != 0)
-      {
-         memset(event, 0, APX_EVENT_SIZE);
-         event->evType = APX_EVENT_FILE_CREATED;
-         event->evData1 = (void*) connection;
-         event->evData2 = (void*) fileInfo;
-      }
+      memset(event, 0, APX_EVENT_SIZE);
+      event->evType = APX_EVENT_FILE_CREATED;
+      event->evData1 = (void*) connection;
+      event->evData2 = (void*) fileInfo;
    }
 }
 
