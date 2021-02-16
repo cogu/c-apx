@@ -1532,7 +1532,7 @@ static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_
       provide_port_id = apx_bytePortMap_lookup(self->byte_port_map, provide_data_offset);
       if (provide_port_id == APX_INVALID_PORT_ID)
       {
-         fprintf(stderr, "[APX_NODE_INSTANCE] blocked write on invalid offset %d\n", provide_data_offset);
+         fprintf(stderr, "[APX_NODE_INSTANCE] blocked write on invalid offset %u\n", provide_data_offset);
          retval = APX_INVALID_WRITE_ERROR;
          break;
       }

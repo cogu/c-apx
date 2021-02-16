@@ -203,7 +203,7 @@ void apx_connectionBase_start(apx_connectionBase_t* self)
 #if APX_DEBUG_ENABLE
       if (self->mode == APX_SERVER_MODE)
       {
-         printf("[BASE-CONNECTION %u] Starting connection\n", (int)self->connection_id);
+         printf("[BASE-CONNECTION %u] Starting connection\n", self->connection_id);
       }
       else
       {
