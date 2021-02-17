@@ -37,6 +37,7 @@
 #else
 #include <pthread.h>
 #endif
+#include "apx/event_listener.h"
 #include "apx/connection_base.h"
 #include "adt_list.h"
 #include "adt_str.h"
@@ -54,6 +55,8 @@ typedef struct apx_serverConnection_tag
    adt_str_t *tag; //optional tag
    bool is_greeting_accepted;
    apx_error_t last_error;
+   MUTEX_T event_listener_lock;
+   adt_list_t event_listeners;  //strong references to apx_connectionEventListener_t
 } apx_serverConnection_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -74,7 +77,9 @@ void apx_serverConnection_vnode_created_notification(void* arg, apx_nodeInstance
 void apx_serverConnection_set_connection_id(apx_serverConnection_t* self, uint32_t connection_id);
 uint32_t apx_serverConnection_get_connection_id(apx_serverConnection_t* self);
 void apx_serverConnection_set_server(apx_serverConnection_t* self, struct apx_server_tag* server);
-
+struct apx_server_tag* apx_serverConnection_get_server(apx_serverConnection_t* self);
+void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_connectionEventListener_t* event_listener);
+void apx_serverConnection_unregister_event_listener(apx_serverConnection_t* self, void* handle);
 
 // ClientConnection API
 apx_fileManager_t* apx_serverConnection_get_file_manager(apx_serverConnection_t* self);
@@ -87,6 +92,10 @@ uint32_t apx_serverConnection_get_total_bytes_sent(apx_serverConnection_t* self)
 //ConnectionInterface API
 apx_error_t apx_serverConnection_vremote_file_published_notification(void* arg, apx_file_t* file);
 apx_error_t apx_serverConnection_vremote_file_write_notification(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
+
+//Internal Event API (Called asynchronously from server event thread)
+void apx_server_connection_trigger_protocol_header_accepted(apx_serverConnection_t* self);
+void apx_server_connection_trigger_remote_file_published(apx_serverConnection_t* self, rmf_fileInfo_t *file_info);
 
 /*** UNIT TEST API ***/
 #ifdef UNIT_TEST

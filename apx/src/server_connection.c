@@ -37,6 +37,7 @@
 #include "apx/remotefile.h"
 #include "apx/util.h"
 #include "apx/server.h"
+#include "apx/event.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #else
@@ -65,7 +66,8 @@ static apx_error_t gather_provide_port_connector_changes(adt_ary_t* node_instanc
 static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instance_array, adt_ary_t* requester_change_array);
 static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_change_array);
 static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_change_array);
-
+static void emit_remote_file_published_event(apx_serverConnection_t* self, apx_file_t* file);
+static void emit_protocol_header_accepted(apx_serverConnection_t* self);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -84,11 +86,12 @@ apx_error_t apx_serverConnection_create(apx_serverConnection_t* self, apx_connec
       base_connection_vtable->node_created_notification = apx_serverConnection_vnode_created_notification;
       connection_interface->remote_file_published_notification = apx_serverConnection_vremote_file_published_notification;
       connection_interface->remote_file_write_notification = apx_serverConnection_vremote_file_write_notification;
+      adt_list_create(&self->event_listeners, apx_connectionEventListener_vdelete);
       error_code = apx_connectionBase_create(&self->base, APX_SERVER_MODE, base_connection_vtable, connection_interface);
+      MUTEX_INIT(self->event_listener_lock);
       self->is_greeting_accepted = false;
       self->parent = NULL;
       self->last_error = APX_NO_ERROR;
-      //apx_connectionBase_setEventHandler(&self->base, apx_serverConnection_defaultEventHandler, (void*) self);
       return error_code;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -98,6 +101,8 @@ void apx_serverConnection_destroy(apx_serverConnection_t* self)
 {
    if (self != 0)
    {
+      MUTEX_DESTROY(self->event_listener_lock);
+      adt_list_destroy(&self->event_listeners);
       apx_connectionBase_destroy(&self->base);
    }
 }
@@ -134,26 +139,37 @@ uint32_t apx_serverConnection_get_total_bytes_sent(apx_serverConnection_t* self)
    return 0u;
 }
 
-/*
-void apx_serverConnection_default_event_handler(void* arg, apx_event_t* event)
+void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_connectionEventListener_t* event_listener)
 {
-   (void)arg;
-   (void)event;
-}
-
-void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_connectionEventListener_t* listener)
-{
-   (void)self;
-   (void)listener;
-   return NULL;
+   if ((self != NULL) && (event_listener != NULL))
+   {
+      void* handle = (void*)apx_connectionEventListener_clone(event_listener);
+      if (handle != NULL)
+      {
+         MUTEX_LOCK(self->event_listener_lock);
+         adt_list_insert(&self->event_listeners, handle);
+         MUTEX_UNLOCK(self->event_listener_lock);
+      }
+      return handle;
+   }
+   return (void*)0;
 }
 
 void apx_serverConnection_unregister_event_listener(apx_serverConnection_t* self, void* handle)
 {
-   (void)self;
-   (void)handle;
+   if ((self != NULL) && (handle != NULL))
+   {
+      bool is_found;
+      MUTEX_LOCK(self->event_listener_lock);
+      is_found = adt_list_remove(&self->event_listeners, handle);
+      MUTEX_UNLOCK(self->event_listener_lock);
+      if (is_found)
+      {
+         apx_connectionEventListener_vdelete(handle);
+      }
+   }
 }
-*/
+
 
 void apx_serverConnection_greeting_header_accepted_notification(apx_serverConnection_t* self)
 {
@@ -161,6 +177,7 @@ void apx_serverConnection_greeting_header_accepted_notification(apx_serverConnec
    {
       self->is_greeting_accepted = true;
       apx_fileManager_connected(&self->base.file_manager);
+      emit_protocol_header_accepted(self);
    }
 }
 
@@ -299,6 +316,75 @@ apx_error_t apx_serverConnection_vremote_file_write_notification(void* arg, apx_
    return remote_file_write_notification((apx_serverConnection_t*)arg, file, offset, data, size);
 }
 
+//Internal Event API
+void apx_server_connection_trigger_protocol_header_accepted(apx_serverConnection_t* self)
+{
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t* iter = adt_list_iter_first(&self->event_listeners);
+   while (iter != 0)
+   {
+      apx_connectionEventListener_t* listener = (apx_connectionEventListener_t*)iter->pItem;
+      if ((listener != 0) && (listener->protocol_header_accepted != 0))
+      {
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->protocol_header_accepted);
+         length++;
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->event_listener_lock);
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_protocolHeaderAcceptedFunc_t* callback = (apx_protocolHeaderAcceptedFunc_t*)adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, &self->base);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
+}
+
+void apx_server_connection_trigger_remote_file_published(apx_serverConnection_t* self, rmf_fileInfo_t* file_info)
+{
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t* iter = adt_list_iter_first(&self->event_listeners);
+   while (iter != 0)
+   {
+      apx_connectionEventListener_t* listener = (apx_connectionEventListener_t*)iter->pItem;
+      if ((listener != 0) && (listener->file_published != 0))
+      {
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->file_published);
+         length++;
+}
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->event_listener_lock);
+   for (i = 0; i < length; i++)
+   {
+      void* arg = adt_ary_value(&args, i);
+      apx_fileEventFunc_t* callback = (apx_fileEventFunc_t*)adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, &self->base, file_info);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
+}
+
+
+//Unit Test API
 #ifdef UNIT_TEST
 void apx_serverConnection_run(apx_serverConnection_t* self)
 {
@@ -321,6 +407,7 @@ static apx_error_t remote_file_published_notification(apx_serverConnection_t* se
    if ((self != NULL) && (file != NULL))
    {
       apx_fileType_t file_type = apx_file_get_apx_file_type(file);
+      emit_remote_file_published_event(self, file);
       if (file_type == APX_PROVIDE_PORT_DATA_FILE_TYPE)
       {
          return process_new_provide_port_data_file(self, file);
@@ -745,3 +832,32 @@ static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_cha
    return APX_NO_ERROR;
 }
 
+static void emit_remote_file_published_event(apx_serverConnection_t* self, apx_file_t* file)
+{
+#ifndef UNIT_TEST
+   rmf_fileInfo_t* file_info = apx_file_clone_file_info(file);
+   if ((self->parent != NULL) && (file_info != NULL))
+   {
+      apx_event_t event;
+      apx_event_pack_remote_file_published(&event, &self->base, file_info);
+      apx_server_append_event(self->parent, &event);
+   }
+#else
+   (void)self;
+   (void)file;
+#endif
+}
+
+static void emit_protocol_header_accepted(apx_serverConnection_t* self)
+{
+#ifndef UNIT_TEST
+   if (self->parent != NULL)
+   {
+      apx_event_t event;
+      apx_event_pack_protocol_header_accepted(&event, &self->base);
+      apx_server_append_event(self->parent, &event);
+   }
+#else
+   (void)self;
+#endif
+}

@@ -29,6 +29,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN
@@ -36,13 +37,13 @@
 # include <Windows.h>
 #else
 # include <pthread.h>
-# include <semaphore.h>
+//# include <semaphore.h>
 #endif
 #include "apx/types.h"
 #include "apx/error.h"
 #include "apx/file_manager.h"
 #include "apx/node_manager.h"
-#include "apx/event_loop.h"
+//#include "apx/event_loop.h"
 #include "apx/allocator.h"
 #include "apx/connection_interface.h"
 #include "osmacro.h"
@@ -55,7 +56,6 @@ struct apx_nodeData_tag;
 struct apx_portConnectionTable_tag;
 struct apx_file_tag;
 struct rmf_fileInfo_tag;
-
 
 typedef void (apx_fileInfoNotifyFunc)(void *arg, const struct rmf_fileInfo_tag *fileInfo);
 typedef void (apx_nodeFileWriteNotifyFunc)(void *arg, apx_nodeInstance_t * node_instance, apx_fileType_t fileType, uint32_t offset, const uint8_t *data, uint32_t len);
@@ -77,22 +77,16 @@ typedef struct apx_connectionBaseVTable_tag
 typedef struct apx_connectionBase_tag
 {
    apx_fileManager_t file_manager;
-   apx_nodeManager_t* node_manager;
-   apx_eventLoop_t event_loop;
-   apx_allocator_t allocator;
-   adt_list_t connection_event_listeners; //weak references to apx_connectionEventListener_t
+   apx_nodeManager_t* node_manager;   
+   apx_allocator_t allocator;   
    apx_connectionBaseVTable_t vtable;
-   apx_connectionInterface_t connection_interface;
-   MUTEX_T event_listener_mutex; //thread-protection for connection_event_listeners
-   THREAD_T event_loop_thread;
-   apx_eventHandlerFunc_t *event_handler;
+   apx_connectionInterface_t connection_interface;         
    void *event_handler_arg;
    uint32_t total_bytes_received;
    uint32_t total_bytes_sent;
    uint32_t connection_id;
    apx_size_t num_header_size; //UINT16_SIZE or UINT32_SIZE
-   apx_mode_t mode;
-   bool event_loop_thread_valid;
+   apx_mode_t mode;   
 #ifdef _WIN32
    unsigned int thread_id;
 #endif
@@ -108,7 +102,6 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self);
 void apx_connectionBase_delete(apx_connectionBase_t *self);
 void apx_connectionBase_vdelete(void *arg);
 apx_fileManager_t *apx_connectionBase_get_file_manager(apx_connectionBase_t const* self);
-void apx_connectionBase_set_event_handler(apx_connectionBase_t* self, apx_eventHandlerFunc_t* event_handler, void* event_handler_arg);
 void apx_connectionBase_start(apx_connectionBase_t *self);
 void apx_connectionBase_stop(apx_connectionBase_t *self);
 void apx_connectionBase_close(apx_connectionBase_t *self);
@@ -116,7 +109,6 @@ void apx_connectionBase_attach_node_manager(apx_connectionBase_t* self, apx_node
 apx_nodeManager_t* apx_connectionBase_get_node_manager(apx_connectionBase_t const* self);
 apx_connectionInterface_t const* apx_connectionBase_get_connection(apx_connectionBase_t const* self);
 apx_error_t apx_connectionBase_message_received(apx_connectionBase_t *self, const uint8_t *data, apx_size_t size);
-uint16_t apx_connectionBase_get_num_pending_events(apx_connectionBase_t *self);
 uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t *self);
 void apx_connectionBase_set_connection_id(apx_connectionBase_t* self, uint32_t connection_id);
 

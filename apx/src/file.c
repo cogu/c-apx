@@ -71,8 +71,7 @@ apx_error_t apx_file_create(apx_file_t* self, const rmf_fileInfo_t* file_info)
       self->has_first_write = false;
       self->file_manager = (apx_fileManager_t*) NULL;
       self->apx_file_type = APX_UNKNOWN_FILE_TYPE;
-      memset(&self->notification_handler, 0, sizeof(apx_fileNotificationHandler_t));
-      adt_list_create(&self->event_listeners, apx_fileEventListener_vdelete);
+      memset(&self->notification_handler, 0, sizeof(apx_fileNotificationHandler_t));      
       retval = rmf_fileInfo_create_copy(&self->file_info, file_info);
       if (retval == APX_NO_ERROR)
       {
@@ -88,8 +87,7 @@ void apx_file_destroy(apx_file_t *self)
 {
    if (self != 0)
    {
-      rmf_fileInfo_destroy(&self->file_info);
-      adt_list_destroy(&self->event_listeners);
+      rmf_fileInfo_destroy(&self->file_info);      
       MUTEX_DESTROY(self->lock);
    }
 }
@@ -237,28 +235,6 @@ void apx_file_set_file_manager(apx_file_t* self, struct apx_fileManager_tag* fil
    if (self != 0)
    {
       self->file_manager = file_manager;
-   }
-}
-
-void* apx_file_register_event_listener(apx_file_t *self, apx_fileEventListener2_t *handler_table)
-{
-   if ( (self != NULL) && (handler_table != NULL) )
-   {
-      apx_fileEventListener2_t *handle = apx_fileEventListener_clone(handler_table);
-      if (handle != NULL)
-      {
-         adt_list_insert_unique(&self->event_listeners, handle);
-      }
-      return handle;
-   }
-   return (void*) 0;
-}
-
-void apx_file_unregister_event_listener(apx_file_t *self, void *handle)
-{
-   if ( (self != 0) && (handle != 0) )
-   {
-      adt_list_remove(&self->event_listeners, handle);
    }
 }
 

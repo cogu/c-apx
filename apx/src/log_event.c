@@ -45,26 +45,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_logEvent_pack(apx_event_t *event, apx_logLevel_t level, char *label, adt_str_t *msg)
-{
-   if ( (event != 0) && (label != 0) && (msg != 0) )
-   {
-      event->evType = APX_EVENT_LOG_EVENT;
-      event->evData1 = label;
-      event->evData2 = msg;
-      event->evData4 = (uint32_t) level;
-   }
-}
 
-void apx_logEvent_unpack(apx_event_t *event, apx_logLevel_t *level, char **label, adt_str_t **msg)
-{
-   if ( (event != 0) && (event->evType == APX_EVENT_LOG_EVENT) && (level != 0) && (label != 0) && (msg != 0) )
-   {
-      *label = (char*) event->evData1;
-      *msg = (adt_str_t*) event->evData2;
-      *level = (apx_logLevel_t) event->evData4;
-   }
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

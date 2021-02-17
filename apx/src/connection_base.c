@@ -107,41 +107,24 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       {
          memset(&self->connection_interface, 0, sizeof(apx_connectionInterface_t));
       }
-      self->node_manager = NULL;
-      self->event_handler = NULL;
+      self->node_manager = NULL;      
       self->event_handler_arg = NULL;
       self->total_bytes_received = 0u;
       self->total_bytes_sent = 0u;
       self->connection_id = APX_INVALID_CONNECTION_ID;
       self->num_header_size = UINT32_SIZE;
       self->mode = mode;
-      self->event_loop_thread_valid = false;
-#ifdef _WIN32
-      self->event_loop_thread = INVALID_HANDLE_VALUE;
-      self->thread_id = 0u;
-#else
-      self->event_loop_thread = 0;
-#endif
       rc = apx_allocator_create(&self->allocator, APX_MAX_NUM_MESSAGES);
       if (rc != APX_NO_ERROR)
       {
          return rc;
       }
-      rc = apx_eventLoop_create(&self->event_loop);
-      if (rc != APX_NO_ERROR)
-      {
-         apx_allocator_destroy(&self->allocator);
-         return APX_MEM_ERROR;
-      }
       rc = apx_fileManager_create(&self->file_manager, mode, &self->connection_interface, &self->allocator);
       if (rc != APX_NO_ERROR)
       {
-         apx_allocator_destroy(&self->allocator);
-         apx_eventLoop_destroy(&self->event_loop);
+         apx_allocator_destroy(&self->allocator);         
          return rc;
       }
-      adt_list_create(&self->connection_event_listeners, apx_connectionEventListener_vdelete);
-      MUTEX_INIT(self->event_listener_mutex);
       apx_allocator_start(&self->allocator);
       return rc;
    }
@@ -152,10 +135,7 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self)
 {
    if (self != NULL)
    {
-      apx_fileManager_destroy(&self->file_manager);
-      apx_eventLoop_destroy(&self->event_loop);
-      MUTEX_DESTROY(self->event_listener_mutex);
-      adt_list_destroy(&self->connection_event_listeners);
+      apx_fileManager_destroy(&self->file_manager);      
       apx_allocator_stop(&self->allocator);
       apx_allocator_destroy(&self->allocator);
    }
@@ -185,15 +165,6 @@ apx_fileManager_t* apx_connectionBase_get_file_manager(apx_connectionBase_t cons
       return (apx_fileManager_t*) &self->file_manager;
    }
    return NULL;
-}
-
-void apx_connectionBase_set_event_handler(apx_connectionBase_t* self, apx_eventHandlerFunc_t* event_handler, void* event_handler_arg)
-{
-   if (self != NULL)
-   {
-      self->event_handler = event_handler;
-      self->event_handler_arg = event_handler_arg;
-   }
 }
 
 void apx_connectionBase_start(apx_connectionBase_t* self)
@@ -275,16 +246,6 @@ apx_error_t apx_connectionBase_message_received(apx_connectionBase_t* self, cons
       return apx_fileManager_message_received(&self->file_manager, data, size);
    }
    return APX_INVALID_ARGUMENT_ERROR;
-}
-
-uint16_t apx_connectionBase_get_num_pending_events(apx_connectionBase_t* self)
-{
-   if (self != NULL)
-   {
-      return apx_eventLoop_numPendingEvents(&self->event_loop);
-   }
-   return 0;
-
 }
 
 uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t* self)
