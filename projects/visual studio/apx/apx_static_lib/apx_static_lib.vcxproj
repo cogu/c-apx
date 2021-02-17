@@ -221,6 +221,7 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\vm_common.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\vm_defs.h" />
     <ClInclude Include="..\..\..\..\bstr\inc\bstr.h" />
+    <ClInclude Include="..\..\..\..\cutil\inc\argparse.h" />
     <ClInclude Include="..\..\..\..\cutil\inc\filestream.h" />
     <ClInclude Include="..\..\..\..\cutil\inc\pack.h" />
     <ClInclude Include="..\..\..\..\cutil\inc\sha256.h" />
@@ -276,7 +277,6 @@
     <ClCompile Include="..\..\..\..\apx\src\file_manager_shared.c" />
     <ClCompile Include="..\..\..\..\apx\src\file_manager_worker.c" />
     <ClCompile Include="..\..\..\..\apx\src\file_map.c" />
-    <ClCompile Include="..\..\..\..\apx\src\log_event.c" />
     <ClCompile Include="..\..\..\..\apx\src\node.c" />
     <ClCompile Include="..\..\..\..\apx\src\node_cache.c" />
     <ClCompile Include="..\..\..\..\apx\src\node_data.c" />
@@ -309,6 +309,7 @@
     <ClCompile Include="..\..\..\..\apx\src\vm.c" />
     <ClCompile Include="..\..\..\..\apx\src\vm_common.c" />
     <ClCompile Include="..\..\..\..\bstr\src\bstr.c" />
+    <ClCompile Include="..\..\..\..\cutil\src\argparse.c" />
     <ClCompile Include="..\..\..\..\cutil\src\filestream.c" />
     <ClCompile Include="..\..\..\..\cutil\src\pack.c" />
     <ClCompile Include="..\..\..\..\cutil\src\sha256.c" />

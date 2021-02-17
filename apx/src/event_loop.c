@@ -59,7 +59,7 @@ apx_error_t apx_eventLoop_create(apx_eventLoop_t *self)
          return APX_MEM_ERROR;
       }
       self->exitFlag = false;
-      SPINLOCK_INIT(self->lock);
+      (void)SPINLOCK_INIT(self->lock);
       SEMAPHORE_CREATE(self->semaphore);
       return APX_NO_ERROR;
    }

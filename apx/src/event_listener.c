@@ -129,33 +129,6 @@ void apx_connectionEventListener_vdelete(void *arg)
    apx_connectionEventListener_delete((apx_connectionEventListener_t*) arg);
 }
 
-apx_fileEventListener2_t *apx_fileEventListener_clone(apx_fileEventListener2_t *other)
-{
-   if (other != 0)
-   {
-      apx_fileEventListener2_t *self = (apx_fileEventListener2_t*) malloc(sizeof(apx_fileEventListener2_t));
-      if (self != 0)
-      {
-         *self = *other;
-      }
-      return self;
-   }
-   return (apx_fileEventListener2_t*) 0;
-}
-
-void apx_fileEventListener_delete(apx_fileEventListener2_t *self)
-{
-   if (self != 0)
-   {
-      free(self);
-   }
-}
-
-void apx_fileEventListener_vdelete(void *arg)
-{
-   apx_fileEventListener_delete((apx_fileEventListener2_t *) arg);
-}
-
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////

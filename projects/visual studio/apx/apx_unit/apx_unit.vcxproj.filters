@@ -237,9 +237,6 @@
     <ClCompile Include="..\..\..\..\apx\src\file_map.c">
       <Filter>apx\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\log_event.c">
-      <Filter>apx\src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\apx\src\node.c">
       <Filter>apx\src</Filter>
     </ClCompile>
@@ -357,9 +354,6 @@
     <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_socket_connection.c">
       <Filter>apx\test\extension</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_text_log.c">
-      <Filter>apx\test\extension</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_socket_server_extension.c">
       <Filter>apx\test\extension</Filter>
     </ClCompile>
@@ -471,6 +465,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_unpack.c">
       <Filter>apx\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_text_log.c">
+      <Filter>apx\test\extension</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

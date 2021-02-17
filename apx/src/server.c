@@ -30,7 +30,6 @@
 //#include "apx/logging.h"
 #include "apx/file_manager.h"
 #include "apx/event_listener.h"
-#include "apx/log_event.h"
 #include <string.h>
 #include <malloc.h>
 #include <assert.h>
@@ -53,7 +52,7 @@
 static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serverConnection_t *new_connection);
 static void apx_server_trigger_connected_event(apx_server_t *self, apx_serverConnection_t * server_connection);
 static void apx_server_trigger_disconnected_event(apx_server_t *self, apx_serverConnection_t *server_connection);
-static void apx_server_trigger_log_event(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
+static void apx_server_trigger_log_write_event(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
 static void apx_server_init_extensions(apx_server_t *self);
 static void apx_server_shutdown_extensions(apx_server_t *self);
 static void apx_server_handle_event(void *arg, apx_event_t *event);
@@ -246,7 +245,7 @@ apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_s
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_server_log_event(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
+void apx_server_log_write(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
 {
    if ( (self != NULL) && (level <= APX_MAX_LOG_LEVEL) && (msg != 0) )
    {
@@ -278,9 +277,16 @@ void apx_server_log_event(apx_server_t* self, apx_logLevel_t level, const char* 
          labelStr[labelSize] = 0;
       }
       memset(&event, 0, sizeof(event));
-      apx_logEvent_pack(&event, level, labelStr, msgStr);
+      apx_event_pack_log_write(&event, level, labelStr, msgStr);
       apx_eventLoop_append(&self->event_loop, &event);
    }
+}
+
+
+apx_error_t apx_server_append_event(apx_server_t* self, apx_event_t* event)
+{
+   apx_eventLoop_append(&self->event_loop, event);
+   return APX_NO_ERROR;
 }
 
 /**
@@ -556,9 +562,9 @@ static void apx_server_trigger_connected_event(apx_server_t* self, apx_serverCon
    while(iter != 0)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->serverConnect1 != NULL) )
+      if ( (listener != 0) && (listener->new_connection2 != NULL) )
       {
-         listener->serverConnect1(listener->arg, server_connection);
+         listener->new_connection2(listener->arg, server_connection);
       }
       iter = adt_list_iter_next(iter);
    }
@@ -574,9 +580,9 @@ static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server
    while(iter != 0)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->serverDisconnect1 != NULL) )
+      if ( (listener != 0) && (listener->connection_closed2 != NULL) )
       {
-         listener->serverDisconnect1(listener->arg, server_connection);
+         listener->connection_closed2(listener->arg, server_connection);
       }
       iter = adt_list_iter_next(iter);
    }
@@ -656,16 +662,18 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
       size_t labelSize;
       char *label;
       adt_str_t *str;
-      const char *msg;
-      switch(event->evType)
+      const char *msg = NULL;
+      rmf_fileInfo_t* file_info = NULL;
+      apx_serverConnection_t* server_connection = NULL;
+      switch(event->ev_type)
       {
-      case APX_EVENT_LOG_EVENT:
-         apx_logEvent_unpack(event, &level, &label, &str);
+      case APX_EVENT_LOG_WRITE:
+         apx_event_unpack_log_write(event, &level, &label, &str);
          msg = adt_str_cstr(str);
          if (label != 0)
          {
             labelSize = strlen(label);
-            apx_server_trigger_log_event(self, level, label, msg);
+            apx_server_trigger_log_write_event(self, level, label, msg);
             MUTEX_LOCK(self->event_loop_lock);
             soa_free(&self->allocator, label, labelSize+1);
             MUTEX_UNLOCK(self->event_loop_lock);
@@ -676,8 +684,68 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
          }
          adt_str_delete(str);
          break;
+      case APX_EVENT_PROTOCOL_HEADER_ACCEPTED:
+         apx_event_unpack_protocol_header_accepted(event, (apx_connectionBase_t**)&server_connection);
+         if (server_connection != NULL)
+         {
+            apx_server_connection_trigger_protocol_header_accepted(server_connection);
+         }
+         else
+         {
+            assert(0);
+         }
+         break;
+      case APX_EVENT_REMOTE_FILE_PUBLISHED:
+         apx_event_unpack_remote_file_published(event, (apx_connectionBase_t**)&server_connection, &file_info);
+         if ((server_connection != NULL) && (file_info != NULL) )
+         {
+            apx_server_connection_trigger_remote_file_published(server_connection, file_info);
+            rmf_fileInfo_delete(file_info);
+         }
+         else
+         {
+            assert(0);
+         }
+         break;
+      default:
+         printf("[SERVER] Unhandled event %d\n", (int)event->ev_type);
       }
    }
+}
+
+static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
+{
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
+   MUTEX_LOCK(self->event_loop_lock);
+   adt_list_elem_t* iter = adt_list_iter_first(&self->server_event_listeners);   
+   while (iter != NULL)
+   {      
+      apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
+      if ( (listener != 0) && (listener->server_write_log2 != 0) )
+      {
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->server_write_log2);
+         length++;         
+      }      
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->event_loop_lock);
+   for (i = 0; i < length; i++)
+   {
+      void* arg = adt_ary_value(&args, i);
+      apx_serverLogWritEventFunc_t* callback = (apx_serverLogWritEventFunc_t*)adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, level, label, msg);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
 }
 #ifndef UNIT_TEST
 
@@ -743,6 +811,7 @@ static THREAD_PROTO(thread_task, arg)
    apx_server_t *self = (apx_server_t*) arg;
    if (self != NULL)
    {
+      printf("[SERVER] Starting event loop\n");
       apx_eventLoop_run(&self->event_loop, apx_server_handle_event, (void*) self);
    }
    THREAD_RETURN(0);

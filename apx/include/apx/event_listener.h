@@ -48,48 +48,45 @@ struct apx_portInstance_tag;
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-typedef void (apx_eventListener2_portConnectFunc_t)(void *arg, struct apx_nodeInstance_tag *inst, struct apx_portConnectionTable_tag *connectionTable);
-typedef void (apx_eventListener2_fileEvent_t)(void *arg, struct apx_connectionBase_tag *connection, const struct apx_fileInfo_tag *fileInfo);
-typedef void (*remoteFilePreWriteFuncType1)(void *arg, struct apx_file_tag *remoteFile, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit);
-typedef void (*remoteFileWriteFuncType1)(void *arg, struct apx_file_tag *remoteFile, uint32_t offset, const uint8_t *data, uint32_t len);
-typedef void (clientRequirePortWriteFuncType1)(void *arg, struct apx_portInstance_tag *port_instance, uint8_t const* data, apx_size_t size);
+//typedef void (apx_eventListener2_portConnectFunc_t)(void *arg, struct apx_nodeInstance_tag *inst, struct apx_portConnectionTable_tag *connectionTable);
+//typedef void (apx_eventListener2_fileEvent_t)(void *arg, struct apx_connectionBase_tag *connection, const struct apx_fileInfo_tag *fileInfo);
+//typedef void (*remoteFilePreWriteFuncType1)(void *arg, struct apx_file_tag *remoteFile, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit);
+//typedef void (*remoteFileWriteFuncType1)(void *arg, struct apx_file_tag *remoteFile, uint32_t offset, const uint8_t *data, uint32_t len);
+
+
+//Client/Server typedefs
+typedef void (apx_clientConnectionEventFunc_t)(void* arg, struct apx_clientConnection_tag* connection);
+typedef void (apx_serverConnectionEventFunc_t)(void* arg, struct apx_serverConnection_tag* connection);
+typedef void (apx_serverLogWritEventFunc_t)(void* arg, apx_logLevel_t level, const char* label, const char* msg);
+
+//Connection typedefs
+typedef void (apx_protocolHeaderAcceptedFunc_t)(void* arg, struct apx_connectionBase_tag* connection);
+typedef void (apx_portDataWriteFunc1_t)(void* arg, struct apx_portInstance_tag* port_instance, uint8_t const* data, apx_size_t size);
+typedef void (apx_fileEventFunc_t)(void* arg, struct apx_connectionBase_tag* connection, const struct rmf_fileInfo_tag* file_info);
 
 typedef struct apx_clientEventListener_tag
 {
    void *arg;
-   void (*client_connect1)(void *arg, struct apx_clientConnection_tag *clientConnection);
-   void (*client_disconnect1)(void *arg, struct apx_clientConnection_tag *clientConnection);
-   clientRequirePortWriteFuncType1 *require_port_write1;
+   apx_clientConnectionEventFunc_t* connected1;
+   apx_clientConnectionEventFunc_t* disconnected1;
+   apx_portDataWriteFunc1_t* require_port_write1;
 } apx_clientEventListener_t;
 
 typedef struct apx_serverEventListener_tag
 {
    void *arg;
-   void (*serverConnect1)(void *arg, struct apx_serverConnection_tag *connection);
-   void (*serverDisconnect1)(void *arg, struct apx_serverConnection_tag *connection);
+   apx_serverConnectionEventFunc_t* new_connection2;
+   apx_serverConnectionEventFunc_t* connection_closed2;
+   apx_serverLogWritEventFunc_t* server_write_log2;
 } apx_serverEventListener_t;
 
 typedef struct apx_connectionEventListener_tag
 {
    void *arg;
-   void (*headerAccepted2)(void *arg, struct apx_connectionBase_tag *connection);
-   apx_eventListener2_fileEvent_t *fileCreate2;
-   apx_eventListener2_fileEvent_t *fileRevoke2;
-   apx_eventListener2_fileEvent_t *fileOpen2;
-   apx_eventListener2_fileEvent_t *fileClose2;
-   remoteFilePreWriteFuncType1 *filePreWrite1;
-   void (*nodeComplete2) (void *arg, struct apx_nodeInstance_tag *inst);
-   apx_eventListener2_portConnectFunc_t *requirePortsConnected1;
-   apx_eventListener2_portConnectFunc_t *requirePortsDisconnected1;
-   apx_eventListener2_portConnectFunc_t *providePortsConnected1;
-   apx_eventListener2_portConnectFunc_t *providePortsDisconnected1;
+   apx_protocolHeaderAcceptedFunc_t* protocol_header_accepted;
+   apx_fileEventFunc_t* file_published;
+   apx_fileEventFunc_t* file_revoked;
 } apx_connectionEventListener_t;
-
-
-typedef struct apx_fileEventListener2_tag
-{
-   remoteFileWriteFuncType1 remoteFileWrite1;
-} apx_fileEventListener2_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -106,10 +103,6 @@ void apx_serverEventListener_vdelete(void *arg);
 apx_connectionEventListener_t *apx_connectionEventListener_clone(apx_connectionEventListener_t *other);
 void apx_connectionEventListener_delete(apx_connectionEventListener_t *self);
 void apx_connectionEventListener_vdelete(void *arg);
-
-apx_fileEventListener2_t *apx_fileEventListener_clone(apx_fileEventListener2_t *other);
-void apx_fileEventListener_delete(apx_fileEventListener2_t *self);
-void apx_fileEventListener_vdelete(void *arg);
 
 
 

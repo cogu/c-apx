@@ -168,23 +168,15 @@
     <ClCompile Include="..\..\..\..\apx\src\data_type.c" />
     <ClCompile Include="..\..\..\..\apx\src\decoder.c" />
     <ClCompile Include="..\..\..\..\apx\src\deserializer.c" />
-    <ClCompile Include="..\..\..\..\apx\src\event.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\src\event.c" />
     <ClCompile Include="..\..\..\..\apx\src\event_listener.c" />
     <ClCompile Include="..\..\..\..\apx\src\event_loop.c" />
     <ClCompile Include="..\..\..\..\apx\src\extension\socket_server_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log_extension.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log.c" />
+    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log_extension.c" />
     <ClCompile Include="..\..\..\..\apx\src\extension\socket_server.c" />
     <ClCompile Include="..\..\..\..\apx\src\extension\socket_server_extension.c" />
-    <ClCompile Include="..\..\..\..\apx\src\extension\text_log_base.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\src\extension\text_log_base.c" />
     <ClCompile Include="..\..\..\..\apx\src\file.c" />
     <ClCompile Include="..\..\..\..\apx\src\node_cache.c" />
     <ClCompile Include="..\..\..\..\apx\src\file_info.c" />
@@ -195,7 +187,6 @@
     <ClCompile Include="..\..\..\..\apx\src\file_manager_shared.c" />
     <ClCompile Include="..\..\..\..\apx\src\file_manager_worker.c" />
     <ClCompile Include="..\..\..\..\apx\src\file_map.c" />
-    <ClCompile Include="..\..\..\..\apx\src\log_event.c" />
     <ClCompile Include="..\..\..\..\apx\src\node.c" />
     <ClCompile Include="..\..\..\..\apx\src\node_data.c" />
     <ClCompile Include="..\..\..\..\apx\src\node_instance.c" />
@@ -229,13 +220,11 @@
     <ClCompile Include="..\..\..\..\apx\src\util.c" />
     <ClCompile Include="..\..\..\..\apx\src\vm.c" />
     <ClCompile Include="..\..\..\..\apx\src\vm_common.c" />
+    <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_text_log.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_allocator.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_attribute_parser.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_client.c" />
     <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_socket_connection.c" />
-    <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_text_log.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_socket_server_extension.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_compiler_unpack.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_computation.c" />

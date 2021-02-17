@@ -28,6 +28,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include "apx/event.h"
+#include "apx/connection_base.h"
+#include "apx/file_info.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -45,64 +47,66 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_event_create_serverConnected(apx_event_t *event, struct apx_serverConnectionBase_tag *connection)
+
+void apx_event_pack_log_write(apx_event_t* event, apx_logLevel_t level, char* label, adt_str_t* msg)
 {
-   memset(event, 0, APX_EVENT_SIZE);
-   event->evType = APX_EVENT_SERVER_CONNECTED;
-   event->evData1 = (void*) connection;
+   if ((event != NULL) && (label != NULL) && (msg != NULL))
+   {
+      event->ev_type = APX_EVENT_LOG_WRITE;
+      event->data1 = (uint32_t)level;
+      event->data3 = label;
+      event->data4 = msg;
+   }
 }
 
-void apx_event_create_serverDisconnected(apx_event_t *event, struct apx_serverConnectionBase_tag *connection)
+void apx_event_unpack_log_write(apx_event_t const* event, apx_logLevel_t* level, char** label, adt_str_t** msg)
 {
-   memset(event, 0, APX_EVENT_SIZE);
-   event->evType = APX_EVENT_SERVER_DISCONNECTED;
-   event->evData1 = (void*) connection;
+   if ( (event != NULL) && (level != NULL) && (label != NULL) && (msg != NULL))
+   {
+      *level = (apx_logLevel_t)event->data1;
+      *label = (char*)event->data4;
+      *msg = (adt_str_t*)event->data3;      
+   }
 }
 
-void apx_event_create_clientConnected(apx_event_t *event, struct apx_clientConnectionBase_tag *connection)
-{
-   memset(event, 0, APX_EVENT_SIZE);
-   event->evType = APX_EVENT_CLIENT_CONNECTED;
-   event->evData1 = (void*) connection;
-}
-
-void apx_event_create_clientDisconnected(apx_event_t *event, struct apx_clientConnectionBase_tag *connection)
-{
-   memset(event, 0, APX_EVENT_SIZE);
-   event->evType = APX_EVENT_CLIENT_DISCONNECTED;
-   event->evData1 = (void*) connection;
-}
-
-void apx_event_fillRemoteFileHeaderComplete(apx_event_t *event, struct apx_connectionBase_tag *connection)
+void apx_event_pack_protocol_header_accepted(apx_event_t* event, struct apx_connectionBase_tag* connection)
 {
    if (event != 0)
    {
       memset(event, 0, APX_EVENT_SIZE);
-      event->evType = APX_EVENT_RMF_HEADER_ACCEPTED;
-      event->evData1 = (void*) connection;
+      event->ev_type = APX_EVENT_PROTOCOL_HEADER_ACCEPTED;
+      event->data3 = (void*) connection;
    }
 }
 
-void apx_event_fillFileCreatedEvent(apx_event_t *event, struct apx_connectionBase_tag *connection, struct apx_fileInfo_tag *fileInfo)
+void apx_event_unpack_protocol_header_accepted(apx_event_t const* event, struct apx_connectionBase_tag** connection)
+{
+   if ((event != NULL) && (connection != NULL))
+   {
+      *connection = (apx_connectionBase_t*)event->data3;
+   }
+}
+
+void apx_event_pack_remote_file_published(apx_event_t* event, struct apx_connectionBase_tag* connection, struct rmf_fileInfo_tag* file_info)
 {
    if (event != 0)
    {
       memset(event, 0, APX_EVENT_SIZE);
-      event->evType = APX_EVENT_FILE_CREATED;
-      event->evData1 = (void*) connection;
-      event->evData2 = (void*) fileInfo;
+      event->ev_type = APX_EVENT_REMOTE_FILE_PUBLISHED;
+      event->data3 = (void*)connection;
+      event->data4 = (void*)file_info;
    }
 }
 
-void apx_event_createHeaderAccepted(apx_event_t *event, struct apx_connectionBase_tag *connection)
+void apx_event_unpack_remote_file_published(apx_event_t const* event, struct apx_connectionBase_tag** connection, struct rmf_fileInfo_tag** file_info)
 {
-   if (event != 0)
+   if ((event != NULL) && (connection != NULL) && (file_info != NULL))
    {
-      memset(event, 0, APX_EVENT_SIZE);
-      event->evType = APX_EVENT_RMF_HEADER_ACCEPTED;
-      event->evData1 = (void*) connection;
+      *connection = (apx_connectionBase_t*)event->data3;
+      *file_info = (rmf_fileInfo_t*)event->data4;
    }
 }
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

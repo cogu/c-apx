@@ -7,15 +7,6 @@
     <Filter Include="src">
       <UniqueIdentifier>{17a7409b-6edf-4e4f-8574-28328bded62e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="cutil">
-      <UniqueIdentifier>{6c4064b5-cfa8-4694-8b14-ec2f9a00fbd1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cutil\include">
-      <UniqueIdentifier>{2f658f03-6486-438a-b1ac-9aa4752b06a8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cutil\src">
-      <UniqueIdentifier>{90b88750-5736-42b3-af4c-ab00785fcfad}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\app\apx_node\include\apx_connection.h">
@@ -26,9 +17,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\app\apx_node\include\json_server_connection.h">
       <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\cutil\inc\argparse.h">
-      <Filter>cutil\include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -43,9 +31,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\app\apx_node\src\json_server_connection.c">
       <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\cutil\src\argparse.c">
-      <Filter>cutil\src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

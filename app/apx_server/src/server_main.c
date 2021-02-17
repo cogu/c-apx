@@ -145,7 +145,7 @@ int main(int argc, char **argv)
          {
             char msg[40];
             sprintf(msg, "Shutdown in %ds", m_shutdownTimer);
-            apx_server_log_event(&m_server, APX_LOG_LEVEL_INFO, "main", msg);
+            apx_server_log_write(&m_server, APX_LOG_LEVEL_INFO, "main", msg);
          }
       }
    }

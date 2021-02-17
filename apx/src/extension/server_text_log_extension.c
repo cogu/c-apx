@@ -60,11 +60,12 @@ apx_error_t apx_serverTextLogExtension_register(struct apx_server_tag *apx_serve
    {
       dtl_sv_t *extensionEnabled;
       dtl_hv_t *cfg = (dtl_hv_t*) config;
+      bool ok;
       extensionEnabled = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "extension-enabled");
-      if ( (extensionEnabled != 0) && (dtl_sv_to_bool(extensionEnabled)))
+      if ( (extensionEnabled != 0) && (dtl_sv_to_bool(extensionEnabled, &ok)))
       {
          apx_serverExtensionHandler_t handler = {apx_serverTextLogExtension_init, apx_serverTextLogExtension_shutdown};
-         return apx_server_addExtension(apx_server, "TEXTLOG", &handler, config);
+         return apx_server_add_extension(apx_server, "TEXTLOG", &handler, config);
       }
    }
    return APX_NO_ERROR;
@@ -90,7 +91,7 @@ apx_error_t apx_serverTextLogExtension_init(struct apx_server_tag *apx_server, d
          }
          else
          {
-            return APX_DV_TYPE_ERROR;
+            return APX_VALUE_TYPE_ERROR;
          }
       }
    }
@@ -111,13 +112,15 @@ static apx_error_t apx_serverTextLogExtension_configure(apx_serverTextLog_t *ins
 {
    dtl_sv_t *svFileEnabled;
    dtl_sv_t *svFilePath;
+   bool ok = false;
    svFileEnabled = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "file-enabled");
    svFilePath = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "file-path");
-   if ( (svFileEnabled != 0) && (dtl_sv_to_bool(svFileEnabled) != false) )
+   (void)instance;
+   if ( (svFileEnabled != 0) && (dtl_sv_to_bool(svFileEnabled, &ok) != false) )
    {
       if (svFilePath != 0)
       {
-         const char *filePath = dtl_sv_to_cstr(svFilePath);
+         const char *filePath = dtl_sv_to_cstr(svFilePath, &ok);
          if (strlen(filePath) == 0u)
          {
             apx_textLogBase_enableStdout(&m_instance->base);

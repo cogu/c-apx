@@ -30,20 +30,25 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/types.h"
+#include "adt_str.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+//forward declarations
+struct apx_connectionBase_tag;
+struct rmf_fileInfo_tag;
+
 typedef struct apx_event_tag
 {
-   apx_eventId_t evType;
-   uint16_t evFlags;
-   void *evCallback; //callback function
-   void *evData1;    //generic void* pointer value
-   void *evData2;    //generic void* pointer value
-   void *evData3;    //generic void* pointer value
-   uint32_t evData4; //generic uint32 value
-   uint32_t evData5; //generic uint32 value
+   apx_eventId_t ev_type;
+   uint16_t flags;
+   void *callback; //callback function
+   uint32_t data1; //generic uint32 value
+   uint32_t data2; //generic uint32 value
+   void *data3;    //generic void* pointer value
+   void *data4;    //generic void* pointer value
+   void *data5;    //generic void* pointer value
 } apx_event_t;
 
 #define APX_EVENT_SIZE sizeof(apx_event_t)
@@ -52,51 +57,23 @@ typedef struct apx_event_tag
 #define APX_EVENT_FLAG_REMOTE_ADDRESS        0x02
 
 //APX Log event
-#define APX_EVENT_LOG_EVENT                0 //evData1: char[16] label, evData2: adt_str_t *msg, evData4: logLevel (0-3)
+#define APX_EVENT_LOG_WRITE                0 //data1: logLevel (0-3) data3: char[16] label (strong), data4: adt_str_t *msg (strong), 
 
 //APX connection events
-#define APX_EVENT_SERVER_CONNECTED         1 //evData1: apx_serverConnectionBase_t *connection
-#define APX_EVENT_SERVER_DISCONNECTED      2 //evData1: apx_serverConnectionBase_t *connection
-#define APX_EVENT_CLIENT_CONNECTED         3 //evData1: apx_clientConnectionBase_T *connection
-#define APX_EVENT_CLIENT_DISCONNECTED      4 //evData1: apx_clientConnectionBase_T *connection
-
-//APX session events
-#define APX_EVENT_FM_PRE_START             5 //evData1: apx_fileManager_t *fileManager
-#define APX_EVENT_FM_POST_STOP             6 //evData1: apx_fileManager_t *fileManager
-#define APX_EVENT_RMF_HEADER_ACCEPTED      7 //evData1: connectionBase_t *connection
-#define APX_EVENT_FILE_CREATED             8 //evData1: connectionBase_t *connection, evData2: apx_fileInfo_t *fileInfo, evData3: const void *caller
-#define APX_EVENT_FM_FILE_REVOKED          9 //evData1: apx_fileManager_t *fileManager, evData2: apx_file2_t *file, evData3: const void *caller
-#define APX_EVENT_FM_FILE_OPENED           10 //evData1: apx_fileManager_t *fileManager, evData2: apx_file2_t *file, evData3: const void *caller
-#define APX_EVENT_FM_FILE_CLOSED           11 //evData1: apx_fileManager_t *fileManager, evData2: apx_file2_t *file, evData3: const void *caller
-
-//APX node events
-#define APX_EVENT_REQUIRE_PORT_CONNECT     13 //evData1: apx_nodeData_t *nodeData (weak), evData2: apx_portConnectionTable_t *connections (strong)
-#define APX_EVENT_PROVIDE_PORT_CONNECT     14 //evData1: apx_nodeData_t *nodeData (weak), evData2: apx_portConnectionTable_t *connections (strong)
-#define APX_EVENT_REQUIRE_PORT_DISCONNECT  15 //evData1: apx_nodeData_t *nodeData (weak), evData2: apx_portConnectionTable_t *connections (strong)
-#define APX_EVENT_PROVIDE_PORT_DISCONNECT  16 //evData1: apx_nodeData_t *nodeData (weak), evData2: apx_portConnectionTable_t *connections (strong)
-#define APX_EVENT_NODE_COMPLETE            17 //evData1:*arg, evData2:*nodeData
-#define APX_EVENT_NODE_DEFINITION_WRITE    18 //evFlag: APX_EVENT_FLAG_REMOTE_ADDRESS?, evData1:*arg, evData2:*nodeData, evData4: offset, evData5: len
-#define APX_EVENT_NODE_INDATA_WRITE        19 //evFlag: APX_EVENT_FLAG_REMOTE_ADDRESS?, evData1:*arg, evData2:*nodeData, evData4: offset, evData5: len
-#define APX_EVENT_NODE_OUTATA_WRITE        20 //evFlag: APX_EVENT_FLAG_REMOTE_ADDRESS?, evData1:*arg, evData2:*nodeData, evData4: offset, evData5: len
-
+#define APX_EVENT_PROTOCOL_HEADER_ACCEPTED 1 //data3: apx_connectionBase_t* connection (weak)
+#define APX_EVENT_REMOTE_FILE_PUBLISHED    2 //data3: apx_connectionBase_t* connection (weak), data4: rmf_fileInfo_t* connection (strong)
 
 
 typedef void (apx_eventHandlerFunc_t)(void *arg, apx_event_t *event);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-//forward declarations
-struct apx_serverConnectionBase_tag;
-struct apx_clientConnectionBase_tag;
-struct apx_connectionBase_tag;
-struct apx_fileInfo_tag;
 
-void apx_event_create_serverConnected(apx_event_t *event, struct apx_serverConnectionBase_tag *connection);
-void apx_event_create_serverDisconnected(apx_event_t *event, struct apx_serverConnectionBase_tag *connection);
-void apx_event_create_clientConnected(apx_event_t *event, struct apx_clientConnectionBase_tag *connection);
-void apx_event_create_clientDisconnected(apx_event_t *event, struct apx_clientConnectionBase_tag *connection);
-void apx_event_fillRemoteFileHeaderComplete(apx_event_t *event, struct apx_connectionBase_tag *connection);
-void apx_event_fillFileCreatedEvent(apx_event_t *event, struct apx_connectionBase_tag *connection, struct apx_fileInfo_tag *fileInfo);
-void apx_event_createHeaderAccepted(apx_event_t *event, struct apx_connectionBase_tag *connection);
+void apx_event_pack_log_write(apx_event_t* event, apx_logLevel_t level, char* label, adt_str_t* msg);
+void apx_event_unpack_log_write(apx_event_t const* event, apx_logLevel_t* level, char** label, adt_str_t** msg);
+void apx_event_pack_protocol_header_accepted(apx_event_t* event, struct apx_connectionBase_tag* connection);
+void apx_event_unpack_protocol_header_accepted(apx_event_t const* event, struct apx_connectionBase_tag** connection);
+void apx_event_pack_remote_file_published(apx_event_t* event, struct apx_connectionBase_tag* connection, struct rmf_fileInfo_tag* file_info);
+void apx_event_unpack_remote_file_published(apx_event_t const* event, struct apx_connectionBase_tag** connection, struct rmf_fileInfo_tag** file_info);
 
 #endif //APX_EVENT_H

@@ -29,7 +29,7 @@
 #include <assert.h>
 #include <string.h>
 #include <malloc.h>
-#include "apx_connection.h"
+#include "apx_observer_connection.h"
 #include "apx/event_listener.h"
 #include "dtl_json.h"
 
