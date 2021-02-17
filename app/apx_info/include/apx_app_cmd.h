@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      file.c
+* \file      apx_application_actions.h
 * \author    Conny Gustafsson
 * \date      2021-01-01
-* \brief     Description
+* \brief     Program action definitions
 *
 * Copyright (c) 2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -23,43 +23,23 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
+#ifndef APX_APP_COMMAND_H
+#define APX_APP_COMMAND_H
+
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "extensions_cfg.h"
-#include "apx/extension/socket_server_extension.h"
-#include "apx/extension/server_text_log_extension.h"
+#include "apx/types.h"
 
 //////////////////////////////////////////////////////////////////////////////
-// PRIVATE CONSTANTS AND DATA TYPES
+// PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTION PROTOTYPES
-//////////////////////////////////////////////////////////////////////////////
+typedef uint8_t apx_app_cmd_t;
+#define APX_APP_CMD_NONE        ((apx_app_cmd_t) 0u)
+#define APX_APP_CMD_CLIENTS     ((apx_app_cmd_t) 1u)
 
 //////////////////////////////////////////////////////////////////////////////
-// PUBLIC FUNCTIONS
+// PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t register_apx_server_extensions(apx_server_t* server, dtl_hv_t* config)
-{
-   apx_error_t result;
-   result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, APX_SERVER_TEXTLOG_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
 
-   result = apx_socketServerExtension_register(server, dtl_hv_get_cstr(config, APX_SOCKET_SERVER_EXT_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
-   return APX_NO_ERROR;
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTIONS
-//////////////////////////////////////////////////////////////////////////////
+#endif //APX_APP_COMMAND_H

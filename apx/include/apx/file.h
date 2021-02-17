@@ -75,8 +75,7 @@ typedef struct apx_file_tag
    apx_fileType_t apx_file_type;
    rmf_fileInfo_t file_info;
    apx_fileNotificationHandler_t notification_handler;
-   struct apx_fileManager_tag *file_manager;
-   adt_list_t event_listeners; //strong references to apx_fileEventListener2_t
+   struct apx_fileManager_tag *file_manager;   
    MUTEX_T lock;
 } apx_file_t;
 
@@ -100,8 +99,6 @@ bool apx_file_is_remote(apx_file_t *self);
 bool apx_file_has_valid_address(apx_file_t* self);
 struct apx_fileManager_tag* apx_file_get_file_manager(apx_file_t *self);
 void apx_file_set_file_manager(apx_file_t *self, struct apx_fileManager_tag *file_manager);
-void* apx_file_register_event_listener(apx_file_t* self, apx_fileEventListener2_t* handler_table);
-void apx_file_unregister_event_listener(apx_file_t* self, void* handle);
 apx_fileType_t apx_file_get_apx_file_type(const apx_file_t* self);
 uint32_t apx_file_get_address(const apx_file_t *self);
 uint32_t apx_file_get_address_without_flags(const apx_file_t* self);

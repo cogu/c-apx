@@ -34,7 +34,7 @@
 #include "adt_str.h"
 #include "apx/extension/server_text_log.h"
 #include "apx/event_listener.h"
-#include "apx/server_connection_base.h"
+#include "apx/server_connection.h"
 #include "apx/port_connector_change_table.h"
 #include "apx/server.h"
 
@@ -54,18 +54,15 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void apx_serverTextLog_registerServerListener(apx_serverTextLog_t *self);
-static void apx_serverTextLog_registerNodeDataListener(apx_serverTextLog_t *self, apx_serverConnectionBase_t *connection);
+static void register_connection_listener(apx_serverTextLog_t *self, apx_serverConnection_t *connection);
 static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg);
 
-static void apx_serverTextLog_onConnected(void *arg, apx_serverConnectionBase_t *connection);
-static void apx_serverTextLog_onDisconnected(void *arg, apx_serverConnectionBase_t *connection);
-static void apx_serverTextLog_onDefinitionDataWritten(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
-static void apx_serverTextLog_onOutPortDataWritten(void *arg, struct apx_nodeData_tag *nodeData, uint32_t offset, uint32_t len);
-static void apx_serverTextLog_onNodeDataComplete(void *arg, struct apx_nodeData_tag *nodeData);
-static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable);
-static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable);
-static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable);
-static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable);
+static void apx_serverTextLog_on_new_connection(void *arg, apx_serverConnection_t *connection);
+static void apx_serverTextLog_on_connection_closed(void *arg, apx_serverConnection_t *connection);
+static void on_protocol_header_accepted(apx_serverTextLog_t* self, apx_serverConnection_t* connection);
+static void on_file_published(apx_serverTextLog_t* self, apx_serverConnection_t* connection, const struct rmf_fileInfo_tag* file_info);
+static void on_file_revoked(apx_serverTextLog_t* self, apx_serverConnection_t* connection, const struct rmf_fileInfo_tag* file_info);
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -143,6 +140,34 @@ void apx_serverTextLog_closeAll(apx_serverTextLog_t *self)
    }
 }
 
+void apx_serverTextLog_virtual_on_protocol_header_accepted(void* arg, struct apx_connectionBase_tag* connection)
+{
+   apx_serverTextLog_t* self = (apx_serverTextLog_t*)arg;
+   if ((self != NULL) && connection != NULL)
+   {
+      on_protocol_header_accepted(self, (apx_serverConnection_t*)connection);
+   }
+}
+
+void apx_serverTextLog_virtual_on_file_published(void* arg, struct apx_connectionBase_tag* connection, const struct rmf_fileInfo_tag* file_info)
+{
+   apx_serverTextLog_t* self = (apx_serverTextLog_t*)arg;
+   if ((self != NULL) && (connection != NULL) && (file_info != NULL))
+   {
+      on_file_published(self, (apx_serverConnection_t*)connection, file_info);
+   }
+}
+
+void apx_serverTextLog_virtual_on_file_revoked(void* arg, struct apx_connectionBase_tag* connection, const struct rmf_fileInfo_tag* file_info)
+{
+   apx_serverTextLog_t* self = (apx_serverTextLog_t*)arg;
+   if ((self != NULL) && (connection != NULL) && (file_info != NULL))
+   {
+      on_file_revoked(self, (apx_serverConnection_t*)connection, file_info);
+   }
+}
+
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -151,31 +176,26 @@ static void apx_serverTextLog_registerServerListener(apx_serverTextLog_t *self)
    apx_serverEventListener_t eventListener;
    memset(&eventListener, 0, sizeof(apx_serverEventListener_t));
    eventListener.arg = (void*) self;
-   eventListener.serverConnect1 = apx_serverTextLog_onConnected;
-   eventListener.serverDisconnect1 = apx_serverTextLog_onDisconnected;
-   //eventListener.logEvent = apx_serverTextLog_onLogEvent;
-   apx_server_registerEventListener(self->server, &eventListener);
+   eventListener.new_connection2 = apx_serverTextLog_on_new_connection;
+   eventListener.connection_closed2 = apx_serverTextLog_on_connection_closed;
+   apx_server_register_event_listener(self->server, &eventListener);
 }
 
-static void apx_serverTextLog_registerNodeDataListener(apx_serverTextLog_t *self, apx_serverConnectionBase_t *connection)
+static void register_connection_listener(apx_serverTextLog_t *self, apx_serverConnection_t *connection)
 {
    apx_connectionEventListener_t listener;
    memset(&listener, 0, sizeof(listener));
    listener.arg = (void*) self;
-/*   listener.providePortsConnected = apx_serverTextLog_providePortsConnected;
-   listener.providePortsDisconnected = apx_serverTextLog_providePortsDisconnected;
-   listener.requirePortsConnected = apx_serverTextLog_requirePortsConnected;
-   listener.requirePortsDisconnected = apx_serverTextLog_requirePortsDisconnected;
-   listener.definitionDataWritten = apx_serverTextLog_onDefinitionDataWritten;
-   listener.outPortDataWritten = apx_serverTextLog_onOutPortDataWritten;
-   listener.nodeComplete = apx_serverTextLog_onNodeDataComplete;
-   */
-   apx_serverConnectionBase_registerEventListener(connection, &listener);
+   listener.protocol_header_accepted = apx_serverTextLog_virtual_on_protocol_header_accepted;
+   listener.file_published = apx_serverTextLog_virtual_on_file_published;
+   listener.file_revoked = apx_serverTextLog_virtual_on_file_revoked;
+   apx_serverConnection_register_event_listener(connection, &listener);
 }
 
 static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
+   (void)level;
    if ( (self != 0) && (label != 0) && (msg != 0) )
    {
       apx_textLogBase_printf(&self->base, "[%s] %s", label, msg);
@@ -183,70 +203,50 @@ static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const 
 }
 
 
-static void apx_serverTextLog_onConnected(void *arg, apx_serverConnectionBase_t *connection)
+static void apx_serverTextLog_on_new_connection(void *arg, apx_serverConnection_t *connection)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (connection != 0) )
    {
-      apx_textLogBase_printf(&self->base, "[%u] Client connected", apx_serverConnectionBase_getConnectionId(connection));
-      apx_serverTextLog_registerNodeDataListener(self, connection);
+      apx_textLogBase_printf(&self->base, "[%u] Client connected", apx_serverConnection_get_connection_id(connection));
+      register_connection_listener(self, connection);
    }
 }
 
-static void apx_serverTextLog_onDisconnected(void *arg, apx_serverConnectionBase_t *connection)
+static void apx_serverTextLog_on_connection_closed(void *arg, apx_serverConnection_t *connection)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    if ( (self != 0) && (connection != 0) )
    {
-      apx_textLogBase_printf(&self->base, "[%u] Client disconnected", apx_serverConnectionBase_getConnectionId(connection));
-      //apx_serverTextLog_registerNodeDataListener(self, connection);
+      apx_textLogBase_printf(&self->base, "[%u] Client disconnected", apx_serverConnection_get_connection_id(connection));      
    }
 }
 
-static void apx_serverTextLog_onDefinitionDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
+static void on_protocol_header_accepted(apx_serverTextLog_t* self, apx_serverConnection_t* connection)
 {
-   apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (nodeData != 0) )
-   {
-      apx_textLogBase_printf(&self->base, "[%u] %s: Definition data written (%u, %u)",
-            apx_nodeData_getConnectionId(nodeData),
-            apx_nodeData_getName(nodeData),
-            (unsigned int) offset,
-            (unsigned int) len);
-   }
+   apx_textLogBase_printf(&self->base, "[%u] Header Accepted", apx_serverConnection_get_connection_id(connection));
 }
 
-static void apx_serverTextLog_onOutPortDataWritten(void *arg, apx_nodeData_t *nodeData, uint32_t offset, uint32_t len)
+static void on_file_published(apx_serverTextLog_t* self, apx_serverConnection_t* connection, const struct rmf_fileInfo_tag* file_info)
 {
-   apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (nodeData != 0) )
-   {
-      apx_textLogBase_printf(&self->base, "[%u] %s: Outport data written (%u, %u)",
-            apx_nodeData_getConnectionId(nodeData),
-            apx_nodeData_getName(nodeData),
-            (unsigned int) offset,
-            (unsigned int) len);
-   }
+   (void)file_info;
+   apx_textLogBase_printf(&self->base, "[%u] New file published", apx_serverConnection_get_connection_id(connection));
 }
 
-static void apx_serverTextLog_onNodeDataComplete(void *arg, apx_nodeData_t *nodeData)
+static void on_file_revoked(apx_serverTextLog_t* self, apx_serverConnection_t* connection, const struct rmf_fileInfo_tag* file_info)
 {
-   apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (nodeData != 0) )
-   {
-      apx_textLogBase_printf(&self->base, "[%u] %s: Node Complete",
-            apx_nodeData_getConnectionId(nodeData),
-            apx_nodeData_getName(nodeData));
-   }
+   (void)self;
+   (void)connection;
+   (void)file_info;
 }
 
 
-static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable)
-{
-   apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (nodeData != 0) && (connectionTable != 0))
-   {
 #if 0
+static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeInstance_t* node_instance, apx_portConnectorChangeTable_t *connectionTable)
+{
+   apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
+   if ( (self != 0) && (node_instance != 0) && (connectionTable != 0))
+   {
       int32_t localPortId;
       apx_node_t *localNode = apx_nodeData_getNode(nodeData);
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
@@ -276,16 +276,14 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeData_t *n
             }
          }
       }
-#endif
    }
 }
 
-static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable)
+static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeInstance_t* node_instance, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (nodeData != 0) && (connectionTable != 0) )
+   if ( (self != 0) && (node_instance != 0) && (connectionTable != 0) )
    {
-#if 0
       int32_t localPortId;
       apx_node_t *localNode = apx_nodeData_getNode(nodeData);
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
@@ -314,16 +312,14 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeData_t
             }
          }
       }
-#endif
    }
 }
 
-static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable)
+static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeInstance_t* node_instance, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (nodeData != 0) && (connectionTable != 0))
+   if ( (self != 0) && (node_instance != 0) && (connectionTable != 0))
    {
-#if 0
       int32_t localPortId;
       apx_node_t *localNode = apx_nodeData_getNode(nodeData);
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
@@ -353,16 +349,14 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeData_t *n
             }
          }
       }
-#endif
    }
 }
 
-static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t *nodeData, apx_portConnectorChangeTable_t *connectionTable)
+static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeInstance_t* node_instance, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (nodeData != 0) && (connectionTable != 0) )
+   if ( (self != 0) && (node_instance != 0) && (connectionTable != 0) )
    {
-#if 0
       int32_t localPortId;
       apx_node_t *localNode = apx_nodeData_getNode(nodeData);
       for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
@@ -391,6 +385,6 @@ static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeData_t
             }
          }
       }
-#endif
    }
 }
+#endif

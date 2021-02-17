@@ -29,6 +29,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "apx/connection_base.h"
+#include "apx/file_info.h"
 #include "apx/extension/text_log_base.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -60,6 +62,11 @@ void apx_serverTextLog_enableFile(apx_serverTextLog_t *self, const char *path);
 void apx_serverTextLog_enableStdOut(apx_serverTextLog_t *self);
 void apx_serverTextLog_enableSysLog(apx_serverTextLog_t *self, const char *label);
 void apx_serverTextLog_closeAll(apx_serverTextLog_t *self);
+
+//Virtual functions
+void apx_serverTextLog_virtual_on_protocol_header_accepted(void* arg, struct apx_connectionBase_tag* connection);
+void apx_serverTextLog_virtual_on_file_published(void* arg, struct apx_connectionBase_tag* connection, const struct rmf_fileInfo_tag* file_info);
+void apx_serverTextLog_virtual_on_file_revoked(void* arg, struct apx_connectionBase_tag* connection, const struct rmf_fileInfo_tag* file_info);
 
 
 #endif //APX_SERVER_TEXT_LOG_H

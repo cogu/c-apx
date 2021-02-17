@@ -57,7 +57,7 @@
 
 typedef struct apx_server_tag
 {
-   adt_list_t server_event_listeners;          //weak references to apx_serverEventListener_t
+   adt_list_t server_event_listeners;          //Strong references to apx_serverEventListener_t
    apx_portSignatureMap_t port_signature_map;  //This is the global map that is used to build all port connectors.
                                                //Any access to this structure must be protected by acquiring the globalLock.
    apx_connectionManager_t connection_manager; //server connections
@@ -93,10 +93,12 @@ void apx_server_start(apx_server_t *self);
 void apx_server_stop(apx_server_t *self);
 void* apx_server_register_event_listener(apx_server_t *self, apx_serverEventListener_t *event_listener);
 void apx_server_unregister_event_listener(apx_server_t *self, void *handle);
+
 void apx_server_accept_connection(apx_server_t *self, apx_serverConnection_t *server_connection);
 apx_error_t apx_server_detach_connection(apx_server_t *self, apx_serverConnection_t *server_connection);
 apx_error_t apx_server_add_extension(apx_server_t *self, const char *name, apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
-void apx_server_log_event(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
+void apx_server_log_write(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
+apx_error_t apx_server_append_event(apx_server_t* self, apx_event_t* event);
 void apx_server_take_global_lock(apx_server_t *self);
 void apx_server_release_global_lock(apx_server_t *self);
 apx_error_t apx_server_connect_node_instance_provide_ports(apx_server_t *self, apx_nodeInstance_t *node_instance);

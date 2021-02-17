@@ -42,7 +42,6 @@ static void test_extension_init_shutdown(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_socketServerExtension_register(&apx_server, (dtl_dv_t*) extension_cfg));
    apx_server_start(&apx_server);
    apx_server_run(&apx_server);
-   apx_server_destroy(&apx_server);
-   //dtl_dec_ref(extension_cfg);
+   apx_server_destroy(&apx_server);   
 }
 
