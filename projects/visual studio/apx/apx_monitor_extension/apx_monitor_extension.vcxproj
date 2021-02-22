@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{38aa213c-8af2-45f7-be7c-786bc3c99e5a}</ProjectGuid>
-    <RootNamespace>apxserver</RootNamespace>
+    <ProjectGuid>{66c74fea-56a7-4ed0-af68-3b1a38dab985}</ProjectGuid>
+    <RootNamespace>apxmonitorextension</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -40,7 +40,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
@@ -114,15 +114,13 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>SW_VERSION_LITERAL="0.3.2a";ADT_RBFH_ENABLE=1;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;ADT_RBFH_ENABLE=1;APX_DEBUG_ENABLE=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>apx_socket_extension.lib;apx_text_log_extension.lib;apx_monitor_extension.lib;apx_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -142,11 +140,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\app\apx_server\src\extensions_cfg.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\extension\monitor_extension.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\app\apx_server\src\extensions_cfg.c" />
-    <ClCompile Include="..\..\..\..\app\apx_server\src\server_main.c" />
+    <ClCompile Include="..\..\..\..\apx\src\extension\monitor_extension.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      file.c
+* \file      server_model.h
 * \author    Conny Gustafsson
 * \date      2021-01-01
-* \brief     Description
+* \brief     APX server model used by observer extension and its clients
 *
 * Copyright (c) 2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -23,51 +23,20 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
+#ifndef APX_SERVER_MODEL_H
+#define APX_SERVER_MODEL_H
+
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "extensions_cfg.h"
-#include "apx/extension/socket_server_extension.h"
-#include "apx/extension/server_text_log_extension.h"
-#include "apx/extension/monitor_extension.h"
 
 //////////////////////////////////////////////////////////////////////////////
-// PRIVATE CONSTANTS AND DATA TYPES
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTION PROTOTYPES
+// PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-// PUBLIC FUNCTIONS
+// PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t register_apx_server_extensions(apx_server_t* server, dtl_hv_t* config)
-{
-   apx_error_t result;
-   result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, APX_SERVER_TEXTLOG_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
 
-   result = apx_socketServerExtension_register(server, dtl_hv_get_cstr(config, APX_SOCKET_SERVER_EXT_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
+#endif //APX_SERVER_MODEL_H
 
-   result = apx_monitorExtension_register(server, dtl_hv_get_cstr(config, APX_MONITOR_EXTENSION_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
-
-   return APX_NO_ERROR;
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTIONS
-//////////////////////////////////////////////////////////////////////////////

@@ -792,5 +792,8 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\server_connection.h">
       <Filter>apx\include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\include\apx\server_model.h">
+      <Filter>apx\include</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      file.c
+* \file      observer_extension.c
 * \author    Conny Gustafsson
-* \date      2021-01-01
-* \brief     Description
+* \date      2021-02-18
+* \brief     Monitor extension
 *
 * Copyright (c) 2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -26,48 +26,58 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "extensions_cfg.h"
-#include "apx/extension/socket_server_extension.h"
-#include "apx/extension/server_text_log_extension.h"
+#include <string.h>
 #include "apx/extension/monitor_extension.h"
+#include "apx/server.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+static apx_error_t init(struct apx_server_tag *apx_server, dtl_dv_t *config);
+static void shutdown(void);
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+// PRIVATE VARIABLES
+//////////////////////////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t register_apx_server_extensions(apx_server_t* server, dtl_hv_t* config)
+apx_error_t apx_monitorExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   apx_error_t result;
-   result = apx_serverTextLogExtension_register(server, dtl_hv_get_cstr(config, APX_SERVER_TEXTLOG_CFG_KEY));
-   if (result != APX_NO_ERROR)
+   if ( (config != 0) && (dtl_dv_type(config) == DTL_DV_HASH))
    {
-      return result;
+      dtl_sv_t *extensionEnabled;
+      dtl_hv_t *cfg = (dtl_hv_t*) config;
+      bool ok;
+      extensionEnabled = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "extension-enabled");
+      if ( (extensionEnabled != 0) && (dtl_sv_to_bool(extensionEnabled, &ok)))
+      {
+         apx_serverExtensionHandler_t handler = {init, shutdown};
+         return apx_server_add_extension(apx_server, "MONITOR", &handler, config);
+      }
    }
-
-   result = apx_socketServerExtension_register(server, dtl_hv_get_cstr(config, APX_SOCKET_SERVER_EXT_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
-
-   result = apx_monitorExtension_register(server, dtl_hv_get_cstr(config, APX_MONITOR_EXTENSION_CFG_KEY));
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
-
    return APX_NO_ERROR;
 }
-
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+static apx_error_t init(struct apx_server_tag *apx_server, dtl_dv_t *config)
+{
+   (void)apx_server;
+   (void)config;
+   return APX_NO_ERROR;
+}
+
+static void shutdown(void)
+{
+}
+
