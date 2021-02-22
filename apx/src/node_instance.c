@@ -110,7 +110,8 @@ void apx_nodeInstance_create(apx_nodeInstance_t* self, apx_mode_t mode, char con
       self->require_port_changes = NULL;
       self->provide_port_changes = NULL;
       self->node_data = NULL;
-      self->byte_port_map = NULL;
+      self->provide_byte_port_map = NULL;
+      self->require_byte_port_map = NULL;
       self->parent = NULL;
       self->connector_table = NULL;
       self->server = NULL;
@@ -188,7 +189,8 @@ void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
       if (self->require_port_init_data != NULL) free(self->require_port_init_data);
       if (self->provide_port_init_data != NULL) free(self->provide_port_init_data);
       if (self->node_data != NULL) apx_nodeData_delete(self->node_data);
-      if (self->byte_port_map != NULL) apx_bytePortMap_delete(self->byte_port_map);
+      if (self->provide_byte_port_map != NULL) apx_bytePortMap_delete(self->provide_byte_port_map);
+      if (self->require_byte_port_map != NULL) apx_bytePortMap_delete(self->require_byte_port_map);
    }
 }
 
@@ -609,28 +611,41 @@ apx_error_t apx_nodeInstance_create_byte_port_map(apx_nodeInstance_t* self)
    if (self != NULL)
    {
       apx_error_t retval = APX_NO_ERROR;
-      if ( (self->mode == APX_CLIENT_MODE) && apx_nodeInstance_has_require_port_data(self))
+      if ( ((self->mode == APX_CLIENT_MODE) || (self->mode == APX_MONITOR_MODE)) && apx_nodeInstance_has_require_port_data(self))
       {
-         self->byte_port_map = apx_bytePortMap_new(self->require_port_init_data_size, self->require_ports, self->num_require_ports, &retval);
-      }
-      else if ((self->mode == APX_SERVER_MODE) && apx_nodeInstance_has_provide_port_data(self))
+         self->require_byte_port_map = apx_bytePortMap_new(self->require_port_init_data_size, self->require_ports, self->num_require_ports, &retval);
+         if (self->require_byte_port_map == NULL)
+         {
+            retval = APX_MEM_ERROR;
+         }
+      }       
+      if ((retval == APX_NO_ERROR) && ((self->mode == APX_SERVER_MODE) || (self->mode == APX_MONITOR_MODE)) && apx_nodeInstance_has_provide_port_data(self))
       {
-         self->byte_port_map = apx_bytePortMap_new(self->provide_port_init_data_size, self->provide_ports, self->num_provide_ports, &retval);
-      }
-      else
-      {
-         //No need to create byte-port-map
+         self->provide_byte_port_map = apx_bytePortMap_new(self->provide_port_init_data_size, self->provide_ports, self->num_provide_ports, &retval);
+         if (self->provide_byte_port_map == NULL)
+         {
+            retval = APX_MEM_ERROR;
+         }
       }
       return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_bytePortMap_t const* apx_nodeInstance_get_byte_port_map(apx_nodeInstance_t const* self)
+apx_bytePortMap_t const* apx_nodeInstance_get_provide_byte_port_map(apx_nodeInstance_t const* self)
 {
    if (self != NULL)
    {
-      return self->byte_port_map;
+      return self->provide_byte_port_map;
+   }
+   return NULL;
+}
+
+apx_bytePortMap_t const* apx_nodeInstance_get_require_byte_port_map(apx_nodeInstance_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->require_byte_port_map;
    }
    return NULL;
 }
@@ -705,18 +720,18 @@ struct apx_nodeManager_tag* apx_nodeInstance_get_parent(apx_nodeInstance_t const
 
 apx_portId_t apx_nodeInstance_lookup_require_port_id(apx_nodeInstance_t const* self, apx_size_t byte_offset)
 {
-   if ( (self != NULL) && (self->mode == APX_CLIENT_MODE))
+   if ( (self != NULL) && (self->require_byte_port_map != NULL))
    {
-      return apx_bytePortMap_lookup(self->byte_port_map, byte_offset);
+      return apx_bytePortMap_lookup(self->require_byte_port_map, byte_offset);
    }
    return APX_INVALID_PORT_ID;
 }
 
 apx_portId_t apx_nodeInstance_lookup_provide_port_id(apx_nodeInstance_t const* self, apx_size_t byte_offset)
 {
-   if ((self != NULL) && (self->mode == APX_SERVER_MODE))
+   if ((self != NULL) && (self->provide_byte_port_map != NULL))
    {
-      return apx_bytePortMap_lookup(self->byte_port_map, byte_offset);
+      return apx_bytePortMap_lookup(self->provide_byte_port_map, byte_offset);
    }
    return APX_INVALID_PORT_ID;
 }
@@ -1523,13 +1538,13 @@ static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_
    apx_error_t retval = APX_NO_ERROR;
    uint32_t end_offset = provide_data_offset + provide_data_size;
    assert(self->connector_table != NULL);
-   assert(self->byte_port_map != NULL);
+   assert(self->provide_byte_port_map != NULL);
    MUTEX_LOCK(self->lock);
    while (provide_data_offset < end_offset)
    {
       apx_portId_t provide_port_id;
       apx_portInstance_t* provide_port = NULL;
-      provide_port_id = apx_bytePortMap_lookup(self->byte_port_map, provide_data_offset);
+      provide_port_id = apx_bytePortMap_lookup(self->provide_byte_port_map, provide_data_offset);
       if (provide_port_id == APX_INVALID_PORT_ID)
       {
          fprintf(stderr, "[APX_NODE_INSTANCE] blocked write on invalid offset %u\n", provide_data_offset);
@@ -1723,13 +1738,13 @@ static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self
    apx_error_t retval = APX_NO_ERROR;
    assert((self != NULL) && (data != NULL));
    apx_size_t end_offset = offset + size;
-   if (self->byte_port_map == NULL)
+   if (self->require_byte_port_map == NULL)
    {
       return APX_NULL_PTR_ERROR;
    }
    while (offset < end_offset)
    {
-      apx_portId_t port_id = apx_bytePortMap_lookup(self->byte_port_map, offset);
+      apx_portId_t port_id = apx_bytePortMap_lookup(self->require_byte_port_map, offset);
       if (port_id != APX_INVALID_PORT_ID)
       {
          apx_portInstance_t* port_instance = apx_nodeInstance_get_require_port(self, port_id);
