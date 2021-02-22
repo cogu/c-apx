@@ -507,7 +507,7 @@ static void test_client_node_require_port_byte_map_creation(CuTest* tc)
    CuAssertUIntEquals(tc, 4, apx_nodeData_num_require_ports(node_data));
    CuAssertUIntEquals(tc, 0u, apx_nodeData_provide_port_data_size(node_data));
    CuAssertUIntEquals(tc, 32u, apx_nodeData_require_port_data_size(node_data));
-   apx_bytePortMap_t const* byte_port_map = apx_nodeInstance_get_byte_port_map(node_instance);
+   apx_bytePortMap_t const* byte_port_map = apx_nodeInstance_get_require_byte_port_map(node_instance);
    CuAssertPtrNotNull(tc, byte_port_map);
    apx_portId_t expected_map[32] = {
    0, 0, 0, 0, 0, 0, 0, 0,

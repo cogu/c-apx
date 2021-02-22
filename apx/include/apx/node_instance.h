@@ -78,7 +78,8 @@ typedef struct apx_nodeInstance_tag
    uint8_t* provide_port_init_data; //Calculated init data for providePorts
    apx_nodeData_t *node_data; //All dynamic data in a node, things that change during runtime (strong reference)
    apx_portConnectorList_t *connector_table; //Array of apx_portConnectorList_t; Length of array: info->numProvidePorts. Created using a single malloc. Only used in server mode.
-   apx_bytePortMap_t* byte_port_map; //context of this is mode dependent.
+   apx_bytePortMap_t* provide_byte_port_map; //Used in APX_SERVER_MODE, APX_MONITOR_MODE
+   apx_bytePortMap_t* require_byte_port_map; //Used in APX_CLIENT_MODE, APX_MONITOR_MODE
    apx_portConnectorChangeTable_t *require_port_changes; //temporary data structure used for tracking port connector changes to requirePorts
    apx_portConnectorChangeTable_t *provide_port_changes; //temporary data structure used for tracking port connector changes to providePorts
    apx_mode_t mode;
@@ -134,7 +135,8 @@ uint8_t const* apx_nodeInstance_get_definition_data(apx_nodeInstance_t const* se
 apx_error_t apx_nodeInstance_create_data_element_list(apx_nodeInstance_t* self, adt_ary_t* data_element_list);
 apx_error_t apx_nodeInstance_create_computation_lists(apx_nodeInstance_t* self, adt_ary_t* computation_lists);
 apx_error_t apx_nodeInstance_create_byte_port_map(apx_nodeInstance_t* self);
-apx_bytePortMap_t const* apx_nodeInstance_get_byte_port_map(apx_nodeInstance_t const* self);
+apx_bytePortMap_t const* apx_nodeInstance_get_provide_byte_port_map(apx_nodeInstance_t const* self);
+apx_bytePortMap_t const* apx_nodeInstance_get_require_byte_port_map(apx_nodeInstance_t const* self);
 apx_dataState_t apx_nodeInstance_get_definition_data_state(apx_nodeInstance_t const* self);
 apx_dataState_t apx_nodeInstance_get_require_port_data_state(apx_nodeInstance_t const* self);
 apx_dataState_t apx_nodeInstance_get_provide_port_data_state(apx_nodeInstance_t const* self);
