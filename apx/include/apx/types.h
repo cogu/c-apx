@@ -112,6 +112,7 @@ typedef uint8_t apx_mode_t;
 #define APX_NO_MODE              ((apx_mode_t) 0u)
 #define APX_CLIENT_MODE          ((apx_mode_t) 1u)
 #define APX_SERVER_MODE          ((apx_mode_t) 2u)
+#define APX_MONITOR_MODE         ((apx_mode_t) 3u)
 
 typedef uint8_t apx_portType_t;
 #define APX_REQUIRE_PORT ((apx_portType_t) 0u)
