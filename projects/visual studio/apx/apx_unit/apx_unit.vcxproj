@@ -299,6 +299,7 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\client.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_internal.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\server_model.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\socket_client_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_test_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\compiler.h" />
