@@ -196,8 +196,8 @@ int main(int argc, char **argv)
             else
             {
                apx_nodeInstance_t *node_instance;
-               apx_portCount_t num_provide_ports;
-               apx_portCount_t num_require_ports;
+               apx_size_t num_provide_ports;
+               apx_size_t num_require_ports;
                printf("OK\n");
                node_instance = apx_connection_getLastAttachedNode(m_apx_connection);
                if (node_instance != 0)

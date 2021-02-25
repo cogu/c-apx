@@ -262,7 +262,7 @@ static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t* self, 
    apx_error_t retval = APX_NO_ERROR;
    if ( (self != NULL) && (node_instance != NULL) )
    {
-      apx_portCount_t num_provide_ports;
+      apx_size_t num_provide_ports;
       apx_portId_t port_id;
       num_provide_ports = apx_nodeInstance_get_num_provide_ports(node_instance);
       for(port_id = 0; port_id < num_provide_ports; port_id++)

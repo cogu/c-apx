@@ -68,6 +68,7 @@ apx_error_t apx_serverTestConnection_create(apx_serverTestConnection_t *self)
       apx_connectionInterface_t connection_interface;
       self->default_buffer_size = 1024u;
       self->pending_bytes = 0u;
+      self->compatibility_mode = false;
       apx_connectionBaseVTable_create(&base_connection_vtable,
          apx_serverTestConnection_vdestroy,
          apx_serverTestConnection_vstart,
@@ -261,12 +262,12 @@ apx_error_t apx_serverTestConnection_send_greeting_header(apx_serverTestConnecti
    {
       apx_size_t greeting_size = 0u;
       apx_size_t parse_len = 0u;
-      int num_header_format = 32;
+      int message_format = 32;
       char greeting[RMF_GREETING_MAX_LEN];
       char* p = &greeting[1];
-      strcpy(greeting, RMF_GREETING_START);
+      strcpy(greeting, RMF_GREETING10_START);
       p += strlen(greeting);
-      p += sprintf(p, "%s%d\n\n", RMF_NUMHEADER_FORMAT_HDR, num_header_format);
+      p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_FORMAT_HDR, message_format);
       greeting_size = (apx_size_t)(p - greeting - NUMHEADER32_SHORT_SIZE);
       greeting[0] = (char)greeting_size;
       int result = apx_serverConnection_on_data_received(&self->base, (uint8_t const*)greeting, greeting_size + NUMHEADER32_SHORT_SIZE, &parse_len);
@@ -325,11 +326,15 @@ apx_error_t apx_serverTestConnection_publish_remote_file(apx_serverTestConnectio
       }
       file_info = rmf_fileInfo_make_fixed(file_name, file_size, address);
       apx_size_t const max_cmd_size = sizeof(buffer) - RMF_HIGH_ADDR_SIZE;
-      apx_size_t const cmd_size = rmf_encode_publish_file_cmd(buffer + RMF_HIGH_ADDR_SIZE, max_cmd_size, file_info);
+      apx_size_t cmd_size = rmf_encode_publish_file_cmd(buffer + RMF_HIGH_ADDR_SIZE, max_cmd_size, file_info);
       rmf_fileInfo_delete(file_info);
       if (cmd_size == 0)
       {
          return APX_INTERNAL_ERROR;
+      }
+      if (self->compatibility_mode)
+      {
+         cmd_size--; //Do not include null-terminator at the end of the message. This emulates behavior of old Python clients.
       }
       return apx_fileManager_message_received(file_manager, buffer, RMF_HIGH_ADDR_SIZE + cmd_size);
    }
@@ -399,6 +404,18 @@ void apx_serverTestConnection_run(apx_serverTestConnection_t* self)
 #ifdef UNIT_TEST
       apx_serverConnection_run(&self->base);
 #endif
+   }
+}
+
+/**
+* Enables compatibility mode which means that no null-terminator is added to the end of a file creation command.
+* This emulates the behavior of old py-apx clients
+*/
+void apx_serverTestConnection_enable_compatibility_mode(apx_serverTestConnection_t* self)
+{
+   if (self != NULL)
+   {
+      self->compatibility_mode = true;
    }
 }
 
