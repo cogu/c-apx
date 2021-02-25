@@ -48,6 +48,7 @@ typedef struct apx_serverTestConnection_tag
    apx_size_t default_buffer_size;
    apx_size_t pending_bytes;
    apx_nodeManager_t node_manager;
+   bool compatibility_mode;
 }apx_serverTestConnection_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -90,5 +91,6 @@ apx_error_t apx_serverTestConnection_write_remote_data(apx_serverTestConnection_
 apx_nodeInstance_t* apx_serverTestConnection_find_node(apx_serverTestConnection_t* self, char const* name);
 apx_error_t apx_serverTestConnection_build_node(apx_serverTestConnection_t* self, char const* definition_text);
 void apx_serverTestConnection_run(apx_serverTestConnection_t* self);
+void apx_serverTestConnection_enable_compatibility_mode(apx_serverTestConnection_t* self);
 
 #endif //APX_SERVER_TEST_CONNECTION_H
