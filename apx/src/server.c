@@ -397,7 +397,7 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
 {
    if ((self != NULL) && (provide_node_instance != NULL) && (connector_changes != NULL))
    {
-      apx_portCount_t num_provide_ports;
+      apx_size_t num_provide_ports;
       apx_portId_t port_id;
       num_provide_ports = apx_nodeInstance_get_num_provide_ports(provide_node_instance);
       assert(connector_changes->num_ports == num_provide_ports);

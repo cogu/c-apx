@@ -59,8 +59,8 @@ typedef struct apx_nodeDataBuffers_tag
    apx_size_t require_port_data_size;
    apx_size_t num_provide_ports;
    apx_size_t num_require_ports;
-   apx_connectionCount_t* require_port_connection_count;
-   apx_connectionCount_t* provide_port_connection_count;
+   apx_portCount_t* require_port_connection_count;
+   apx_portCount_t* provide_port_connection_count;
    uint8_t checksum_data[RMF_SHA256_SIZE];
    rmf_digestType_t checksum_type;
 } apx_nodeDataBuffers_t;
@@ -75,8 +75,8 @@ typedef struct apx_nodeData_tag
    apx_size_t provide_port_data_size;
    apx_size_t num_require_ports;
    apx_size_t num_provide_ports;
-   apx_connectionCount_t* require_port_connection_count; //array-length: num_require_ports
-   apx_connectionCount_t* provide_port_connection_count; //array-length: num_provide_ports
+   apx_portCount_t* require_port_connection_count; //array-length: num_require_ports
+   apx_portCount_t* provide_port_connection_count; //array-length: num_provide_ports
    uint8_t checksum_data[RMF_SHA256_SIZE];
    rmf_digestType_t checksum_type;
    struct apx_nodeInstance_tag* parent;
@@ -123,8 +123,8 @@ const uint8_t* apx_nodeData_get_checksum_data(apx_nodeData_t const* self);
 /*
 ////////////////// Port Connection Count API //////////////////
 #ifndef APX_EMBEDDED
-apx_error_t apx_nodeData_createRequirePortConnectionCountBuffer(apx_nodeData_t* self, apx_portCount_t numRequirePorts);
-apx_error_t apx_nodeData_createProvidePortConnectionCountBuffer(apx_nodeData_t* self, apx_portCount_t numProvidePorts);
+apx_error_t apx_nodeData_createRequirePortConnectionCountBuffer(apx_nodeData_t* self, apx_size_t numRequirePorts);
+apx_error_t apx_nodeData_createProvidePortConnectionCountBuffer(apx_nodeData_t* self, apx_size_t numProvidePorts);
 #endif
 apx_connectionCount_t apx_nodeData_getRequirePortConnectionCount(apx_nodeData_t* self, apx_portId_t portId);
 apx_connectionCount_t apx_nodeData_getProvidePortConnectionCount(apx_nodeData_t* self, apx_portId_t portId);

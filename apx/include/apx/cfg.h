@@ -46,9 +46,9 @@
 #define APX_MAX_DEFINITION_LEN 0x400000 //4MB
 
 
-#ifndef APX_CONNECTION_COUNT_TYPE
-# define APX_CONNECTION_COUNT_TYPE uint16_t  //Using uint8_t or uint16_t is recommended
-# define APX_CONNECTION_COUNT_MAX  UINT16_MAX //This define must match limit of selected data type APX_CONNECTION_COUNT_TYPE
+#ifndef APX_PORT_COUNT_TYPE
+# define APX_PORT_COUNT_TYPE uint16_t  //Using uint8_t or uint16_t is recommended
+# define APX_PORT_COUNT_MAX  UINT16_MAX //This define must match limit of selected data type APX_PORT_COUNT_TYPE
 #endif
 
 #define APX_SERVER_MAX_CONCURRENT_CONNECTIONS 4000 //maximum number of connections the server will accept

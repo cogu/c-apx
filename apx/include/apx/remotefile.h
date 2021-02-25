@@ -106,8 +106,10 @@ typedef uint8_t rmf_digestType_t;
 #define RMF_NUMHEADER_SIZE_DEFAULT RMF_NUMHEADER_SIZE_32
 
 #define RMF_GREETING_MAX_LEN 127
-#define RMF_GREETING_START "RMFP/1.0\n"
-#define RMF_NUMHEADER_FORMAT_HDR "NumHeader-Format:"
+#define RMF_GREETING10_START "RMFP/1.0\n"
+#define RMF_GREETING11_START "RMFP/1.1\n"
+#define RMF_MESSAGE_FORMAT_HDR "Message-Format"
+#define RMF_CONNECTION_TYPE_MONITOR_HDR "Connection-Type"
 
 apx_size_t rmf_needed_encoding_size(uint32_t address);
 apx_size_t rmf_address_encode(uint8_t* buf, apx_size_t buf_size, uint32_t address, bool more_bit);

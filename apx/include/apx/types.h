@@ -49,7 +49,6 @@ typedef struct adt_str_tag* (apx_to_string_func_t)(void* arg);
 typedef int32_t apx_offset_t;
 typedef uint32_t apx_size_t; //use uint16_t  to send up to 64KB, use uint32_t for 4GB.
 typedef APX_PORT_ID_TYPE apx_portId_t; //uint32_t is default. Use uint16_t for smaller memory footprint
-typedef APX_PORT_ID_TYPE apx_portCount_t;
 typedef uint32_t apx_uniquePortId_t; //highest significant bit is 0 when it contains a require port ID and 1 when it contains a provide port ID
 typedef uint32_t apx_typeId_t;
 typedef uint32_t apx_computationListId_t;
@@ -65,7 +64,7 @@ typedef uint32_t apx_elementId_t;
 #define APX_ADDRESS_MASK_INTERNAL ((uint32_t) 0x7FFFFFFF)
 #define APX_INVALID_ADDRESS ((uint32_t) 0x7FFFFFFF)
 
-typedef APX_CONNECTION_COUNT_TYPE apx_connectionCount_t;
+typedef APX_PORT_COUNT_TYPE apx_portCount_t;
 
 typedef uint16_t apx_eventId_t;
 
@@ -77,17 +76,9 @@ typedef struct apx_dataWriteCmd_tag
 
 #define APX_DATA_WRITE_CMD_SIZE sizeof(apx_dataWriteCmd_t)
 
-#define APX_CONNECTION_TYPE_TEST_SOCKET       0
-#define APX_CONNECTION_TYPE_TCP_SOCKET        1
-#define APX_CONNECTION_TYPE_LOCAL_SOCKET      2
-
-#define APX_DEBUG_NONE                        0
-#define APX_DEBUG_1_PROFILE                   1  // Used to profile node connect performance using timestamped log
-#define APX_DEBUG_2_LOW                       2
-#define APX_DEBUG_3_MID                       3
-#define APX_DEBUG_4_HIGH                      4
-
-#define APX_DEBUG_INFO_MAX_LEN 20
+typedef uint8_t apx_connectionType_t;
+#define APX_CONNECTION_TYPE_DEFAULT           0
+#define APX_CONNECTION_TYPE_MONITOR           1
 
 typedef uint8_t apx_fileType_t;
 #define APX_UNKNOWN_FILE_TYPE             ((apx_fileType_t) 0u)

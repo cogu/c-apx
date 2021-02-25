@@ -25,6 +25,7 @@
 static void test_acknowledge_is_sent_when_greeting_is_seen(CuTest* tc);
 static void test_node_instance_is_created_when_definition_file_is_seen(CuTest* tc);
 static void test_file_open_request_is_sent_after_definition_file_is_seen(CuTest* tc);
+static void test_file_open_request_is_sent_after_definition_file_is_seen_in_compatibility_mode(CuTest* tc);
 static void test_definition_is_parsed_after_file_has_been_sent(CuTest* tc);
 static void test_provide_port_data_is_requested_after_definition_file_has_been_parsed(CuTest* tc);
 static void test_provide_port_data_is_received_after_request(CuTest* tc);
@@ -47,6 +48,7 @@ CuSuite* testSuite_apx_serverConnection(void)
    SUITE_ADD_TEST(suite, test_acknowledge_is_sent_when_greeting_is_seen);
    SUITE_ADD_TEST(suite, test_node_instance_is_created_when_definition_file_is_seen);
    SUITE_ADD_TEST(suite, test_file_open_request_is_sent_after_definition_file_is_seen);
+   SUITE_ADD_TEST(suite, test_file_open_request_is_sent_after_definition_file_is_seen_in_compatibility_mode);
    SUITE_ADD_TEST(suite, test_definition_is_parsed_after_file_has_been_sent);
    SUITE_ADD_TEST(suite, test_provide_port_data_is_requested_after_definition_file_has_been_parsed);
    SUITE_ADD_TEST(suite, test_provide_port_data_is_received_after_request);
@@ -167,6 +169,62 @@ static void test_file_open_request_is_sent_after_definition_file_is_seen(CuTest*
    apx_size_t definition_size = (apx_size_t)strlen(apx_text);
    connection = apx_serverTestConnection_new();
    CuAssertPtrNotNull(tc, connection);
+   CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_greeting_header(connection));
+   apx_serverTestConnection_run(connection);
+   CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
+   packet = apx_serverTestConnection_get_log_packet(connection, 0);
+   CuAssertPtrNotNull(tc, packet);
+   CuAssertIntEquals(tc, acknowledge_size, adt_bytearray_length(packet)); //This is the acknowledge message
+   apx_serverTestConnection_clear_log(connection);
+   CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_publish_remote_file(connection, APX_DEFINITION_ADDRESS_START, "TestNode1.apx", definition_size));
+   apx_serverTestConnection_run(connection);
+   CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
+   packet = apx_serverTestConnection_get_log_packet(connection, 0);
+   CuAssertPtrNotNull(tc, packet);
+   CuAssertIntEquals(tc, open_request_size, adt_bytearray_length(packet)); //Should be a file open request message
+   memcpy(actual, adt_bytearray_data(packet), open_request_size);
+   CuAssertIntEquals(tc, 0, memcmp(actual, expected, open_request_size));
+   apx_serverTestConnection_delete(connection);
+}
+
+static void test_file_open_request_is_sent_after_definition_file_is_seen_in_compatibility_mode(CuTest* tc)
+{
+   apx_serverTestConnection_t* connection;
+   adt_bytearray_t* packet;
+   int const acknowledge_size = 9;
+   int const open_request_size = 13;
+   uint8_t actual[13];
+   uint8_t expected[13] = {
+      //message size
+      12,
+      //write address
+      0xBFu,
+      0xFFu,
+      0xFCu,
+      0x00u,
+      //command type
+      (uint8_t)RMF_CMD_OPEN_FILE_MSG,
+      0u,
+      0u,
+      0u,
+      //address
+      0u,
+      0u,
+      0u,
+      4u,
+   };
+   char const* apx_text =
+      "APX/1.2\n"
+      "N\"TestNode1\"\n"
+      "R\"RequirePort1\"C(0,3):=3\n"
+      "R\"RequirePort2\"C(0,7):=7\n";
+
+   apx_size_t definition_size = (apx_size_t)strlen(apx_text);
+   connection = apx_serverTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   apx_serverTestConnection_enable_compatibility_mode(connection);
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_greeting_header(connection));
    apx_serverTestConnection_run(connection);
