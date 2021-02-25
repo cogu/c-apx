@@ -4,7 +4,7 @@
 * \date      2018-12-31
 * \brief     Base class for client connections
 *
-* Copyright (c) 2018-2020 Conny Gustafsson
+* Copyright (c) 2018-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
 * this software and associated documentation files (the "Software"), to deal in
 * the Software without restriction, including without limitation the rights to
@@ -51,6 +51,8 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void send_greeting_header(apx_clientConnection_t* self);
+static void send_monitor_greeting_header(apx_clientConnection_t* self);
+static void send_default_greeting_header(apx_clientConnection_t* self);
 static apx_error_t remote_file_published_notification(apx_clientConnection_t* self, apx_file_t* file);
 static apx_error_t process_new_require_port_data_file(apx_clientConnection_t* self, apx_file_t* file);
 static apx_error_t remote_file_write_notification(apx_clientConnection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
@@ -76,6 +78,7 @@ apx_error_t apx_clientConnection_create(apx_clientConnection_t* self, apx_connec
       connection_interface->remote_file_published_notification = apx_clientConnection_vremote_file_published_notification;
       connection_interface->remote_file_write_notification = apx_clientConnection_vremote_file_write_notification;
       error_code = apx_connectionBase_create(&self->base, APX_CLIENT_MODE, base_connection_vtable, connection_interface);
+      self->connection_type = APX_CONNECTION_TYPE_DEFAULT;
       self->is_greeting_accepted = false;
       self->client = NULL;
       self->last_error = APX_NO_ERROR;
@@ -93,37 +96,7 @@ void apx_clientConnection_destroy(apx_clientConnection_t *self)
    }
 }
 
-apx_fileManager_t* apx_clientConnection_get_file_manager(apx_clientConnection_t* self)
-{
-   if (self != 0)
-   {
-      return apx_connectionBase_get_file_manager(&self->base);
-   }
-   return NULL;
-}
 
-void apx_clientConnection_start(apx_clientConnection_t* self)
-{
-   (void)self;
-}
-
-
-void apx_clientConnection_close(apx_clientConnection_t* self)
-{
-   (void)self;
-}
-
-uint32_t apx_clientConnection_get_total_bytes_received(apx_clientConnection_t* self)
-{
-   (void)self;
-   return 0u;
-}
-
-uint32_t apx_clientConnection_get_total_bytes_sent(apx_clientConnection_t* self)
-{
-   (void)self;
-   return 0u;
-}
 
 /*
 void apx_clientConnection_default_event_handler(void* arg, apx_event_t* event)
@@ -204,6 +177,23 @@ void apx_clientConnection_set_client(apx_clientConnection_t* self, struct apx_cl
    }
 }
 
+void apx_clientConnection_set_connection_type(apx_clientConnection_t* self, apx_connectionType_t connection_type)
+{
+   if (self != NULL)
+   {
+      self->connection_type = connection_type;
+   }
+}
+
+apx_connectionType_t apx_clientConnection_get_connection_type(apx_clientConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->connection_type;
+   }
+   return APX_CONNECTION_TYPE_DEFAULT;
+}
+
 int apx_clientConnection_on_data_received(apx_clientConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len)
 {
    if ( (self != NULL) && (data != NULL) && (data_size > 0u) && (parse_len != NULL))
@@ -253,6 +243,40 @@ apx_error_t apx_clientConnection_attach_node_instance(apx_clientConnection_t* se
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+// ClientConnection API
+
+apx_fileManager_t* apx_clientConnection_get_file_manager(apx_clientConnection_t* self)
+{
+   if (self != 0)
+   {
+      return apx_connectionBase_get_file_manager(&self->base);
+   }
+   return NULL;
+}
+
+void apx_clientConnection_start(apx_clientConnection_t* self)
+{
+   (void)self;
+}
+
+
+void apx_clientConnection_close(apx_clientConnection_t* self)
+{
+   (void)self;
+}
+
+uint32_t apx_clientConnection_get_total_bytes_received(apx_clientConnection_t* self)
+{
+   (void)self;
+   return 0u;
+}
+
+uint32_t apx_clientConnection_get_total_bytes_sent(apx_clientConnection_t* self)
+{
+   (void)self;
+   return 0u;
+}
+
 void apx_clientConnection_vrequire_port_write_notification(void* arg, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size)
 {
    apx_clientConnection_t* self = (apx_clientConnection_t*)arg;
@@ -292,14 +316,49 @@ void apx_clientConnection_run(apx_clientConnection_t* self)
 
 static void send_greeting_header(apx_clientConnection_t* self)
 {
+   if (self->connection_type == APX_CONNECTION_TYPE_MONITOR)
+   {
+      send_monitor_greeting_header(self);
+   }
+   else
+   {
+      send_default_greeting_header(self);
+   }
+}
+
+static void send_monitor_greeting_header(apx_clientConnection_t* self)
+{
    int32_t greeting_size;
    apx_connectionInterface_t const* connection;
-   int num_header_format = 32;
+   int message_format = 32;
    char greeting[RMF_GREETING_MAX_LEN];
    char* p = &greeting[0];
-   strcpy(greeting, RMF_GREETING_START);
+   strcpy(greeting, RMF_GREETING11_START);
    p += strlen(greeting);
-   p += sprintf(p, "%s%d\n\n", RMF_NUMHEADER_FORMAT_HDR, num_header_format);
+   p += sprintf(p, "%s: %d\n", RMF_MESSAGE_FORMAT_HDR, message_format);
+   p += sprintf(p, "%s: Monitor\n\n", RMF_CONNECTION_TYPE_MONITOR_HDR);
+   greeting_size = (int32_t)(p - greeting);
+   connection = apx_connectionBase_get_connection(&self->base);
+   if (connection != NULL)
+   {
+      int32_t bytes_available = 0;
+      assert((connection->transmit_begin != NULL) && (connection->transmit_end != NULL) && (connection->transmit_direct_message != NULL));
+      connection->transmit_begin(connection->arg);
+      connection->transmit_direct_message(connection->arg, (uint8_t const*)greeting, greeting_size, &bytes_available);
+      connection->transmit_end(connection->arg);
+   }
+}
+
+static void send_default_greeting_header(apx_clientConnection_t* self)
+{
+   int32_t greeting_size;
+   apx_connectionInterface_t const* connection;
+   int message_format = 32;
+   char greeting[RMF_GREETING_MAX_LEN];
+   char* p = &greeting[0];
+   strcpy(greeting, RMF_GREETING10_START);
+   p += strlen(greeting);
+   p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_FORMAT_HDR, message_format);
    greeting_size = (int32_t)(p - greeting);
    connection = apx_connectionBase_get_connection(&self->base);
    if (connection != NULL)

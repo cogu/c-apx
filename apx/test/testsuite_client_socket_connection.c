@@ -69,7 +69,7 @@ static void test_connection_create(CuTest* tc)
    apx_clientSocketConnection_t conn;
    testsocket_t *sock1;
    sock1 = testsocket_new(); //apx_clientSocketConnection_t takes ownership of this object. No need to manually delete it
-   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock1));
+   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock1, APX_CONNECTION_TYPE_DEFAULT));
    CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
    CuAssertPtrEquals(tc, sock1, conn.socket_object);
    apx_clientSocketConnection_destroy(&conn);
@@ -80,22 +80,22 @@ static void test_send_greeting_on_connect(CuTest* tc)
    testsocket_t *sock;
    uint32_t len;
    adt_str_t *str;
-   const char *expected_greeting = "RMFP/1.0\nNumHeader-Format:32\n\n";
+   const char *expected_greeting = "RMFP/1.0\nMessage-Format: 32\n\n";
    const char *data;
    apx_clientSocketConnection_t conn;
 
    testsocket_spy_create();
    sock = testsocket_spy_server();
    CuAssertPtrNotNull(tc, sock);
-   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock));
+   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock, APX_CONNECTION_TYPE_DEFAULT));
    CuAssertIntEquals(tc, 0, testsocket_spy_getServerConnectedCount());
    testsocket_onConnect(sock);
    CONNECTION_RUN(&conn, sock);
    CuAssertIntEquals(tc, 1, testsocket_spy_getServerConnectedCount());
    data = (const char*) testsocket_spy_getReceivedData(&len);
-   CuAssertIntEquals(tc, 31, len);
-   CuAssertIntEquals(tc, 30, data[0]);
-   str = adt_str_new_bstr((const uint8_t*) &data[1], (const uint8_t*) &data[1]+30);
+   CuAssertIntEquals(tc, 30, len);
+   CuAssertIntEquals(tc, 29, data[0]);
+   str = adt_str_new_bstr((const uint8_t*) &data[1], (const uint8_t*) &data[1]+29);
    CuAssertStrEquals(tc, expected_greeting, adt_str_cstr(str));
    adt_str_delete(str);
 
@@ -163,7 +163,7 @@ static void test_send_file_info_after_acknowledge_from_single_node(CuTest* tc)
    sock = testsocket_spy_server();
    apx_nodeManager_create(&node_manager, APX_CLIENT_MODE);
    CuAssertPtrNotNull(tc, sock);
-   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock));
+   CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock, APX_CONNECTION_TYPE_DEFAULT));
    apx_clientSocketConnection_attach_node_manager(&conn, &node_manager);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_clientSocketConnection_build_node(&conn, apx_text));
    CuAssertIntEquals(tc, 0, testsocket_spy_getServerConnectedCount());
@@ -171,7 +171,7 @@ static void test_send_file_info_after_acknowledge_from_single_node(CuTest* tc)
    CONNECTION_RUN(&conn, sock);
    CuAssertIntEquals(tc, 1, testsocket_spy_getServerConnectedCount());
    data = (const char*)testsocket_spy_getReceivedData(&len);
-   CuAssertIntEquals(tc, 31, len); //This is the greeting message
+   CuAssertIntEquals(tc, 30, len); //This is the greeting message
    testsocket_spy_clearReceivedData();
 
    testsocket_helper_send_acknowledge(sock);
