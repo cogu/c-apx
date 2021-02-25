@@ -163,7 +163,7 @@ apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_
 {
    if (self != NULL)
    {
-      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new(socketObject);
+      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new(socketObject, APX_CONNECTION_TYPE_DEFAULT);
       if (socketConnection)
       {
          apx_error_t result;
@@ -190,7 +190,7 @@ apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint
 {
    if (self != NULL)
    {
-      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0);
+      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
       if (socketConnection != 0)
       {
          apx_error_t result;
@@ -217,7 +217,7 @@ apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socketPath)
 {
    if (self != NULL)
    {
-      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new((msocket_t*) 0);
+      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
       if (socketConnection != 0)
       {
          apx_error_t result;

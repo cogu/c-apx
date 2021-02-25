@@ -55,10 +55,11 @@ typedef struct apx_clientSocketConnection_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self, SOCKET_TYPE * socket_object);
+apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self, SOCKET_TYPE * socket_object, apx_connectionType_t connection_type);
 void apx_clientSocketConnection_destroy(apx_clientSocketConnection_t *self);
 void apx_clientSocketConnection_vdestroy(void *arg);
-apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE * socket_object);
+apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE * socket_object, apx_connectionType_t connection_type);
+apx_connectionType_t apx_clientSocketConnection_get_connection_type(apx_clientSocketConnection_t const* self);
 
 #ifndef UNIT_TEST
 apx_error_t apx_clientConnection_tcp_connect(apx_clientSocketConnection_t *self, const char *address, uint16_t port);
