@@ -107,7 +107,7 @@ static void send_packet(apx_clientSocketConnection_t* self);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self, SOCKET_TYPE * socket_object)
+apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self, SOCKET_TYPE * socket_object, apx_connectionType_t connection_type)
 {
    if (self != 0)
    {
@@ -126,6 +126,7 @@ apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self
       {
          return result;
       }
+      apx_clientConnection_set_connection_type(&self->base, connection_type);
       adt_bytearray_create(&self->send_buffer, SEND_BUFFER_GROW_SIZE);
       register_msocket_handler(self, socket_object);
       apx_connectionBase_start(&self->base.base);///TODO: Don't call start from the constructor
@@ -150,12 +151,12 @@ void apx_clientSocketConnection_vdestroy(void *arg)
    apx_clientSocketConnection_destroy((apx_clientSocketConnection_t*) arg);
 }
 
-apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE *socket_object)
+apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE *socket_object, apx_connectionType_t connection_type)
 {
    apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) malloc(sizeof(apx_clientSocketConnection_t));
    if (self != 0)
    {
-      apx_error_t errorCode = apx_clientSocketConnection_create(self, socket_object);
+      apx_error_t errorCode = apx_clientSocketConnection_create(self, socket_object, connection_type);
       if (errorCode != APX_NO_ERROR)
       {
          free(self);
@@ -165,8 +166,14 @@ apx_clientSocketConnection_t *apx_clientSocketConnection_new(SOCKET_TYPE *socket
    return self;
 }
 
-
-
+apx_connectionType_t apx_clientSocketConnection_get_connection_type(apx_clientSocketConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return apx_clientConnection_get_connection_type(&self->base);
+   }
+   return APX_CONNECTION_TYPE_DEFAULT;
+}
 
 #ifndef UNIT_TEST
 apx_error_t apx_clientConnection_tcp_connect(apx_clientSocketConnection_t *self, const char *address, uint16_t port)
