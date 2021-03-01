@@ -101,19 +101,25 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       }
       if (connection_interface != NULL)
       {
+         //Set non-overidable methods of connection_interface
+         connection_interface->get_connection_id = apx_connectionBase_vget_connection_id;
+         connection_interface->get_remotefile_protocol_version_id = apx_connectionBase_vget_remotefile_protocol_version_id;
+         connection_interface->get_connection_type = apx_connectionBase_vget_connection_type;
          memcpy(&self->connection_interface, connection_interface, sizeof(apx_connectionInterface_t));
       }
       else
       {
          memset(&self->connection_interface, 0, sizeof(apx_connectionInterface_t));
       }
-      self->node_manager = NULL;      
+      self->node_manager = NULL;
       self->event_handler_arg = NULL;
       self->total_bytes_received = 0u;
       self->total_bytes_sent = 0u;
       self->connection_id = APX_INVALID_CONNECTION_ID;
       self->num_header_size = UINT32_SIZE;
       self->mode = mode;
+      self->connection_type = APX_CONNECTION_TYPE_DEFAULT;
+      self->rmf_version_id = RMF_PROTOCOL_VERSION_ID_1_0;
       rc = apx_allocator_create(&self->allocator, APX_MAX_NUM_MESSAGES);
       if (rc != APX_NO_ERROR)
       {
@@ -122,7 +128,7 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
       rc = apx_fileManager_create(&self->file_manager, mode, &self->connection_interface, &self->allocator);
       if (rc != APX_NO_ERROR)
       {
-         apx_allocator_destroy(&self->allocator);         
+         apx_allocator_destroy(&self->allocator);
          return rc;
       }
       apx_allocator_start(&self->allocator);
@@ -135,7 +141,7 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self)
 {
    if (self != NULL)
    {
-      apx_fileManager_destroy(&self->file_manager);      
+      apx_fileManager_destroy(&self->file_manager);
       apx_allocator_stop(&self->allocator);
       apx_allocator_destroy(&self->allocator);
    }
@@ -181,13 +187,11 @@ void apx_connectionBase_start(apx_connectionBase_t* self)
          printf("[BASE-CONNECTION] Starting connection\n");
       }
 #endif
-#ifndef UNIT_TEST
       apx_fileManager_start(&self->file_manager);
       if (self->vtable.start != NULL)
       {
          self->vtable.start((void*)self);
       }
-#endif
    }
 }
 
@@ -262,9 +266,70 @@ void apx_connectionBase_set_connection_id(apx_connectionBase_t* self, uint32_t c
    if (self != NULL)
    {
       self->connection_id = connection_id;
-      apx_fileManager_set_connection_id(&self->file_manager, connection_id);
+      //apx_fileManager_set_connection_id(&self->file_manager, connection_id);
    }
 }
+
+uint32_t apx_connectionBase_get_connection_id(apx_connectionBase_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->connection_id;
+   }
+   return APX_INVALID_CONNECTION_ID;
+}
+
+void apx_connectionBase_set_connection_type(apx_connectionBase_t* self, apx_connectionType_t connection_type)
+{
+   if (self != NULL)
+   {
+      self->connection_type = connection_type;
+   }
+}
+
+apx_connectionType_t apx_connectionBase_get_connection_type(apx_connectionBase_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->connection_type;
+   }
+   return APX_CONNECTION_TYPE_DEFAULT;
+}
+
+void apx_connectionBase_set_num_header_size(apx_connectionBase_t* self, apx_size_t size)
+{
+   if ( (self != NULL) && ( (size == UINT16_SIZE) || (size == UINT32_SIZE) ))
+   {
+      self->num_header_size = size;
+   }
+}
+
+apx_size_t apx_connectionBase_get_num_header_size(apx_connectionBase_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->num_header_size;
+   }
+   return 0u;
+}
+
+void apx_connectionBase_set_rmf_proto_id(apx_connectionBase_t* self, rmf_versionId_t version_id)
+{
+   if (self != NULL)
+   {
+      self->rmf_version_id = version_id;
+   }
+}
+
+rmf_versionId_t apx_connectionBase_get_rmf_proto_id(apx_connectionBase_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->rmf_version_id;
+   }
+   return RMF_PROTOCOL_VERSION_ID_NONE;
+}
+
 
 //Virtual function call-points
 
@@ -288,6 +353,37 @@ void apx_connectionBase_require_port_write_notification(apx_connectionBase_t con
          self->vtable.require_port_write_notification((void*)self, port_instance, raw_data, data_size);
       }
    }
+}
+
+
+uint32_t apx_connectionBase_vget_connection_id(void* arg)
+{
+   apx_connectionBase_t const* self = (apx_connectionBase_t const*) arg;
+   if (self != NULL)
+   {
+      return self->connection_id;
+   }
+   return APX_INVALID_CONNECTION_ID;
+}
+
+rmf_versionId_t apx_connectionBase_vget_remotefile_protocol_version_id(void* arg)
+{
+   apx_connectionBase_t const* self = (apx_connectionBase_t const*)arg;
+   if (self != NULL)
+   {
+      return self->rmf_version_id;
+   }
+   return RMF_PROTOCOL_VERSION_ID_NONE;
+}
+
+apx_connectionType_t apx_connectionBase_vget_connection_type(void* arg)
+{
+   apx_connectionBase_t const* self = (apx_connectionBase_t const*)arg;
+   if (self != NULL)
+   {
+      return self->connection_type;
+   }
+   return APX_CONNECTION_TYPE_DEFAULT;
 }
 
 

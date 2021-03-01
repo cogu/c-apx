@@ -80,7 +80,7 @@ static void test_send_greeting_on_connect(CuTest* tc)
    testsocket_t *sock;
    uint32_t len;
    adt_str_t *str;
-   const char *expected_greeting = "RMFP/1.0\nMessage-Format: 32\n\n";
+   const char *expected_greeting = "RMFP/1.0\nMessage-Size: 32\n\n";
    const char *data;
    apx_clientSocketConnection_t conn;
 
@@ -93,9 +93,9 @@ static void test_send_greeting_on_connect(CuTest* tc)
    CONNECTION_RUN(&conn, sock);
    CuAssertIntEquals(tc, 1, testsocket_spy_getServerConnectedCount());
    data = (const char*) testsocket_spy_getReceivedData(&len);
-   CuAssertIntEquals(tc, 30, len);
-   CuAssertIntEquals(tc, 29, data[0]);
-   str = adt_str_new_bstr((const uint8_t*) &data[1], (const uint8_t*) &data[1]+29);
+   CuAssertIntEquals(tc, 28, len);
+   CuAssertIntEquals(tc, 27, data[0]);
+   str = adt_str_new_bstr((const uint8_t*) &data[1], (const uint8_t*) &data[1]+27);
    CuAssertStrEquals(tc, expected_greeting, adt_str_cstr(str));
    adt_str_delete(str);
 
@@ -171,7 +171,7 @@ static void test_send_file_info_after_acknowledge_from_single_node(CuTest* tc)
    CONNECTION_RUN(&conn, sock);
    CuAssertIntEquals(tc, 1, testsocket_spy_getServerConnectedCount());
    data = (const char*)testsocket_spy_getReceivedData(&len);
-   CuAssertIntEquals(tc, 30, len); //This is the greeting message
+   CuAssertIntEquals(tc, 28, len); //This is the greeting message
    testsocket_spy_clearReceivedData();
 
    testsocket_helper_send_acknowledge(sock);

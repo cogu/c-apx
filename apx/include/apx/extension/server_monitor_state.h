@@ -1,8 +1,8 @@
 /*****************************************************************************
-* \file      connection_interface.h
+* \file      server_monitor_state.h
 * \author    Conny Gustafsson
-* \date      2021-01-01
-* \brief     Abstract connection interface
+* \date      2021-02-28
+* \brief     Server Monitor State
 *
 * Copyright (c) 2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -23,47 +23,51 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *
 ******************************************************************************/
-#ifndef APX_CONNECTION_INTERFACE_H
-#define APX_CONNECTION_INTERFACE_H
+#ifndef APX_SERVER_MONITOR_STATE_H
+#define APX_SERVER_MONITOR_STATE_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/types.h"
-#include "apx/error.h"
-#include "apx/file.h"
-#include "apx/remotefile.h"
+#include "apx/server_extension.h"
+#include "apx/server_connection.h"
+#include "apx/file_info.h"
+#include "adt_list.h"
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+# define WIN32_LEAN_AND_MEAN
+# endif
+# include <Windows.h>
+#else
+# include <pthread.h>
+#endif
+#include "osmacro.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef apx_error_t (apx_connection_transmit_data_message_func)(void* arg, uint32_t write_address, bool more_bit, uint8_t const* data, int32_t size, int32_t* bytes_available);
-typedef apx_error_t (apx_connection_transmit_direct_message_func)(void* arg, uint8_t const* data, int32_t size, int32_t* bytes_available);
+#define APX_MONITOR_EXTENSION_CFG_KEY "monitor"
 
-typedef struct apx_connectionInterface_tag
+struct apx_server_tag;
+
+typedef struct apx_serverMonitorState_tag
 {
-   void* arg;
-   //Transmit methods
-   int32_t(*transmit_max_buffer_size)(void* arg); //Returns largest possible buffer size the transmitter can provide
-   int32_t(*transmit_current_bytes_avaiable)(void* arg); //Returns avaiable bytes in current buffer
-   void (*transmit_begin)(void* arg); //Locks transmit resource
-   void (*transmit_end)(void* arg); //Unlocks transmit resource
-   apx_connection_transmit_data_message_func* transmit_data_message; //Message that is written into the remotefile address space
-   apx_connection_transmit_direct_message_func* transmit_direct_message; //Message that is written outside the remotefile address space
-
-   //Connection details
-   uint32_t(*get_connection_id)(void* arg);
-   rmf_versionId_t(*get_remotefile_protocol_version_id)(void* arg);
-   apx_connectionType_t(*get_connection_type)(void* arg);
-
-
-   // Notification callbacks
-   apx_error_t (*remote_file_published_notification)(void* arg, apx_file_t* file);
-   apx_error_t (*remote_file_write_notification)(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
-} apx_connectionInterface_t;
+   struct apx_server_tag* server;
+   adt_list_t client_connections; //weak references to apx_serverConnection_t
+   MUTEX_T lock;
+} apx_serverMonitorState_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+void apx_serverMonitorState_create(apx_serverMonitorState_t* self, struct apx_server_tag* server);
+void apx_serverMonitorState_destroy(apx_serverMonitorState_t* self);
+apx_serverMonitorState_t* apx_serverMonitorState_new(struct apx_server_tag* server);
+void apx_serverMonitorState_delete(apx_serverMonitorState_t* self);
 
-#endif //APX_CONNECTION_INTERFACE_H
+//Virtual call points
+void apx_serverMonitorState_virtual_on_new_connection(void* arg, apx_serverConnection_t* connection);
+void apx_serverMonitorState_virtual_on_connection_closed(void* arg, apx_serverConnection_t* connection);
+void apx_serverMonitorState_virtual_on_protocol_header_accepted(void* arg, struct apx_connectionBase_tag* connection);
+
+#endif //APX_SERVER_MONITOR_STATE_H

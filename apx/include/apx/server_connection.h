@@ -80,6 +80,13 @@ void apx_serverConnection_set_server(apx_serverConnection_t* self, struct apx_se
 struct apx_server_tag* apx_serverConnection_get_server(apx_serverConnection_t* self);
 void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_connectionEventListener_t* event_listener);
 void apx_serverConnection_unregister_event_listener(apx_serverConnection_t* self, void* handle);
+void apx_serverConnection_set_connection_type(apx_serverConnection_t* self, apx_connectionType_t connection_type);
+apx_connectionType_t apx_serverConnection_get_connection_type(apx_serverConnection_t const* self);
+void apx_serverConnection_set_num_header_size(apx_serverConnection_t* self, apx_size_t size);
+apx_size_t apx_serverConnection_get_num_header_size(apx_serverConnection_t const* self);
+void apx_serverConnection_set_rmf_proto_id(apx_serverConnection_t* self, rmf_versionId_t version_id);
+rmf_versionId_t apx_serverConnection_get_rmf_proto_id(apx_serverConnection_t const* self);
+
 
 // ClientConnection API
 apx_fileManager_t* apx_serverConnection_get_file_manager(apx_serverConnection_t* self);

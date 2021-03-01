@@ -1,36 +1,33 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="extension">
-      <UniqueIdentifier>{db3e9c41-a1ad-45aa-9075-85c4260906c3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="extension\include">
+    <Filter Include="include">
       <UniqueIdentifier>{1f766a94-8dd0-4373-86f5-7549434c4e30}</UniqueIdentifier>
     </Filter>
-    <Filter Include="extension\src">
+    <Filter Include="src">
       <UniqueIdentifier>{eb3b1f38-9485-4205-97b8-59c62183449d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server.h">
-      <Filter>extension\include</Filter>
+      <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server_connection.h">
-      <Filter>extension\include</Filter>
+      <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server_extension.h">
-      <Filter>extension\include</Filter>
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\apx\src\extension\socket_server.c">
-      <Filter>extension\src</Filter>
+      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\apx\src\extension\socket_server_connection.c">
-      <Filter>extension\src</Filter>
+      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\apx\src\extension\socket_server_extension.c">
-      <Filter>extension\src</Filter>
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

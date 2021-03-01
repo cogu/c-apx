@@ -76,6 +76,14 @@ void apx_fileManagerShared_destroy(apx_fileManagerShared_t *self)
    }
 }
 
+void apx_fileManagerShared_start(apx_fileManagerShared_t* self)
+{
+   if (self != NULL)
+   {
+      assert(self->parent_connection.get_connection_id != NULL);
+      self->connection_id = self->parent_connection.get_connection_id(self->parent_connection.arg);
+   }
+}
 
 apx_file_t* apx_fileManagerShared_create_local_file(apx_fileManagerShared_t* self, const rmf_fileInfo_t* file_info)
 {
@@ -176,28 +184,32 @@ apx_file_t* apx_fileManagerShared_find_file_by_address(apx_fileManagerShared_t* 
    return (apx_file_t*) NULL;
 }
 
-
-void apx_fileManagerShared_set_connection_id(apx_fileManagerShared_t* self, uint32_t connection_id)
+uint32_t apx_fileManagerShared_get_connection_id(apx_fileManagerShared_t const* self)
 {
    if (self != NULL)
    {
-      MUTEX_LOCK(self->lock);
-      self->connection_id = connection_id;
-      MUTEX_UNLOCK(self->lock);
-   }
-}
-
-uint32_t apx_fileManagerShared_get_connection_id(apx_fileManagerShared_t* self)
-{
-   if (self != NULL)
-   {
-      uint32_t retval;
-      MUTEX_LOCK(self->lock);
-      retval = self->connection_id;
-      MUTEX_UNLOCK(self->lock);
-      return retval;
+      return self->connection_id;
    }
    return APX_INVALID_CONNECTION_ID;
+}
+
+apx_connectionType_t apx_fileManagerShared_get_connection_type(apx_fileManagerShared_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->connection_type;
+   }
+   return APX_CONNECTION_TYPE_DEFAULT;
+}
+
+
+rmf_versionId_t apx_fileManagerShared_get_remotefile_version_id(apx_fileManagerShared_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->remote_file_version_id;
+   }
+   return RMF_PROTOCOL_VERSION_ID_NONE;
 }
 
 int32_t apx_fileManagerShared_copy_local_file_info(apx_fileManagerShared_t* self, adt_ary_t* array)
@@ -236,6 +248,10 @@ void apx_fileManagerShared_connected(apx_fileManagerShared_t* self)
 {
    if (self != NULL)
    {
+      assert(self->parent_connection.get_remotefile_protocol_version_id != NULL);
+      assert(self->parent_connection.get_connection_type != NULL);
+      self->remote_file_version_id = self->parent_connection.get_remotefile_protocol_version_id(self->parent_connection.arg);
+      self->connection_type = self->parent_connection.get_connection_type(self->parent_connection.arg);
       MUTEX_LOCK(self->lock);
       self->is_connected = true;
       MUTEX_UNLOCK(self->lock);
@@ -267,7 +283,6 @@ bool apx_fileManagerShared_is_connected(apx_fileManagerShared_t* self)
    }
    return false;
 }
-
 
 apx_connectionInterface_t const* apx_fileManagerShared_connection(apx_fileManagerShared_t const* self)
 {

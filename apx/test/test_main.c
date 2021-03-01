@@ -45,6 +45,7 @@ CuSuite* testSuite_apx_portSignatureMap(void);
 CuSuite* testSuite_apx_clientTestConnection(void);
 CuSuite* testSuite_apx_client_socketConnection(void);
 CuSuite* testSuite_apx_client(void);
+CuSuite* testSuite_apx_client_socket_monitor_connection(void);
 
 //Server
 CuSuite* testSuite_apx_serverConnection(void);
@@ -53,6 +54,8 @@ CuSuite* testSuite_apx_server(void);
 //Server extensions
 CuSuite* testsuite_apx_socketServerExtension(void);
 CuSuite* testSuite_apx_socketServerConnection(void);
+
+//Applications
 
 void RunAllTests(void)
 {
@@ -90,6 +93,8 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_clientTestConnection());
    CuSuiteAddSuite(suite, testSuite_apx_client_socketConnection());
    CuSuiteAddSuite(suite, testSuite_apx_client());
+   CuSuiteAddSuite(suite, testSuite_apx_client_socket_monitor_connection());
+
 
    //Server
    CuSuiteAddSuite(suite, testSuite_apx_serverConnection());
@@ -106,6 +111,9 @@ void RunAllTests(void)
    //Util
    CuSuiteAddSuite(suite, testSuite_apx_util());
 
+   //Applications
+
+   //Run Tests
    CuSuiteRun(suite);
    CuSuiteSummary(suite, output);
    CuSuiteDetails(suite, output);

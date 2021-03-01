@@ -144,6 +144,19 @@ apx_size_t rmf_encode_acknowledge_cmd(uint8_t* buf, apx_size_t buf_size)
    return required_size;
 }
 
+apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id)
+{
+   apx_size_t const required_size = RMF_CMD_TYPE_SIZE + UINT32_SIZE;
+   if (required_size > buf_size)
+   {
+      return 0;
+   }
+   uint8_t* p = buf;
+   packLE(p, RMF_CMD_ACCEPT_HEADER, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+   packLE(p, connection_id, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+   return required_size;
+}
+
 apx_size_t rmf_decode_cmd_type(uint8_t const* begin, uint8_t const* end, uint32_t* cmd_type)
 {
    if ((begin == NULL) || (end == NULL) || (begin >= end) || (cmd_type == NULL))

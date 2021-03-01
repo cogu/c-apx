@@ -86,7 +86,10 @@ typedef struct apx_connectionBase_tag
    uint32_t total_bytes_sent;
    uint32_t connection_id;
    apx_size_t num_header_size; //UINT16_SIZE or UINT32_SIZE
-   apx_mode_t mode;   
+   apx_mode_t mode;
+   rmf_versionId_t rmf_version_id; //Remotefile protocol version ID
+   apx_connectionType_t connection_type;
+
 #ifdef _WIN32
    unsigned int thread_id;
 #endif
@@ -111,6 +114,13 @@ apx_connectionInterface_t const* apx_connectionBase_get_connection(apx_connectio
 apx_error_t apx_connectionBase_message_received(apx_connectionBase_t *self, const uint8_t *data, apx_size_t size);
 uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t *self);
 void apx_connectionBase_set_connection_id(apx_connectionBase_t* self, uint32_t connection_id);
+uint32_t apx_connectionBase_get_connection_id(apx_connectionBase_t const* self);
+void apx_connectionBase_set_connection_type(apx_connectionBase_t* self, apx_connectionType_t connection_type);
+apx_connectionType_t apx_connectionBase_get_connection_type(apx_connectionBase_t const* self);
+void apx_connectionBase_set_num_header_size(apx_connectionBase_t* self, apx_size_t size);
+apx_size_t apx_connectionBase_get_num_header_size(apx_connectionBase_t const* self);
+void apx_connectionBase_set_rmf_proto_id(apx_connectionBase_t* self, rmf_versionId_t version_id);
+rmf_versionId_t apx_connectionBase_get_rmf_proto_id(apx_connectionBase_t const* self);
 
 //uint8_t *apx_connectionBase_alloc(apx_connectionBase_t *self, size_t size);
 //void apx_connectionBase_free(apx_connectionBase_t *self, uint8_t *ptr, size_t size);
@@ -119,6 +129,9 @@ void apx_connectionBase_set_connection_id(apx_connectionBase_t* self, uint32_t c
 //Virtual function call-points
 void apx_connectionBase_node_created_notification(apx_connectionBase_t const* self, apx_nodeInstance_t* node_instance);
 void apx_connectionBase_require_port_write_notification(apx_connectionBase_t const* self, apx_portInstance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size);
+uint32_t apx_connectionBase_vget_connection_id(void* arg);
+rmf_versionId_t apx_connectionBase_vget_remotefile_protocol_version_id(void* arg);
+apx_connectionType_t apx_connectionBase_vget_connection_type(void* arg);
 
 /*** Internal Callback API ***/
 

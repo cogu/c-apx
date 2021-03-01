@@ -37,15 +37,17 @@
 //////////////////////////////////////////////////////////////////////////////
 
 typedef uint8_t apx_cmdType_t;
-#define APX_CMD_EXIT                  ((apx_cmdType_t) 0u)
-#define APX_CMD_SEND_ACKNOWLEDGE      ((apx_cmdType_t) 1u)
-#define APX_CMD_SEND_ERROR_CODE       ((apx_cmdType_t) 2u)
-#define APX_CMD_PUBLISH_LOCAL_FILE    ((apx_cmdType_t) 3u)
-#define APX_CMD_REVOKE_LOCAL_FILE     ((apx_cmdType_t) 4u)
-#define APX_CMD_OPEN_REMOTE_FILE      ((apx_cmdType_t) 5u)
-#define APX_CMD_CLOSE_REMOTE_FILE     ((apx_cmdType_t) 6u)
-#define APX_CMD_SEND_LOCAL_CONST_DATA ((apx_cmdType_t) 7u)
-#define APX_CMD_SEND_LOCAL_DATA       ((apx_cmdType_t) 8u)
+#define APX_CMD_EXIT                   ((apx_cmdType_t) 0u)
+#define APX_CMD_SEND_ACKNOWLEDGE       ((apx_cmdType_t) 1u)
+#define APX_CMD_SEND_ERROR_CODE        ((apx_cmdType_t) 2u)
+#define APX_CMD_PUBLISH_LOCAL_FILE     ((apx_cmdType_t) 3u)
+#define APX_CMD_REVOKE_LOCAL_FILE      ((apx_cmdType_t) 4u)
+#define APX_CMD_OPEN_REMOTE_FILE       ((apx_cmdType_t) 5u)
+#define APX_CMD_CLOSE_REMOTE_FILE      ((apx_cmdType_t) 6u)
+#define APX_CMD_SEND_LOCAL_CONST_DATA  ((apx_cmdType_t) 7u)
+#define APX_CMD_SEND_LOCAL_DATA        ((apx_cmdType_t) 8u)
+#define APX_CMD_SEND_HEADER_ACCEPTED   ((apx_cmdType_t) 9u)
+
 
 typedef struct apx_command_tag
 {
