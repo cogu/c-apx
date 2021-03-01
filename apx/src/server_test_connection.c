@@ -69,6 +69,8 @@ apx_error_t apx_serverTestConnection_create(apx_serverTestConnection_t *self)
       self->default_buffer_size = 1024u;
       self->pending_bytes = 0u;
       self->compatibility_mode = false;
+      self->protocol_version_id = RMF_PROTOCOL_VERSION_ID_1_0;
+      self->connection_type = APX_CONNECTION_TYPE_DEFAULT;
       apx_connectionBaseVTable_create(&base_connection_vtable,
          apx_serverTestConnection_vdestroy,
          apx_serverTestConnection_vstart,
@@ -138,6 +140,41 @@ void apx_serverTestConnection_delete(apx_serverTestConnection_t *self)
       apx_serverTestConnection_destroy(self);
       free(self);
    }
+}
+
+void apx_serverTestConnection_set_connection_type(apx_serverTestConnection_t* self, apx_connectionType_t connection_type)
+{
+   if (self != NULL)
+   {
+      apx_serverConnection_set_connection_type(&self->base, connection_type);
+   }
+}
+
+apx_connectionType_t apx_serverTestConnection_get_connection_type(apx_serverTestConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return apx_serverConnection_get_connection_type(&self->base);
+   }
+   return APX_CONNECTION_TYPE_DEFAULT;
+}
+
+apx_size_t apx_serverTestConnection_get_num_header_size(apx_serverTestConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return apx_serverConnection_get_num_header_size(&self->base);
+   }
+   return 0u;
+}
+
+rmf_versionId_t apx_serverTestConnection_get_rmf_proto_id(apx_serverTestConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return apx_serverConnection_get_rmf_proto_id(&self->base);
+   }
+   return RMF_PROTOCOL_VERSION_ID_NONE;
 }
 
 void apx_serverTestConnection_start(apx_serverTestConnection_t *self)
@@ -238,6 +275,22 @@ void apx_serverTestConnection_clear_log(apx_serverTestConnection_t* self)
 
 //Test-case API
 
+void apx_serverTestConnection_set_tester_protocol_version(apx_serverTestConnection_t* self, rmf_versionId_t id)
+{
+   if (self != NULL)
+   {
+      self->protocol_version_id = id;
+   }
+}
+
+void apx_serverTestConnection_set_tester_connection_type(apx_serverTestConnection_t* self, apx_connectionType_t connection_type)
+{
+   if (self != NULL)
+   {
+      self->connection_type = connection_type;
+   }
+}
+
 apx_fileManager_t* apx_serverTestConnection_get_file_manager(apx_serverTestConnection_t* self)
 {
    if (self != NULL)
@@ -265,13 +318,61 @@ apx_error_t apx_serverTestConnection_send_greeting_header(apx_serverTestConnecti
       int message_format = 32;
       char greeting[RMF_GREETING_MAX_LEN];
       char* p = &greeting[1];
-      strcpy(greeting, RMF_GREETING10_START);
-      p += strlen(greeting);
-      p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_FORMAT_HDR, message_format);
+      if (self->protocol_version_id == RMF_PROTOCOL_VERSION_ID_1_1)
+      {
+         strcpy(p, RMF_GREETING_1_1_START);
+         p += strlen(RMF_GREETING_1_1_START);
+      }
+      else
+      {
+         strcpy(p, RMF_GREETING_1_0_START);
+         p += strlen(RMF_GREETING_1_0_START);
+      }
+      p += sprintf(p, "%s: %d\n", RMF_MESSAGE_SIZE_HDR, message_format);
+      if (self->connection_type != APX_CONNECTION_TYPE_DEFAULT)
+      {
+         switch(self->connection_type)
+         {
+         case APX_CONNECTION_TYPE_MONITOR:
+            p += sprintf(p, "%s: Monitor\n", RMF_CONNECTION_TYPE_MONITOR_HDR);
+            break;
+         case APX_CONNECTION_TYPE_EVENT:
+            p += sprintf(p, "%s: Event\n", RMF_CONNECTION_TYPE_MONITOR_HDR);
+            break;
+         default:
+            assert(0);
+         }
+      }
+      *p++ = '\n';
       greeting_size = (apx_size_t)(p - greeting - NUMHEADER32_SHORT_SIZE);
       greeting[0] = (char)greeting_size;
       int result = apx_serverConnection_on_data_received(&self->base, (uint8_t const*)greeting, greeting_size + NUMHEADER32_SHORT_SIZE, &parse_len);
       if ( (result == 0) && (parse_len == greeting_size + NUMHEADER32_SHORT_SIZE) )
+      {
+         return APX_NO_ERROR;
+      }
+      else
+      {
+         return APX_PARSE_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_serverTestConnection_send_custom_greeting_header(apx_serverTestConnection_t* self, char const* greeting)
+{
+   if (self != NULL)
+   {
+      apx_size_t message_size = 0u;
+      apx_size_t parse_len = 0u;
+      char message[RMF_GREETING_MAX_LEN];
+      char* p = &message[1];
+      strcpy(p, greeting);
+      p += strlen(greeting);
+      message_size = (apx_size_t)(p - message - NUMHEADER32_SHORT_SIZE);
+      message[0] = (char)message_size;
+      int result = apx_serverConnection_on_data_received(&self->base, (uint8_t const*)message, message_size + NUMHEADER32_SHORT_SIZE, &parse_len);
+      if ((result == 0) && (parse_len == message_size + NUMHEADER32_SHORT_SIZE))
       {
          return APX_NO_ERROR;
       }

@@ -49,6 +49,8 @@ typedef struct apx_serverTestConnection_tag
    apx_size_t pending_bytes;
    apx_nodeManager_t node_manager;
    bool compatibility_mode;
+   rmf_versionId_t protocol_version_id;
+   apx_connectionType_t connection_type;
 }apx_serverTestConnection_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -59,6 +61,10 @@ void apx_serverTestConnection_destroy(apx_serverTestConnection_t *self);
 void apx_serverTestConnection_vdestroy(void *arg);
 apx_serverTestConnection_t *apx_serverTestConnection_new(void);
 void apx_serverTestConnection_delete(apx_serverTestConnection_t *self);
+apx_connectionType_t apx_serverTestConnection_get_connection_type(apx_serverTestConnection_t const* self);
+apx_size_t apx_serverTestConnection_get_num_header_size(apx_serverTestConnection_t const* self);
+rmf_versionId_t apx_serverTestConnection_get_rmf_proto_id(apx_serverTestConnection_t const* self);
+
 
 // BaseConnection API
 void apx_serverTestConnection_start(apx_serverTestConnection_t* self);
@@ -82,9 +88,12 @@ adt_bytearray_t* apx_serverTestConnection_get_log_packet(apx_serverTestConnectio
 void apx_serverTestConnection_clear_log(apx_serverTestConnection_t* self);
 
 //Test-case API
+void apx_serverTestConnection_set_tester_protocol_version(apx_serverTestConnection_t* self, rmf_versionId_t id);
+void apx_serverTestConnection_set_tester_connection_type(apx_serverTestConnection_t* self, apx_connectionType_t connection_type);
 apx_fileManager_t* apx_serverTestConnection_get_file_manager(apx_serverTestConnection_t* self);
 apx_nodeManager_t* apx_serverTestConnection_get_node_manager(apx_serverTestConnection_t* self);
 apx_error_t apx_serverTestConnection_send_greeting_header(apx_serverTestConnection_t* self);
+apx_error_t apx_serverTestConnection_send_custom_greeting_header(apx_serverTestConnection_t* self, char const* greeting);
 apx_error_t apx_serverTestConnection_request_open_local_file(apx_serverTestConnection_t* self, char const* file_name);
 apx_error_t apx_serverTestConnection_publish_remote_file(apx_serverTestConnection_t* self, uint32_t address, char const* file_name, apx_size_t file_size);
 apx_error_t apx_serverTestConnection_write_remote_data(apx_serverTestConnection_t* self, uint32_t address, uint8_t const* payload_data, apx_size_t payload_size);

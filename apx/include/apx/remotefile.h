@@ -78,6 +78,7 @@ typedef uint8_t rmf_digestType_t;
 #define RMF_FILE_INFO_HEADER_SIZE  48u
 #define RMF_FILE_NAME_MAX_SIZE     RMF_MAX_FILE_NAME_SIZE
 
+//RMFP 1.0 commands
 #define RMF_CMD_ACK_MSG            ((uint32_t) 0u)
 #define RMF_CMD_NACK_MSG           ((uint32_t) 1u)
 #define RMF_CMD_PUBLISH_FILE_MSG   ((uint32_t) 3u)
@@ -85,6 +86,9 @@ typedef uint8_t rmf_digestType_t;
 #define RMF_CMD_REVOKE_FILE_MSG    ((uint32_t) 4u)
 #define RMF_CMD_OPEN_FILE_MSG      ((uint32_t) 10u)
 #define RMF_CMD_CLOSE_FILE_MSG     ((uint32_t) 11u)
+
+//RMFP 1.1 commands
+#define RMF_CMD_ACCEPT_HEADER      ((uint32_t) 20u)
 
 #define RMF_FILE_OPEN_CMD_SIZE     UINT32_SIZE
 #define RMF_FILE_CLOSE_CMD_SIZE    UINT32_SIZE
@@ -106,21 +110,26 @@ typedef uint8_t rmf_digestType_t;
 #define RMF_NUMHEADER_SIZE_DEFAULT RMF_NUMHEADER_SIZE_32
 
 #define RMF_GREETING_MAX_LEN 127
-#define RMF_GREETING10_START "RMFP/1.0\n"
-#define RMF_GREETING11_START "RMFP/1.1\n"
-#define RMF_MESSAGE_FORMAT_HDR "Message-Format"
+#define RMF_GREETING_1_0_START "RMFP/1.0\n"
+#define RMF_GREETING_1_1_START "RMFP/1.1\n"
+#define RMF_MESSAGE_SIZE_HDR "Message-Size"
 #define RMF_CONNECTION_TYPE_MONITOR_HDR "Connection-Type"
+
+typedef uint8_t rmf_versionId_t;
+//RMF protocol version id to version numbers
+// VERSION ID 1: RMFP/1.0
+// VERSION_ID 2: RMFP/1.1
+#define RMF_PROTOCOL_VERSION_ID_NONE ((rmf_versionId_t)0u)
+#define RMF_PROTOCOL_VERSION_ID_1_0 ((rmf_versionId_t)1u)
+#define RMF_PROTOCOL_VERSION_ID_1_1 ((rmf_versionId_t)2u)
 
 apx_size_t rmf_needed_encoding_size(uint32_t address);
 apx_size_t rmf_address_encode(uint8_t* buf, apx_size_t buf_size, uint32_t address, bool more_bit);
 apx_size_t rmf_address_decode(uint8_t const* begin, uint8_t const* end, uint32_t* address, bool* more_bit);
 apx_size_t rmf_encode_open_file_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t address);
 apx_size_t rmf_encode_acknowledge_cmd(uint8_t* buf, apx_size_t buf_size);
+apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id);
 apx_size_t rmf_decode_cmd_type(uint8_t const* begin, uint8_t const* end, uint32_t* cmd_type);
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES

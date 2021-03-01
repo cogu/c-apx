@@ -79,6 +79,18 @@
     <Filter Include="apx\include\extension">
       <UniqueIdentifier>{efc81e5f-d55c-4a6a-ba60-b968421198d1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="app">
+      <UniqueIdentifier>{06fb6c85-0ff1-4956-90b8-75fe245cde45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\apx_info">
+      <UniqueIdentifier>{389637f1-3c06-4f91-ad41-8af31c61b197}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\apx_info\include">
+      <UniqueIdentifier>{e37bfd82-b7d6-4ce5-95d7-61195c493248}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\apx_info\src">
+      <UniqueIdentifier>{f7bfe775-ca16-48f7-a18c-437a03d9057e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\adt\src\adt_ary.c">
@@ -469,6 +481,15 @@
     <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_text_log.c">
       <Filter>apx\test\extension</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\test\testsuite_client_socket_monitor_connection.c">
+      <Filter>apx\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\src\extension\monitor_extension.c">
+      <Filter>apx\src\extension</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\src\extension\server_monitor_state.c">
+      <Filter>apx\src\extension</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h">
@@ -794,6 +815,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\apx\include\apx\server_model.h">
       <Filter>apx\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\include\apx\extension\monitor_extension.h">
+      <Filter>apx\include\extension</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_monitor_state.h">
+      <Filter>apx\include\extension</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

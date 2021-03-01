@@ -82,7 +82,8 @@ void apx_fileManagerWorker_stop(apx_fileManagerWorker_t* self);
 #endif
 
 //Command API
-apx_error_t apx_fileManagerWorker_preare_acknowledge(apx_fileManagerWorker_t* self);
+apx_error_t apx_fileManagerWorker_prepare_acknowledge(apx_fileManagerWorker_t* self);
+apx_error_t apx_fileManagerWorker_prepare_header_accepted(apx_fileManagerWorker_t* self, uint32_t connection_id);
 apx_error_t apx_fileManagerWorker_prepare_publish_local_file(apx_fileManagerWorker_t* self, rmf_fileInfo_t* file_info); //ownership is taken of the file_info object
 apx_error_t apx_fileManagerWorker_prepare_send_local_const_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
 apx_error_t apx_fileManagerWorker_prepare_send_local_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t* data, uint32_t size);

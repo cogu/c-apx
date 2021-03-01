@@ -201,7 +201,7 @@ static void test_server_parses_definition_data_after_transmission(CuTest *tc)
 
 static void send_header(testsocket_t *sock)
 {
-   const char *greeting = "RMFP/1.0\nNumHeader-Format:32\n\n";
+   const char *greeting = "RMFP/1.0\nMessage-Size:32\n\n";
    int32_t msgLen;
    uint8_t msg[RMF_GREETING_MAX_LEN];
    msgLen = (int32_t) strlen(greeting);

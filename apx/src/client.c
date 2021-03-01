@@ -195,7 +195,7 @@ apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint
       {
          apx_error_t result;
          apx_client_attach_connection(self, (apx_clientConnection_t*) socketConnection);
-         result = apx_clientConnection_tcp_connect(socketConnection, address, port);
+         result = apx_clientSocketConnection_connect_tcp(socketConnection, address, port);
          if (result == APX_NO_ERROR)
          {
             MUTEX_LOCK(self->lock);
@@ -222,7 +222,7 @@ apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socketPath)
       {
          apx_error_t result;
          apx_client_attach_connection(self, (apx_clientConnection_t*) socketConnection);
-         result = apx_clientConnection_unix_connect(socketConnection, socketPath);
+         result = apx_clientSocketConnection_connect_unix(socketConnection, socketPath);
          if (result == APX_NO_ERROR)
          {
             MUTEX_LOCK(self->lock);

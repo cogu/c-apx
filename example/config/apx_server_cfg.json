@@ -11,17 +11,16 @@
          "tcp-port": 5000,
          "tcp-tag": "tcp",
          "unix-file": "/tmp/apx_server.socket",
-         "unix-tag": "unix"
+         "unix-tag": "local"
 	   },
 	  "textlog": {
 	     "extension-enabled": true,
 	     "file-enabled": true,
 	     "file-path": "",
-	     "syslog-enabled": false	     
+	     "syslog-enabled": false
 	  },
-      "command": {
-         "extension-enabled": true,
-         "connection-tag": "tcp"
+      "monitor": {
+         "extension-enabled": true
       }
    }
 }

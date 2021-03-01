@@ -51,6 +51,8 @@ typedef struct apx_fileManagerShared_tag
    apx_fileMap_t local_file_map;
    apx_fileMap_t remote_file_map;
    uint32_t connection_id;
+   rmf_versionId_t remote_file_version_id;
+   apx_connectionType_t connection_type;
    bool is_connected;
    apx_connectionInterface_t parent_connection;
    apx_allocator_t* allocator;
@@ -64,6 +66,7 @@ typedef struct apx_fileManagerShared_tag
 
 void apx_fileManagerShared_create(apx_fileManagerShared_t *self, apx_connectionInterface_t const *parent_connection, apx_allocator_t* allocator);
 void apx_fileManagerShared_destroy(apx_fileManagerShared_t *self);
+void apx_fileManagerShared_start(apx_fileManagerShared_t* self);
 apx_file_t *apx_fileManagerShared_create_local_file(apx_fileManagerShared_t *self, const rmf_fileInfo_t *fileInfo);
 apx_file_t *apx_fileManagerShared_create_remote_file(apx_fileManagerShared_t *self, const rmf_fileInfo_t *fileInfo);
 int32_t apx_fileManagerShared_get_num_local_files(apx_fileManagerShared_t* self);
@@ -71,8 +74,9 @@ int32_t apx_fileManagerShared_get_num_remote_files(apx_fileManagerShared_t* self
 apx_file_t *apx_fileManagerShared_find_local_file_by_name(apx_fileManagerShared_t* self, const char *name);
 apx_file_t *apx_fileManagerShared_find_remote_file_by_name(apx_fileManagerShared_t* self, const char *name);
 apx_file_t *apx_fileManagerShared_find_file_by_address(apx_fileManagerShared_t* self, uint32_t address);
-void apx_fileManagerShared_set_connection_id(apx_fileManagerShared_t *self, uint32_t connection_id);
-uint32_t apx_fileManagerShared_get_connection_id(apx_fileManagerShared_t* self);
+uint32_t apx_fileManagerShared_get_connection_id(apx_fileManagerShared_t const* self);
+apx_connectionType_t apx_fileManagerShared_get_connection_type(apx_fileManagerShared_t const* self);
+rmf_versionId_t apx_fileManagerShared_get_remotefile_version_id(apx_fileManagerShared_t const* self);
 int32_t apx_fileManagerShared_copy_local_file_info(apx_fileManagerShared_t *self, adt_ary_t *array);
 void apx_fileManagerShared_connected(apx_fileManagerShared_t *self);
 void apx_fileManagerShared_disconnected(apx_fileManagerShared_t *self);

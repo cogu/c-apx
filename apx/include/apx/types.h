@@ -79,6 +79,7 @@ typedef struct apx_dataWriteCmd_tag
 typedef uint8_t apx_connectionType_t;
 #define APX_CONNECTION_TYPE_DEFAULT           0
 #define APX_CONNECTION_TYPE_MONITOR           1
+#define APX_CONNECTION_TYPE_EVENT             2
 
 typedef uint8_t apx_fileType_t;
 #define APX_UNKNOWN_FILE_TYPE             ((apx_fileType_t) 0u)

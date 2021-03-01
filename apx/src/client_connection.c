@@ -36,6 +36,7 @@
 #include "apx/remotefile.h"
 #include "apx/client.h"
 #include "apx/client_internal.h"
+#include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #else
@@ -57,7 +58,7 @@ static apx_error_t remote_file_published_notification(apx_clientConnection_t* se
 static apx_error_t process_new_require_port_data_file(apx_clientConnection_t* self, apx_file_t* file);
 static apx_error_t remote_file_write_notification(apx_clientConnection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
 static uint8_t const* parse_message(apx_clientConnection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code);
-static bool is_greeting_accepted(uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
+static bool parse_greeting(apx_clientConnection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -78,7 +79,6 @@ apx_error_t apx_clientConnection_create(apx_clientConnection_t* self, apx_connec
       connection_interface->remote_file_published_notification = apx_clientConnection_vremote_file_published_notification;
       connection_interface->remote_file_write_notification = apx_clientConnection_vremote_file_write_notification;
       error_code = apx_connectionBase_create(&self->base, APX_CLIENT_MODE, base_connection_vtable, connection_interface);
-      self->connection_type = APX_CONNECTION_TYPE_DEFAULT;
       self->is_greeting_accepted = false;
       self->client = NULL;
       self->last_error = APX_NO_ERROR;
@@ -181,7 +181,7 @@ void apx_clientConnection_set_connection_type(apx_clientConnection_t* self, apx_
 {
    if (self != NULL)
    {
-      self->connection_type = connection_type;
+      apx_connectionBase_set_connection_type(&self->base, connection_type);
    }
 }
 
@@ -189,7 +189,7 @@ apx_connectionType_t apx_clientConnection_get_connection_type(apx_clientConnecti
 {
    if (self != NULL)
    {
-      return self->connection_type;
+      return apx_connectionBase_get_connection_type(&self->base);
    }
    return APX_CONNECTION_TYPE_DEFAULT;
 }
@@ -222,6 +222,9 @@ int apx_clientConnection_on_data_received(apx_clientConnection_t* self, uint8_t 
          }
          else
          {
+#if APX_DEBUG_ENABLE
+            printf("[CLIENT_CONNECTION] Error %d while parsing message\n", error_code);
+#endif
             self->last_error = error_code;
             return -1;
          }
@@ -241,6 +244,23 @@ apx_error_t apx_clientConnection_attach_node_instance(apx_clientConnection_t* se
       return apx_nodeInstance_attach_to_file_manager(node_instance, file_manager);
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+void apx_clientConnection_set_rmf_proto_id(apx_clientConnection_t* self, rmf_versionId_t version_id)
+{
+   if (self != NULL)
+   {
+      apx_connectionBase_set_rmf_proto_id(&self->base, version_id);
+   }
+}
+
+rmf_versionId_t apx_clientConnection_get_rmf_proto_id(apx_clientConnection_t* self)
+{
+   if (self != NULL)
+   {
+      return apx_connectionBase_get_rmf_proto_id(&self->base);
+   }
+   return RMF_PROTOCOL_VERSION_ID_NONE;
 }
 
 // ClientConnection API
@@ -316,7 +336,7 @@ void apx_clientConnection_run(apx_clientConnection_t* self)
 
 static void send_greeting_header(apx_clientConnection_t* self)
 {
-   if (self->connection_type == APX_CONNECTION_TYPE_MONITOR)
+   if (self->base.connection_type == APX_CONNECTION_TYPE_MONITOR)
    {
       send_monitor_greeting_header(self);
    }
@@ -333,9 +353,9 @@ static void send_monitor_greeting_header(apx_clientConnection_t* self)
    int message_format = 32;
    char greeting[RMF_GREETING_MAX_LEN];
    char* p = &greeting[0];
-   strcpy(greeting, RMF_GREETING11_START);
+   strcpy(greeting, RMF_GREETING_1_1_START);
    p += strlen(greeting);
-   p += sprintf(p, "%s: %d\n", RMF_MESSAGE_FORMAT_HDR, message_format);
+   p += sprintf(p, "%s: %d\n", RMF_MESSAGE_SIZE_HDR, message_format);
    p += sprintf(p, "%s: Monitor\n\n", RMF_CONNECTION_TYPE_MONITOR_HDR);
    greeting_size = (int32_t)(p - greeting);
    connection = apx_connectionBase_get_connection(&self->base);
@@ -356,9 +376,9 @@ static void send_default_greeting_header(apx_clientConnection_t* self)
    int message_format = 32;
    char greeting[RMF_GREETING_MAX_LEN];
    char* p = &greeting[0];
-   strcpy(greeting, RMF_GREETING10_START);
+   strcpy(greeting, RMF_GREETING_1_0_START);
    p += strlen(greeting);
-   p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_FORMAT_HDR, message_format);
+   p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_SIZE_HDR, message_format);
    greeting_size = (int32_t)(p - greeting);
    connection = apx_connectionBase_get_connection(&self->base);
    if (connection != NULL)
@@ -460,12 +480,13 @@ static uint8_t const* parse_message(apx_clientConnection_t* self, uint8_t const*
             }
             else
             {
-               if (is_greeting_accepted(msg_data, msg_size, error_code))
+               if (parse_greeting(self, msg_data, msg_size, error_code))
                {
                   apx_clientConnection_greeting_header_accepted_notification(self);
                }
                else
                {
+                  *error_code = APX_INVALID_MSG_ERROR;
                   return NULL;
                }
             }
@@ -485,7 +506,7 @@ static uint8_t const* parse_message(apx_clientConnection_t* self, uint8_t const*
    return msg_end;
 }
 
-static bool is_greeting_accepted(uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code)
+static bool parse_greeting(apx_clientConnection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code)
 {
    uint32_t address;
    bool more_bit = false;
@@ -495,9 +516,20 @@ static bool is_greeting_accepted(uint8_t const* msg_data, apx_size_t msg_size, a
    {
       uint32_t cmd_type = 0u;
       apx_size_t decode_size = rmf_decode_cmd_type(msg_data + header_size, msg_end, &cmd_type);
-      if ((decode_size == RMF_CMD_TYPE_SIZE) && (cmd_type ==RMF_CMD_ACK_MSG))
+      if (decode_size == RMF_CMD_TYPE_SIZE)
       {
-         return true;
+         uint32_t data_size = msg_size - header_size - decode_size;
+         if (cmd_type == RMF_CMD_ACK_MSG)
+         {
+            return true;
+         }
+         else if ((cmd_type == RMF_CMD_ACCEPT_HEADER) && (data_size == UINT32_SIZE))
+         {
+            uint32_t connection_id = unpackLE(msg_data + header_size + RMF_CMD_TYPE_SIZE, UINT32_SIZE);
+            apx_connectionBase_set_connection_id(&self->base, connection_id);
+            printf("Connection-Id: %u\n", (unsigned int)connection_id);
+            return true;
+         }
       }
    }
    else

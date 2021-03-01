@@ -141,9 +141,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\apx\include\apx\extension\monitor_extension.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_monitor_state.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\apx\src\extension\monitor_extension.c" />
+    <ClCompile Include="..\..\..\..\apx\src\extension\server_monitor_state.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

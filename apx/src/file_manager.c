@@ -98,6 +98,7 @@ void apx_fileManager_start(apx_fileManager_t *self)
 {
    if (self != NULL)
    {
+      apx_fileManagerShared_start(&self->shared);
 #ifndef UNIT_TEST
       apx_error_t result = apx_fileManagerWorker_start(&self->worker);
 # if (APX_DEBUG_ENABLE)
@@ -135,7 +136,17 @@ void apx_fileManager_connected(apx_fileManager_t* self)
       }
       else
       {
-         apx_fileManagerWorker_preare_acknowledge(&self->worker);
+         apx_fileManagerShared_connected(&self->shared);
+         rmf_versionId_t const version_id = apx_fileManagerShared_get_remotefile_version_id(&self->shared);
+         if (version_id == RMF_PROTOCOL_VERSION_ID_1_1)
+         {
+            uint32_t connection_id = apx_fileManagerShared_get_connection_id(&self->shared);
+            apx_fileManagerWorker_prepare_header_accepted(&self->worker, connection_id);
+         }
+         else
+         {
+            apx_fileManagerWorker_prepare_acknowledge(&self->worker);
+         }
       }
    }
 }
@@ -311,6 +322,7 @@ uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self
    return 0u;
 }
 
+/* replaced by callback
 void apx_fileManager_set_connection_id(apx_fileManager_t* self, uint32_t connection_id)
 {
    if (self != NULL)
@@ -318,6 +330,7 @@ void apx_fileManager_set_connection_id(apx_fileManager_t* self, uint32_t connect
       apx_fileManagerShared_set_connection_id(&self->shared, connection_id);
    }
 }
+*/
 
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t* self)
