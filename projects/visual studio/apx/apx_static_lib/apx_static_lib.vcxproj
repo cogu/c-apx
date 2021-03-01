@@ -115,7 +115,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;ADT_RBFH_ENABLE=1;APX_DEBUG_ENABLE=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;ADT_RBFH_ENABLE=1;APX_DEBUG_ENABLE=1;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx\include</AdditionalIncludeDirectories>
     </ClCompile>

@@ -53,7 +53,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_serverTextLog_registerServerListener(apx_serverTextLog_t *self);
+static void register_server_listener(apx_serverTextLog_t *self);
 static void register_connection_listener(apx_serverTextLog_t *self, apx_serverConnection_t *connection);
 static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const char *label, const char *msg);
 
@@ -77,7 +77,7 @@ void apx_serverTextLog_create(apx_serverTextLog_t *self, struct apx_server_tag *
    {
       apx_textLogBase_create(&self->base);
       self->server = server;
-      apx_serverTextLog_registerServerListener(self);
+      register_server_listener(self);
    }
 }
 
@@ -171,7 +171,7 @@ void apx_serverTextLog_virtual_on_file_revoked(void* arg, struct apx_connectionB
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_serverTextLog_registerServerListener(apx_serverTextLog_t *self)
+static void register_server_listener(apx_serverTextLog_t *self)
 {
    apx_serverEventListener_t eventListener;
    memset(&eventListener, 0, sizeof(apx_serverEventListener_t));

@@ -31,6 +31,12 @@ static void test_provide_port_data_is_requested_after_definition_file_has_been_p
 static void test_provide_port_data_is_received_after_request(CuTest* tc);
 static void test_require_port_data_is_published_after_definition_has_been_parsed(CuTest* tc);
 static void test_require_port_data_is_sent_after_file_open_request_received(CuTest* tc);
+static void test_remotefile_protocol_version_is_parsed_from_greeting_header(CuTest* tc);
+static void test_message_format_is_parsed_from_greeting_header(CuTest* tc);
+static void test_default_connection_type_is_parsed_from_greeting_header(CuTest* tc);
+static void test_monitor_connection_type_is_parsed_from_greeting_header(CuTest* tc);
+static void test_event_connection_type_is_parsed_from_greeting_header(CuTest* tc);
+static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* tc);
 
 
 
@@ -54,6 +60,12 @@ CuSuite* testSuite_apx_serverConnection(void)
    SUITE_ADD_TEST(suite, test_provide_port_data_is_received_after_request);
    SUITE_ADD_TEST(suite, test_require_port_data_is_published_after_definition_has_been_parsed);
    SUITE_ADD_TEST(suite, test_require_port_data_is_sent_after_file_open_request_received);
+   SUITE_ADD_TEST(suite, test_remotefile_protocol_version_is_parsed_from_greeting_header);
+   SUITE_ADD_TEST(suite, test_message_format_is_parsed_from_greeting_header);
+   SUITE_ADD_TEST(suite, test_default_connection_type_is_parsed_from_greeting_header);
+   SUITE_ADD_TEST(suite, test_monitor_connection_type_is_parsed_from_greeting_header);
+   SUITE_ADD_TEST(suite, test_event_connection_type_is_parsed_from_greeting_header);
+   SUITE_ADD_TEST(suite, test_accept_header_is_sent_when_new_greeting_format_is_seen);
 
    return suite;
 }
@@ -597,5 +609,121 @@ static void test_require_port_data_is_sent_after_file_open_request_received(CuTe
    CuAssertIntEquals(tc, data_write_size, adt_bytearray_length(packet)); //This is the require port data
    memcpy(actual, adt_bytearray_data(packet), data_write_size);
    CuAssertIntEquals(tc, 0, memcmp(actual, expected, data_write_size));
+   apx_serverTestConnection_delete(connection);
+}
+
+static void test_remotefile_protocol_version_is_parsed_from_greeting_header(CuTest* tc)
+{
+   apx_serverTestConnection_t* connection;
+   char const* greeting = "RMFP/1.1\n\n";
+   connection = apx_serverTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_custom_greeting_header(connection, greeting));
+   apx_serverTestConnection_run(connection);
+   CuAssertUIntEquals(tc, RMF_PROTOCOL_VERSION_ID_1_1, apx_serverTestConnection_get_rmf_proto_id(connection));
+
+   apx_serverTestConnection_delete(connection);
+}
+
+static void test_message_format_is_parsed_from_greeting_header(CuTest* tc)
+{
+   apx_serverTestConnection_t* connection;
+   char const* greeting = "RMFP/1.1\n"
+      "Message-Size: 16\n"
+      "\n";
+   connection = apx_serverTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_custom_greeting_header(connection, greeting));
+   apx_serverTestConnection_run(connection);
+   CuAssertUIntEquals(tc, UINT16_SIZE, apx_serverTestConnection_get_num_header_size(connection));
+
+   apx_serverTestConnection_delete(connection);
+}
+
+static void test_default_connection_type_is_parsed_from_greeting_header(CuTest* tc)
+{
+   apx_serverTestConnection_t* connection;
+   char const* greeting = "RMFP/1.1\n"
+      "Connection-Type: Default\n"
+      "\n";
+   connection = apx_serverTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_custom_greeting_header(connection, greeting));
+   apx_serverTestConnection_run(connection);
+   CuAssertUIntEquals(tc, APX_CONNECTION_TYPE_DEFAULT, apx_serverTestConnection_get_connection_type(connection));
+
+   apx_serverTestConnection_delete(connection);
+}
+
+static void test_monitor_connection_type_is_parsed_from_greeting_header(CuTest* tc)
+{
+   apx_serverTestConnection_t* connection;
+   char const* greeting = "RMFP/1.1\n"
+      "Connection-Type: Monitor\n"
+      "\n";
+   connection = apx_serverTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_custom_greeting_header(connection, greeting));
+   apx_serverTestConnection_run(connection);
+   CuAssertUIntEquals(tc, APX_CONNECTION_TYPE_MONITOR, apx_serverTestConnection_get_connection_type(connection));
+
+   apx_serverTestConnection_delete(connection);
+}
+
+static void test_event_connection_type_is_parsed_from_greeting_header(CuTest* tc)
+{
+   apx_serverTestConnection_t* connection;
+   char const* greeting = "RMFP/1.1\n"
+      "Connection-Type: Event\n"
+      "\n";
+   connection = apx_serverTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_custom_greeting_header(connection, greeting));
+   apx_serverTestConnection_run(connection);
+   CuAssertUIntEquals(tc, APX_CONNECTION_TYPE_EVENT, apx_serverTestConnection_get_connection_type(connection));
+
+   apx_serverTestConnection_delete(connection);
+}
+
+static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* tc)
+{
+   apx_serverTestConnection_t* connection;
+   adt_bytearray_t* packet;
+   uint8_t actual[13];
+   uint8_t expected[13] = {
+      //message size
+      12,
+      //write address
+      0xBFu,
+      0xFFu,
+      0xFCu,
+      0x00u,
+      //command type
+      (uint8_t)RMF_CMD_ACCEPT_HEADER,
+      0u,
+      0u,
+      0u,
+      //connection id
+      0xffu,
+      0xffu,
+      0xffu,
+      0xffu,
+   };
+   memset(actual, 0, sizeof(actual));
+   connection = apx_serverTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   apx_serverTestConnection_set_tester_protocol_version(connection, RMF_PROTOCOL_VERSION_ID_1_1);
+   apx_serverTestConnection_set_tester_connection_type(connection, APX_CONNECTION_TYPE_MONITOR);
+   CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
+   apx_connectionBase_start((apx_connectionBase_t*)connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_greeting_header(connection));
+   apx_serverTestConnection_run(connection);
+   CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
+   packet = apx_serverTestConnection_get_log_packet(connection, 0);
+   CuAssertPtrNotNull(tc, packet);
+   CuAssertIntEquals(tc, (int)sizeof(actual), adt_bytearray_length(packet)); //Should contain acknowledge message
+   memcpy(actual, adt_bytearray_data(packet), sizeof(actual));
+   CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(actual)));
+
    apx_serverTestConnection_delete(connection);
 }

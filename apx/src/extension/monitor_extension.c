@@ -28,6 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include "apx/extension/monitor_extension.h"
+#include "apx/extension/server_monitor_state.h"
 #include "apx/server.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -45,7 +46,7 @@ static void shutdown(void);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-
+static apx_serverMonitorState_t* m_instance = NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -58,7 +59,7 @@ apx_error_t apx_monitorExtension_register(struct apx_server_tag *apx_server, dtl
       dtl_hv_t *cfg = (dtl_hv_t*) config;
       bool ok;
       extensionEnabled = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "extension-enabled");
-      if ( (extensionEnabled != 0) && (dtl_sv_to_bool(extensionEnabled, &ok)))
+      if ( (extensionEnabled != NULL) && (dtl_sv_to_bool(extensionEnabled, &ok)))
       {
          apx_serverExtensionHandler_t handler = {init, shutdown};
          return apx_server_add_extension(apx_server, "MONITOR", &handler, config);
@@ -72,12 +73,20 @@ apx_error_t apx_monitorExtension_register(struct apx_server_tag *apx_server, dtl
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   (void)apx_server;
    (void)config;
+   if (m_instance == NULL)
+   {
+      m_instance = apx_serverMonitorState_new(apx_server);
+      if (m_instance == NULL)
+      {
+         return APX_MEM_ERROR;
+      }
+   }
    return APX_NO_ERROR;
 }
 
 static void shutdown(void)
 {
+   apx_serverMonitorState_delete(m_instance);
 }
 

@@ -41,10 +41,9 @@ typedef struct apx_clientConnection_tag
 {
    apx_connectionBase_t base;
    struct apx_client_tag *client;
-   apx_connectionType_t connection_type;
    bool is_greeting_accepted;
    apx_error_t last_error;
-}apx_clientConnection_t;
+} apx_clientConnection_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
@@ -63,6 +62,8 @@ void apx_clientConnection_set_connection_type(apx_clientConnection_t* self, apx_
 apx_connectionType_t apx_clientConnection_get_connection_type(apx_clientConnection_t const* self);
 int apx_clientConnection_on_data_received(apx_clientConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len);
 apx_error_t apx_clientConnection_attach_node_instance(apx_clientConnection_t* self, apx_nodeInstance_t* node_instance);
+void apx_clientConnection_set_rmf_proto_id(apx_clientConnection_t* self, rmf_versionId_t version_id);
+rmf_versionId_t apx_clientConnection_get_rmf_proto_id(apx_clientConnection_t* self);
 
 // ClientConnection API
 apx_fileManager_t *apx_clientConnection_get_file_manager(apx_clientConnection_t *self);

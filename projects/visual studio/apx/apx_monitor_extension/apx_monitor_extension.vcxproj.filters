@@ -12,9 +12,15 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\extension\monitor_extension.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_monitor_state.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\apx\src\extension\monitor_extension.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\src\extension\server_monitor_state.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

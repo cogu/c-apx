@@ -156,6 +156,8 @@
     <ClCompile Include="..\..\..\..\apx\src\byte_port_map.c" />
     <ClCompile Include="..\..\..\..\apx\src\client.c" />
     <ClCompile Include="..\..\..\..\apx\src\client_connection.c" />
+    <ClCompile Include="..\..\..\..\apx\src\extension\monitor_extension.c" />
+    <ClCompile Include="..\..\..\..\apx\src\extension\server_monitor_state.c" />
     <ClCompile Include="..\..\..\..\apx\src\socket_client_connection.c" />
     <ClCompile Include="..\..\..\..\apx\src\client_test_connection.c" />
     <ClCompile Include="..\..\..\..\apx\src\command.c" />
@@ -226,6 +228,7 @@
     <ClCompile Include="..\..\..\..\apx\test\testsuite_client.c" />
     <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_server_socket_connection.c" />
     <ClCompile Include="..\..\..\..\apx\test\extension\testsuite_apx_socket_server_extension.c" />
+    <ClCompile Include="..\..\..\..\apx\test\testsuite_client_socket_monitor_connection.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_compiler_unpack.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_computation.c" />
     <ClCompile Include="..\..\..\..\apx\test\testsuite_decoder.c" />
@@ -299,6 +302,8 @@
     <ClInclude Include="..\..\..\..\apx\include\apx\client.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_internal.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\extension\monitor_extension.h" />
+    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_monitor_state.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\server_model.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\socket_client_connection.h" />
     <ClInclude Include="..\..\..\..\apx\include\apx\client_test_connection.h" />

@@ -58,7 +58,7 @@ static apx_error_t process_new_provide_port_data_file(apx_serverConnection_t* se
 static apx_error_t create_new_node_instance(apx_serverConnection_t* self, apx_nodeManager_t* node_manager,  apx_file_t* definition_file);
 static apx_error_t remote_file_write_notification(apx_serverConnection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
 static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code);
-static bool process_greeting_message(uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
+static bool process_greeting_message(apx_serverConnection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
 static void apx_serverConnection_node_created_notification(apx_serverConnection_t* self, apx_nodeInstance_t* node_instance);
 static apx_error_t detach_all_nodes(apx_serverConnection_t* self);
 static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ary_t* node_instance_array);
@@ -68,6 +68,7 @@ static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_chang
 static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_change_array);
 static void emit_remote_file_published_event(apx_serverConnection_t* self, apx_file_t* file);
 static void emit_protocol_header_accepted(apx_serverConnection_t* self);
+static apx_error_t parse_protocol_header_line(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -168,6 +169,57 @@ void apx_serverConnection_unregister_event_listener(apx_serverConnection_t* self
          apx_connectionEventListener_vdelete(handle);
       }
    }
+}
+
+void apx_serverConnection_set_connection_type(apx_serverConnection_t* self, apx_connectionType_t connection_type)
+{
+   if (self != NULL)
+   {
+      apx_connectionBase_set_connection_type(&self->base, connection_type);
+   }
+}
+
+apx_connectionType_t apx_serverConnection_get_connection_type(apx_serverConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return apx_connectionBase_get_connection_type(&self->base);
+   }
+   return APX_CONNECTION_TYPE_DEFAULT;
+}
+
+void apx_serverConnection_set_num_header_size(apx_serverConnection_t* self, apx_size_t size)
+{
+   if (self != NULL)
+   {
+      apx_connectionBase_set_num_header_size(&self->base, size);
+   }
+}
+
+apx_size_t apx_serverConnection_get_num_header_size(apx_serverConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return apx_connectionBase_get_num_header_size(&self->base);
+   }
+   return 0u;
+}
+
+void apx_serverConnection_set_rmf_proto_id(apx_serverConnection_t* self, rmf_versionId_t version_id)
+{
+   if (self != NULL)
+   {
+      apx_connectionBase_set_rmf_proto_id(&self->base, version_id);
+   }
+}
+
+rmf_versionId_t apx_serverConnection_get_rmf_proto_id(apx_serverConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return apx_connectionBase_get_rmf_proto_id(&self->base);
+   }
+   return RMF_PROTOCOL_VERSION_ID_NONE;
 }
 
 
@@ -546,7 +598,7 @@ static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const*
             }
             else
             {
-               if (process_greeting_message(msg_data, msg_size, error_code))
+               if (process_greeting_message(self, msg_data, msg_size, error_code))
                {
                   apx_serverConnection_greeting_header_accepted_notification(self);
                }
@@ -571,7 +623,7 @@ static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const*
    return msg_end;
 }
 
-static bool process_greeting_message(uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code)
+static bool process_greeting_message(apx_serverConnection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code)
 {
    const uint8_t* next = msg_data;
    const uint8_t* end = msg_data + msg_size;
@@ -594,13 +646,10 @@ static bool process_greeting_message(uint8_t const* msg_data, apx_size_t msg_siz
          }
          else
          {
-            //TODO: parse greeting line
-            if (length_of_line < MAX_HEADER_LEN)
+            *error_code = parse_protocol_header_line(self, mark, mark + length_of_line);
+            if (*error_code != APX_NO_ERROR)
             {
-               char tmp[MAX_HEADER_LEN + 1];
-               memcpy(tmp, mark, length_of_line);
-               tmp[length_of_line] = 0;
-               //printf("\tgreeting-line: '%s'\n",tmp);
+               break;
             }
          }
       }
@@ -860,4 +909,90 @@ static void emit_protocol_header_accepted(apx_serverConnection_t* self)
 #else
    (void)self;
 #endif
+}
+
+static apx_error_t parse_protocol_header_line(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end)
+{
+   uint8_t const* result;
+   result = bstr_match_cstr(begin, end, "RMFP/1.0");
+   if (result > begin)
+   {
+      apx_serverConnection_set_rmf_proto_id(self, RMF_PROTOCOL_VERSION_ID_1_0);
+   }
+   else
+   {
+      result = bstr_match_cstr(begin, end, "RMFP/1.1");
+      if (result > begin)
+      {
+         apx_serverConnection_set_rmf_proto_id(self, RMF_PROTOCOL_VERSION_ID_1_1);
+      }
+      else
+      {
+         result = bstr_match_cstr(begin, end, "Message-Size:");
+         if (result > begin)
+         {
+            unsigned long size = 0u;
+            uint8_t const* next = bstr_lstrip(result, end);
+            result = bstr_to_unsigned_long(next, end, 10, &size);
+            if (result > next)
+            {
+               if ((size != 16) && (size != 32))
+               {
+                  return APX_INVALID_HEADER_ERROR;
+               }
+               apx_serverConnection_set_num_header_size(self, (apx_size_t)(size/8u)); //convert from bits to bytes
+            }
+            else
+            {
+               return APX_INVALID_HEADER_ERROR;
+            }
+         }
+         else
+         {
+            result = bstr_match_cstr(begin, end, "Connection-Type:");
+            if (result > begin)
+            {
+               uint8_t const* next = bstr_lstrip(result, end);
+               result = bstr_match_cstr(next, end, "Default");
+               if (result == end)
+               {
+                  apx_serverConnection_set_connection_type(self, APX_CONNECTION_TYPE_DEFAULT);
+               }
+               else
+               {
+                  result = bstr_match_cstr(next, end, "Monitor");
+                  if (result == end)
+                  {
+                     apx_serverConnection_set_connection_type(self, APX_CONNECTION_TYPE_MONITOR);
+                  }
+                  else
+                  {
+                     result = bstr_match_cstr(next, end, "Event");
+                     if (result == end)
+                     {
+                        apx_serverConnection_set_connection_type(self, APX_CONNECTION_TYPE_EVENT);
+                     }
+                     else
+                     {
+                        return APX_INVALID_HEADER_ERROR;
+                     }
+                  }
+               }
+            }
+            else
+            {
+               int32_t length_of_line = (int32_t)(end - begin);
+               if (length_of_line < MAX_HEADER_LEN)
+               {
+                  char tmp[MAX_HEADER_LEN + 1];
+                  memcpy(tmp, begin, length_of_line);
+                  tmp[length_of_line] = 0;
+                  printf("\tUnprocessed header line: '%s'\n", tmp);
+               }
+               return APX_INVALID_HEADER_ERROR;
+            }
+         }
+      }
+   }
+   return APX_NO_ERROR;
 }
