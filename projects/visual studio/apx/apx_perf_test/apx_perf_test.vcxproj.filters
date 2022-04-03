@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{9e490106-4dc8-40f5-8dd4-7bc5ed82b839}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cutil">
+      <UniqueIdentifier>{90e67b7d-aaa9-4ab0-8182-ec2f8aac6701}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cutil\include">
+      <UniqueIdentifier>{8ef621a3-ee32-456e-ad63-f579d4b55522}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cutil\src">
+      <UniqueIdentifier>{a350d1fe-7e9e-4d77-b09f-2e7da6cb753c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\cutil\inc\argparse.h">
+      <Filter>cutil\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\app\apx_perf_test\src\application.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\cutil\src\argparse.c">
+      <Filter>cutil\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\app\apx_perf_test\src\application.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\app\apx_perf_test\src\apx_perf_test_main.c">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
