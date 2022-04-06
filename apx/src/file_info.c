@@ -74,7 +74,7 @@ rmf_fileInfo_t* rmf_fileInfo_make_fixed_with_digest(char const* name, uint32_t s
 
 apx_error_t rmf_fileInfo_create(rmf_fileInfo_t* self, uint32_t address, uint32_t size, const char* name, rmf_fileType_t file_type, rmf_digestType_t digest_type, const uint8_t* digest_data)
 {
-   if ( self != NULL)
+   if (self != NULL)
    {
       adt_error_t result;
       self->address = address;
@@ -115,7 +115,7 @@ apx_error_t rmf_fileInfo_create_copy(rmf_fileInfo_t* self, rmf_fileInfo_t const*
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void rmf_fileInfo_destroy(rmf_fileInfo_t *self)
+void rmf_fileInfo_destroy(rmf_fileInfo_t* self)
 {
    if (self != 0)
    {
@@ -125,14 +125,14 @@ void rmf_fileInfo_destroy(rmf_fileInfo_t *self)
 
 rmf_fileInfo_t* rmf_fileInfo_new(uint32_t address, uint32_t size, const char* name, rmf_fileType_t file_type, rmf_digestType_t digest_type, const uint8_t* digest_data)
 {
-   rmf_fileInfo_t *self = (rmf_fileInfo_t*) malloc(sizeof(rmf_fileInfo_t));
+   rmf_fileInfo_t* self = (rmf_fileInfo_t*)malloc(sizeof(rmf_fileInfo_t));
    if (self != 0)
    {
       apx_error_t rc = rmf_fileInfo_create(self, address, size, name, file_type, digest_type, digest_data);
       if (rc != APX_NO_ERROR)
       {
          free(self);
-         self = (rmf_fileInfo_t*) 0;
+         self = (rmf_fileInfo_t*)0;
       }
    }
    return self;
@@ -206,9 +206,9 @@ uint8_t const* rmf_fileInfo_digest_data(rmf_fileInfo_t const* self)
    return NULL;
 }
 
-apx_error_t rmf_fileInfo_assign(rmf_fileInfo_t *self, const rmf_fileInfo_t *other)
+apx_error_t rmf_fileInfo_assign(rmf_fileInfo_t* self, const rmf_fileInfo_t* other)
 {
-   if ( (self != NULL) && (other != NULL) )
+   if ((self != NULL) && (other != NULL))
    {
       adt_error_t result;
       self->address = other->address;
@@ -225,11 +225,11 @@ apx_error_t rmf_fileInfo_assign(rmf_fileInfo_t *self, const rmf_fileInfo_t *othe
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-rmf_fileInfo_t* rmf_fileInfo_clone(const rmf_fileInfo_t *other)
+rmf_fileInfo_t* rmf_fileInfo_clone(const rmf_fileInfo_t* other)
 {
    if (other != 0)
    {
-      rmf_fileInfo_t *self = (rmf_fileInfo_t*) malloc(sizeof(rmf_fileInfo_t));
+      rmf_fileInfo_t* self = (rmf_fileInfo_t*)malloc(sizeof(rmf_fileInfo_t));
       if (self != 0)
       {
          apx_error_t rc = rmf_fileInfo_create(self, other->address, other->size, adt_str_cstr((adt_str_t*)&other->name),
@@ -237,15 +237,15 @@ rmf_fileInfo_t* rmf_fileInfo_clone(const rmf_fileInfo_t *other)
          if (rc != APX_NO_ERROR)
          {
             free(self);
-            self = (rmf_fileInfo_t*) 0;
+            self = (rmf_fileInfo_t*)0;
          }
       }
       return self;
    }
-   return (rmf_fileInfo_t*) 0;
+   return (rmf_fileInfo_t*)0;
 }
 
-void rmf_fileInfo_set_address(rmf_fileInfo_t *self, uint32_t address)
+void rmf_fileInfo_set_address(rmf_fileInfo_t* self, uint32_t address)
 {
    if (self != NULL)
    {
@@ -264,42 +264,42 @@ bool rmf_fileInfo_is_remote_address(rmf_fileInfo_t const* self)
 
 bool rmf_fileInfo_name_ends_with(rmf_fileInfo_t const* self, const char* suffix)
 {
-   if ( (self != NULL) && (suffix != NULL) && (adt_str_size(&self->name)>0u) )
+   if ((self != NULL) && (suffix != NULL) && (adt_str_size(&self->name) > 0u))
    {
       size_t str_len = adt_str_length(&self->name);
       size_t suffix_len = strlen(suffix);
-      return (str_len >= suffix_len) && (strcmp(adt_str_cstr((adt_str_t*)&self->name) + (str_len-suffix_len), suffix) == 0);
+      return (str_len >= suffix_len) && (strcmp(adt_str_cstr((adt_str_t*)&self->name) + (str_len - suffix_len), suffix) == 0);
    }
    return false;
 }
 
 char* rmf_fileInfo_base_name(rmf_fileInfo_t const* self)
 {
-   if ( (self != NULL))
+   if ((self != NULL))
    {
       char const* name = adt_str_cstr((adt_str_t*)&self->name);
-      char *dot = strchr(name, '.');
+      char* dot = strchr(name, '.');
       if (dot != 0)
       {
-         return bstr_make_cstr((const uint8_t*) name, (const uint8_t*) dot);
+         return bstr_make_cstr((const uint8_t*)name, (const uint8_t*)dot);
       }
    }
-   return (char*) 0;
+   return (char*)0;
 }
 
 void rmf_fileInfo_copy_base_name(rmf_fileInfo_t const* self, char* dest, uint32_t max_dest_len)
 {
-   if ( (self != NULL) && (max_dest_len > 1))
+   if ((self != NULL) && (max_dest_len > 1))
    {
       char const* name = adt_str_cstr((adt_str_t*)&self->name);
-      char *dot = strchr(name, '.');
+      char* dot = strchr(name, '.');
       if (dot != 0)
       {
-         uint32_t len = (uint32_t) (dot - name);
+         uint32_t len = (uint32_t)(dot - name);
          if (max_dest_len < len)
          {
-            strncpy(dest, name, max_dest_len -1);
-            dest[max_dest_len -1] = '\0';
+            strncpy(dest, name, max_dest_len - 1);
+            dest[max_dest_len - 1] = '\0';
          }
          else
          {
@@ -396,6 +396,9 @@ apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_fi
    return 0u;
 }
 
+/**
+* Returns number of bytes consumed from buffer
+*/
 apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, rmf_fileInfo_t* file_info)
 {
    if ((buf != NULL) && (file_info != NULL))
@@ -425,14 +428,15 @@ apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, 
          {
             return 0u;
          }
+         //The file name can either end with an optional null-terminator or the name string continues until end of message.
+         //Both variants are acceptable using the two lines below
          uint8_t const* result = bstr_while_predicate(next, end, bstr_pred_is_not_zero);
-         if ((result > next) && (result < end))
+         if ((result > next) && (result <= end))
          {
             adt_str_set_bstr(&file_info->name, next, result);
          }
          else
          {
-            //null-terminator not found within message buffer
             return 0u;
          }
          return (apx_size_t)(result - buf);
