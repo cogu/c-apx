@@ -50,7 +50,8 @@ static apx_error_t decode_range_check_uint32(apx_vm_decoder_t* self, uint8_t var
 static apx_error_t decode_range_check_uint64(apx_vm_decoder_t* self, uint8_t variant);
 static apx_error_t decode_range_check_int32(apx_vm_decoder_t* self, uint8_t variant);
 static apx_error_t decode_range_check_int64(apx_vm_decoder_t* self, uint8_t variant);
-static apx_error_t decode_record_select(apx_vm_decoder_t* self, bool is_last_field);
+static apx_error_t decode_record_select(apx_vm_decoder_t* self, bool is_first_field);
+static apx_error_t decode_record_end(apx_vm_decoder_t* self);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -76,7 +77,7 @@ void apx_vm_decoder_create(apx_vm_decoder_t* self)
       self->range_check_int64_info.lower_limit = 0;
       self->range_check_int64_info.upper_limit = 0;
       adt_str_create(&self->field_name);
-      self->is_last_field = false;
+      self->is_first_field = false;
    }
 }
 
@@ -218,11 +219,11 @@ bool apx_vm_decoder_has_saved_program_position(apx_vm_decoder_t* self)
    return false;
 }
 
-bool apx_vm_decoder_is_last_field(apx_vm_decoder_t* self)
+bool apx_vm_decoder_is_first_field(apx_vm_decoder_t* self)
 {
    if (self != NULL)
    {
-      return self->is_last_field;
+      return self->is_first_field;
    }
    return false;
 }
@@ -259,6 +260,10 @@ static apx_error_t decode_next_instruction_internal(apx_vm_decoder_t* self)
       if (variant == APX_VM_VARIANT_RECORD_SELECT)
       {
          return decode_record_select(self, flag);
+      }
+      else if (variant == APX_VM_VARIANT_RECORD_END)
+      {
+         return decode_record_end(self);
       }
       else if (variant <= APX_VM_VARIANT_LIMIT_CHECK_LAST)
       {
@@ -490,7 +495,7 @@ static apx_error_t decode_range_check_int64(apx_vm_decoder_t* self, uint8_t vari
    return APX_UNEXPECTED_END_ERROR;
 }
 
-static apx_error_t decode_record_select(apx_vm_decoder_t* self, bool is_last_field)
+static apx_error_t decode_record_select(apx_vm_decoder_t* self, bool is_first_field)
 {
    assert(self != NULL);
    self->operation_type = APX_OPERATION_TYPE_RECORD_SELECT;
@@ -499,8 +504,16 @@ static apx_error_t decode_record_select(apx_vm_decoder_t* self, bool is_last_fie
    {
       adt_str_set_bstr(&self->field_name, self->program_next, result);
       self->program_next = result + UINT8_SIZE; //Skip past null-terminator
-      self->is_last_field = is_last_field;
+      self->is_first_field = is_first_field;
       return APX_NO_ERROR;
    }
    return APX_INVALID_INSTRUCTION_ERROR;
 }
+
+static apx_error_t decode_record_end(apx_vm_decoder_t* self)
+{
+   assert(self != NULL);
+   self->operation_type = APX_OPERATION_TYPE_RECORD_END;
+   return APX_NO_ERROR;
+}
+

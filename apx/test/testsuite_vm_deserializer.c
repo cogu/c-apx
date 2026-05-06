@@ -119,7 +119,7 @@ CuSuite* testSuite_apx_vm_deserializer(void)
    SUITE_ADD_TEST(suite, test_unpack_record_inside_record_u8_u16__u16_u32);
    SUITE_ADD_TEST(suite, test_unpack_array_of_record_u16_u8);
    SUITE_ADD_TEST(suite, test_unpack_uint8_queued_element);
-   SUITE_ADD_TEST(suite, test_unpack_uint8_multiple_queued_elements);   
+   SUITE_ADD_TEST(suite, test_unpack_uint8_multiple_queued_elements);
    SUITE_ADD_TEST(suite, test_range_check_uint8_scalar);
    SUITE_ADD_TEST(suite, test_range_check_uint8_with_out_of_range_value);
    SUITE_ADD_TEST(suite, test_range_check_uint8_array);
@@ -1052,10 +1052,11 @@ static void test_unpack_record_u8_u8(CuTest* tc)
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, array_length, dynamic_size_type));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, array_length, dynamic_size_type));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Second", true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Second", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, array_length, dynamic_size_type));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_deserializer_bytes_read(&dsr));
    CuAssertUIntEquals(tc, DTL_DV_HASH, apx_vm_deserializer_value_type(&dsr));
    hv = apx_vm_deserializer_take_hv(&dsr);
@@ -1088,10 +1089,11 @@ static void test_unpack_record_u8array_u16(CuTest* tc)
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, outer_array_length, dynamic_size_type));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, inner_array_length1, dynamic_size_type));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Second", true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Second", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint16(&dsr, inner_array_length2, dynamic_size_type));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_deserializer_bytes_read(&dsr));
    CuAssertUIntEquals(tc, DTL_DV_HASH, apx_vm_deserializer_value_type(&dsr));
    hv = apx_vm_deserializer_take_hv(&dsr);
@@ -1136,12 +1138,13 @@ static void test_unpack_record_string_string_bool(CuTest* tc)
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, array_length, dynamic_size_type));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_char(&dsr, str_max_length1, dynamic_size_type));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Second", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_char(&dsr, str_max_length2, dynamic_size_type));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Third", true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Third", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_bool(&dsr, array_length, dynamic_size_type));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_deserializer_bytes_read(&dsr));
    CuAssertUIntEquals(tc, DTL_DV_HASH, apx_vm_deserializer_value_type(&dsr));
    hv = apx_vm_deserializer_take_hv(&dsr);
@@ -1184,10 +1187,11 @@ static void test_unpack_record_dynstring_u32array(CuTest* tc)
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, 0u, record_dynamic_size_type));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_char(&dsr, max_string_length, str_dynamic_size_type));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Second", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint32(&dsr, u32_array_size, u32_array_size_type));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_deserializer_bytes_read(&dsr));
    CuAssertUIntEquals(tc, DTL_DV_HASH, apx_vm_deserializer_value_type(&dsr));
    hv = apx_vm_deserializer_take_hv(&dsr);
@@ -1227,10 +1231,11 @@ static void test_unpack_record_bool_dynstring(CuTest* tc)
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, 0u, record_size_type));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_bool(&dsr, 0u, first_field_size_type));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Second", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_char(&dsr, max_string_length, second_field_size_type));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_deserializer_bytes_read(&dsr));
    CuAssertUIntEquals(tc, DTL_DV_HASH, apx_vm_deserializer_value_type(&dsr));
    hv = apx_vm_deserializer_take_hv(&dsr);
@@ -1260,18 +1265,21 @@ static void test_unpack_record_inside_record_u8_u16__u16_u32(CuTest* tc)
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, 0u, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "First", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, 0u, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Inner1", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Inner1", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, 0u, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Inner2", true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Inner2", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint16(&dsr, 0u, APX_SIZE_TYPE_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Second", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, 0u, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Inner3", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Inner3", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint16(&dsr, 0u, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Inner4", true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Inner4", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint32(&dsr, 0u, APX_SIZE_TYPE_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_deserializer_bytes_read(&dsr));
    CuAssertUIntEquals(tc, DTL_DV_HASH, apx_vm_deserializer_value_type(&dsr));
    hv = apx_vm_deserializer_take_hv(&dsr);
@@ -1320,22 +1328,25 @@ static void test_unpack_array_of_record_u16_u8(CuTest* tc)
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_record(&dsr, array_length, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Id", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Id", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint16(&dsr, 0u, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Value", true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Value", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, 0u, APX_SIZE_TYPE_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_array_next(&dsr, &is_last));
    CuAssertFalse(tc, is_last);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Id", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Id", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint16(&dsr, 0u, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Value", true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Value", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, 0u, APX_SIZE_TYPE_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_array_next(&dsr, &is_last));
    CuAssertFalse(tc, is_last);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Id", false));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Id", true));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint16(&dsr, 0u, APX_SIZE_TYPE_NONE));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Value", true));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_select(&dsr, "Value", false));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, 0u, APX_SIZE_TYPE_NONE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_record_end(&dsr));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_array_next(&dsr, &is_last));
    CuAssertTrue(tc, is_last);
    CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_deserializer_bytes_read(&dsr));
@@ -1549,9 +1560,9 @@ static void test_range_check_int8_array(CuTest* tc)
    apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_int8(&dsr, array_length, dynamic_size_type));   
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_int8(&dsr, array_length, dynamic_size_type));
    CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_deserializer_bytes_read(&dsr));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_check_value_range_int32(&dsr, -10, 10));   
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_check_value_range_int32(&dsr, -10, 10));
    apx_vm_deserializer_destroy(&dsr);
 }
 
@@ -1591,7 +1602,7 @@ static void test_range_check_uint64_scalar(CuTest* tc)
 }
 
 static void test_range_check_int64_scalar(CuTest* tc)
-{   
+{
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT64_SIZE] = { 0x18, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }; //-1000 encoded as little endian
    uint32_t const array_length = 0u;

@@ -51,7 +51,7 @@ typedef struct apx_vm_decoder_tag
    apx_rangeCheckInt32OperationInfo_t range_check_int32_info;
    apx_rangeCheckInt64OperationInfo_t range_check_int64_info;
    adt_str_t field_name;
-   bool is_last_field;
+   bool is_first_field;
 } apx_vm_decoder_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -71,6 +71,6 @@ char const* apx_vm_decoder_get_field_name(apx_vm_decoder_t* self);
 void apx_vm_decoder_save_program_position(apx_vm_decoder_t* self);
 void apx_vm_decoder_recall_program_position(apx_vm_decoder_t* self);
 bool apx_vm_decoder_has_saved_program_position(apx_vm_decoder_t* self);
-bool apx_vm_decoder_is_last_field(apx_vm_decoder_t* self);
+bool apx_vm_decoder_is_first_field(apx_vm_decoder_t* self);
 
 #endif //APX_VM_DECODER_H
