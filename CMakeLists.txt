@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
 
-project(apx LANGUAGES C VERSION 0.3.1)
+project(apx LANGUAGES C VERSION 0.3.2)
+
+set(apx_ALPHA_BETA_VERSION "")
+
 
 set(ADT_RBFH_ENABLE ON CACHE BOOL "This must always be enabled in c-apx" FORCE)
 
@@ -10,7 +13,6 @@ include(adt/cmake/LeakCheck.cmake)
 include(adt/cmake/UnitTest.cmake)
 include(cmake/SetEnv.cmake)
 
-option(apx_ALPHA_BUILD "Is this an alpha build?" OFF)
 option(BUILD_DEFAULT_SERVER "Build default APX server?" ON)
 option(APX_DEBUG "Enable debug-level printouts?" OFF)
 
@@ -22,12 +24,6 @@ if (UNIT_TEST OR MSVC)
     set(BUILD_SHARED_LIB_DEFAULT OFF) #We still have some work to do before enabling DLL builds on Windows
 else()
     set(BUILD_SHARED_LIB_DEFAULT ON)
-endif()
-
-if (apx_ALPHA_BUILD)
-    set (apx_ALPHA_BUILD_STR "a")
-else()
-    set (apx_ALPHA_BUILD_STR "")
 endif()
 
 option(BUILD_SHARED_LIBS "Build ${PROJECT_NAME} as a shared library." ${BUILD_SHARED_LIB_DEFAULT})
