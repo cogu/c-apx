@@ -11,7 +11,7 @@ Latest release is [v0.2.8](https://github.com/cogu/c-apx/releases/tag/v0.2.8).
 
 A brand new implementation is being developed on master branch. Its current state is experimental at best.
 
-### Current implementation status ([v0.3.1](https://github.com/cogu/c-apx/releases/tag/v0.3.1))
+### Current implementation status ([v0.3.2](https://github.com/cogu/c-apx/releases/tag/v0.3.2))
 
 - New APX server and client with support for APX IDL v1.3 (upcoming APX specification).
   - Native support for TCP/IP and UNIX sockets.
