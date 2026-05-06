@@ -108,12 +108,14 @@
              4: S8
              5: S16
              6: S32
-             7: S64
-             8: ARRAY
-             9: RECORD
-             10: BOOL
-             11: BYTE (immutable bytes object)
-             12: CHAR
+             8: BOOL
+             9: BYTE (immutable bytes object)
+             10: RECORD
+             11: ARRAY
+             12: ASCII_CHAR
+             13: CHAR8
+             14: CHAR16
+             15: CHAR32
 
           2: DATA_SIZE     : 6 variants
              FLAG: is_dynamic_array(true, false)
@@ -130,19 +132,19 @@
              10: ELEMENT_SIZE_U32_QUEUE_SIZE_U16
              11: ELEMENT_SIZE_U32_QUEUE_SIZE_U32
 
-          3: DATA_CTRL  : 9 variants
+          3: DATA_CTRL  : 10 variants
              0: RECORD_SELECT
-             1: LIMIT_CHECK_U8
-             2: LIMIT_CHECK_U16
-             3: LIMIT_CHECK_U32
-             4: LIMIT_CHECK_U64
-             5: LIMIT_CHECK_S8
-             6: LIMIT_CHECK_S16
-             7: LIMIT_CHECK_S32
-             8: LIMIT_CHECK_S64
-             FLAG(variant 0): When true: This is the last record field.
-                  When false: More record fields to follow
-             FLAG (variant 1..8): When true, the limit check applies to non-scalar value (such as array of u8, u16 etc.)
+             1: RECORD_END
+             2: LIMIT_CHECK_U8
+             3: LIMIT_CHECK_U16
+             4: LIMIT_CHECK_U32
+             5: LIMIT_CHECK_U64
+             6: LIMIT_CHECK_S8
+             7: LIMIT_CHECK_S16
+             8: LIMIT_CHECK_S32
+             9: LIMIT_CHECK_S64
+             FLAG (variant 0): When true, this is the first field of the record.
+             FLAG (variants 1..9): When true, the limit check applies to non-scalar value (such as array of u8, u16 etc.)
           4: FLOW_CTRL     : 1 variant
              0: ARRAY_NEXT
           5: UNPACK2 (reserved for 16 additional data types)
@@ -204,12 +206,13 @@
 #define APX_VM_OPCODE_DATA_CTRL         ((uint8_t) 3u)
 #define APX_VM_VARIANT_RECORD_SELECT    ((uint8_t) 0u)
 #define APX_VM_VARIANT_LIMIT_CHECK_NONE ((uint8_t) 0u) //Overlays with APX_VM_VARIANT_RECORD_SELECT (context-specific)
-#define APX_VM_VARIANT_LIMIT_CHECK_U8   ((uint8_t) 1u)
-#define APX_VM_VARIANT_LIMIT_CHECK_U16  ((uint8_t) 2u)
-#define APX_VM_VARIANT_LIMIT_CHECK_U32  ((uint8_t) 3u)
-#define APX_VM_VARIANT_LIMIT_CHECK_U64  ((uint8_t) 4u)
-#define APX_VM_VARIANT_LIMIT_CHECK_S8   ((uint8_t) 5u)
-#define APX_VM_VARIANT_LIMIT_CHECK_S16  ((uint8_t) 6u)
+#define APX_VM_VARIANT_RECORD_END       ((uint8_t) 1u)
+#define APX_VM_VARIANT_LIMIT_CHECK_U8   ((uint8_t) 2u)
+#define APX_VM_VARIANT_LIMIT_CHECK_U16  ((uint8_t) 3u)
+#define APX_VM_VARIANT_LIMIT_CHECK_U32  ((uint8_t) 4u)
+#define APX_VM_VARIANT_LIMIT_CHECK_U64  ((uint8_t) 5u)
+#define APX_VM_VARIANT_LIMIT_CHECK_S8   ((uint8_t) 6u)
+#define APX_VM_VARIANT_LIMIT_CHECK_S16  ((uint8_t) 7u)
 #define APX_VM_VARIANT_LIMIT_CHECK_S32  ((uint8_t) 8u)
 #define APX_VM_VARIANT_LIMIT_CHECK_S64  ((uint8_t) 9u)
 #define APX_VM_VARIANT_LIMIT_CHECK_LAST APX_VM_VARIANT_LIMIT_CHECK_S64
@@ -228,7 +231,7 @@
 #define APX_VM_INST_FLAG         0x80
 #define APX_VM_ARRAY_FLAG        APX_VM_INST_FLAG
 #define APX_VM_DYN_ARRAY_FLAG    APX_VM_INST_FLAG
-#define APX_VM_LAST_FIELD_FLAG   APX_VM_INST_FLAG
+#define APX_VM_FIRST_FIELD_FLAG   APX_VM_INST_FLAG
 
 #define APX_VM_UINT8_SIZE  ((uint32_t) sizeof(uint8_t))
 #define APX_VM_CHAR_SIZE   ((uint32_t) sizeof(char))
@@ -254,7 +257,8 @@ typedef uint8_t apx_operationType_t;
 #define APX_OPERATION_TYPE_RANGE_CHECK_INT64   ((apx_operationType_t) 5u)
 #define APX_OPERATION_TYPE_RANGE_CHECK_UINT64  ((apx_operationType_t) 6u)
 #define APX_OPERATION_TYPE_RECORD_SELECT       ((apx_operationType_t) 7u)
-#define APX_OPERATION_TYPE_ARRAY_NEXT          ((apx_operationType_t) 8u)
+#define APX_OPERATION_TYPE_RECORD_END          ((apx_operationType_t) 8u)
+#define APX_OPERATION_TYPE_ARRAY_NEXT          ((apx_operationType_t) 9u)
 
 typedef struct apx_packUnpackOperationInfo_tag
 {

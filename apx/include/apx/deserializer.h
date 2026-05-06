@@ -77,7 +77,6 @@ typedef struct apx_vm_readState_tag
    dtl_dv_type_id value_type; //describes which part of the value union is currently active
    scalar_storage_type_t scalar_storage_type; //describes which part of the scalar_value union is currently active
    apx_typeCode_t type_code;
-   bool is_last_field;
    apx_sizeType_t dynamic_size_type;
    apx_rangeCheckState_t range_check_state;
 } apx_vm_readState_t;
@@ -131,7 +130,8 @@ apx_error_t apx_vm_deserializer_unpack_char8(apx_vm_deserializer_t* self, uint32
 apx_error_t apx_vm_deserializer_unpack_bool(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
 apx_error_t apx_vm_deserializer_unpack_byte(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
 apx_error_t apx_vm_deserializer_unpack_record(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_deserializer_record_select(apx_vm_deserializer_t* self, char const* key, bool is_last_field);
+apx_error_t apx_vm_deserializer_record_select(apx_vm_deserializer_t* self, char const* key, bool const is_first_field);
+apx_error_t apx_vm_deserializer_record_end(apx_vm_deserializer_t* self);
 apx_error_t apx_vm_deserializer_check_value_range_int32(apx_vm_deserializer_t* self, int32_t lower_limit, int32_t upper_limit);
 apx_error_t apx_vm_deserializer_check_value_range_uint32(apx_vm_deserializer_t* self, uint32_t lower_limit, uint32_t upper_limit);
 apx_error_t apx_vm_deserializer_check_value_range_int64(apx_vm_deserializer_t* self, int64_t lower_limit, int64_t upper_limit);

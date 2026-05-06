@@ -67,7 +67,7 @@ static apx_error_t state_read_scalar_array_value(apx_vm_writeState_t* self, int3
 static apx_error_t state_read_scalar_value_internal(apx_vm_writeState_t* self, dtl_sv_t const* sv, apx_typeCode_t type_code);
 static apx_error_t state_default_range_check_scalar(apx_vm_writeState_t* self);
 static dtl_dv_t* state_get_child_value(apx_vm_writeState_t* self, char const* key);
-static apx_error_t state_set_field_name(apx_vm_writeState_t* self, char const* name, bool is_last_field);
+static apx_error_t state_set_field_name(apx_vm_writeState_t* self, char const* name);
 
 //apx_vm_queuedWriteState_t API
 static void queued_write_state_init(apx_vm_queuedWriteState_t* self);
@@ -110,7 +110,6 @@ void apx_vm_writeState_create(apx_vm_writeState_t* self)
       self->value_type = DTL_DV_NULL;
       self->scalar_storage_type = APX_VM_SCALAR_STORAGE_TYPE_NONE;
       self->type_code = APX_TYPE_CODE_NONE;
-      self->is_last_field = false;
       self->dynamic_size_type = APX_SIZE_TYPE_NONE;
       self->range_check_state = APX_RANGE_CHECK_STATE_NOT_CHECKED;
       self->scalar_value.i32 = 0u;
@@ -528,11 +527,14 @@ apx_error_t apx_vm_serializer_pack_record(apx_vm_serializer_t* self, uint32_t ar
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_record_select(apx_vm_serializer_t* self, char const* key, bool is_last_field)
+apx_error_t apx_vm_serializer_record_select(apx_vm_serializer_t* self, char const* key, bool const is_first_field)
 {
-
    if ( (self != NULL) && (key != NULL) )
    {
+      if (!is_first_field)
+      {
+         serializer_pop_state(self);
+      }
       if (self->state->value_type == DTL_DV_HASH)
       {
          dtl_dv_t* child_value = state_get_child_value(self->state, key);
@@ -540,14 +542,23 @@ apx_error_t apx_vm_serializer_record_select(apx_vm_serializer_t* self, char cons
          {
             return APX_NOT_FOUND_ERROR;
          }
-         state_set_field_name(self->state, key, is_last_field);
+         state_set_field_name(self->state, key);
          serializer_enter_new_child_state(self);
-         state_set_value(self->state, child_value); //m_state on this line is the newly entered child_state
+         state_set_value(self->state, child_value); //state on this line is the newly entered child_state
          return APX_NO_ERROR;
       }
       return APX_VALUE_TYPE_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vm_serializer_record_end(apx_vm_serializer_t* self)
+{
+   if (self != NULL)
+   {
+      serializer_pop_state(self);
+   }
+   return APX_NO_ERROR;
 }
 
 apx_error_t apx_vm_serializer_check_value_range_int32(apx_vm_serializer_t* self, int32_t lower_limit, int32_t upper_limit)
@@ -843,6 +854,7 @@ apx_error_t apx_vm_serializer_array_next(apx_vm_serializer_t* self, bool* is_las
    if ((self != NULL) && (is_last != NULL))
    {
       *is_last = false;
+      serializer_pop_state(self);
       if (self->state->value_type == DTL_DV_ARRAY)
       {
          if (self->state->array_len > 0)
@@ -927,7 +939,6 @@ static void state_reset(apx_vm_writeState_t* self, dtl_dv_type_id type_id)
    self->array_len = 0u;
    self->max_array_len = 0u;
    self->element_size = 0u;
-   self->is_last_field = false;
    self->type_code = APX_TYPE_CODE_NONE;
    self->scalar_storage_type = APX_VM_SCALAR_STORAGE_TYPE_NONE;
    self->range_check_state = APX_RANGE_CHECK_STATE_NOT_CHECKED;
@@ -1265,14 +1276,13 @@ static dtl_dv_t* state_get_child_value(apx_vm_writeState_t* self, char const* ke
    return NULL;
 }
 
-static apx_error_t state_set_field_name(apx_vm_writeState_t* self, char const* name, bool is_last_field)
+static apx_error_t state_set_field_name(apx_vm_writeState_t* self, char const* name)
 {
    assert( self != NULL);
    if (name == NULL)
    {
       return APX_NULL_PTR_ERROR;
    }
-   self->is_last_field = is_last_field;
    return convert_from_adt_to_apx_error(adt_str_set_cstr(&self->field_name, name));
 }
 
@@ -1362,7 +1372,7 @@ static apx_error_t serializer_pack_value(apx_vm_serializer_t* self)
    assert(self != NULL);
    apx_error_t retval = APX_NO_ERROR;
    assert(self->state != NULL);
-   bool do_pop_state = true;
+
    if (queued_write_state_is_active(&self->queued_write_state))
    {
       if (self->queued_write_state.current_length >= self->queued_write_state.max_length)
@@ -1385,7 +1395,6 @@ static apx_error_t serializer_pack_value(apx_vm_serializer_t* self)
          }
          else if (state_is_record_type(self->state))
          {
-            do_pop_state = false;
             retval = serializer_pack_record_value(self);
          }
          else
@@ -1416,7 +1425,6 @@ static apx_error_t serializer_pack_value(apx_vm_serializer_t* self)
          }
          else if (state_is_record_type(self->state))
          {
-            do_pop_state = false;
             retval = serializer_pack_record_value(self);
          }
          else
@@ -1430,10 +1438,6 @@ static apx_error_t serializer_pack_value(apx_vm_serializer_t* self)
       if (queued_write_state_is_active(&self->queued_write_state))
       {
          self->queued_write_state.current_length++;
-      }
-      if (do_pop_state)
-      {
-         serializer_pop_state(self);
       }
    }
    return retval;
@@ -1690,16 +1694,12 @@ static apx_error_t serializer_pack_byte_array_internal(apx_vm_serializer_t* self
 static void serializer_pop_state(apx_vm_serializer_t* self)
 {
    assert(self->state != NULL);
-   while (adt_stack_size(&self->stack) > 0)
+   if (adt_stack_size(&self->stack) > 0)
    {
       assert(self->state != NULL);
       apx_vm_writeState_delete(self->state);
       self->state = adt_stack_top(&self->stack);
       adt_stack_pop(&self->stack);
-      if (!self->state->is_last_field)
-      {
-         break;
-      }
    }
 }
 

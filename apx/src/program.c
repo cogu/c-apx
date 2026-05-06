@@ -28,6 +28,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <assert.h>
+#include <stdio.h>
 #include "apx/program.h"
 #include "apx/vm_common.h"
 #include "pack.h"
@@ -248,7 +249,7 @@ uint8_t apx_program_encode_instruction(uint8_t opcode, uint8_t variant, bool fla
    return result;
 }
 
-void apx_program_decode_instruction(uint8_t instruction, uint8_t* opcode, uint8_t* variant, bool* flag)
+void apx_program_decode_instruction(uint8_t const instruction, uint8_t* opcode, uint8_t* variant, bool* flag)
 {
    if ((opcode != NULL) && (variant != NULL) && (flag != NULL))
    {
@@ -286,3 +287,20 @@ static uint8_t calc_data_size_variant(uint8_t element_variant, uint8_t queue_var
    return retval;
 }
 
+void apx_program_dump(apx_program_t const* program)
+{
+   if (program != NULL)
+   {
+      uint8_t const* program_next = adt_bytearray_data(program);
+      uint8_t const* program_end = program_next + adt_bytearray_length(program);
+      while(program_next < program_end)
+      {
+         uint8_t const instruction = *program_next++;
+         uint8_t opcode = 0u;
+         uint8_t variant = 0u;
+         bool flag = false;
+         apx_program_decode_instruction(instruction, &opcode, &variant, &flag);
+         printf("Instruction: 0x%02X, Opcode: 0x%02X, Variant: 0x%02X, Flag: %d\n", instruction, opcode, variant, flag);
+      }
+   }
+}

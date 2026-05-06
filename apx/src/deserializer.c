@@ -67,7 +67,7 @@ static apx_error_t state_determine_array_length_from_read_buffer(apx_vm_readStat
 static dtl_sv_t* state_take_sv(apx_vm_readState_t* self);
 static apx_error_t state_push_array_value(apx_vm_readState_t* self, dtl_dv_t* dv);
 static apx_error_t state_read_byte_array(apx_vm_readState_t* self, apx_vm_readBuffer_t* buffer);
-static apx_error_t state_set_field_name(apx_vm_readState_t* self, char const* name, bool is_last_field);
+static apx_error_t state_set_field_name(apx_vm_readState_t* self, char const* name);
 static apx_error_t state_create_child_value_from_child_state(apx_vm_readState_t* self, apx_vm_readState_t* child_state);
 static apx_error_t state_push_value_from_child_state(apx_vm_readState_t* self, apx_vm_readState_t* child_state);
 
@@ -404,17 +404,34 @@ apx_error_t apx_vm_deserializer_unpack_record(apx_vm_deserializer_t* self, uint3
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_record_select(apx_vm_deserializer_t* self, char const* key, bool is_last_field)
+apx_error_t apx_vm_deserializer_record_select(apx_vm_deserializer_t* self, char const* key, bool const is_first_field)
 {
    if ( (self != NULL) && (key != NULL) )
    {
+      if (!is_first_field)
+      {
+         apx_error_t const result = deserializer_pop_state(self);
+         if (result != APX_NO_ERROR)
+         {
+            return result;
+         }
+      }
       if (self->state->value_type == DTL_DV_HASH)
       {
-         state_set_field_name(self->state, key, is_last_field);
+         state_set_field_name(self->state, key);
          deserializer_enter_new_child_state(self);
          return APX_NO_ERROR;
       }
       return APX_VALUE_TYPE_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_vm_deserializer_record_end(apx_vm_deserializer_t* self)
+{
+   if (self != NULL)
+   {
+      return deserializer_pop_state(self);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -664,6 +681,7 @@ apx_error_t apx_vm_deserializer_array_next(apx_vm_deserializer_t* self, bool* is
    if ((self != NULL) && (is_last != NULL))
    {
       *is_last = false;
+      deserializer_pop_state(self);
       if (self->state->value_type == DTL_DV_ARRAY)
       {
          if (self->state->array_len > 0)
@@ -780,7 +798,6 @@ static void state_create(apx_vm_readState_t* self)
       self->value_type = DTL_DV_NULL;
       self->scalar_storage_type = APX_VM_SCALAR_STORAGE_TYPE_NONE;
       self->type_code = APX_TYPE_CODE_NONE;
-      self->is_last_field = false;
       self->dynamic_size_type = APX_SIZE_TYPE_NONE;
       self->range_check_state = APX_RANGE_CHECK_STATE_NOT_CHECKED;
       self->scalar_value.i32 = 0u;
@@ -829,7 +846,6 @@ static void state_reset(apx_vm_readState_t* self)
    self->array_len = 0u;
    self->max_array_len = 0u;
    self->element_size = 0u;
-   self->is_last_field = false;
    self->type_code = APX_TYPE_CODE_NONE;
    self->scalar_storage_type = APX_VM_SCALAR_STORAGE_TYPE_NONE;
    self->range_check_state = APX_RANGE_CHECK_STATE_NOT_CHECKED;
@@ -1190,13 +1206,12 @@ static apx_error_t state_read_byte_array(apx_vm_readState_t* self, apx_vm_readBu
    return APX_NO_ERROR;
 }
 
-static apx_error_t state_set_field_name(apx_vm_readState_t* self, char const* name, bool is_last_field)
+static apx_error_t state_set_field_name(apx_vm_readState_t* self, char const* name)
 {
    if ((self != NULL) && (name != NULL))
    {
       apx_error_t retval = APX_NO_ERROR;
       adt_error_t rc;
-      self->is_last_field = is_last_field;
       rc = adt_str_set_cstr(&self->field_name, name);
       if (rc != ADT_NO_ERROR)
       {
@@ -1339,7 +1354,6 @@ apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t arra
    assert(self != NULL);
    apx_error_t retval = APX_NO_ERROR;
    assert(self->state != NULL);
-   bool do_pop_state = true;
    retval = deserializer_prepare_for_array(self, array_length, dynamic_size_type);
    if (retval == APX_NO_ERROR)
    {
@@ -1368,7 +1382,6 @@ apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t arra
             }
             else if (state_is_record_type(self->state))
             {
-               do_pop_state = false;
                retval = deserializer_unpack_record_value(self);
             }
             else
@@ -1395,20 +1408,12 @@ apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t arra
             }
             else if (state_is_record_type(self->state))
             {
-               do_pop_state = false;
                retval = deserializer_unpack_record_value(self);
             }
             else
             {
                retval = APX_NOT_IMPLEMENTED_ERROR;
             }
-         }
-      }
-      if (retval == APX_NO_ERROR)
-      {
-         if (do_pop_state)
-         {
-            retval = deserializer_pop_state(self);
          }
       }
    }
@@ -1571,7 +1576,7 @@ static apx_error_t deserializer_unpack_byte_array_internal(apx_vm_deserializer_t
 static apx_error_t deserializer_pop_state(apx_vm_deserializer_t* self)
 {
    assert(self->state != NULL);
-   while (adt_stack_size(&self->stack) > 0)
+   if (adt_stack_size(&self->stack) > 0)
    {
       apx_vm_readState_t* child_state = self->state;
       assert(child_state != NULL);
@@ -1605,10 +1610,6 @@ static apx_error_t deserializer_pop_state(apx_vm_deserializer_t* self)
          return APX_NOT_IMPLEMENTED_ERROR;
       }
       state_delete(child_state);
-      if (!self->state->is_last_field)
-      {
-         break;
-      }
    }
    return APX_NO_ERROR;
 }

@@ -57,7 +57,9 @@ static apx_error_t run_range_check_unpack_uint32(apx_vm_t* self);
 static apx_error_t run_range_check_unpack_int64(apx_vm_t* self);
 static apx_error_t run_range_check_unpack_uint64(apx_vm_t* self);
 static apx_error_t run_pack_record_select(apx_vm_t* self);
+static apx_error_t run_pack_record_end(apx_vm_t* self);
 static apx_error_t run_unpack_record_select(apx_vm_t* self);
+static apx_error_t run_unpack_record_end(apx_vm_t* self);
 static apx_error_t run_array_next(apx_vm_t* self);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -272,6 +274,9 @@ static apx_error_t run_pack_program(apx_vm_t* self)
       case APX_OPERATION_TYPE_RECORD_SELECT:
          result = run_pack_record_select(self);
          break;
+      case APX_OPERATION_TYPE_RECORD_END:
+         result = run_pack_record_end(self);
+         break;
       case APX_OPERATION_TYPE_ARRAY_NEXT:
          result = run_array_next(self);
          break;
@@ -319,6 +324,9 @@ static apx_error_t run_unpack_program(apx_vm_t* self)
          break;
       case APX_OPERATION_TYPE_RECORD_SELECT:
     	  result = run_unpack_record_select(self);
+         break;
+      case APX_OPERATION_TYPE_RECORD_END:
+    	  result = run_unpack_record_end(self);
          break;
       case APX_OPERATION_TYPE_ARRAY_NEXT:
          result = run_array_next(self);
@@ -511,18 +519,27 @@ static apx_error_t run_range_check_unpack_uint64(apx_vm_t* self)
 static apx_error_t run_pack_record_select(apx_vm_t* self)
 {
    char const* field_name = apx_vm_decoder_get_field_name(&self->decoder);
-   bool is_last_field = apx_vm_decoder_is_last_field(&self->decoder);
+   bool const is_first_field = apx_vm_decoder_is_first_field(&self->decoder);
    assert(field_name != NULL);
-   return apx_vm_serializer_record_select(&self->serializer, field_name, is_last_field);
+   return apx_vm_serializer_record_select(&self->serializer, field_name, is_first_field);
+}
+
+static apx_error_t run_pack_record_end(apx_vm_t* self)
+{
+   return apx_vm_serializer_record_end(&self->serializer);
 }
 
 static apx_error_t run_unpack_record_select(apx_vm_t* self)
 {
    char const* field_name = apx_vm_decoder_get_field_name(&self->decoder);
-   bool is_last_field = apx_vm_decoder_is_last_field(&self->decoder);
+   bool const is_first_field = apx_vm_decoder_is_first_field(&self->decoder);
    assert(field_name != NULL);
-   return apx_vm_deserializer_record_select(&self->deserializer, field_name, is_last_field);
+   return apx_vm_deserializer_record_select(&self->deserializer, field_name, is_first_field);
+}
 
+static apx_error_t run_unpack_record_end(apx_vm_t* self)
+{
+   return apx_vm_deserializer_record_end(&self->deserializer);
 }
 
 static apx_error_t run_array_next(apx_vm_t* self)

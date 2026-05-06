@@ -58,7 +58,8 @@ static apx_error_t compile_limit_values_int64(apx_compiler_t* self, uint8_t limi
 static apx_error_t compile_limit_values_uint64(apx_compiler_t* self, uint8_t limit_variant, uint64_t lower_limit, uint64_t upper_limit);
 static apx_error_t compile_array_size_instruction(apx_compiler_t* self, uint32_t array_size, bool is_dynamic_array);
 static apx_error_t compile_record_fields(apx_compiler_t* self, apx_dataElement_t const* data_element, apx_programType_t program_type, uint32_t* record_size);
-static apx_error_t compile_record_select_instruction(apx_compiler_t* self, apx_dataElement_t const* data_element, bool is_last_field);
+static apx_error_t compile_record_select_instruction(apx_compiler_t* self, apx_dataElement_t const* data_element, bool const is_first_field);
+static apx_error_t compile_record_end_instruction(apx_compiler_t* self);
 static apx_error_t compile_array_next_instruction(apx_compiler_t* self);
 
 
@@ -647,13 +648,13 @@ static apx_error_t compile_record_fields(apx_compiler_t* self, apx_dataElement_t
    {
       return APX_EMPTY_RECORD_ERROR;
    }
+   apx_error_t result = APX_NO_ERROR;
    for (i = 0u; i < num_children; i++)
    {
-      apx_error_t result = APX_NO_ERROR;
       uint32_t child_size = 0u;
       apx_dataElement_t const* child_element = apx_dataElement_get_child_at(data_element, i);
       assert(child_element != NULL);
-      result = compile_record_select_instruction(self, child_element, (i == (num_children - 1)) ? true : false);
+      result = compile_record_select_instruction(self, child_element, (i==0u) ? true : false);
       if (result != APX_NO_ERROR)
       {
          return result;
@@ -676,10 +677,15 @@ static apx_error_t compile_record_fields(apx_compiler_t* self, apx_dataElement_t
       }
       *record_size += child_size;
    }
+   result = compile_record_end_instruction(self);
+   if (result != APX_NO_ERROR)
+   {
+      return result;
+   }
    return APX_NO_ERROR;
 }
 
-static apx_error_t compile_record_select_instruction(apx_compiler_t* self, apx_dataElement_t const* data_element, bool is_last_field)
+static apx_error_t compile_record_select_instruction(apx_compiler_t* self, apx_dataElement_t const* data_element, bool const is_first_field)
 {
    assert((self != NULL) && (data_element != NULL));
    char const* name = apx_dataElement_get_name(data_element);
@@ -698,7 +704,7 @@ static apx_error_t compile_record_select_instruction(apx_compiler_t* self, apx_d
    {
       return APX_NAME_TOO_LONG_ERROR;
    }
-   uint8_t const instruction = apx_program_encode_instruction(APX_VM_OPCODE_DATA_CTRL, APX_VM_VARIANT_RECORD_SELECT, is_last_field);
+   uint8_t const instruction = apx_program_encode_instruction(APX_VM_OPCODE_DATA_CTRL, APX_VM_VARIANT_RECORD_SELECT, is_first_field);
    rc = adt_bytearray_push(self->program, instruction);
    if (rc == ADT_NO_ERROR)
    {
@@ -708,6 +714,14 @@ static apx_error_t compile_record_select_instruction(apx_compiler_t* self, apx_d
          rc = adt_bytearray_push(self->program, 0u); //null-terminator;
       }
    }
+   return convert_from_adt_to_apx_error(rc);
+}
+
+static apx_error_t compile_record_end_instruction(apx_compiler_t* self)
+{
+   assert(self != NULL);
+   uint8_t const instruction = apx_program_encode_instruction(APX_VM_OPCODE_DATA_CTRL, APX_VM_VARIANT_RECORD_END, false);
+   adt_error_t rc = adt_bytearray_push(self->program, instruction);
    return convert_from_adt_to_apx_error(rc);
 }
 

@@ -55,7 +55,8 @@ typedef struct apx_programHeader_tag
 apx_error_t apx_program_encode_header(apx_program_t *program, apx_programType_t program_type, uint32_t element_size, uint32_t queue_size, bool is_dynamic);
 apx_error_t apx_program_decode_header(uint8_t const* begin, uint8_t const* end, uint8_t const** next, apx_programHeader_t *header);
 uint8_t apx_program_encode_instruction(uint8_t opcode, uint8_t variant, bool flag);
-void apx_program_decode_instruction(uint8_t instruction, uint8_t* opcode, uint8_t* variant, bool* flag);
+void apx_program_decode_instruction(uint8_t const instruction, uint8_t* opcode, uint8_t* variant, bool* flag);
+void apx_program_dump(apx_program_t const* program);
 
 #define APX_PROGRAM_CREATE(p) adt_bytearray_create(p, APX_PROGRAM_GROW_SIZE)
 #define APX_PROGRAM_NEW() adt_bytearray_new(APX_PROGRAM_GROW_SIZE)

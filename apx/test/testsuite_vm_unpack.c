@@ -39,6 +39,7 @@ static void test_apx_vm_unpack_char_string(CuTest* tc);
 static void test_apx_vm_unpack_char8_string(CuTest* tc);
 static void test_apx_vm_unpack_record_u16_u8(CuTest* tc);
 static void test_apx_vm_unpack_array_of_record_u16_u8(CuTest* tc);
+static void test_apx_vm_unpack_record_element_with_range_check(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -70,6 +71,7 @@ CuSuite* testSuite_apx_vm_unpack(void)
    SUITE_ADD_TEST(suite, test_apx_vm_unpack_char8_string);
    SUITE_ADD_TEST(suite, test_apx_vm_unpack_record_u16_u8);
    SUITE_ADD_TEST(suite, test_apx_vm_unpack_array_of_record_u16_u8);
+   SUITE_ADD_TEST(suite, test_apx_vm_unpack_record_element_with_range_check);
 
    return suite;
 }
@@ -1190,6 +1192,56 @@ static void test_apx_vm_unpack_array_of_record_u16_u8(CuTest* tc)
    CuAssertUIntEquals(tc, 0x34, dtl_sv_to_u32(child_sv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dec_ref(av);
+
+   apx_vm_delete(vm);
+   APX_PROGRAM_DELETE(program);
+   apx_compiler_destroy(&compiler);
+   apx_node_delete(node);
+   apx_parser_destroy(&parser);
+   apx_istream_destroy(&stream);
+}
+
+static void test_apx_vm_unpack_record_element_with_range_check(CuTest* tc)
+{
+   const char* apx_text =
+      "APX/1.3\n"
+      "N\"TestNode\"\n"
+      "R\"TestPort\"{\"First\"C(0,7)}";
+   apx_parser_t parser;
+   apx_istream_t stream;
+   apx_node_t* node = NULL;
+   apx_port_t* port = NULL;
+   apx_compiler_t compiler;
+   apx_error_t error_code = APX_NO_ERROR;
+   apx_program_t* program;
+   apx_vm_t* vm = apx_vm_new();
+   dtl_hv_t* hv = NULL;
+   dtl_sv_t* child_sv = NULL;
+   bool ok = false;
+   uint8_t buf[UINT8_SIZE] = {7u};
+   apx_istream_create(&stream);
+   apx_parser_create(&parser, &stream);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+   node = apx_parser_take_last_node(&parser);
+   CuAssertPtrNotNull(tc, node);
+   port = apx_node_get_last_require_port(node);
+   CuAssertPtrNotNull(tc, port);
+   apx_compiler_create(&compiler);
+   program = apx_compiler_compile_port(&compiler, port, APX_UNPACK_PROGRAM, &error_code);
+   CuAssertPtrNotNull(tc, program);
+   CuAssertIntEquals(tc, APX_NO_ERROR, error_code);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_select_program(vm, program));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_set_read_buffer(vm, buf, sizeof(buf)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_unpack_value(vm, (dtl_dv_t**)&hv));
+   CuAssertUIntEquals(tc, (unsigned int)sizeof(buf), (unsigned int)apx_vm_get_bytes_read(vm));
+   CuAssertPtrNotNull(tc, hv);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type((dtl_dv_t*)hv));
+   child_sv = (dtl_sv_t*)dtl_hv_get_cstr(hv, "First");
+   CuAssertPtrNotNull(tc, child_sv);
+   CuAssertIntEquals(tc, DTL_SV_U32, dtl_sv_type(child_sv));
+   CuAssertUIntEquals(tc, 7u, dtl_sv_to_u32(child_sv, &ok));
+   dtl_dec_ref(hv);
 
    apx_vm_delete(vm);
    APX_PROGRAM_DELETE(program);
