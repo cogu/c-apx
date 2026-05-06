@@ -74,17 +74,18 @@ int main(int argc, char **argv)
    apx_error_t result;
    dtl_hv_t *server_config = (dtl_hv_t*) 0;
 
-   m_shutdownTimer = SHUTDOWN_TIMER_INIT;   
+   m_shutdownTimer = SHUTDOWN_TIMER_INIT;
    m_runFlag = 1;
 
-   if (argc < 2u)
+   if ((argc < 2u) || (argv[1] == NULL))
    {
       printUsage(argv[0]);
       return 0;
    }
+   const char* config_path = argv[1];
    printf("APX Server %s\n\n", SW_VERSION_STR);
-   result = load_config_file(argv[1], &server_config);
-   printf("Loading %s: ", argv[1]);
+   result = load_config_file(config_path, &server_config);
+   printf("Loading %s: ", config_path);
    if (result != APX_NO_ERROR)
    {
       printf("Error %d\n", (int) result);
