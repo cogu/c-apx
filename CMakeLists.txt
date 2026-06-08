@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
 
-project(apx LANGUAGES C VERSION 0.3.2)
+project(apx LANGUAGES C VERSION 0.3.3)
 
-set(apx_ALPHA_BETA_VERSION "")
+set(apx_ALPHA_BETA_VERSION "a1")
 
 
 set(ADT_RBFH_ENABLE ON CACHE BOOL "This must always be enabled in c-apx" FORCE)

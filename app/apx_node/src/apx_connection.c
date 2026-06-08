@@ -232,14 +232,14 @@ static void apx_connection_on_require_port_write(void* arg, struct apx_portInsta
       char const* port_name;
       dtl_dv_t* dv = 0;
       MUTEX_LOCK(self->mutex);
+      port_name = apx_portInstance_name(port_instance);
       result = apx_client_read_port_data(self->client, port_instance, &dv);
+      MUTEX_UNLOCK(self->mutex);
       if (result != APX_NO_ERROR)
       {
          printf("apx_client_read_port_data failed with error code %d\n", (int)result);
          return;
       }
-      port_name = apx_portInstance_name(port_instance);
-      MUTEX_UNLOCK(self->mutex);
       if ((dv != 0) && (port_name != 0))
       {
          adt_str_t* value = dtl_json_dumps(dv, 0, false);
@@ -273,13 +273,13 @@ static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t* self, 
          {
             port_name = apx_portInstance_name(port_instance);
          }
-         
+
          if ( port_name == NULL)
          {
             retval = APX_NULL_PTR_ERROR;
             break;
          }
-         adt_hash_set(&self->provide_port_lookup_table, port_name, (void*) port_instance);         
+         adt_hash_set(&self->provide_port_lookup_table, port_name, (void*) port_instance);
       }
    }
    else
