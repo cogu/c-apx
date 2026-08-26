@@ -9,24 +9,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_text_log.h">
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\server_text_log.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_text_log_extension.h">
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\server_text_log_extension.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\text_log_base.h">
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\text_log_base.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log.c">
+    <ClCompile Include="..\..\..\..\apx\extension\src\server_text_log.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log_extension.c">
+    <ClCompile Include="..\..\..\..\apx\extension\src\server_text_log_extension.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\extension\text_log_base.c">
+    <ClCompile Include="..\..\..\..\apx\extension\src\text_log_base.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

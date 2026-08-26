@@ -56,6 +56,7 @@ static void apx_server_trigger_log_write_event(apx_server_t *self, apx_logLevel_
 static void apx_server_init_extensions(apx_server_t *self);
 static void apx_server_shutdown_extensions(apx_server_t *self);
 static void apx_server_handle_event(void *arg, apx_event_t *event);
+static void apx_server_destroy_event(apx_server_t* self, apx_event_t* event);
 #ifndef UNIT_TEST
 static apx_error_t apx_server_start_thread(apx_server_t *self);
 static apx_error_t apx_server_stop_thread(apx_server_t *self);
@@ -110,7 +111,7 @@ void apx_server_destroy(apx_server_t *self)
       apx_connectionManager_destroy(&self->connection_manager);
       apx_portSignatureMap_destroy(&self->port_signature_map);
       MUTEX_UNLOCK(self->global_lock);
-      apx_eventLoop_destroy(&self->event_loop);
+      apx_eventLoop_destroy(&self->event_loop, apx_server_vdestroy_event, (void*)self);
       MUTEX_DESTROY(self->event_loop_lock);
       MUTEX_DESTROY(self->global_lock);
       MUTEX_DESTROY(self->event_listener_lock);
@@ -504,6 +505,12 @@ void apx_server_clear_port_connector_changes(apx_server_t* self)
    }
 }
 
+void apx_server_vdestroy_event(void* arg, apx_event_t* event)
+{
+   apx_server_t* self = (apx_server_t*)arg;
+   apx_server_destroy_event(self, event);
+}
+
 #ifdef UNIT_TEST
 void apx_server_run(apx_server_t *self)
 {
@@ -688,7 +695,7 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
          apx_event_unpack_protocol_header_accepted(event, (apx_connectionBase_t**)&server_connection);
          if (server_connection != NULL)
          {
-            apx_server_connection_trigger_protocol_header_accepted(server_connection);
+            apx_server_connection_process_protocol_header_accepted_event(server_connection);
          }
          else
          {
@@ -699,7 +706,7 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
          apx_event_unpack_remote_file_published(event, (apx_connectionBase_t**)&server_connection, &file_info);
          if ((server_connection != NULL) && (file_info != NULL) )
          {
-            apx_server_connection_trigger_remote_file_published(server_connection, file_info);
+            apx_server_connection_process_remote_file_published_event(server_connection, file_info);
             rmf_fileInfo_delete(file_info);
          }
          else
@@ -746,6 +753,14 @@ static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_
    }
    adt_ary_destroy(&args);
    adt_ary_destroy(&callbacks);
+}
+
+static void apx_server_destroy_event(apx_server_t* self, apx_event_t* event)
+{
+   if ((self != NULL) && (event != NULL))
+   {
+      apx_event_destroy(event, &self->allocator);
+   }
 }
 #ifndef UNIT_TEST
 

@@ -31,6 +31,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/types.h"
 #include "adt_str.h"
+#include "soa.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -57,7 +58,7 @@ typedef struct apx_event_tag
 #define APX_EVENT_FLAG_REMOTE_ADDRESS        0x02
 
 //APX Log event
-#define APX_EVENT_LOG_WRITE                0 //data1: logLevel (0-3) data3: char[16] label (strong), data4: adt_str_t *msg (strong), 
+#define APX_EVENT_LOG_WRITE                0 //data1: logLevel (0-3) data3: char[16] label (soa-strong), data4: adt_str_t *msg (strong), 
 
 //APX connection events
 #define APX_EVENT_PROTOCOL_HEADER_ACCEPTED 1 //data3: apx_connectionBase_t* connection (weak)
@@ -75,5 +76,6 @@ void apx_event_pack_protocol_header_accepted(apx_event_t* event, struct apx_conn
 void apx_event_unpack_protocol_header_accepted(apx_event_t const* event, struct apx_connectionBase_tag** connection);
 void apx_event_pack_remote_file_published(apx_event_t* event, struct apx_connectionBase_tag* connection, struct rmf_fileInfo_tag* file_info);
 void apx_event_unpack_remote_file_published(apx_event_t const* event, struct apx_connectionBase_tag** connection, struct rmf_fileInfo_tag** file_info);
+void apx_event_destroy(apx_event_t* event, soa_t *allocator);
 
 #endif //APX_EVENT_H

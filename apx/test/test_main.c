@@ -54,6 +54,8 @@ CuSuite* testSuite_apx_server(void);
 //Server extensions
 CuSuite* testsuite_apx_socketServerExtension(void);
 CuSuite* testSuite_apx_socketServerConnection(void);
+CuSuite* testsuite_apx_serverMonitorState(void);
+CuSuite* testsuite_apx_monitor_extension(void);
 
 //Applications
 
@@ -61,6 +63,14 @@ void RunAllTests(void)
 {
    CuString *output = CuStringNew();
    CuSuite* suite = CuSuiteNew();
+
+// RemoteFile
+   CuSuiteAddSuite(suite, testSuite_remotefile());
+   CuSuiteAddSuite(suite, testSuite_file_info());
+
+//Util
+   CuSuiteAddSuite(suite, testSuite_apx_util());
+
 
 // APX Common
 
@@ -103,13 +113,9 @@ void RunAllTests(void)
    //Server extensions
    CuSuiteAddSuite(suite, testsuite_apx_socketServerExtension());
    CuSuiteAddSuite(suite, testSuite_apx_socketServerConnection());
-
-   // RemoteFile
-   CuSuiteAddSuite(suite, testSuite_remotefile());
-   CuSuiteAddSuite(suite, testSuite_file_info());
-
-   //Util
-   CuSuiteAddSuite(suite, testSuite_apx_util());
+   CuSuiteAddSuite(suite, testsuite_apx_serverMonitorState());
+   CuSuiteAddSuite(suite, testsuite_apx_monitor_extension());
+   
 
    //Applications
 

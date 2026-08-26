@@ -18,6 +18,16 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\server_text_log.h" />
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\server_text_log_extension.h" />
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\text_log_base.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\apx\extension\src\server_text_log.c" />
+    <ClCompile Include="..\..\..\..\apx\extension\src\server_text_log_extension.c" />
+    <ClCompile Include="..\..\..\..\apx\extension\src\text_log_base.c" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -116,7 +126,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;ADT_RBFH_ENABLE=1;APX_DEBUG_ENABLE=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx\include;$(SolutionDir)..\..\..\apx\extension\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -139,16 +149,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_text_log.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_text_log_extension.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\text_log_base.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log.c" />
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_text_log_extension.c" />
-    <ClCompile Include="..\..\..\..\apx\src\extension\text_log_base.c" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

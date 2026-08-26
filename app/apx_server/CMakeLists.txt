@@ -10,7 +10,9 @@ add_executable(apx_server
 
 target_link_libraries(apx_server PRIVATE
 apx
-apx_srv_sock_ext
+apx_socket_extension
+apx_text_log_extension
+apx_monitor_extension
 Threads::Threads
 )
 if (LEAK_CHECK)

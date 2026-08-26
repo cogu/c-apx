@@ -143,11 +143,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\app\apx_info\src\apx_info_main.c" />
-    <ClCompile Include="..\..\..\..\apx\src\monitor_socket_client_connection.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\app\apx_info\include\apx_app_cmd.h" />
-    <ClInclude Include="..\..\..\..\apx\include\apx\monitor_socket_client_connection.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -313,6 +313,15 @@ apx_error_t apx_fileManager_send_error_code(apx_fileManager_t* self, apx_error_t
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_fileManager_send_connection_create(apx_fileManager_t* self, apx_connectionId_t connection_id, apx_connectionState_t connection_state, char const* tag)
+{
+   if (self != NULL)
+   {
+      return apx_fileManagerWorker_prepare_send_connection_create(&self->worker, connection_id, connection_state, tag);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self)
 {
    if (self != NULL)
@@ -322,15 +331,6 @@ uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self
    return 0u;
 }
 
-/* replaced by callback
-void apx_fileManager_set_connection_id(apx_fileManager_t* self, uint32_t connection_id)
-{
-   if (self != NULL)
-   {
-      apx_fileManagerShared_set_connection_id(&self->shared, connection_id);
-   }
-}
-*/
 
 #ifdef UNIT_TEST
 bool apx_fileManager_run(apx_fileManager_t* self)

@@ -66,10 +66,25 @@ apx_error_t apx_eventLoop_create(apx_eventLoop_t *self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_eventLoop_destroy(apx_eventLoop_t *self)
+void apx_eventLoop_destroy(apx_eventLoop_t *self, void (*destructor)(void*, apx_event_t*), void *destructor_arg)
 {
-   if (self != 0)
+   if (self != NULL)
    {
+      if (destructor != NULL)
+      {
+         apx_event_t event;
+         adt_buf_err_t rc = BUF_E_OK;
+         SPINLOCK_ENTER(self->lock);
+         while (rc == BUF_E_OK)
+         {
+            rc = adt_rbfh_remove(&self->pendingEvents, (uint8_t*)&event);
+            if (rc == BUF_E_OK)
+            {
+               destructor(destructor_arg, &event);
+            }
+         }         
+         SPINLOCK_LEAVE(self->lock);
+      }
       SPINLOCK_DESTROY(self->lock);
       adt_rbfh_destroy(&self->pendingEvents);
    }
@@ -90,11 +105,11 @@ apx_eventLoop_t *apx_eventLoop_new(void)
    return self;
 }
 
-void apx_eventLoop_delete(apx_eventLoop_t *self)
+void apx_eventLoop_delete(apx_eventLoop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg)
 {
    if (self != 0)
    {
-      apx_eventLoop_destroy(self);
+      apx_eventLoop_destroy(self, destructor, destructor_arg);
       free(self);
    }
 }

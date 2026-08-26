@@ -9,24 +9,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server.h">
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\socket_server.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server_connection.h">
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\socket_server_connection.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\socket_server_extension.h">
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\socket_server_extension.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\apx\src\extension\socket_server.c">
+    <ClCompile Include="..\..\..\..\apx\extension\src\socket_server.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\extension\socket_server_connection.c">
+    <ClCompile Include="..\..\..\..\apx\extension\src\socket_server_connection.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\extension\socket_server_extension.c">
+    <ClCompile Include="..\..\..\..\apx\extension\src\socket_server_extension.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

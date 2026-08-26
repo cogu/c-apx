@@ -37,12 +37,12 @@
 #else
 #include <pthread.h>
 #endif
+#include "osmacro.h"
 #include "apx/event_listener.h"
 #include "apx/connection_base.h"
 #include "adt_list.h"
 #include "adt_str.h"
 #include "apx/event_listener.h"
-#include "osmacro.h"
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ typedef struct apx_serverConnection_tag
    apx_connectionBase_t base;
    struct apx_server_tag *parent;
    adt_str_t *tag; //optional tag
-   bool is_greeting_accepted;
+   apx_connectionState_t connection_state;
    apx_error_t last_error;
    MUTEX_T event_listener_lock;
    adt_list_t event_listeners;  //strong references to apx_connectionEventListener_t
@@ -78,7 +78,7 @@ void apx_serverConnection_set_connection_id(apx_serverConnection_t* self, uint32
 uint32_t apx_serverConnection_get_connection_id(apx_serverConnection_t* self);
 void apx_serverConnection_set_server(apx_serverConnection_t* self, struct apx_server_tag* server);
 struct apx_server_tag* apx_serverConnection_get_server(apx_serverConnection_t* self);
-void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_connectionEventListener_t* event_listener);
+void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_serverConnectionEventListener_t* event_listener);
 void apx_serverConnection_unregister_event_listener(apx_serverConnection_t* self, void* handle);
 void apx_serverConnection_set_connection_type(apx_serverConnection_t* self, apx_connectionType_t connection_type);
 apx_connectionType_t apx_serverConnection_get_connection_type(apx_serverConnection_t const* self);
@@ -86,9 +86,12 @@ void apx_serverConnection_set_num_header_size(apx_serverConnection_t* self, apx_
 apx_size_t apx_serverConnection_get_num_header_size(apx_serverConnection_t const* self);
 void apx_serverConnection_set_rmf_proto_id(apx_serverConnection_t* self, rmf_versionId_t version_id);
 rmf_versionId_t apx_serverConnection_get_rmf_proto_id(apx_serverConnection_t const* self);
+apx_connectionState_t apx_serverConnection_get_connection_state(apx_serverConnection_t const* self);
+void apx_serverConnection_set_tag(apx_serverConnection_t* self, char const* tag);
+adt_str_t* apx_serverConnection_get_tag(apx_serverConnection_t const* self); //It's the callers responsibility to dispose of the returned string object
 
 
-// ClientConnection API
+// ServerConnection API
 apx_fileManager_t* apx_serverConnection_get_file_manager(apx_serverConnection_t* self);
 void apx_serverConnection_start(apx_serverConnection_t* self);
 void apx_serverConnection_close(apx_serverConnection_t* self);
@@ -101,13 +104,13 @@ apx_error_t apx_serverConnection_vremote_file_published_notification(void* arg, 
 apx_error_t apx_serverConnection_vremote_file_write_notification(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
 
 //Internal Event API (Called asynchronously from server event thread)
-void apx_server_connection_trigger_protocol_header_accepted(apx_serverConnection_t* self);
-void apx_server_connection_trigger_remote_file_published(apx_serverConnection_t* self, rmf_fileInfo_t *file_info);
+void apx_server_connection_process_protocol_header_accepted_event(apx_serverConnection_t* self);
+void apx_server_connection_process_remote_file_published_event(apx_serverConnection_t* self, rmf_fileInfo_t *file_info);
 
 /*** UNIT TEST API ***/
 #ifdef UNIT_TEST
 void apx_serverConnection_run(apx_serverConnection_t *self);
-apx_error_t apx_serverConnection_on_remote_file_published(apx_serverConnection_t* self, const rmf_fileInfo_t* file_info);
+
 
 #endif
 

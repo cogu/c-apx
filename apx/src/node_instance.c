@@ -1202,7 +1202,7 @@ static apx_error_t file_open_notify(apx_nodeInstance_t* self, apx_file_t* file)
                   retval = connect_require_ports_to_server(self);
                   if (retval == APX_NO_ERROR)
                   {
-                     apx_nodeInstance_set_require_port_data_state(self, APX_DATA_STATE_CONNECTED);
+                     apx_nodeInstance_set_require_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
                      //TODO:Take snapshot first, then release global lock, then transmit snapshot data through file manager.
                      //This shortens the time the global lock is held.
                      retval = send_require_port_data_to_file_manager(self, file_manager, address);
@@ -1211,7 +1211,7 @@ static apx_error_t file_open_notify(apx_nodeInstance_t* self, apx_file_t* file)
                }
                else
                {
-                  apx_nodeInstance_set_require_port_data_state(self, APX_DATA_STATE_CONNECTED);
+                  apx_nodeInstance_set_require_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
                   retval = send_require_port_data_to_file_manager(self, file_manager, address);
                }
             }
@@ -1299,7 +1299,7 @@ static apx_error_t process_remote_write_definition_data(apx_nodeInstance_t* self
 {
    if (self->definition_data_state == APX_DATA_STATE_WAITING_FOR_FILE_DATA)
    {
-      self->definition_data_state = APX_DATA_STATE_CONNECTED;
+      self->definition_data_state = APX_DATA_STATE_SYNCHRONIZED;
    }
    apx_error_t retval = apx_nodeData_write_definition_data(self->node_data, offset, data, size);
    if (retval == APX_NO_ERROR)
@@ -1314,7 +1314,7 @@ static apx_error_t process_remote_write_require_port_data(apx_nodeInstance_t* se
 {
    if (self->require_port_data_state == APX_DATA_STATE_WAITING_FOR_FILE_DATA)
    {
-      self->require_port_data_state = APX_DATA_STATE_CONNECTED;
+      self->require_port_data_state = APX_DATA_STATE_SYNCHRONIZED;
    }
    apx_error_t retval = apx_nodeData_write_require_port_data(self->node_data, offset, data, size);
    if ( (retval == APX_NO_ERROR) && (self->mode == APX_CLIENT_MODE) )
@@ -1335,7 +1335,7 @@ static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* se
    case APX_DATA_STATE_INIT:
       retval = APX_INTERNAL_ERROR;
       break;
-   case APX_DATA_STATE_WAITING_FILE_INFO:
+   case APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION:
       retval = APX_INTERNAL_ERROR;
       break;
    case APX_DATA_STATE_WAITING_FOR_FILE_DATA:
@@ -1349,7 +1349,7 @@ static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* se
             if (retval == APX_NO_ERROR)
             {
                apx_portConnectorChangeTable_t* provide_port_changes;
-               apx_nodeInstance_set_provide_port_data_state(self, APX_DATA_STATE_CONNECTED);
+               apx_nodeInstance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
                provide_port_changes = apx_nodeInstance_get_provide_port_connector_changes(self, false);
                if (provide_port_changes != NULL)
                {
@@ -1366,11 +1366,11 @@ static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* se
          }
          else
          {
-            apx_nodeInstance_set_provide_port_data_state(self, APX_DATA_STATE_CONNECTED);
+            apx_nodeInstance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
          }
       }
       break;
-   case APX_DATA_STATE_CONNECTED:
+   case APX_DATA_STATE_SYNCHRONIZED:
       if (self->server != NULL)
       {
          retval = apx_nodeData_write_provide_port_data(node_data, offset, data, size);
@@ -1380,6 +1380,8 @@ static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* se
          }
       }
       break;
+   case APX_DATA_STATE_FILE_REVOKED:
+      break; //Drop all data
    case APX_DATA_STATE_DISCONNECTED:
       break; //Drop all data writes in this state, we are about to close connection
    }
@@ -1412,7 +1414,7 @@ static apx_error_t apx_nodeInstance_attach_to_file_manager_client_mode(apx_nodeI
    }
    if (apx_nodeInstance_has_require_port_data(self))
    {
-      apx_nodeInstance_set_require_port_data_state(self, APX_DATA_STATE_WAITING_FILE_INFO);
+      apx_nodeInstance_set_require_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION);
    }
    result = create_definition_file_info(self, &file_info);
    if (result == APX_NO_ERROR)
@@ -1435,7 +1437,7 @@ static apx_error_t apx_nodeInstance_attach_to_file_manager_server_mode(apx_nodeI
 
    if (apx_nodeInstance_has_provide_port_data(self))
    {
-      apx_nodeInstance_set_provide_port_data_state(self, APX_DATA_STATE_WAITING_FILE_INFO);
+      apx_nodeInstance_set_provide_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION);
       retval = search_for_remote_provide_port_data_file(self, file_manager);
    }
    if (apx_nodeInstance_has_require_port_data(self))
@@ -1508,7 +1510,7 @@ static apx_error_t request_remote_require_port_data(apx_nodeInstance_t* self, ap
 {
    apx_fileManager_t* file_manager = apx_file_get_file_manager(file);
    assert(file_manager != NULL);
-   assert(apx_nodeInstance_get_require_port_data_state(self) == APX_DATA_STATE_WAITING_FILE_INFO);
+   assert(apx_nodeInstance_get_require_port_data_state(self) == APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION);
    apx_nodeInstance_set_require_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
    apx_file_open(file); //Should this be moved into file_manager?
    return apx_fileManager_send_open_file_request(file_manager, apx_file_get_address_without_flags(file));

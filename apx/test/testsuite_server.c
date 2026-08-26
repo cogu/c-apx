@@ -129,7 +129,7 @@ static void test_connectors_connect_disconnect_node_with_only_require_ports(CuTe
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_serverTestConnection_run(connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
    packet = apx_serverTestConnection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -142,7 +142,7 @@ static void test_connectors_connect_disconnect_node_with_only_require_ports(CuTe
    CuAssertIntEquals(tc, 1, apx_portSignatureMap_length(port_signature_map));
    apx_portSignatureMapEntry_t* map_entry = apx_portSignatureMap_find(port_signature_map, "\"BreakAlertStatus\"C(0,3)");
    CuAssertPtrNotNull(tc, map_entry);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_require_port_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_require_port_data_state(node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
    packet = apx_serverTestConnection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -207,7 +207,7 @@ static void test_connectors_connect_disconnect_node_with_only_provide_ports(CuTe
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_serverTestConnection_run(connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
    packet = apx_serverTestConnection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -215,7 +215,7 @@ static void test_connectors_connect_disconnect_node_with_only_provide_ports(CuTe
    apx_serverTestConnection_clear_log(connection);
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_provide_port_data_state(node_instance));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_PORT_DATA_ADDRESS_START, provide_port_data, provide_port_data_size));
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_provide_port_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_provide_port_data_state(node_instance));
    apx_serverTestConnection_run(connection);
    CuAssertIntEquals(tc, 1, apx_portSignatureMap_length(port_signature_map));
    apx_portSignatureMapEntry_t* map_entry = apx_portSignatureMap_find(port_signature_map, "\"BreakAlertStatus\"C(0,3)");
@@ -280,7 +280,7 @@ static void test_connectors_node_with_require_port_is_connected_after_node_with_
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(provider_connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(provider_connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)m_provider1_definition, provider_definition_size));
    apx_serverTestConnection_run(provider_connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(provider_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(provider_node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(provider_connection));
    packet = apx_serverTestConnection_get_log_packet(provider_connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -288,7 +288,7 @@ static void test_connectors_node_with_require_port_is_connected_after_node_with_
    apx_serverTestConnection_clear_log(provider_connection);
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_provide_port_data_state(provider_node_instance));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(provider_connection, APX_PORT_DATA_ADDRESS_START, provide_port_data, provide_port_data_size));
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_provide_port_data_state(provider_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_provide_port_data_state(provider_node_instance));
    apx_serverTestConnection_run(provider_connection);
    apx_portSignatureMapEntry_t* map_entry = apx_portSignatureMap_find(port_signature_map, "\"VehicleSpeed\"S");
    CuAssertPtrNotNull(tc, map_entry);
@@ -329,7 +329,7 @@ static void test_connectors_node_with_require_port_is_connected_after_node_with_
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(requester_connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(requester_connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)m_requester1_definition, requester_definition_size));
    apx_serverTestConnection_run(requester_connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(requester_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(requester_node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(requester_connection));
    packet = apx_serverTestConnection_get_log_packet(requester_connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -339,7 +339,7 @@ static void test_connectors_node_with_require_port_is_connected_after_node_with_
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(requester_connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_request_open_local_file(requester_connection, "Requester1.in"));
    apx_serverTestConnection_run(requester_connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_require_port_data_state(requester_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_require_port_data_state(requester_node_instance));
    snapshot = apx_nodeData_take_require_port_data_snapshot(requester_node_data);
    CuAssertPtrNotNull(tc, snapshot);
    CuAssertUIntEquals(tc, 0x34, snapshot[0]);
@@ -421,7 +421,7 @@ static void test_connectors_node_with_provide_port_is_connected_when_multiple_no
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(requester1_connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(requester1_connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)m_requester1_definition, requester1_definition_size));
    apx_serverTestConnection_run(requester1_connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(requester1_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(requester1_node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(requester1_connection));
    packet = apx_serverTestConnection_get_log_packet(requester1_connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -431,7 +431,7 @@ static void test_connectors_node_with_provide_port_is_connected_when_multiple_no
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(requester1_connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_request_open_local_file(requester1_connection, "Requester1.in"));
    apx_serverTestConnection_run(requester1_connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_require_port_data_state(requester1_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_require_port_data_state(requester1_node_instance));
    //Verify that Requester1.in has default init values since no provider is available yet
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(requester1_connection));
    packet = apx_serverTestConnection_get_log_packet(requester1_connection, 0);
@@ -481,7 +481,7 @@ static void test_connectors_node_with_provide_port_is_connected_when_multiple_no
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(requester2_connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(requester2_connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)m_requester2_definition, requester2_definition_size));
    apx_serverTestConnection_run(requester2_connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(requester2_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(requester2_node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(requester2_connection));
    packet = apx_serverTestConnection_get_log_packet(requester2_connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -491,7 +491,7 @@ static void test_connectors_node_with_provide_port_is_connected_when_multiple_no
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(requester2_connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_request_open_local_file(requester2_connection, "Requester2.in"));
    apx_serverTestConnection_run(requester2_connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_require_port_data_state(requester1_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_require_port_data_state(requester1_node_instance));
    //Verify that Requester1.in has default init values since no provider is available yet
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(requester2_connection));
    packet = apx_serverTestConnection_get_log_packet(requester2_connection, 0);
@@ -546,7 +546,7 @@ static void test_connectors_node_with_provide_port_is_connected_when_multiple_no
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(provider_connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(provider_connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)m_provider1_definition, provider_definition_size));
    apx_serverTestConnection_run(provider_connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(provider_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(provider_node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(provider_connection));
    packet = apx_serverTestConnection_get_log_packet(provider_connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -554,7 +554,7 @@ static void test_connectors_node_with_provide_port_is_connected_when_multiple_no
    apx_serverTestConnection_clear_log(provider_connection);
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_provide_port_data_state(provider_node_instance));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(provider_connection, APX_PORT_DATA_ADDRESS_START, provide_port_data, provide_port_data_size));
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_provide_port_data_state(provider_node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_provide_port_data_state(provider_node_instance));
    apx_serverTestConnection_run(provider_connection);
 
    //Analyze port map changes

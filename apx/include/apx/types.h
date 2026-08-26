@@ -53,6 +53,7 @@ typedef uint32_t apx_uniquePortId_t; //highest significant bit is 0 when it cont
 typedef uint32_t apx_typeId_t;
 typedef uint32_t apx_computationListId_t;
 typedef uint32_t apx_elementId_t;
+typedef uint32_t apx_connectionId_t;
 
 #define MAX_TYPE_REF_FOLLOW_COUNT 255u
 
@@ -210,11 +211,17 @@ typedef uint8_t apx_rangeCheckState_t;
 
 typedef uint8_t apx_dataState_t;
 #define APX_DATA_STATE_INIT                           ((apx_dataState_t) 0u)
-#define APX_DATA_STATE_WAITING_FILE_INFO              ((apx_dataState_t) 1u) //used in client mode
-#define APX_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST  ((apx_dataState_t) 2u) //used in server mode
+#define APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION   ((apx_dataState_t) 1u) //Used in client mode
+#define APX_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST  ((apx_dataState_t) 2u) //Used in server mode
 #define APX_DATA_STATE_WAITING_FOR_FILE_DATA          ((apx_dataState_t) 3u) //used in client and server mode
-#define APX_DATA_STATE_CONNECTED                      ((apx_dataState_t) 4u) //Used during normal operation
-#define APX_DATA_STATE_DISCONNECTED                   ((apx_dataState_t) 5u) //Used during cleanup
+#define APX_DATA_STATE_SYNCHRONIZED                   ((apx_dataState_t) 4u) //Used in client and server mode
+#define APX_DATA_STATE_FILE_REVOKED                   ((apx_dataState_t) 5u) //Used in client and server mode
+#define APX_DATA_STATE_DISCONNECTED                   ((apx_dataState_t) 6u) //Used in client and server mode
+
+
+typedef uint8_t apx_fileRequestType_t;
+#define APX_FILE_REQUEST_TYPE_MAPPING                 ((apx_fileRequestType_t) 0u)
+#define APX_FILE_REQUEST_TYPE_SNAPSHOT                ((apx_fileRequestType_t) 1u)
 
 typedef uint8_t apx_resource_type_t;
 #define APX_RESOURCE_TYPE_UNKNOWN ((apx_resource_type_t) 0) //Unknown
@@ -255,6 +262,12 @@ typedef uint8_t apx_computationType_t;
 typedef uint8_t apx_portConnectorEvent_t;
 #define APX_PORT_CONNECTED_EVENT       ((apx_portConnectorEvent_t) 0u)
 #define APX_PORT_DISCONNECTED_EVENT    ((apx_portConnectorEvent_t) 1u)
+
+typedef uint8_t apx_connectionState_t;
+#define APX_CONNECTION_STATE_CREATED      ((apx_connectionState_t) 0u)
+#define APX_CONNECTION_STATE_CONNECTING   ((apx_connectionState_t) 1u)
+#define APX_CONNECTION_STATE_ACCEPTED     ((apx_connectionState_t) 2u)
+#define APX_CONNECTION_STATE_CLOSED       ((apx_connectionState_t) 3u)
 
 
 // Shared library visibility (needs more work)

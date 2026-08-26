@@ -142,14 +142,6 @@ void apx_serverTestConnection_delete(apx_serverTestConnection_t *self)
    }
 }
 
-void apx_serverTestConnection_set_connection_type(apx_serverTestConnection_t* self, apx_connectionType_t connection_type)
-{
-   if (self != NULL)
-   {
-      apx_serverConnection_set_connection_type(&self->base, connection_type);
-   }
-}
-
 apx_connectionType_t apx_serverTestConnection_get_connection_type(apx_serverTestConnection_t const* self)
 {
    if (self != NULL)
@@ -288,6 +280,10 @@ void apx_serverTestConnection_set_tester_connection_type(apx_serverTestConnectio
    if (self != NULL)
    {
       self->connection_type = connection_type;
+      if (connection_type != APX_CONNECTION_TYPE_DEFAULT)
+      {
+         self->protocol_version_id = RMF_PROTOCOL_VERSION_ID_1_1;
+      }
    }
 }
 
@@ -519,6 +515,18 @@ void apx_serverTestConnection_enable_compatibility_mode(apx_serverTestConnection
       self->compatibility_mode = true;
    }
 }
+
+
+void apx_serverTestConnection_set_connection_id(apx_serverTestConnection_t* self, uint32_t connection_id)
+{
+   if (self != NULL)
+   {
+      apx_serverConnection_set_connection_id(&self->base, connection_id);
+   }
+}
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

@@ -112,7 +112,6 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
          memset(&self->connection_interface, 0, sizeof(apx_connectionInterface_t));
       }
       self->node_manager = NULL;
-      self->event_handler_arg = NULL;
       self->total_bytes_received = 0u;
       self->total_bytes_sent = 0u;
       self->connection_id = APX_INVALID_CONNECTION_ID;

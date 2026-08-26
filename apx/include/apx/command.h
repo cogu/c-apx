@@ -47,6 +47,8 @@ typedef uint8_t apx_cmdType_t;
 #define APX_CMD_SEND_LOCAL_CONST_DATA  ((apx_cmdType_t) 7u)
 #define APX_CMD_SEND_LOCAL_DATA        ((apx_cmdType_t) 8u)
 #define APX_CMD_SEND_HEADER_ACCEPTED   ((apx_cmdType_t) 9u)
+#define APX_CMD_CREATE_CONNECTION      ((apx_cmdType_t) 10u)
+
 
 
 typedef struct apx_command_tag

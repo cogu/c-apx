@@ -27,6 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
+#include <assert.h>
 #include "apx/event.h"
 #include "apx/connection_base.h"
 #include "apx/file_info.h"
@@ -64,8 +65,8 @@ void apx_event_unpack_log_write(apx_event_t const* event, apx_logLevel_t* level,
    if ( (event != NULL) && (level != NULL) && (label != NULL) && (msg != NULL))
    {
       *level = (apx_logLevel_t)event->data1;
-      *label = (char*)event->data4;
-      *msg = (adt_str_t*)event->data3;      
+      *label = (char*)event->data3;
+      *msg = (adt_str_t*)event->data4;
    }
 }
 
@@ -104,6 +105,39 @@ void apx_event_unpack_remote_file_published(apx_event_t const* event, struct apx
    {
       *connection = (apx_connectionBase_t*)event->data3;
       *file_info = (rmf_fileInfo_t*)event->data4;
+   }
+}
+
+void apx_event_destroy(apx_event_t* event, soa_t* allocator)
+{
+   if (event != NULL)
+   {      
+      size_t label_size;
+      char* label;
+      adt_str_t* str;      
+      rmf_fileInfo_t* file_info = NULL;      
+      switch (event->ev_type)
+      {
+      case APX_EVENT_LOG_WRITE:
+         label = (char*)event->data3;
+         str = (adt_str_t*)event->data4;
+         if ( (label != NULL) && (allocator != NULL) )
+         {
+            label_size = strlen(label);
+            soa_free(allocator, label, label_size + 1);
+         }
+         adt_str_delete(str);
+         break;
+      case APX_EVENT_PROTOCOL_HEADER_ACCEPTED:
+         //Weak references only
+         break;
+      case APX_EVENT_REMOTE_FILE_PUBLISHED:
+         file_info = (rmf_fileInfo_t*)event->data4;
+         rmf_fileInfo_delete(file_info);
+         break;
+      default:
+         assert(0);
+      }
    }
 }
 

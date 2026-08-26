@@ -527,7 +527,6 @@ static bool parse_greeting(apx_clientConnection_t* self, uint8_t const* msg_data
          {
             uint32_t connection_id = unpackLE(msg_data + header_size + RMF_CMD_TYPE_SIZE, UINT32_SIZE);
             apx_connectionBase_set_connection_id(&self->base, connection_id);
-            printf("Connection-Id: %u\n", (unsigned int)connection_id);
             return true;
          }
       }
