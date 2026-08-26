@@ -90,9 +90,10 @@ apx_error_t apx_serverConnection_create(apx_serverConnection_t* self, apx_connec
       adt_list_create(&self->event_listeners, apx_connectionEventListener_vdelete);
       error_code = apx_connectionBase_create(&self->base, APX_SERVER_MODE, base_connection_vtable, connection_interface);
       MUTEX_INIT(self->event_listener_lock);
-      self->is_greeting_accepted = false;
+      self->connection_state = APX_CONNECTION_STATE_CREATED;
       self->parent = NULL;
       self->last_error = APX_NO_ERROR;
+      self->tag = NULL;
       return error_code;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -105,6 +106,10 @@ void apx_serverConnection_destroy(apx_serverConnection_t* self)
       MUTEX_DESTROY(self->event_listener_lock);
       adt_list_destroy(&self->event_listeners);
       apx_connectionBase_destroy(&self->base);
+      if (self->tag != NULL)
+      {
+         adt_str_delete(self->tag);
+      }
    }
 }
 
@@ -140,7 +145,7 @@ uint32_t apx_serverConnection_get_total_bytes_sent(apx_serverConnection_t* self)
    return 0u;
 }
 
-void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_connectionEventListener_t* event_listener)
+void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_serverConnectionEventListener_t* event_listener)
 {
    if ((self != NULL) && (event_listener != NULL))
    {
@@ -227,7 +232,7 @@ void apx_serverConnection_greeting_header_accepted_notification(apx_serverConnec
 {
    if (self != NULL)
    {
-      self->is_greeting_accepted = true;
+      self->connection_state = APX_CONNECTION_STATE_ACCEPTED;
       apx_fileManager_connected(&self->base.file_manager);
       emit_protocol_header_accepted(self);
    }
@@ -237,7 +242,7 @@ void apx_serverConnection_connected_notification(apx_serverConnection_t* self)
 {
    if (self != NULL)
    {
-      self->is_greeting_accepted = false;
+      self->connection_state = APX_CONNECTION_STATE_CONNECTING;
    }
 }
 
@@ -357,6 +362,23 @@ apx_error_t apx_serverConnection_attach_node_instance(apx_serverConnection_t* se
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+void apx_serverConnection_set_tag(apx_serverConnection_t* self, char const* tag)
+{
+   if ((self != NULL) && (tag != NULL))
+   {
+      self->tag = adt_str_new_cstr(tag);
+   }
+}
+
+adt_str_t* apx_serverConnection_get_tag(apx_serverConnection_t const* self)
+{
+   if ( (self != NULL) && (self->tag != NULL))
+   {
+      return adt_str_clone(self->tag);
+   }
+   return NULL;
+}
+
 //ConnectionInterface API
 apx_error_t apx_serverConnection_vremote_file_published_notification(void* arg, apx_file_t* file)
 {
@@ -369,7 +391,7 @@ apx_error_t apx_serverConnection_vremote_file_write_notification(void* arg, apx_
 }
 
 //Internal Event API
-void apx_server_connection_trigger_protocol_header_accepted(apx_serverConnection_t* self)
+void apx_server_connection_process_protocol_header_accepted_event(apx_serverConnection_t* self)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -381,7 +403,7 @@ void apx_server_connection_trigger_protocol_header_accepted(apx_serverConnection
    adt_list_elem_t* iter = adt_list_iter_first(&self->event_listeners);
    while (iter != 0)
    {
-      apx_connectionEventListener_t* listener = (apx_connectionEventListener_t*)iter->pItem;
+      apx_serverConnectionEventListener_t* listener = (apx_serverConnectionEventListener_t*)iter->pItem;
       if ((listener != 0) && (listener->protocol_header_accepted != 0))
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -402,7 +424,7 @@ void apx_server_connection_trigger_protocol_header_accepted(apx_serverConnection
    adt_ary_destroy(&callbacks);
 }
 
-void apx_server_connection_trigger_remote_file_published(apx_serverConnection_t* self, rmf_fileInfo_t* file_info)
+void apx_server_connection_process_remote_file_published_event(apx_serverConnection_t* self, rmf_fileInfo_t* file_info)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -414,13 +436,13 @@ void apx_server_connection_trigger_remote_file_published(apx_serverConnection_t*
    adt_list_elem_t* iter = adt_list_iter_first(&self->event_listeners);
    while (iter != 0)
    {
-      apx_connectionEventListener_t* listener = (apx_connectionEventListener_t*)iter->pItem;
+      apx_serverConnectionEventListener_t* listener = (apx_serverConnectionEventListener_t*)iter->pItem;
       if ((listener != 0) && (listener->file_published != 0))
       {
          adt_ary_push(&args, (void*)listener->arg);
          adt_ary_push(&callbacks, (void*)listener->file_published);
          length++;
-}
+      }
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->event_listener_lock);
@@ -435,6 +457,14 @@ void apx_server_connection_trigger_remote_file_published(apx_serverConnection_t*
    adt_ary_destroy(&callbacks);
 }
 
+apx_connectionState_t apx_serverConnection_get_connection_state(apx_serverConnection_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->connection_state;
+   }
+   return APX_CONNECTION_STATE_CLOSED;
+}
 
 //Unit Test API
 #ifdef UNIT_TEST
@@ -592,11 +622,11 @@ static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const*
 
          if (msg_end <= end)
          {
-            if (self->is_greeting_accepted)
+            if (self->connection_state == APX_CONNECTION_STATE_ACCEPTED)
             {
                *error_code = apx_connectionBase_message_received(&self->base, msg_data, msg_size);
             }
-            else
+            else if ((self->connection_state == APX_CONNECTION_STATE_CREATED) || (self->connection_state == APX_CONNECTION_STATE_CONNECTING) )
             {
                if (process_greeting_message(self, msg_data, msg_size, error_code))
                {
@@ -604,8 +634,14 @@ static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const*
                }
                else
                {
+                  fprintf(stderr, "[SERVER-CONNECTION] Failed to parse greeting message\n");
                   return NULL;
                }
+            }
+            else
+            {
+               fprintf(stderr, "[SERVER-CONNECTION] Invalid state detected\n");
+               return NULL;
             }
          }
          else
@@ -730,7 +766,7 @@ static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ar
       assert(node_instance != 0);
       require_port_data_state = apx_nodeInstance_get_require_port_data_state(node_instance);
       provide_port_data_state = apx_nodeInstance_get_provide_port_data_state(node_instance);
-      if (require_port_data_state == APX_DATA_STATE_CONNECTED)
+      if (require_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
       {
          result = apx_server_disconnect_node_instance_require_ports(self->parent, node_instance);
          if (result == APX_NO_ERROR)
@@ -741,7 +777,7 @@ static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ar
             fprintf(stderr, "[SERVER-CONNECTION] apx_server_disconnect_node_instance_require_ports failed with %d\n", (int)result);
          }
       }
-      if (provide_port_data_state == APX_DATA_STATE_CONNECTED)
+      if (provide_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
       {
          result = apx_server_disconnect_node_instance_provide_ports(self->parent, node_instance);
          if (result == APX_NO_ERROR)
@@ -769,7 +805,7 @@ static apx_error_t gather_provide_port_connector_changes(adt_ary_t* node_instanc
       apx_nodeInstance_t* node_instance = (apx_nodeInstance_t*)adt_ary_value(node_instance_array, i);
       assert(node_instance != 0);
       provide_port_data_state = apx_nodeInstance_get_provide_port_data_state(node_instance);
-      if (provide_port_data_state == APX_DATA_STATE_CONNECTED)
+      if (provide_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
       {
          apx_portConnectorChangeTable_t* connector_changes = apx_nodeInstance_get_provide_port_connector_changes(node_instance, false);
          if (connector_changes != NULL)
@@ -810,7 +846,7 @@ static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instanc
       apx_nodeInstance_t* node_instance = (apx_nodeInstance_t*)adt_ary_value(node_instance_array, i);
       assert(node_instance != 0);
       require_port_data_state = apx_nodeInstance_get_require_port_data_state(node_instance);
-      if (require_port_data_state == APX_DATA_STATE_CONNECTED)
+      if (require_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
       {
          apx_portConnectorChangeTable_t* connector_changes = apx_nodeInstance_get_require_port_connector_changes(node_instance, false);
          if (connector_changes != NULL)
@@ -852,7 +888,7 @@ static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_chang
       apx_portConnectorChangeRef_t* ref = (apx_portConnectorChangeRef_t*)adt_ary_value(provider_change_array, i);
       provider_node_instance = ref->node_instance;
       connector_changes = ref->connector_changes;
-      assert(apx_nodeInstance_get_provide_port_data_state(provider_node_instance) == APX_DATA_STATE_CONNECTED);
+      assert(apx_nodeInstance_get_provide_port_data_state(provider_node_instance) == APX_DATA_STATE_SYNCHRONIZED);
       assert(connector_changes->num_ports == apx_nodeInstance_get_num_provide_ports(provider_node_instance));
       apx_nodeInstance_clear_connector_table(provider_node_instance);
       apx_nodeInstance_set_provide_port_data_state(provider_node_instance, APX_DATA_STATE_DISCONNECTED);
@@ -873,7 +909,7 @@ static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_cha
       apx_portConnectorChangeRef_t* ref = (apx_portConnectorChangeRef_t*)adt_ary_value(requester_change_array, i);
       require_node_instance = ref->node_instance;
       connector_changes = ref->connector_changes;
-      assert(apx_nodeInstance_get_require_port_data_state(require_node_instance) == APX_DATA_STATE_CONNECTED);
+      assert(apx_nodeInstance_get_require_port_data_state(require_node_instance) == APX_DATA_STATE_SYNCHRONIZED);
       assert(connector_changes->num_ports == apx_nodeInstance_get_num_require_ports(require_node_instance));
       apx_nodeInstance_handle_require_ports_disconnected(require_node_instance, connector_changes);
       apx_nodeInstance_set_require_port_data_state(require_node_instance, APX_DATA_STATE_DISCONNECTED);
@@ -883,32 +919,27 @@ static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_cha
 
 static void emit_remote_file_published_event(apx_serverConnection_t* self, apx_file_t* file)
 {
-#ifndef UNIT_TEST
-   rmf_fileInfo_t* file_info = apx_file_clone_file_info(file);
-   if ((self->parent != NULL) && (file_info != NULL))
+   if (self->parent != NULL)
    {
-      apx_event_t event;
-      apx_event_pack_remote_file_published(&event, &self->base, file_info);
-      apx_server_append_event(self->parent, &event);
+      rmf_fileInfo_t* file_info = apx_file_clone_file_info(file);
+      if (file_info != NULL)
+      {
+         apx_event_t event;
+         apx_event_pack_remote_file_published(&event, &self->base, file_info);
+         apx_server_append_event(self->parent, &event);
+      }
    }
-#else
-   (void)self;
-   (void)file;
-#endif
+   
 }
 
 static void emit_protocol_header_accepted(apx_serverConnection_t* self)
 {
-#ifndef UNIT_TEST
    if (self->parent != NULL)
    {
       apx_event_t event;
       apx_event_pack_protocol_header_accepted(&event, &self->base);
       apx_server_append_event(self->parent, &event);
    }
-#else
-   (void)self;
-#endif
 }
 
 static apx_error_t parse_protocol_header_line(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end)

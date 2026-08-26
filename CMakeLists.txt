@@ -79,40 +79,114 @@ set (APX_COMMON_TEST_SUITE
 )
 
 set (APX_SERVER_SOCKET_EXTENSION_TEST_SUITE
-    apx/test/extension/testsuite_apx_server_socket_connection.c
-    apx/test/extension/testsuite_apx_socket_server_extension.c
+    apx/extension/test/testsuite_apx_server_socket_connection.c
+    apx/extension/test/testsuite_apx_socket_server_extension.c
 )
 
-#Library apx_srv_sock_ext
-set (APX_SERVER_SOCKET_EXTENSION_HEADERS
-    apx/include/apx/extension/socket_server_connection.h
-    apx/include/apx/extension/socket_server_extension.h
-    apx/include/apx/extension/socket_server.h
+#Library apx_socket_extension
+set (APX_SOCKET_EXTENSION_HEADERS
+    apx/extension/include/apx/extension/socket_server_connection.h
+    apx/extension/include/apx/extension/socket_server_extension.h
+    apx/extension/include/apx/extension/socket_server.h
 )
 
-set (APX_SERVER_SOCKET_EXTENSION_SOURCES
-    apx/src/extension/socket_server_connection.c
-    apx/src/extension/socket_server_extension.c
-    apx/src/extension/socket_server.c
+set (APX_SOCKET_EXTENSION_SOURCES
+    apx/extension/src/socket_server_connection.c
+    apx/extension/src/socket_server_extension.c
+    apx/extension/src/socket_server.c
 )
 
-add_library(apx_srv_sock_ext ${LIBRARY_TYPE} ${APX_SERVER_SOCKET_EXTENSION_HEADERS} ${APX_SERVER_SOCKET_EXTENSION_SOURCES})
+add_library(apx_socket_extension ${LIBRARY_TYPE} ${APX_SOCKET_EXTENSION_HEADERS} ${APX_SOCKET_EXTENSION_SOURCES})
 if (LEAK_CHECK)
-    target_compile_definitions(apx_srv_sock_ext PRIVATE MEM_LEAK_CHECK)
+    target_compile_definitions(apx_socket_extension PRIVATE MEM_LEAK_CHECK)
 endif()
 if (UNIT_TEST)
-    target_link_libraries(apx_srv_sock_ext PRIVATE msocket_testsocket)
-    target_compile_definitions(apx_srv_sock_ext PRIVATE UNIT_TEST)
+    target_link_libraries(apx_socket_extension PRIVATE msocket_testsocket)
+    target_compile_definitions(apx_socket_extension PRIVATE UNIT_TEST)
 endif()
 if(APX_DEBUG)
-    target_compile_definitions(apx_srv_sock_ext PUBLIC APX_DEBUG_ENABLE=1)
+    target_compile_definitions(apx_socket_extension PUBLIC APX_DEBUG_ENABLE=1)
 endif()
-target_link_libraries(apx_srv_sock_ext PRIVATE apx)
-target_include_directories(apx_srv_sock_ext PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/include)
-set_target_properties(apx_srv_sock_ext PROPERTIES VERSION ${apx_VERSION} SOVERSION ${apx_VERSION_MAJOR})
+target_link_libraries(apx_socket_extension PRIVATE apx)
+target_include_directories(apx_socket_extension PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/extension/include)
+set_target_properties(apx_socket_extension PROPERTIES VERSION ${apx_VERSION} SOVERSION ${apx_VERSION_MAJOR})
 
 install(
-  TARGETS apx_srv_sock_ext
+  TARGETS apx_socket_extension
+  LIBRARY DESTINATION lib
+  COMPONENT Server
+)
+
+###
+
+#Library apx_text_log_extension
+set (APX_TEXT_LOG_EXTENSION_HEADERS
+    apx/extension/include/apx/extension/server_text_log_extension.h
+    apx/extension/include/apx/extension/server_text_log.h
+    apx/extension/include/apx/extension/text_log_base.h
+)
+
+set (APX_TEXT_LOG_EXTENSION_SOURCES
+    apx/extension/src/server_text_log_extension.c
+    apx/extension/src/server_text_log.c
+    apx/extension/src/text_log_base.c
+)
+
+add_library(apx_text_log_extension ${LIBRARY_TYPE} ${APX_TEXT_LOG_EXTENSION_HEADERS} ${APX_TEXT_LOG_EXTENSION_SOURCES})
+if (LEAK_CHECK)
+    target_compile_definitions(apx_text_log_extension PRIVATE MEM_LEAK_CHECK)
+endif()
+if (UNIT_TEST)
+#    target_link_libraries(apx_text_log_extension PRIVATE msocket_testsocket)
+    target_compile_definitions(apx_text_log_extension PRIVATE UNIT_TEST)
+endif()
+if(APX_DEBUG)
+    target_compile_definitions(apx_text_log_extension PUBLIC APX_DEBUG_ENABLE=1)
+endif()
+target_link_libraries(apx_text_log_extension PRIVATE apx)
+target_include_directories(apx_text_log_extension PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/extension/include)
+set_target_properties(apx_text_log_extension PROPERTIES VERSION ${apx_VERSION} SOVERSION ${apx_VERSION_MAJOR})
+
+install(
+  TARGETS apx_text_log_extension
+  LIBRARY DESTINATION lib
+  COMPONENT Server
+)
+
+###
+
+#Library apx_monitor_extension
+set (APX_MONITOR_EXTENSION_HEADERS
+    apx/extension/include/apx/extension/monitor_extension.h
+    apx/extension/include/apx/extension/observed_connection.h
+    apx/extension/include/apx/extension/observed_file.h
+    apx/extension/include/apx/extension/server_monitor.h
+)
+
+set (APX_MONITOR_EXTENSION_SOURCES
+    apx/extension/src/monitor_extension.c
+    apx/extension/src/observed_connection.c
+    apx/extension/src/observed_file.c
+    apx/extension/src/server_monitor.c
+)
+
+add_library(apx_monitor_extension ${LIBRARY_TYPE} ${APX_MONITOR_EXTENSION_HEADERS} ${APX_MONITOR_EXTENSION_SOURCES})
+if (LEAK_CHECK)
+    target_compile_definitions(apx_monitor_extension PRIVATE MEM_LEAK_CHECK)
+endif()
+if (UNIT_TEST)
+#    target_link_libraries(apx_monitor_extension PRIVATE msocket_testsocket)
+    target_compile_definitions(apx_monitor_extension PRIVATE UNIT_TEST)
+endif()
+if(APX_DEBUG)
+    target_compile_definitions(apx_monitor_extension PUBLIC APX_DEBUG_ENABLE=1)
+endif()
+target_link_libraries(apx_monitor_extension PRIVATE apx)
+target_include_directories(apx_monitor_extension PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/apx/extension/include)
+set_target_properties(apx_monitor_extension PROPERTIES VERSION ${apx_VERSION} SOVERSION ${apx_VERSION_MAJOR})
+
+install(
+  TARGETS apx_monitor_extension
   LIBRARY DESTINATION lib
   COMPONENT Server
 )
@@ -129,7 +203,7 @@ add_subdirectory(msocket)
 if (NOT UNIT_TEST)
 add_subdirectory(app/apx_node)
 add_subdirectory(app/apx_control)
-add_subdirectory(app/apx_perf_test)
+#add_subdirectory(app/apx_perf_test)#
 if(BUILD_DEFAULT_SERVER)
     add_subdirectory(app/apx_server)
 endif()
@@ -170,7 +244,6 @@ set (APX_COMMON_HEADERS
     apx/include/apx/file_manager.h
     apx/include/apx/file_map.h
     apx/include/apx/file.h
-    apx/include/apx/log_event.h
     apx/include/apx/node_cache.h
     apx/include/apx/node_data.h
     apx/include/apx/node_instance.h
@@ -234,7 +307,7 @@ set (APX_COMMON_SOURCES
     apx/src/file_manager_worker.c
     apx/src/file_manager.c
     apx/src/file_map.c
-    apx/src/log_event.c
+    apx/src/event.c
     apx/src/node_cache.c
     apx/src/node_data.c
     apx/src/node_instance.c

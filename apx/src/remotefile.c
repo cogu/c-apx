@@ -27,6 +27,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <assert.h>
+#include <string.h>
 #include "apx/remotefile.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
@@ -171,6 +172,54 @@ apx_size_t rmf_decode_cmd_type(uint8_t const* begin, uint8_t const* end, uint32_
    return 0u;
 }
 
+apx_size_t rmf_decode_header_accepted(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id)
+{
+   if ((begin == NULL) || (end == NULL) || (begin >= end) || (connection_id == NULL))
+   {
+      return 0u;
+   }
+   if (begin + RMF_CMD_TYPE_SIZE <= end)
+   {
+      *connection_id = unpackLE(begin, UINT32_SIZE);
+      return UINT32_SIZE;
+   }
+   return 0u;      
+}
+
+apx_size_t rmf_encode_connection_create(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id, uint8_t connection_state, char const* tag)
+{
+   apx_size_t tag_size = 0u;
+   apx_size_t required_size = RMF_CMD_TYPE_SIZE + UINT32_SIZE + UINT8_SIZE + CHAR_SIZE; //Reserve 1 byte for null-terminator
+   if (tag != NULL)
+   {
+      tag_size = (apx_size_t)strlen(tag);
+      required_size += tag_size;
+   }
+   if (required_size > buf_size)
+   {
+      return 0;
+   }
+   uint8_t* p = buf;
+   packLE(p, RMF_CMD_CONNECTION_CREATE, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+   packLE(p, connection_id, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+   packLE(p, (uint32_t)connection_state, (uint8_t)UINT8_SIZE); p += UINT8_SIZE;
+   if (tag_size > 0u)
+   {
+      memcpy(p, tag, tag_size); p += tag_size;      
+   }
+   *p = 0u; //null-terminator is always added 
+   return required_size;
+}
+
+apx_size_t rmf_decode_connection_create(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id, uint8_t* connection_state, char** tag)
+{
+   (void)begin;
+   (void)end;
+   (void)connection_id;
+   (void)connection_state;
+   (void)tag;
+   return 0;
+}
 
 
 

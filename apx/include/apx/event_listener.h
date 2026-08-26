@@ -80,13 +80,13 @@ typedef struct apx_serverEventListener_tag
    apx_serverLogWritEventFunc_t* server_write_log2;
 } apx_serverEventListener_t;
 
-typedef struct apx_connectionEventListener_tag
+typedef struct apx_serverConnectionEventListener_tag
 {
    void *arg;
    apx_protocolHeaderAcceptedFunc_t* protocol_header_accepted;
    apx_fileEventFunc_t* file_published;
    apx_fileEventFunc_t* file_revoked;
-} apx_connectionEventListener_t;
+} apx_serverConnectionEventListener_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -100,8 +100,8 @@ apx_serverEventListener_t *apx_serverEventListener_clone(apx_serverEventListener
 void apx_serverEventListener_delete(apx_serverEventListener_t *self);
 void apx_serverEventListener_vdelete(void *arg);
 
-apx_connectionEventListener_t *apx_connectionEventListener_clone(apx_connectionEventListener_t *other);
-void apx_connectionEventListener_delete(apx_connectionEventListener_t *self);
+apx_serverConnectionEventListener_t *apx_connectionEventListener_clone(apx_serverConnectionEventListener_t *other);
+void apx_connectionEventListener_delete(apx_serverConnectionEventListener_t *self);
 void apx_connectionEventListener_vdelete(void *arg);
 
 

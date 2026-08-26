@@ -43,6 +43,8 @@
 # define APX_MAX_NUM_EVENTS 1000
 #endif
 
+#define APX_MAX_TAG_STR_SIZE 255
+
 #define APX_MAX_DEFINITION_LEN 0x400000 //4MB
 
 

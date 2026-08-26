@@ -305,7 +305,7 @@ static void test_node_data_is_updated_when_require_port_is_written(CuTest* tc)
    uint8_t data[UINT8_SIZE * 2] = { 1, 7 };
    uint8_t buffer[UINT8_SIZE * 2] = { 0, 0 };
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_clientTestConnection_write_remote_data(connection, APX_PORT_DATA_ADDRESS_START, &data[0], (apx_size_t)sizeof(data)));
-   CuAssertUIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_require_port_data_state(node_instance));
+   CuAssertUIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_require_port_data_state(node_instance));
    apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_require_port_data(node_data, 0, &buffer[0], (apx_size_t) sizeof(buffer)));

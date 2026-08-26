@@ -80,8 +80,7 @@ typedef struct apx_connectionBase_tag
    apx_nodeManager_t* node_manager;   
    apx_allocator_t allocator;   
    apx_connectionBaseVTable_t vtable;
-   apx_connectionInterface_t connection_interface;         
-   void *event_handler_arg;
+   apx_connectionInterface_t connection_interface;   
    uint32_t total_bytes_received;
    uint32_t total_bytes_sent;
    uint32_t connection_id;

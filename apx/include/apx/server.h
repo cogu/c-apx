@@ -66,7 +66,7 @@ typedef struct apx_server_tag
    THREAD_T event_thread;                      //Local worker thread (for playing server-global events such as log events)
    bool is_event_thread_valid;                 //True if event_thread is a valid variable
    soa_t allocator;                            //small object allocator
-   apx_eventLoop_t event_loop;                  //Event loop used by event_thread
+   apx_eventLoop_t event_loop;                 //Event loop used by event_thread
    MUTEX_T event_loop_lock;                    //For protecting the event loop
    MUTEX_T global_lock;                        //1. Protects the port_signature_map and connection_manager
                                                //2. Synchronize data routing
@@ -110,6 +110,7 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t *self
 apx_error_t apx_server_insert_modified_node_instance(apx_server_t *self, apx_nodeInstance_t *node_instance);
 adt_ary_t *apx_server_get_modified_node_instance(const apx_server_t *self);
 void apx_server_clear_port_connector_changes(apx_server_t *self);
+void apx_server_vdestroy_event(void *arg, apx_event_t* event);
 
 
 #ifdef UNIT_TEST

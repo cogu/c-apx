@@ -9,18 +9,30 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\monitor_extension.h">
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\monitor_extension.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extension\server_monitor_state.h">
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\observed_connection.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\observed_file.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\server_monitor.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\apx\src\extension\monitor_extension.c">
+    <ClCompile Include="..\..\..\..\apx\extension\src\monitor_extension.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\extension\server_monitor_state.c">
+    <ClCompile Include="..\..\..\..\apx\extension\src\observed_connection.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\extension\src\observed_file.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\apx\extension\src\server_monitor.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

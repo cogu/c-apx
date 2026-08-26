@@ -64,10 +64,10 @@ typedef struct apx_eventLoop_tag
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_eventLoop_create(apx_eventLoop_t *self);
-void apx_eventLoop_destroy(apx_eventLoop_t *self);
+void apx_eventLoop_destroy(apx_eventLoop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
 apx_eventLoop_t *apx_eventLoop_new(void);
-void apx_eventLoop_delete(apx_eventLoop_t *self);
-void apx_eventLoop_setEventHandler(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);
+void apx_eventLoop_delete(apx_eventLoop_t *self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
+//void apx_eventLoop_setEventHandler(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);
 //External events (handler implemented in this class)
 void apx_eventLoop_append(apx_eventLoop_t *self, apx_event_t *event);
 void apx_eventLoop_run(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);

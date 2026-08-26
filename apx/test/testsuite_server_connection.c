@@ -298,7 +298,7 @@ static void test_definition_is_parsed_after_file_has_been_sent(CuTest* tc)
    CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_definition_data_state(node_instance));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*) apx_text, definition_size));
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
    apx_serverTestConnection_run(connection);
    apx_serverTestConnection_delete(connection);
 }
@@ -371,7 +371,7 @@ static void test_provide_port_data_is_requested_after_definition_file_has_been_p
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_serverTestConnection_run(connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
    packet = apx_serverTestConnection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -429,7 +429,7 @@ static void test_provide_port_data_is_received_after_request(CuTest* tc)
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_serverTestConnection_run(connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
    packet = apx_serverTestConnection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -437,7 +437,7 @@ static void test_provide_port_data_is_received_after_request(CuTest* tc)
    apx_serverTestConnection_clear_log(connection);
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_provide_port_data_state(node_instance));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_PORT_DATA_ADDRESS_START, provide_port_data, provide_port_data_size));
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_provide_port_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_provide_port_data_state(node_instance));
    apx_serverTestConnection_delete(connection);
 }
 
@@ -523,7 +523,7 @@ static void test_require_port_data_is_published_after_definition_has_been_parsed
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_serverTestConnection_run(connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
    packet = apx_serverTestConnection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -592,7 +592,7 @@ static void test_require_port_data_is_sent_after_file_open_request_received(CuTe
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_serverTestConnection_run(connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_definition_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
    packet = apx_serverTestConnection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -602,7 +602,7 @@ static void test_require_port_data_is_sent_after_file_open_request_received(CuTe
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_request_open_local_file(connection, "TestNode1.in"));
    apx_serverTestConnection_run(connection);
-   CuAssertIntEquals(tc, APX_DATA_STATE_CONNECTED, apx_nodeInstance_get_require_port_data_state(node_instance));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_require_port_data_state(node_instance));
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
    packet = apx_serverTestConnection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, packet);
@@ -687,6 +687,7 @@ static void test_event_connection_type_is_parsed_from_greeting_header(CuTest* tc
 
 static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* tc)
 {
+   uint32_t const connection_id = 0u;
    apx_serverTestConnection_t* connection;
    adt_bytearray_t* packet;
    uint8_t actual[13];
@@ -704,16 +705,17 @@ static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* 
       0u,
       0u,
       //connection id
-      0xffu,
-      0xffu,
-      0xffu,
-      0xffu,
+      0x00u,
+      0x00u,
+      0x00u,
+      0x00u,
    };
    memset(actual, 0, sizeof(actual));
    connection = apx_serverTestConnection_new();
    CuAssertPtrNotNull(tc, connection);
    apx_serverTestConnection_set_tester_protocol_version(connection, RMF_PROTOCOL_VERSION_ID_1_1);
    apx_serverTestConnection_set_tester_connection_type(connection, APX_CONNECTION_TYPE_MONITOR);
+   apx_serverTestConnection_set_connection_id(connection, connection_id);
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
    apx_connectionBase_start((apx_connectionBase_t*)connection);
    CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_greeting_header(connection));

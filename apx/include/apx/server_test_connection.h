@@ -101,5 +101,8 @@ apx_nodeInstance_t* apx_serverTestConnection_find_node(apx_serverTestConnection_
 apx_error_t apx_serverTestConnection_build_node(apx_serverTestConnection_t* self, char const* definition_text);
 void apx_serverTestConnection_run(apx_serverTestConnection_t* self);
 void apx_serverTestConnection_enable_compatibility_mode(apx_serverTestConnection_t* self);
+void apx_serverTestConnection_set_connection_id(apx_serverTestConnection_t* self, uint32_t connection_id);
+
+
 
 #endif //APX_SERVER_TEST_CONNECTION_H

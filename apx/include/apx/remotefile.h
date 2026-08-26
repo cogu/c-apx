@@ -89,6 +89,8 @@ typedef uint8_t rmf_digestType_t;
 
 //RMFP 1.1 commands
 #define RMF_CMD_ACCEPT_HEADER      ((uint32_t) 20u)
+#define RMF_CMD_CONNECTION_CREATE  ((uint32_t) 21u)
+#define RMF_CMD_CONNECTION_REVOKE  ((uint32_t) 22u)
 
 #define RMF_FILE_OPEN_CMD_SIZE     UINT32_SIZE
 #define RMF_FILE_CLOSE_CMD_SIZE    UINT32_SIZE
@@ -128,8 +130,11 @@ apx_size_t rmf_address_encode(uint8_t* buf, apx_size_t buf_size, uint32_t addres
 apx_size_t rmf_address_decode(uint8_t const* begin, uint8_t const* end, uint32_t* address, bool* more_bit);
 apx_size_t rmf_encode_open_file_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t address);
 apx_size_t rmf_encode_acknowledge_cmd(uint8_t* buf, apx_size_t buf_size);
-apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id);
 apx_size_t rmf_decode_cmd_type(uint8_t const* begin, uint8_t const* end, uint32_t* cmd_type);
+apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id);
+apx_size_t rmf_decode_header_accepted(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id);
+apx_size_t rmf_encode_connection_create(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id, uint8_t connection_state, char const* tag);
+apx_size_t rmf_decode_connection_create(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id, uint8_t* connection_state, char** tag);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES

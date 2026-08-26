@@ -12,15 +12,9 @@
     <ClCompile Include="..\..\..\..\app\apx_info\src\apx_info_main.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\monitor_socket_client_connection.c">
-      <Filter>src</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\app\apx_info\include\apx_app_cmd.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\monitor_socket_client_connection.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

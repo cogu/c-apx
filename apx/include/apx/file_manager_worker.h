@@ -88,5 +88,6 @@ apx_error_t apx_fileManagerWorker_prepare_publish_local_file(apx_fileManagerWork
 apx_error_t apx_fileManagerWorker_prepare_send_local_const_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
 apx_error_t apx_fileManagerWorker_prepare_send_local_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t* data, uint32_t size);
 apx_error_t apx_fileManagerWorker_prepare_send_open_file_request(apx_fileManagerWorker_t* self, uint32_t address);
+apx_error_t apx_fileManagerWorker_prepare_send_connection_create(apx_fileManagerWorker_t* self, apx_connectionId_t connection_id, apx_connectionState_t connection_state, char const* tag);
 
 #endif //APX_FILE_MANAGER_WORKER_H
