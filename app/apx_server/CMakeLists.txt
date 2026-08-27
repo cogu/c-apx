@@ -9,7 +9,7 @@ add_executable(apx_server
 )
 
 target_link_libraries(apx_server PRIVATE
-apx
+apx_core
 apx_socket_extension
 apx_text_log_extension
 apx_monitor_extension

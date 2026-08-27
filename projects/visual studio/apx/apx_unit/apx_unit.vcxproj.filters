@@ -1,10 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="adt">
       <UniqueIdentifier>{3743fb3d-292f-46c9-abc3-e30236445e0d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="apx">
+    <Filter Include="apx_core">
       <UniqueIdentifier>{faede8b3-e78c-4d62-a529-7c62e3fb83df}</UniqueIdentifier>
     </Filter>
     <Filter Include="bstr">
@@ -28,7 +28,7 @@
     <Filter Include="adt\src">
       <UniqueIdentifier>{a0c6c5a5-98c4-4e67-a045-5b853cab7487}</UniqueIdentifier>
     </Filter>
-    <Filter Include="apx\src">
+    <Filter Include="apx_core\src">
       <UniqueIdentifier>{82950687-abf5-4e44-9a91-800664bac5dc}</UniqueIdentifier>
     </Filter>
     <Filter Include="bstr\include">
@@ -64,10 +64,10 @@
     <Filter Include="cutest">
       <UniqueIdentifier>{b4247233-4bff-4c58-ba97-31452a087a8d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="apx\test">
+    <Filter Include="apx_core\test">
       <UniqueIdentifier>{0bd2e6be-2615-4737-9f0a-cc52cadf4ba6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="apx\include">
+    <Filter Include="apx_core\include">
       <UniqueIdentifier>{0f299598-4ea3-4ec2-9a15-7b08fd618628}</UniqueIdentifier>
     </Filter>
     <Filter Include="app">
@@ -82,16 +82,16 @@
     <Filter Include="app\apx_info\src">
       <UniqueIdentifier>{f7bfe775-ca16-48f7-a18c-437a03d9057e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="apx\extension">
+    <Filter Include="extension">
       <UniqueIdentifier>{5e7d4ead-aa1c-4cb4-8660-6d1990d7d7a8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="apx\extension\include">
+    <Filter Include="extension\include">
       <UniqueIdentifier>{2951011a-984d-4a68-bd00-c46f9a8886a9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="apx\extension\src">
+    <Filter Include="extension\src">
       <UniqueIdentifier>{54763271-6b34-4184-bcba-c4363038dcd0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="apx\extension\test">
+    <Filter Include="extension\test">
       <UniqueIdentifier>{0d5d256e-fbae-41a5-9390-b15031595830}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -189,321 +189,321 @@
     <ClCompile Include="..\..\..\..\dtl_json\src\dtl_json_writer.c">
       <Filter>dtl_json\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\allocator.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\allocator.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\attribute_parser.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\attribute_parser.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\byte_port_map.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\byte_port_map.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\client.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\client.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\client_test_connection.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\client_test_connection.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\compiler.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\compiler.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\connection_base.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\connection_base.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\connection_manager.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\connection_manager.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\data_element.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\data_element.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\data_signature.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\data_signature.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\data_type.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\data_type.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\event.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\event.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\event_listener.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\event_listener.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\event_loop.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\event_loop.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\file.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file_info.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\file_info.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file_manager.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\file_manager.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file_manager_receiver.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\file_manager_receiver.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file_manager_shared.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\file_manager_shared.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file_manager_worker.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\file_manager_worker.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\file_map.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\file_map.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\node.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\node.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\node_data.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\node_data.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\node_instance.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\node_instance.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\node_manager.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\node_manager.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\numheader.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\numheader.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_entry.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port_connector_change_entry.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_ref.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port_connector_change_ref.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_connector_change_table.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port_connector_change_table.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_connector_list.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port_connector_list.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_signature_map.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port_signature_map.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_signature_map_entry.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port_signature_map_entry.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\server.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\server.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\server_extension.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\server_extension.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\server_test_connection.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\server_test_connection.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\type_attribute.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\type_attribute.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\util.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\util.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_client_socket_connection.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_client_socket_connection.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_client_test_connection.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_client_test_connection.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_data_element.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_data_element.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_file.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_file.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_file_manager_receiver.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_file_manager_receiver.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_file_map.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_file_map.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_node.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_node.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_node_data.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_node_data.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_parser.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_parser.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_port_connection_change_entry.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_port_connection_change_entry.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_port_connector_change_table.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_port_connector_change_table.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_port_signature_map.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_port_signature_map.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_remotefile.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_remotefile.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_server_connection.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_server_connection.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_util.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_util.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_deserializer.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_vm_deserializer.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_allocator.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_allocator.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_attribute_parser.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_attribute_parser.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_client.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_client.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\test_main.c" />
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_serializer.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\test_main.c" />
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_vm_serializer.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_instance.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port_instance.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\program.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\program.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_program.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_program.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\signature_parser.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\signature_parser.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_signature_parser.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_signature_parser.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\computation.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\computation.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_computation.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_computation.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\parser_base.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\parser_base.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\port_attribute.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\port_attribute.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\parser.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\parser.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_compiler_pack.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_compiler_pack.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_compiler_unpack.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_compiler_unpack.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\serializer.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\serializer.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\deserializer.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\deserializer.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\vm_common.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\vm_common.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\vm.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\vm.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\decoder.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\decoder.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_decoder.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_decoder.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_node_manager_client.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_node_manager_client.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_node_manager_server.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_node_manager_server.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\node_cache.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\node_cache.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\remotefile.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\remotefile.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_file_info.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_file_info.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\command.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\command.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_server.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_server.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\stream.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\stream.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\client_connection.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\client_connection.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\socket_client_connection.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\socket_client_connection.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\src\server_connection.c">
-      <Filter>apx\src</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\src\server_connection.c">
+      <Filter>apx_core\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_pack.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_vm_pack.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_vm_unpack.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_vm_unpack.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\test\testsuite_client_socket_monitor_connection.c">
-      <Filter>apx\test</Filter>
+    <ClCompile Include="..\..\..\..\apx_core\test\testsuite_client_socket_monitor_connection.c">
+      <Filter>apx_core\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\monitor_extension.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_monitor_extension\src\monitor_extension.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\server_text_log.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_text_log_extension\src\server_text_log.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\server_text_log_extension.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_text_log_extension\src\server_text_log_extension.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\socket_server.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_socket_extension\src\socket_server.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\socket_server_connection.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_socket_extension\src\socket_server_connection.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\socket_server_extension.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_socket_extension\src\socket_server_extension.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\text_log_base.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_text_log_extension\src\text_log_base.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\test\testsuite_monitor_extension.c">
-      <Filter>apx\extension\test</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_monitor_extension\test\testsuite_monitor_extension.c">
+      <Filter>extension\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\test\testsuite_server_monitor_state.c">
-      <Filter>apx\extension\test</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_monitor_extension\test\testsuite_server_monitor_state.c">
+      <Filter>extension\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\test\testsuite_server_socket_connection.c">
-      <Filter>apx\extension\test</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_socket_extension\test\testsuite_server_socket_connection.c">
+      <Filter>extension\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\test\testsuite_server_text_log.c">
-      <Filter>apx\extension\test</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_text_log_extension\test\testsuite_server_text_log.c">
+      <Filter>extension\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\test\testsuite_socket_server_extension.c">
-      <Filter>apx\extension\test</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_socket_extension\test\testsuite_socket_server_extension.c">
+      <Filter>extension\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\observed_connection.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_monitor_extension\src\observed_connection.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\observed_file.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_monitor_extension\src\observed_file.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\apx\extension\src\server_monitor.c">
-      <Filter>apx\extension\src</Filter>
+    <ClCompile Include="..\..\..\..\extension\apx_monitor_extension\src\server_monitor.c">
+      <Filter>extension\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -609,242 +609,239 @@
     <ClInclude Include="..\..\..\..\dtl_json\inc\dtl_json.h">
       <Filter>dtl_json\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\allocator.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\allocator.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\attribute_parser.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\attribute_parser.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\byte_port_map.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\byte_port_map.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\cfg.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\cfg.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\client.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\client.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\client_internal.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\client_internal.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\client_test_connection.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\client_test_connection.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\compiler.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\compiler.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\connection_base.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\connection_base.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\connection_manager.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\connection_manager.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\data_element.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\data_element.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\data_signature.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\data_signature.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\data_type.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\data_type.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\error.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\error.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\event.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\event.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\event_listener.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\event_listener.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\event_loop.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\event_loop.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\file.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\file.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\file_info.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\file_info.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\file_manager.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\file_manager.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\file_manager_defs.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\file_manager_defs.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\file_manager_receiver.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\file_manager_receiver.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\file_manager_shared.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\file_manager_shared.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\file_manager_worker.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\file_manager_worker.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\file_map.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\file_map.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\log_event.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\logging.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\logging.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\node.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\node.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\node_data.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\node_data.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\node_instance.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\node_instance.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\node_manager.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\node_manager.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\numheader.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\numheader.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port_connector_change_entry.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port_connector_change_entry.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port_connector_change_ref.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port_connector_change_ref.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port_connector_change_table.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port_connector_change_table.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port_connector_list.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port_connector_list.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port_signature_map.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port_signature_map.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port_signature_map_entry.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port_signature_map_entry.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\server.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\server.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\server_extension.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\server_extension.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\server_test_connection.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\server_test_connection.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\type_attribute.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\type_attribute.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\types.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\types.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\util.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\util.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\vm.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\vm.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\vm_defs.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\vm_defs.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port_instance.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port_instance.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\program.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\program.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\signature_parser.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\signature_parser.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\computation.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\computation.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\parser_base.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\parser_base.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\port_attribute.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\port_attribute.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\parser.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\parser.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\serializer.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\serializer.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\deserializer.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\deserializer.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\vm_common.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\vm_common.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\decoder.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\decoder.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\node_cache.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\node_cache.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\remotefile.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\remotefile.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\remotefile_cfg.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\remotefile_cfg.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\command.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\command.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\connection_interface.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\connection_interface.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\stream.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\stream.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\client_connection.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\client_connection.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\socket_client_connection.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\socket_client_connection.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\server_connection.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\server_connection.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\server_model.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\server_model.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_monitor_extension\include\apx\extension\monitor_extension.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\monitor_extension.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_text_log_extension\include\apx\extension\server_text_log.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\server_text_log.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_text_log_extension\include\apx\extension\server_text_log_extension.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\server_text_log_extension.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_socket_extension\include\apx\extension\socket_server.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\socket_server.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_socket_extension\include\apx\extension\socket_server_connection.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\socket_server_connection.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_socket_extension\include\apx\extension\socket_server_extension.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\socket_server_extension.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_text_log_extension\include\apx\extension\text_log_base.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\text_log_base.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_monitor_extension\include\apx\extension\observed_connection.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\observed_connection.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_monitor_extension\include\apx\extension\observed_file.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\observed_file.h">
-      <Filter>apx\extension\include</Filter>
+    <ClInclude Include="..\..\..\..\extension\apx_monitor_extension\include\apx\extension\server_monitor.h">
+      <Filter>extension\include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\extension\include\apx\extension\server_monitor.h">
-      <Filter>apx\extension\include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\apx\include\apx\extended_file_info.h">
-      <Filter>apx\include</Filter>
+    <ClInclude Include="..\..\..\..\apx_core\include\apx\extended_file_info.h">
+      <Filter>apx_core\include</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

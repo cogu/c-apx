@@ -1,0 +1,3 @@
+add_subdirectory(apx_socket_extension)
+add_subdirectory(apx_text_log_extension)
+add_subdirectory(apx_monitor_extension)
