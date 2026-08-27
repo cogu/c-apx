@@ -102,7 +102,6 @@ void apx_server_destroy(apx_server_t *self)
    {
       apx_server_stop(self);
       MUTEX_LOCK(self->global_lock);
-      soa_destroy(&self->allocator);
       adt_list_destroy(&self->extension_manager);
       adt_ary_destroy(&self->modified_nodes);
       MUTEX_LOCK(self->event_listener_lock);
@@ -112,6 +111,7 @@ void apx_server_destroy(apx_server_t *self)
       apx_portSignatureMap_destroy(&self->port_signature_map);
       MUTEX_UNLOCK(self->global_lock);
       apx_eventLoop_destroy(&self->event_loop, apx_server_vdestroy_event, (void*)self);
+      soa_destroy(&self->allocator);
       MUTEX_DESTROY(self->event_loop_lock);
       MUTEX_DESTROY(self->global_lock);
       MUTEX_DESTROY(self->event_listener_lock);
@@ -666,7 +666,6 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
    if ( (self != NULL) && (event != NULL) )
    {
       apx_logLevel_t level;
-      size_t labelSize;
       char *label;
       adt_str_t *str;
       const char *msg = NULL;
@@ -679,10 +678,10 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
          msg = adt_str_cstr(str);
          if (label != 0)
          {
-            labelSize = strlen(label);
+            size_t label_size = strlen(label);
             apx_server_trigger_log_write_event(self, level, label, msg);
             MUTEX_LOCK(self->event_loop_lock);
-            soa_free(&self->allocator, label, labelSize+1);
+            soa_free(&self->allocator, label, label_size + 1);
             MUTEX_UNLOCK(self->event_loop_lock);
          }
          else

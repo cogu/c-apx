@@ -26,6 +26,15 @@ target_link_libraries(apx_text_log_extension PRIVATE apx_core)
 target_include_directories(apx_text_log_extension PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(apx_text_log_extension PROPERTIES VERSION ${apx_core_VERSION} SOVERSION ${apx_core_VERSION_MAJOR})
 
+if(APX_SERVER_ENABLE_TEXT_LOG_EXTENSION)
+    apx_register_server_extension(
+        TARGET apx_text_log_extension
+        NAME "textlog"
+        HEADER "apx/extension/server_text_log_extension.h"
+        REGISTER_FN "apx_serverTextLogExtension_register"
+    )
+endif()
+
 install(
   TARGETS apx_text_log_extension
   LIBRARY DESTINATION lib

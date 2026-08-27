@@ -32,6 +32,15 @@ target_link_libraries(apx_monitor_extension PRIVATE apx_core)
 target_include_directories(apx_monitor_extension PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(apx_monitor_extension PROPERTIES VERSION ${apx_core_VERSION} SOVERSION ${apx_core_VERSION_MAJOR})
 
+if(APX_SERVER_ENABLE_MONITOR_EXTENSION)
+    apx_register_server_extension(
+        TARGET apx_monitor_extension
+        NAME "monitor"
+        HEADER "apx/extension/monitor_extension.h"
+        REGISTER_FN "apx_monitorExtension_register"
+    )
+endif()
+
 install(
   TARGETS apx_monitor_extension
   LIBRARY DESTINATION lib

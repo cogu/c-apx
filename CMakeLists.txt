@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 
 
 project(apx_core LANGUAGES C VERSION 0.3.3)
 
-set(apx_core_ALPHA_BETA_VERSION "a1")
+set(apx_core_ALPHA_BETA_VERSION "a2")
 
 
 set(ADT_RBFH_ENABLE ON CACHE BOOL "This must always be enabled in c-apx" FORCE)
@@ -12,8 +12,13 @@ include(adt/cmake/BuildTypes.cmake)
 include(adt/cmake/LeakCheck.cmake)
 include(adt/cmake/UnitTest.cmake)
 include(cmake/SetEnv.cmake)
+include(cmake/ApxExtension.cmake)
 
-option(BUILD_DEFAULT_SERVER "Build default APX server?" ON)
+option(APX_BUILD_SERVER "Build the APX server executable" ON)
+option(APX_SERVER_ENABLE_SOCKET_EXTENSION "Enable Socket Server Extension" ON)
+option(APX_SERVER_ENABLE_TEXT_LOG_EXTENSION "Enable Server Text Log Extension" ON)
+option(APX_SERVER_ENABLE_MONITOR_EXTENSION "Enable Server Monitor Extension" ON)
+set(APX_SERVER_EXTENSION_DIRS "" CACHE STRING "Semicolon-separated list of out-of-tree APX server extension directories")
 option(APX_DEBUG "Enable debug-level printouts?" OFF)
 
 if (LEAK_CHECK)
@@ -302,14 +307,22 @@ install(
 ### Extensions
 add_subdirectory(extension)
 
+### Out-of-tree Extensions
+foreach(ext_dir IN LISTS APX_SERVER_EXTENSION_DIRS)
+    if(IS_DIRECTORY "${ext_dir}")
+        get_filename_component(ext_name "${ext_dir}" NAME)
+        add_subdirectory("${ext_dir}" "${CMAKE_CURRENT_BINARY_DIR}/custom_extensions/${ext_name}")
+    else()
+        message(FATAL_ERROR "APX_SERVER_EXTENSION_DIRS contains non-existent directory: ${ext_dir}")
+    endif()
+endforeach()
+
 ### Applications
-if (NOT UNIT_TEST)
 add_subdirectory(app/apx_node)
 add_subdirectory(app/apx_control)
 #add_subdirectory(app/apx_perf_test)#
-if(BUILD_DEFAULT_SERVER)
+if(APX_BUILD_SERVER)
     add_subdirectory(app/apx_server)
-endif()
 endif()
 
 ### Executable apx_unit
