@@ -25,6 +25,7 @@
 #include "apx/types.h"
 #include "dtl_json.h"
 #include "extensions_cfg.h"
+#include "server_cfg.h"
 #include "apx/event_listener.h"
 #ifdef USE_CONFIGURATION_FILE
 #include "apx_build_cfg.h"
@@ -49,7 +50,6 @@ static void signal_handler_setup(void);
 void signal_handler(int signum);
 #endif
 static void printUsage(char *name);
-static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv);
 #ifdef _WIN32
 static int init_wsa(void);
 #endif
@@ -73,6 +73,7 @@ int main(int argc, char **argv)
 {
    apx_error_t result;
    dtl_hv_t *server_config = (dtl_hv_t*) 0;
+   dtl_hv_t *extensions_config = (dtl_hv_t*) 0;
 
    m_shutdownTimer = SHUTDOWN_TIMER_INIT;
    m_runFlag = 1;
@@ -84,8 +85,8 @@ int main(int argc, char **argv)
    }
    const char* config_path = argv[1];
    printf("APX Server %s\n\n", SW_VERSION_STR);
-   result = load_config_file(config_path, &server_config);
    printf("Loading %s: ", config_path);
+   result = apx_server_load_config(config_path, &server_config, &extensions_config);
    if (result != APX_NO_ERROR)
    {
       printf("Error %d\n", (int) result);
@@ -94,15 +95,13 @@ int main(int argc, char **argv)
    else
    {
       printf("OK\n");
-      dtl_dv_t *tmp = dtl_hv_get_cstr(server_config, "server");
-      if ( (tmp != 0) && (dtl_dv_type(tmp) == DTL_DV_HASH) )
+      if (server_config != 0)
       {
-         int32_t i32;
-         bool ok;
-         dtl_hv_t *serverCfg = (dtl_hv_t*) tmp;
-         dtl_sv_t *svShutdownTimer = (dtl_sv_t*) dtl_hv_get_cstr(serverCfg, "shutdown-timer");
+         dtl_sv_t *svShutdownTimer = (dtl_sv_t*) dtl_hv_get_cstr(server_config, "shutdown-timer");
          if (svShutdownTimer != 0)
          {
+            int32_t i32;
+            bool ok;
             i32 = dtl_sv_to_i32(svShutdownTimer, &ok);
             if (ok)
             {
@@ -123,14 +122,9 @@ int main(int argc, char **argv)
    signal_handler_setup();
 #endif
    apx_server_create(&m_server);
-   if (server_config != 0)
+   if (extensions_config != 0)
    {
-      dtl_dv_t *extension_config = (dtl_dv_t*) 0;
-      extension_config = dtl_hv_get_cstr(server_config, "extension");
-      if ( (extension_config != 0) && (dtl_dv_type(extension_config) == DTL_DV_HASH) )
-      {
-         register_apx_server_extensions(&m_server, (dtl_hv_t*) extension_config);
-      }
+      register_apx_server_extensions(&m_server, extensions_config);
    }
    apx_server_start(&m_server);
    while(m_runFlag != 0)
@@ -152,7 +146,14 @@ int main(int argc, char **argv)
    }
    printf("Server shutdown started\n");
    apx_server_destroy(&m_server);
-   dtl_dec_ref(server_config);
+   if (server_config != 0)
+   {
+      dtl_dec_ref(server_config);
+   }
+   if (extensions_config != 0)
+   {
+      dtl_dec_ref(extensions_config);
+   }
    printf("Server shutdown complete\n");
 #ifdef _WIN32
    WSACleanup();
@@ -194,41 +195,8 @@ void signal_handler(int signum)
 
 static void printUsage(char *name)
 {
-   printf("Usage:\n%s configFile.json\n",name);
+   printf("Usage:\n%s <configDir | configFile.json>\n", name);
 }
-
-static apx_error_t load_config_file(const char *filename, dtl_hv_t **hv)
-{
-   if ( (filename != 0) && (hv != 0) )
-   {
-      FILE *fh = fopen(filename, "r");
-      if (fh != 0)
-      {
-         dtl_dv_t *json_data = dtl_json_load(fh);
-         fclose(fh);
-         if (json_data != 0)
-         {
-            if (dtl_dv_type(json_data) == DTL_DV_HASH)
-            {
-               *hv = (dtl_hv_t*) json_data;
-            }
-            else
-            {
-               dtl_dec_ref(json_data);
-               return APX_VALUE_TYPE_ERROR;
-            }
-            return APX_NO_ERROR;
-         }
-         else
-         {
-            return APX_PARSE_ERROR;
-         }
-      }
-      return APX_FILE_NOT_FOUND_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-}
-
 
 #ifdef _WIN32
 static int init_wsa(void)
@@ -241,4 +209,3 @@ static int init_wsa(void)
    return err;
 }
 #endif
-

@@ -27,6 +27,15 @@ target_link_libraries(apx_socket_extension PRIVATE apx_core)
 target_include_directories(apx_socket_extension PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(apx_socket_extension PROPERTIES VERSION ${apx_core_VERSION} SOVERSION ${apx_core_VERSION_MAJOR})
 
+if(APX_SERVER_ENABLE_SOCKET_EXTENSION)
+    apx_register_server_extension(
+        TARGET apx_socket_extension
+        NAME "socket-server"
+        HEADER "apx/extension/socket_server_extension.h"
+        REGISTER_FN "apx_socketServerExtension_register"
+    )
+endif()
+
 install(
   TARGETS apx_socket_extension
   LIBRARY DESTINATION lib

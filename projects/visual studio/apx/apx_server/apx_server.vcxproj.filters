@@ -9,12 +9,18 @@
     <ClCompile Include="..\..\..\..\app\apx_server\src\server_main.c">
       <Filter>server</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\app\apx_server\src\extensions_cfg.c">
+    <ClCompile Include="..\..\..\..\app\apx_server\src\server_cfg.c">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="extensions_cfg.c">
       <Filter>server</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\app\apx_server\src\extensions_cfg.h">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\app\apx_server\src\server_cfg.h">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

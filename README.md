@@ -21,7 +21,6 @@ A brand new implementation is being developed on master branch. Its current stat
 - Static clients not yet supported (needs rewrite from v0.2 to v0.3).
 - CMake build support for Linux and Windows.
 - Visual Studio 2019 projects for Windows.
-- Eclipse projects for Linux.
 
 ## Dynamic vs. Static Clients
 
