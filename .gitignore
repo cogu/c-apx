@@ -12,3 +12,4 @@ CMemLeak.txt
 massif.out.*
 **/*.vcxproj.user
 .vscode/
+Testing/

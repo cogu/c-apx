@@ -14,7 +14,7 @@ set (APX_PERF_SOURCES
 
 add_executable(apx_perf_test ${APX_PERF_TEST_HEADERS} ${APX_PERF_SOURCES})
 target_link_libraries(apx_perf_test PRIVATE
-    apx
+    apx_core
     Threads::Threads
 )
 

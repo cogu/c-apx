@@ -14,7 +14,7 @@ set (APX_CONTROL_SOURCES
 
 add_executable(apx_control ${APX_CONTROL_HEADERS} ${APX_CONTROL_SOURCES})
 target_link_libraries(apx_control PRIVATE
-    apx
+    apx_core
     Threads::Threads
 )
 

@@ -18,7 +18,7 @@ set (APX_NODE_SOURCE_LIST
 
 add_executable(apx_node ${APX_NODE_HEADER_LIST} ${APX_NODE_SOURCE_LIST})
 target_link_libraries(apx_node PRIVATE
-    apx
+    apx_core
     Threads::Threads
 )
 target_include_directories(apx_node PRIVATE

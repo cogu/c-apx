@@ -14,7 +14,7 @@ set (APX_INFO_HEADERS
 
 add_executable(apx_info ${APX_INFO_HEADERS} ${APX_INFO_HEADERS})
 target_link_libraries(apx_info PRIVATE
-    apx
+    apx_core
     Threads::Threads
 )
 

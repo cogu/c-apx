@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>APX_DEBUG_ENABLE=1;SW_VERSION_LITERAL="0.3.2a";ADT_RBFH_ENABLE=1;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx\include;$(SolutionDir)..\..\..\apx\extension\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx_core\include;$(SolutionDir)..\..\..\extension\apx_socket_extension\include;$(SolutionDir)..\..\..\extension\apx_text_log_extension\include;$(SolutionDir)..\..\..\extension\apx_monitor_extension\include</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
@@ -149,6 +149,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\..\app\apx_server\src\extensions_cfg.c" />
     <ClCompile Include="..\..\..\..\app\apx_server\src\server_main.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\apx_monitor_extension\apx_monitor_extension.vcxproj" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

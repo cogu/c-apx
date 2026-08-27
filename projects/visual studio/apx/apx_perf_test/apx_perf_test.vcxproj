@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>SW_VERSION_LITERAL="0.3.1a";ADT_RBFH_ENABLE=1;APX_DEBUG_ENABLE=0;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx\include;$(SolutionDir)..\..\..\app\apx_control\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\cutil\inc;$(SolutionDir)..\..\..\adt\inc;$(SolutionDir)..\..\..\bstr\inc;$(SolutionDir)..\..\..\dtl_type\inc;$(SolutionDir)..\..\..\dtl_json\inc;$(SolutionDir)..\..\..\msocket\inc;$(SolutionDir)..\..\..\apx_core\include;$(SolutionDir)..\..\..\app\apx_control\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
