@@ -1,12 +1,12 @@
 name: "unit tests"
 
 # Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the master branch
+# events for all branches except maintenance_0.2
 on:
   push:
-    branches: [ master ]
+    branches-ignore: [ maintenance_0.2 ]
   pull_request:
-    branches: [ master ]
+    branches-ignore: [ maintenance_0.2 ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
