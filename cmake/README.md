@@ -148,3 +148,9 @@ ExecStart=/usr/bin/apx_server /etc/apx/
 ```
 
 `apx_server` will automatically load `/etc/apx/server.json` and any matching `<NAME>.json` files for each statically linked extension.
+
+---
+
+## 6. Build Instructions
+
+For instructions on building the APX applications (`apx_server`, `apx_node`, `apx_control`) and running unit tests using GCC, Clang, or MSVC, please refer to the main [README.md](../README.md).

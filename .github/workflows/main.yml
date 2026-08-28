@@ -12,12 +12,26 @@ on:
 jobs:
   # This workflow contains a single job called "build"
   build:
+    name: build (${{ matrix.name }})
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: GCC
+            cc: gcc
+            cxx: g++
+          - name: Clang
+            cc: clang
+            cxx: clang++
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
 
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     # Build with CMake
@@ -27,4 +41,4 @@ jobs:
       run: cmake --build build --target apx_unit
     # Run unit test suite
     - name: test
-      run: cd build && ctest
+      run: ctest --test-dir build --output-on-failure

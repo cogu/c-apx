@@ -3,7 +3,8 @@
 **/Release
 **/UnitTest
 **/VisualStudio
-**/build/
+build/
+build-*/
 **.vs/
 *.VC.db
 *.VC.opendb
@@ -14,3 +15,4 @@ massif.out.*
 .vscode/
 Testing/
 TODO.md
+/CMakeUserPresets.json
