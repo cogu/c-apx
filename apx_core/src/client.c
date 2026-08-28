@@ -637,7 +637,7 @@ void apx_client_run(apx_client_t *self)
 static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, apx_clientConnection_t *connection)
 {
    (void)connection;
-   MUTEX_LOCK(self->event_listener_lock); 
+   MUTEX_LOCK(self->event_listener_lock);
    adt_list_elem_t *iter = adt_list_iter_first(self->event_listeners);
    while(iter != 0)
    {
@@ -647,7 +647,7 @@ static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, 
          listener->client_connect1(listener->arg, connection);
       }
       iter = adt_list_iter_next(iter);
-   }   
+   }
    MUTEX_UNLOCK(self->event_listener_lock);
 }
 */
@@ -665,7 +665,7 @@ static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *sel
          listener->client_disconnect1(listener->arg, connection);
       }
       iter = adt_list_iter_next(iter);
-   }   
+   }
    MUTEX_UNLOCK(self->event_listener_lock);
 }
 */

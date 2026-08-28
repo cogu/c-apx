@@ -7,9 +7,12 @@ This directory contains CMake helper modules, templates, and integration hooks f
 ## 1. Overview
 
 `c-apx` is designed for automotive and embedded Linux environments (such as Yocto / OpenEmbedded). It uses a modular extension architecture where:
-- Core APX and extensions are compiled as static libraries (`.a` / `.lib`).
-- The `apx_server` binary statically links only the enabled in-tree and out-of-tree extensions.
-- No dynamic runtime loading (`dlopen`) is used, meeting strict automotive cybersecurity standards.
+- A compile-time static extension registry (`extensions_cfg.c`) is generated during the build, eliminating dynamic runtime plugin discovery (`dlopen`) to meet strict cybersecurity requirements.
+- The `apx_server` binary only compiles and registers enabled in-tree and out-of-tree extensions.
+- Library linkage is controlled via standard CMake options:
+  - By default on Linux (`BUILD_SHARED_LIBS=ON`), libraries are built as shared libraries (`.so`).
+  - For embedded/Yocto deployments requiring fully static binaries, configure with `-DBUILD_SHARED_LIBS=OFF` to build `apx_core` and extensions as static archives (`.a` / `.lib`) linked directly into `apx_server`.
+  - On MSVC and during test builds (`UNIT_TEST=ON`), `BUILD_SHARED_LIBS` defaults to `OFF`.
 
 ---
 

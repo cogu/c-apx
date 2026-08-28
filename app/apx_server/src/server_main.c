@@ -122,9 +122,23 @@ int main(int argc, char **argv)
    signal_handler_setup();
 #endif
    apx_server_create(&m_server);
-   if (extensions_config != 0)
+   result = register_apx_server_extensions(&m_server, extensions_config);
+   if (result != APX_NO_ERROR)
    {
-      register_apx_server_extensions(&m_server, extensions_config);
+      fprintf(stderr, "Failed to register server extensions: error %d\n", (int) result);
+      apx_server_destroy(&m_server);
+      if (server_config != 0)
+      {
+         dtl_dec_ref(server_config);
+      }
+      if (extensions_config != 0)
+      {
+         dtl_dec_ref(extensions_config);
+      }
+#ifdef _WIN32
+      WSACleanup();
+#endif
+      return 1;
    }
    apx_server_start(&m_server);
    while(m_runFlag != 0)

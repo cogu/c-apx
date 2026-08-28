@@ -57,7 +57,8 @@ CuSuite* testSuite_apx_socketServerConnection(void);
 CuSuite* testsuite_apx_serverMonitorState(void);
 CuSuite* testsuite_apx_monitor_extension(void);
 
-//Applications
+//Applications / Server config
+CuSuite* testsuite_server_cfg(void);
 
 void RunAllTests(void)
 {
@@ -115,9 +116,9 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testSuite_apx_socketServerConnection());
    CuSuiteAddSuite(suite, testsuite_apx_serverMonitorState());
    CuSuiteAddSuite(suite, testsuite_apx_monitor_extension());
-   
 
-   //Applications
+   //Applications / Server config
+   CuSuiteAddSuite(suite, testsuite_server_cfg());
 
    //Run Tests
    CuSuiteRun(suite);

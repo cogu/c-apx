@@ -7,7 +7,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(apx_core_ALPHA_BETA_VERSION "a2")
+set(apx_core_ALPHA_BETA_VERSION "a3")
 
 
 set(ADT_RBFH_ENABLE ON CACHE BOOL "This must always be enabled in c-apx" FORCE)
@@ -323,14 +323,23 @@ install(
 add_subdirectory(extension)
 
 ### Out-of-tree Extensions
+set(APX_REGISTERED_EXTENSION_NAMES "")
 foreach(ext_dir IN LISTS APX_SERVER_EXTENSION_DIRS)
     if(IS_DIRECTORY "${ext_dir}")
         get_filename_component(ext_name "${ext_dir}" NAME)
+        if(ext_name IN_LIST APX_REGISTERED_EXTENSION_NAMES)
+            message(FATAL_ERROR "Duplicate extension directory name '${ext_name}' in APX_SERVER_EXTENSION_DIRS: ${ext_dir}")
+        endif()
+        list(APPEND APX_REGISTERED_EXTENSION_NAMES "${ext_name}")
         add_subdirectory("${ext_dir}" "${CMAKE_CURRENT_BINARY_DIR}/custom_extensions/${ext_name}")
     else()
         message(FATAL_ERROR "APX_SERVER_EXTENSION_DIRS contains non-existent directory: ${ext_dir}")
     endif()
 endforeach()
+
+# Generate extensions_cfg.c based on all registered in-tree and out-of-tree extensions
+set(GENERATED_EXTENSIONS_CFG "${PROJECT_BINARY_DIR}/extensions_cfg.c")
+apx_generate_server_extension_registry("${GENERATED_EXTENSIONS_CFG}")
 
 ### Applications
 if(NOT UNIT_TEST)
@@ -353,6 +362,9 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             extension/apx_text_log_extension/test/testsuite_server_text_log.c
             extension/apx_monitor_extension/test/testsuite_monitor_extension.c
             extension/apx_monitor_extension/test/testsuite_server_monitor_state.c
+            app/apx_server/src/server_cfg.c
+            ${GENERATED_EXTENSIONS_CFG}
+            app/apx_server/test/testsuite_server_cfg.c
         )
         target_link_libraries(apx_unit PRIVATE
             apx_core
@@ -366,6 +378,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         target_include_directories(apx_unit PRIVATE
             "${PROJECT_BINARY_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/apx_core/test"
+            "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_server/src"
             "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_socket_extension/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_text_log_extension/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_monitor_extension/include"

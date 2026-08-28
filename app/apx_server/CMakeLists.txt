@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.14)
 
 project(apx_server LANGUAGES C)
 
-# Generate extensions_cfg.c based on all registered in-tree and out-of-tree extensions
-set(GENERATED_EXTENSIONS_CFG "${CMAKE_CURRENT_BINARY_DIR}/extensions_cfg.c")
-apx_generate_server_extension_registry("${GENERATED_EXTENSIONS_CFG}")
-
 # Retrieve list of all registered extension targets to link
 get_property(APX_SERVER_EXT_LIBS GLOBAL PROPERTY APX_SERVER_REGISTERED_TARGETS)
 

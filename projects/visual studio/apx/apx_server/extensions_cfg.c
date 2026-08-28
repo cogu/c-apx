@@ -3,6 +3,9 @@
 * \author    Conny Gustafsson
 * \date      2026-08-28
 * \brief     Extension configuration and static registry implementation (Visual Studio)
+* \details   This static file defines the default in-tree extension registry for the
+*            Visual Studio solution build. In CMake builds, this file is automatically
+*            generated from cmake/extensions_cfg.c.in based on enabled extensions.
 *
 * Copyright (c) 2026 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
