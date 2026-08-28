@@ -613,7 +613,7 @@ static void apx_server_trigger_log_event(apx_server_t* self, apx_logLevel_t leve
       iter = adt_list_iter_next(iter);
    }
 }
-*/   
+*/
 
 static void apx_server_init_extensions(apx_server_t* self)
 {
@@ -730,16 +730,16 @@ static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_
    adt_ary_create(&callbacks, NULL);
 
    MUTEX_LOCK(self->event_loop_lock);
-   adt_list_elem_t* iter = adt_list_iter_first(&self->server_event_listeners);   
+   adt_list_elem_t* iter = adt_list_iter_first(&self->server_event_listeners);
    while (iter != NULL)
-   {      
+   {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
       if ( (listener != 0) && (listener->server_write_log2 != 0) )
       {
          adt_ary_push(&args, (void*)listener->arg);
          adt_ary_push(&callbacks, (void*)listener->server_write_log2);
-         length++;         
-      }      
+         length++;
+      }
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->event_loop_lock);

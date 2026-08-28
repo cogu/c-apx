@@ -7,7 +7,7 @@ This is the C implementation of [APX](https://cogu.github.com/apx).
 All maintenance work for v0.2 is done on the [maintenance_0.2](https://github.com/cogu/c-apx/tree/maintenance_0.2) branch.
 Latest release is [v0.2.8](https://github.com/cogu/c-apx/releases/tag/v0.2.8).
 
-## v0.3.x (Experimental)
+## v0.3.x (Development)
 
 A brand new implementation is being developed on master branch. Its current state is experimental at best.
 
@@ -24,13 +24,13 @@ A brand new implementation is being developed on master branch. Its current stat
 
 ## Dynamic vs. Static Clients
 
-### Static Clients
+### Static Clients (not yet supported)
 
 Static clients uses a code generator (see [Python APX](https://github.com/cogu/py-apx)) to generate C code from APX definitions files.
 The generated code is fast and integrates well with type definitions shared with an AUTOSAR RTE generator.
 Statically generated clients are supposed to be used together with APX-ES in order to run on small devices that run an RTOS.
 
-### Dynamic Clients
+### Dynamic Clients (supported)
 
 Dynamic clients parses an APX definition file in runtime and builds small byte code programs (in-memory) which then executes through a virtual machine (VM). This method has more flexibility since it doesn't require C code to be generated or compiled as an intermediate step.
 Caching mechanisms are currently being developed for C and C++ (More information later).
@@ -38,7 +38,7 @@ Dynamic clients is best used on Windows and Linux systems.
 
 ## What is APX?
 
-APX is a software solution designed for the automotive industry. It is used to stream automotive signals in real-time
+APX (AUTOSAR Port eXchange) is a software solution designed for the automotive industry. It is used to stream automotive signals in real-time
 to (or from) Linux or Windows systems. APX is designed to work well for high-frequency signal changes (low latency updates) over short distances (SPI buses, local area ethernet or local host).
 
 APX is a client-server solution. In a typical setup, one apx-server instance executes on Linux (or Windows).
@@ -60,7 +60,7 @@ APX for embedded systems (APX-ES) is client source code written in C for very sm
 - It does not require any heap memory.
 - It is intended to be MISRA-compliant (at some point).
 
-Note that APX-ES on master branch is not yet updated to work with the new v0.3.x code base (that work will start soon).
+Note that APX-ES on master branch is not yet updated to work with the new v0.3.x code base.
 
 ## Building with CMake
 

@@ -41,7 +41,8 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static bool is_directory(const char *path);
-static dtl_dv_t* load_json_file(const char *filepath);
+static apx_error_t load_json_file(const char *filepath, dtl_dv_t **out_dv);
+static apx_error_t load_json_hash_file(const char *filepath, dtl_hv_t **out_hv);
 static void build_filepath(char *dest, size_t dest_size, const char *dir, const char *filename);
 static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config);
 static apx_error_t load_config_from_file(const char *file_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config);
@@ -115,16 +116,40 @@ static bool is_directory(const char *path)
    return false;
 }
 
-static dtl_dv_t* load_json_file(const char *filepath)
+static apx_error_t load_json_file(const char *filepath, dtl_dv_t **out_dv)
 {
+   *out_dv = NULL;
    FILE *fh = fopen(filepath, "r");
-   if (fh != NULL)
+   if (fh == NULL)
    {
-      dtl_dv_t *json_data = dtl_json_load(fh);
-      fclose(fh);
-      return json_data;
+      return APX_FILE_NOT_FOUND_ERROR;
    }
-   return NULL;
+   dtl_dv_t *json_data = dtl_json_load(fh);
+   fclose(fh);
+   if (json_data == NULL)
+   {
+      return APX_PARSE_ERROR;
+   }
+   *out_dv = json_data;
+   return APX_NO_ERROR;
+}
+
+static apx_error_t load_json_hash_file(const char *filepath, dtl_hv_t **out_hv)
+{
+   *out_hv = NULL;
+   dtl_dv_t *json_data = NULL;
+   apx_error_t result = load_json_file(filepath, &json_data);
+   if (result != APX_NO_ERROR)
+   {
+      return result;
+   }
+   if (dtl_dv_type(json_data) != DTL_DV_HASH)
+   {
+      dtl_dec_ref(json_data);
+      return APX_VALUE_TYPE_ERROR;
+   }
+   *out_hv = (dtl_hv_t*) json_data;
+   return APX_NO_ERROR;
 }
 
 static void build_filepath(char *dest, size_t dest_size, const char *dir, const char *filename)
@@ -143,33 +168,30 @@ static void build_filepath(char *dest, size_t dest_size, const char *dir, const 
 static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config)
 {
    char filepath[1024];
-   dtl_dv_t *server_data = NULL;
+   dtl_hv_t *server_hv = NULL;
+   apx_error_t result;
 
    // 1. Try server.json, fallback to apx_server.json
    build_filepath(filepath, sizeof(filepath), dir_path, "server.json");
-   server_data = load_json_file(filepath);
-   if (server_data == NULL)
+   result = load_json_hash_file(filepath, &server_hv);
+   if (result == APX_FILE_NOT_FOUND_ERROR)
    {
       build_filepath(filepath, sizeof(filepath), dir_path, "apx_server.json");
-      server_data = load_json_file(filepath);
+      result = load_json_hash_file(filepath, &server_hv);
    }
 
-   if (server_data != NULL)
+   if (result == APX_NO_ERROR)
    {
-      if (dtl_dv_type(server_data) == DTL_DV_HASH)
-      {
-         *server_config = (dtl_hv_t*) server_data;
-      }
-      else
-      {
-         dtl_dec_ref(server_data);
-         return APX_VALUE_TYPE_ERROR;
-      }
+      *server_config = server_hv;
+   }
+   else if (result == APX_FILE_NOT_FOUND_ERROR)
+   {
+      // If neither server.json nor apx_server.json found, create an empty hash for default settings
+      *server_config = dtl_hv_new();
    }
    else
    {
-      // If no server.json found, create an empty hash for default settings
-      *server_config = dtl_hv_new();
+      return result;
    }
 
    // 2. Load individual extension JSON configs
@@ -181,27 +203,29 @@ static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_
       snprintf(ext_filename, sizeof(ext_filename), "%s.json", entry->name);
       build_filepath(filepath, sizeof(filepath), dir_path, ext_filename);
 
-      dtl_dv_t *ext_data = load_json_file(filepath);
-      if (ext_data == NULL)
+      dtl_hv_t *ext_entry_hv = NULL;
+      result = load_json_hash_file(filepath, &ext_entry_hv);
+      if (result == APX_FILE_NOT_FOUND_ERROR)
       {
          // Try subfolder extensions/<name>.json
          char ext_subpath[256];
          snprintf(ext_subpath, sizeof(ext_subpath), "extensions/%s.json", entry->name);
          build_filepath(filepath, sizeof(filepath), dir_path, ext_subpath);
-         ext_data = load_json_file(filepath);
+         result = load_json_hash_file(filepath, &ext_entry_hv);
       }
 
-      if (ext_data != NULL)
+      if (result == APX_NO_ERROR)
       {
-         if (dtl_dv_type(ext_data) == DTL_DV_HASH)
-         {
-            dtl_hv_set_cstr(ext_hash, entry->name, ext_data, false);
-         }
-         else
-         {
-            dtl_dec_ref(ext_data);
-         }
+         dtl_hv_set_cstr(ext_hash, entry->name, (dtl_dv_t*) ext_entry_hv, false);
       }
+      else if (result != APX_FILE_NOT_FOUND_ERROR)
+      {
+         dtl_dec_ref(*server_config);
+         *server_config = NULL;
+         dtl_dec_ref(ext_hash);
+         return result;
+      }
+      // If APX_FILE_NOT_FOUND_ERROR, extension config is omitted (optional)
       entry++;
    }
 
@@ -211,42 +235,54 @@ static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_
 
 static apx_error_t load_config_from_file(const char *file_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config)
 {
-   dtl_dv_t *json_data = load_json_file(file_path);
-   if (json_data == NULL)
+   dtl_hv_t *root_hv = NULL;
+   apx_error_t result = load_json_hash_file(file_path, &root_hv);
+   if (result != APX_NO_ERROR)
    {
-      return APX_FILE_NOT_FOUND_ERROR;
+      return result;
    }
 
-   if (dtl_dv_type(json_data) != DTL_DV_HASH)
-   {
-      dtl_dec_ref(json_data);
-      return APX_VALUE_TYPE_ERROR;
-   }
-
-   dtl_hv_t *root_hv = (dtl_hv_t*) json_data;
    dtl_dv_t *server_node = dtl_hv_get_cstr(root_hv, "server");
-   if (server_node != NULL && dtl_dv_type(server_node) == DTL_DV_HASH)
+   if (server_node != NULL)
    {
-      dtl_inc_ref(server_node);
-      *server_config = (dtl_hv_t*) server_node;
+      if (dtl_dv_type(server_node) == DTL_DV_HASH)
+      {
+         dtl_inc_ref(server_node);
+         *server_config = (dtl_hv_t*) server_node;
+      }
+      else
+      {
+         dtl_dec_ref(root_hv);
+         return APX_VALUE_TYPE_ERROR;
+      }
    }
    else
    {
-      dtl_inc_ref(json_data);
+      dtl_inc_ref(root_hv);
       *server_config = root_hv;
    }
 
    dtl_dv_t *ext_node = dtl_hv_get_cstr(root_hv, "extension");
-   if (ext_node != NULL && dtl_dv_type(ext_node) == DTL_DV_HASH)
+   if (ext_node != NULL)
    {
-      dtl_inc_ref(ext_node);
-      *extensions_config = (dtl_hv_t*) ext_node;
+      if (dtl_dv_type(ext_node) == DTL_DV_HASH)
+      {
+         dtl_inc_ref(ext_node);
+         *extensions_config = (dtl_hv_t*) ext_node;
+      }
+      else
+      {
+         dtl_dec_ref(*server_config);
+         *server_config = NULL;
+         dtl_dec_ref(root_hv);
+         return APX_VALUE_TYPE_ERROR;
+      }
    }
    else
    {
       *extensions_config = dtl_hv_new();
    }
 
-   dtl_dec_ref(json_data);
+   dtl_dec_ref(root_hv);
    return APX_NO_ERROR;
 }
