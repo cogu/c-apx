@@ -71,7 +71,7 @@ apx_observedFile_t* apx_observedFile_new(rmf_extendedFileInfo_t* const file_info
 
 void apx_observedFile_delete(apx_observedFile_t* self)
 {
-   if (self != NULL);
+   if (self != NULL)
    {
       apx_observedFile_destroy(self);
       free(self);

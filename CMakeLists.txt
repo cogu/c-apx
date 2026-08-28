@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.14)
 
 project(apx_core LANGUAGES C VERSION 0.3.3)
 
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(apx_core_ALPHA_BETA_VERSION "a2")
 
 
@@ -19,7 +23,18 @@ option(APX_SERVER_ENABLE_SOCKET_EXTENSION "Enable Socket Server Extension" ON)
 option(APX_SERVER_ENABLE_TEXT_LOG_EXTENSION "Enable Server Text Log Extension" ON)
 option(APX_SERVER_ENABLE_MONITOR_EXTENSION "Enable Server Monitor Extension" ON)
 set(APX_SERVER_EXTENSION_DIRS "" CACHE STRING "Semicolon-separated list of out-of-tree APX server extension directories")
+set(APX_SANITIZERS "" CACHE STRING "Comma-separated sanitizers to enable (for example: address,undefined or thread)")
+set_property(CACHE APX_SANITIZERS PROPERTY STRINGS "" "address" "address,undefined" "thread")
 option(APX_DEBUG "Enable debug-level printouts?" OFF)
+
+if(APX_SANITIZERS)
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+        add_compile_options(-fsanitize=${APX_SANITIZERS} -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=${APX_SANITIZERS})
+    else()
+        message(FATAL_ERROR "APX_SANITIZERS is only supported with GCC or Clang")
+    endif()
+endif()
 
 if (LEAK_CHECK)
     message(STATUS "LEAK_CHECK=${LEAK_CHECK} (C-APX)")
@@ -318,9 +333,11 @@ foreach(ext_dir IN LISTS APX_SERVER_EXTENSION_DIRS)
 endforeach()
 
 ### Applications
-add_subdirectory(app/apx_node)
-add_subdirectory(app/apx_control)
-#add_subdirectory(app/apx_perf_test)#
+if(NOT UNIT_TEST)
+    add_subdirectory(app/apx_node)
+    add_subdirectory(app/apx_control)
+    #add_subdirectory(app/apx_perf_test)#
+endif()
 if(APX_BUILD_SERVER)
     add_subdirectory(app/apx_server)
 endif()

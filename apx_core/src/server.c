@@ -596,6 +596,7 @@ static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server
    MUTEX_UNLOCK(self->event_listener_lock);
 }
 
+/*
 static void apx_server_trigger_log_event(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
 {
    adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
@@ -604,16 +605,15 @@ static void apx_server_trigger_log_event(apx_server_t* self, apx_logLevel_t leve
    (void)msg;
    while(iter != 0)
    {
-/*
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
       if ( (listener != 0) && (listener->serverConnected != 0) )
       {
          listener->logEvent(listener->arg, level, label, msg);
       }
-*/
       iter = adt_list_iter_next(iter);
    }
 }
+*/   
 
 static void apx_server_init_extensions(apx_server_t* self)
 {

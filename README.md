@@ -64,68 +64,28 @@ Note that APX-ES on master branch is not yet updated to work with the new v0.3.x
 
 ## Building with CMake
 
-CMake build has been tested for Windows (with Visual Studio) as well as Linux (with GCC).
+`c-apx` provides CMake support for both Windows (MSVC) and Linux (GCC and Clang).
 
-For Windows, use a "Native tools command prompt" provided by your Visual Studio installation. It comes with a cmake binary that
-by default chooses the right version of Visusl Studio compiler.
+### Build Targets and Modes
 
-### Running unit tests (Linux and Windows)
+- **Applications**: Standard builds compile the core library (`apx_core`), enabled extensions, and the executable applications in `app/`:
+  - `apx_server`: The APX server daemon.
+  - `apx_node`: APX node application.
+  - `apx_control`: APX control application.
 
-Configure:
+  Applications can be built in either `Debug` or `Release` configuration.
 
-```sh
-cmake -S . -B build -DUNIT_TEST=ON
-```
+- **Unit Tests**: A dedicated unit test suite target `apx_unit` is available.
+  - Enabled by setting `-DUNIT_TEST=ON` at CMake configure time.
+  - Built specifically via `--target apx_unit` and executed with `ctest`.
 
-Build:
+---
 
-```sh
-cmake --build build --target apx_unit
-```
+### Building on Windows (Visual Studio / MSVC)
 
-Run test cases:
+Open the **x64 Native Tools Command Prompt for Visual Studio** (e.g. Visual Studio 2019 or later) to ensure CMake configures the MSVC compiler environment.
 
-```cmd
-cd build && ctest
-```
-
-### Building APX Binaries (Linux)
-
-**Configure:**
-
-```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-```
-
-Option 1: If you're going to run install target and want the binaries to end up in `/usr/bin` instead of `/usr/local/bin`:
-
-```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr
-```
-
-Option 2: if you have ninja-build installed (recommended) remember to add the `-GNinja` argument during configuration.
-
-```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -GNinja
-```
-
-**Build binaries:**
-
-```sh
-cmake --build build
-```
-
-**Install binaries:**
-
-Also builds binaries if not previously built.
-
-```sh
-sudo cmake --build build --target install
-```
-
-### Building APX Binaries (Windows and Visual Studio)
-
-Launch "x64 Native Tools Command Prompt for Visual Studio 2019" from start menu.
+#### 1. Building Applications
 
 **Configure:**
 
@@ -133,16 +93,152 @@ Launch "x64 Native Tools Command Prompt for Visual Studio 2019" from start menu.
 cmake -S . -B build
 ```
 
-**Build binaries:**
+**Build (Release):**
 
 ```cmd
 cmake --build build --config Release
 ```
+*(Or use `--config Debug` for a debug build).*
 
-**Install binaries:**
+**Install binaries (optional):**
 
-Run with admininistrative privilege.
+Run from an elevated Command Prompt:
 
 ```cmd
-cmake --build build --target install
+cmake --build build --target install --config Release
 ```
+
+#### 2. Building and Running Unit Tests
+
+**Configure with unit tests enabled:**
+
+```cmd
+cmake -S . -B build-test -DUNIT_TEST=ON
+```
+
+**Build test target:**
+
+```cmd
+cmake --build build-test --target apx_unit
+```
+
+**Run unit tests:**
+
+```cmd
+ctest --test-dir build-test --output-on-failure
+```
+
+---
+
+### Building on Linux
+
+#### 1. Using GCC
+
+##### Building Applications
+
+**Configure:**
+
+```bash
+cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
+```
+
+If you plan to run the install target and want binaries installed to `/usr/bin` instead of `/usr/local/bin`:
+
+```bash
+cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr
+```
+
+**Build:**
+
+```bash
+cmake --build build
+```
+
+**Install binaries (optional):**
+
+```bash
+sudo cmake --build build --target install
+```
+
+##### Building and Running Unit Tests
+
+**Configure:**
+
+```bash
+cmake -S . -B build-test -GNinja -DUNIT_TEST=ON
+```
+
+**Build `apx_unit`:**
+
+```bash
+cmake --build build-test --target apx_unit
+```
+
+**Run unit tests:**
+
+```bash
+ctest --test-dir build-test --output-on-failure
+```
+
+---
+
+#### 2. Using Clang
+
+`c-apx` includes CMake Presets (`CMakePresets.json`) targeting Clang 18 with Ninja, as well as support for direct CMake invocations.
+
+##### Using CMake Presets (Recommended)
+
+**Building Applications (Debug or Release):**
+
+```bash
+# Debug build (apx_server, apx_node, apx_control)
+cmake --preset clang-debug
+cmake --build --preset clang-debug
+
+# Release build
+cmake --preset clang-release
+cmake --build --preset clang-release
+```
+
+The debug preset also generates a compilation database at `build/clang-debug/compile_commands.json` for `clangd` / IDE integration.
+
+**Running Unit Tests & Sanitizers:**
+
+```bash
+# Standard Unit Tests
+cmake --preset clang-test
+cmake --build --preset clang-test
+ctest --preset clang-test
+
+# Address and Undefined Behavior Sanitizers (ASan + UBSan)
+cmake --preset clang-asan
+cmake --build --preset clang-asan
+ctest --preset clang-asan
+
+# Thread Sanitizer (TSan)
+cmake --preset clang-tsan
+cmake --build --preset clang-tsan
+ctest --preset clang-tsan
+
+# Static Analysis (Clang-Tidy)
+cmake --preset clang-tidy
+cmake --build --preset clang-tidy
+```
+
+##### Using Direct CMake Commands
+
+**Building Applications:**
+
+```bash
+cmake -S . -B build-clang -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -GNinja
+cmake --build build-clang
+```
+
+**Building & Running Unit Tests:**
+
+```bash
+cmake -S . -B build-clang-test -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUNIT_TEST=ON -GNinja
+cmake --build build-clang-test --target apx_unit
+ctest --test-dir build-clang-test --output-on-failure
+```
+

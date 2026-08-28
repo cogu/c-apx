@@ -31,6 +31,7 @@
 #include <malloc.h>
 #include "apx_connection.h"
 #include "apx/event_listener.h"
+#include "apx/client.h"
 #include "dtl_json.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -210,14 +211,13 @@ apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const ch
 static void apx_connection_on_connect(void* arg, apx_clientConnection_t* client_connection)
 {
    (void)arg;
-   (void*)client_connection;
+   (void)client_connection;
    printf("[APX-CONNECTION] connected to APX server\n");
 }
 
 static void apx_connection_on_disconnect(void* arg, apx_clientConnection_t* client_connection)
 {
    (void)arg;
-   (void*)client_connection;
    printf("[APX-CONNECTION] Disconnected from APX server\n");
 }
 
