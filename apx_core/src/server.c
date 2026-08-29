@@ -562,38 +562,80 @@ static void apx_server_attach_and_start_connection(apx_server_t* self, apx_serve
 }
 static void apx_server_trigger_connected_event(apx_server_t* self, apx_serverConnection_t* server_connection)
 {
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
    assert(self != NULL);
    assert(server_connection != NULL);
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
    MUTEX_LOCK(self->event_listener_lock);
    adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
-   while(iter != 0)
+   while(iter != NULL)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->new_connection2 != NULL) )
+      if ( (listener != NULL) && (listener->new_connection2 != NULL) )
       {
-         listener->new_connection2(listener->arg, server_connection);
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->new_connection2);
+         length++;
       }
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->event_listener_lock);
+
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_serverConnectionEventFunc_t *callback = (apx_serverConnectionEventFunc_t*) adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, server_connection);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
 }
 
 static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_serverConnection_t* server_connection)
 {
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
    assert(self != NULL);
    assert(server_connection != NULL);
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
    MUTEX_LOCK(self->event_listener_lock);
    adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
-   while(iter != 0)
+   while(iter != NULL)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->connection_closed2 != NULL) )
+      if ( (listener != NULL) && (listener->connection_closed2 != NULL) )
       {
-         listener->connection_closed2(listener->arg, server_connection);
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->connection_closed2);
+         length++;
       }
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->event_listener_lock);
+
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_serverConnectionEventFunc_t *callback = (apx_serverConnectionEventFunc_t*) adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, server_connection);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
 }
 
 /*
@@ -729,7 +771,7 @@ static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_
    adt_ary_create(&args, NULL);
    adt_ary_create(&callbacks, NULL);
 
-   MUTEX_LOCK(self->event_loop_lock);
+   MUTEX_LOCK(self->event_listener_lock);
    adt_list_elem_t* iter = adt_list_iter_first(&self->server_event_listeners);
    while (iter != NULL)
    {
@@ -742,7 +784,7 @@ static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_
       }
       iter = adt_list_iter_next(iter);
    }
-   MUTEX_UNLOCK(self->event_loop_lock);
+   MUTEX_UNLOCK(self->event_listener_lock);
    for (i = 0; i < length; i++)
    {
       void* arg = adt_ary_value(&args, i);
