@@ -672,19 +672,40 @@ static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *sel
 
 static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self, apx_clientConnection_t* connection, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size)
 {
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
    (void)connection;
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
    MUTEX_LOCK(self->event_listener_lock);
    adt_list_elem_t *iter = adt_list_iter_first(self->event_listeners);
-   while(iter != 0)
+   while (iter != NULL)
    {
       apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->require_port_write1 != 0))
+      if ( (listener != NULL) && (listener->require_port_write1 != NULL) )
       {
-         listener->require_port_write1(listener->arg, port_instance, data, size);
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->require_port_write1);
+         length++;
       }
       iter = adt_list_iter_next(iter);
    }
    MUTEX_UNLOCK(self->event_listener_lock);
+
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_portDataWriteFunc1_t *callback = (apx_portDataWriteFunc1_t*) adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, port_instance, data, size);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
 }
 
 
