@@ -384,7 +384,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         target_include_directories(apx_unit PRIVATE
             "${PROJECT_BINARY_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/apx_core/test"
-            "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_server/src"
+            "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_server/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_socket_extension/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_text_log_extension/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_monitor_extension/include"
