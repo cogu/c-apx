@@ -23,6 +23,7 @@ static void test_parse_resource_name_containing_ipv4_address_with_port(CuTest* t
 static void test_parse_resource_name_localhost_without_port(CuTest* tc);
 static void test_parse_resource_name_localhost_with_port(CuTest* tc);
 static void test_parse_resource_name_port_only(CuTest* tc);
+static void test_apx_strerror(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -42,6 +43,7 @@ CuSuite* testSuite_apx_util(void)
    SUITE_ADD_TEST(suite, test_parse_resource_name_localhost_without_port);
    SUITE_ADD_TEST(suite, test_parse_resource_name_localhost_with_port);
    SUITE_ADD_TEST(suite, test_parse_resource_name_port_only);
+   SUITE_ADD_TEST(suite, test_apx_strerror);
 
    return suite;
 }
@@ -196,4 +198,14 @@ static void test_parse_resource_name_port_only(CuTest* tc)
    CuAssertUIntEquals(tc, 8080u, port);
    adt_str_delete(address);
 
+}
+
+static void test_apx_strerror(CuTest* tc)
+{
+   CuAssertStrEquals(tc, "No error", apx_strerror(APX_NO_ERROR));
+   CuAssertStrEquals(tc, "No such file or directory", apx_strerror(APX_FILE_NOT_FOUND_ERROR));
+   CuAssertStrEquals(tc, "Parse error", apx_strerror(APX_PARSE_ERROR));
+   CuAssertStrEquals(tc, "Invalid argument", apx_strerror(APX_INVALID_ARGUMENT_ERROR));
+   CuAssertStrEquals(tc, "Out of memory", apx_strerror(APX_MEM_ERROR));
+   CuAssertStrEquals(tc, "Unknown error", apx_strerror(9999));
 }
