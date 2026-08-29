@@ -113,8 +113,8 @@ cmake --build build --config Release
 
 :: Build and Run Unit Tests
 cmake -S . -B build-test -DUNIT_TEST=ON
-cmake --build build-test --target apx_unit
-ctest --test-dir build-test --output-on-failure
+cmake --build build-test --target apx_unit --config Debug
+ctest --test-dir build-test -C Debug --output-on-failure
 ```
 
 ---
