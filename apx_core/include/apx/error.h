@@ -89,6 +89,7 @@ typedef int32_t apx_error_t;
 #define APX_TOO_MANY_REFERENCES_ERROR          75
 #define APX_INDEX_ERROR                        76
 #define APX_SEMAPHORE_ERROR                    77
+#define APX_NOT_A_DIRECTORY_ERROR             78
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES

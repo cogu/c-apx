@@ -207,5 +207,6 @@ static void test_apx_strerror(CuTest* tc)
    CuAssertStrEquals(tc, "Parse error", apx_strerror(APX_PARSE_ERROR));
    CuAssertStrEquals(tc, "Invalid argument", apx_strerror(APX_INVALID_ARGUMENT_ERROR));
    CuAssertStrEquals(tc, "Out of memory", apx_strerror(APX_MEM_ERROR));
+   CuAssertStrEquals(tc, "Not a directory", apx_strerror(APX_NOT_A_DIRECTORY_ERROR));
    CuAssertStrEquals(tc, "Unknown error", apx_strerror(9999));
 }

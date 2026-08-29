@@ -388,6 +388,8 @@ const char *apx_strerror(apx_error_t error_code)
       return "Index error";
    case APX_SEMAPHORE_ERROR:
       return "Semaphore error";
+   case APX_NOT_A_DIRECTORY_ERROR:
+      return "Not a directory";
    default:
       return "Unknown error";
    }

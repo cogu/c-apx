@@ -45,7 +45,6 @@ static apx_error_t load_json_file(const char *filepath, dtl_dv_t **out_dv);
 static apx_error_t load_json_hash_file(const char *filepath, dtl_hv_t **out_hv);
 static void build_filepath(char *dest, size_t dest_size, const char *dir, const char *filename);
 static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config);
-static apx_error_t load_config_from_file(const char *file_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -61,14 +60,12 @@ apx_error_t apx_server_load_config(const char *path, dtl_hv_t **server_config, d
    *server_config = NULL;
    *extensions_config = NULL;
 
-   if (is_directory(path))
+   if (!is_directory(path))
    {
-      return load_config_from_dir(path, server_config, extensions_config);
+      return APX_NOT_A_DIRECTORY_ERROR;
    }
-   else
-   {
-      return load_config_from_file(path, server_config, extensions_config);
-   }
+
+   return load_config_from_dir(path, server_config, extensions_config);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -230,59 +227,5 @@ static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_
    }
 
    *extensions_config = ext_hash;
-   return APX_NO_ERROR;
-}
-
-static apx_error_t load_config_from_file(const char *file_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config)
-{
-   dtl_hv_t *root_hv = NULL;
-   apx_error_t result = load_json_hash_file(file_path, &root_hv);
-   if (result != APX_NO_ERROR)
-   {
-      return result;
-   }
-
-   dtl_dv_t *server_node = dtl_hv_get_cstr(root_hv, "server");
-   if (server_node != NULL)
-   {
-      if (dtl_dv_type(server_node) == DTL_DV_HASH)
-      {
-         dtl_inc_ref(server_node);
-         *server_config = (dtl_hv_t*) server_node;
-      }
-      else
-      {
-         dtl_dec_ref(root_hv);
-         return APX_VALUE_TYPE_ERROR;
-      }
-   }
-   else
-   {
-      dtl_inc_ref(root_hv);
-      *server_config = root_hv;
-   }
-
-   dtl_dv_t *ext_node = dtl_hv_get_cstr(root_hv, "extension");
-   if (ext_node != NULL)
-   {
-      if (dtl_dv_type(ext_node) == DTL_DV_HASH)
-      {
-         dtl_inc_ref(ext_node);
-         *extensions_config = (dtl_hv_t*) ext_node;
-      }
-      else
-      {
-         dtl_dec_ref(*server_config);
-         *server_config = NULL;
-         dtl_dec_ref(root_hv);
-         return APX_VALUE_TYPE_ERROR;
-      }
-   }
-   else
-   {
-      *extensions_config = dtl_hv_new();
-   }
-
-   dtl_dec_ref(root_hv);
    return APX_NO_ERROR;
 }
