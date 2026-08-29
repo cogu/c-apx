@@ -79,9 +79,9 @@ bool application_init(const application_cfg_t *cfg)
    apx_clientEventListener_t handlerTable;
    apx_error_t result;
    memset(&handlerTable, 0, sizeof(handlerTable));
-   handlerTable.client_connect1 = onClientConnected;
-   handlerTable.client_disconnect1 = onClientDisconnected;
-   handlerTable.require_port_write1 = onRequirePortWrite;
+   handlerTable.connected = onClientConnected;
+   handlerTable.disconnected = onClientDisconnected;
+   handlerTable.require_port_write = onRequirePortWrite;
    if (cfg == NULL)
    {
       printf("cfg is NULL, aborting\n");
