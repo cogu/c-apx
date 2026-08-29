@@ -71,7 +71,7 @@ static apx_server_t m_server;
 static int32_t m_shutdownTimer;
 static bool m_display_help = false;
 static bool m_display_version = false;
-static const char *m_config_path = NULL;
+static adt_str_t *m_config_path = NULL;
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
@@ -110,11 +110,12 @@ int main(int argc, char **argv)
       return 0;
    }
 
-   const char* config_path = m_config_path;
+   const char* config_path = adt_str_cstr(m_config_path);
    printf("APX Server %s\n\n", SW_VERSION_STR);
    printf("Loading %s: ", config_path);
    fflush(stdout);
    result = apx_server_load_config(config_path, &server_config, &extensions_config);
+   adt_str_delete(m_config_path);
    if (result != APX_NO_ERROR)
    {
       printf("Error %d: %s\n", (int) result, apx_strerror(result));
@@ -197,7 +198,7 @@ int main(int argc, char **argv)
    {
       dtl_dec_ref(extensions_config);
    }
-   printf("Server shutdown complete\n");
+   printf("Server shutdown complete\n");   
 #ifdef _WIN32
    WSACleanup();
 #endif
@@ -284,7 +285,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
    {
       if (short_name == NULL && long_name == NULL)
       {
-         m_config_path = value;
+         m_config_path = adt_str_new_cstr(value);
       }
       else
       {
