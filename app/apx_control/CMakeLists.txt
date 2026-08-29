@@ -24,11 +24,11 @@ target_include_directories(apx_control PRIVATE
 )
 target_compile_definitions(apx_control PRIVATE USE_CONFIGURATION_FILE)
 if(APX_DEBUG)
-    target_compile_definitions(apx_node PUBLIC APX_DEBUG_ENABLE=1)
+    target_compile_definitions(apx_control PUBLIC APX_DEBUG_ENABLE=1)
 endif()
 
 install(
   TARGETS apx_control
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   COMPONENT App
 )

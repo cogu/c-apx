@@ -15,7 +15,7 @@ set(ADT_RBFH_ENABLE ON CACHE BOOL "This must always be enabled in c-apx" FORCE)
 include(adt/cmake/BuildTypes.cmake)
 include(adt/cmake/LeakCheck.cmake)
 include(adt/cmake/UnitTest.cmake)
-include(cmake/SetEnv.cmake)
+include(GNUInstallDirs)
 include(cmake/ApxExtension.cmake)
 
 option(APX_BUILD_SERVER "Build the APX server executable" ON)
@@ -316,7 +316,9 @@ set_target_properties(apx_core PROPERTIES VERSION ${apx_core_VERSION} SOVERSION 
 
 install(
   TARGETS apx_core
-  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 ### Extensions
