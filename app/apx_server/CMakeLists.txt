@@ -27,6 +27,6 @@ target_include_directories(apx_server PRIVATE src ${PROJECT_BINARY_DIR} ${CMAKE_
 
 install(
   TARGETS apx_server
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   COMPONENT Server
 )

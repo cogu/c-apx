@@ -26,6 +26,6 @@ target_compile_definitions(apx_perf_test PRIVATE USE_CONFIGURATION_FILE)
 
 install(
   TARGETS apx_perf_test
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   COMPONENT App
 )
