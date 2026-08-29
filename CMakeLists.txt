@@ -3,9 +3,13 @@ cmake_minimum_required(VERSION 3.20)
 
 project(apx_core LANGUAGES C VERSION 0.3.3)
 
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_OPTIMIZE_DEPENDENCIES ON)
 
 set(apx_core_ALPHA_BETA_VERSION "a3")
 
@@ -290,11 +294,12 @@ endif()
 if(APX_DEBUG)
     target_compile_definitions(apx_core PUBLIC APX_DEBUG_ENABLE=1)
 endif()
-if(MSVC)
-  target_compile_options(apx_core PRIVATE /W4)
-else()
-  target_compile_options(apx_core PRIVATE -Wall)
-endif()
+target_compile_options(apx_core PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:/W4>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wall>
+)
+
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${APX_COMMON_HEADERS} ${APX_COMMON_SOURCES})
 
 #Enable later once all needed symbols have been chosen for shared library export
 #target_compile_options(apx_core PRIVATE -fvisibility=hidden)
@@ -328,7 +333,7 @@ add_subdirectory(extension)
 set(APX_REGISTERED_EXTENSION_NAMES "")
 foreach(ext_dir IN LISTS APX_SERVER_EXTENSION_DIRS)
     if(IS_DIRECTORY "${ext_dir}")
-        get_filename_component(ext_name "${ext_dir}" NAME)
+        cmake_path(GET ext_dir FILENAME ext_name)
         if(ext_name IN_LIST APX_REGISTERED_EXTENSION_NAMES)
             message(FATAL_ERROR "Duplicate extension directory name '${ext_name}' in APX_SERVER_EXTENSION_DIRS: ${ext_dir}")
         endif()
@@ -393,7 +398,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         endif()
 
         enable_testing()
-        add_test(apx_test ${CMAKE_CURRENT_BINARY_DIR}/apx_unit)
+        add_test(NAME apx_test COMMAND apx_unit)
         set_tests_properties(apx_test PROPERTIES PASS_REGULAR_EXPRESSION "OK \\([0-9]+ tests\\)")
     endif()
 endif()

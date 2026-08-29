@@ -119,14 +119,15 @@ cmake -S . -B build-test -DUNIT_TEST=ON
 **Build test target:**
 
 ```cmd
-cmake --build build-test --target apx_unit
+cmake --build build-test --target apx_unit --config Debug
 ```
 
 **Run unit tests:**
 
 ```cmd
-ctest --test-dir build-test --output-on-failure
+ctest --test-dir build-test -C Debug --output-on-failure
 ```
+*(Or use `--config Release` / `-C Release` for release configuration).*
 
 ---
 
