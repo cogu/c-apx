@@ -397,8 +397,11 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         endif()
 
         enable_testing()
-        add_test(NAME apx_test COMMAND apx_unit)
-        set_tests_properties(apx_test PROPERTIES PASS_REGULAR_EXPRESSION "OK \\([0-9]+ tests\\)")
+        add_test(NAME apx_unit_test COMMAND apx_unit)
+        set_tests_properties(apx_unit_test PROPERTIES 
+            PASS_REGULAR_EXPRESSION "OK \\([0-9]+ tests\\)"
+            LABELS "unit"
+        )
     endif()
 endif()
 ###
