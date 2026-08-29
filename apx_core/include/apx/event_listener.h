@@ -48,36 +48,30 @@ struct apx_portInstance_tag;
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-//typedef void (apx_eventListener2_portConnectFunc_t)(void *arg, struct apx_nodeInstance_tag *inst, struct apx_portConnectionTable_tag *connectionTable);
-//typedef void (apx_eventListener2_fileEvent_t)(void *arg, struct apx_connectionBase_tag *connection, const struct apx_fileInfo_tag *fileInfo);
-//typedef void (*remoteFilePreWriteFuncType1)(void *arg, struct apx_file_tag *remoteFile, uint32_t offset, const uint8_t *data, uint32_t len, bool moreBit);
-//typedef void (*remoteFileWriteFuncType1)(void *arg, struct apx_file_tag *remoteFile, uint32_t offset, const uint8_t *data, uint32_t len);
-
-
 //Client/Server typedefs
 typedef void (apx_clientConnectionEventFunc_t)(void* arg, struct apx_clientConnection_tag* connection);
 typedef void (apx_serverConnectionEventFunc_t)(void* arg, struct apx_serverConnection_tag* connection);
-typedef void (apx_serverLogWritEventFunc_t)(void* arg, apx_logLevel_t level, const char* label, const char* msg);
+typedef void (apx_serverLogWriteEventFunc_t)(void* arg, apx_logLevel_t level, const char* label, const char* msg);
 
 //Connection typedefs
 typedef void (apx_protocolHeaderAcceptedFunc_t)(void* arg, struct apx_connectionBase_tag* connection);
-typedef void (apx_portDataWriteFunc1_t)(void* arg, struct apx_portInstance_tag* port_instance, uint8_t const* data, apx_size_t size);
+typedef void (apx_portDataWriteFunc_t)(void* arg, struct apx_portInstance_tag* port_instance, uint8_t const* data, apx_size_t size);
 typedef void (apx_fileEventFunc_t)(void* arg, struct apx_connectionBase_tag* connection, const struct rmf_fileInfo_tag* file_info);
 
 typedef struct apx_clientEventListener_tag
 {
    void *arg;
-   apx_clientConnectionEventFunc_t* connected1;
-   apx_clientConnectionEventFunc_t* disconnected1;
-   apx_portDataWriteFunc1_t* require_port_write1;
+   apx_clientConnectionEventFunc_t* connected;
+   apx_clientConnectionEventFunc_t* disconnected;
+   apx_portDataWriteFunc_t* require_port_write;
 } apx_clientEventListener_t;
 
 typedef struct apx_serverEventListener_tag
 {
    void *arg;
-   apx_serverConnectionEventFunc_t* new_connection2;
-   apx_serverConnectionEventFunc_t* connection_closed2;
-   apx_serverLogWritEventFunc_t* server_write_log2;
+   apx_serverConnectionEventFunc_t* new_connection;
+   apx_serverConnectionEventFunc_t* connection_closed;
+   apx_serverLogWriteEventFunc_t* server_write_log;
 } apx_serverEventListener_t;
 
 typedef struct apx_serverConnectionEventListener_tag

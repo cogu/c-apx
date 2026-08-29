@@ -578,10 +578,10 @@ static void apx_server_trigger_connected_event(apx_server_t* self, apx_serverCon
    while(iter != NULL)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != NULL) && (listener->new_connection2 != NULL) )
+      if ( (listener != NULL) && (listener->new_connection != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
-         adt_ary_push(&callbacks, (void*)listener->new_connection2);
+         adt_ary_push(&callbacks, (void*)listener->new_connection);
          length++;
       }
       iter = adt_list_iter_next(iter);
@@ -617,10 +617,10 @@ static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server
    while(iter != NULL)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != NULL) && (listener->connection_closed2 != NULL) )
+      if ( (listener != NULL) && (listener->connection_closed != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
-         adt_ary_push(&callbacks, (void*)listener->connection_closed2);
+         adt_ary_push(&callbacks, (void*)listener->connection_closed);
          length++;
       }
       iter = adt_list_iter_next(iter);
@@ -637,25 +637,6 @@ static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server
    adt_ary_destroy(&args);
    adt_ary_destroy(&callbacks);
 }
-
-/*
-static void apx_server_trigger_log_event(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
-{
-   adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
-   (void)level;
-   (void)label;
-   (void)msg;
-   while(iter != 0)
-   {
-      apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->serverConnected != 0) )
-      {
-         listener->logEvent(listener->arg, level, label, msg);
-      }
-      iter = adt_list_iter_next(iter);
-   }
-}
-*/
 
 static void apx_server_init_extensions(apx_server_t* self)
 {
@@ -776,10 +757,10 @@ static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_
    while (iter != NULL)
    {
       apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
-      if ( (listener != 0) && (listener->server_write_log2 != 0) )
+      if ( (listener != NULL) && (listener->server_write_log != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
-         adt_ary_push(&callbacks, (void*)listener->server_write_log2);
+         adt_ary_push(&callbacks, (void*)listener->server_write_log);
          length++;
       }
       iter = adt_list_iter_next(iter);
@@ -788,7 +769,7 @@ static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_
    for (i = 0; i < length; i++)
    {
       void* arg = adt_ary_value(&args, i);
-      apx_serverLogWritEventFunc_t* callback = (apx_serverLogWritEventFunc_t*)adt_ary_value(&callbacks, i);
+      apx_serverLogWriteEventFunc_t* callback = (apx_serverLogWriteEventFunc_t*)adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, level, label, msg);
    }

@@ -159,8 +159,8 @@ static void register_server_listener(apx_serverMonitor_t* self)
       apx_serverEventListener_t eventListener;
       memset(&eventListener, 0, sizeof(apx_serverEventListener_t));
       eventListener.arg = (void*)self;
-      eventListener.new_connection2 = apx_serverMonitor_virtual_on_new_connection;
-      eventListener.connection_closed2 = apx_serverMonitor_virtual_on_connection_closed;
+      eventListener.new_connection = apx_serverMonitor_virtual_on_new_connection;
+      eventListener.connection_closed = apx_serverMonitor_virtual_on_connection_closed;
       apx_server_register_event_listener(self->server, &eventListener);
    }
 }

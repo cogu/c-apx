@@ -65,9 +65,9 @@ apx_error_t apx_connection_create(apx_connection_t *self)
       }
       memset(&listener, 0, sizeof(listener));
       listener.arg = (void*) self;
-      listener.connected1 = apx_connection_on_connect;
-      listener.disconnected1 = apx_connection_on_disconnect;
-      listener.require_port_write1 = apx_connection_on_require_port_write;
+      listener.connected = apx_connection_on_connect;
+      listener.disconnected = apx_connection_on_disconnect;
+      listener.require_port_write = apx_connection_on_require_port_write;
       apx_client_register_event_listener(self->client, &listener);
       adt_hash_create(&self->provide_port_lookup_table, NULL);
       MUTEX_INIT(self->mutex);

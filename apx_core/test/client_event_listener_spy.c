@@ -69,9 +69,10 @@ void* apx_clientEventListenerSpy_register(apx_clientEventListenerSpy_t *self, ap
    {
       apx_clientEventListener_t handler;
       handler.arg = (void*) self;
-      handler.clientConnect1 = apx_clientEventListenerSpy_onConnect;
-      handler.clientDisconnect1 = apx_clientEventListenerSpy_onDisconnect;
-      return apx_client_registerEventListener(client, &handler);
+      handler.connected = apx_clientEventListenerSpy_onConnect;
+      handler.disconnected = apx_clientEventListenerSpy_onDisconnect;
+      handler.require_port_write = NULL;
+      return apx_client_register_event_listener(client, &handler);
    }
    return (void*) 0;
 }

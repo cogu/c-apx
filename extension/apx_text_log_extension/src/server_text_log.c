@@ -176,9 +176,9 @@ static void register_server_listener(apx_serverTextLog_t *self)
    apx_serverEventListener_t eventListener;
    memset(&eventListener, 0, sizeof(apx_serverEventListener_t));
    eventListener.arg = (void*) self;
-   eventListener.new_connection2 = apx_serverTextLog_on_new_connection;
-   eventListener.connection_closed2 = apx_serverTextLog_on_connection_closed;
-   eventListener.server_write_log2 = apx_serverTextLog_onLogEvent;
+   eventListener.new_connection = apx_serverTextLog_on_new_connection;
+   eventListener.connection_closed = apx_serverTextLog_on_connection_closed;
+   eventListener.server_write_log = apx_serverTextLog_onLogEvent;
    apx_server_register_event_listener(self->server, &eventListener);
 }
 
