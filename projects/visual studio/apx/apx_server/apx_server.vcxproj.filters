@@ -24,4 +24,7 @@
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\apx_monitor_extension\apx_monitor_extension.vcxproj" />
+  </ItemGroup>
 </Project>

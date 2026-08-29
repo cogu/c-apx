@@ -100,13 +100,6 @@ cmake --build build --config Release
 ```
 *(Or use `--config Debug` for a debug build).*
 
-**Install binaries (optional):**
-
-Run from an elevated Command Prompt:
-
-```cmd
-cmake --build build --target install --config Release
-```
 
 #### 2. Building and Running Unit Tests
 
