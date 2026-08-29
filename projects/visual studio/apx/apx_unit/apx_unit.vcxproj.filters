@@ -73,15 +73,6 @@
     <Filter Include="app">
       <UniqueIdentifier>{06fb6c85-0ff1-4956-90b8-75fe245cde45}</UniqueIdentifier>
     </Filter>
-    <Filter Include="app\apx_info">
-      <UniqueIdentifier>{389637f1-3c06-4f91-ad41-8af31c61b197}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="app\apx_info\include">
-      <UniqueIdentifier>{e37bfd82-b7d6-4ce5-95d7-61195c493248}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="app\apx_info\src">
-      <UniqueIdentifier>{f7bfe775-ca16-48f7-a18c-437a03d9057e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="extension">
       <UniqueIdentifier>{5e7d4ead-aa1c-4cb4-8660-6d1990d7d7a8}</UniqueIdentifier>
     </Filter>
@@ -93,6 +84,18 @@
     </Filter>
     <Filter Include="extension\test">
       <UniqueIdentifier>{0d5d256e-fbae-41a5-9390-b15031595830}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\apx_server">
+      <UniqueIdentifier>{389637f1-3c06-4f91-ad41-8af31c61b197}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\apx_server\include">
+      <UniqueIdentifier>{e37bfd82-b7d6-4ce5-95d7-61195c493248}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\apx_server\src">
+      <UniqueIdentifier>{f7bfe775-ca16-48f7-a18c-437a03d9057e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\apx_server\test">
+      <UniqueIdentifier>{3f4733f3-af08-4aab-a9a8-ad88764aadaa}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -505,6 +508,15 @@
     <ClCompile Include="..\..\..\..\extension\apx_monitor_extension\src\server_monitor.c">
       <Filter>extension\src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\app\apx_server\test\testsuite_server_cfg.c">
+      <Filter>app\apx_server\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\app\apx_server\src\server_cfg.c">
+      <Filter>app\apx_server\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\apx_server\extensions_cfg.c">
+      <Filter>app\apx_server\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\adt\inc\adt_ary.h">
@@ -842,6 +854,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\apx_core\include\apx\extended_file_info.h">
       <Filter>apx_core\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\app\apx_server\src\server_cfg.h">
+      <Filter>app\apx_server\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\app\apx_server\include\extensions_cfg.h">
+      <Filter>app\apx_server\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\app\apx_server\include\server_cfg.h">
+      <Filter>app\apx_server\include</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
