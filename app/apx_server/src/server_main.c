@@ -89,7 +89,7 @@ int main(int argc, char **argv)
    result = apx_server_load_config(config_path, &server_config, &extensions_config);
    if (result != APX_NO_ERROR)
    {
-      printf("Error %d\n", (int) result);
+      printf("Error %d: %s\n", (int) result, apx_strerror(result));
       return 1;
    }
    else
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
    result = register_apx_server_extensions(&m_server, extensions_config);
    if (result != APX_NO_ERROR)
    {
-      fprintf(stderr, "Failed to register server extensions: error %d\n", (int) result);
+      fprintf(stderr, "Failed to register server extensions: %s (error %d)\n", apx_strerror(result), (int) result);
       apx_server_destroy(&m_server);
       if (server_config != 0)
       {
