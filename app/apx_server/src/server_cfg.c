@@ -26,11 +26,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "server_cfg.h"
+#include "fileutil.h"
 #include "dtl_json.h"
 #include "extensions_cfg.h"
 #ifdef MEM_LEAK_CHECK
@@ -40,10 +40,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static bool is_directory(const char *path);
 static apx_error_t load_json_file(const char *filepath, dtl_dv_t **out_dv);
 static apx_error_t load_json_hash_file(const char *filepath, dtl_hv_t **out_hv);
-static void build_filepath(char *dest, size_t dest_size, const char *dir, const char *filename);
 static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -60,7 +58,7 @@ apx_error_t apx_server_load_config(const char *path, dtl_hv_t **server_config, d
    *server_config = NULL;
    *extensions_config = NULL;
 
-   if (!is_directory(path))
+   if (!cutil_is_dir(path))
    {
       return APX_NOT_A_DIRECTORY_ERROR;
    }
@@ -71,47 +69,6 @@ apx_error_t apx_server_load_config(const char *path, dtl_hv_t **server_config, d
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-static bool is_directory(const char *path)
-{
-   struct stat st;
-   char clean_path[1024];
-   size_t len = strlen(path);
-   if (len == 0 || len >= sizeof(clean_path))
-   {
-      return false;
-   }
-   memcpy(clean_path, path, len + 1);
-
-   // Strip trailing slashes, but keep root like "/" or "C:\"
-   while (len > 1 && (clean_path[len - 1] == '/' || clean_path[len - 1] == '\\'))
-   {
-#ifdef _WIN32
-      if (len == 3 && clean_path[1] == ':')
-      {
-         break;
-      }
-#endif
-      clean_path[len - 1] = '\0';
-      len--;
-   }
-
-   if (stat(clean_path, &st) == 0)
-   {
-#ifdef _WIN32
-      if (st.st_mode & _S_IFDIR)
-      {
-         return true;
-      }
-#else
-      if (S_ISDIR(st.st_mode))
-      {
-         return true;
-      }
-#endif
-   }
-   return false;
-}
 
 static apx_error_t load_json_file(const char *filepath, dtl_dv_t **out_dv)
 {
@@ -149,33 +106,29 @@ static apx_error_t load_json_hash_file(const char *filepath, dtl_hv_t **out_hv)
    return APX_NO_ERROR;
 }
 
-static void build_filepath(char *dest, size_t dest_size, const char *dir, const char *filename)
-{
-   size_t dir_len = strlen(dir);
-   if (dir_len > 0 && (dir[dir_len - 1] == '/' || dir[dir_len - 1] == '\\'))
-   {
-      snprintf(dest, dest_size, "%s%s", dir, filename);
-   }
-   else
-   {
-      snprintf(dest, dest_size, "%s/%s", dir, filename);
-   }
-}
-
 static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_config, dtl_hv_t **extensions_config)
 {
-   char filepath[1024];
    dtl_hv_t *server_hv = NULL;
    apx_error_t result;
 
    // 1. Try server.json, fallback to apx_server.json
-   build_filepath(filepath, sizeof(filepath), dir_path, "server.json");
-   result = load_json_hash_file(filepath, &server_hv);
+   adt_str_t *filepath = cutil_path_join(dir_path, "server.json");
+   if (filepath == NULL)
+   {
+      return APX_MEM_ERROR;
+   }
+   result = load_json_hash_file(adt_str_cstr(filepath), &server_hv);
    if (result == APX_FILE_NOT_FOUND_ERROR)
    {
-      build_filepath(filepath, sizeof(filepath), dir_path, "apx_server.json");
-      result = load_json_hash_file(filepath, &server_hv);
+      adt_str_delete(filepath);
+      filepath = cutil_path_join(dir_path, "apx_server.json");
+      if (filepath == NULL)
+      {
+         return APX_MEM_ERROR;
+      }
+      result = load_json_hash_file(adt_str_cstr(filepath), &server_hv);
    }
+   adt_str_delete(filepath);
 
    if (result == APX_NO_ERROR)
    {
@@ -198,18 +151,34 @@ static apx_error_t load_config_from_dir(const char *dir_path, dtl_hv_t **server_
    {
       char ext_filename[128];
       snprintf(ext_filename, sizeof(ext_filename), "%s.json", entry->name);
-      build_filepath(filepath, sizeof(filepath), dir_path, ext_filename);
+      adt_str_t *ext_filepath = cutil_path_join(dir_path, ext_filename);
+      if (ext_filepath == NULL)
+      {
+         dtl_dec_ref(*server_config);
+         *server_config = NULL;
+         dtl_dec_ref(ext_hash);
+         return APX_MEM_ERROR;
+      }
 
       dtl_hv_t *ext_entry_hv = NULL;
-      result = load_json_hash_file(filepath, &ext_entry_hv);
+      result = load_json_hash_file(adt_str_cstr(ext_filepath), &ext_entry_hv);
       if (result == APX_FILE_NOT_FOUND_ERROR)
       {
          // Try subfolder extensions/<name>.json
+         adt_str_delete(ext_filepath);
          char ext_subpath[256];
          snprintf(ext_subpath, sizeof(ext_subpath), "extensions/%s.json", entry->name);
-         build_filepath(filepath, sizeof(filepath), dir_path, ext_subpath);
-         result = load_json_hash_file(filepath, &ext_entry_hv);
+         ext_filepath = cutil_path_join(dir_path, ext_subpath);
+         if (ext_filepath == NULL)
+         {
+            dtl_dec_ref(*server_config);
+            *server_config = NULL;
+            dtl_dec_ref(ext_hash);
+            return APX_MEM_ERROR;
+         }
+         result = load_json_hash_file(adt_str_cstr(ext_filepath), &ext_entry_hv);
       }
+      adt_str_delete(ext_filepath);
 
       if (result == APX_NO_ERROR)
       {
