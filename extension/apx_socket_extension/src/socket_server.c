@@ -64,9 +64,9 @@ struct msocket_server_tag;
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock);
+static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *srv, void *sock);
 #if !defined(UNIT_TEST) && !defined(_WIN32)
-static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock);
+static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *srv, void *sock);
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ void apx_socketServer_start_tcp_server(apx_socketServer_t *self, uint16_t tcp_po
 #ifndef UNIT_TEST
       server_handler.tcp_accept = apx_socketServer_tcp_accept;
 #endif
-      msocket_server_create(&self->tcp_server, AF_INET, NULL);
+      msocket_server_create(&self->tcp_server, MSOCKET_ADDR_INET, NULL);
       msocket_server_disable_cleanup(&self->tcp_server); //we will use our own garbage collector
       msocket_server_sethandler(&self->tcp_server, &server_handler, self);
       msocket_server_start(&self->tcp_server, NULL, 0, self->tcp_port);
@@ -179,7 +179,7 @@ void apx_socketServer_start_unix_server(apx_socketServer_t *self, const char *fi
 #ifndef UNIT_TEST
       server_handler.tcp_accept = apx_socketServer_unix_accept;
 #endif
-      msocket_server_create(&self->unix_server, AF_LOCAL, NULL);
+      msocket_server_create(&self->unix_server, MSOCKET_ADDR_UNIX, NULL);
       msocket_server_disable_cleanup(&self->unix_server); //we will use our own garbage collector
       msocket_server_sethandler(&self->unix_server, &server_handler, self);
       msocket_server_unix_start(&self->unix_server, self->unix_server_file);
@@ -235,7 +235,7 @@ void apx_socketServer_accept_testsocket(apx_socketServer_t *self, testsocket_t *
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock)
+static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *srv, void *sock)
 {
    apx_socketServer_t *self = (apx_socketServer_t*) arg;
    (void)srv;
@@ -262,7 +262,7 @@ static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *sr
 }
 
 #if !defined(UNIT_TEST) && !defined(_WIN32)
-static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *srv, SOCKET_TYPE *sock)
+static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *srv, void *sock)
 {
    apx_socketServer_t *self = (apx_socketServer_t*) arg;
 #if APX_DEBUG_ENABLE

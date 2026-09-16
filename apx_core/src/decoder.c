@@ -499,8 +499,8 @@ static apx_error_t decode_record_select(apx_vm_decoder_t* self, bool is_first_fi
 {
    assert(self != NULL);
    self->operation_type = APX_OPERATION_TYPE_RECORD_SELECT;
-   uint8_t const* result = bstr_while_predicate(self->program_next, self->program_end, bstr_pred_is_not_zero);
-   if ((result > self->program_next) && (self->program_next <= self->program_end))
+   uint8_t const* result = bstr_find_byte(self->program_next, self->program_end, 0);
+   if ((result > self->program_next) && (result < self->program_end))
    {
       adt_str_set_bstr(&self->field_name, self->program_next, result);
       self->program_next = result + UINT8_SIZE; //Skip past null-terminator

@@ -43,7 +43,7 @@
 #ifdef UNIT_TEST
 #define SOCKET_TYPE struct testsocket_tag
 #else
-#define SOCKET_TYPE struct msocket_t
+#define SOCKET_TYPE struct msocket_tag
 #endif
 SOCKET_TYPE; //this is a forward declaration of the declared type just above
 

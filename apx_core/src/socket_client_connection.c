@@ -81,9 +81,9 @@ static void register_msocket_handler(apx_clientSocketConnection_t *self, SOCKET_
 static void create_connection_interface_vtable(apx_clientSocketConnection_t* self, apx_connectionInterface_t* interface);
 
 //msocket API
-static void on_socket_connected(void *arg, const char *addr, uint16_t port);
-static void on_socket_disconnected(void* arg);
-static int8_t on_socket_data(void* arg, const uint8_t* data, uint32_t data_size, uint32_t* parse_size);
+static void on_socket_connected(void *arg, void *socket, const char *addr, uint16_t port);
+static void on_socket_disconnected(void* arg, void *socket);
+static msocket_error_t on_socket_data(void* arg, void *socket, const uint8_t* data, const uint32_t num_bytes, uint32_t* consumed_bytes, uint32_t* msg_size_hint);
 
 //APX BaseConnection API
 static void apx_clientSocketConnection_close(apx_clientSocketConnection_t *self);
@@ -127,7 +127,7 @@ apx_error_t apx_clientSocketConnection_create(apx_clientSocketConnection_t *self
          return result;
       }
       apx_clientConnection_set_connection_type(&self->base, connection_type);
-      adt_bytearray_create(&self->send_buffer, SEND_BUFFER_GROW_SIZE);
+      adt_bytearray_create(&self->send_buffer);
       register_msocket_handler(self, socket_object);
       apx_connectionBase_start(&self->base.base);///TODO: Don't call start from the constructor
       return APX_NO_ERROR;
@@ -181,7 +181,7 @@ apx_error_t apx_clientSocketConnection_connect_tcp(apx_clientSocketConnection_t 
    if (self != 0)
    {
       apx_error_t retval = APX_NO_ERROR;
-      msocket_t *socketObject = msocket_new(AF_INET);
+      msocket_t *socketObject = msocket_new(MSOCKET_ADDR_INET);
       if (socketObject != 0)
       {
          int8_t result = 0;
@@ -190,7 +190,7 @@ apx_error_t apx_clientSocketConnection_connect_tcp(apx_clientSocketConnection_t 
          if (result != 0)
          {
             msocket_delete(socketObject);
-            self->socket_object = (SOCKET_TYPE*) 0;
+            self->socket_object = NULL;
             retval = APX_CONNECTION_ERROR;
          }
          else
@@ -212,7 +212,7 @@ apx_error_t apx_clientSocketConnection_connect_unix(apx_clientSocketConnection_t
    if (self != 0)
    {
       apx_error_t retval = APX_NO_ERROR;
-      msocket_t *socket_object = msocket_new(AF_LOCAL);
+      msocket_t *socket_object = msocket_new(MSOCKET_ADDR_UNIX);
       if (socket_object != 0)
       {
          int8_t result = 0;
@@ -221,7 +221,7 @@ apx_error_t apx_clientSocketConnection_connect_unix(apx_clientSocketConnection_t
          if (result != 0)
          {
             msocket_delete(socket_object);
-            self->socket_object = (SOCKET_TYPE*) 0;
+            self->socket_object = NULL;
             retval = APX_CONNECTION_ERROR;
          }
          else
@@ -347,9 +347,10 @@ static void create_connection_interface_vtable(apx_clientSocketConnection_t* sel
 
 //msocket API
 
-static void on_socket_connected(void* arg, const char* addr, uint16_t port)
+static void on_socket_connected(void* arg, void* socket, const char* addr, uint16_t port)
 {
    apx_clientSocketConnection_t *self;
+   (void) socket;
    (void) addr;
    (void) port;
 #if APX_DEBUG_ENABLE
@@ -359,15 +360,18 @@ static void on_socket_connected(void* arg, const char* addr, uint16_t port)
    apx_clientConnection_connected_notification(&self->base);
 }
 
-static int8_t on_socket_data(void* arg, const uint8_t* data, uint32_t data_size, uint32_t* parse_size)
+static msocket_error_t on_socket_data(void* arg, void* socket, const uint8_t* data, const uint32_t num_bytes, uint32_t* consumed_bytes, uint32_t* msg_size_hint)
 {
+   (void) socket;
+   (void) msg_size_hint;
    apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) arg;
-   int8_t retval = (int8_t) apx_clientConnection_on_data_received(&self->base, data, data_size, parse_size);
-   return retval;
+   int retval = apx_clientConnection_on_data_received(&self->base, data, num_bytes, consumed_bytes);
+   return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
-static void on_socket_disconnected(void* arg)
+static void on_socket_disconnected(void* arg, void* socket)
 {
+   (void) socket;
    apx_clientSocketConnection_t *self = (apx_clientSocketConnection_t*) arg;
 #if APX_DEBUG_ENABLE
    printf("[CLIENT-SOCKET] Disconnected\n");

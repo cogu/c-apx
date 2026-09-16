@@ -540,6 +540,7 @@ static void test_apx_client_read_struct_with_array(CuTest* tc)
    CuAssertUIntEquals(tc, 0x05, dtl_sv_to_u32(child_sv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dv_dec_ref((dtl_dv_t*)hv);
+   apx_client_delete(client);
 }
 
 static void test_apx_client_read_array_of_structs(CuTest* tc)
@@ -603,4 +604,5 @@ static void test_apx_client_read_array_of_structs(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dv_dec_ref((dtl_dv_t*)av);
+   apx_client_delete(client);
 }

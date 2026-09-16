@@ -58,8 +58,8 @@ uint8_t apx_program_encode_instruction(uint8_t opcode, uint8_t variant, bool fla
 void apx_program_decode_instruction(uint8_t const instruction, uint8_t* opcode, uint8_t* variant, bool* flag);
 void apx_program_dump(apx_program_t const* program);
 
-#define APX_PROGRAM_CREATE(p) adt_bytearray_create(p, APX_PROGRAM_GROW_SIZE)
-#define APX_PROGRAM_NEW() adt_bytearray_new(APX_PROGRAM_GROW_SIZE)
+#define APX_PROGRAM_CREATE(p) adt_bytearray_create(p)
+#define APX_PROGRAM_NEW() adt_bytearray_new()
 #define APX_PROGRAM_DESTROY(p) adt_bytearray_destroy(p)
 #define APX_PROGRAM_DELETE(p) adt_bytearray_delete(p)
 

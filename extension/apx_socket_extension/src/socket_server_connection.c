@@ -85,8 +85,8 @@ static void register_msocket_handler(apx_socketServerConnection_t* self, SOCKET_
 static void create_connection_interface_vtable(apx_socketServerConnection_t* self, apx_connectionInterface_t* interface);
 
 //msocket API
-static void socket_disconnected_notification(void* arg);
-static int8_t socket_data_notification(void* arg, const uint8_t* data, uint32_t data_size, uint32_t* parse_size);
+static void socket_disconnected_notification(void* arg, void* socket);
+static msocket_error_t socket_data_notification(void* arg, void* socket, const uint8_t* data, const uint32_t num_bytes, uint32_t* consumed_bytes, uint32_t* msg_size_hint);
 
 //APX BaseConnection API
 static void connection_close(apx_socketServerConnection_t* self);
@@ -126,7 +126,7 @@ apx_error_t apx_socketServerConnection_create(apx_socketServerConnection_t *self
       apx_error_t retval = apx_serverConnection_create(&self->base, &base_connection_vtable, &connection_interface);
       if (retval == APX_NO_ERROR)
       {
-         adt_bytearray_create(&self->send_buffer, SEND_BUFFER_GROW_SIZE);
+         adt_bytearray_create(&self->send_buffer);
          register_msocket_handler(self, socket_object);
       }
       if (retval == APX_NO_ERROR)
@@ -275,8 +275,9 @@ static void create_connection_interface_vtable(apx_socketServerConnection_t* sel
 }
 
 //msocket API
-static void socket_disconnected_notification(void* arg)
+static void socket_disconnected_notification(void* arg, void* socket)
 {
+   (void) socket;
    apx_socketServerConnection_t* self = (apx_socketServerConnection_t*)arg;
 #if APX_DEBUG_ENABLE
    printf("[SERVER-SOCKET] Client disconnected\n");
@@ -288,11 +289,13 @@ static void socket_disconnected_notification(void* arg)
    }
 }
 
-static int8_t socket_data_notification(void* arg, const uint8_t* data, uint32_t data_size, uint32_t* parse_size)
+static msocket_error_t socket_data_notification(void* arg, void* socket, const uint8_t* data, const uint32_t num_bytes, uint32_t* consumed_bytes, uint32_t* msg_size_hint)
 {
+   (void) socket;
+   (void) msg_size_hint;
    apx_socketServerConnection_t* self = (apx_socketServerConnection_t*)arg;
-   int8_t retval = (int8_t)apx_serverConnection_on_data_received(&self->base, data, data_size, parse_size);
-   return retval;
+   int retval = apx_serverConnection_on_data_received(&self->base, data, num_bytes, consumed_bytes);
+   return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
 //APX BaseConnection API

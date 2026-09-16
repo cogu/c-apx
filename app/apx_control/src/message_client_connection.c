@@ -41,8 +41,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void message_client_connection_onConnect(void *arg, const char *addr, uint16_t port);
-static void message_client_connection_onDisconnect(void *arg);
+static void message_client_connection_onConnect(void *arg, void *socket, const char *addr, uint16_t port);
+static void message_client_connection_onDisconnect(void *arg, void *socket);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -125,7 +125,7 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
       }
       if (self->pendingMessage == 0)
       {
-         self->pendingMessage = adt_bytearray_new(BUFFER_GROW_SIZE);
+         self->pendingMessage = adt_bytearray_new();
          if (self->pendingMessage == 0)
          {
             return ADT_MEM_ERROR;
@@ -207,9 +207,10 @@ int32_t message_client_wait_for_message_transmitted(message_client_connection_t 
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void message_client_connection_onConnect(void *arg, const char *addr, uint16_t port)
+static void message_client_connection_onConnect(void *arg, void *socket, const char *addr, uint16_t port)
 {
    message_client_connection_t *self = (message_client_connection_t*) arg;
+   (void)socket;
    (void)port;
    (void)addr;
    if (self != 0 )
@@ -228,8 +229,9 @@ static void message_client_connection_onConnect(void *arg, const char *addr, uin
    }
 }
 
-static void message_client_connection_onDisconnect(void *arg)
+static void message_client_connection_onDisconnect(void *arg, void *socket)
 {
    (void)arg;
+   (void)socket;
    printf("[APX_CONTROL] disconnected\n");
 }

@@ -40,6 +40,7 @@
 #include "apx_connection.h"
 #include "apx/util.h"
 #include "argparse.h"
+#include "msocket.h"
 #include "json_server.h"
 #include "filestream.h"
 #ifdef USE_CONFIGURATION_FILE
@@ -568,30 +569,34 @@ static apx_error_t connect_to_apx_server(void)
 
 static apx_error_t init_json_message_server(void)
 {
-   uint8_t addressFamily = AF_UNSPEC;
+   uint8_t addressFamily = 255u;
    const char* bind_address = adt_str_cstr(m_bind_address);
    switch (m_bind_resource_type)
    {
    case APX_RESOURCE_TYPE_IPV4:
-      addressFamily = AF_INET;
+      addressFamily = MSOCKET_ADDR_INET;
       break;
    case APX_RESOURCE_TYPE_IPV6:
-      addressFamily = AF_INET6;
+      addressFamily = MSOCKET_ADDR_INET6;
       break;
    case APX_RESOURCE_TYPE_FILE:
 #ifdef _WIN32
       printf("UNIX domain sockets not supported in Windows\n");
       return APX_NOT_IMPLEMENTED_ERROR;
 #else
-      addressFamily = AF_UNIX;
+      addressFamily = MSOCKET_ADDR_UNIX;
+      break;
 #endif
    case APX_RESOURCE_TYPE_NAME:
       if ((strlen(bind_address) == 0) || (strcmp(bind_address, "localhost") == 0))
       {
-         addressFamily = AF_INET;
+         addressFamily = MSOCKET_ADDR_INET;
       }
+      break;
+   default:
+      break;
    }
-   if (addressFamily != AF_UNSPEC)
+   if (addressFamily != 255u)
    {
       return json_server_init(m_apx_connection, addressFamily);
    }

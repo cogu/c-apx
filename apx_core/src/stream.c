@@ -76,7 +76,7 @@ void apx_istream_create(apx_istream_t* self)
 {
    if(self != NULL)
    {
-      adt_bytearray_create(&self->buf, APX_BUF_GROW_SIZE);
+      adt_bytearray_create(&self->buf);
       apx_istream_set_handler(self, NULL);
       self->last_error = APX_NO_ERROR;
    }
@@ -154,22 +154,18 @@ void apx_istream_write(apx_istream_t* self, uint8_t const* chunk, uint32_t chunk
 
       while (line_begin < buffer_end)
       {
-         const uint8_t* line_end = bstr_search_val(line_begin, buffer_end, (uint8_t)'\n');
-         if (line_end == line_begin)
+         const uint8_t* line_end = bstr_find_line_feed(line_begin, buffer_end);
+         if (line_end == buffer_end)
          {
-            const uint8_t first_byte = *line_begin;
-            if (first_byte == '\n')
+            break; //Wait for more data
+         }
+         else if (line_end == line_begin)
+         {
+            //empty line
+            self->last_error = apx_istream_handler_new_line(&self->handler, (const char*) line_begin++, (const char*) line_end);
+            if (self->last_error != APX_NO_ERROR)
             {
-               //empty line
-               self->last_error = apx_istream_handler_new_line(&self->handler, (const char*) line_begin++, (const char*) line_end);
-               if (self->last_error != APX_NO_ERROR)
-               {
-                  return;
-               }
-            }
-            else
-            {
-               break; //Wait for next write (or possible close)
+               return;
             }
          }
          else if (line_end > line_begin)
@@ -201,7 +197,7 @@ void apx_istream_write(apx_istream_t* self, uint8_t const* chunk, uint32_t chunk
          else
          {
             assert(line_begin < buffer_end);
-            adt_bytearray_trimLeft(&self->buf, line_begin);
+            adt_bytearray_trim_left(&self->buf, line_begin);
          }
       }
    }
