@@ -57,7 +57,7 @@ static apx_error_t process_new_definition_data_file(apx_serverConnection_t* self
 static apx_error_t process_new_provide_port_data_file(apx_serverConnection_t* self, apx_file_t* file);
 static apx_error_t create_new_node_instance(apx_serverConnection_t* self, apx_nodeManager_t* node_manager,  apx_file_t* definition_file);
 static apx_error_t remote_file_write_notification(apx_serverConnection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
-static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code);
+static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint);
 static bool process_greeting_message(apx_serverConnection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
 static void apx_serverConnection_node_created_notification(apx_serverConnection_t* self, apx_nodeInstance_t* node_instance);
 static apx_error_t detach_all_nodes(apx_serverConnection_t* self);
@@ -273,18 +273,22 @@ apx_nodeManager_t* apx_serverConnection_get_node_manager(apx_serverConnection_t*
    return NULL;
 }
 
-int apx_serverConnection_on_data_received(apx_serverConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len)
+int apx_serverConnection_on_data_received(apx_serverConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len, apx_size_t* msg_size_hint)
 {
    if ((self != NULL) && (data != NULL) && (data_size > 0u) && (parse_len != NULL))
    {
       apx_size_t total_parse_len = 0u;
       uint8_t const* next = data;
       uint8_t const* end = data + data_size;
+      if (msg_size_hint != NULL)
+      {
+         *msg_size_hint = 0u;
+      }
       while (next < end)
       {
          uint8_t const* result;
          apx_error_t error_code = APX_NO_ERROR;
-         result = parse_message(self, next, end, &error_code);
+         result = parse_message(self, next, end, &error_code, msg_size_hint);
          if (error_code == APX_NO_ERROR)
          {
             assert((result >= next) && (result <= end));
@@ -304,6 +308,10 @@ int apx_serverConnection_on_data_received(apx_serverConnection_t* self, uint8_t 
             self->last_error = error_code;
             return -1;
          }
+      }
+      if (total_parse_len > 0u && msg_size_hint != NULL)
+      {
+         *msg_size_hint = 0u;
       }
       *parse_len = total_parse_len;
       return 0;
@@ -593,7 +601,7 @@ static apx_error_t remote_file_write_notification(apx_serverConnection_t* self, 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code)
+static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint)
 {
    uint8_t const* msg_end = NULL;
    *error_code = APX_NO_ERROR;
@@ -647,6 +655,10 @@ static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const*
          else
          {
             //Message not complete, try again later
+            if (msg_size_hint != NULL)
+            {
+               *msg_size_hint = (apx_size_t)((msg_data - begin) + msg_size);
+            }
             return begin;
          }
       }

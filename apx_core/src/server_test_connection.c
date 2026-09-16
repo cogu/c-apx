@@ -342,7 +342,7 @@ apx_error_t apx_serverTestConnection_send_greeting_header(apx_serverTestConnecti
       *p++ = '\n';
       greeting_size = (apx_size_t)(p - greeting - NUMHEADER32_SHORT_SIZE);
       greeting[0] = (char)greeting_size;
-      int result = apx_serverConnection_on_data_received(&self->base, (uint8_t const*)greeting, greeting_size + NUMHEADER32_SHORT_SIZE, &parse_len);
+      int result = apx_serverConnection_on_data_received(&self->base, (uint8_t const*)greeting, greeting_size + NUMHEADER32_SHORT_SIZE, &parse_len, NULL);
       if ( (result == 0) && (parse_len == greeting_size + NUMHEADER32_SHORT_SIZE) )
       {
          return APX_NO_ERROR;
@@ -367,7 +367,7 @@ apx_error_t apx_serverTestConnection_send_custom_greeting_header(apx_serverTestC
       p += strlen(greeting);
       message_size = (apx_size_t)(p - message - NUMHEADER32_SHORT_SIZE);
       message[0] = (char)message_size;
-      int result = apx_serverConnection_on_data_received(&self->base, (uint8_t const*)message, message_size + NUMHEADER32_SHORT_SIZE, &parse_len);
+      int result = apx_serverConnection_on_data_received(&self->base, (uint8_t const*)message, message_size + NUMHEADER32_SHORT_SIZE, &parse_len, NULL);
       if ((result == 0) && (parse_len == message_size + NUMHEADER32_SHORT_SIZE))
       {
          return APX_NO_ERROR;

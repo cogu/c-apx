@@ -37,6 +37,7 @@ static void test_default_connection_type_is_parsed_from_greeting_header(CuTest* 
 static void test_monitor_connection_type_is_parsed_from_greeting_header(CuTest* tc);
 static void test_event_connection_type_is_parsed_from_greeting_header(CuTest* tc);
 static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* tc);
+static void test_msg_size_hint_returned_for_partial_message(CuTest* tc);
 
 
 
@@ -66,6 +67,7 @@ CuSuite* testSuite_apx_serverConnection(void)
    SUITE_ADD_TEST(suite, test_monitor_connection_type_is_parsed_from_greeting_header);
    SUITE_ADD_TEST(suite, test_event_connection_type_is_parsed_from_greeting_header);
    SUITE_ADD_TEST(suite, test_accept_header_is_sent_when_new_greeting_format_is_seen);
+   SUITE_ADD_TEST(suite, test_msg_size_hint_returned_for_partial_message);
 
    return suite;
 }
@@ -726,6 +728,32 @@ static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* 
    CuAssertIntEquals(tc, (int)sizeof(actual), adt_bytearray_length(packet)); //Should contain acknowledge message
    memcpy(actual, adt_bytearray_data(packet), sizeof(actual));
    CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(actual)));
+
+   apx_serverTestConnection_delete(connection);
+}
+
+static void test_msg_size_hint_returned_for_partial_message(CuTest* tc)
+{
+   apx_serverTestConnection_t* connection = apx_serverTestConnection_new();
+   CuAssertPtrNotNull(tc, connection);
+   apx_connectionBase_start((apx_connectionBase_t*)connection);
+
+   /* Encode a message header declaring payload size of 1000 bytes, but only provide a partial buffer */
+   uint8_t buffer[16];
+   memset(buffer, 0, sizeof(buffer));
+   uint32_t expected_payload_size = 1000u;
+   int32_t header_size = numheader_encode32(buffer, (int32_t)sizeof(buffer), expected_payload_size);
+   CuAssertTrue(tc, header_size > 0);
+   apx_size_t total_expected = (apx_size_t)header_size + expected_payload_size;
+
+   apx_size_t parse_len = 0u;
+   apx_size_t msg_size_hint = 0u;
+
+   /* Provide only 10 bytes (header + partial payload) */
+   int result = apx_serverConnection_on_data_received(&connection->base, buffer, 10u, &parse_len, &msg_size_hint);
+   CuAssertIntEquals(tc, 0, result);
+   CuAssertUIntEquals(tc, 0u, parse_len);
+   CuAssertUIntEquals(tc, total_expected, msg_size_hint);
 
    apx_serverTestConnection_delete(connection);
 }

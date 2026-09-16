@@ -60,7 +60,7 @@ void apx_clientConnection_require_port_data_written(apx_clientConnection_t* self
 void apx_clientConnection_set_client(apx_clientConnection_t* self, struct apx_client_tag* client);
 void apx_clientConnection_set_connection_type(apx_clientConnection_t* self, apx_connectionType_t connection_type);
 apx_connectionType_t apx_clientConnection_get_connection_type(apx_clientConnection_t const* self);
-int apx_clientConnection_on_data_received(apx_clientConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len);
+int apx_clientConnection_on_data_received(apx_clientConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len, apx_size_t* msg_size_hint);
 apx_error_t apx_clientConnection_attach_node_instance(apx_clientConnection_t* self, apx_nodeInstance_t* node_instance);
 void apx_clientConnection_set_rmf_proto_id(apx_clientConnection_t* self, rmf_versionId_t version_id);
 rmf_versionId_t apx_clientConnection_get_rmf_proto_id(apx_clientConnection_t* self);
