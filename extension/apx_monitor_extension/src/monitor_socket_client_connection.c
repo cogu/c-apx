@@ -358,9 +358,8 @@ static void on_socket_connected(void* arg, void* socket, const char* addr, uint1
 static msocket_error_t on_socket_data(void* arg, void* socket, const uint8_t* data, const uint32_t num_bytes, uint32_t* consumed_bytes, uint32_t* msg_size_hint)
 {
    (void)socket;
-   (void)msg_size_hint;
    apx_monitorSocketClientConnection_t* self = (apx_monitorSocketClientConnection_t*)arg;
-   int retval = apx_clientConnection_on_data_received(&self->base, data, num_bytes, consumed_bytes);
+   int retval = apx_clientConnection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
    return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 

@@ -292,9 +292,8 @@ static void socket_disconnected_notification(void* arg, void* socket)
 static msocket_error_t socket_data_notification(void* arg, void* socket, const uint8_t* data, const uint32_t num_bytes, uint32_t* consumed_bytes, uint32_t* msg_size_hint)
 {
    (void) socket;
-   (void) msg_size_hint;
    apx_socketServerConnection_t* self = (apx_socketServerConnection_t*)arg;
-   int retval = apx_serverConnection_on_data_received(&self->base, data, num_bytes, consumed_bytes);
+   int retval = apx_serverConnection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
    return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 

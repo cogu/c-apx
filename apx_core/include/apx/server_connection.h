@@ -72,7 +72,7 @@ void apx_serverConnection_attach_node_manager(apx_serverConnection_t* self, apx_
 apx_nodeManager_t* apx_serverConnection_get_node_manager(apx_serverConnection_t* self);
 void apx_serverConnection_require_port_data_written(apx_serverConnection_t* self, apx_nodeInstance_t* node_instance, apx_size_t offset, apx_size_t size);
 apx_error_t apx_serverConnection_attach_node_instance(apx_serverConnection_t* self, apx_nodeInstance_t* node_instance);
-int apx_serverConnection_on_data_received(apx_serverConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len);
+int apx_serverConnection_on_data_received(apx_serverConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len, apx_size_t* msg_size_hint);
 void apx_serverConnection_vnode_created_notification(void* arg, apx_nodeInstance_t* node_instance);
 void apx_serverConnection_set_connection_id(apx_serverConnection_t* self, uint32_t connection_id);
 uint32_t apx_serverConnection_get_connection_id(apx_serverConnection_t* self);

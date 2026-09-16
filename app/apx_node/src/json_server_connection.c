@@ -126,7 +126,6 @@ static void json_server_connection_disconnected(void *arg, void *socket)
 static msocket_error_t json_server_connection_data(void *arg, void *socket, const uint8_t *dataBuf, const uint32_t dataLen, uint32_t *consumed_bytes, uint32_t *msg_size_hint)
 {
    (void) socket;
-   (void) msg_size_hint;
    json_server_connection_t *self = (json_server_connection_t*) arg;
    if (self != 0)
    {
@@ -135,6 +134,10 @@ static msocket_error_t json_server_connection_data(void *arg, void *socket, cons
       assert(consumed_bytes != 0);
       uint32_t msgSize = 0u;
       *consumed_bytes = 0;
+      if (msg_size_hint != NULL)
+      {
+         *msg_size_hint = 0u;
+      }
       pResult = numheader_decode32(dataBuf, pEnd, &msgSize);
       if ( (pResult > dataBuf)  )
       {
@@ -144,6 +147,10 @@ static msocket_error_t json_server_connection_data(void *arg, void *socket, cons
             json_server_connection_process_message(self, pNext, pNext+msgSize);
             pNext += msgSize;
             *consumed_bytes = (uint32_t) (pNext - dataBuf);
+         }
+         else if (msg_size_hint != NULL)
+         {
+            *msg_size_hint = (uint32_t) ((pResult - dataBuf) + msgSize);
          }
       }
       return MSOCKET_NO_ERROR;
