@@ -430,7 +430,7 @@ apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, 
          }
          //The file name can either end with an optional null-terminator or the name string continues until end of message.
          //Both variants are acceptable using the two lines below
-         uint8_t const* result = bstr_while_predicate(next, end, bstr_pred_is_not_zero);
+         uint8_t const* result = bstr_find_byte(next, end, 0);
          if ((result > next) && (result <= end))
          {
             adt_str_set_bstr(&file_info->name, next, result);

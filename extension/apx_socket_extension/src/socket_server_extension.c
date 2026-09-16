@@ -32,6 +32,7 @@
 # endif
 #include <Windows.h>
 #endif
+#include <string.h>
 #include "apx/extension/socket_server_extension.h"
 #include "apx/extension/socket_server.h"
 #include "apx/server.h"
@@ -50,7 +51,7 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-static apx_socketServer_t *m_instance = (apx_socketServer_t*) 0; //singleton
+static apx_socketServer_t *m_instance = NULL; //singleton
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS

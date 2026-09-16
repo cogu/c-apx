@@ -536,8 +536,8 @@ static apx_error_t parser_accept_type_declaration(apx_parser_t* self, uint8_t co
             }
             assert(self->state.data_type != NULL);
             next = result + 1;
-            result = bstr_search_val(next, end, ':');
-            if (result > next)
+            result = bstr_find_byte(next, end, ':');
+            if (result < end)
             {
                //Type attributes exists (OK)
                uint8_t const* mark = result;
@@ -628,8 +628,8 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t* self, uint8_t co
             }
             next = result + 1;
             assert(self->state.port != NULL);
-            result = bstr_search_val(next, end, ':');
-            if (result > next)
+            result = bstr_find_byte(next, end, ':');
+            if (result < end)
             {
                //Type attributes exists (OK)
                uint8_t const* mark = result;

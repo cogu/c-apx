@@ -15,9 +15,13 @@ set(CMAKE_OPTIMIZE_DEPENDENCIES ON)
 
 set(ADT_RBFH_ENABLE ON CACHE BOOL "This must always be enabled in c-apx" FORCE)
 
-include(adt/cmake/BuildTypes.cmake)
-include(adt/cmake/LeakCheck.cmake)
-include(adt/cmake/UnitTest.cmake)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
+endif()
+
+option(UNIT_TEST "Unit Test Build" OFF)
+option(LEAK_CHECK "Memory Leak Detection" OFF)
 include(GNUInstallDirs)
 include(cmake/ApxExtension.cmake)
 
@@ -248,14 +252,12 @@ get_directory_property(BSTR_SOURCE_LIST DIRECTORY bstr DEFINITION BSTR_SOURCE_LI
 get_directory_property(CUTIL_HEADER_LIST DIRECTORY cutil DEFINITION CUTIL_HEADER_LIST)
 get_directory_property(CUTIL_SOURCE_LIST DIRECTORY cutil DEFINITION CUTIL_SOURCE_LIST)
 get_directory_property(BYTE_ORDER_VALUE DIRECTORY cutil DEFINITION BYTE_ORDER_VALUE)
-get_directory_property(DTL_JSON_HEADERS DIRECTORY dtl_json DEFINITION DTL_JSON_HEADERS)
-get_directory_property(DTL_JSON_SOURCES DIRECTORY dtl_json DEFINITION DTL_JSON_SOURCES)
+get_directory_property(DTL_JSON_HEADER_LIST DIRECTORY dtl_json DEFINITION DTL_JSON_HEADER_LIST)
+get_directory_property(DTL_JSON_SOURCE_LIST DIRECTORY dtl_json DEFINITION DTL_JSON_SOURCE_LIST)
 get_directory_property(DTL_TYPE_HEADER_LIST DIRECTORY dtl_type DEFINITION DTL_TYPE_HEADER_LIST)
 get_directory_property(DTL_TYPE_SOURCE_LIST DIRECTORY dtl_type DEFINITION DTL_TYPE_SOURCE_LIST)
 get_directory_property(MSOCKET_HEADERS DIRECTORY msocket DEFINITION MSOCKET_HEADERS)
 get_directory_property(MSOCKET_SOURCES DIRECTORY msocket DEFINITION MSOCKET_SOURCES)
-get_directory_property(MSOCKET_SERVER_HEADERS DIRECTORY msocket DEFINITION MSOCKET_SERVER_HEADERS)
-get_directory_property(MSOCKET_SERVER_SOURCES DIRECTORY msocket DEFINITION MSOCKET_SERVER_SOURCES)
 
 
 add_library(apx_core ${LIBRARY_TYPE}
@@ -267,14 +269,12 @@ add_library(apx_core ${LIBRARY_TYPE}
             ${BSTR_SOURCE_LIST}
             ${CUTIL_HEADER_LIST}
             ${CUTIL_SOURCE_LIST}
-            ${DTL_JSON_HEADERS}
-            ${DTL_JSON_SOURCES}
+            ${DTL_JSON_HEADER_LIST}
+            ${DTL_JSON_SOURCE_LIST}
             ${DTL_TYPE_HEADER_LIST}
             ${DTL_TYPE_SOURCE_LIST}
             ${MSOCKET_HEADERS}
             ${MSOCKET_SOURCES}
-            ${MSOCKET_SERVER_HEADERS}
-            ${MSOCKET_SERVER_SOURCES}
 )
 
 target_compile_definitions(apx_core PUBLIC ADT_RBFH_ENABLE=1)
@@ -307,13 +307,13 @@ target_link_libraries(apx_core PRIVATE Threads::Threads)
 
 target_include_directories(apx_core PUBLIC
 "${PROJECT_BINARY_DIR}"
-"${CMAKE_CURRENT_SOURCE_DIR}/adt/inc"
+"${CMAKE_CURRENT_SOURCE_DIR}/adt/include"
 "${CMAKE_CURRENT_SOURCE_DIR}/apx_core/include"
-"${CMAKE_CURRENT_SOURCE_DIR}/bstr/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/cutil/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/dtl_type/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/dtl_json/inc"
-"${CMAKE_CURRENT_SOURCE_DIR}/msocket/inc"
+"${CMAKE_CURRENT_SOURCE_DIR}/bstr/include"
+"${CMAKE_CURRENT_SOURCE_DIR}/cutil/include"
+"${CMAKE_CURRENT_SOURCE_DIR}/dtl_type/include"
+"${CMAKE_CURRENT_SOURCE_DIR}/dtl_json/include"
+"${CMAKE_CURRENT_SOURCE_DIR}/msocket/include"
 )
 
 set_target_properties(apx_core PROPERTIES VERSION ${apx_core_VERSION} SOVERSION ${apx_core_VERSION_MAJOR})
@@ -377,7 +377,6 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             apx_socket_extension
             apx_text_log_extension
             apx_monitor_extension
-            msocket_testsocket
             cutest
             Threads::Threads
         )

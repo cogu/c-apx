@@ -181,10 +181,10 @@ int main(int argc, char **argv)
             switch(m_connect_resource_type)
             {
             case APX_RESOURCE_TYPE_IPV4: //fall-trough
-               connect_and_send_message_tcp(address, m_connect_port, AF_INET);
+               connect_and_send_message_tcp(address, m_connect_port, MSOCKET_ADDR_INET);
                break;
             case APX_RESOURCE_TYPE_IPV6:
-               connect_and_send_message_tcp(address, m_connect_port, AF_INET6);
+               connect_and_send_message_tcp(address, m_connect_port, MSOCKET_ADDR_INET6);
                break;
             case APX_RESOURCE_TYPE_FILE:
    #ifdef _WIN32
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
             case APX_RESOURCE_TYPE_NAME:
                if ( (strlen(address) == 0) || (strcmp(address, "localhost") == 0) )
                {
-                  connect_and_send_message_tcp("127.0.0.1", m_connect_port, AF_INET);
+                  connect_and_send_message_tcp("127.0.0.1", m_connect_port, MSOCKET_ADDR_INET);
                }
                else
                {
@@ -406,7 +406,7 @@ static void application_cleanup(void)
 #ifndef _WIN32
 static void connect_and_send_message_unix(const char *socketPath)
 {
-   message_client_connection_t *connection = message_client_connection_new(AF_UNIX);
+   message_client_connection_t *connection = message_client_connection_new(MSOCKET_ADDR_UNIX);
    assert(m_message != 0);
    if (connection != 0)
    {
@@ -439,7 +439,7 @@ static void connect_and_send_message_unix(const char *socketPath)
 
 static void connect_and_send_message_tcp(const char *address, uint16_t port, uint8_t addressFamily)
 {
-   if ((addressFamily == AF_INET) || (addressFamily == AF_INET6))
+   if ((addressFamily == MSOCKET_ADDR_INET) || (addressFamily == MSOCKET_ADDR_INET6))
    {
       message_client_connection_t* connection = message_client_connection_new(addressFamily);
       assert(m_message != 0);

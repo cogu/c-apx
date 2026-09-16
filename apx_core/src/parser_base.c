@@ -44,13 +44,13 @@
 
 uint8_t const* apx_parserBase_parse_double(uint8_t const* begin, uint8_t const* end, double* v)
 {
-   return bstr_to_double(begin, end, v);
+   return bstr_parse_double(begin, end, v);
 }
 
 uint8_t const* apx_parserBase_parse_i32(uint8_t const* begin, uint8_t const* end, int32_t* v)
 {
    long tmp = 0;
-   uint8_t const* result = bstr_to_long(begin, end, &tmp);
+   uint8_t const* result = bstr_parse_long(begin, end, &tmp);
    if ((result > begin) && (result <= end))
    {
       *v = (int32_t)tmp;
@@ -61,7 +61,7 @@ uint8_t const* apx_parserBase_parse_i32(uint8_t const* begin, uint8_t const* end
 uint8_t const* apx_parserBase_parse_u32(uint8_t const* begin, uint8_t const* end, uint32_t* v)
 {
    unsigned long tmp = 0;
-   uint8_t const* result = bstr_to_unsigned_long(begin, end, 10, &tmp);
+   uint8_t const* result = bstr_parse_unsigned_long(begin, end, 10, &tmp);
    if ((result > begin) && (result <= end))
    {
       *v = (uint32_t)tmp;
@@ -72,7 +72,7 @@ uint8_t const* apx_parserBase_parse_u32(uint8_t const* begin, uint8_t const* end
 uint8_t const* apx_parserBase_parse_i64(uint8_t const* begin, uint8_t const* end, int64_t* v)
 {
    long long tmp = 0;
-   uint8_t const* result = bstr_to_long_long(begin, end, &tmp);
+   uint8_t const* result = bstr_parse_long_long(begin, end, &tmp);
    if ((result > begin) && (result <= end))
    {
       *v = (int64_t)tmp;
@@ -83,7 +83,7 @@ uint8_t const* apx_parserBase_parse_i64(uint8_t const* begin, uint8_t const* end
 uint8_t const* apx_parserBase_parse_u64(uint8_t const* begin, uint8_t const* end, uint64_t* v)
 {
    unsigned long long tmp = 0;
-   uint8_t const* result = bstr_to_unsigned_long_long(begin, end, 10, &tmp);
+   uint8_t const* result = bstr_parse_unsigned_long_long(begin, end, 10, &tmp);
    if ((result > begin) && (result <= end))
    {
       *v = (uint64_t)tmp;

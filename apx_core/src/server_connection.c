@@ -667,8 +667,8 @@ static bool process_greeting_message(apx_serverConnection_t* self, uint8_t const
    while (next < end)
    {
       const uint8_t* result;
-      result = bstr_line(next, end);
-      if ((result > next) || ((result == next) && *next == (uint8_t)'\n'))
+      result = bstr_find_line_feed(next, end);
+      if (result < end)
       {
          //found a line ending with '\n'
          const uint8_t* mark = next;
@@ -964,7 +964,7 @@ static apx_error_t parse_protocol_header_line(apx_serverConnection_t* self, uint
          {
             unsigned long size = 0u;
             uint8_t const* next = bstr_lstrip(result, end);
-            result = bstr_to_unsigned_long(next, end, 10, &size);
+            result = bstr_parse_unsigned_long(next, end, 10, &size);
             if (result > next)
             {
                if ((size != 16) && (size != 32))

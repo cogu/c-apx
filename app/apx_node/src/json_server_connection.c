@@ -43,8 +43,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void json_server_connection_disconnected(void *arg);
-static int8_t json_server_connection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen); //return 0 on success, -1 on failure (this will force the socket to close)
+static void json_server_connection_disconnected(void *arg, void *socket);
+static msocket_error_t json_server_connection_data(void *arg, void *socket, const uint8_t *dataBuf, const uint32_t dataLen, uint32_t *consumed_bytes, uint32_t *msg_size_hint);
 static void json_server_connection_process_message(json_server_connection_t *self, const uint8_t *pBegin, const uint8_t *pEnd);
 static void json_server_connection_process_hash_value(json_server_connection_t *self, dtl_hv_t *hv);
 //////////////////////////////////////////////////////////////////////////////
@@ -113,8 +113,9 @@ void json_server_connection_start(json_server_connection_t *self)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void json_server_connection_disconnected(void *arg)
+static void json_server_connection_disconnected(void *arg, void *socket)
 {
+   (void) socket;
    json_server_connection_t *self = (json_server_connection_t*) arg;
    if (self != 0)
    {
@@ -122,17 +123,18 @@ static void json_server_connection_disconnected(void *arg)
    }
 }
 
-//return 0 on success, -1 on failure (this will force the socket to close)
-static int8_t json_server_connection_data(void *arg, const uint8_t *dataBuf, uint32_t dataLen, uint32_t *parseLen)
+static msocket_error_t json_server_connection_data(void *arg, void *socket, const uint8_t *dataBuf, const uint32_t dataLen, uint32_t *consumed_bytes, uint32_t *msg_size_hint)
 {
+   (void) socket;
+   (void) msg_size_hint;
    json_server_connection_t *self = (json_server_connection_t*) arg;
    if (self != 0)
    {
       const uint8_t *pResult;
       const uint8_t *pEnd = dataBuf + dataLen;
-      assert(parseLen != 0);
+      assert(consumed_bytes != 0);
       uint32_t msgSize = 0u;
-      *parseLen = 0;
+      *consumed_bytes = 0;
       pResult = numheader_decode32(dataBuf, pEnd, &msgSize);
       if ( (pResult > dataBuf)  )
       {
@@ -141,12 +143,12 @@ static int8_t json_server_connection_data(void *arg, const uint8_t *dataBuf, uin
          {
             json_server_connection_process_message(self, pNext, pNext+msgSize);
             pNext += msgSize;
-            *parseLen = (uint32_t) (pNext - dataBuf);
+            *consumed_bytes = (uint32_t) (pNext - dataBuf);
          }
       }
-      return 0;
+      return MSOCKET_NO_ERROR;
    }
-   return -1;
+   return MSOCKET_INVALID_ARGUMENT_ERROR;
 }
 
 static void json_server_connection_process_message(json_server_connection_t *self, const uint8_t *pBegin, const uint8_t *pEnd)

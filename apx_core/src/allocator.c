@@ -74,7 +74,7 @@ apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessa
       size_t elemSize = sizeof(rbf_data_t);
       adt_buf_err_t bufResult;
 
-      bufResult = adt_rbfh_createEx(&self->messages, (uint8_t) elemSize, ADT_RBFSH_MIN_NUM_ELEMS_DEFAULT, maxPendingMessages);
+      bufResult = adt_rbfh_create_with_params(&self->messages, (uint8_t) elemSize, ADT_RBFSH_MIN_NUM_ELEMS_DEFAULT, maxPendingMessages);
       if (bufResult != BUF_E_OK)
       {
          return APX_MEM_ERROR;

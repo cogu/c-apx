@@ -86,7 +86,7 @@ apx_error_t apx_serverTestConnection_create(apx_serverTestConnection_t *self)
          }
          else
          {
-            adt_bytearray_create(&self->transmit_buffer, 0u);
+            adt_bytearray_create(&self->transmit_buffer);
          }
       }
       if (result == APX_NO_ERROR)
@@ -636,7 +636,7 @@ static apx_error_t apx_serverTestConnection_transmit_direct_message(apx_serverTe
 
 static void send_packet(apx_serverTestConnection_t* self)
 {
-   adt_bytearray_t* packet = adt_bytearray_new(0u);
+   adt_bytearray_t* packet = adt_bytearray_new();
    if (packet != NULL)
    {
       adt_error_t result = adt_bytearray_resize(packet, (uint32_t)self->pending_bytes);
