@@ -137,29 +137,36 @@ static apx_error_t apx_bytePortMap_build(apx_bytePortMap_t* self, apx_portInstan
    if ( (self != NULL) && (port_instance_list != NULL) && (num_ports > 0u) && (map_len > 0u) )
    {
       apx_portId_t port_id;
-      apx_portId_t* next;
-      apx_portId_t* end;
-      self->map_data = (apx_portId_t*) malloc(map_len * sizeof(apx_portId_t));
-      if (self->map_data == NULL)
+      apx_size_t offset = 0u;
+      apx_portId_t* map_data = (apx_portId_t*) malloc(map_len * sizeof(apx_portId_t));
+      if (map_data == NULL)
       {
          return APX_MEM_ERROR;
       }
-      self->map_len = map_len;
-      next = self->map_data;
-      end = next + self->map_len;
-      for (port_id =0; port_id < num_ports; port_id++)
+      for (port_id = 0; port_id < num_ports; port_id++)
       {
          apx_size_t i;
          apx_size_t pack_len = (apx_size_t)apx_portInstance_data_size(&port_instance_list[port_id]);
-         for(i=0u; i < pack_len; i++)
+         if (pack_len > (map_len - offset))
          {
-            next[i] = port_id;
+            free(map_data);
+            return APX_LENGTH_ERROR;
          }
-         next += pack_len;
-         assert(next <= end);
+         for (i = 0u; (i < pack_len) && ((offset + i) < map_len); i++)
+         {
+            map_data[offset + i] = port_id;
+         }
+         offset += pack_len;
       }
-      assert(next == end);
+      if (offset != map_len)
+      {
+         free(map_data);
+         return APX_LENGTH_ERROR;
+      }
+      self->map_data = map_data;
+      self->map_len = map_len;
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
