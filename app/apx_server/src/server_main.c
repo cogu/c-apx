@@ -12,7 +12,6 @@
 # define WIN32_LEAN_AND_MEAN
 # endif
 #include <Windows.h>
-#include <WinSock2.h>
 #else
 #include <unistd.h>
 #include <signal.h>
@@ -32,7 +31,6 @@
 #include "apx_build_cfg.h"
 #endif
 
-#pragma comment(lib, "ws2_32.lib")
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -141,14 +139,7 @@ int main(int argc, char **argv)
       }
    }
 
-#ifdef _WIN32
-   if (init_wsa() != 0)
-   {
-      int err = WSAGetLastError();
-      fprintf(stderr, "WSAStartup failed with error: %d\n", err);
-      return 1;
-   }
-#else
+#ifndef _WIN32
    signal_handler_setup();
 #endif
    apx_server_create(&m_server);
@@ -165,9 +156,6 @@ int main(int argc, char **argv)
       {
          dtl_dec_ref(extensions_config);
       }
-#ifdef _WIN32
-      WSACleanup();
-#endif
       return 1;
    }
    apx_server_start(&m_server);
@@ -199,9 +187,6 @@ int main(int argc, char **argv)
       dtl_dec_ref(extensions_config);
    }
    printf("Server shutdown complete\n");   
-#ifdef _WIN32
-   WSACleanup();
-#endif
 #if defined(_MSC_VER) && (CLEANUP_TEST != 0)
    _CrtDumpMemoryLeaks();
 #endif
@@ -295,14 +280,4 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
    return ARGPARSE_SUCCESS;
 }
 
-#ifdef _WIN32
-static int init_wsa(void)
-{
-   WORD wVersionRequested;
-   WSADATA wsaData;
-   int err;
-   wVersionRequested = MAKEWORD(2, 2);
-   err = WSAStartup(wVersionRequested, &wsaData);
-   return err;
-}
-#endif
+

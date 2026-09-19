@@ -110,15 +110,6 @@ int main(int argc, char **argv)
    argparse_result_t result = argparse_exec(argc, (const char**)argv, argparse_cbk);
    if (result == ARGPARSE_SUCCESS)
    {
-#ifdef _WIN32
-      if (init_wsa() != 0)
-      {
-         int err = WSAGetLastError();
-         fprintf(stderr, "WSAStartup failed with error: %d\n", err);
-         retval = 1;
-         goto SHUTDOWN;
-      }
-#endif
       if (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
       {
          uint16_t dummy_port;
@@ -153,17 +144,6 @@ SHUTDOWN:
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-#ifdef _WIN32
-static int init_wsa(void)
-{
-   WORD wVersionRequested;
-   WSADATA wsaData;
-   int err;
-   wVersionRequested = MAKEWORD(2, 2);
-   err = WSAStartup(wVersionRequested, &wsaData);
-   return err;
-}
-#endif
 
 static argparse_result_t argparse_cbk(const char* short_name, const char* long_name, const char* value)
 {
