@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 
-project(apx_core LANGUAGES C VERSION 0.3.3)
+project(apx_core LANGUAGES C VERSION 0.3.4)
 set(APX_VERSION_SUFFIX "")
 set(APX_VERSION_FULL "${PROJECT_VERSION}${APX_VERSION_SUFFIX}")
 
@@ -397,7 +397,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
         enable_testing()
         add_test(NAME apx_unit_test COMMAND apx_unit)
-        set_tests_properties(apx_unit_test PROPERTIES 
+        set_tests_properties(apx_unit_test PROPERTIES
             PASS_REGULAR_EXPRESSION "OK \\([0-9]+ tests\\)"
             LABELS "unit"
         )

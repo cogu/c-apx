@@ -9,18 +9,17 @@ Latest release is [v0.2.8](https://github.com/cogu/c-apx/releases/tag/v0.2.8).
 
 ## v0.3.x (Development)
 
-A brand new implementation is being developed on master branch. Its current state is experimental at best.
+A brand new implementation is being developed on master branch. Its current state is in pre-alpha stage.
 
-### Current implementation status ([v0.3.3](https://github.com/cogu/c-apx/releases/tag/v0.3.3))
+### Current implementation status
 
-- New APX server and client with support for APX IDL v1.3 (upcoming APX specification).
+- New APX server and client with support for APX IDL v1.3.
   - Native support for TCP/IP and UNIX sockets.
   - Possible to extend the server with custom extensions to allow new connection types.
 - Dynamic clients are fully supported.
 - APX-ES clients not yet supported (needs rewrite from v0.2 to v0.3).
 - Static clients not yet supported (needs rewrite from v0.2 to v0.3).
 - CMake build support for Linux and Windows.
-- Visual Studio 2019 projects for Windows.
 
 ## Dynamic vs. Static Clients
 
