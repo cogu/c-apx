@@ -36,32 +36,45 @@
 //////////////////////////////////////////////////////////////////////////////
 
       /*
-      * APX VM 2.0 PROGRAM HEADER (Varies between 2 and 10 bytes)
-      * Byte 0 (bits 4-7): program flags
-      * Byte 0 (bit 3): pack or unpack program (0-1)
-      * Byte 0 (bits 0-2): data size variant (VARIANT_U8, VARIANT_U16, VARIANT_U32). This determines the value of N in the next entry.
-      * Bytes 1..(N-1): DataSize (Maximum data size required by this program) (variable-size encoded integer)
-      *            - If Byte 1 (bits 0-2) has value VARIANT_U8 this is encoded as uint8. (N=2)
-      *            - If Byte 1 (bits 0-2) has value VARIANT_U16 this is encoded as uint16le (little endian). (N=3)
-      *            - If Byte 1 (bits 0-2) has value VARIANT_U32 this is encoded as uint32le. (N=5)
-      * After the the previous integer is encoded the header usually ends. However, if HEADER_FLAG_QUEUED_DATA was set among program flags (Byte 0)
-      * The header continues with an encoded DATA_SIZE instruction where variant must be value 3 or above.
-      * Since length of previous header field varies we call the first byte after the encoded integer "Byte N".
-      * Byte N: DATA_SIZE instruction header (Determines the value of QueueStorageSize)
-      * Bytes (N+1)..(N+4): ElementSize (variable-size encoded integer)
+      * APX VM 2.1 PROGRAM HEADER (Varies between 4 and 12 bytes)
       *
-      * When HEADER_FLAG_QUEUED_DATA is set the queue size can be calculated from using the DataSize and ElementSize numbers.
-      * The DataSize value has been previously incremented by the value 1, 2 or 4. Which of these it is can be determined from variant in the DATA_SIZE instruction.
-      * The queue length can be calculated by using this formula:
+      * Base Program Header:
+      * Byte 0: APX VM major version number ('2' in ASCII, 0x32)
+      * Byte 1: APX VM minor version number ('1' in ASCII, 0x31)
+      * Byte 2: Program Flags and Type byte
+      *         - Bits 0-2: Data size variant (VARIANT_U8, VARIANT_U16, VARIANT_U32)
+      *                     Determines the byte width of MaxDataSize directly following Byte 2:
+      *                     - 0 (VARIANT_U8):  1 byte (0..255)
+      *                     - 1 (VARIANT_U16): 2 bytes, little-endian (0..65535)
+      *                     - 2 (VARIANT_U32): 4 bytes, little-endian (0..4294967295)
+      *         - Bit 3:    Program type (0 = UNPACK, 1 = PACK)
+      *         - Bit 4:    DYNAMIC_DATA flag (0x10): Active if dynamic arrays are present
+      *         - Bit 5:    QUEUED_DATA flag (0x20): Active if this is a queued port
+      *         - Bits 6-7: Reserved for future use (must be 0)
+      * Bytes 3..(N-1): MaxDataSize (Maximum expected data size, 1, 2, or 4 bytes little-endian)
       *
-      * NumberOfQueuedElements = (DataSize-QueueStorageSize)/ElementSize
-      * where QueueStorageSize is either 1, 2, or 4 (which can be determined from the variant on the DATA_SIZE instruction).
-      * The result of NumberOfQueuedElements should always be an integer without fraction (otherwise the header have been incorrectly encoded).
+      * Queued Port Header Extension (only when QUEUED_DATA flag is set):
+      * Since the length of the previous field varies, we call the next byte "Byte N".
+      * Byte N:             Embedded DATA_SIZE instruction header (Opcode 2, Variants 3..11, Flag bit = 0)
+      * Bytes (N+1)..(N+M): ElementSize (1, 2, or 4 bytes little-endian unsigned integer)
       *
+      * When QUEUED_DATA is set, the queue length can be calculated using the formula:
+      *
+      * Queue Length = (MaxDataSize - QueueStorageSize) / ElementSize
+      *
+      * where QueueStorageSize is the header prefix size (in bytes) reserved in the data buffer
+      * to store the current queue length:
+      *   - 1 byte when Queue Size is UINT8  (Variants 3, 6, 9)
+      *   - 2 bytes when Queue Size is UINT16 (Variants 4, 7, 10)
+      *   - 4 bytes when Queue Size is UINT32 (Variants 5, 8, 11)
+      *
+      * The result of Queue Length should always be an integer without fraction.
       */
 
 #define APX_VM_MAJOR_VERSION ((uint8_t) 2u) //NO LONGER USED IN PROGRAM HEADER. Moved to file cache header instead.
 #define APX_VM_MINOR_VERSION ((uint8_t) 0u) //NO LONGER USED IN PROGRAM HEADER. Moved to file cache header instead.
+#define APX_VM_HEADER_VERSION_MAJOR ((uint8_t) 0x32u) // ASCII '2'
+#define APX_VM_HEADER_VERSION_MINOR ((uint8_t) 0x31u) // ASCII '1'
 #define APX_VM_VERSION_SIZE 2u              //NO LONGER USED IN PROGRAM HEADER. Moved to file cache header instead.
 #define APX_VM_HEADER_DATA_VARIANT_MASK ((uint8_t) 0x07) // Mask for bits 0..2 which can hold APX_VM_VARIANT_UINT8, APX_VM_VARIANT_UINT16 or APX_VM_VARIANT_UINT32
                                                          // (with an extra spare bit for future use)
@@ -73,87 +86,86 @@
 #define APX_VM_HEADER_FLAG_QUEUED_DATA ((uint8_t) 0x20) //When this is active, the very next instruction must be OPCODE_DATA_SIZE.
 
 
-/* APX VM 2.0 Instruction Format
+/* APX VM 2.1 Instruction Format
 
-          +-------------+----------------+---------------+
-          | 1 FLag bit  | 4 variant bits | 3 opcode bits |
-          +-------------+----------------+---------------+
+          +------------+---------------+----------------+
+          | 1 Flag bit | 3 opcode bits | 4 variant bits |
+          +------------+---------------+----------------+
+          |   Bit 7    |   Bits 4-6    |    Bits 0-3    |
+          +------------+---------------+----------------+
 
           OP CODES
-          0: UNPACK:   13 variants
-             FLAG: is_array(true,false)
-             0: U8
-             1: U16
-             2: U32
-             3: U64
-             4: S8
-             5: S16
-             6: S32
-             7: S64
+          0: PACK:       14 variants
+             FLAG: is_array (true, false)
+             0: UINT8
+             1: UINT16
+             2: UINT32
+             3: UINT64
+             4: INT8
+             5: INT16
+             6: INT32
+             7: INT64
              8: BOOL
-             9: BYTE (immutable bytes object)
+             9: BYTE (raw byte / blob)
              10: RECORD
-             11: ARRAY
-             12: ASCII_CHAR
-             13: CHAR8
-             14: CHAR16
-             15: CHAR32
+             11: ARRAY (reserved for nested arrays / future use)
+             12: CHAR (ASCII)
+             13: CHAR8 (UTF-8)
+             14: CHAR16 (UTF-16)
+             15: CHAR32 (UTF-32)
 
-          1: PACK  13 variants
-             FLAG: is_array(true,false)
-             0: U8
-             1: U16
-             2: U32
-             3: U64
-             4: S8
-             5: S16
-             6: S32
-             8: BOOL
-             9: BYTE (immutable bytes object)
-             10: RECORD
-             11: ARRAY
-             12: ASCII_CHAR
-             13: CHAR8
-             14: CHAR16
-             15: CHAR32
+          1: UNPACK:     14 variants
+             FLAG: is_array (true, false)
+             Same variants (0..15) and payload sizes as PACK.
 
-          2: DATA_SIZE     : 6 variants
-             FLAG: is_dynamic_array(true, false)
-             0: ARRAY_SIZE_U8
-             1: ARRAY_SIZE_U16
-             2: ARRAY_SIZE_U32
-             3: ELEMENT_SIZE_U8_QUEUE_SIZE_U8
-             4: ELEMENT_SIZE_U8_QUEUE_SIZE_U16
-             5: ELEMENT_SIZE_U8_QUEUE_SIZE_U32
-             6: ELEMENT_SIZE_U16_QUEUE_SIZE_U8
-             7: ELEMENT_SIZE_U16_QUEUE_SIZE_U16
-             8: ELEMENT_SIZE_U16_QUEUE_SIZE_U32
-             9: ELEMENT_SIZE_U32_QUEUE_SIZE_U8
-             10: ELEMENT_SIZE_U32_QUEUE_SIZE_U16
-             11: ELEMENT_SIZE_U32_QUEUE_SIZE_U32
+          2: DATA_SIZE:  12 variants
+             Variants 0..2: ARRAY_SIZE
+             FLAG: is_dynamic_array (0: fixed-length, 1: dynamic-length)
+             0: ARRAY_SIZE_UINT8  (1 byte length payload, 0..255)
+             1: ARRAY_SIZE_UINT16 (2 bytes length payload, 256..65535, little-endian)
+             2: ARRAY_SIZE_UINT32 (4 bytes length payload, > 65535, little-endian)
 
-          3: DATA_CTRL  : 10 variants
-             0: RECORD_SELECT
-             1: RECORD_END
-             2: LIMIT_CHECK_U8
-             3: LIMIT_CHECK_U16
-             4: LIMIT_CHECK_U32
-             5: LIMIT_CHECK_U64
-             6: LIMIT_CHECK_S8
-             7: LIMIT_CHECK_S16
-             8: LIMIT_CHECK_S32
-             9: LIMIT_CHECK_S64
-             FLAG (variant 0): When true, this is the first field of the record.
-             FLAG (variants 1..9): When true, the limit check applies to non-scalar value (such as array of u8, u16 etc.)
-          4: FLOW_CTRL     : 1 variant
-             0: ARRAY_NEXT
-          5: UNPACK2 (reserved for 16 additional data types)
-          6: PACK2 (reserved for 16 additional data types)
-          7: RESERVED
+             Variants 3..11: ELEMENT_SIZE & QUEUE_SIZE (Queued Port Header Extension)
+             FLAG: Unused (must be 0)
+             3:  ELEMENT_SIZE_U8_QUEUE_SIZE_UINT8   (1B elem size, 1B queue storage)
+             4:  ELEMENT_SIZE_U8_QUEUE_SIZE_UINT16  (1B elem size, 2B queue storage)
+             5:  ELEMENT_SIZE_U8_QUEUE_SIZE_UINT32  (1B elem size, 4B queue storage)
+             6:  ELEMENT_SIZE_U16_QUEUE_SIZE_UINT8  (2B elem size, 1B queue storage)
+             7:  ELEMENT_SIZE_U16_QUEUE_SIZE_UINT16 (2B elem size, 2B queue storage)
+             8:  ELEMENT_SIZE_U16_QUEUE_SIZE_UINT32 (2B elem size, 4B queue storage)
+             9:  ELEMENT_SIZE_U32_QUEUE_SIZE_UINT8  (4B elem size, 1B queue storage)
+             10: ELEMENT_SIZE_U32_QUEUE_SIZE_UINT16 (4B elem size, 2B queue storage)
+             11: ELEMENT_SIZE_U32_QUEUE_SIZE_UINT32 (4B elem size, 4B queue storage)
+
+          3: DATA_CTRL:  10 variants
+             0: RECORD_SELECT (Variable payload: null-terminated ASCII string)
+                FLAG: When 1, this is the first field of the record.
+                      When 0, subsequent record field.
+             1: RECORD_END (0 payload bytes)
+                Explicit end-of-record delimiter.
+             2: LIMIT_CHECK_UINT8  (2 bytes payload: 1B lower, 1B upper)
+             3: LIMIT_CHECK_UINT16 (4 bytes payload: 2B lower, 2B upper, little-endian)
+             4: LIMIT_CHECK_UINT32 (8 bytes payload: 4B lower, 4B upper, little-endian)
+             5: LIMIT_CHECK_UINT64 (16 bytes payload: 8B lower, 8B upper, little-endian)
+             6: LIMIT_CHECK_INT8   (2 bytes payload: 1B lower, 1B upper)
+             7: LIMIT_CHECK_INT16  (4 bytes payload: 2B lower, 2B upper, little-endian)
+             8: LIMIT_CHECK_INT32  (8 bytes payload: 4B lower, 4B upper, little-endian)
+             9: LIMIT_CHECK_INT64  (16 bytes payload: 8B lower, 8B upper, little-endian)
+             FLAG (variants 2..9):
+                0: Limit check applies to scalar value.
+                1: Limit check applies to array of values.
+
+          4: FLOW_CTRL:  1 variant
+             0: ARRAY_NEXT (0 payload bytes)
+                Advances internal array iterator to the next element.
+
+          5: RESERVED (Reserved for future use)
+          6: RESERVED (Reserved for future use)
+          7: RESERVED (Reserved for future use)
           */
 
-//OPCODE UNPACK
-#define APX_VM_OPCODE_UNPACK               ((uint8_t) 0u)
+//OPCODE PACK
+#define APX_VM_OPCODE_PACK              ((uint8_t) 0u)
 //If flagbit is set it means the next instruction is an opcode ARRAY
 //PACK VARIANTS
 #define APX_VM_VARIANT_UINT8            ((uint8_t) 0u)
@@ -175,9 +187,9 @@
 #define APX_VM_VARIANT_LAST             APX_VM_VARIANT_CHAR32
 #define APX_VM_VARIANT_INVALID          ((uint8_t) 255u)
 
-//OPCODE PACK
-#define APX_VM_OPCODE_PACK              ((uint8_t) 1u)
-//same variants as OPCODE_UNPACK
+//OPCODE UNPACK
+#define APX_VM_OPCODE_UNPACK            ((uint8_t) 1u)
+//same variants as OPCODE_PACK
 
 //OPCODE DATA_SIZE
 #define APX_VM_OPCODE_DATA_SIZE         ((uint8_t) 2u)
@@ -224,13 +236,14 @@
 
 
 //Other VM-related defines
-#define APX_VM_INST_SIZE ((uint32_t) sizeof(uint8_t))
+#define APX_VM_INST_SIZE          ((uint32_t) sizeof(uint8_t))
 #define APX_VM_INST_OPCODE_MASK   7u
-#define APX_VM_INST_VARIANT_SHIFT 3u
-#define APX_VM_INST_VARIANT_MASK 0xf
-#define APX_VM_INST_FLAG         0x80
-#define APX_VM_ARRAY_FLAG        APX_VM_INST_FLAG
-#define APX_VM_DYN_ARRAY_FLAG    APX_VM_INST_FLAG
+#define APX_VM_INST_OPCODE_SHIFT  4u
+#define APX_VM_INST_VARIANT_MASK  0x0fu
+#define APX_VM_INST_VARIANT_SHIFT 0u
+#define APX_VM_INST_FLAG          0x80u
+#define APX_VM_ARRAY_FLAG         APX_VM_INST_FLAG
+#define APX_VM_DYN_ARRAY_FLAG     APX_VM_INST_FLAG
 #define APX_VM_FIRST_FIELD_FLAG   APX_VM_INST_FLAG
 
 #define APX_VM_UINT8_SIZE  ((uint32_t) sizeof(uint8_t))

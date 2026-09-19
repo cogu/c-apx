@@ -2,7 +2,7 @@
 * \file      vm.h
 * \author    Conny Gustafsson
 * \date      2020-02-24
-* \brief     APX virtual machine for APX VM 2.0 standard
+* \brief     APX virtual machine for APX VM 2.1 standard
 *
 * Copyright (c) 2019-2021 Conny Gustafsson
 * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -33,7 +33,7 @@
 #include "apx/program.h"
 #include "apx/serializer.h"
 #include "apx/deserializer.h"
-#include "apx/decoder.h"
+#include "apx/program_decoder.h"
 #include "dtl_type.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ typedef struct apx_vm_tag
 {
    apx_vm_serializer_t serializer;
    apx_vm_deserializer_t deserializer;
-   apx_vm_decoder_t decoder;
+   apx_programDecoder_t decoder;
    apx_programHeader_t program_header;
 } apx_vm_t;
 
