@@ -3,7 +3,7 @@
   "cmakeMinimumRequired": {
     "major": 3,
     "minor": 20,
-    "patch": 0
+    "patch": 1
   },
   "configurePresets": [
     {
@@ -66,6 +66,44 @@
         "CMAKE_C_CLANG_TIDY": "clang-tidy-18",
         "CMAKE_CXX_CLANG_TIDY": "clang-tidy-18"
       }
+    },
+    {
+      "name": "msvc-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
+      }
+    },
+    {
+      "name": "msvc-debug",
+      "displayName": "MSVC Debug (Apps)",
+      "inherits": "msvc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "msvc-release",
+      "displayName": "MSVC Release (Apps)",
+      "inherits": "msvc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "msvc-test",
+      "displayName": "MSVC Unit Tests",
+      "inherits": "msvc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "UNIT_TEST": true
+      }
     }
   ],
   "buildPresets": [
@@ -104,6 +142,21 @@
       "targets": [
         "apx_unit"
       ]
+    },
+    {
+      "name": "msvc-debug",
+      "configurePreset": "msvc-debug"
+    },
+    {
+      "name": "msvc-release",
+      "configurePreset": "msvc-release"
+    },
+    {
+      "name": "msvc-test",
+      "configurePreset": "msvc-test",
+      "targets": [
+        "apx_unit"
+      ]
     }
   ],
   "testPresets": [
@@ -124,6 +177,13 @@
     {
       "name": "clang-tsan",
       "configurePreset": "clang-tsan",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "msvc-test",
+      "configurePreset": "msvc-test",
       "output": {
         "outputOnFailure": true
       }
