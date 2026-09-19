@@ -86,7 +86,7 @@ static bool read_buffer_is_valid(apx_vm_readBuffer_t* self);
 static apx_error_t deserializer_prepare_for_buffer_read(apx_vm_deserializer_t* self, apx_typeCode_t type_code, uint32_t element_size);
 apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
 static apx_error_t deserializer_prepare_for_array(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-static apx_error_t deserializer_unpack_scalar_value(apx_vm_deserializer_t* self, dtl_sv_t *sv);
+static apx_error_t deserializer_unpack_scalar_value(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_unpack_record_value(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_unpack_array_of_scalar(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_unpack_string(apx_vm_deserializer_t* self);
@@ -1374,7 +1374,7 @@ apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t arra
                retval = state_init_scalar_value(self->state);
                if (retval == APX_NO_ERROR)
                {
-                  retval = deserializer_unpack_scalar_value(self, self->state->value.sv);
+                  retval = deserializer_unpack_scalar_value(self);
                }
             }
             else if (state_is_record_type(self->state))
@@ -1448,9 +1448,9 @@ static apx_error_t deserializer_prepare_for_array(apx_vm_deserializer_t* self, u
    return APX_NO_ERROR;
 }
 
-static apx_error_t deserializer_unpack_scalar_value(apx_vm_deserializer_t* self, dtl_sv_t* sv)
+static apx_error_t deserializer_unpack_scalar_value(apx_vm_deserializer_t* self)
 {
-   assert((self != NULL) && (sv != NULL));
+   assert((self != NULL) && (self->state != NULL));
    apx_error_t retval = state_read_scalar_value(self->state, &self->buffer);
    if (retval == APX_NO_ERROR)
    {
