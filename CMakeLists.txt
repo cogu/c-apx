@@ -81,7 +81,6 @@ set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_compiler_unpack.c
     apx_core/test/testsuite_computation.c
     apx_core/test/testsuite_data_element.c
-    apx_core/test/testsuite_decoder.c
     apx_core/test/testsuite_file_info.c
     apx_core/test/testsuite_file_manager_receiver.c
     apx_core/test/testsuite_file_map.c
@@ -94,7 +93,8 @@ set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_port_connection_change_entry.c
     apx_core/test/testsuite_port_connector_change_table.c
     apx_core/test/testsuite_port_signature_map.c
-    apx_core/test/testsuite_program.c
+    apx_core/test/testsuite_program_decoder.c
+    apx_core/test/testsuite_program_encoder.c
     apx_core/test/testsuite_remotefile.c
     apx_core/test/testsuite_server_connection.c
     apx_core/test/testsuite_server.c
@@ -158,6 +158,8 @@ set (APX_COMMON_HEADERS
     apx_core/include/apx/port_signature_map.h
     apx_core/include/apx/port.h
     apx_core/include/apx/program.h
+    apx_core/include/apx/program_decoder.h
+    apx_core/include/apx/program_encoder.h
     apx_core/include/apx/remotefile_cfg.h
     apx_core/include/apx/remotefile.h
     apx_core/include/apx/serializer.h
@@ -192,7 +194,8 @@ set (APX_COMMON_SOURCES
     apx_core/src/data_element.c
     apx_core/src/data_signature.c
     apx_core/src/data_type.c
-    apx_core/src/decoder.c
+    apx_core/src/program_decoder.c
+    apx_core/src/program_encoder.c
     apx_core/src/deserializer.c
     apx_core/src/event_listener.c
     apx_core/src/event_loop.c
