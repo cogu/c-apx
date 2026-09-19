@@ -98,7 +98,7 @@
 //include Windows.h for Windows, pthread.h for Linux/Cygwin
 #ifdef _WIN32
 #define SPINLOCK_T CRITICAL_SECTION
-#define SPINLOCK_INIT(spin) InitializeCriticalSectionAndSpinCount(&spin,1000)
+#define SPINLOCK_INIT(spin) (void)InitializeCriticalSectionAndSpinCount(&spin,1000)
 #define SPINLOCK_ENTER(spin) EnterCriticalSection(&spin)
 #define SPINLOCK_LEAVE(spin) LeaveCriticalSection(&spin)
 #define SPINLOCK_DESTROY(spin) DeleteCriticalSection(&spin);
