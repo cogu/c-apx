@@ -77,8 +77,7 @@ static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 int main(int argc, char **argv)
 {
    apx_error_t result;
-   dtl_hv_t *server_config = NULL;
-   dtl_hv_t *extensions_config = NULL;
+   dtl_hv_t *config = NULL;
 
    m_shutdownTimer = SHUTDOWN_TIMER_INIT;
    m_runFlag = 1;
@@ -112,7 +111,7 @@ int main(int argc, char **argv)
    printf("APX Server %s\n\n", SW_VERSION_STR);
    printf("Loading %s: ", config_path);
    fflush(stdout);
-   result = apx_server_load_config(config_path, &server_config, &extensions_config);
+   result = apx_server_load_config(config_path, &config);
    adt_str_delete(m_config_path);
    if (result != APX_NO_ERROR)
    {
@@ -123,17 +122,21 @@ int main(int argc, char **argv)
    {
       printf("OK\n");
       fflush(stdout);
-      if (server_config != NULL)
+      if (config != NULL)
       {
-         dtl_sv_t *svShutdownTimer = (dtl_sv_t*) dtl_hv_get_cstr(server_config, "shutdown-timer");
-         if (svShutdownTimer != NULL)
+         dtl_dv_t *server_node = dtl_hv_get_cstr(config, "apx-server");
+         if (server_node != NULL && dtl_dv_type(server_node) == DTL_DV_HASH)
          {
-            int32_t i32;
-            bool ok;
-            i32 = dtl_sv_to_i32(svShutdownTimer, &ok);
-            if (ok)
+            dtl_sv_t *svShutdownTimer = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "shutdown-timer");
+            if (svShutdownTimer != NULL)
             {
-               m_shutdownTimer = i32;
+               int32_t i32;
+               bool ok;
+               i32 = dtl_sv_to_i32(svShutdownTimer, &ok);
+               if (ok)
+               {
+                  m_shutdownTimer = i32;
+               }
             }
          }
       }
@@ -143,18 +146,14 @@ int main(int argc, char **argv)
    signal_handler_setup();
 #endif
    apx_server_create(&m_server);
-   result = register_apx_server_extensions(&m_server, extensions_config);
+   result = register_apx_server_extensions(&m_server, config);
    if (result != APX_NO_ERROR)
    {
       fprintf(stderr, "Failed to register server extensions: %s (error %d)\n", apx_strerror(result), (int) result);
       apx_server_destroy(&m_server);
-      if (server_config != NULL)
+      if (config != NULL)
       {
-         dtl_dec_ref(server_config);
-      }
-      if (extensions_config != NULL)
-      {
-         dtl_dec_ref(extensions_config);
+         dtl_dec_ref(config);
       }
       return 1;
    }
@@ -178,15 +177,11 @@ int main(int argc, char **argv)
    }
    printf("Server shutdown started\n");
    apx_server_destroy(&m_server);
-   if (server_config != NULL)
+   if (config != NULL)
    {
-      dtl_dec_ref(server_config);
+      dtl_dec_ref(config);
    }
-   if (extensions_config != NULL)
-   {
-      dtl_dec_ref(extensions_config);
-   }
-   printf("Server shutdown complete\n");   
+   printf("Server shutdown complete\n");
 #if defined(_MSC_VER) && (CLEANUP_TEST != 0)
    _CrtDumpMemoryLeaks();
 #endif
@@ -229,7 +224,7 @@ static void print_version(void)
 
 static void print_usage(const char *name)
 {
-   printf("Usage:\n%s [-h | --help] [--version] <config_dir>\n", name);
+   printf("Usage:\n%s [-h | --help] [--version] <config_file | config_dir>\n", name);
 }
 
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value)

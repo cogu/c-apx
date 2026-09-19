@@ -7,6 +7,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include <stdio.h>
+#include <stdbool.h>
 #include "extensions_cfg.h"
 
 @GENERATED_EXTENSION_INCLUDES@
@@ -32,7 +34,29 @@ apx_error_t register_apx_server_extensions(struct apx_server_tag *server, dtl_hv
 {
    for (const apx_server_extension_entry_t *entry = m_extension_registry; entry->name != NULL; ++entry)
    {
-      dtl_dv_t *config = (extensions_config != NULL) ? dtl_hv_get_cstr(extensions_config, entry->name) : NULL;
+      dtl_dv_t *config = NULL;
+      if (extensions_config != NULL)
+      {
+         char key[128];
+         snprintf(key, sizeof(key), "%s-extension", entry->name);
+         config = dtl_hv_get_cstr(extensions_config, key);
+         if (config != NULL)
+         {
+            if (dtl_dv_type(config) == DTL_DV_HASH)
+            {
+               dtl_sv_t *enabled_sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) config, "enabled");
+               if (enabled_sv != NULL)
+               {
+                  bool ok = false;
+                  bool is_enabled = dtl_sv_to_bool(enabled_sv, &ok);
+                  if (ok && !is_enabled)
+                  {
+                     continue;
+                  }
+               }
+            }
+         }
+      }
       apx_error_t result = entry->register_fn(server, config);
       if (result != APX_NO_ERROR)
       {

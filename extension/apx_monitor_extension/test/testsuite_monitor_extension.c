@@ -164,9 +164,5 @@ static void test_monitor_connection_transmits_existing_connection_info_on_connec
 //Helper functions
 static void register_extension(CuTest* tc, apx_server_t* server)
 {   
-   dtl_hv_t* cfg = dtl_hv_new();
-   CuAssertPtrNotNull(tc, cfg);
-   dtl_hv_set_cstr(cfg, "extension-enabled", (dtl_dv_t*) dtl_sv_make_bool(true), false);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_monitorExtension_register(server, (dtl_dv_t*)cfg));
-   dtl_dec_ref(cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_monitorExtension_register(server, NULL));
 }

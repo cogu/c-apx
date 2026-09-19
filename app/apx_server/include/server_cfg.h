@@ -38,17 +38,20 @@
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * Loads server configuration from a path (directory or JSON file).
+ * Loads server configuration from a path (JSON file or directory containing server.json).
  *
  * If path is a directory:
- *   - Reads <path>/server.json (or <path>/apx_server.json) into *server_config
- *   - Reads individual extension JSON files (<path>/<key>.json) into *extensions_config
+ *   - Resolves <path>/server.json (or fallback <path>/apx_server.json)
  *
  * If path is a file:
- *   - Reads the JSON file and extracts "server" and "extension" objects
+ *   - Reads the specified JSON configuration file
  *
- * Caller takes ownership of the returned dtl_hv_t pointers and should release them with dtl_dec_ref().
+ * The JSON configuration file contains:
+ *   - "apx-server": Server daemon settings (optional)
+ *   - "<name>-extension": Extension settings
+ *
+ * Caller takes ownership of the returned dtl_hv_t pointer and should release it with dtl_dec_ref().
  */
-apx_error_t apx_server_load_config(const char *path, dtl_hv_t **server_config, dtl_hv_t **extensions_config);
+apx_error_t apx_server_load_config(const char *path, dtl_hv_t **config);
 
 #endif //APX_SERVER_CFG_H
