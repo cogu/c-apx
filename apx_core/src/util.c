@@ -407,7 +407,7 @@ static bool apx_util_verifyIPV4Address(const char *pBegin, const char *pEnd)
    int group_length = 0;
    int group_count = 1u; //verifies that we have exactly 4 groups of numbers separated by '.'
    assert((pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd));
-   for(c=*pNext; pNext<pEnd; c=*(++pNext))
+   for(c = (unsigned char)*pNext; pNext < pEnd; c = (unsigned char)*(++pNext))
    {
       if (c == '.')
       {
@@ -460,7 +460,7 @@ static bool apx_util_verify_name(const char *pBegin, const char *pEnd)
       //empty string
       return true;
    }
-   for(c=*pNext; pNext<pEnd; c=*(++pNext))
+   for(c = (unsigned char)*pNext; pNext < pEnd; c = (unsigned char)*(++pNext))
    {
       if (first)
       {

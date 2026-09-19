@@ -737,7 +737,7 @@ apx_error_t apx_dataElement_derive_proper_init_value(apx_dataElement_t* self, dt
                dtl_av_t* derived_av = dtl_av_new();
                for (uint32_t i = 0; i < self->array_len; i++)
                {
-                  dtl_dv_t* parsed_child_dv = dtl_av_value(parsed_av, i);
+                  dtl_dv_t* parsed_child_dv = dtl_av_value(parsed_av, (int32_t)i);
                   if (dtl_dv_type(parsed_child_dv) == DTL_DV_SCALAR)
                   {
                      dtl_av_push(derived_av, parsed_child_dv, true);

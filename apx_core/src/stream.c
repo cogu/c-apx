@@ -168,7 +168,7 @@ void apx_istream_write(apx_istream_t* self, uint8_t const* chunk, uint32_t chunk
                return;
             }
          }
-         else if (line_end > line_begin)
+         else
          {
             size_t eol_size = 1u;
             if (line_end[-1] == '\r')
@@ -182,10 +182,6 @@ void apx_istream_write(apx_istream_t* self, uint8_t const* chunk, uint32_t chunk
                return;
             }
             line_begin = line_end + eol_size; //skip past the new-line character(s)
-         }
-         else
-         {
-            break; //Wait for more data
          }
       }
       if ( (line_begin > buffer_begin) )

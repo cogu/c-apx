@@ -464,10 +464,10 @@ apx_error_t apx_vm_deserializer_check_value_range_int32(apx_vm_deserializer_t* s
       }
       else if (self->state->value_type == DTL_DV_ARRAY)
       {
-         uint32_t i;
-         uint32_t length = (uint32_t)dtl_av_length(self->state->value.av);
+         int32_t i;
+         int32_t length = dtl_av_length(self->state->value.av);
          self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
-         for (i = 0u; i < length; i++)
+         for (i = 0; i < length; i++)
          {
             retval = state_store_scalar_array_value(self->state, i, APX_TYPE_CODE_INT32);
             if (retval == APX_NO_ERROR)
@@ -507,7 +507,7 @@ apx_error_t apx_vm_deserializer_check_value_range_uint32(apx_vm_deserializer_t* 
          if (retval == APX_NO_ERROR)
          {
             assert(self->state->scalar_storage_type == APX_VM_SCALAR_STORAGE_TYPE_UINT32);
-            retval = apx_vm_value_in_range_i32(self->state->scalar_value.u32, lower_limit, upper_limit);
+            retval = apx_vm_value_in_range_u32(self->state->scalar_value.u32, lower_limit, upper_limit);
             if (retval == APX_NO_ERROR)
             {
                self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
@@ -524,16 +524,16 @@ apx_error_t apx_vm_deserializer_check_value_range_uint32(apx_vm_deserializer_t* 
       }
       else if (self->state->value_type == DTL_DV_ARRAY)
       {
-         uint32_t i;
-         uint32_t length = (uint32_t)dtl_av_length(self->state->value.av);
+         int32_t i;
+         int32_t length = dtl_av_length(self->state->value.av);
          self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
-         for (i = 0u; i < length; i++)
+         for (i = 0; i < length; i++)
          {
             retval = state_store_scalar_array_value(self->state, i, APX_TYPE_CODE_UINT32);
             if (retval == APX_NO_ERROR)
             {
                assert(self->state->scalar_storage_type == APX_VM_SCALAR_STORAGE_TYPE_UINT32);
-               retval = apx_vm_value_in_range_i32(self->state->scalar_value.u32, lower_limit, upper_limit);
+               retval = apx_vm_value_in_range_u32(self->state->scalar_value.u32, lower_limit, upper_limit);
                if (retval != APX_NO_ERROR)
                {
                   self->state->range_check_state = APX_RANGE_CHECK_STATE_FAIL;
@@ -584,15 +584,15 @@ apx_error_t apx_vm_deserializer_check_value_range_int64(apx_vm_deserializer_t* s
       }
       else if (self->state->value_type == DTL_DV_ARRAY)
       {
-         uint32_t i;
-         uint32_t length = (uint32_t)dtl_av_length(self->state->value.av);
+         int32_t i;
+         int32_t length = dtl_av_length(self->state->value.av);
          self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
-         for (i = 0u; i < length; i++)
+         for (i = 0; i < length; i++)
          {
-            retval = state_store_scalar_array_value(self->state, i, APX_TYPE_CODE_INT32);
+            retval = state_store_scalar_array_value(self->state, i, APX_TYPE_CODE_INT64);
             if (retval == APX_NO_ERROR)
             {
-               assert(self->state->scalar_storage_type == APX_VM_SCALAR_STORAGE_TYPE_INT32);
+               assert(self->state->scalar_storage_type == APX_VM_SCALAR_STORAGE_TYPE_INT64);
                retval = apx_vm_value_in_range_i64(self->state->scalar_value.i64, lower_limit, upper_limit);
                if (retval != APX_NO_ERROR)
                {
@@ -623,10 +623,10 @@ apx_error_t apx_vm_deserializer_check_value_range_uint64(apx_vm_deserializer_t* 
       apx_error_t retval = APX_NO_ERROR;
       if (self->state->value_type == DTL_DV_SCALAR)
       {
-         retval = state_store_scalar_value(self->state, self->state->value.sv, APX_TYPE_CODE_INT64);
+         retval = state_store_scalar_value(self->state, self->state->value.sv, APX_TYPE_CODE_UINT64);
          if (retval == APX_NO_ERROR)
          {
-            assert(self->state->scalar_storage_type == APX_VM_SCALAR_STORAGE_TYPE_INT64);
+            assert(self->state->scalar_storage_type == APX_VM_SCALAR_STORAGE_TYPE_UINT64);
             retval = apx_vm_value_in_range_u64(self->state->scalar_value.u64, lower_limit, upper_limit);
             if (retval == APX_NO_ERROR)
             {
@@ -644,15 +644,15 @@ apx_error_t apx_vm_deserializer_check_value_range_uint64(apx_vm_deserializer_t* 
       }
       else if (self->state->value_type == DTL_DV_ARRAY)
       {
-         uint32_t i;
-         uint32_t length = (uint32_t)dtl_av_length(self->state->value.av);
+         int32_t i;
+         int32_t length = dtl_av_length(self->state->value.av);
          self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
-         for (i = 0u; i < length; i++)
+         for (i = 0; i < length; i++)
          {
-            retval = state_store_scalar_array_value(self->state, i, APX_TYPE_CODE_INT32);
+            retval = state_store_scalar_array_value(self->state, i, APX_TYPE_CODE_UINT64);
             if (retval == APX_NO_ERROR)
             {
-               assert(self->state->scalar_storage_type == APX_VM_SCALAR_STORAGE_TYPE_INT32);
+               assert(self->state->scalar_storage_type == APX_VM_SCALAR_STORAGE_TYPE_UINT64);
                retval = apx_vm_value_in_range_u64(self->state->scalar_value.u64, lower_limit, upper_limit);
                if (retval != APX_NO_ERROR)
                {
@@ -1480,7 +1480,7 @@ static apx_error_t deserializer_unpack_record_value(apx_vm_deserializer_t* self)
    {
       retval = state_init_hash_value(self->state);
    }
-   return APX_NO_ERROR;
+   return retval;
 }
 
 static apx_error_t deserializer_unpack_array_of_scalar(apx_vm_deserializer_t* self)
@@ -1528,7 +1528,7 @@ static apx_error_t deserializer_unpack_string(apx_vm_deserializer_t* self)
       bool is_dynamic = (self->state->dynamic_size_type != APX_SIZE_TYPE_NONE);
       adt_str_t s;
       uint32_t i;
-      uint8_t const* adjusted_next = self->buffer.next + CHAR_SIZE * self->state->array_len;
+      uint8_t const* adjusted_next = self->buffer.next + (size_t)CHAR_SIZE * self->state->array_len;
       adt_str_create(&s);
       for (i = 0u; i < self->state->array_len; i++)
       {
@@ -1592,21 +1592,16 @@ static apx_error_t deserializer_pop_state(apx_vm_deserializer_t* self)
          }
          else
          {
-            state_delete(child_state);
             result = APX_NOT_IMPLEMENTED_ERROR;
          }
-         if (result != APX_NO_ERROR)
-         {
-            state_delete(child_state);
-            return result;
-         }
+         state_delete(child_state);
+         return result;
       }
       else
       {
          state_delete(child_state);
          return APX_NOT_IMPLEMENTED_ERROR;
       }
-      state_delete(child_state);
    }
    return APX_NO_ERROR;
 }

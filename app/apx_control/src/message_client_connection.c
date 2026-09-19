@@ -116,7 +116,7 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
    if ( (self != 0) && (message != 0) )
    {
       uint8_t headerData[UINT32_SIZE];
-      int32_t messageSize;
+      uint32_t messageSize;
       int32_t headerSize;
       adt_bytearray_t *messageBytes = adt_str_bytearray(message);
       if (messageBytes == 0)
@@ -141,12 +141,12 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
       headerSize = numheader_encode32(&headerData[0], UINT32_SIZE, messageSize);
       if ( (headerSize > 0) && (headerSize <= UINT32_SIZE) )
       {
-         adt_error_t rc = adt_bytearray_append(self->pendingMessage, &headerData[0], headerSize);
+         adt_error_t rc = adt_bytearray_append(self->pendingMessage, &headerData[0], (uint32_t)headerSize);
          if (rc != ADT_NO_ERROR)
          {
             return rc;
          }
-         adt_bytearray_append(self->pendingMessage, adt_bytearray_data(messageBytes), messageSize);
+         rc = adt_bytearray_append(self->pendingMessage, adt_bytearray_data(messageBytes), messageSize);
          if (rc != ADT_NO_ERROR)
          {
             return rc;

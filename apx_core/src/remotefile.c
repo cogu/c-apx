@@ -130,7 +130,7 @@ apx_size_t rmf_encode_open_file_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t 
    }
    uint8_t* p = buf;
    packLE(p, RMF_CMD_OPEN_FILE_MSG, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
-   packLE(p, address, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+   packLE(p, address, (uint8_t)UINT32_SIZE);
    return required_size;
 }
 
@@ -154,7 +154,7 @@ apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_
    }
    uint8_t* p = buf;
    packLE(p, RMF_CMD_ACCEPT_HEADER, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
-   packLE(p, connection_id, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+   packLE(p, connection_id, (uint8_t)UINT32_SIZE);
    return required_size;
 }
 

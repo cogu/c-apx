@@ -478,7 +478,7 @@ apx_rationalScaling_t* apx_attributeParser_create_rational_scaling_from_state(ap
 static uint8_t const* apx_attributeParser_parse_single_port_attribute(apx_attributeParser_t* self, uint8_t const* begin, uint8_t const* end, apx_portAttributes_t* attr)
 {
    uint8_t const* next = begin;
-   char c = *next;
+   char c = (char)*next;
    apx_attributeParseType_t attribute_type = APX_ATTRIBUTE_PARSE_TYPE_NONE;
    switch (c)
    {
@@ -877,7 +877,7 @@ static uint8_t const* apx_attributeParser_parse_value_table(apx_attributeParser_
             break;
          }
          next = bstr_lstrip(next, end);
-         const char c = *next;
+         const char c = (char)*next;
          if (c == ',')
          {
             //prepare for parsing next argument
@@ -925,7 +925,7 @@ static uint8_t const* apx_attributeParser_parse_rational_scaling(apx_attributePa
             break;
          }
          next = bstr_lstrip(next, end);
-         const char c = *next;
+         const char c = (char)*next;
          if (c == ',')
          {
             //prepare for parsing next argument

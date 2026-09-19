@@ -610,21 +610,18 @@ static apx_error_t compile_array_size_instruction(apx_compiler_t* self, uint32_t
       variant = APX_VM_VARIANT_ARRAY_SIZE_U32;
       encoded_size = UINT32_SIZE;
       packLE(p, array_size, (uint8_t)encoded_size);
-      p += sizeof(uint32_t);
    }
    else if (array_size > UINT8_MAX)
    {
       variant = APX_VM_VARIANT_ARRAY_SIZE_U16;
       encoded_size = UINT16_SIZE;
       packLE(p, array_size, (uint8_t)encoded_size);
-      p += sizeof(uint16_t);
    }
    else
    {
       variant = APX_VM_VARIANT_ARRAY_SIZE_U8;
       encoded_size = UINT8_SIZE;
       packLE(p, array_size, (uint8_t)encoded_size);
-      p += sizeof(uint8_t);
    }
    instruction_header = apx_program_encode_instruction(opcode, variant, is_dynamic_array);
    rc = adt_bytearray_push(self->program, instruction_header);

@@ -171,6 +171,7 @@ static void test_send_file_info_after_acknowledge_from_single_node(CuTest* tc)
    CONNECTION_RUN(&conn, sock);
    CuAssertIntEquals(tc, 1, testsocket_spy_getServerConnectedCount());
    data = (const char*)testsocket_spy_getReceivedData(&len);
+   CuAssertPtrNotNull(tc, data);
    CuAssertIntEquals(tc, 28, len); //This is the greeting message
    testsocket_spy_clearReceivedData();
 

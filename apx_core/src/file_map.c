@@ -380,6 +380,8 @@ static bool insert_item(apx_fileMap_t* self, apx_file_t* file, adt_list_elem_t* 
       if (iterator_left != NULL)
       {
          apx_file_t* tmp = (apx_file_t*)iterator_left->pItem;
+         (void)tmp;
+         (void)file_start_address;
          assert(tmp != NULL);
          assert(apx_file_get_end_address_without_flags(tmp) <= file_start_address);
          iterator_right = adt_list_iter_next(iterator_left);

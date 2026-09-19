@@ -786,12 +786,12 @@ static void test_range_check_int64_value(CuTest* tc)
    apx_vm_serializer_create(&sr);
 
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_serializer_set_value_sv(&sr, sv));
-   CuAssertIntEquals(tc, APX_VALUE_RANGE_ERROR, apx_vm_serializer_check_value_range_int64(&sr, -250000000, 250000000ll));
-   dtl_sv_set_i64(sv, 250000000ll);
+   CuAssertIntEquals(tc, APX_VALUE_RANGE_ERROR, apx_vm_serializer_check_value_range_int64(&sr, -250000000, 250000000LL));
+   dtl_sv_set_i64(sv, 250000000LL);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_serializer_check_value_range_int64(&sr, -250000000LL, 250000000LL));
    dtl_sv_set_i64(sv, 0);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_serializer_check_value_range_int64(&sr, -250000000LL, 250000000LL));
-   dtl_sv_set_i64(sv, -250000000ll);
+   dtl_sv_set_i64(sv, -250000000LL);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_serializer_check_value_range_int64(&sr, -250000000LL, 250000000LL));
    dtl_sv_set_i64(sv, -250000001LL);
    CuAssertIntEquals(tc, APX_VALUE_RANGE_ERROR, apx_vm_serializer_check_value_range_int64(&sr, -250000000LL, 250000000LL));
