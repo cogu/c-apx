@@ -55,6 +55,10 @@ void apx_serverExtension_create(apx_serverExtension_t *self, const char *name, c
       self->name = STRDUP(name);
       memcpy(&self->handler, handler, sizeof(apx_serverExtensionHandler_t));
       self->config = config;
+      if (self->config != 0)
+      {
+         dtl_dv_inc_ref(self->config);
+      }
    }
 }
 
@@ -65,6 +69,11 @@ void apx_serverExtension_destroy(apx_serverExtension_t *self)
       if (self->name != 0)
       {
          free(self->name);
+      }
+      if (self->config != 0)
+      {
+         dtl_dv_dec_ref(self->config);
+         self->config = (dtl_dv_t*) 0;
       }
    }
 }

@@ -16,6 +16,8 @@
 #endif
 #include "CuTest.h"
 #include "server_cfg.h"
+#include "extensions_cfg.h"
+#include "apx/server.h"
 #include "dtl_type.h"
 #include "apx/error.h"
 #ifdef MEM_LEAK_CHECK
@@ -30,15 +32,15 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_load_config_invalid_arguments(CuTest *tc);
-static void test_load_config_file_returns_not_a_directory(CuTest *tc);
-static void test_load_config_nonexistent_path_returns_not_a_directory(CuTest *tc);
+static void test_load_config_nonexistent_path(CuTest *tc);
+static void test_load_config_from_file_valid(CuTest *tc);
 static void test_load_config_from_dir_valid(CuTest *tc);
 static void test_load_config_from_dir_fallback(CuTest *tc);
-static void test_load_config_from_dir_empty_default(CuTest *tc);
-static void test_load_config_from_dir_malformed_server_json(CuTest *tc);
-static void test_load_config_from_dir_malformed_extension_json(CuTest *tc);
-static void test_load_config_from_dir_invalid_extension_type(CuTest *tc);
-static void test_load_config_from_dir_extensions_subfolder(CuTest *tc);
+static void test_load_config_from_dir_not_found(CuTest *tc);
+static void test_load_config_malformed_json(CuTest *tc);
+static void test_load_config_invalid_root_type(CuTest *tc);
+static void test_load_config_missing_server_key(CuTest *tc);
+static void test_register_extensions_with_single_config(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -47,15 +49,15 @@ CuSuite* testsuite_server_cfg(void)
 {
    CuSuite* suite = CuSuiteNew();
    SUITE_ADD_TEST(suite, test_load_config_invalid_arguments);
-   SUITE_ADD_TEST(suite, test_load_config_file_returns_not_a_directory);
-   SUITE_ADD_TEST(suite, test_load_config_nonexistent_path_returns_not_a_directory);
+   SUITE_ADD_TEST(suite, test_load_config_nonexistent_path);
+   SUITE_ADD_TEST(suite, test_load_config_from_file_valid);
    SUITE_ADD_TEST(suite, test_load_config_from_dir_valid);
    SUITE_ADD_TEST(suite, test_load_config_from_dir_fallback);
-   SUITE_ADD_TEST(suite, test_load_config_from_dir_empty_default);
-   SUITE_ADD_TEST(suite, test_load_config_from_dir_malformed_server_json);
-   SUITE_ADD_TEST(suite, test_load_config_from_dir_malformed_extension_json);
-   SUITE_ADD_TEST(suite, test_load_config_from_dir_invalid_extension_type);
-   SUITE_ADD_TEST(suite, test_load_config_from_dir_extensions_subfolder);
+   SUITE_ADD_TEST(suite, test_load_config_from_dir_not_found);
+   SUITE_ADD_TEST(suite, test_load_config_malformed_json);
+   SUITE_ADD_TEST(suite, test_load_config_invalid_root_type);
+   SUITE_ADD_TEST(suite, test_load_config_missing_server_key);
+   SUITE_ADD_TEST(suite, test_register_extensions_with_single_config);
    return suite;
 }
 
@@ -78,38 +80,60 @@ static void write_test_file(const char *path, const char *content)
 
 static void test_load_config_invalid_arguments(CuTest *tc)
 {
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
+   dtl_hv_t *cfg = NULL;
 
-   CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_load_config(NULL, &server_cfg, &ext_cfg));
-   CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_load_config("test.json", NULL, &ext_cfg));
-   CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_load_config("test.json", &server_cfg, NULL));
+   CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_load_config(NULL, &cfg));
+   CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_load_config("test.json", NULL));
 }
 
-static void test_load_config_file_returns_not_a_directory(CuTest *tc)
+static void test_load_config_nonexistent_path(CuTest *tc)
 {
-   const char *filepath = "test_file_not_dir.json";
-   write_test_file(filepath, "{}");
+   dtl_hv_t *cfg = NULL;
 
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-   apx_error_t result = apx_server_load_config(filepath, &server_cfg, &ext_cfg);
-   CuAssertIntEquals(tc, APX_NOT_A_DIRECTORY_ERROR, result);
-   CuAssertPtrEquals(tc, NULL, server_cfg);
-   CuAssertPtrEquals(tc, NULL, ext_cfg);
+   apx_error_t result = apx_server_load_config("non_existent_config_file_987654.json", &cfg);
+   CuAssertIntEquals(tc, APX_FILE_NOT_FOUND_ERROR, result);
+   CuAssertPtrEquals(tc, NULL, cfg);
+}
 
+static void test_load_config_from_file_valid(CuTest *tc)
+{
+   const char *filepath = "test_single_server.json";
+   const char *content =
+      "{\n"
+      "    \"apx-server\": {\n"
+      "        \"shutdown-timer\": 10,\n"
+      "        \"max-num-events\": 200\n"
+      "    },\n"
+      "    \"socket-server-extension\": {\n"
+      "        \"enabled\": true,\n"
+      "        \"tcp-port\": 5000\n"
+      "    },\n"
+      "    \"textlog-extension\": {\n"
+      "        \"enabled\": true\n"
+      "    }\n"
+      "}\n";
+   write_test_file(filepath, content);
+
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(filepath, &cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertPtrNotNull(tc, cfg);
+
+   dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
+   CuAssertPtrNotNull(tc, server_node);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(server_node));
+   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "shutdown-timer");
+   CuAssertPtrNotNull(tc, sv);
+   bool ok = false;
+   CuAssertIntEquals(tc, 10, dtl_sv_to_i32(sv, &ok));
+   CuAssertTrue(tc, ok);
+
+   dtl_dv_t *ext_node = dtl_hv_get_cstr(cfg, "socket-server-extension");
+   CuAssertPtrNotNull(tc, ext_node);
+   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(ext_node));
+
+   dtl_dec_ref(cfg);
    remove(filepath);
-}
-
-static void test_load_config_nonexistent_path_returns_not_a_directory(CuTest *tc)
-{
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-
-   apx_error_t result = apx_server_load_config("non_existent_config_dir_987654", &server_cfg, &ext_cfg);
-   CuAssertIntEquals(tc, APX_NOT_A_DIRECTORY_ERROR, result);
-   CuAssertPtrEquals(tc, NULL, server_cfg);
-   CuAssertPtrEquals(tc, NULL, ext_cfg);
 }
 
 static void test_load_config_from_dir_valid(CuTest *tc)
@@ -117,32 +141,35 @@ static void test_load_config_from_dir_valid(CuTest *tc)
    const char *dirname = "test_dir_valid";
    MKDIR(dirname);
 
-   char file1[128];
-   char file2[128];
-   snprintf(file1, sizeof(file1), "%s/server.json", dirname);
-   snprintf(file2, sizeof(file2), "%s/socket-server.json", dirname);
+   char filepath[128];
+   snprintf(filepath, sizeof(filepath), "%s/server.json", dirname);
+   const char *content =
+      "{\n"
+      "    \"apx-server\": {\n"
+      "        \"shutdown-timer\": 20\n"
+      "    },\n"
+      "    \"socket-server-extension\": {\n"
+      "        \"enabled\": true\n"
+      "    }\n"
+      "}\n";
+   write_test_file(filepath, content);
 
-   write_test_file(file1, "{\"shutdown-timer\": 10}");
-   write_test_file(file2, "{\"port\": 8080}");
-
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-   apx_error_t result = apx_server_load_config(dirname, &server_cfg, &ext_cfg);
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(dirname, &cfg);
    CuAssertIntEquals(tc, APX_NO_ERROR, result);
-   CuAssertPtrNotNull(tc, server_cfg);
-   CuAssertPtrNotNull(tc, ext_cfg);
+   CuAssertPtrNotNull(tc, cfg);
 
-   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr(server_cfg, "shutdown-timer");
+   dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
+   CuAssertPtrNotNull(tc, server_node);
+   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "shutdown-timer");
    CuAssertPtrNotNull(tc, sv);
    bool ok = false;
-   CuAssertIntEquals(tc, 10, dtl_sv_to_i32(sv, &ok));
+   CuAssertIntEquals(tc, 20, dtl_sv_to_i32(sv, &ok));
    CuAssertTrue(tc, ok);
 
-   dtl_dec_ref(server_cfg);
-   dtl_dec_ref(ext_cfg);
+   dtl_dec_ref(cfg);
 
-   remove(file1);
-   remove(file2);
+   remove(filepath);
    RMDIR(dirname);
 }
 
@@ -151,152 +178,121 @@ static void test_load_config_from_dir_fallback(CuTest *tc)
    const char *dirname = "test_dir_fallback";
    MKDIR(dirname);
 
-   char file1[128];
-   snprintf(file1, sizeof(file1), "%s/apx_server.json", dirname);
-   write_test_file(file1, "{\"shutdown-timer\": 25}");
+   char filepath[128];
+   snprintf(filepath, sizeof(filepath), "%s/apx_server.json", dirname);
+   const char *content =
+      "{\n"
+      "    \"apx-server\": {\n"
+      "        \"shutdown-timer\": 30\n"
+      "    }\n"
+      "}\n";
+   write_test_file(filepath, content);
 
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-   apx_error_t result = apx_server_load_config(dirname, &server_cfg, &ext_cfg);
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(dirname, &cfg);
    CuAssertIntEquals(tc, APX_NO_ERROR, result);
-   CuAssertPtrNotNull(tc, server_cfg);
-   CuAssertPtrNotNull(tc, ext_cfg);
+   CuAssertPtrNotNull(tc, cfg);
 
-   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr(server_cfg, "shutdown-timer");
+   dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
+   CuAssertPtrNotNull(tc, server_node);
+   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "shutdown-timer");
    CuAssertPtrNotNull(tc, sv);
    bool ok = false;
-   CuAssertIntEquals(tc, 25, dtl_sv_to_i32(sv, &ok));
+   CuAssertIntEquals(tc, 30, dtl_sv_to_i32(sv, &ok));
    CuAssertTrue(tc, ok);
 
-   dtl_dec_ref(server_cfg);
-   dtl_dec_ref(ext_cfg);
+   dtl_dec_ref(cfg);
 
-   remove(file1);
+   remove(filepath);
    RMDIR(dirname);
 }
 
-static void test_load_config_from_dir_empty_default(CuTest *tc)
+static void test_load_config_from_dir_not_found(CuTest *tc)
 {
-   const char *dirname = "test_dir_empty";
+   const char *dirname = "test_dir_not_found";
    MKDIR(dirname);
 
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-   apx_error_t result = apx_server_load_config(dirname, &server_cfg, &ext_cfg);
-   CuAssertIntEquals(tc, APX_NO_ERROR, result);
-   CuAssertPtrNotNull(tc, server_cfg);
-   CuAssertPtrNotNull(tc, ext_cfg);
-   CuAssertIntEquals(tc, 0, dtl_hv_length(server_cfg));
-
-   dtl_dec_ref(server_cfg);
-   dtl_dec_ref(ext_cfg);
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(dirname, &cfg);
+   CuAssertIntEquals(tc, APX_FILE_NOT_FOUND_ERROR, result);
+   CuAssertPtrEquals(tc, NULL, cfg);
 
    RMDIR(dirname);
 }
 
-static void test_load_config_from_dir_malformed_server_json(CuTest *tc)
+static void test_load_config_malformed_json(CuTest *tc)
 {
-   const char *dirname = "test_dir_bad_server";
-   MKDIR(dirname);
+   const char *filepath = "test_malformed.json";
+   write_test_file(filepath, "{ malformed json ");
 
-   char file1[128];
-   snprintf(file1, sizeof(file1), "%s/server.json", dirname);
-   write_test_file(file1, "{ malformed json ");
-
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-   apx_error_t result = apx_server_load_config(dirname, &server_cfg, &ext_cfg);
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(filepath, &cfg);
    CuAssertIntEquals(tc, APX_PARSE_ERROR, result);
-   CuAssertPtrEquals(tc, NULL, server_cfg);
-   CuAssertPtrEquals(tc, NULL, ext_cfg);
+   CuAssertPtrEquals(tc, NULL, cfg);
 
-   remove(file1);
-   RMDIR(dirname);
+   remove(filepath);
 }
 
-static void test_load_config_from_dir_malformed_extension_json(CuTest *tc)
+static void test_load_config_invalid_root_type(CuTest *tc)
 {
-   const char *dirname = "test_dir_bad_ext";
-   MKDIR(dirname);
+   const char *filepath = "test_bad_root.json";
+   write_test_file(filepath, "[1, 2, 3]");
 
-   char file1[128];
-   char file2[128];
-   snprintf(file1, sizeof(file1), "%s/server.json", dirname);
-   snprintf(file2, sizeof(file2), "%s/socket-server.json", dirname);
-
-   write_test_file(file1, "{}");
-   write_test_file(file2, "{ broken json ");
-
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-   apx_error_t result = apx_server_load_config(dirname, &server_cfg, &ext_cfg);
-   CuAssertIntEquals(tc, APX_PARSE_ERROR, result);
-   CuAssertPtrEquals(tc, NULL, server_cfg);
-   CuAssertPtrEquals(tc, NULL, ext_cfg);
-
-   remove(file1);
-   remove(file2);
-   RMDIR(dirname);
-}
-
-static void test_load_config_from_dir_invalid_extension_type(CuTest *tc)
-{
-   const char *dirname = "test_dir_type_ext";
-   MKDIR(dirname);
-
-   char file1[128];
-   char file2[128];
-   snprintf(file1, sizeof(file1), "%s/server.json", dirname);
-   snprintf(file2, sizeof(file2), "%s/socket-server.json", dirname);
-
-   write_test_file(file1, "{}");
-   write_test_file(file2, "[1, 2, 3]");
-
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-   apx_error_t result = apx_server_load_config(dirname, &server_cfg, &ext_cfg);
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(filepath, &cfg);
    CuAssertIntEquals(tc, APX_VALUE_TYPE_ERROR, result);
-   CuAssertPtrEquals(tc, NULL, server_cfg);
-   CuAssertPtrEquals(tc, NULL, ext_cfg);
+   CuAssertPtrEquals(tc, NULL, cfg);
 
-   remove(file1);
-   remove(file2);
-   RMDIR(dirname);
+   remove(filepath);
 }
 
-static void test_load_config_from_dir_extensions_subfolder(CuTest *tc)
+static void test_load_config_missing_server_key(CuTest *tc)
 {
-   const char *dirname = "test_dir_sub";
-   char subdir[128];
-   snprintf(subdir, sizeof(subdir), "%s/extensions", dirname);
+   const char *filepath = "test_no_server.json";
+   write_test_file(filepath, "{\"socket-server-extension\": {\"enabled\": true}}");
 
-   MKDIR(dirname);
-   MKDIR(subdir);
-
-   char file1[128];
-   char file2[128];
-   snprintf(file1, sizeof(file1), "%s/server.json", dirname);
-   snprintf(file2, sizeof(file2), "%s/extensions/socket-server.json", dirname);
-
-   write_test_file(file1, "{}");
-   write_test_file(file2, "{\"port\": 9000}");
-
-   dtl_hv_t *server_cfg = NULL;
-   dtl_hv_t *ext_cfg = NULL;
-   apx_error_t result = apx_server_load_config(dirname, &server_cfg, &ext_cfg);
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(filepath, &cfg);
    CuAssertIntEquals(tc, APX_NO_ERROR, result);
-   CuAssertPtrNotNull(tc, server_cfg);
-   CuAssertPtrNotNull(tc, ext_cfg);
+   CuAssertPtrNotNull(tc, cfg);
+   dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
+   CuAssertPtrEquals(tc, NULL, server_node);
 
-   dtl_dv_t *ext_node = dtl_hv_get_cstr(ext_cfg, "socket-server");
-   CuAssertPtrNotNull(tc, ext_node);
-   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(ext_node));
+   dtl_dec_ref(cfg);
 
-   dtl_dec_ref(server_cfg);
-   dtl_dec_ref(ext_cfg);
+   remove(filepath);
+}
 
-   remove(file1);
-   remove(file2);
-   RMDIR(subdir);
-   RMDIR(dirname);
+static void test_register_extensions_with_single_config(CuTest *tc)
+{
+   const char *filepath = "test_ext_dispatch.json";
+   const char *content =
+      "{\n"
+      "    \"apx-server\": {\n"
+      "        \"shutdown-timer\": 0\n"
+      "    },\n"
+      "    \"socket-server-extension\": {\n"
+      "        \"enabled\": true\n"
+      "    },\n"
+      "    \"monitor-extension\": {\n"
+      "        \"enabled\": false\n"
+      "    }\n"
+      "}\n";
+   write_test_file(filepath, content);
+
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(filepath, &cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+
+   apx_server_t server;
+   apx_server_create(&server);
+
+   result = register_apx_server_extensions(&server, cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+
+   apx_server_destroy(&server);
+
+   dtl_dec_ref(cfg);
+
+   remove(filepath);
 }

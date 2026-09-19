@@ -237,10 +237,6 @@ apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_s
          return APX_MEM_ERROR;
       }
       adt_list_insert(&self->extension_manager, (void*) extension);
-      if (config != 0)
-      {
-         dtl_dv_inc_ref(config);
-      }
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;

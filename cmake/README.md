@@ -104,7 +104,7 @@ target_link_libraries(my_sec_extension PRIVATE
     apx_core
 )
 
-# Register with apx_server (NAME dictates the config filename: <NAME>.json)
+# Register with apx_server (NAME dictates the config key: "<NAME>-extension")
 apx_register_server_extension(
     TARGET      my_sec_extension
     NAME        "security"
@@ -135,22 +135,35 @@ When CMake runs, it automatically includes the custom extension directory, compi
 
 ## 5. Runtime Configuration for Extensions
 
-When deploying to a target system (e.g. via systemd), configuration files can be placed in `/etc/apx/`:
+Configuration for the APX server daemon and all extensions is centralized in a single JSON configuration file (e.g. `/etc/apx/server.json`):
 
-```
-/etc/apx/
-├── server.json            # Core server configuration
-├── socket-server.json     # Built-in socket extension configuration
-└── security.json          # Custom security extension configuration (<NAME>.json)
+```json
+{
+  "apx-server": {
+    "shutdown-timer": 0
+  },
+  "socket-server-extension": {
+    "enabled": true,
+    "unix": {
+      "tag": "UNIX",
+      "path": "/tmp/apx_server.socket"
+    }
+  },
+  "security-extension": {
+    "enabled": true,
+    "auth-level": "admin"
+  }
+}
 ```
 
 The systemd service unit executes:
 ```ini
 [Service]
-ExecStart=/usr/bin/apx_server /etc/apx/
+ExecStart=/usr/bin/apx_server /etc/apx/server.json
 ```
+*(or specify `/etc/apx/` directly, where `apx_server` will automatically resolve `server.json`)*
 
-`apx_server` will automatically load `/etc/apx/server.json` and any matching `<NAME>.json` files for each statically linked extension.
+Each extension entry in the registry (registered with `NAME "<NAME>"`) receives only its isolated sub-tree under `"<NAME>-extension"`. Furthermore, the server daemon automatically checks the optional `"enabled"` boolean attribute for each extension: if set to `false`, the extension is skipped and never initialized.
 
 ---
 

@@ -56,19 +56,8 @@ apx_serverTextLog_t *m_instance = (apx_serverTextLog_t*) 0;
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_serverTextLogExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   if ( (config != 0) && (dtl_dv_type(config) == DTL_DV_HASH))
-   {
-      dtl_sv_t *extensionEnabled;
-      dtl_hv_t *cfg = (dtl_hv_t*) config;
-      bool ok;
-      extensionEnabled = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "extension-enabled");
-      if ( (extensionEnabled != 0) && (dtl_sv_to_bool(extensionEnabled, &ok)))
-      {
-         apx_serverExtensionHandler_t handler = {apx_serverTextLogExtension_init, apx_serverTextLogExtension_shutdown};
-         return apx_server_add_extension(apx_server, "TEXTLOG", &handler, config);
-      }
-   }
-   return APX_NO_ERROR;
+   apx_serverExtensionHandler_t handler = {apx_serverTextLogExtension_init, apx_serverTextLogExtension_shutdown};
+   return apx_server_add_extension(apx_server, "TEXTLOG", &handler, config);
 }
 
 //////////////////////////////////////////////////////////////////////////////
