@@ -64,7 +64,6 @@ apx_error_t apx_bytePortMap_create(apx_bytePortMap_t* self, apx_size_t total_siz
    apx_error_t retval = APX_INVALID_ARGUMENT_ERROR;
    if ( (self != NULL) && (port_instance_list != NULL) && (num_ports > 0u) && (total_size > 0u) )
    {
-      retval = APX_NO_ERROR;
       self->map_data = (apx_portId_t*) NULL;
       self->map_len = 0;
       retval = apx_bytePortMap_build(self, port_instance_list, num_ports, total_size);

@@ -212,17 +212,17 @@ static void send_header(testsocket_t *sock)
 
 static void send_file_info_no_checksum(CuTest* tc, testsocket_t *sock, const char *name, uint32_t startAddress, uint32_t length)
 {
-   int32_t msgLen = 0;
+   apx_size_t msgLen = 0;
    uint8_t buf[RMF_CMD_AREA_SIZE];
    rmf_fileInfo_t* file_info = rmf_fileInfo_make_fixed(name, length, startAddress);
    CuAssertPtrNotNull(tc, file_info);
 
-   msgLen += rmf_address_encode(&buf[1+msgLen], sizeof(buf)-msgLen, RMF_CMD_AREA_START_ADDRESS, false);
-   msgLen += rmf_encode_publish_file_cmd(&buf[1+msgLen], sizeof(buf)-msgLen, file_info);
+   msgLen += rmf_address_encode(&buf[1+msgLen], (apx_size_t)(sizeof(buf)-msgLen), RMF_CMD_AREA_START_ADDRESS, false);
+   msgLen += rmf_encode_publish_file_cmd(&buf[1+msgLen], (apx_size_t)(sizeof(buf)-msgLen), file_info);
    rmf_fileInfo_delete(file_info);
-   CuAssertIntEquals(tc, 65, msgLen);
+   CuAssertUIntEquals(tc, 65, msgLen);
    buf[0]=(uint8_t) msgLen;
-   testsocket_clientSend(sock, &buf[0], 1+msgLen);
+   testsocket_clientSend(sock, &buf[0], (uint32_t)(1+msgLen));
 
 }
 
@@ -266,14 +266,15 @@ static void verify_file_open_request(CuTest* tc, testsocket_t *sock, uint32_t ad
 static void send_file_content(CuTest* tc, testsocket_t *sock, uint32_t address)
 {
    uint8_t bufData[200];
-   int32_t msgLen = 0;
+   apx_size_t msgLen = 0;
    uint32_t dataLen = (uint32_t) strlen(m_TestNodeDefinition);
    uint32_t bufLen=(uint32_t) sizeof(bufData);
    (void)tc;
    msgLen += rmf_address_encode(&bufData[1+msgLen], bufLen, address, false);
    memcpy(&bufData[1+msgLen], &m_TestNodeDefinition[0], dataLen);
-   msgLen+=dataLen;
+   msgLen += dataLen;
+   bufData[1+msgLen] = '\0';
    assert((uint32_t) msgLen <= NUMHEADER32_MAX_NUM_SHORT);
    bufData[0]=(uint8_t) msgLen;
-   testsocket_clientSend(sock, &bufData[0], 1+msgLen);
+   testsocket_clientSend(sock, &bufData[0], (uint32_t)(1+msgLen));
 }

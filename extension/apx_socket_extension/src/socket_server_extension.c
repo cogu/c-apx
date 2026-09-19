@@ -156,6 +156,8 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
              }
 #ifndef UNIT_TEST
              apx_socketServer_start_unix_server(m_instance, unix_file_path, tag);
+#else
+             (void)tag;
 #endif
           }
       }

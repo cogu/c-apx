@@ -122,9 +122,9 @@ int main(int argc, char **argv)
          if (m_input_file_path != 0)
          {
             const char *input_file_path = adt_str_cstr(m_input_file_path);
-            result = read_message_from_file(input_file_path);
+            apx_error_t apx_result = read_message_from_file(input_file_path);
 
-            if (result != APX_NO_ERROR)
+            if (apx_result != APX_NO_ERROR)
             {
                fprintf(stderr, "Error: Failed to read contents of file %s\n", input_file_path);
             }
@@ -155,8 +155,8 @@ int main(int argc, char **argv)
                }
                else
                {
-                  result = build_json_message(m_name, m_value);
-                  if (result != ADT_NO_ERROR)
+                  adt_error_t adt_result = build_json_message(m_name, m_value);
+                  if (adt_result != ADT_NO_ERROR)
                   {
                      retval = -1;
                      goto SHUTDOWN;

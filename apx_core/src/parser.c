@@ -233,7 +233,7 @@ static apx_error_t state_make_data_type(apx_parse_state_t* self, uint8_t const* 
    }
    memcpy(&node_name[0], name_begin, name_size);
    node_name[name_size] = '\0';
-   self->data_type = apx_dataType_new(node_name, self->lineno);
+   self->data_type = apx_dataType_new(node_name, (int32_t)self->lineno);
    if (self->data_type == NULL)
    {
       return APX_MEM_ERROR;
@@ -251,7 +251,7 @@ static apx_error_t state_make_provide_port(apx_parse_state_t* self, uint8_t cons
    }
    memcpy(&node_name[0], name_begin, name_size);
    node_name[name_size] = '\0';
-   self->port = apx_port_new(APX_PROVIDE_PORT, node_name, self->lineno);
+   self->port = apx_port_new(APX_PROVIDE_PORT, node_name, (int32_t)self->lineno);
    if (self->port == NULL)
    {
       return APX_MEM_ERROR;
@@ -269,7 +269,7 @@ static apx_error_t state_make_require_port(apx_parse_state_t* self, uint8_t cons
    }
    memcpy(&node_name[0], name_begin, name_size);
    node_name[name_size] = '\0';
-   self->port = apx_port_new(APX_REQUIRE_PORT, node_name, self->lineno);
+   self->port = apx_port_new(APX_REQUIRE_PORT, node_name, (int32_t)self->lineno);
    if (self->port == NULL)
    {
       return APX_MEM_ERROR;
@@ -411,7 +411,7 @@ static apx_error_t parser_on_new_line(void* arg, const char* line_begin, const c
          }
          if (retval != APX_NO_ERROR)
          {
-            parser_set_error(self, retval, self->state.lineno);
+            parser_set_error(self, retval, (int32_t)self->state.lineno);
          }
       }
       else

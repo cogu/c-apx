@@ -215,7 +215,7 @@ static uint8_t const* apx_signatureParser_parse_data_element(apx_signatureParser
    {
       return begin;
    }
-   const char c = *next;
+   const char c = (char)*next;
    bool is_signed_type = true;
    bool is_64_bit_type = false;
    bool check_limits = true;

@@ -560,7 +560,7 @@ apx_error_t apx_nodeInstance_create_data_element_list(apx_nodeInstance_t* self, 
             apx_size_t i;
             for (i = 0; i < self->num_data_elements; i++)
             {
-               self->data_elements[i] = adt_ary_value(data_element_list, i);
+               self->data_elements[i] = adt_ary_value(data_element_list, (int32_t)i);
             }
             //Take memory owmership of the copied pointers
             adt_ary_destructor_enable(data_element_list, false);
@@ -590,7 +590,7 @@ apx_error_t apx_nodeInstance_create_computation_lists(apx_nodeInstance_t* self, 
             apx_size_t i;
             for (i = 0; i < self->num_computation_lists; i++)
             {
-               self->computation_lists[i] = adt_ary_value(computation_lists, i);
+               self->computation_lists[i] = adt_ary_value(computation_lists, (int32_t)i);
             }
             //Take memory owmership of the copied pointers
             adt_ary_destructor_enable(computation_lists, false);
@@ -849,7 +849,7 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_get_require_port_connector_chan
    {
       if ((self->require_port_changes == NULL) && (auto_create))
       {
-         self->require_port_changes = apx_portConnectorChangeTable_new(self->num_require_ports);
+         self->require_port_changes = apx_portConnectorChangeTable_new((int32_t)self->num_require_ports);
          if ((self->require_port_changes != NULL) && (self->server != NULL))
          {
             apx_server_insert_modified_node_instance(self->server, self);
@@ -866,7 +866,7 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_get_provide_port_connector_chan
    {
       if ((self->provide_port_changes == NULL) && (auto_create))
       {
-         self->provide_port_changes = apx_portConnectorChangeTable_new(self->num_provide_ports);
+         self->provide_port_changes = apx_portConnectorChangeTable_new((int32_t)self->num_provide_ports);
          if ((self->provide_port_changes != NULL) && (self->server != NULL))
          {
             apx_server_insert_modified_node_instance(self->server, self);
@@ -958,6 +958,7 @@ apx_error_t apx_nodeInstance_handle_require_port_connected_to_provide_port(apx_p
       apx_nodeInstance_t* provide_node;
       apx_portId_t provide_port_id;
       require_node = require_port->parent;
+      (void)require_node;
       provide_node = provide_port->parent;
       provide_port_id = apx_portInstance_port_id(provide_port);
       assert(require_node != NULL);
@@ -1333,8 +1334,6 @@ static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* se
    switch (self->provide_port_data_state)
    {
    case APX_DATA_STATE_INIT:
-      retval = APX_INTERNAL_ERROR;
-      break;
    case APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION:
       retval = APX_INTERNAL_ERROR;
       break;
@@ -1381,7 +1380,6 @@ static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* se
       }
       break;
    case APX_DATA_STATE_FILE_REVOKED:
-      break; //Drop all data
    case APX_DATA_STATE_DISCONNECTED:
       break; //Drop all data writes in this state, we are about to close connection
    }

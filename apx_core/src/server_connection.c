@@ -900,6 +900,7 @@ static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_chang
       apx_portConnectorChangeRef_t* ref = (apx_portConnectorChangeRef_t*)adt_ary_value(provider_change_array, i);
       provider_node_instance = ref->node_instance;
       connector_changes = ref->connector_changes;
+      (void)connector_changes;
       assert(apx_nodeInstance_get_provide_port_data_state(provider_node_instance) == APX_DATA_STATE_SYNCHRONIZED);
       assert(connector_changes->num_ports == apx_nodeInstance_get_num_provide_ports(provider_node_instance));
       apx_nodeInstance_clear_connector_table(provider_node_instance);

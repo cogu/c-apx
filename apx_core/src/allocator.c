@@ -306,6 +306,7 @@ static THREAD_PROTO(threadTask,arg)
             break;
          }
       }
+      (void)messages_processed;
       //APX_LOG_DEBUG("[APX_ALLOCATOR]: messages_processed: %u\n", messages_processed);
    }
    THREAD_RETURN(0);

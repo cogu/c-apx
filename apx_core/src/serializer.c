@@ -589,10 +589,10 @@ apx_error_t apx_vm_serializer_check_value_range_int32(apx_vm_serializer_t* self,
       }
       else if (self->state->value_type == DTL_DV_ARRAY)
       {
-         uint32_t i;
-         uint32_t length = (uint32_t)dtl_av_length(self->state->value.av);
+         int32_t i;
+         int32_t length = dtl_av_length(self->state->value.av);
          self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
-         for (i = 0u; i < length; i++)
+         for (i = 0; i < length; i++)
          {
             retval = state_read_scalar_array_value(self->state, i, APX_TYPE_CODE_INT32);
             if (retval == APX_NO_ERROR)
@@ -649,10 +649,10 @@ apx_error_t apx_vm_serializer_check_value_range_uint32(apx_vm_serializer_t* self
       }
       else if (self->state->value_type == DTL_DV_ARRAY)
       {
-         uint32_t i;
-         uint32_t length = (uint32_t) dtl_av_length(self->state->value.av);
+         int32_t i;
+         int32_t length = dtl_av_length(self->state->value.av);
          self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
-         for (i = 0u; i < length; i++)
+         for (i = 0; i < length; i++)
          {
             retval = state_read_scalar_array_value(self->state, i, APX_TYPE_CODE_UINT32);
             if (retval == APX_NO_ERROR)
@@ -709,10 +709,10 @@ apx_error_t apx_vm_serializer_check_value_range_int64(apx_vm_serializer_t* self,
       }
       else if (self->state->value_type == DTL_DV_ARRAY)
       {
-         uint32_t i;
-         uint32_t length = (uint32_t)dtl_av_length(self->state->value.av);
+         int32_t i;
+         int32_t length = dtl_av_length(self->state->value.av);
          self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
-         for (i = 0u; i < length; i++)
+         for (i = 0; i < length; i++)
          {
             retval = state_read_scalar_array_value(self->state, i, APX_TYPE_CODE_INT64);
             if (retval == APX_NO_ERROR)
@@ -769,10 +769,10 @@ apx_error_t apx_vm_serializer_check_value_range_uint64(apx_vm_serializer_t* self
       }
       else if (self->state->value_type == DTL_DV_ARRAY)
       {
-         uint32_t i;
-         uint32_t length = (uint32_t)dtl_av_length(self->state->value.av);
+         int32_t i;
+         int32_t length = dtl_av_length(self->state->value.av);
          self->state->range_check_state = APX_RANGE_CHECK_STATE_OK;
-         for (i = 0u; i < length; i++)
+         for (i = 0; i < length; i++)
          {
             retval = state_read_scalar_array_value(self->state, i, APX_TYPE_CODE_UINT64);
             if (retval == APX_NO_ERROR)
@@ -1352,7 +1352,7 @@ static apx_error_t serializer_prepare_for_array(apx_vm_serializer_t* self, uint3
          }
          self->state->dynamic_size_type = dynamic_size_type;
          assert(self->state->element_size != 0);
-         self->buffer.padded_next = self->buffer.next + length_size + (self->state->max_array_len * self->state->element_size);
+         self->buffer.padded_next = self->buffer.next + length_size + ((size_t) self->state->max_array_len * self->state->element_size);
          if (self->buffer.padded_next > self->buffer.end)
          {
             return APX_BUFFER_BOUNDARY_ERROR;
@@ -1600,7 +1600,7 @@ static apx_error_t serializer_pack_array_of_scalar(apx_vm_serializer_t* self)
    uint32_t i;
    for (i = 0; i < value_length; i++)
    {
-      apx_error_t result = state_read_scalar_array_value(self->state, i, self->state->type_code);
+      apx_error_t result = state_read_scalar_array_value(self->state, (int32_t)i, self->state->type_code);
       if (result != APX_NO_ERROR)
       {
          return result;
@@ -1637,8 +1637,6 @@ static apx_error_t serializer_pack_string(apx_vm_serializer_t* self)
       switch (self->state->type_code)
       {
       case APX_TYPE_CODE_CHAR:
-         retval = serializer_pack_char_string(self, value, target_string_size);
-         break;
       case APX_TYPE_CODE_CHAR8:
          ///For now, treat char and char8 the same way. In the future we need to separate the two types.
          retval = serializer_pack_char_string(self, value, target_string_size);

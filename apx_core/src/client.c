@@ -293,7 +293,7 @@ int32_t apx_client_get_num_attached_nodes(apx_client_t *self)
    {
       int32_t retval;
       MUTEX_LOCK(self->lock);
-      retval = apx_nodeManager_length(self->node_manager);
+      retval = (int32_t)apx_nodeManager_length(self->node_manager);
       MUTEX_UNLOCK(self->lock);
       return retval;
    }
@@ -547,11 +547,13 @@ apx_error_t apx_client_read_port_data(apx_client_t* self, apx_portInstance_t* po
       node_data = apx_nodeInstance_get_node_data(apx_portInstance_parent(port_instance));
       if (node_data == NULL)
       {
+         if (is_heap_allocated_buffer) free(read_buffer);
          return APX_NULL_PTR_ERROR;
       }
       result = apx_nodeData_read_require_port_data(node_data, offset, read_buffer, data_size);
       if (result != APX_NO_ERROR)
       {
+         if (is_heap_allocated_buffer) free(read_buffer);
          return result;
       }
       MUTEX_LOCK(self->lock);
