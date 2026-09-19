@@ -304,6 +304,9 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${APX_COMMON_HEADERS} ${AP
 #target_compile_options(apx_core PRIVATE -fvisibility=hidden)
 
 target_link_libraries(apx_core PRIVATE Threads::Threads)
+if(WIN32)
+    target_link_libraries(apx_core PUBLIC ws2_32)
+endif()
 
 target_include_directories(apx_core PUBLIC
 "${PROJECT_BINARY_DIR}"
