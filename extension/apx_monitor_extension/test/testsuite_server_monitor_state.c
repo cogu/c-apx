@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_server_monitor_state.c
+* \author    Conny Gustafsson
+* \date      2026-08-26
+* \brief     Unit tests for server monitor state
+*
+* Copyright (c) 2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_vm_deserializer.c
+* \author    Conny Gustafsson
+* \date      2019-10-07
+* \brief     Unit tests for VM deserializer
+*
+* Copyright (c) 2019-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

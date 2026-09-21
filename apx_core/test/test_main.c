@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      test_main.c
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     Unit test entry point
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 #if !defined(MEM_LEAK_CHECK) && defined(_WIN32)
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>

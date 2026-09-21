@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_os_task.c
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     Unit tests for OS task
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

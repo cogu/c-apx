@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_port_signature_map.c
+* \author    Conny Gustafsson
+* \date      2020-02-19
+* \brief     Unit tests for port signature map
+*
+* Copyright (c) 2020-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

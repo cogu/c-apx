@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_data_element.c
+* \author    Conny Gustafsson
+* \date      2017-08-13
+* \brief     Unit tests for data element
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

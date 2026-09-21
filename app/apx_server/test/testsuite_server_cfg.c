@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_server_cfg.c
+* \author    Conny Gustafsson
+* \date      2026-08-29
+* \brief     Unit tests for server configuration
+*
+* Copyright (c) 2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

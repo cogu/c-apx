@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_vm_serializer.c
+* \author    Conny Gustafsson
+* \date      2019-08-12
+* \brief     Unit tests for VM serializer
+*
+* Copyright (c) 2019-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

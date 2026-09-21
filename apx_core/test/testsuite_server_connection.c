@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_server_connection.c
+* \author    Conny Gustafsson
+* \date      2019-11-29
+* \brief     Unit tests for server connection
+*
+* Copyright (c) 2019-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

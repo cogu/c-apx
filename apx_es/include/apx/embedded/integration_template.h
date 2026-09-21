@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      integration_template.h
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     APX embedded integration template
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 /**
  * This is a template header for apx_es_integration.h needed for compiling apx_es.
  */

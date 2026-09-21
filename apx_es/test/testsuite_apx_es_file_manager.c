@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_apx_es_file_manager.c
+* \author    Conny Gustafsson
+* \date      2017-03-12
+* \brief     Unit tests for APX-ES file manager
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

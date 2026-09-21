@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_file_manager_receiver.c
+* \author    Conny Gustafsson
+* \date      2020-02-12
+* \brief     Unit tests for file manager receiver
+*
+* Copyright (c) 2020-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

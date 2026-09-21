@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_util.c
+* \author    Conny Gustafsson
+* \date      2020-04-22
+* \brief     Unit tests for apx_util
+*
+* Copyright (c) 2020-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

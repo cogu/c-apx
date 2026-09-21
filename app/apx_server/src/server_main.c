@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      server_main.c
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     APX server daemon main
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 #define CLEANUP_TEST 1                  //0=no cleanup test (default), 1=enable cleanup test
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES

@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      priority_queue.h
+* \author    Conny Gustafsson
+* \date      2017-06-28
+* \brief     Priority queue data structure
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 #ifndef OS_PQ_H
 #define OS_PQ_H
 
