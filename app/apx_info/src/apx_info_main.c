@@ -84,7 +84,7 @@ static adt_str_t* m_connect_address = NULL;
 static apx_resource_type_t m_connect_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
 
 /*** Other local variables***/
-static apx_clientSocketConnection_t* m_client_connection = NULL;
+static apx_client_socket_connection_t* m_client_connection = NULL;
 static int m_runFlag = 1;
 static bool m_messageServerRunning = false;
 

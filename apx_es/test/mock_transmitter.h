@@ -22,7 +22,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #define MOCK_TRANSMIT_MAX_LEN 1024
 
-typedef struct mockTransmitter_tag
+typedef struct mock_transmitter_tag
 {
    int32_t writeOffset;
    int32_t readOffset;

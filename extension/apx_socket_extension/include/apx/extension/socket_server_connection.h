@@ -27,29 +27,29 @@
 #endif
 SOCKET_TYPE; //this is a forward declaration of the declared type just above
 
-typedef struct apx_socketServerConnection_tag
+typedef struct apx_socket_server_connection_tag
 {
-   apx_serverConnection_t base;
-   apx_nodeManager_t node_manager;
+   apx_server_connection_t base;
+   apx_node_manager_t node_manager;
    adt_bytearray_t send_buffer;
    apx_size_t default_buffer_size;
    apx_size_t pending_bytes;
    SOCKET_TYPE *socket_object;
    MUTEX_T lock;
-}apx_socketServerConnection_t;
+}apx_socket_server_connection_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_socketServerConnection_create(apx_socketServerConnection_t *self, SOCKET_TYPE *socketObject);
-void apx_socketServerConnection_destroy(apx_socketServerConnection_t *self);
+apx_error_t apx_socketServerConnection_create(apx_socket_server_connection_t *self, SOCKET_TYPE *socketObject);
+void apx_socketServerConnection_destroy(apx_socket_server_connection_t *self);
 void apx_socketServerConnection_vdestroy(void *arg);
-apx_socketServerConnection_t *apx_socketServerConnection_new(SOCKET_TYPE *socketObject);
-void apx_socketServerConnection_delete(apx_socketServerConnection_t *self);
+apx_socket_server_connection_t *apx_socketServerConnection_new(SOCKET_TYPE *socketObject);
+void apx_socketServerConnection_delete(apx_socket_server_connection_t *self);
 void apx_socketServerConnection_vdelete(void *arg);
 void apx_socketServerConnection_vstart(void *arg);
 void apx_socketServerConnection_vclose(void *arg);
-void apx_socketServerConnection_set_tag(apx_socketServerConnection_t* self, char const* tag);
+void apx_socketServerConnection_set_tag(apx_socket_server_connection_t* self, char const* tag);
 
 // ConnectionInterface API
 int32_t apx_socketServerConnection_vtransmit_max_bytes_avaiable(void* arg);
@@ -59,7 +59,7 @@ void apx_socketServerConnection_vtransmit_end(void* arg);
 apx_error_t apx_socketServerConnection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
 apx_error_t apx_socketServerConnection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
 #ifdef UNIT_TEST
-void apx_socketServerConnection_run(apx_socketServerConnection_t* self);
+void apx_socketServerConnection_run(apx_socket_server_connection_t* self);
 #endif
 
 #undef SOCKET_TYPE

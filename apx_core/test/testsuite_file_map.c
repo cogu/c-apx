@@ -71,9 +71,9 @@ CuSuite* testSuite_apx_fileMap(void)
 
 static void test_auto_assign_local_address(CuTest* tc)
 {
-   apx_fileMap_t map;
+   apx_file_map_t map;
    apx_fileMap_create(&map, false);
-   rmf_fileInfo_t* info = rmf_fileInfo_make_fixed("TestNode1.out", 10u, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info = rmf_fileInfo_make_fixed("TestNode1.out", 10u, RMF_INVALID_ADDRESS);
    apx_file_t const* file = apx_fileMap_create_file(&map, info);
    rmf_fileInfo_delete(info);
    CuAssertPtrNotNull(tc, file);
@@ -108,9 +108,9 @@ static void test_auto_assign_local_address(CuTest* tc)
 
 static void test_create_port_file_after_definition_file(CuTest* tc)
 {
-   apx_fileMap_t map;
+   apx_file_map_t map;
    apx_fileMap_create(&map, false);
-   rmf_fileInfo_t* info = rmf_fileInfo_make_fixed("TestNode1.apx", 100u, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info = rmf_fileInfo_make_fixed("TestNode1.apx", 100u, RMF_INVALID_ADDRESS);
    apx_file_t const* file1 = apx_fileMap_create_file(&map, info);
    rmf_fileInfo_delete(info);
    CuAssertPtrNotNull(tc, file1);
@@ -127,10 +127,10 @@ static void test_create_port_file_after_definition_file(CuTest* tc)
 
 static void test_add_too_many_files_of_same_type(CuTest* tc)
 {
-   apx_fileMap_t map;
+   apx_file_map_t map;
    apx_fileMap_create(&map, false);
 
-   rmf_fileInfo_t* info = rmf_fileInfo_make_fixed("TestNode1.apx", 10000u, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info = rmf_fileInfo_make_fixed("TestNode1.apx", 10000u, RMF_INVALID_ADDRESS);
    apx_file_t const* file = apx_fileMap_create_file(&map, info);
    rmf_fileInfo_delete(info);
    CuAssertPtrNotNull(tc, file);
@@ -158,10 +158,10 @@ static void test_add_too_many_files_of_same_type(CuTest* tc)
 
 static void test_find_file_by_address(CuTest* tc)
 {
-   apx_fileMap_t map;
+   apx_file_map_t map;
    apx_fileMap_create(&map, false);
 
-   rmf_fileInfo_t* info = rmf_fileInfo_make_fixed("TestNode1.out", 10u, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info = rmf_fileInfo_make_fixed("TestNode1.out", 10u, RMF_INVALID_ADDRESS);
    apx_file_t const* file1 = apx_fileMap_create_file(&map, info);
    rmf_fileInfo_delete(info);
    CuAssertPtrNotNull(tc, file1);
@@ -195,10 +195,10 @@ static void test_find_file_by_address(CuTest* tc)
 
 static void test_find_file_by_name(CuTest* tc)
 {
-   apx_fileMap_t map;
+   apx_file_map_t map;
    apx_fileMap_create(&map, false);
 
-   rmf_fileInfo_t* info = rmf_fileInfo_make_fixed("TestNode1.out", 10u, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info = rmf_fileInfo_make_fixed("TestNode1.out", 10u, RMF_INVALID_ADDRESS);
    apx_file_t const* file1 = apx_fileMap_create_file(&map, info);
    rmf_fileInfo_delete(info);
    CuAssertPtrNotNull(tc, file1);
@@ -230,10 +230,10 @@ static void test_find_file_by_name(CuTest* tc)
 
 static void test_find_remote_file_by_local_address(CuTest* tc)
 {
-   apx_fileMap_t map;
+   apx_file_map_t map;
    apx_fileMap_create(&map, true);
 
-   rmf_fileInfo_t* info = rmf_fileInfo_make_fixed("TestNode1.out", 10u, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info = rmf_fileInfo_make_fixed("TestNode1.out", 10u, RMF_INVALID_ADDRESS);
    apx_file_t const* file1 = apx_fileMap_create_file(&map, info);
    rmf_fileInfo_delete(info);
    CuAssertPtrNotNull(tc, file1);

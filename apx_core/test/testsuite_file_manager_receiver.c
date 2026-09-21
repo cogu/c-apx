@@ -70,7 +70,7 @@ CuSuite* testSuite_apx_fileManagerReceiver(void)
 
 static void test_command_area_size_on_creation(CuTest* tc)
 {
-   apx_fileManagerReceiver_t recvr;
+   apx_file_manager_receiver_t recvr;
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerReceiver_create(&recvr));
    CuAssertUIntEquals(tc, RMF_CMD_AREA_SIZE, apx_fileManagerReceiver_buffer_size(&recvr));
    apx_fileManagerReceiver_destroy(&recvr);
@@ -78,7 +78,7 @@ static void test_command_area_size_on_creation(CuTest* tc)
 
 static void test_resize_to_large_buffer(CuTest* tc)
 {
-   apx_fileManagerReceiver_t recvr;
+   apx_file_manager_receiver_t recvr;
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerReceiver_create(&recvr));
    CuAssertUIntEquals(tc, RMF_CMD_AREA_SIZE, apx_fileManagerReceiver_buffer_size(&recvr));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerReceiver_reserve(&recvr, LARGE_BUFFER_SIZE));
@@ -89,8 +89,8 @@ static void test_resize_to_large_buffer(CuTest* tc)
 static void test_small_size_write(CuTest* tc)
 {
    uint8_t msg[4] = { 0x12, 0x034, 0x56, 0x78 };
-   apx_fileManagerReceiver_t recvr;
-   apx_fileManagerReceptionResult_t result;
+   apx_file_manager_receiver_t recvr;
+   apx_file_manager_reception_result_t result;
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerReceiver_create(&recvr));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_fileManagerReceiver_write(&recvr, &result, 0u, msg, (apx_size_t)sizeof(msg), false));
    CuAssertTrue(tc, result.is_complete);
@@ -105,8 +105,8 @@ static void test_medium_size_write(CuTest* tc)
 {
    uint8_t msg[64];
    size_t i;
-   apx_fileManagerReceiver_t recvr;
-   apx_fileManagerReceptionResult_t result;
+   apx_file_manager_receiver_t recvr;
+   apx_file_manager_reception_result_t result;
    for (i = 0; i < sizeof(msg); i++)
    {
       msg[i] = (uint8_t)i;
@@ -127,8 +127,8 @@ static void test_one_byte_fragmented_write(CuTest* tc)
    uint32_t i;
    uint32_t const write_address = 0x10000;
    uint32_t write_offset = 0u;
-   apx_fileManagerReceiver_t recvr;
-   apx_fileManagerReceptionResult_t result;
+   apx_file_manager_receiver_t recvr;
+   apx_file_manager_reception_result_t result;
    for (i = 0; i < sizeof(msg); i++)
    {
       msg[i] = (uint8_t)i;
@@ -157,8 +157,8 @@ static void test_three_piece_message_followed_by_two_piece_message(CuTest* tc)
    apx_size_t const write_size1 = 17;
    apx_size_t const write_size2 = 33;
    apx_size_t const write_size3 = 14;
-   apx_fileManagerReceiver_t recvr;
-   apx_fileManagerReceptionResult_t result;
+   apx_file_manager_receiver_t recvr;
+   apx_file_manager_reception_result_t result;
    uint8_t msg[17+33+14];
 
    for (i = 0; i < sizeof(msg); i++)
@@ -209,8 +209,8 @@ static void test_fragmented_write_at_wrong_address(CuTest* tc)
    uint32_t write_offset = 0u;
    apx_size_t const write_size1 = 15;
    apx_size_t const write_size2 = 15;
-   apx_fileManagerReceiver_t recvr;
-   apx_fileManagerReceptionResult_t result;
+   apx_file_manager_receiver_t recvr;
+   apx_file_manager_reception_result_t result;
    uint8_t msg[15 + 15];
 
    for (i = 0; i < sizeof(msg); i++)

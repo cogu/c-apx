@@ -31,14 +31,14 @@ static void shutdown(void);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-static apx_serverMonitor_t* m_instance = NULL;
+static apx_server_monitor_t* m_instance = NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_monitorExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   apx_serverExtensionHandler_t handler = {init, shutdown};
+   apx_server_extension_handler_t handler = {init, shutdown};
    return apx_server_add_extension(apx_server, "MONITOR", &handler, config);
 }
 

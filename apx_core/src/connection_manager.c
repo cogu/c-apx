@@ -28,9 +28,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static uint32_t apx_connectionManager_generate_connection_id(apx_connectionManager_t *self);
+static uint32_t apx_connectionManager_generate_connection_id(apx_connection_manager_t *self);
 THREAD_PROTO(cleanup_task, arg);
-static void apx_connectionManager_cleanup_task_main(apx_connectionManager_t *self, int32_t num_inactive_connections);
+static void apx_connectionManager_cleanup_task_main(apx_connection_manager_t *self, int32_t num_inactive_connections);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -39,7 +39,7 @@ static void apx_connectionManager_cleanup_task_main(apx_connectionManager_t *sel
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionManager_create(apx_connectionManager_t *self)
+void apx_connectionManager_create(apx_connection_manager_t *self)
 {
    if (self != NULL)
    {
@@ -54,7 +54,7 @@ void apx_connectionManager_create(apx_connectionManager_t *self)
    }
 }
 
-void apx_connectionManager_destroy(apx_connectionManager_t *self)
+void apx_connectionManager_destroy(apx_connection_manager_t *self)
 {
    if (self != NULL)
    {
@@ -66,7 +66,7 @@ void apx_connectionManager_destroy(apx_connectionManager_t *self)
    }
 }
 
-void apx_connectionManager_start(apx_connectionManager_t *self)
+void apx_connectionManager_start(apx_connection_manager_t *self)
 {
    if (self != NULL)
    {
@@ -80,7 +80,7 @@ void apx_connectionManager_start(apx_connectionManager_t *self)
    }
 }
 
-void apx_connectionManager_stop(apx_connectionManager_t *self)
+void apx_connectionManager_stop(apx_connection_manager_t *self)
 {
    if ( (self != NULL) && (self->cleanup_thread_valid == true) )
    {
@@ -100,7 +100,7 @@ void apx_connectionManager_stop(apx_connectionManager_t *self)
    }
 }
 
-void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConnection_t *connection)
+void apx_connectionManager_attach(apx_connection_manager_t *self, apx_server_connection_t *connection)
 {
    if ( (self != NULL) && (connection != NULL) )
    {
@@ -117,7 +117,7 @@ void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConne
    }
 }
 
-void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConnection_t *connection)
+void apx_connectionManager_detach(apx_connection_manager_t *self, apx_server_connection_t *connection)
 {
    if ( (self != NULL) && (connection != NULL))
    {
@@ -133,19 +133,19 @@ void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConne
    }
 }
 
-apx_serverConnection_t* apx_connectionManager_get_last_connection(apx_connectionManager_t const*self)
+apx_server_connection_t* apx_connectionManager_get_last_connection(apx_connection_manager_t const*self)
 {
    if (self != NULL)
    {
       if (adt_list_is_empty(&self->active_connections) == false)
       {
-         return (apx_serverConnection_t*) adt_list_last(&self->active_connections);
+         return (apx_server_connection_t*) adt_list_last(&self->active_connections);
       }
    }
    return NULL;
 }
 
-uint32_t apx_connectionManager_get_num_connections(apx_connectionManager_t *self)
+uint32_t apx_connectionManager_get_num_connections(apx_connection_manager_t *self)
 {
    if (self != NULL)
    {
@@ -158,7 +158,7 @@ uint32_t apx_connectionManager_get_num_connections(apx_connectionManager_t *self
 #ifdef UNIT_TEST
 #define APX_SERVER_RUN_CYCLES 10
 
-void apx_connectionManager_run(apx_connectionManager_t *self)
+void apx_connectionManager_run(apx_connection_manager_t *self)
 {
    if (self != NULL)
    {
@@ -170,7 +170,7 @@ void apx_connectionManager_run(apx_connectionManager_t *self)
          //run the event loop of each active connection
          while(it != NULL)
          {
-            apx_serverConnection_t * server_connection = (apx_serverConnection_t*) it->pItem;
+            apx_server_connection_t * server_connection = (apx_server_connection_t*) it->pItem;
             apx_serverConnection_run(server_connection);
             it = adt_list_iter_next(it);
          }
@@ -178,7 +178,7 @@ void apx_connectionManager_run(apx_connectionManager_t *self)
          //run the event loop of each inactive connection
          while(it != NULL)
          {
-            apx_serverConnection_t * server_connection = (apx_serverConnection_t*) it->pItem;
+            apx_server_connection_t * server_connection = (apx_server_connection_t*) it->pItem;
             apx_serverConnection_run(server_connection);
             it = adt_list_iter_next(it);
          }
@@ -203,7 +203,7 @@ void apx_connectionManager_run(apx_connectionManager_t *self)
  * This function assumes that APX_SERVER_MAX_CONCURRENT_CONNECTIONS is much less than 2^32-1 and that the caller has previously checked that
  * self->numConnections < APX_SERVER_MAX_CONCURRENT_CONNECTIONS
  */
-static uint32_t apx_connectionManager_generate_connection_id(apx_connectionManager_t *self)
+static uint32_t apx_connectionManager_generate_connection_id(apx_connection_manager_t *self)
 {
    for(;;)
    {
@@ -225,7 +225,7 @@ static uint32_t apx_connectionManager_generate_connection_id(apx_connectionManag
 
 THREAD_PROTO(cleanup_task,arg)
 {
-   apx_connectionManager_t *self = (apx_connectionManager_t*) arg;
+   apx_connection_manager_t *self = (apx_connection_manager_t*) arg;
    if(self != NULL)
    {
       while(1)
@@ -256,13 +256,13 @@ THREAD_PROTO(cleanup_task,arg)
 /**
  * Called by cleanup_task thread (or from internal run function during unit test)
  */
-static void apx_connectionManager_cleanup_task_main(apx_connectionManager_t *self, int32_t num_inactive_connections)
+static void apx_connectionManager_cleanup_task_main(apx_connection_manager_t *self, int32_t num_inactive_connections)
 {
    if (num_inactive_connections > 0)
    {
       SPINLOCK_ENTER(self->lock);
       adt_list_elem_t *iter = adt_list_iter_first(&self->inactive_connections);
-      apx_serverConnection_t *serverConnection = (apx_serverConnection_t*) iter->pItem;
+      apx_server_connection_t *serverConnection = (apx_server_connection_t*) iter->pItem;
       if ( (apx_connectionBase_get_num_pending_worker_commands(&serverConnection->base) == 0u) )
       {
 #if (APX_DEBUG_ENABLE)

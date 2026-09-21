@@ -35,32 +35,32 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t calc_init_data_size(apx_portInstance_t* port_list, apx_size_t num_ports, apx_size_t* total_size);
-static apx_error_t create_definition_file_info(apx_nodeInstance_t* self, rmf_fileInfo_t* file_info);
-static apx_error_t create_provide_port_data_file_info(apx_nodeInstance_t* self, rmf_fileInfo_t* file_info);
-static apx_error_t create_require_port_data_file_info(apx_nodeInstance_t* self, rmf_fileInfo_t* file_info);
-static apx_error_t file_open_notify(apx_nodeInstance_t* self, apx_file_t *file);
-static apx_error_t send_definition_data_to_file_manager(apx_nodeInstance_t* self, apx_fileManager_t* file_manager, uint32_t address);
-static apx_error_t send_provide_port_data_to_file_manager(apx_nodeInstance_t* self, apx_fileManager_t* file_manager, uint32_t address);
-static apx_error_t send_require_port_data_to_file_manager(apx_nodeInstance_t* self, apx_fileManager_t* file_manager, uint32_t address);
-static void set_file_notification_handler(apx_nodeInstance_t* self, apx_file_t* file);
-static apx_error_t file_write_notify(apx_nodeInstance_t* self, apx_file_t* file, uint32_t offset, const uint8_t* data, apx_size_t size);
-static apx_error_t process_remote_write_definition_data(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
-static apx_error_t process_remote_write_require_port_data(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
-static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
-static apx_error_t apx_nodeInstance_attach_to_file_manager_client_mode(apx_nodeInstance_t* self, struct apx_fileManager_tag* file_manager);
-static apx_error_t apx_nodeInstance_attach_to_file_manager_server_mode(apx_nodeInstance_t* self, struct apx_fileManager_tag* file_manager);
-static apx_error_t search_for_remote_provide_port_data_file(apx_nodeInstance_t* self, struct apx_fileManager_tag* file_manager);
-static apx_error_t request_remote_provide_port_data(apx_nodeInstance_t* self, apx_file_t* file);
-static apx_error_t request_remote_require_port_data(apx_nodeInstance_t* self, apx_file_t* file);
-static apx_error_t connect_require_ports_to_server(apx_nodeInstance_t* self);
-static apx_error_t remove_provide_port_connector(apx_nodeInstance_t* self, apx_portId_t provide_port_id, apx_portInstance_t* require_port);
-static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_t* self, uint32_t provide_data_offset, const uint8_t* provide_data, apx_size_t provide_data_size);
-static apx_error_t route_provide_port_data_to_require_port(apx_portInstance_t* provide_port, apx_portInstance_t* require_port, bool do_remote_routing);
-static apx_error_t remote_route_require_port_data(apx_nodeInstance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size);
-static apx_error_t remote_route_provide_port_data(apx_nodeInstance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size);
+static apx_error_t calc_init_data_size(apx_port_instance_t* port_list, apx_size_t num_ports, apx_size_t* total_size);
+static apx_error_t create_definition_file_info(apx_node_instance_t* self, rmf_file_info_t* file_info);
+static apx_error_t create_provide_port_data_file_info(apx_node_instance_t* self, rmf_file_info_t* file_info);
+static apx_error_t create_require_port_data_file_info(apx_node_instance_t* self, rmf_file_info_t* file_info);
+static apx_error_t file_open_notify(apx_node_instance_t* self, apx_file_t *file);
+static apx_error_t send_definition_data_to_file_manager(apx_node_instance_t* self, apx_file_manager_t* file_manager, uint32_t address);
+static apx_error_t send_provide_port_data_to_file_manager(apx_node_instance_t* self, apx_file_manager_t* file_manager, uint32_t address);
+static apx_error_t send_require_port_data_to_file_manager(apx_node_instance_t* self, apx_file_manager_t* file_manager, uint32_t address);
+static void set_file_notification_handler(apx_node_instance_t* self, apx_file_t* file);
+static apx_error_t file_write_notify(apx_node_instance_t* self, apx_file_t* file, uint32_t offset, const uint8_t* data, apx_size_t size);
+static apx_error_t process_remote_write_definition_data(apx_node_instance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
+static apx_error_t process_remote_write_require_port_data(apx_node_instance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
+static apx_error_t process_remote_write_provide_port_data(apx_node_instance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
+static apx_error_t apx_nodeInstance_attach_to_file_manager_client_mode(apx_node_instance_t* self, struct apx_file_manager_tag* file_manager);
+static apx_error_t apx_nodeInstance_attach_to_file_manager_server_mode(apx_node_instance_t* self, struct apx_file_manager_tag* file_manager);
+static apx_error_t search_for_remote_provide_port_data_file(apx_node_instance_t* self, struct apx_file_manager_tag* file_manager);
+static apx_error_t request_remote_provide_port_data(apx_node_instance_t* self, apx_file_t* file);
+static apx_error_t request_remote_require_port_data(apx_node_instance_t* self, apx_file_t* file);
+static apx_error_t connect_require_ports_to_server(apx_node_instance_t* self);
+static apx_error_t remove_provide_port_connector(apx_node_instance_t* self, apx_port_id_t provide_port_id, apx_port_instance_t* require_port);
+static apx_error_t route_provide_port_data_change_to_receivers(apx_node_instance_t* self, uint32_t provide_data_offset, const uint8_t* provide_data, apx_size_t provide_data_size);
+static apx_error_t route_provide_port_data_to_require_port(apx_port_instance_t* provide_port, apx_port_instance_t* require_port, bool do_remote_routing);
+static apx_error_t remote_route_require_port_data(apx_node_instance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size);
+static apx_error_t remote_route_provide_port_data(apx_node_instance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size);
 static apx_error_t remote_route_data_to_file(apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
-static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
+static apx_error_t trigger_require_port_write_callbacks(apx_node_instance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -70,11 +70,11 @@ static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_nodeInstance_create(apx_nodeInstance_t* self, apx_mode_t mode, char const* name)
+void apx_nodeInstance_create(apx_node_instance_t* self, apx_mode_t mode, char const* name)
 {
    if ( (self != NULL) && ( (mode == APX_CLIENT_MODE) || (mode == APX_SERVER_MODE) ))
    {
-      memset(self, 0, sizeof(apx_nodeInstance_t));
+      memset(self, 0, sizeof(apx_node_instance_t));
       self->mode = mode;
       self->definition_data_state = APX_DATA_STATE_INIT;
       self->provide_port_data_state = APX_DATA_STATE_INIT;
@@ -107,7 +107,7 @@ void apx_nodeInstance_create(apx_nodeInstance_t* self, apx_mode_t mode, char con
    }
 }
 
-void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
+void apx_nodeInstance_destroy(apx_node_instance_t *self)
 {
    if (self != NULL)
    {
@@ -179,9 +179,9 @@ void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
    }
 }
 
-apx_nodeInstance_t* apx_nodeInstance_new(apx_mode_t mode, char const* name)
+apx_node_instance_t* apx_nodeInstance_new(apx_mode_t mode, char const* name)
 {
-   apx_nodeInstance_t *self = (apx_nodeInstance_t*) malloc(sizeof(apx_nodeInstance_t));
+   apx_node_instance_t *self = (apx_node_instance_t*) malloc(sizeof(apx_node_instance_t));
    if(self != NULL)
    {
       apx_nodeInstance_create(self, mode, name);
@@ -189,7 +189,7 @@ apx_nodeInstance_t* apx_nodeInstance_new(apx_mode_t mode, char const* name)
    return self;
 }
 
-void apx_nodeInstance_delete(apx_nodeInstance_t *self)
+void apx_nodeInstance_delete(apx_node_instance_t *self)
 {
    if(self != NULL)
    {
@@ -200,10 +200,10 @@ void apx_nodeInstance_delete(apx_nodeInstance_t *self)
 
 void apx_nodeInstance_vdelete(void *arg)
 {
-   apx_nodeInstance_delete((apx_nodeInstance_t*) arg);
+   apx_nodeInstance_delete((apx_node_instance_t*) arg);
 }
 
-char const* apx_nodeInstance_get_name(apx_nodeInstance_t const* self)
+char const* apx_nodeInstance_get_name(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -211,7 +211,7 @@ char const* apx_nodeInstance_get_name(apx_nodeInstance_t const* self)
    }
    return NULL;
 }
-apx_size_t apx_nodeInstance_get_num_data_elements(apx_nodeInstance_t const* self)
+apx_size_t apx_nodeInstance_get_num_data_elements(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -220,7 +220,7 @@ apx_size_t apx_nodeInstance_get_num_data_elements(apx_nodeInstance_t const* self
    return 0u;
 }
 
-apx_size_t apx_nodeInstance_get_num_computation_lists(apx_nodeInstance_t const* self)
+apx_size_t apx_nodeInstance_get_num_computation_lists(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -229,7 +229,7 @@ apx_size_t apx_nodeInstance_get_num_computation_lists(apx_nodeInstance_t const* 
    return 0u;
 }
 
-apx_size_t apx_nodeInstance_get_num_provide_ports(apx_nodeInstance_t const* self)
+apx_size_t apx_nodeInstance_get_num_provide_ports(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -238,7 +238,7 @@ apx_size_t apx_nodeInstance_get_num_provide_ports(apx_nodeInstance_t const* self
    return 0;
 }
 
-apx_size_t apx_nodeInstance_get_num_require_ports(apx_nodeInstance_t const* self)
+apx_size_t apx_nodeInstance_get_num_require_ports(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -247,7 +247,7 @@ apx_size_t apx_nodeInstance_get_num_require_ports(apx_nodeInstance_t const* self
    return 0u;
 }
 
-apx_size_t apx_nodeInstance_get_provide_port_init_data_size(apx_nodeInstance_t const* self)
+apx_size_t apx_nodeInstance_get_provide_port_init_data_size(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -256,7 +256,7 @@ apx_size_t apx_nodeInstance_get_provide_port_init_data_size(apx_nodeInstance_t c
    return 0u;
 }
 
-apx_size_t apx_nodeInstance_get_require_port_init_data_size(apx_nodeInstance_t const* self)
+apx_size_t apx_nodeInstance_get_require_port_init_data_size(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -265,7 +265,7 @@ apx_size_t apx_nodeInstance_get_require_port_init_data_size(apx_nodeInstance_t c
    return 0u;
 }
 
-uint8_t const* apx_nodeInstance_get_provide_port_init_data(apx_nodeInstance_t const* self)
+uint8_t const* apx_nodeInstance_get_provide_port_init_data(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -274,7 +274,7 @@ uint8_t const* apx_nodeInstance_get_provide_port_init_data(apx_nodeInstance_t co
    return NULL;
 }
 
-uint8_t const* apx_nodeInstance_get_require_port_init_data(apx_nodeInstance_t const* self)
+uint8_t const* apx_nodeInstance_get_require_port_init_data(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -283,25 +283,25 @@ uint8_t const* apx_nodeInstance_get_require_port_init_data(apx_nodeInstance_t co
    return NULL;
 }
 
-apx_portInstance_t* apx_nodeInstance_get_provide_port(apx_nodeInstance_t const* self, apx_portId_t port_id)
+apx_port_instance_t* apx_nodeInstance_get_provide_port(apx_node_instance_t const* self, apx_port_id_t port_id)
 {
-   if ( (self != NULL) && (port_id < (apx_portId_t)self->num_provide_ports) )
+   if ( (self != NULL) && (port_id < (apx_port_id_t)self->num_provide_ports) )
    {
       return &self->provide_ports[port_id];
    }
    return NULL;
 }
 
-apx_portInstance_t* apx_nodeInstance_get_require_port(apx_nodeInstance_t const* self, apx_portId_t port_id)
+apx_port_instance_t* apx_nodeInstance_get_require_port(apx_node_instance_t const* self, apx_port_id_t port_id)
 {
-   if ((self != NULL) && (port_id < (apx_portId_t)self->num_require_ports))
+   if ((self != NULL) && (port_id < (apx_port_id_t)self->num_require_ports))
    {
       return &self->require_ports[port_id];
    }
    return NULL;
 }
 
-apx_dataElement_t const* apx_nodeInstance_get_data_element(apx_nodeInstance_t const* self, apx_elementId_t id)
+apx_data_element_t const* apx_nodeInstance_get_data_element(apx_node_instance_t const* self, apx_element_id_t id)
 {
    if ((self != NULL) && (id < self->num_data_elements))
    {
@@ -310,7 +310,7 @@ apx_dataElement_t const* apx_nodeInstance_get_data_element(apx_nodeInstance_t co
    return NULL;
 }
 
-apx_computationList_t const* apx_nodeInstance_get_computation_list(apx_nodeInstance_t* self, apx_computationListId_t id)
+apx_computation_list_t const* apx_nodeInstance_get_computation_list(apx_node_instance_t* self, apx_computation_list_id_t id)
 {
    if ((self != NULL) && (id < self->num_computation_lists))
    {
@@ -319,7 +319,7 @@ apx_computationList_t const* apx_nodeInstance_get_computation_list(apx_nodeInsta
    return NULL;
 }
 
-apx_error_t apx_nodeInstance_alloc_port_instance_memory(apx_nodeInstance_t* self, apx_size_t num_provide_ports, apx_size_t num_require_ports)
+apx_error_t apx_nodeInstance_alloc_port_instance_memory(apx_node_instance_t* self, apx_size_t num_provide_ports, apx_size_t num_require_ports)
 {
    if (self != NULL)
    {
@@ -327,7 +327,7 @@ apx_error_t apx_nodeInstance_alloc_port_instance_memory(apx_nodeInstance_t* self
       self->num_require_ports = num_require_ports;
       if (num_provide_ports > 0u)
       {
-         self->provide_ports = (apx_portInstance_t*)malloc(num_provide_ports * sizeof(apx_portInstance_t));
+         self->provide_ports = (apx_port_instance_t*)malloc(num_provide_ports * sizeof(apx_port_instance_t));
          if (self->provide_ports == NULL)
          {
             return APX_MEM_ERROR;
@@ -335,7 +335,7 @@ apx_error_t apx_nodeInstance_alloc_port_instance_memory(apx_nodeInstance_t* self
       }
       if (num_require_ports > 0u)
       {
-         self->require_ports = (apx_portInstance_t*)malloc(num_require_ports * sizeof(apx_portInstance_t));
+         self->require_ports = (apx_port_instance_t*)malloc(num_require_ports * sizeof(apx_port_instance_t));
          if (self->require_ports == NULL)
          {
             return APX_MEM_ERROR;
@@ -345,10 +345,10 @@ apx_error_t apx_nodeInstance_alloc_port_instance_memory(apx_nodeInstance_t* self
    return APX_NO_ERROR;
 }
 
-apx_error_t apx_nodeInstance_create_provide_port(apx_nodeInstance_t* self, apx_portId_t port_id, char const* name,
+apx_error_t apx_nodeInstance_create_provide_port(apx_node_instance_t* self, apx_port_id_t port_id, char const* name,
    apx_program_t const* pack_program, uint32_t data_offset, uint32_t* data_size)
 {
-   if ((self != NULL) && (port_id < (apx_portId_t)self->num_provide_ports))
+   if ((self != NULL) && (port_id < (apx_port_id_t)self->num_provide_ports))
    {
       apx_portInstance_create(&self->provide_ports[port_id], self, APX_PROVIDE_PORT, port_id,
          name, pack_program, NULL);
@@ -357,10 +357,10 @@ apx_error_t apx_nodeInstance_create_provide_port(apx_nodeInstance_t* self, apx_p
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_create_require_port(apx_nodeInstance_t* self, apx_portId_t port_id, char const* name,
+apx_error_t apx_nodeInstance_create_require_port(apx_node_instance_t* self, apx_port_id_t port_id, char const* name,
    apx_program_t const* pack_program, apx_program_t const* unpack_program, uint32_t data_offset, uint32_t* data_size)
 {
-   if ((self != NULL) && (port_id < (apx_portId_t)self->num_require_ports))
+   if ((self != NULL) && (port_id < (apx_port_id_t)self->num_require_ports))
    {
       apx_portInstance_create(&self->require_ports[port_id], self, APX_REQUIRE_PORT, port_id,
          name, pack_program, unpack_program);
@@ -369,7 +369,7 @@ apx_error_t apx_nodeInstance_create_require_port(apx_nodeInstance_t* self, apx_p
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_alloc_init_data_memory(apx_nodeInstance_t* self, uint8_t** provide_port_data,
+apx_error_t apx_nodeInstance_alloc_init_data_memory(apx_node_instance_t* self, uint8_t** provide_port_data,
    apx_size_t* provide_port_data_size, uint8_t** require_port_data, apx_size_t* require_port_data_size)
 {
    if ( (self != NULL) && (provide_port_data != NULL) && (provide_port_data_size != NULL) &&
@@ -420,12 +420,12 @@ apx_error_t apx_nodeInstance_alloc_init_data_memory(apx_nodeInstance_t* self, ui
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_init_node_data(apx_nodeInstance_t* self, uint8_t const* definition_data, apx_size_t definition_size)
+apx_error_t apx_nodeInstance_init_node_data(apx_node_instance_t* self, uint8_t const* definition_data, apx_size_t definition_size)
 {
    if (self != NULL)
    {
       apx_error_t retval = APX_NO_ERROR;
-      apx_nodeData_t* node_data = apx_nodeData_new();
+      apx_node_data_t* node_data = apx_nodeData_new();
       if (node_data != NULL)
       {
          retval = apx_nodeData_create_definition_data(node_data, definition_data, definition_size);
@@ -443,12 +443,12 @@ apx_error_t apx_nodeInstance_init_node_data(apx_nodeInstance_t* self, uint8_t co
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_finalize_node_data(apx_nodeInstance_t* self)
+apx_error_t apx_nodeInstance_finalize_node_data(apx_node_instance_t* self)
 {
    if (self != NULL)
    {
       apx_error_t retval = APX_NO_ERROR;
-      apx_nodeData_t* node_data = self->node_data;
+      apx_node_data_t* node_data = self->node_data;
       if (node_data != NULL)
       {
          if (apx_nodeInstance_has_provide_port_data(self))
@@ -469,7 +469,7 @@ apx_error_t apx_nodeInstance_finalize_node_data(apx_nodeInstance_t* self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-bool apx_nodeInstance_has_provide_port_data(apx_nodeInstance_t const* self)
+bool apx_nodeInstance_has_provide_port_data(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -478,7 +478,7 @@ bool apx_nodeInstance_has_provide_port_data(apx_nodeInstance_t const* self)
    return false;
 }
 
-bool apx_nodeInstance_has_require_port_data(apx_nodeInstance_t const* self)
+bool apx_nodeInstance_has_require_port_data(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -487,7 +487,7 @@ bool apx_nodeInstance_has_require_port_data(apx_nodeInstance_t const* self)
    return false;
 }
 
-apx_nodeData_t const* apx_nodeInstance_get_const_node_data(apx_nodeInstance_t const* self)
+apx_node_data_t const* apx_nodeInstance_get_const_node_data(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -496,7 +496,7 @@ apx_nodeData_t const* apx_nodeInstance_get_const_node_data(apx_nodeInstance_t co
    return NULL;
 }
 
-apx_nodeData_t* apx_nodeInstance_get_node_data(apx_nodeInstance_t const* self)
+apx_node_data_t* apx_nodeInstance_get_node_data(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -505,7 +505,7 @@ apx_nodeData_t* apx_nodeInstance_get_node_data(apx_nodeInstance_t const* self)
    return NULL;
 }
 
-bool apx_nodeInstance_has_node_data(apx_nodeInstance_t const* self)
+bool apx_nodeInstance_has_node_data(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -514,7 +514,7 @@ bool apx_nodeInstance_has_node_data(apx_nodeInstance_t const* self)
    return false;
 }
 
-apx_size_t apx_nodeInstance_get_definition_size(apx_nodeInstance_t const* self)
+apx_size_t apx_nodeInstance_get_definition_size(apx_node_instance_t const* self)
 {
    if ( (self != NULL) && (self->node_data != NULL) )
    {
@@ -523,7 +523,7 @@ apx_size_t apx_nodeInstance_get_definition_size(apx_nodeInstance_t const* self)
    return 0u;
 }
 
-uint8_t const* apx_nodeInstance_get_definition_data(apx_nodeInstance_t const* self)
+uint8_t const* apx_nodeInstance_get_definition_data(apx_node_instance_t const* self)
 {
    if ((self != NULL) && (self->node_data != NULL))
    {
@@ -532,14 +532,14 @@ uint8_t const* apx_nodeInstance_get_definition_data(apx_nodeInstance_t const* se
    return NULL;
 }
 
-apx_error_t apx_nodeInstance_create_data_element_list(apx_nodeInstance_t* self, adt_ary_t* data_element_list)
+apx_error_t apx_nodeInstance_create_data_element_list(apx_node_instance_t* self, adt_ary_t* data_element_list)
 {
    if (self != NULL)
    {
       self->num_data_elements = (apx_size_t)adt_ary_length(data_element_list);
       if (self->num_data_elements > 0u)
       {
-         self->data_elements = (apx_dataElement_t**)malloc(self->num_data_elements * sizeof(apx_dataElement_t*));
+         self->data_elements = (apx_data_element_t**)malloc(self->num_data_elements * sizeof(apx_data_element_t*));
          if (self->data_elements != NULL)
          {
             apx_size_t i;
@@ -562,14 +562,14 @@ apx_error_t apx_nodeInstance_create_data_element_list(apx_nodeInstance_t* self, 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_create_computation_lists(apx_nodeInstance_t* self, adt_ary_t* computation_lists)
+apx_error_t apx_nodeInstance_create_computation_lists(apx_node_instance_t* self, adt_ary_t* computation_lists)
 {
    if (self != NULL)
    {
       self->num_computation_lists = (apx_size_t)adt_ary_length(computation_lists);
       if (self->num_computation_lists > 0u)
       {
-         self->computation_lists = (apx_computationList_t**)malloc(self->num_computation_lists * sizeof(apx_computationList_t*));
+         self->computation_lists = (apx_computation_list_t**)malloc(self->num_computation_lists * sizeof(apx_computation_list_t*));
          if (self->computation_lists != NULL)
          {
             apx_size_t i;
@@ -591,7 +591,7 @@ apx_error_t apx_nodeInstance_create_computation_lists(apx_nodeInstance_t* self, 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_create_byte_port_map(apx_nodeInstance_t* self)
+apx_error_t apx_nodeInstance_create_byte_port_map(apx_node_instance_t* self)
 {
    if (self != NULL)
    {
@@ -617,7 +617,7 @@ apx_error_t apx_nodeInstance_create_byte_port_map(apx_nodeInstance_t* self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_bytePortMap_t const* apx_nodeInstance_get_provide_byte_port_map(apx_nodeInstance_t const* self)
+apx_byte_port_map_t const* apx_nodeInstance_get_provide_byte_port_map(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -626,7 +626,7 @@ apx_bytePortMap_t const* apx_nodeInstance_get_provide_byte_port_map(apx_nodeInst
    return NULL;
 }
 
-apx_bytePortMap_t const* apx_nodeInstance_get_require_byte_port_map(apx_nodeInstance_t const* self)
+apx_byte_port_map_t const* apx_nodeInstance_get_require_byte_port_map(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -635,7 +635,7 @@ apx_bytePortMap_t const* apx_nodeInstance_get_require_byte_port_map(apx_nodeInst
    return NULL;
 }
 
-apx_dataState_t apx_nodeInstance_get_definition_data_state(apx_nodeInstance_t const* self)
+apx_data_state_t apx_nodeInstance_get_definition_data_state(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -644,7 +644,7 @@ apx_dataState_t apx_nodeInstance_get_definition_data_state(apx_nodeInstance_t co
    return APX_DATA_STATE_DISCONNECTED;
 }
 
-apx_dataState_t apx_nodeInstance_get_require_port_data_state(apx_nodeInstance_t const* self)
+apx_data_state_t apx_nodeInstance_get_require_port_data_state(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -653,7 +653,7 @@ apx_dataState_t apx_nodeInstance_get_require_port_data_state(apx_nodeInstance_t 
    return APX_DATA_STATE_INIT;
 }
 
-apx_dataState_t apx_nodeInstance_get_provide_port_data_state(apx_nodeInstance_t const* self)
+apx_data_state_t apx_nodeInstance_get_provide_port_data_state(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -662,7 +662,7 @@ apx_dataState_t apx_nodeInstance_get_provide_port_data_state(apx_nodeInstance_t 
    return APX_DATA_STATE_INIT;
 }
 
-void apx_nodeInstance_set_definition_data_state(apx_nodeInstance_t* self, apx_dataState_t state)
+void apx_nodeInstance_set_definition_data_state(apx_node_instance_t* self, apx_data_state_t state)
 {
    if (self != NULL)
    {
@@ -670,7 +670,7 @@ void apx_nodeInstance_set_definition_data_state(apx_nodeInstance_t* self, apx_da
    }
 }
 
-void apx_nodeInstance_set_require_port_data_state(apx_nodeInstance_t* self, apx_dataState_t state)
+void apx_nodeInstance_set_require_port_data_state(apx_node_instance_t* self, apx_data_state_t state)
 {
    if (self != NULL)
    {
@@ -678,7 +678,7 @@ void apx_nodeInstance_set_require_port_data_state(apx_nodeInstance_t* self, apx_
    }
 }
 
-void apx_nodeInstance_set_provide_port_data_state(apx_nodeInstance_t* self, apx_dataState_t state)
+void apx_nodeInstance_set_provide_port_data_state(apx_node_instance_t* self, apx_data_state_t state)
 {
    if (self != NULL)
    {
@@ -686,7 +686,7 @@ void apx_nodeInstance_set_provide_port_data_state(apx_nodeInstance_t* self, apx_
    }
 }
 
-void apx_nodeInstance_set_parent(apx_nodeInstance_t* self, struct apx_nodeManager_tag* parent)
+void apx_nodeInstance_set_parent(apx_node_instance_t* self, struct apx_node_manager_tag* parent)
 {
    if (self != NULL)
    {
@@ -694,7 +694,7 @@ void apx_nodeInstance_set_parent(apx_nodeInstance_t* self, struct apx_nodeManage
    }
 }
 
-struct apx_nodeManager_tag* apx_nodeInstance_get_parent(apx_nodeInstance_t const* self)
+struct apx_node_manager_tag* apx_nodeInstance_get_parent(apx_node_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -703,7 +703,7 @@ struct apx_nodeManager_tag* apx_nodeInstance_get_parent(apx_nodeInstance_t const
    return NULL;
 }
 
-apx_portId_t apx_nodeInstance_lookup_require_port_id(apx_nodeInstance_t const* self, apx_size_t byte_offset)
+apx_port_id_t apx_nodeInstance_lookup_require_port_id(apx_node_instance_t const* self, apx_size_t byte_offset)
 {
    if ( (self != NULL) && (self->require_byte_port_map != NULL))
    {
@@ -712,7 +712,7 @@ apx_portId_t apx_nodeInstance_lookup_require_port_id(apx_nodeInstance_t const* s
    return APX_INVALID_PORT_ID;
 }
 
-apx_portId_t apx_nodeInstance_lookup_provide_port_id(apx_nodeInstance_t const* self, apx_size_t byte_offset)
+apx_port_id_t apx_nodeInstance_lookup_provide_port_id(apx_node_instance_t const* self, apx_size_t byte_offset)
 {
    if ((self != NULL) && (self->provide_byte_port_map != NULL))
    {
@@ -721,7 +721,7 @@ apx_portId_t apx_nodeInstance_lookup_provide_port_id(apx_nodeInstance_t const* s
    return APX_INVALID_PORT_ID;
 }
 
-apx_portInstance_t* apx_nodeInstance_find(apx_nodeInstance_t const* self, char const* name)
+apx_port_instance_t* apx_nodeInstance_find(apx_node_instance_t const* self, char const* name)
 {
    if (self != NULL)
    {
@@ -730,7 +730,7 @@ apx_portInstance_t* apx_nodeInstance_find(apx_nodeInstance_t const* self, char c
       {
          for (i = 0; i < self->num_provide_ports; i++)
          {
-            apx_portInstance_t* port_instance = &self->provide_ports[i];
+            apx_port_instance_t* port_instance = &self->provide_ports[i];
             if (strcmp(name, apx_portInstance_name(port_instance))==0)
             {
                return port_instance;
@@ -741,7 +741,7 @@ apx_portInstance_t* apx_nodeInstance_find(apx_nodeInstance_t const* self, char c
       {
          for (i = 0; i < self->num_require_ports; i++)
          {
-            apx_portInstance_t* port_instance = &self->require_ports[i];
+            apx_port_instance_t* port_instance = &self->require_ports[i];
             if (strcmp(name, apx_portInstance_name(port_instance)) == 0)
             {
                return port_instance;
@@ -753,7 +753,7 @@ apx_portInstance_t* apx_nodeInstance_find(apx_nodeInstance_t const* self, char c
 }
 
 
-apx_error_t apx_nodeInstance_attach_to_file_manager(apx_nodeInstance_t* self, struct apx_fileManager_tag* file_manager)
+apx_error_t apx_nodeInstance_attach_to_file_manager(apx_node_instance_t* self, struct apx_file_manager_tag* file_manager)
 {
    if (self != NULL)
    {
@@ -769,7 +769,7 @@ apx_error_t apx_nodeInstance_attach_to_file_manager(apx_nodeInstance_t* self, st
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_remote_file_published_notification(apx_nodeInstance_t* self, apx_file_t* file)
+apx_error_t apx_nodeInstance_remote_file_published_notification(apx_node_instance_t* self, apx_file_t* file)
 {
    if ((self != NULL) && (file != NULL))
    {
@@ -791,7 +791,7 @@ apx_error_t apx_nodeInstance_remote_file_published_notification(apx_nodeInstance
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_nodeInstance_set_server(apx_nodeInstance_t* self, struct apx_server_tag* server)
+void apx_nodeInstance_set_server(apx_node_instance_t* self, struct apx_server_tag* server)
 {
    if (self != NULL)
    {
@@ -799,7 +799,7 @@ void apx_nodeInstance_set_server(apx_nodeInstance_t* self, struct apx_server_tag
    }
 }
 
-apx_error_t apx_nodeInstance_write_provide_port_data(apx_nodeInstance_t* self, apx_size_t offset, uint8_t* data, apx_size_t size)
+apx_error_t apx_nodeInstance_write_provide_port_data(apx_node_instance_t* self, apx_size_t offset, uint8_t* data, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -812,7 +812,7 @@ apx_error_t apx_nodeInstance_write_provide_port_data(apx_nodeInstance_t* self, a
 
 apx_error_t apx_nodeInstance_vfile_open_notify(void* arg, apx_file_t* file)
 {
-   return file_open_notify((apx_nodeInstance_t*)arg, file);
+   return file_open_notify((apx_node_instance_t*)arg, file);
 }
 
 apx_error_t apx_nodeInstance_vfile_close_notify(void* arg, apx_file_t* file)
@@ -824,11 +824,11 @@ apx_error_t apx_nodeInstance_vfile_close_notify(void* arg, apx_file_t* file)
 
 apx_error_t apx_nodeInstance_vfile_write_notify(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
 {
-   return file_write_notify((apx_nodeInstance_t*)arg, file, offset, data, size);
+   return file_write_notify((apx_node_instance_t*)arg, file, offset, data, size);
 }
 
 // Port Connector Change API
-apx_portConnectorChangeTable_t* apx_nodeInstance_get_require_port_connector_changes(apx_nodeInstance_t* self, bool auto_create)
+apx_port_connector_change_table_t* apx_nodeInstance_get_require_port_connector_changes(apx_node_instance_t* self, bool auto_create)
 {
    if ( (self != NULL) && (self->num_require_ports > 0))
    {
@@ -842,10 +842,10 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_get_require_port_connector_chan
       }
       return self->require_port_changes;
    }
-   return (apx_portConnectorChangeTable_t*)NULL;
+   return (apx_port_connector_change_table_t*)NULL;
 }
 
-apx_portConnectorChangeTable_t* apx_nodeInstance_get_provide_port_connector_changes(apx_nodeInstance_t* self, bool auto_create)
+apx_port_connector_change_table_t* apx_nodeInstance_get_provide_port_connector_changes(apx_node_instance_t* self, bool auto_create)
 {
    if ((self != NULL) && (self->num_provide_ports > 0))
    {
@@ -859,10 +859,10 @@ apx_portConnectorChangeTable_t* apx_nodeInstance_get_provide_port_connector_chan
       }
       return self->provide_port_changes;
    }
-   return (apx_portConnectorChangeTable_t*)NULL;
+   return (apx_port_connector_change_table_t*)NULL;
 }
 
-void apx_nodeInstance_clear_require_port_connector_changes(apx_nodeInstance_t* self, bool release_memory)
+void apx_nodeInstance_clear_require_port_connector_changes(apx_node_instance_t* self, bool release_memory)
 {
    if (self != NULL)
    {
@@ -870,11 +870,11 @@ void apx_nodeInstance_clear_require_port_connector_changes(apx_nodeInstance_t* s
       {
          apx_portConnectorChangeTable_delete(self->require_port_changes);
       }
-      self->require_port_changes = (apx_portConnectorChangeTable_t*)NULL;
+      self->require_port_changes = (apx_port_connector_change_table_t*)NULL;
    }
 }
 
-void apx_nodeInstance_clear_provide_port_connector_changes(apx_nodeInstance_t* self, bool release_memory)
+void apx_nodeInstance_clear_provide_port_connector_changes(apx_node_instance_t* self, bool release_memory)
 {
    if (self != NULL)
    {
@@ -882,20 +882,20 @@ void apx_nodeInstance_clear_provide_port_connector_changes(apx_nodeInstance_t* s
       {
          apx_portConnectorChangeTable_delete(self->provide_port_changes);
       }
-      self->provide_port_changes = (apx_portConnectorChangeTable_t*)NULL;
+      self->provide_port_changes = (apx_port_connector_change_table_t*)NULL;
    }
 }
 
-apx_error_t apx_nodeInstance_handle_require_ports_disconnected(apx_nodeInstance_t* self, apx_portConnectorChangeTable_t* connector_changes)
+apx_error_t apx_nodeInstance_handle_require_ports_disconnected(apx_node_instance_t* self, apx_port_connector_change_table_t* connector_changes)
 {
    if ((self != NULL) && (connector_changes != NULL))
    {
-      apx_portId_t require_port_id;
+      apx_port_id_t require_port_id;
       apx_size_t num_require_ports = apx_nodeInstance_get_num_require_ports(self);
       for (require_port_id = 0; require_port_id < num_require_ports; require_port_id++)
       {
-         apx_portInstance_t* require_port;
-         apx_portConnectorChangeEntry_t* entry = apx_portConnectorChangeTable_get_entry(connector_changes, require_port_id);
+         apx_port_instance_t* require_port;
+         apx_port_connector_change_entry_t* entry = apx_portConnectorChangeTable_get_entry(connector_changes, require_port_id);
          require_port = apx_nodeInstance_get_require_port(self, require_port_id);
          assert(require_port != NULL);
          assert(entry != NULL);
@@ -903,9 +903,9 @@ apx_error_t apx_nodeInstance_handle_require_ports_disconnected(apx_nodeInstance_
          if (entry->count == -1)
          {
             apx_error_t result;
-            apx_portId_t provide_port_id;
-            apx_nodeInstance_t* provide_node_instance;
-            apx_portInstance_t* provide_port = entry->data.port_instance;
+            apx_port_id_t provide_port_id;
+            apx_node_instance_t* provide_node_instance;
+            apx_port_instance_t* provide_port = entry->data.port_instance;
             assert(provide_port != NULL);
             provide_node_instance = provide_port->parent;
             assert(provide_node_instance != 0);
@@ -934,14 +934,14 @@ apx_error_t apx_nodeInstance_handle_require_ports_disconnected(apx_nodeInstance_
 }
 
 // Data Routing API
-apx_error_t apx_nodeInstance_handle_require_port_connected_to_provide_port(apx_portInstance_t* require_port, apx_portInstance_t* provide_port)
+apx_error_t apx_nodeInstance_handle_require_port_connected_to_provide_port(apx_port_instance_t* require_port, apx_port_instance_t* provide_port)
 {
    if ((require_port != NULL) && (provide_port != NULL))
    {
       apx_error_t retval = APX_NO_ERROR;
-      apx_nodeInstance_t* require_node;
-      apx_nodeInstance_t* provide_node;
-      apx_portId_t provide_port_id;
+      apx_node_instance_t* require_node;
+      apx_node_instance_t* provide_node;
+      apx_port_id_t provide_port_id;
       require_node = require_port->parent;
       (void)require_node;
       provide_node = provide_port->parent;
@@ -952,7 +952,7 @@ apx_error_t apx_nodeInstance_handle_require_port_connected_to_provide_port(apx_p
       MUTEX_LOCK(provide_node->lock);
       if (provide_node->connector_table != NULL)
       {
-         apx_portConnectorList_t* connectors = &provide_node->connector_table[provide_port_id];
+         apx_port_connector_list_t* connectors = &provide_node->connector_table[provide_port_id];
          retval = apx_portConnectorList_insert(connectors, require_port);
       }
       else
@@ -970,13 +970,13 @@ apx_error_t apx_nodeInstance_handle_require_port_connected_to_provide_port(apx_p
 
 }
 
-apx_error_t apx_nodeInstance_handle_provide_port_connected_to_require_port(apx_portInstance_t* provide_port, apx_portInstance_t* require_port)
+apx_error_t apx_nodeInstance_handle_provide_port_connected_to_require_port(apx_port_instance_t* provide_port, apx_port_instance_t* require_port)
 {
    if ( (provide_port != NULL) && (require_port != NULL) && (provide_port->parent != NULL) && (require_port->parent != NULL))
    {
       apx_error_t retval = APX_NO_ERROR;
-      apx_nodeInstance_t* provide_node = provide_port->parent;
-      apx_portId_t provide_port_id = apx_portInstance_port_id(provide_port);
+      apx_node_instance_t* provide_node = provide_port->parent;
+      apx_port_id_t provide_port_id = apx_portInstance_port_id(provide_port);
       assert(provide_port_id < provide_node->num_provide_ports);
       assert(provide_node->connector_table != NULL);
       retval = apx_portConnectorList_insert(&provide_node->connector_table[provide_port_id], require_port);
@@ -989,7 +989,7 @@ apx_error_t apx_nodeInstance_handle_provide_port_connected_to_require_port(apx_p
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeInstance_handle_require_port_disconnected_from_provide_port(apx_portInstance_t* require_port, apx_portInstance_t* provide_port)
+apx_error_t apx_nodeInstance_handle_require_port_disconnected_from_provide_port(apx_port_instance_t* require_port, apx_port_instance_t* provide_port)
 {
    (void)require_port;
    (void)provide_port;
@@ -998,7 +998,7 @@ apx_error_t apx_nodeInstance_handle_require_port_disconnected_from_provide_port(
 }
 
 // ConnectorTable API
-apx_error_t apx_nodeInstance_build_connector_table(apx_nodeInstance_t* self)
+apx_error_t apx_nodeInstance_build_connector_table(apx_node_instance_t* self)
 {
    if (self != NULL)
    {
@@ -1006,10 +1006,10 @@ apx_error_t apx_nodeInstance_build_connector_table(apx_nodeInstance_t* self)
       apx_size_t const num_provide_ports = self->num_provide_ports;
       if (num_provide_ports > 0u)
       {
-         apx_portId_t port_id;
-         size_t alloc_size = num_provide_ports * sizeof(apx_portConnectorList_t);
+         apx_port_id_t port_id;
+         size_t alloc_size = num_provide_ports * sizeof(apx_port_connector_list_t);
          MUTEX_LOCK(self->lock);
-         self->connector_table = (apx_portConnectorList_t*)malloc(alloc_size);
+         self->connector_table = (apx_port_connector_list_t*)malloc(alloc_size);
          if (self->connector_table != NULL)
          {
             for (port_id = 0; port_id < num_provide_ports; port_id++)
@@ -1028,7 +1028,7 @@ apx_error_t apx_nodeInstance_build_connector_table(apx_nodeInstance_t* self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_nodeInstance_lock_port_connector_table(apx_nodeInstance_t* self)
+void apx_nodeInstance_lock_port_connector_table(apx_node_instance_t* self)
 {
    if (self != NULL)
    {
@@ -1036,7 +1036,7 @@ void apx_nodeInstance_lock_port_connector_table(apx_nodeInstance_t* self)
    }
 }
 
-void apx_nodeInstance_unlock_port_connector_table(apx_nodeInstance_t* self)
+void apx_nodeInstance_unlock_port_connector_table(apx_node_instance_t* self)
 {
    if (self != NULL)
    {
@@ -1044,7 +1044,7 @@ void apx_nodeInstance_unlock_port_connector_table(apx_nodeInstance_t* self)
    }
 }
 
-apx_portConnectorList_t* apx_nodeInstance_get_provide_port_connectors(apx_nodeInstance_t* self, apx_portId_t port_id)
+apx_port_connector_list_t* apx_nodeInstance_get_provide_port_connectors(apx_node_instance_t* self, apx_port_id_t port_id)
 {
    if ( (self != NULL) && (port_id < self->num_provide_ports))
    {
@@ -1054,18 +1054,18 @@ apx_portConnectorList_t* apx_nodeInstance_get_provide_port_connectors(apx_nodeIn
    return NULL;
 }
 /*
-apx_error_t apx_nodeInstance_insert_provide_port_connector(apx_nodeInstance_t* self, apx_portId_t provide_port_id, apx_portInstance_t* require_port)
+apx_error_t apx_nodeInstance_insert_provide_port_connector(apx_node_instance_t* self, apx_port_id_t provide_port_id, apx_port_instance_t* require_port)
 {
    return APX_NOT_IMPLEMENTED_ERROR;
 }
 
-apx_error_t apx_nodeInstance_remove_provide_port_connector(apx_nodeInstance_t* self, apx_portId_t provide_port_id, apx_portInstance_t* require_port)
+apx_error_t apx_nodeInstance_remove_provide_port_connector(apx_node_instance_t* self, apx_port_id_t provide_port_id, apx_port_instance_t* require_port)
 {
    return APX_NOT_IMPLEMENTED_ERROR;
 }
 */
 
-void apx_nodeInstance_clear_connector_table(apx_nodeInstance_t* self)
+void apx_nodeInstance_clear_connector_table(apx_node_instance_t* self)
 {
    if (self != NULL)
    {
@@ -1075,7 +1075,7 @@ void apx_nodeInstance_clear_connector_table(apx_nodeInstance_t* self)
    }
 }
 
-apx_portInstance_t* apx_nodeInstance_find_port_by_name(apx_nodeInstance_t const* self, char const* name)
+apx_port_instance_t* apx_nodeInstance_find_port_by_name(apx_node_instance_t const* self, char const* name)
 {
    if ((self != NULL) && (name != NULL))
    {
@@ -1084,7 +1084,7 @@ apx_portInstance_t* apx_nodeInstance_find_port_by_name(apx_nodeInstance_t const*
       {
          for (port_id = 0u; port_id < self->num_provide_ports; port_id++)
          {
-            apx_portInstance_t* port_instance = &self->provide_ports[port_id];
+            apx_port_instance_t* port_instance = &self->provide_ports[port_id];
             char const* port_name = apx_portInstance_name(port_instance);
             if ((port_name != NULL) && (strcmp(port_name, name) == 0))
             {
@@ -1096,7 +1096,7 @@ apx_portInstance_t* apx_nodeInstance_find_port_by_name(apx_nodeInstance_t const*
       {
          for (port_id = 0u; port_id < self->num_require_ports; port_id++)
          {
-            apx_portInstance_t* port_instance = &self->require_ports[port_id];
+            apx_port_instance_t* port_instance = &self->require_ports[port_id];
             char const* port_name = apx_portInstance_name(port_instance);
             if ((port_name != NULL) && (strcmp(port_name, name) == 0))
             {
@@ -1111,7 +1111,7 @@ apx_portInstance_t* apx_nodeInstance_find_port_by_name(apx_nodeInstance_t const*
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t calc_init_data_size(apx_portInstance_t* port_list, apx_size_t num_ports, apx_size_t* total_size)
+static apx_error_t calc_init_data_size(apx_port_instance_t* port_list, apx_size_t num_ports, apx_size_t* total_size)
 {
    if ((port_list == NULL) || (num_ports == 0))
    {
@@ -1127,7 +1127,7 @@ static apx_error_t calc_init_data_size(apx_portInstance_t* port_list, apx_size_t
    return APX_NO_ERROR;
 }
 
-static apx_error_t create_definition_file_info(apx_nodeInstance_t* self, rmf_fileInfo_t* file_info)
+static apx_error_t create_definition_file_info(apx_node_instance_t* self, rmf_file_info_t* file_info)
 {
    assert(self->node_data != NULL);
    char file_name[RMF_MAX_FILE_NAME_SIZE + 1];
@@ -1141,7 +1141,7 @@ static apx_error_t create_definition_file_info(apx_nodeInstance_t* self, rmf_fil
       RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_SHA256, &digest_data[0]);
 }
 
-static apx_error_t create_provide_port_data_file_info(apx_nodeInstance_t* self, rmf_fileInfo_t* file_info)
+static apx_error_t create_provide_port_data_file_info(apx_node_instance_t* self, rmf_file_info_t* file_info)
 {
    assert((self != NULL) && (file_info != NULL) && (self->provide_port_init_data_size > 0u));
    char file_name[RMF_MAX_FILE_NAME_SIZE + 1];
@@ -1151,7 +1151,7 @@ static apx_error_t create_provide_port_data_file_info(apx_nodeInstance_t* self, 
       RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
 }
 
-static apx_error_t create_require_port_data_file_info(apx_nodeInstance_t* self, rmf_fileInfo_t* file_info)
+static apx_error_t create_require_port_data_file_info(apx_node_instance_t* self, rmf_file_info_t* file_info)
 {
    assert((self != NULL) && (file_info != NULL) && (self->require_port_init_data_size > 0u));
    char file_name[RMF_MAX_FILE_NAME_SIZE + 1];
@@ -1161,15 +1161,15 @@ static apx_error_t create_require_port_data_file_info(apx_nodeInstance_t* self, 
       RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
 }
 
-static apx_error_t file_open_notify(apx_nodeInstance_t* self, apx_file_t* file)
+static apx_error_t file_open_notify(apx_node_instance_t* self, apx_file_t* file)
 {
    if ( (file != NULL) && (self != NULL) && (self->node_data != NULL) )
    {
-      apx_fileManager_t* file_manager = apx_file_get_file_manager(file);
+      apx_file_manager_t* file_manager = apx_file_get_file_manager(file);
       if (file_manager != NULL)
       {
          apx_error_t retval = APX_NO_ERROR;
-         apx_fileType_t file_type = apx_file_get_apx_file_type(file);
+         apx_file_type_t file_type = apx_file_get_apx_file_type(file);
          uint32_t address = apx_file_get_address_without_flags(file);
          switch (file_type)
          {
@@ -1211,14 +1211,14 @@ static apx_error_t file_open_notify(apx_nodeInstance_t* self, apx_file_t* file)
    return APX_NULL_PTR_ERROR;
 }
 
-static apx_error_t send_definition_data_to_file_manager(apx_nodeInstance_t* self, apx_fileManager_t* file_manager, uint32_t address)
+static apx_error_t send_definition_data_to_file_manager(apx_node_instance_t* self, apx_file_manager_t* file_manager, uint32_t address)
 {
    uint8_t const* definition_data = apx_nodeData_get_definition_data(self->node_data);
    apx_size_t const definition_size = apx_nodeData_definition_data_size(self->node_data);
    return apx_fileManager_send_local_const_data(file_manager, address, definition_data, definition_size);
 }
 
-static apx_error_t send_provide_port_data_to_file_manager(apx_nodeInstance_t* self, apx_fileManager_t* file_manager, uint32_t address)
+static apx_error_t send_provide_port_data_to_file_manager(apx_node_instance_t* self, apx_file_manager_t* file_manager, uint32_t address)
 {
    uint8_t* snapshot = apx_nodeData_take_provide_port_data_snapshot(self->node_data);
    apx_size_t const provide_port_data_size = apx_nodeData_provide_port_data_size(self->node_data);
@@ -1229,7 +1229,7 @@ static apx_error_t send_provide_port_data_to_file_manager(apx_nodeInstance_t* se
    return apx_fileManager_send_local_data(file_manager, address, snapshot, provide_port_data_size);
 }
 
-static apx_error_t send_require_port_data_to_file_manager(apx_nodeInstance_t* self, apx_fileManager_t* file_manager, uint32_t address)
+static apx_error_t send_require_port_data_to_file_manager(apx_node_instance_t* self, apx_file_manager_t* file_manager, uint32_t address)
 {
    uint8_t* snapshot = apx_nodeData_take_require_port_data_snapshot(self->node_data);
    apx_size_t const require_port_data_size = apx_nodeData_require_port_data_size(self->node_data);
@@ -1241,9 +1241,9 @@ static apx_error_t send_require_port_data_to_file_manager(apx_nodeInstance_t* se
 }
 
 
-static void set_file_notification_handler(apx_nodeInstance_t* self, apx_file_t* file)
+static void set_file_notification_handler(apx_node_instance_t* self, apx_file_t* file)
 {
-   apx_fileNotificationHandler_t handler;
+   apx_file_notification_handler_t handler;
 
    assert((self != NULL) && (file != NULL));
    memset(&handler, 0, sizeof(handler));
@@ -1254,7 +1254,7 @@ static void set_file_notification_handler(apx_nodeInstance_t* self, apx_file_t* 
    apx_file_set_notification_handler(file, &handler);
 }
 
-static apx_error_t file_write_notify(apx_nodeInstance_t* self, apx_file_t* file, uint32_t offset, const uint8_t* data, apx_size_t size)
+static apx_error_t file_write_notify(apx_node_instance_t* self, apx_file_t* file, uint32_t offset, const uint8_t* data, apx_size_t size)
 {
    apx_error_t retval = APX_NO_ERROR;
    switch (apx_file_get_apx_file_type(file))
@@ -1281,7 +1281,7 @@ static apx_error_t file_write_notify(apx_nodeInstance_t* self, apx_file_t* file,
    return retval;
 }
 
-static apx_error_t process_remote_write_definition_data(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
+static apx_error_t process_remote_write_definition_data(apx_node_instance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
 {
    if (self->definition_data_state == APX_DATA_STATE_WAITING_FOR_FILE_DATA)
    {
@@ -1296,7 +1296,7 @@ static apx_error_t process_remote_write_definition_data(apx_nodeInstance_t* self
    return retval;
 }
 
-static apx_error_t process_remote_write_require_port_data(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
+static apx_error_t process_remote_write_require_port_data(apx_node_instance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
 {
    if (self->require_port_data_state == APX_DATA_STATE_WAITING_FOR_FILE_DATA)
    {
@@ -1311,10 +1311,10 @@ static apx_error_t process_remote_write_require_port_data(apx_nodeInstance_t* se
    return retval;
 }
 
-static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
+static apx_error_t process_remote_write_provide_port_data(apx_node_instance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
 {
    apx_error_t retval = APX_NO_ERROR;
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(self);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(self);
    assert(node_data != NULL);
    switch (self->provide_port_data_state)
    {
@@ -1332,7 +1332,7 @@ static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* se
             retval = apx_server_connect_node_instance_provide_ports(self->server, self);
             if (retval == APX_NO_ERROR)
             {
-               apx_portConnectorChangeTable_t* provide_port_changes;
+               apx_port_connector_change_table_t* provide_port_changes;
                apx_nodeInstance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
                provide_port_changes = apx_nodeInstance_get_provide_port_connector_changes(self, false);
                if (provide_port_changes != NULL)
@@ -1371,9 +1371,9 @@ static apx_error_t process_remote_write_provide_port_data(apx_nodeInstance_t* se
    return retval;
 }
 
-static apx_error_t apx_nodeInstance_attach_to_file_manager_client_mode(apx_nodeInstance_t* self, struct apx_fileManager_tag* file_manager)
+static apx_error_t apx_nodeInstance_attach_to_file_manager_client_mode(apx_node_instance_t* self, struct apx_file_manager_tag* file_manager)
 {
-   rmf_fileInfo_t file_info;
+   rmf_file_info_t file_info;
    apx_error_t result = APX_NO_ERROR;
 
    if (apx_nodeInstance_has_provide_port_data(self))
@@ -1413,9 +1413,9 @@ static apx_error_t apx_nodeInstance_attach_to_file_manager_client_mode(apx_nodeI
    return result;
 }
 
-static apx_error_t apx_nodeInstance_attach_to_file_manager_server_mode(apx_nodeInstance_t* self, struct apx_fileManager_tag* file_manager)
+static apx_error_t apx_nodeInstance_attach_to_file_manager_server_mode(apx_node_instance_t* self, struct apx_file_manager_tag* file_manager)
 {
-   rmf_fileInfo_t file_info;
+   rmf_file_info_t file_info;
    apx_error_t retval = APX_NO_ERROR;
 
    if (apx_nodeInstance_has_provide_port_data(self))
@@ -1437,7 +1437,7 @@ static apx_error_t apx_nodeInstance_attach_to_file_manager_server_mode(apx_nodeI
          }
          else
          {
-            rmf_fileInfo_t const* attached_file_info = apx_file_get_file_info(self->require_port_data_file);
+            rmf_file_info_t const* attached_file_info = apx_file_get_file_info(self->require_port_data_file);
             assert((attached_file_info != NULL) && (rmf_fileInfo_address_without_flags(attached_file_info) != RMF_INVALID_ADDRESS));
             set_file_notification_handler(self, self->require_port_data_file);
             retval = apx_fileManager_publish_local_file(file_manager, attached_file_info);
@@ -1451,7 +1451,7 @@ static apx_error_t apx_nodeInstance_attach_to_file_manager_server_mode(apx_nodeI
    return retval;
 }
 
-static apx_error_t search_for_remote_provide_port_data_file(apx_nodeInstance_t* self, struct apx_fileManager_tag* file_manager)
+static apx_error_t search_for_remote_provide_port_data_file(apx_node_instance_t* self, struct apx_file_manager_tag* file_manager)
 {
    apx_error_t retval = APX_NO_ERROR;
    adt_str_t* str = adt_str_new_cstr(apx_nodeInstance_get_name(self));
@@ -1480,18 +1480,18 @@ static apx_error_t search_for_remote_provide_port_data_file(apx_nodeInstance_t* 
    return retval;
 }
 
-static apx_error_t request_remote_provide_port_data(apx_nodeInstance_t* self, apx_file_t* file)
+static apx_error_t request_remote_provide_port_data(apx_node_instance_t* self, apx_file_t* file)
 {
-   apx_fileManager_t* file_manager = apx_file_get_file_manager(file);
+   apx_file_manager_t* file_manager = apx_file_get_file_manager(file);
    assert(file_manager != NULL);
    apx_nodeInstance_set_provide_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
    apx_file_open(file); //Should this be moved into file_manager?
    return apx_fileManager_send_open_file_request(file_manager, apx_file_get_address_without_flags(file));
 }
 
-static apx_error_t request_remote_require_port_data(apx_nodeInstance_t* self, apx_file_t* file)
+static apx_error_t request_remote_require_port_data(apx_node_instance_t* self, apx_file_t* file)
 {
-   apx_fileManager_t* file_manager = apx_file_get_file_manager(file);
+   apx_file_manager_t* file_manager = apx_file_get_file_manager(file);
    assert(file_manager != NULL);
    assert(apx_nodeInstance_get_require_port_data_state(self) == APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION);
    apx_nodeInstance_set_require_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
@@ -1499,14 +1499,14 @@ static apx_error_t request_remote_require_port_data(apx_nodeInstance_t* self, ap
    return apx_fileManager_send_open_file_request(file_manager, apx_file_get_address_without_flags(file));
 }
 
-static apx_error_t connect_require_ports_to_server(apx_nodeInstance_t* self)
+static apx_error_t connect_require_ports_to_server(apx_node_instance_t* self)
 {
    apx_error_t retval = APX_NO_ERROR;
    assert( (self != NULL) && (self->server != NULL));
    retval = apx_server_connect_node_instance_require_ports(self->server, self);
    if (retval == APX_NO_ERROR)
    {
-      apx_portConnectorChangeTable_t* require_port_changes;
+      apx_port_connector_change_table_t* require_port_changes;
       require_port_changes = apx_nodeInstance_get_require_port_connector_changes(self, false);
       if (require_port_changes != NULL)
       {
@@ -1518,7 +1518,7 @@ static apx_error_t connect_require_ports_to_server(apx_nodeInstance_t* self)
    return retval;
 }
 
-static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_t* self, uint32_t provide_data_offset, const uint8_t* provide_data, apx_size_t provide_data_size)
+static apx_error_t route_provide_port_data_change_to_receivers(apx_node_instance_t* self, uint32_t provide_data_offset, const uint8_t* provide_data, apx_size_t provide_data_size)
 {
    apx_error_t retval = APX_NO_ERROR;
    uint32_t end_offset = provide_data_offset + provide_data_size;
@@ -1527,8 +1527,8 @@ static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_
    MUTEX_LOCK(self->lock);
    while (provide_data_offset < end_offset)
    {
-      apx_portId_t provide_port_id;
-      apx_portInstance_t* provide_port = NULL;
+      apx_port_id_t provide_port_id;
+      apx_port_instance_t* provide_port = NULL;
       provide_port_id = apx_bytePortMap_lookup(self->provide_byte_port_map, provide_data_offset);
       if (provide_port_id == APX_INVALID_PORT_ID)
       {
@@ -1544,7 +1544,7 @@ static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_
       provide_port = apx_nodeInstance_get_provide_port(self, provide_port_id);
       if (provide_port != NULL)
       {
-         apx_portConnectorList_t* port_connectors;
+         apx_port_connector_list_t* port_connectors;
          int32_t num_connectors;
          int32_t connector_id;
          apx_size_t provide_port_data_size = apx_portInstance_data_size(provide_port);
@@ -1553,7 +1553,7 @@ static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_
          num_connectors = apx_portConnectorList_length(port_connectors);
          for (connector_id = 0; connector_id < num_connectors; connector_id++)
          {
-            apx_portInstance_t* require_port = apx_portConnectorList_get(port_connectors, connector_id);
+            apx_port_instance_t* require_port = apx_portConnectorList_get(port_connectors, connector_id);
             assert( (require_port != NULL) && (require_port->parent != NULL));
             if (apx_portInstance_queue_length(provide_port) == 0u)
             {
@@ -1589,19 +1589,19 @@ static apx_error_t route_provide_port_data_change_to_receivers(apx_nodeInstance_
 /*
 * Note: Caller must take self->lock before calling this function
 */
-static apx_error_t remove_provide_port_connector(apx_nodeInstance_t* self, apx_portId_t provide_port_id, apx_portInstance_t* require_port)
+static apx_error_t remove_provide_port_connector(apx_node_instance_t* self, apx_port_id_t provide_port_id, apx_port_instance_t* require_port)
 {
    assert(self->connector_table != NULL);
    if (provide_port_id < self->num_provide_ports)
    {
-      apx_portConnectorList_t* connector_list = &self->connector_table[provide_port_id];
+      apx_port_connector_list_t* connector_list = &self->connector_table[provide_port_id];
       apx_portConnectorList_remove(connector_list, require_port);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t route_provide_port_data_to_require_port(apx_portInstance_t* provide_port, apx_portInstance_t* require_port, bool do_remote_routing)
+static apx_error_t route_provide_port_data_to_require_port(apx_port_instance_t* provide_port, apx_port_instance_t* require_port, bool do_remote_routing)
 {
    apx_error_t retval = APX_NO_ERROR;
    assert( (provide_port != NULL) && provide_port->parent != NULL);
@@ -1613,8 +1613,8 @@ static apx_error_t route_provide_port_data_to_require_port(apx_portInstance_t* p
       if (provide_port_data_size == require_port_data_size)
       {
          uint8_t stack_data_buffer[STACK_DATA_BUF_SIZE];
-         apx_nodeInstance_t* provide_node = provide_port->parent;
-         apx_nodeInstance_t* require_node = require_port->parent;
+         apx_node_instance_t* provide_node = provide_port->parent;
+         apx_node_instance_t* require_node = require_port->parent;
          apx_size_t const require_data_offset = apx_portInstance_data_offset(require_port);
          apx_size_t const provide_data_offset = apx_portInstance_data_offset(provide_port);
          uint8_t* provide_port_data = &stack_data_buffer[0];
@@ -1660,7 +1660,7 @@ static apx_error_t route_provide_port_data_to_require_port(apx_portInstance_t* p
    return retval;
 }
 
-static apx_error_t remote_route_require_port_data(apx_nodeInstance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size)
+static apx_error_t remote_route_require_port_data(apx_node_instance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size)
 {
    apx_file_t* file = self->require_port_data_file;
    apx_error_t retval = apx_nodeData_write_require_port_data(self->node_data, offset, data, size);
@@ -1671,7 +1671,7 @@ static apx_error_t remote_route_require_port_data(apx_nodeInstance_t* self, uint
    return retval;
 }
 
-static apx_error_t remote_route_provide_port_data(apx_nodeInstance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size)
+static apx_error_t remote_route_provide_port_data(apx_node_instance_t* self, uint32_t offset, uint8_t const* data, apx_size_t size)
 {
    apx_file_t* file = self->provide_port_data_file;
    apx_error_t retval = apx_nodeData_write_provide_port_data(self->node_data, offset, data, size);
@@ -1687,7 +1687,7 @@ static apx_error_t remote_route_data_to_file(apx_file_t* file, uint32_t offset, 
    apx_error_t retval = APX_NO_ERROR;
    assert(file != NULL);
 
-   apx_fileManager_t* file_manager = apx_file_get_file_manager(file);
+   apx_file_manager_t* file_manager = apx_file_get_file_manager(file);
    if (file_manager == NULL)
    {
       retval = APX_NULL_PTR_ERROR;
@@ -1718,7 +1718,7 @@ static apx_error_t remote_route_data_to_file(apx_file_t* file, uint32_t offset, 
    return retval;
 }
 
-static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
+static apx_error_t trigger_require_port_write_callbacks(apx_node_instance_t* self, uint32_t offset, const uint8_t* data, apx_size_t size)
 {
    apx_error_t retval = APX_NO_ERROR;
    assert((self != NULL) && (data != NULL));
@@ -1729,10 +1729,10 @@ static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self
    }
    while (offset < end_offset)
    {
-      apx_portId_t port_id = apx_bytePortMap_lookup(self->require_byte_port_map, offset);
+      apx_port_id_t port_id = apx_bytePortMap_lookup(self->require_byte_port_map, offset);
       if (port_id != APX_INVALID_PORT_ID)
       {
-         apx_portInstance_t* port_instance = apx_nodeInstance_get_require_port(self, port_id);
+         apx_port_instance_t* port_instance = apx_nodeInstance_get_require_port(self, port_id);
          if (port_instance != NULL)
          {
             uint32_t const port_data_size = apx_portInstance_data_size(port_instance);

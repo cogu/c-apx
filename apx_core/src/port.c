@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t derive_data_element(apx_port_t* self, apx_dataElement_t** data_element, apx_dataElement_t** parent);
+static apx_error_t derive_data_element(apx_port_t* self, apx_data_element_t** data_element, apx_data_element_t** parent);
 
 
 
@@ -41,7 +41,7 @@ static apx_error_t derive_data_element(apx_port_t* self, apx_dataElement_t** dat
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_port_create(apx_port_t* self, apx_portType_t port_type, const char* name, int32_t line_number)
+void apx_port_create(apx_port_t* self, apx_port_type_t port_type, const char* name, int32_t line_number)
 {
    if (self != NULL)
    {
@@ -75,7 +75,7 @@ void apx_port_destroy(apx_port_t* self)
    }
 }
 
-apx_port_t* apx_port_new(apx_portType_t port_type, const char* name, int32_t line_number)
+apx_port_t* apx_port_new(apx_port_type_t port_type, const char* name, int32_t line_number)
 {
    apx_port_t* self = (apx_port_t*)malloc(sizeof(apx_port_t));
    if (self != NULL)
@@ -99,7 +99,7 @@ void apx_port_vdelete(void* arg)
    apx_port_delete((apx_port_t*)arg);
 }
 
-apx_dataElement_t* apx_port_get_data_element(apx_port_t const* self)
+apx_data_element_t* apx_port_get_data_element(apx_port_t const* self)
 {
    if (self != NULL)
    {
@@ -108,7 +108,7 @@ apx_dataElement_t* apx_port_get_data_element(apx_port_t const* self)
    return NULL;
 }
 
-apx_dataElement_t* apx_port_get_effective_data_element(apx_port_t const* self)
+apx_data_element_t* apx_port_get_effective_data_element(apx_port_t const* self)
 {
    if (self != NULL)
    {
@@ -117,7 +117,7 @@ apx_dataElement_t* apx_port_get_effective_data_element(apx_port_t const* self)
    return NULL;
 }
 
-apx_portAttributes_t* apx_port_get_attributes(apx_port_t* self)
+apx_port_attributes_t* apx_port_get_attributes(apx_port_t* self)
 {
    if (self != NULL)
    {
@@ -148,16 +148,16 @@ apx_error_t apx_port_init_attributes(apx_port_t* self)
    return APX_NO_ERROR;
 }
 
-apx_typeAttributes_t* apx_port_get_referenced_type_attributes(apx_port_t const* self)
+apx_type_attributes_t* apx_port_get_referenced_type_attributes(apx_port_t const* self)
 {
    if (self != NULL)
    {
-      apx_dataElement_t* data_element = apx_port_get_data_element(self);
+      apx_data_element_t* data_element = apx_port_get_data_element(self);
       assert(data_element != NULL);
-      apx_typeCode_t type_code = apx_dataElement_get_type_code(data_element);
+      apx_type_code_t type_code = apx_dataElement_get_type_code(data_element);
       if (type_code == APX_TYPE_CODE_REF_PTR)
       {
-         apx_dataType_t* data_type = apx_dataElement_get_type_ref_ptr(data_element);
+         apx_data_type_t* data_type = apx_dataElement_get_type_ref_ptr(data_element);
          assert(data_type != NULL);
          return apx_dataType_get_attributes(data_type);
       }
@@ -167,7 +167,7 @@ apx_typeAttributes_t* apx_port_get_referenced_type_attributes(apx_port_t const* 
 
 apx_error_t apx_port_derive_types(apx_port_t* self, adt_ary_t const* type_list, adt_hash_t const* type_map)
 {
-   apx_dataElement_t* data_element = apx_port_get_data_element(self);
+   apx_data_element_t* data_element = apx_port_get_data_element(self);
    if (data_element == NULL)
    {
       return APX_NULL_PTR_ERROR;
@@ -179,7 +179,7 @@ apx_error_t apx_port_derive_proper_init_value(apx_port_t* self)
 {
    apx_error_t result = APX_NO_ERROR;
    dtl_dv_t* derived_init_value = NULL;
-   apx_dataElement_t* data_element = apx_port_get_effective_data_element(self);
+   apx_data_element_t* data_element = apx_port_get_effective_data_element(self);
    if (data_element == NULL)
    {
       return APX_NULL_PTR_ERROR;
@@ -233,9 +233,9 @@ uint32_t apx_port_get_queue_length(apx_port_t* self)
 apx_error_t apx_port_flatten_data_element(apx_port_t* self)
 {
    apx_error_t result;
-   apx_dataElement_t* parent_element = NULL;
-   apx_dataElement_t* cloned_element = NULL;
-   apx_dataElement_t* data_element = apx_port_get_data_element(self);
+   apx_data_element_t* parent_element = NULL;
+   apx_data_element_t* cloned_element = NULL;
+   apx_data_element_t* data_element = apx_port_get_data_element(self);
    if (data_element == NULL)
    {
       return APX_NULL_PTR_ERROR;
@@ -283,7 +283,7 @@ const char* apx_port_get_name(apx_port_t const* self)
    return NULL;
 }
 
-apx_portType_t apx_port_get_port_type(const apx_port_t* self)
+apx_port_type_t apx_port_get_port_type(const apx_port_t* self)
 {
    if (self != NULL)
    {
@@ -292,7 +292,7 @@ apx_portType_t apx_port_get_port_type(const apx_port_t* self)
    return APX_REQUIRE_PORT;
 }
 
-void apx_port_set_id(apx_port_t* self, apx_portId_t port_id)
+void apx_port_set_id(apx_port_t* self, apx_port_id_t port_id)
 {
    if (self != NULL)
    {
@@ -300,7 +300,7 @@ void apx_port_set_id(apx_port_t* self, apx_portId_t port_id)
    }
 }
 
-apx_portId_t apx_port_get_id(apx_port_t* self)
+apx_port_id_t apx_port_get_id(apx_port_t* self)
 {
    if (self != NULL)
    {
@@ -312,7 +312,7 @@ apx_portId_t apx_port_get_id(apx_port_t* self)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t derive_data_element(apx_port_t* self, apx_dataElement_t** data_element, apx_dataElement_t** parent)
+static apx_error_t derive_data_element(apx_port_t* self, apx_data_element_t** data_element, apx_data_element_t** parent)
 {
    apx_error_t retval = APX_NO_ERROR;
    assert((self != NULL) && (data_element != NULL) );
@@ -323,7 +323,7 @@ static apx_error_t derive_data_element(apx_port_t* self, apx_dataElement_t** dat
    }
    if (apx_dataElement_get_type_code(*data_element) == APX_TYPE_CODE_REF_PTR)
    {
-      apx_dataType_t* data_type = apx_dataElement_get_type_ref_ptr(*data_element);
+      apx_data_type_t* data_type = apx_dataElement_get_type_ref_ptr(*data_element);
       if (parent != NULL)
       {
          *parent = *data_element;

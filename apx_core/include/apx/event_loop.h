@@ -36,30 +36,30 @@
 //////////////////////////////////////////////////////////////////////////////
 //forward declarations
 
-typedef struct apx_eventLoop_tag
+typedef struct apx_event_loop_tag
 {
    SPINLOCK_T lock;
    SEMAPHORE_T semaphore;
    adt_rbfh_t pendingEvents;
    bool exitFlag;
-} apx_eventLoop_t;
+} apx_event_loop_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_eventLoop_create(apx_eventLoop_t *self);
-void apx_eventLoop_destroy(apx_eventLoop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
-apx_eventLoop_t *apx_eventLoop_new(void);
-void apx_eventLoop_delete(apx_eventLoop_t *self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
-//void apx_eventLoop_setEventHandler(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);
+apx_error_t apx_eventLoop_create(apx_event_loop_t *self);
+void apx_eventLoop_destroy(apx_event_loop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
+apx_event_loop_t *apx_eventLoop_new(void);
+void apx_eventLoop_delete(apx_event_loop_t *self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
+//void apx_eventLoop_setEventHandler(apx_event_loop_t *self, apx_event_handler_func_t *eventHandler, void *eventHandlerArg);
 //External events (handler implemented in this class)
-void apx_eventLoop_append(apx_eventLoop_t *self, apx_event_t *event);
-void apx_eventLoop_run(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);
-void apx_eventLoop_exit(apx_eventLoop_t *self);
-uint16_t apx_eventLoop_numPendingEvents(apx_eventLoop_t *self);
+void apx_eventLoop_append(apx_event_loop_t *self, apx_event_t *event);
+void apx_eventLoop_run(apx_event_loop_t *self, apx_event_handler_func_t *eventHandler, void *eventHandlerArg);
+void apx_eventLoop_exit(apx_event_loop_t *self);
+uint16_t apx_eventLoop_numPendingEvents(apx_event_loop_t *self);
 #ifdef UNIT_TEST
-void apx_eventLoop_runAll(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);
+void apx_eventLoop_runAll(apx_event_loop_t *self, apx_event_handler_func_t *eventHandler, void *eventHandlerArg);
 #endif
 
 #endif //APX_EVENT_LOOP_H

@@ -21,24 +21,24 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-typedef uint8_t apx_cmdType_t;
-#define APX_CMD_EXIT                   ((apx_cmdType_t) 0u)
-#define APX_CMD_SEND_ACKNOWLEDGE       ((apx_cmdType_t) 1u)
-#define APX_CMD_SEND_ERROR_CODE        ((apx_cmdType_t) 2u)
-#define APX_CMD_PUBLISH_LOCAL_FILE     ((apx_cmdType_t) 3u)
-#define APX_CMD_REVOKE_LOCAL_FILE      ((apx_cmdType_t) 4u)
-#define APX_CMD_OPEN_REMOTE_FILE       ((apx_cmdType_t) 5u)
-#define APX_CMD_CLOSE_REMOTE_FILE      ((apx_cmdType_t) 6u)
-#define APX_CMD_SEND_LOCAL_CONST_DATA  ((apx_cmdType_t) 7u)
-#define APX_CMD_SEND_LOCAL_DATA        ((apx_cmdType_t) 8u)
-#define APX_CMD_SEND_HEADER_ACCEPTED   ((apx_cmdType_t) 9u)
-#define APX_CMD_CREATE_CONNECTION      ((apx_cmdType_t) 10u)
+typedef uint8_t apx_cmd_type_t;
+#define APX_CMD_EXIT                   ((apx_cmd_type_t) 0u)
+#define APX_CMD_SEND_ACKNOWLEDGE       ((apx_cmd_type_t) 1u)
+#define APX_CMD_SEND_ERROR_CODE        ((apx_cmd_type_t) 2u)
+#define APX_CMD_PUBLISH_LOCAL_FILE     ((apx_cmd_type_t) 3u)
+#define APX_CMD_REVOKE_LOCAL_FILE      ((apx_cmd_type_t) 4u)
+#define APX_CMD_OPEN_REMOTE_FILE       ((apx_cmd_type_t) 5u)
+#define APX_CMD_CLOSE_REMOTE_FILE      ((apx_cmd_type_t) 6u)
+#define APX_CMD_SEND_LOCAL_CONST_DATA  ((apx_cmd_type_t) 7u)
+#define APX_CMD_SEND_LOCAL_DATA        ((apx_cmd_type_t) 8u)
+#define APX_CMD_SEND_HEADER_ACCEPTED   ((apx_cmd_type_t) 9u)
+#define APX_CMD_CREATE_CONNECTION      ((apx_cmd_type_t) 10u)
 
 
 
 typedef struct apx_command_tag
 {
-   apx_cmdType_t cmd_type;
+   apx_cmd_type_t cmd_type;
    uint32_t data1; //generic uint32 value
    uint32_t data2; //generic uint32 value
    union msgData3_tag{
@@ -55,7 +55,7 @@ typedef struct apx_command_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_build_command_with_ptr(apx_command_t* self, apx_cmdType_t cmd_type, uint32_t d1, uint32_t d2, void* d3, void* d4);
-void apx_build_command_with_data(apx_command_t* self, apx_cmdType_t cmd_type, uint32_t d1, uint32_t d2, uint8_t const* d3, void* d4);
+void apx_build_command_with_ptr(apx_command_t* self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, void* d3, void* d4);
+void apx_build_command_with_data(apx_command_t* self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, uint8_t const* d3, void* d4);
 
 #endif //APX_COMMAND_H

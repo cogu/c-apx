@@ -29,29 +29,29 @@
  * When count is negative it means one or more ports connectors was removed
  * When count is positive it means one or more port connectors has been added
  */
-typedef struct apx_portConnectorChangeEntry_tag
+typedef struct apx_port_connector_change_entry_tag
 {
    int32_t count; //initial value is 0. When in negative range it holds port disconnect info. When in positive range it holds port connect info.
    union portref_union_tag
    {
-      apx_portInstance_t* port_instance; //Applies when -1 <= count <= 1
+      apx_port_instance_t* port_instance; //Applies when -1 <= count <= 1
       adt_ary_t *array; //Applies when count<-1 or when count > 1
    } data;
-   //All references to apx_portRef_t are weak references
-} apx_portConnectorChangeEntry_t;
+   //All references to apx_port_ref_t are weak references
+} apx_port_connector_change_entry_t;
 
-typedef apx_error_t (apx_portConnectorChangeEntry_actionFunc)(apx_portConnectorChangeEntry_t *self, apx_portInstance_t* port_instance);
+typedef apx_error_t (apx_portConnectorChangeEntry_actionFunc)(apx_port_connector_change_entry_t *self, apx_port_instance_t* port_instance);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portConnectorChangeEntry_create(apx_portConnectorChangeEntry_t *self);
-void apx_portConnectorChangeEntry_destroy(apx_portConnectorChangeEntry_t *self);
-apx_portConnectorChangeEntry_t *apx_portConnectorChangeEntry_new(void);
-void apx_portConnectorChangeEntry_delete(apx_portConnectorChangeEntry_t *self);
-apx_error_t apx_portConnectorChangeEntry_add_connection(apx_portConnectorChangeEntry_t *self, apx_portInstance_t* port_instance);
-apx_error_t apx_portConnectorChangeEntry_remove_connection(apx_portConnectorChangeEntry_t *self, apx_portInstance_t* port_instance);
-apx_portInstance_t* apx_portConnectorChangeEntry_get(apx_portConnectorChangeEntry_t *self, int32_t index);
-int32_t apx_portConnectorChangeEntry_count(apx_portConnectorChangeEntry_t *self);
+void apx_portConnectorChangeEntry_create(apx_port_connector_change_entry_t *self);
+void apx_portConnectorChangeEntry_destroy(apx_port_connector_change_entry_t *self);
+apx_port_connector_change_entry_t *apx_portConnectorChangeEntry_new(void);
+void apx_portConnectorChangeEntry_delete(apx_port_connector_change_entry_t *self);
+apx_error_t apx_portConnectorChangeEntry_add_connection(apx_port_connector_change_entry_t *self, apx_port_instance_t* port_instance);
+apx_error_t apx_portConnectorChangeEntry_remove_connection(apx_port_connector_change_entry_t *self, apx_port_instance_t* port_instance);
+apx_port_instance_t* apx_portConnectorChangeEntry_get(apx_port_connector_change_entry_t *self, int32_t index);
+int32_t apx_portConnectorChangeEntry_count(apx_port_connector_change_entry_t *self);
 
 #endif //APX_PORT_CONNECTION_ENTRY_H

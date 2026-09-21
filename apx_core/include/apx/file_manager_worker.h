@@ -34,9 +34,9 @@
 //////////////////////////////////////////////////////////////////////////////
 //forward declaration
 
-typedef struct apx_fileManagerWorker_tag
+typedef struct apx_file_manager_worker_tag
 {
-   apx_fileManagerShared_t *shared; //weak reference
+   apx_file_manager_shared_t *shared; //weak reference
    MUTEX_T mutex; //for locking variables in this object
    SPINLOCK_T queue_lock; //used exclusively by workerThread command queue
    THREAD_T worker_thread; //local transmit thread
@@ -47,7 +47,7 @@ typedef struct apx_fileManagerWorker_tag
 #ifdef _WIN32
    unsigned int worker_thread_id;
 #endif
-} apx_fileManagerWorker_t;
+} apx_file_manager_worker_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -56,23 +56,23 @@ typedef struct apx_fileManagerWorker_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileManagerWorker_create(apx_fileManagerWorker_t *self, apx_fileManagerShared_t *shared, apx_mode_t mode);
-void apx_fileManagerWorker_destroy(apx_fileManagerWorker_t *self);
-uint16_t apx_fileManagerWorker_num_pending_commands(apx_fileManagerWorker_t* self);
+apx_error_t apx_fileManagerWorker_create(apx_file_manager_worker_t *self, apx_file_manager_shared_t *shared, apx_mode_t mode);
+void apx_fileManagerWorker_destroy(apx_file_manager_worker_t *self);
+uint16_t apx_fileManagerWorker_num_pending_commands(apx_file_manager_worker_t* self);
 #ifdef UNIT_TEST
-bool apx_fileManagerWorker_run(apx_fileManagerWorker_t* self);
+bool apx_fileManagerWorker_run(apx_file_manager_worker_t* self);
 #else
-apx_error_t apx_fileManagerWorker_start(apx_fileManagerWorker_t* self);
-void apx_fileManagerWorker_stop(apx_fileManagerWorker_t* self);
+apx_error_t apx_fileManagerWorker_start(apx_file_manager_worker_t* self);
+void apx_fileManagerWorker_stop(apx_file_manager_worker_t* self);
 #endif
 
 //Command API
-apx_error_t apx_fileManagerWorker_prepare_acknowledge(apx_fileManagerWorker_t* self);
-apx_error_t apx_fileManagerWorker_prepare_header_accepted(apx_fileManagerWorker_t* self, uint32_t connection_id);
-apx_error_t apx_fileManagerWorker_prepare_publish_local_file(apx_fileManagerWorker_t* self, rmf_fileInfo_t* file_info); //ownership is taken of the file_info object
-apx_error_t apx_fileManagerWorker_prepare_send_local_const_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
-apx_error_t apx_fileManagerWorker_prepare_send_local_data(apx_fileManagerWorker_t* self, uint32_t address, uint8_t* data, uint32_t size);
-apx_error_t apx_fileManagerWorker_prepare_send_open_file_request(apx_fileManagerWorker_t* self, uint32_t address);
-apx_error_t apx_fileManagerWorker_prepare_send_connection_create(apx_fileManagerWorker_t* self, apx_connectionId_t connection_id, apx_connectionState_t connection_state, char const* tag);
+apx_error_t apx_fileManagerWorker_prepare_acknowledge(apx_file_manager_worker_t* self);
+apx_error_t apx_fileManagerWorker_prepare_header_accepted(apx_file_manager_worker_t* self, uint32_t connection_id);
+apx_error_t apx_fileManagerWorker_prepare_publish_local_file(apx_file_manager_worker_t* self, rmf_file_info_t* file_info); //ownership is taken of the file_info object
+apx_error_t apx_fileManagerWorker_prepare_send_local_const_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
+apx_error_t apx_fileManagerWorker_prepare_send_local_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t* data, uint32_t size);
+apx_error_t apx_fileManagerWorker_prepare_send_open_file_request(apx_file_manager_worker_t* self, uint32_t address);
+apx_error_t apx_fileManagerWorker_prepare_send_connection_create(apx_file_manager_worker_t* self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const* tag);
 
 #endif //APX_FILE_MANAGER_WORKER_H

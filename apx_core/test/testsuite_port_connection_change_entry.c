@@ -71,7 +71,7 @@ CuSuite* testSuite_apx_portConnectorChangeEntry(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_portConnectorChangeEntry_create(CuTest *tc)
 {
-   apx_portConnectorChangeEntry_t entry;
+   apx_port_connector_change_entry_t entry;
    apx_portConnectorChangeEntry_create(&entry);
    CuAssertIntEquals(tc, 0, entry.count);
    CuAssertPtrEquals(tc, NULL, entry.data.port_instance);
@@ -80,10 +80,10 @@ static void test_apx_portConnectorChangeEntry_create(CuTest *tc)
 
 static void test_connect_one(CuTest *tc)
 {
-   apx_portConnectorChangeEntry_t entry;
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_portInstance_t *port_instance1;
+   apx_port_connector_change_entry_t entry;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_port_instance_t *port_instance1;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, node_manager);
@@ -104,14 +104,14 @@ static void test_connect_one(CuTest *tc)
 
 static void test_connect_three(CuTest *tc)
 {
-   apx_portConnectorChangeEntry_t entry;
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_nodeInstance_t *node_instance3;
-   apx_portInstance_t *port_instance1;
-   apx_portInstance_t *port_instance2;
-   apx_portInstance_t *port_instance3;
+   apx_port_connector_change_entry_t entry;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_node_instance_t *node_instance3;
+   apx_port_instance_t *port_instance1;
+   apx_port_instance_t *port_instance2;
+   apx_port_instance_t *port_instance3;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    apx_portConnectorChangeEntry_create(&entry);
@@ -144,10 +144,10 @@ static void test_connect_three(CuTest *tc)
 
 static void test_apx_disconnect_one(CuTest *tc)
 {
-   apx_portConnectorChangeEntry_t entry;
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_portInstance_t *port_instance1;
+   apx_port_connector_change_entry_t entry;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_port_instance_t *port_instance1;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, node_manager);
@@ -167,14 +167,14 @@ static void test_apx_disconnect_one(CuTest *tc)
 
 static void test_apx_disconnect_three(CuTest *tc)
 {
-   apx_portConnectorChangeEntry_t entry;
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_nodeInstance_t *node_instance3;
-   apx_portInstance_t *port_instance1;
-   apx_portInstance_t *port_instance2;
-   apx_portInstance_t *port_instance3;
+   apx_port_connector_change_entry_t entry;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_node_instance_t *node_instance3;
+   apx_port_instance_t *port_instance1;
+   apx_port_instance_t *port_instance2;
+   apx_port_instance_t *port_instance3;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    apx_portConnectorChangeEntry_create(&entry);

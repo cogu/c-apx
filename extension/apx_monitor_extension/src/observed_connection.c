@@ -28,7 +28,7 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_observedConnection_create(apx_observedConnection_t* self, apx_serverConnection_t* server_connection)
+void apx_observedConnection_create(apx_observed_connection_t* self, apx_server_connection_t* server_connection)
 {
    if ( (self != NULL) && (server_connection != NULL) )
    {
@@ -41,7 +41,7 @@ void apx_observedConnection_create(apx_observedConnection_t* self, apx_serverCon
    }
 }
 
-void apx_observedConnection_destroy(apx_observedConnection_t* self)
+void apx_observedConnection_destroy(apx_observed_connection_t* self)
 {
    if (self != NULL)
    {
@@ -50,9 +50,9 @@ void apx_observedConnection_destroy(apx_observedConnection_t* self)
    }
 }
 
-apx_observedConnection_t* apx_observedConnection_new(apx_serverConnection_t* server_connection)
+apx_observed_connection_t* apx_observedConnection_new(apx_server_connection_t* server_connection)
 {
-   apx_observedConnection_t* self = (apx_observedConnection_t*)malloc(sizeof(apx_observedConnection_t));
+   apx_observed_connection_t* self = (apx_observed_connection_t*)malloc(sizeof(apx_observed_connection_t));
    if (self != NULL)
    {
       apx_observedConnection_create(self, server_connection);
@@ -60,7 +60,7 @@ apx_observedConnection_t* apx_observedConnection_new(apx_serverConnection_t* ser
    return self;
 }
 
-void apx_observedConnection_delete(apx_observedConnection_t* self)
+void apx_observedConnection_delete(apx_observed_connection_t* self)
 {
    if (self != NULL)
    {
@@ -71,10 +71,10 @@ void apx_observedConnection_delete(apx_observedConnection_t* self)
 
 void apx_observedConnection_vdelete(void* arg)
 {
-   apx_observedConnection_delete((apx_observedConnection_t*)arg);
+   apx_observedConnection_delete((apx_observed_connection_t*)arg);
 }
 
-char const* apx_observedConnection_tag(apx_observedConnection_t* const self)
+char const* apx_observed_connection_tag(apx_observed_connection_t* const self)
 {
    if ( (self != NULL) && (self->tag != NULL) )
    {
@@ -83,7 +83,7 @@ char const* apx_observedConnection_tag(apx_observedConnection_t* const self)
    return NULL;
 }
 
-apx_connectionId_t apx_observedConnection_connection_id(apx_observedConnection_t* const self)
+apx_connection_id_t apx_observedConnection_connection_id(apx_observed_connection_t* const self)
 {
    if (self != NULL)
    {
@@ -92,7 +92,7 @@ apx_connectionId_t apx_observedConnection_connection_id(apx_observedConnection_t
    return APX_INVALID_CONNECTION_ID;
 }
 
-apx_connectionType_t apx_observedConnection_get_connection_type(apx_observedConnection_t* const self)
+apx_connection_type_t apx_observedConnection_get_connection_type(apx_observed_connection_t* const self)
 {
    if (self != NULL)
    {
@@ -101,7 +101,7 @@ apx_connectionType_t apx_observedConnection_get_connection_type(apx_observedConn
    return APX_CONNECTION_TYPE_DEFAULT;
 }
 
-void apx_observedConnection_set_connection_type(apx_observedConnection_t* self, apx_connectionType_t connection_type)
+void apx_observedConnection_set_connection_type(apx_observed_connection_t* self, apx_connection_type_t connection_type)
 {
    if (self != NULL)
    {
@@ -109,7 +109,7 @@ void apx_observedConnection_set_connection_type(apx_observedConnection_t* self, 
    }
 }
 
-apx_connectionState_t apx_observedConnection_get_connection_state(apx_observedConnection_t* const self)
+apx_connection_state_t apx_observedConnection_get_connection_state(apx_observed_connection_t* const self)
 {
    if (self != NULL)
    {
@@ -118,7 +118,7 @@ apx_connectionState_t apx_observedConnection_get_connection_state(apx_observedCo
    return APX_CONNECTION_STATE_CREATED;
 }
 
-void apx_observedConnection_set_connection_state(apx_observedConnection_t* self, apx_connectionState_t connection_state)
+void apx_observedConnection_set_connection_state(apx_observed_connection_t* self, apx_connection_state_t connection_state)
 {
    if (self != NULL)
    {

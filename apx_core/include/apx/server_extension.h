@@ -24,27 +24,27 @@
 //forward declarations
 struct apx_server_tag;
 
-typedef struct apx_serverExtensionHandler_tag
+typedef struct apx_server_extension_handler_tag
 {
    apx_error_t (*init)(struct apx_server_tag *apx_server, dtl_dv_t *config);
    void (*shutdown)(void);
-} apx_serverExtensionHandler_t;
+} apx_server_extension_handler_t;
 
-typedef struct apx_serverExtension_tag
+typedef struct apx_server_extension_tag
 {
-   apx_serverExtensionHandler_t handler;
+   apx_server_extension_handler_t handler;
    dtl_dv_t *config;
    char *name;
-} apx_serverExtension_t;
+} apx_server_extension_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverExtension_create(apx_serverExtension_t *self, const char *name, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
-void apx_serverExtension_destroy(apx_serverExtension_t *self);
-apx_serverExtension_t* apx_serverExtension_new(const char *name, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config);
-void apx_serverExtension_delete(apx_serverExtension_t *self);
+void apx_serverExtension_create(apx_server_extension_t *self, const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config);
+void apx_serverExtension_destroy(apx_server_extension_t *self);
+apx_server_extension_t* apx_serverExtension_new(const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config);
+void apx_serverExtension_delete(apx_server_extension_t *self);
 void apx_serverExtension_vdelete(void *arg);
 
 #endif //APX_SERVER_EXTENTION_H

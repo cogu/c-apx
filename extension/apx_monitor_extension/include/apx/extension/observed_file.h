@@ -22,19 +22,19 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_observedFile_tag
+typedef struct apx_observed_file_tag
 {
-   rmf_extendedFileInfo_t file_info;
-} apx_observedFile_t;
+   rmf_extended_file_info_t file_info;
+} apx_observed_file_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_observedFile_create(apx_observedFile_t* self, rmf_extendedFileInfo_t* const file_info);
-void apx_observedFile_destroy(apx_observedFile_t* self);
-apx_observedFile_t* apx_observedFile_new(rmf_extendedFileInfo_t* const file_info);
-void apx_observedFile_delete(apx_observedFile_t* self);
+void apx_observedFile_create(apx_observed_file_t* self, rmf_extended_file_info_t* const file_info);
+void apx_observedFile_destroy(apx_observed_file_t* self);
+apx_observed_file_t* apx_observedFile_new(rmf_extended_file_info_t* const file_info);
+void apx_observedFile_delete(apx_observed_file_t* self);
 void apx_observedFile_vdelete(void* arg);
 
 #endif //APX_OBSERVED_FILE_H

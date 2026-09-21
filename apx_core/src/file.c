@@ -46,16 +46,16 @@ static void apx_file_unlock(apx_file_t *self);
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_file_create(apx_file_t* self, const rmf_fileInfo_t* file_info)
+apx_error_t apx_file_create(apx_file_t* self, const rmf_file_info_t* file_info)
 {
    if ( (self != NULL) && (file_info != NULL))
    {
       apx_error_t retval = APX_NO_ERROR;
       self->is_file_open = false;
       self->has_first_write = false;
-      self->file_manager = (apx_fileManager_t*) NULL;
+      self->file_manager = (apx_file_manager_t*) NULL;
       self->apx_file_type = APX_UNKNOWN_FILE_TYPE;
-      memset(&self->notification_handler, 0, sizeof(apx_fileNotificationHandler_t));      
+      memset(&self->notification_handler, 0, sizeof(apx_file_notification_handler_t));
       retval = rmf_fileInfo_create_copy(&self->file_info, file_info);
       if (retval == APX_NO_ERROR)
       {
@@ -71,12 +71,12 @@ void apx_file_destroy(apx_file_t *self)
 {
    if (self != NULL)
    {
-      rmf_fileInfo_destroy(&self->file_info);      
+      rmf_fileInfo_destroy(&self->file_info);
       MUTEX_DESTROY(self->lock);
    }
 }
 
-apx_file_t* apx_file_new(const rmf_fileInfo_t* file_info)
+apx_file_t* apx_file_new(const rmf_file_info_t* file_info)
 {
    apx_file_t *self = (apx_file_t*) malloc(sizeof(apx_file_t));
    if (self != NULL)
@@ -125,18 +125,18 @@ void apx_file_close(apx_file_t *self)
    }
 }
 
-void apx_file_set_notification_handler(apx_file_t* self, const apx_fileNotificationHandler_t* handler)
+void apx_file_set_notification_handler(apx_file_t* self, const apx_file_notification_handler_t* handler)
 {
    if (self != NULL)
    {
       apx_file_lock(self);
       if (handler == NULL)
       {
-         memset(&self->notification_handler, 0, sizeof(apx_fileNotificationHandler_t));
+         memset(&self->notification_handler, 0, sizeof(apx_file_notification_handler_t));
       }
       else
       {
-         memcpy(&self->notification_handler, handler, sizeof(apx_fileNotificationHandler_t));
+         memcpy(&self->notification_handler, handler, sizeof(apx_file_notification_handler_t));
       }
       apx_file_unlock(self);
    }
@@ -205,7 +205,7 @@ bool apx_file_has_valid_address(apx_file_t* self)
    return false;
 }
 
-struct apx_fileManager_tag* apx_file_get_file_manager(apx_file_t* self)
+struct apx_file_manager_tag* apx_file_get_file_manager(apx_file_t* self)
 {
    if (self != NULL)
    {
@@ -214,7 +214,7 @@ struct apx_fileManager_tag* apx_file_get_file_manager(apx_file_t* self)
    return NULL;
 }
 
-void apx_file_set_file_manager(apx_file_t* self, struct apx_fileManager_tag* file_manager)
+void apx_file_set_file_manager(apx_file_t* self, struct apx_file_manager_tag* file_manager)
 {
    if (self != NULL)
    {
@@ -222,7 +222,7 @@ void apx_file_set_file_manager(apx_file_t* self, struct apx_fileManager_tag* fil
    }
 }
 
-apx_fileType_t apx_file_get_apx_file_type(const apx_file_t* self)
+apx_file_type_t apx_file_get_apx_file_type(const apx_file_t* self)
 {
    if (self != NULL)
    {
@@ -302,7 +302,7 @@ bool apx_file_address_in_range(const apx_file_t* self, uint32_t address)
    return false;
 }
 
-rmf_fileInfo_t const* apx_file_get_file_info(const apx_file_t* self)
+rmf_file_info_t const* apx_file_get_file_info(const apx_file_t* self)
 {
    if (self != NULL)
    {
@@ -311,7 +311,7 @@ rmf_fileInfo_t const* apx_file_get_file_info(const apx_file_t* self)
    return NULL;
 }
 
-rmf_digestType_t apx_file_get_digest_type(apx_file_t const* self)
+rmf_digest_type_t apx_file_get_digest_type(apx_file_t const* self)
 {
    if (self != NULL)
    {
@@ -329,7 +329,7 @@ uint8_t const* apx_file_get_digest_data(const apx_file_t* self)
    return NULL;
 }
 
-rmf_fileInfo_t* apx_file_clone_file_info(const apx_file_t* self)
+rmf_file_info_t* apx_file_clone_file_info(const apx_file_t* self)
 {
    if (self != NULL)
    {
@@ -371,7 +371,7 @@ apx_error_t apx_file_write_notify(apx_file_t* self, uint32_t offset, const uint8
 }
 
 //global functions
-char const* apx_file_type_to_extension(apx_fileType_t file_type)
+char const* apx_file_type_to_extension(apx_file_type_t file_type)
 {
    switch (file_type)
    {

@@ -27,10 +27,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_serverInfo_tag
+typedef struct apx_server_info_tag
 {
    uint8_t addressFamily;
-}apx_serverInfo_t;
+}apx_server_info_t;
 
 struct msocket_server_tag;
 
@@ -61,7 +61,7 @@ static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *s
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_socketServer_create(apx_socketServer_t *self, struct apx_server_tag *apx_server)
+void apx_socketServer_create(apx_socket_server_t *self, struct apx_server_tag *apx_server)
 {
    if (self != NULL)
    {
@@ -75,7 +75,7 @@ void apx_socketServer_create(apx_socketServer_t *self, struct apx_server_tag *ap
    }
 }
 
-void apx_socketServer_destroy(apx_socketServer_t *self)
+void apx_socketServer_destroy(apx_socket_server_t *self)
 {
    if (self != NULL)
    {
@@ -94,9 +94,9 @@ void apx_socketServer_destroy(apx_socketServer_t *self)
    }
 }
 
-apx_socketServer_t* apx_socketServer_new(struct apx_server_tag *apx_server)
+apx_socket_server_t* apx_socketServer_new(struct apx_server_tag *apx_server)
 {
-   apx_socketServer_t *self = (apx_socketServer_t*) malloc(sizeof(apx_socketServer_t));
+   apx_socket_server_t *self = (apx_socket_server_t*) malloc(sizeof(apx_socket_server_t));
    if (self != NULL)
    {
       apx_socketServer_create(self, apx_server);
@@ -104,7 +104,7 @@ apx_socketServer_t* apx_socketServer_new(struct apx_server_tag *apx_server)
    return self;
 }
 
-void apx_socketServer_delete(apx_socketServer_t *self)
+void apx_socketServer_delete(apx_socket_server_t *self)
 {
    if (self != NULL)
    {
@@ -113,7 +113,7 @@ void apx_socketServer_delete(apx_socketServer_t *self)
    }
 }
 
-void apx_socketServer_start_tcp_server(apx_socketServer_t *self, uint16_t tcp_port, const char *tag)
+void apx_socketServer_start_tcp_server(apx_socket_server_t *self, uint16_t tcp_port, const char *tag)
 {
    if (self != NULL)
    {
@@ -145,7 +145,7 @@ void apx_socketServer_start_tcp_server(apx_socketServer_t *self, uint16_t tcp_po
 }
 
 #if !defined(UNIT_TEST) && !defined(_WIN32)
-void apx_socketServer_start_unix_server(apx_socketServer_t *self, const char *file_path, const char *tag)
+void apx_socketServer_start_unix_server(apx_socket_server_t *self, const char *file_path, const char *tag)
 {
    if ( (self != NULL) && (file_path != NULL))
    {
@@ -176,7 +176,7 @@ void apx_socketServer_start_unix_server(apx_socketServer_t *self, const char *fi
 }
 #endif
 
-void apx_socketServer_stop_all(apx_socketServer_t *self)
+void apx_socketServer_stop_all(apx_socket_server_t *self)
 {
    if (self != NULL)
    {
@@ -187,7 +187,7 @@ void apx_socketServer_stop_all(apx_socketServer_t *self)
    }
 }
 
-void apx_socketServer_stop_tcp_server(apx_socketServer_t *self)
+void apx_socketServer_stop_tcp_server(apx_socket_server_t *self)
 {
    if ( (self != NULL) && (self->is_tcp_server_started) )
    {
@@ -197,7 +197,7 @@ void apx_socketServer_stop_tcp_server(apx_socketServer_t *self)
 }
 
 #if !defined(UNIT_TEST) && !defined(_WIN32)
-void apx_socketServer_stop_unix_server(apx_socketServer_t *self)
+void apx_socketServer_stop_unix_server(apx_socket_server_t *self)
 {
    if ( (self != NULL) && (self->is_unix_server_started) )
    {
@@ -210,7 +210,7 @@ void apx_socketServer_stop_unix_server(apx_socketServer_t *self)
 #endif
 
 #ifdef UNIT_TEST
-void apx_socketServer_accept_testsocket(apx_socketServer_t *self, testsocket_t *sock)
+void apx_socketServer_accept_testsocket(apx_socket_server_t *self, testsocket_t *sock)
 {
    apx_socketServer_tcp_accept((void*) self, (struct msocket_server_tag*) 0, sock);
 }
@@ -222,21 +222,21 @@ void apx_socketServer_accept_testsocket(apx_socketServer_t *self, testsocket_t *
 
 static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *srv, void *sock)
 {
-   apx_socketServer_t *self = (apx_socketServer_t*) arg;
+   apx_socket_server_t *self = (apx_socket_server_t*) arg;
    (void)srv;
 #if APX_DEBUG_ENABLE
    printf("[SOCKET-SERVER] New TCP connection\n");
 #endif
    if (self != NULL)
    {
-      apx_socketServerConnection_t *new_connection = apx_socketServerConnection_new(sock);      
+      apx_socket_server_connection_t *new_connection = apx_socketServerConnection_new(sock);
       if (new_connection != NULL)
       {
          if (self->tcp_connection_tag != NULL)
          {
             apx_socketServerConnection_set_tag(new_connection, self->tcp_connection_tag);
          }
-         apx_server_accept_connection(self->parent, (apx_serverConnection_t*)new_connection);
+         apx_server_accept_connection(self->parent, (apx_server_connection_t*)new_connection);
       }
       else
       {
@@ -249,20 +249,20 @@ static void apx_socketServer_tcp_accept(void *arg, struct msocket_server_tag *sr
 #if !defined(UNIT_TEST) && !defined(_WIN32)
 static void apx_socketServer_unix_accept(void *arg, struct msocket_server_tag *srv, void *sock)
 {
-   apx_socketServer_t *self = (apx_socketServer_t*) arg;
+   apx_socket_server_t *self = (apx_socket_server_t*) arg;
 #if APX_DEBUG_ENABLE
    printf("[SOCKET-SERVER] New UNIX connection\n");
 #endif
    if (self != NULL)
    {
-      apx_socketServerConnection_t * new_connection = apx_socketServerConnection_new(sock);      
+      apx_socket_server_connection_t * new_connection = apx_socketServerConnection_new(sock);
       if (new_connection != NULL)
       {
          if (self->unix_connection_tag != NULL)
          {
             apx_socketServerConnection_set_tag(new_connection, self->unix_connection_tag);
          }
-         apx_server_accept_connection(self->parent, (apx_serverConnection_t*)new_connection);
+         apx_server_accept_connection(self->parent, (apx_server_connection_t*)new_connection);
       }
       else
       {

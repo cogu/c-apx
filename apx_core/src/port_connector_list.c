@@ -33,7 +33,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portConnectorList_create(apx_portConnectorList_t *self)
+void apx_portConnectorList_create(apx_port_connector_list_t *self)
 {
    if (self != NULL)
    {
@@ -41,7 +41,7 @@ void apx_portConnectorList_create(apx_portConnectorList_t *self)
    }
 }
 
-void apx_portConnectorList_destroy(apx_portConnectorList_t *self)
+void apx_portConnectorList_destroy(apx_port_connector_list_t *self)
 {
    if (self != NULL)
    {
@@ -49,9 +49,9 @@ void apx_portConnectorList_destroy(apx_portConnectorList_t *self)
    }
 }
 
-apx_portConnectorList_t* apx_portConnectorList_new(void)
+apx_port_connector_list_t* apx_portConnectorList_new(void)
 {
-   apx_portConnectorList_t *self = (apx_portConnectorList_t*) malloc(sizeof(apx_portConnectorList_t));
+   apx_port_connector_list_t *self = (apx_port_connector_list_t*) malloc(sizeof(apx_port_connector_list_t));
    if (self != NULL)
    {
       apx_portConnectorList_create(self);
@@ -59,7 +59,7 @@ apx_portConnectorList_t* apx_portConnectorList_new(void)
    return self;
 }
 
-void apx_portConnectorList_delete(apx_portConnectorList_t *self)
+void apx_portConnectorList_delete(apx_port_connector_list_t *self)
 {
    if (self != NULL)
    {
@@ -68,7 +68,7 @@ void apx_portConnectorList_delete(apx_portConnectorList_t *self)
    }
 }
 
-apx_error_t apx_portConnectorList_insert(apx_portConnectorList_t* self, apx_portInstance_t* port_instance)
+apx_error_t apx_portConnectorList_insert(apx_port_connector_list_t* self, apx_port_instance_t* port_instance)
 {
    if ( (self != NULL) && (port_instance != NULL) )
    {
@@ -90,7 +90,7 @@ apx_error_t apx_portConnectorList_insert(apx_portConnectorList_t* self, apx_port
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_portConnectorList_remove(apx_portConnectorList_t* self, apx_portInstance_t* port_instance)
+void apx_portConnectorList_remove(apx_port_connector_list_t* self, apx_port_instance_t* port_instance)
 {
    if ((self != NULL) && (port_instance != NULL))
    {
@@ -98,7 +98,7 @@ void apx_portConnectorList_remove(apx_portConnectorList_t* self, apx_portInstanc
    }
 }
 
-void apx_portConnectorList_clear(apx_portConnectorList_t *self)
+void apx_portConnectorList_clear(apx_port_connector_list_t *self)
 {
    if (self != NULL)
    {
@@ -106,7 +106,7 @@ void apx_portConnectorList_clear(apx_portConnectorList_t *self)
    }
 }
 
-int32_t apx_portConnectorList_length(apx_portConnectorList_t *self)
+int32_t apx_portConnectorList_length(apx_port_connector_list_t *self)
 {
    if (self != NULL)
    {
@@ -115,13 +115,13 @@ int32_t apx_portConnectorList_length(apx_portConnectorList_t *self)
    return -1;
 }
 
-apx_portInstance_t* apx_portConnectorList_get(apx_portConnectorList_t* self, int32_t index)
+apx_port_instance_t* apx_portConnectorList_get(apx_port_connector_list_t* self, int32_t index)
 {
    if (self != NULL)
    {
-      return (apx_portInstance_t*) adt_ary_value(&self->require_ports, index);
+      return (apx_port_instance_t*) adt_ary_value(&self->require_ports, index);
    }
-   return (apx_portInstance_t*) NULL;
+   return (apx_port_instance_t*) NULL;
 }
 
 

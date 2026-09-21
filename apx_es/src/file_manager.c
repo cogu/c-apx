@@ -42,30 +42,30 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_es_resetConnectionState(apx_es_fileManager_t *self);
-static void apx_es_initTransmitBuf(apx_es_fileManager_t *self);
-static apx_error_t apx_es_transmitMsg(apx_es_fileManager_t *self, uint32_t msgSize);
-static int32_t apx_es_processPendingWrite(apx_es_fileManager_t *self);
-static int32_t apx_es_fileManager_runEventLoop(apx_es_fileManager_t *self);
-static void apx_es_initFragmentedFileWrite(apx_es_fileManager_t *self,
+static void apx_es_resetConnectionState(apx_es_file_manager_t *self);
+static void apx_es_initTransmitBuf(apx_es_file_manager_t *self);
+static apx_error_t apx_es_transmitMsg(apx_es_file_manager_t *self, uint32_t msgSize);
+static int32_t apx_es_processPendingWrite(apx_es_file_manager_t *self);
+static int32_t apx_es_fileManager_runEventLoop(apx_es_file_manager_t *self);
+static void apx_es_initFragmentedFileWrite(apx_es_file_manager_t *self,
                                            apx_file_t *file,
                                            uint32_t readOffset,
                                            uint32_t writeAddress,
                                            int32_t dataLen);
-static int32_t apx_es_createFileWriteMsg(apx_es_fileManager_t* self, int32_t sendAvail);
-static void apx_es_transmitSuccess(apx_es_fileManager_t* self);
-static void apx_es_processQueuedWriteNotify(apx_es_fileManager_t *self);
-static int32_t apx_es_fileManager_calcSendAvail(apx_es_fileManager_t *self);
-static int32_t apx_es_fileManager_processPendingMessage(apx_es_fileManager_t *self);
-static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *self);
-static int32_t apx_es_fileManager_transmitPendingMessage(apx_es_fileManager_t *self, int32_t msgLen);
-static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen);
-static void apx_es_fileManager_parseDataMsg(apx_es_fileManager_t *self, uint32_t address, const uint8_t *dataBuf, int32_t dataLen, bool more_bit);
-static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const rmf_cmdOpenFile_t *cmdOpenFile);
-static void apx_es_fileManager_setError(apx_es_fileManager_t *self, apx_error_t errorCode);
+static int32_t apx_es_createFileWriteMsg(apx_es_file_manager_t* self, int32_t sendAvail);
+static void apx_es_transmitSuccess(apx_es_file_manager_t* self);
+static void apx_es_processQueuedWriteNotify(apx_es_file_manager_t *self);
+static int32_t apx_es_fileManager_calcSendAvail(apx_es_file_manager_t *self);
+static int32_t apx_es_fileManager_processPendingMessage(apx_es_file_manager_t *self);
+static int32_t apx_es_fileManager_preparePendingMessage(apx_es_file_manager_t *self);
+static int32_t apx_es_fileManager_transmitPendingMessage(apx_es_file_manager_t *self, int32_t msgLen);
+static void apx_es_fileManager_parseCmdMsg(apx_es_file_manager_t *self, const uint8_t *msgBuf, int32_t msgLen);
+static void apx_es_fileManager_parseDataMsg(apx_es_file_manager_t *self, uint32_t address, const uint8_t *dataBuf, int32_t dataLen, bool more_bit);
+static void apx_es_fileManager_processOpenFile(apx_es_file_manager_t *self, const rmf_cmd_open_file_t *cmdOpenFile);
+static void apx_es_fileManager_setError(apx_es_file_manager_t *self, apx_error_t errorCode);
 #ifndef UNIT_TEST
-DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *self, int32_t removeIndex);
-DYN_STATIC void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *self, const rmf_fileInfo_t *fileInfo);
+DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_file_manager_t *self, int32_t removeIndex);
+DYN_STATIC void apx_es_fileManager_processRemoteFileInfo(apx_es_file_manager_t *self, const rmf_file_info_t *fileInfo);
 #endif
 
 //local inline functions
@@ -81,7 +81,7 @@ static inline bool apx_es_isPendingMessage(const apx_msg_t* msg);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueSize, uint8_t *receiveBuf, uint16_t receiveBufLen)
+apx_error_t apx_es_fileManager_create(apx_es_file_manager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueSize, uint8_t *receiveBuf, uint16_t receiveBufLen)
 {
    int8_t retval = APX_INVALID_ARGUMENT_ERROR;
    if ( (self != NULL) && (messageQueueBuf != 0) && (messageQueueSize != 0))
@@ -100,7 +100,7 @@ apx_error_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messa
    return retval;
 }
 
-void apx_es_fileManager_attachLocalFile(apx_es_fileManager_t *self, apx_file_t *localFile)
+void apx_es_fileManager_attachLocalFile(apx_es_file_manager_t *self, apx_file_t *localFile)
 {
    if ( (self != NULL) && (localFile != NULL) )
    {
@@ -108,7 +108,7 @@ void apx_es_fileManager_attachLocalFile(apx_es_fileManager_t *self, apx_file_t *
    }
 }
 
-void apx_es_fileManager_requestRemoteFile(apx_es_fileManager_t *self, apx_file_t *requestedFile)
+void apx_es_fileManager_requestRemoteFile(apx_es_file_manager_t *self, apx_file_t *requestedFile)
 {
    if ( (self != NULL) && (requestedFile != 0) )
    {
@@ -130,22 +130,22 @@ void apx_es_fileManager_requestRemoteFile(apx_es_fileManager_t *self, apx_file_t
    }
 }
 
-void apx_es_fileManager_setTransmitHandler(apx_es_fileManager_t *self, apx_transmitHandler_t *handler)
+void apx_es_fileManager_setTransmitHandler(apx_es_file_manager_t *self, apx_transmit_handler_t *handler)
 {
    if (self != NULL)
    {
       if (handler == NULL)
       {
-         memset(&self->transmitHandler, 0, sizeof(apx_transmitHandler_t));
+         memset(&self->transmitHandler, 0, sizeof(apx_transmit_handler_t));
       }
       else
       {
-         memcpy(&self->transmitHandler, handler, sizeof(apx_transmitHandler_t));
+         memcpy(&self->transmitHandler, handler, sizeof(apx_transmit_handler_t));
       }
    }
 }
 
-void apx_es_fileManager_onConnected(apx_es_fileManager_t *self)
+void apx_es_fileManager_onConnected(apx_es_file_manager_t *self)
 {
    if (self != NULL)
    {
@@ -176,7 +176,7 @@ void apx_es_fileManager_onConnected(apx_es_fileManager_t *self)
    }
 }
 
-void apx_es_fileManager_onDisconnected(apx_es_fileManager_t *self)
+void apx_es_fileManager_onDisconnected(apx_es_file_manager_t *self)
 {
    if (self != NULL)
    {
@@ -206,7 +206,7 @@ void apx_es_fileManager_onDisconnected(apx_es_fileManager_t *self)
 /**
  * triggered by lower layer when a message has been received
  */
-void apx_es_fileManager_onMsgReceived(apx_es_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen)
+void apx_es_fileManager_onMsgReceived(apx_es_file_manager_t *self, const uint8_t *msgBuf, int32_t msgLen)
 {
    rmf_msg_t msg;
    int32_t result = rmf_unpackMsg(msgBuf, msgLen, &msg);
@@ -249,7 +249,7 @@ void apx_es_fileManager_onMsgReceived(apx_es_fileManager_t *self, const uint8_t 
  * triggered when the local file is written to
  * Returns 0 on success, negative value on error.
  */
-int8_t apx_es_fileManager_triggerFileUpdate(apx_es_fileManager_t *self, apx_file_t *file, uint32_t offset, uint32_t length)
+int8_t apx_es_fileManager_triggerFileUpdate(apx_es_file_manager_t *self, apx_file_t *file, uint32_t offset, uint32_t length)
 {
    int8_t retval = APX_NO_ERROR;
    if ( (self != NULL) && (file != NULL) && (length > 0) )
@@ -305,7 +305,7 @@ int8_t apx_es_fileManager_triggerFileUpdate(apx_es_fileManager_t *self, apx_file
 /**
  * Returns 0 on success, negative value on error.
  */
-int8_t apx_es_fileManager_triggerDirectWrite(apx_es_fileManager_t *self, uint8_t *data, uint32_t address, uint32_t length)
+int8_t apx_es_fileManager_triggerDirectWrite(apx_es_file_manager_t *self, uint8_t *data, uint32_t address, uint32_t length)
 {
    int8_t retval = APX_NO_ERROR;
    if ( (self != NULL) && (data != 0) && (length > 0) )
@@ -332,7 +332,7 @@ int8_t apx_es_fileManager_triggerDirectWrite(apx_es_fileManager_t *self, uint8_t
 /**
  * runs the message handler until either the sendbuffer is full or the are no more messages to process
  */
-void apx_es_fileManager_run(apx_es_fileManager_t *self)
+void apx_es_fileManager_run(apx_es_file_manager_t *self)
 {
    int32_t result;
    if ( (self == NULL) || (!self->isConnected) || (self->transmitHandler.getMsgBuffer == 0) || (self->transmitHandler.sendMsg == 0) )
@@ -368,7 +368,7 @@ void apx_es_fileManager_run(apx_es_fileManager_t *self)
    }
 }
 
-bool apx_es_fileManager_hasPendingMsg(apx_es_fileManager_t *self)
+bool apx_es_fileManager_hasPendingMsg(apx_es_file_manager_t *self)
 {
    if (self != NULL)
    {
@@ -377,7 +377,7 @@ bool apx_es_fileManager_hasPendingMsg(apx_es_fileManager_t *self)
    return false;
 }
 
-apx_error_t apx_es_fileManager_getLastError(apx_es_fileManager_t *self)
+apx_error_t apx_es_fileManager_getLastError(apx_es_file_manager_t *self)
 {
    apx_error_t retval;
    if (self != NULL)
@@ -395,7 +395,7 @@ apx_error_t apx_es_fileManager_getLastError(apx_es_fileManager_t *self)
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void apx_es_resetConnectionState(apx_es_fileManager_t *self)
+static void apx_es_resetConnectionState(apx_es_file_manager_t *self)
 {
    rbfs_clear(&self->messageQueue);
    self->receiveBufOffset = 0;
@@ -413,7 +413,7 @@ static void apx_es_resetConnectionState(apx_es_fileManager_t *self)
    memset(&self->fileWriteInfo, 0, sizeof(apx_es_file_write_t));
 }
 
-static void apx_es_initTransmitBuf(apx_es_fileManager_t *self)
+static void apx_es_initTransmitBuf(apx_es_file_manager_t *self)
 {
    if (self != NULL)
    {
@@ -425,7 +425,7 @@ static void apx_es_initTransmitBuf(apx_es_fileManager_t *self)
    }
 }
 
-static apx_error_t apx_es_transmitMsg(apx_es_fileManager_t *self, uint32_t msgSize)
+static apx_error_t apx_es_transmitMsg(apx_es_file_manager_t *self, uint32_t msgSize)
 {
    apx_error_t retval = APX_NO_ERROR;
    if (msgSize > 0)
@@ -466,7 +466,7 @@ static apx_error_t apx_es_transmitMsg(apx_es_fileManager_t *self, uint32_t msgSi
  * Returns 1 on completion.
  * Returns -1 on error. The error code can be read using apx_getLastError.
  */
-static int32_t apx_es_processPendingWrite(apx_es_fileManager_t *self)
+static int32_t apx_es_processPendingWrite(apx_es_file_manager_t *self)
 {
    int32_t retval = 1;
    while( (self->hasPendingWrite) && (retval > 0) )
@@ -495,7 +495,7 @@ static int32_t apx_es_processPendingWrite(apx_es_fileManager_t *self)
  * runs internal event loop
  * returns 0 when no more messages can be processed, -1 on error and 1 on success
  */
-static int32_t apx_es_fileManager_runEventLoop(apx_es_fileManager_t *self)
+static int32_t apx_es_fileManager_runEventLoop(apx_es_file_manager_t *self)
 {
    int32_t retval = 0;
    int8_t rc = rbfs_remove(&self->messageQueue, (uint8_t*) &self->pendingMsg);
@@ -513,7 +513,7 @@ static int32_t apx_es_fileManager_runEventLoop(apx_es_fileManager_t *self)
  * In case of error it returns -1.
  * In case of no available buffer it returns 0.
  */
-static int32_t apx_es_fileManager_processPendingMessage(apx_es_fileManager_t *self)
+static int32_t apx_es_fileManager_processPendingMessage(apx_es_file_manager_t *self)
 {
    int32_t retval = 0;
    int32_t msgLen = apx_es_fileManager_preparePendingMessage(self);
@@ -534,7 +534,7 @@ static int32_t apx_es_fileManager_processPendingMessage(apx_es_fileManager_t *se
  * Returns -1 on error.
  * Returns 0 when no buffer is available
  */
-static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *self)
+static int32_t apx_es_fileManager_preparePendingMessage(apx_es_file_manager_t *self)
 {
    int32_t retval = 0;
    int32_t sendAvail = apx_es_fileManager_calcSendAvail(self);
@@ -576,7 +576,7 @@ static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *se
          break;
       case RMF_MSG_FILE_OPEN: //sends file open command
          {
-            rmf_cmdOpenFile_t cmdOpenFile;
+            rmf_cmd_open_file_t cmdOpenFile;
             headerLen = (int32_t) RMF_HIGH_ADDRESS_SIZE;
             dataLen = (int32_t) RMF_FILE_OPEN_CMD_LEN;
             msgLen = headerLen+dataLen;
@@ -720,7 +720,7 @@ static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *se
 /**
  * Transmits prepared message
  */
-static int32_t apx_es_fileManager_transmitPendingMessage(apx_es_fileManager_t *self, int32_t msgLen)
+static int32_t apx_es_fileManager_transmitPendingMessage(apx_es_file_manager_t *self, int32_t msgLen)
 {
    int32_t retval = msgLen;
    if (msgLen > 0)
@@ -756,7 +756,7 @@ static int32_t apx_es_fileManager_transmitPendingMessage(apx_es_fileManager_t *s
    return retval;
 }
 
-static void apx_es_initFragmentedFileWrite(apx_es_fileManager_t *self,
+static void apx_es_initFragmentedFileWrite(apx_es_file_manager_t *self,
                                            apx_file_t *file,
                                            uint32_t readOffset,
                                            uint32_t writeAddress,
@@ -774,7 +774,7 @@ static void apx_es_initFragmentedFileWrite(apx_es_fileManager_t *self,
  * Serializes a file write message from fileWriteInfo structure into transmit buffer.
  * Returns number of bytes written or -1 on error
  */
-static int32_t apx_es_createFileWriteMsg(apx_es_fileManager_t* self, int32_t sendAvail)
+static int32_t apx_es_createFileWriteMsg(apx_es_file_manager_t* self, int32_t sendAvail)
 {
 
    int32_t retval = 0;
@@ -818,7 +818,7 @@ static int32_t apx_es_createFileWriteMsg(apx_es_fileManager_t* self, int32_t sen
    return retval;
 }
 
-static void apx_es_transmitSuccess(apx_es_fileManager_t* self)
+static void apx_es_transmitSuccess(apx_es_file_manager_t* self)
 {
    if (self->hasPendingWrite)
    {
@@ -839,7 +839,7 @@ static void apx_es_transmitSuccess(apx_es_fileManager_t* self)
    }
 }
 
-static void apx_es_processQueuedWriteNotify(apx_es_fileManager_t *self)
+static void apx_es_processQueuedWriteNotify(apx_es_file_manager_t *self)
 {
    uint8_t result = rbfs_insert(&self->messageQueue, (const uint8_t*) &self->queuedWriteNotify);
    if (result == E_BUF_OK)
@@ -852,7 +852,7 @@ static void apx_es_processQueuedWriteNotify(apx_es_fileManager_t *self)
    }
 }
 
-static int32_t apx_es_fileManager_calcSendAvail(apx_es_fileManager_t *self)
+static int32_t apx_es_fileManager_calcSendAvail(apx_es_file_manager_t *self)
 {
    int32_t retval = self->transmitBuf.avail;
    if (retval > self->transmitBuf.maxMsgLen)
@@ -862,7 +862,7 @@ static int32_t apx_es_fileManager_calcSendAvail(apx_es_fileManager_t *self)
    return retval;
 }
 
-static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uint8_t *msgBuf, int32_t msgLen)
+static void apx_es_fileManager_parseCmdMsg(apx_es_file_manager_t *self, const uint8_t *msgBuf, int32_t msgLen)
 {
    if (msgBuf != 0)
    {
@@ -875,7 +875,7 @@ static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uin
          {
             case RMF_CMD_FILE_INFO:
                {
-                  rmf_fileInfo_t fileInfo;
+                  rmf_file_info_t fileInfo;
                   result = rmf_deserialize_cmdFileInfo(msgBuf, msgLen, &fileInfo);
                   if (result > 0)
                   {
@@ -897,7 +897,7 @@ static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uin
                break;
             case RMF_CMD_FILE_OPEN:
                {
-                  rmf_cmdOpenFile_t cmdOpenFile;
+                  rmf_cmd_open_file_t cmdOpenFile;
                   result = rmf_deserialize_cmdOpenFile(msgBuf, msgLen, &cmdOpenFile);
                   if (result > 0)
                   {
@@ -931,7 +931,7 @@ static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uin
 /**
  * called when a data message has been received.
  */
-static void apx_es_fileManager_parseDataMsg(apx_es_fileManager_t *self, uint32_t address, const uint8_t *dataBuf, int32_t dataLen, bool more_bit)
+static void apx_es_fileManager_parseDataMsg(apx_es_file_manager_t *self, uint32_t address, const uint8_t *dataBuf, int32_t dataLen, bool more_bit)
 {
    if ( (dataBuf != NULL) && (dataLen>=0) )
    {
@@ -1019,9 +1019,9 @@ static void apx_es_fileManager_parseDataMsg(apx_es_fileManager_t *self, uint32_t
 }
 
 /**
- * called when we see a new rmf_cmdFileInfo_t in the input/parse stream
+ * called when we see a new rmf_cmd_file_info_t in the input/parse stream
  */
-DYN_STATIC void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *self, const rmf_fileInfo_t *fileInfo)
+DYN_STATIC void apx_es_fileManager_processRemoteFileInfo(apx_es_file_manager_t *self, const rmf_file_info_t *fileInfo)
 {
    if (fileInfo != NULL)
    {
@@ -1085,7 +1085,7 @@ DYN_STATIC void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *s
    }
 }
 
-static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const rmf_cmdOpenFile_t *cmdOpenFile)
+static void apx_es_fileManager_processOpenFile(apx_es_file_manager_t *self, const rmf_cmd_open_file_t *cmdOpenFile)
 {
    if (cmdOpenFile != 0)
    {
@@ -1115,7 +1115,7 @@ static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const
 /**
  * returns -1 on failure, 0 on success
  */
-DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *self, int32_t removeIndex)
+DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_file_manager_t *self, int32_t removeIndex)
 {
    if ( (self != NULL) && (removeIndex>=0) && (removeIndex < self->numRequestedFiles) )
    {
@@ -1131,13 +1131,13 @@ DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *sel
    return -1;
 }
 
-static void apx_es_fileManager_setError(apx_es_fileManager_t *self, apx_error_t errorCode)
+static void apx_es_fileManager_setError(apx_es_file_manager_t *self, apx_error_t errorCode)
 {
    self->lastErrorCode = errorCode;
 }
 
 #ifdef UNIT_TEST
-int32_t apx_es_fileManager_getNumMessagesInQueue(apx_es_fileManager_t *self)
+int32_t apx_es_fileManager_getNumMessagesInQueue(apx_es_file_manager_t *self)
 {
    return (int32_t) rbfs_size(&self->messageQueue);
 }

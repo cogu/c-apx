@@ -89,7 +89,7 @@ void apx_node_vdelete(void* arg)
    apx_node_delete((apx_node_t*)arg);
 }
 
-apx_error_t apx_node_append_data_type(apx_node_t* self, apx_dataType_t* data_type)
+apx_error_t apx_node_append_data_type(apx_node_t* self, apx_data_type_t* data_type)
 {
    if ((self != NULL) && (data_type != NULL))
    {
@@ -98,14 +98,14 @@ apx_error_t apx_node_append_data_type(apx_node_t* self, apx_dataType_t* data_typ
       {
          return APX_NAME_MISSING_ERROR;
       }
-      apx_dataType_t* found = adt_hash_value(&self->type_map, name);
+      apx_data_type_t* found = adt_hash_value(&self->type_map, name);
       if (found != NULL)
       {
          return APX_TYPE_ALREADY_EXIST_ERROR;
       }
       else
       {
-         apx_dataType_set_id(data_type, (apx_typeId_t)adt_ary_length(&self->data_types));
+         apx_dataType_set_id(data_type, (apx_type_id_t)adt_ary_length(&self->data_types));
          adt_ary_push(&self->data_types, data_type);
          adt_hash_set(&self->type_map, name, data_type);
       }
@@ -123,7 +123,7 @@ apx_error_t apx_node_append_port(apx_node_t* self, apx_port_t* port)
       {
          return APX_NAME_MISSING_ERROR;
       }
-      apx_dataType_t* found = adt_hash_value(&self->port_map, name);
+      apx_data_type_t* found = adt_hash_value(&self->port_map, name);
       if (found != NULL)
       {
          return APX_PORT_ALREADY_EXIST_ERROR;
@@ -132,12 +132,12 @@ apx_error_t apx_node_append_port(apx_node_t* self, apx_port_t* port)
       {
          if (apx_port_get_port_type(port) == APX_PROVIDE_PORT)
          {
-            apx_port_set_id(port, (apx_portId_t)adt_ary_length(&self->provide_ports));
+            apx_port_set_id(port, (apx_port_id_t)adt_ary_length(&self->provide_ports));
             adt_ary_push(&self->provide_ports, port);
          }
          else
          {
-            apx_port_set_id(port, (apx_portId_t)adt_ary_length(&self->require_ports));
+            apx_port_set_id(port, (apx_port_id_t)adt_ary_length(&self->require_ports));
             adt_ary_push(&self->require_ports, port);
          }
          adt_hash_set(&self->port_map, name, port);
@@ -202,7 +202,7 @@ int32_t apx_node_num_provide_ports(const apx_node_t* self)
    return -1;
 }
 
-apx_dataType_t* apx_node_get_data_type(const apx_node_t* self, apx_typeId_t type_id)
+apx_data_type_t* apx_node_get_data_type(const apx_node_t* self, apx_type_id_t type_id)
 {
    if (self != NULL)
    {
@@ -211,7 +211,7 @@ apx_dataType_t* apx_node_get_data_type(const apx_node_t* self, apx_typeId_t type
    return NULL;
 }
 
-apx_port_t* apx_node_get_require_port(const apx_node_t* self, apx_portId_t port_id)
+apx_port_t* apx_node_get_require_port(const apx_node_t* self, apx_port_id_t port_id)
 {
    if (self != NULL)
    {
@@ -220,7 +220,7 @@ apx_port_t* apx_node_get_require_port(const apx_node_t* self, apx_portId_t port_
    return NULL;
 }
 
-apx_port_t* apx_node_get_provide_port(const apx_node_t* self, apx_portId_t port_id)
+apx_port_t* apx_node_get_provide_port(const apx_node_t* self, apx_port_id_t port_id)
 {
    if (self != NULL)
    {
@@ -229,7 +229,7 @@ apx_port_t* apx_node_get_provide_port(const apx_node_t* self, apx_portId_t port_
    return NULL;
 }
 
-apx_dataType_t* apx_node_get_last_data_type(const apx_node_t* self)
+apx_data_type_t* apx_node_get_last_data_type(const apx_node_t* self)
 {
    if ( (self != NULL) && !adt_ary_is_empty(&self->data_types))
    {

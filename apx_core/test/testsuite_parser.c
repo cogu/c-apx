@@ -135,8 +135,8 @@ static void test_parse_uint8_type_declaration(CuTest* tc)
    apx_parser_t parser;
    apx_istream_t stream;
    apx_node_t* node = NULL;
-   apx_dataType_t* data_type = NULL;
-   apx_dataElement_t* data_element = NULL;
+   apx_data_type_t* data_type = NULL;
+   apx_data_element_t* data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
@@ -166,10 +166,10 @@ static void test_parse_uint8_type_declaration_with_attributes(CuTest* tc)
    apx_parser_t parser;
    apx_istream_t stream;
    apx_node_t* node = NULL;
-   apx_dataType_t* data_type = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_typeAttributes_t* attributes = NULL;
-   apx_valueTable_t* value_table = NULL;
+   apx_data_type_t* data_type = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_type_attributes_t* attributes = NULL;
+   apx_value_table_t* value_table = NULL;
    uint32_t lower_limit = 0u;
    uint32_t upper_limit = 0u;
    adt_str_t* str;
@@ -191,7 +191,7 @@ static void test_parse_uint8_type_declaration_with_attributes(CuTest* tc)
    CuAssertUIntEquals(tc, 3u, upper_limit);
    attributes = apx_dataType_get_attributes(data_type);
    CuAssertPtrNotNull(tc, attributes);
-   value_table = (apx_valueTable_t*)apx_typeAttributes_get_computation(attributes, 0);
+   value_table = (apx_value_table_t*)apx_typeAttributes_get_computation(attributes, 0);
    CuAssertPtrNotNull(tc, value_table);
    CuAssertIntEquals(tc, 4, apx_valueTable_length(value_table));
    str = apx_valueTable_get_value(value_table, 0);
@@ -217,9 +217,9 @@ static void test_parse_record_type_declaration(CuTest* tc)
    apx_parser_t parser;
    apx_istream_t stream;
    apx_node_t* node = NULL;
-   apx_dataType_t* data_type = NULL;
-   apx_dataElement_t* record_data_element = NULL;
-   apx_dataElement_t* child_data_element = NULL;
+   apx_data_type_t* data_type = NULL;
+   apx_data_element_t* record_data_element = NULL;
+   apx_data_element_t* child_data_element = NULL;
    uint32_t lower_limit = 0u;
    uint32_t upper_limit = 0u;
 
@@ -299,7 +299,7 @@ static void test_parse_uint8_require_port_no_init(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
+   apx_data_element_t* data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
@@ -332,8 +332,8 @@ static void test_parse_uint8_require_port_with_init(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_portAttributes_t* attributes = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_port_attributes_t* attributes = NULL;
    dtl_sv_t* init_value = NULL;
    bool ok = false;
 
@@ -372,7 +372,7 @@ static void test_parse_uint8_array_require_port_no_init(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
+   apx_data_element_t* data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
@@ -407,7 +407,7 @@ static void test_parse_uint8_array_require_port_with_init(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
+   apx_data_element_t* data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
@@ -441,7 +441,7 @@ static void test_parse_uint8_require_port_with_range_and_no_init(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
+   apx_data_element_t* data_element = NULL;
    uint32_t lower_limit = 0u;
    uint32_t upper_limit = 0u;
 
@@ -478,9 +478,9 @@ static void test_parse_uint8_type_reference_require_port_no_init(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_dataElement_t* ref_data_element = NULL;
-   apx_dataType_t* data_type = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_data_element_t* ref_data_element = NULL;
+   apx_data_type_t* data_type = NULL;
 
 
    apx_istream_create(&stream);
@@ -519,9 +519,9 @@ static void test_parse_uint8_type_reference_require_port_with_value_table(CuTest
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_dataElement_t* ref_data_element = NULL;
-   apx_dataType_t* data_type = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_data_element_t* ref_data_element = NULL;
+   apx_data_type_t* data_type = NULL;
    uint32_t lower_limit = 0u;
    uint32_t upper_limit = 0u;
 
@@ -564,12 +564,12 @@ static void test_parse_uint8_type_references_inside_record_reference_require_por
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_dataElement_t* record_data_element = NULL;
-   apx_dataElement_t* child_data_element = NULL;
-   apx_dataElement_t* ref_child_data_element = NULL;
-   apx_dataType_t* data_type = NULL;
-   apx_dataType_t* child_data_type = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_data_element_t* record_data_element = NULL;
+   apx_data_element_t* child_data_element = NULL;
+   apx_data_element_t* ref_child_data_element = NULL;
+   apx_data_type_t* data_type = NULL;
+   apx_data_type_t* child_data_type = NULL;
    uint32_t lower_limit = 0u;
    uint32_t upper_limit = 0u;
 
@@ -633,8 +633,8 @@ static void test_parse_queued_uint8_provide_port(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_portAttributes_t* attributes;
+   apx_data_element_t* data_element = NULL;
+   apx_port_attributes_t* attributes;
 
 
    apx_istream_create(&stream);
@@ -669,7 +669,7 @@ static void test_parse_char_provide_port(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
+   apx_data_element_t* data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
@@ -699,7 +699,7 @@ static void test_parse_char_array_provide_port(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
+   apx_data_element_t* data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
@@ -730,8 +730,8 @@ static void test_parse_char_array_provide_port_with_empty_initializer(CuTest* tc
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_portAttributes_t* attributes = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_port_attributes_t* attributes = NULL;
    dtl_sv_t* init_value;
    adt_str_t* str;
    bool ok = false;
@@ -775,7 +775,7 @@ static void test_parse_char8_provide_port(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
+   apx_data_element_t* data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
@@ -809,13 +809,13 @@ static void test_parse_record_inside_record_type_reference_require_port(CuTest* 
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_dataElement_t* record_data_element = NULL;
-   apx_dataElement_t* child_data_element = NULL;
-   apx_dataElement_t* ref_child_data_element = NULL;
-   apx_dataElement_t* grand_child_data_element = NULL;
-   apx_dataType_t* data_type = NULL;
-   apx_dataType_t* child_data_type = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_data_element_t* record_data_element = NULL;
+   apx_data_element_t* child_data_element = NULL;
+   apx_data_element_t* ref_child_data_element = NULL;
+   apx_data_element_t* grand_child_data_element = NULL;
+   apx_data_type_t* data_type = NULL;
+   apx_data_type_t* child_data_type = NULL;
    uint32_t lower_limit = 0u;
    uint32_t upper_limit = 0u;
 
@@ -899,8 +899,8 @@ static void test_parse_array_of_records(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_dataElement_t* child_data_element = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_data_element_t* child_data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);
@@ -939,10 +939,10 @@ static void test_parse_array_of_records_type_reference_require_port(CuTest* tc)
    apx_istream_t stream;
    apx_node_t* node = NULL;
    apx_port_t* port = NULL;
-   apx_dataType_t* data_type = NULL;
-   apx_dataElement_t* data_element = NULL;
-   apx_dataElement_t* record_data_element = NULL;
-   apx_dataElement_t* child_data_element = NULL;
+   apx_data_type_t* data_type = NULL;
+   apx_data_element_t* data_element = NULL;
+   apx_data_element_t* record_data_element = NULL;
+   apx_data_element_t* child_data_element = NULL;
 
    apx_istream_create(&stream);
    apx_parser_create(&parser, &stream);

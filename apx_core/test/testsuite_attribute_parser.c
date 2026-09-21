@@ -102,7 +102,7 @@ static void test_parse_init_value_zero(CuTest* tc)
    const char* init_value = "0";
    const uint8_t* begin = (const uint8_t*) init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
@@ -126,7 +126,7 @@ static void test_parse_init_value_minus_one(CuTest* tc)
    const char* init_value2 = "-1";
    const uint8_t* begin = (const uint8_t*)init_value1;
    const uint8_t* end = begin + strlen(init_value1);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
    uint8_t const* result;
@@ -155,7 +155,7 @@ static void test_parse_init_value_uint32_max(CuTest* tc)
    const char* init_value = "0xFFFFFFFF";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
@@ -178,7 +178,7 @@ static void test_parse_init_value_int32_min(CuTest* tc)
    const char* init_value = "-2147483648";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
@@ -201,7 +201,7 @@ static void test_parse_init_value_int32_max(CuTest* tc)
    const char* init_value = "2147483647";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
@@ -224,7 +224,7 @@ static void test_parse_init_value_int32_list(CuTest* tc)
    const char* init_value = "{3, 4}";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
@@ -253,7 +253,7 @@ static void test_parse_init_value_empty_list(CuTest* tc)
    const char* init_value = "{}";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
 
    apx_attributeParser_create(&parser);
@@ -274,7 +274,7 @@ static void test_parse_init_value_int32_lists_in_list(CuTest* tc)
    const char* init_value = "{{1, 2}, {3, 4}, {5}}";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
@@ -327,7 +327,7 @@ static void test_parse_init_value_empty_string(CuTest* tc)
    const char* init_value = "\"\"";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
@@ -352,7 +352,7 @@ static void test_parse_init_value_string_literal(CuTest* tc)
    const char* init_value = "\"InitText\"";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
@@ -377,7 +377,7 @@ static void test_parse_init_value_with_stray_characters(CuTest* tc)
    const char* init_value = "255, ";
    const uint8_t* begin = (const uint8_t*)init_value;
    const uint8_t* end = begin + strlen(init_value);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
 
    apx_attributeParser_create(&parser);
@@ -394,10 +394,10 @@ static void test_parse_type_attribute_default_value_table(CuTest* tc)
    const char* attribute_string = "VT(\"OnOff_Off\", \"OnOff_On\", \"OnOff_Error\", \"OnOff_NotAvailable\")";
    const uint8_t* begin = (const uint8_t*)attribute_string;
    const uint8_t* end = begin + strlen(attribute_string);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    uint8_t const* result = NULL;
-   apx_typeAttributes_t attr;
-   apx_valueTable_t* vt = NULL;
+   apx_type_attributes_t attr;
+   apx_value_table_t* vt = NULL;
    adt_str_t* str = NULL;
 
    apx_attributeParser_create(&parser);
@@ -405,7 +405,7 @@ static void test_parse_type_attribute_default_value_table(CuTest* tc)
    result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertIntEquals(tc, 1, apx_typeAttributes_num_computations(&attr));
-   vt = (apx_valueTable_t*)apx_typeAttributes_get_computation(&attr, 0);
+   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, vt);
    CuAssertIntEquals(tc, 4, apx_valueTable_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
@@ -429,17 +429,17 @@ static void test_parse_type_attribute_value_table_with_offset(CuTest* tc)
    const char* attribute_string = "VT(4, \"OnOff_Off\", \"OnOff_On\", \"OnOff_Error\", \"OnOff_NotAvailable\")";
    const uint8_t* begin = (const uint8_t*)attribute_string;
    const uint8_t* end = begin + strlen(attribute_string);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    uint8_t const* result = NULL;
-   apx_typeAttributes_t attr;
-   apx_valueTable_t* vt = NULL;
+   apx_type_attributes_t attr;
+   apx_value_table_t* vt = NULL;
 
    apx_attributeParser_create(&parser);
    apx_typeAttributes_create(&attr);
    result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertIntEquals(tc, 1, apx_typeAttributes_num_computations(&attr));
-   vt = (apx_valueTable_t*)apx_typeAttributes_get_computation(&attr, 0);
+   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, vt);
    CuAssertIntEquals(tc, 4, apx_valueTable_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
@@ -455,10 +455,10 @@ static void test_parse_type_attribute_value_table_with_negative_range(CuTest* tc
    const char* attribute_string = "VT(-3, 0, \"ErrorCode3\", \"ErrorCode2\", \"ErrorCode1\", \"NoError\")";
    const uint8_t* begin = (const uint8_t*)attribute_string;
    const uint8_t* end = begin + strlen(attribute_string);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    uint8_t const* result = NULL;
-   apx_typeAttributes_t attr;
-   apx_valueTable_t* vt = NULL;
+   apx_type_attributes_t attr;
+   apx_value_table_t* vt = NULL;
    adt_str_t* str = NULL;
 
    apx_attributeParser_create(&parser);
@@ -466,7 +466,7 @@ static void test_parse_type_attribute_value_table_with_negative_range(CuTest* tc
    result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertIntEquals(tc, 1, apx_typeAttributes_num_computations(&attr));
-   vt = (apx_valueTable_t*)apx_typeAttributes_get_computation(&attr, 0);
+   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, vt);
    CuAssertIntEquals(tc, 4, apx_valueTable_length(vt));
    CuAssertTrue(tc, vt->base.is_signed_range);
@@ -491,10 +491,10 @@ static void test_parse_type_attribute_value_table_ranges(CuTest* tc)
    const char* attribute_string = "VT(251, 254, \"Error\"), VT(255, \"NotAvailable\")";
    const uint8_t* begin = (const uint8_t*)attribute_string;
    const uint8_t* end = begin + strlen(attribute_string);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    uint8_t const* result = NULL;
-   apx_typeAttributes_t attr;
-   apx_valueTable_t* vt = NULL;
+   apx_type_attributes_t attr;
+   apx_value_table_t* vt = NULL;
    adt_str_t* str = NULL;
 
    apx_attributeParser_create(&parser);
@@ -502,7 +502,7 @@ static void test_parse_type_attribute_value_table_ranges(CuTest* tc)
    result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertIntEquals(tc, 2, apx_typeAttributes_num_computations(&attr));
-   vt = (apx_valueTable_t*)apx_typeAttributes_get_computation(&attr, 0);
+   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, vt);
    CuAssertIntEquals(tc, 1, apx_valueTable_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
@@ -511,7 +511,7 @@ static void test_parse_type_attribute_value_table_ranges(CuTest* tc)
    str = apx_valueTable_get_value(vt, 0);
    CuAssertStrEquals(tc, "Error", adt_str_cstr(str));
 
-   vt = (apx_valueTable_t*)apx_typeAttributes_get_computation(&attr, 1);
+   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 1);
    CuAssertPtrNotNull(tc, vt);
    CuAssertIntEquals(tc, 1, apx_valueTable_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
@@ -530,10 +530,10 @@ static void test_parse_type_attribute_rational_scaling_vehicle_speed(CuTest* tc)
    const char* attribute_string = "RS(0, 65280, 0, 1, 64, \"km/h\")";
    const uint8_t* begin = (const uint8_t*)attribute_string;
    const uint8_t* end = begin + strlen(attribute_string);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    uint8_t const* result = NULL;
-   apx_typeAttributes_t attr;
-   apx_rationalScaling_t* rs = NULL;
+   apx_type_attributes_t attr;
+   apx_rational_scaling_t* rs = NULL;
 
    apx_attributeParser_create(&parser);
    apx_typeAttributes_create(&attr);
@@ -541,7 +541,7 @@ static void test_parse_type_attribute_rational_scaling_vehicle_speed(CuTest* tc)
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertIntEquals(tc, 1, apx_typeAttributes_num_computations(&attr));
 
-   rs = (apx_rationalScaling_t*)apx_typeAttributes_get_computation(&attr, 0);
+   rs = (apx_rational_scaling_t*)apx_typeAttributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, rs);
    CuAssertFalse(tc, rs->base.is_signed_range);
    CuAssertIntEquals(tc, 0u, rs->base.lower_limit.u32);
@@ -560,11 +560,11 @@ static void test_parse_combined_type_attributes(CuTest* tc)
    const char* attribute_string = "RS(0, 0xFDFF, 0, 1, 64, \"km/h\"),VT(0xFE00, 0xFEFF, \"Error\"),VT(0xFF00, 0xFFFF, \"NotAvailable\")";
    const uint8_t* begin = (const uint8_t*)attribute_string;
    const uint8_t* end = begin + strlen(attribute_string);
-   apx_attributeParser_t parser;
+   apx_attribute_parser_t parser;
    uint8_t const* result = NULL;
-   apx_typeAttributes_t attr;
-   apx_rationalScaling_t* rs = NULL;
-   apx_valueTable_t* vt = NULL;
+   apx_type_attributes_t attr;
+   apx_rational_scaling_t* rs = NULL;
+   apx_value_table_t* vt = NULL;
    adt_str_t* str = NULL;
 
    apx_attributeParser_create(&parser);
@@ -573,7 +573,7 @@ static void test_parse_combined_type_attributes(CuTest* tc)
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertIntEquals(tc, 3, apx_typeAttributes_num_computations(&attr));
 
-   rs = (apx_rationalScaling_t*)apx_typeAttributes_get_computation(&attr, 0);
+   rs = (apx_rational_scaling_t*)apx_typeAttributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, rs);
    CuAssertFalse(tc, rs->base.is_signed_range);
    CuAssertIntEquals(tc, 0u, rs->base.lower_limit.u32);
@@ -583,7 +583,7 @@ static void test_parse_combined_type_attributes(CuTest* tc)
    CuAssertIntEquals(tc, 64, rs->denominator);
    CuAssertStrEquals(tc, "km/h", rs->unit);
 
-   vt = (apx_valueTable_t*)apx_typeAttributes_get_computation(&attr, 1);
+   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 1);
    CuAssertPtrNotNull(tc, vt);
    CuAssertIntEquals(tc, 1, apx_valueTable_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
@@ -592,7 +592,7 @@ static void test_parse_combined_type_attributes(CuTest* tc)
    str = apx_valueTable_get_value(vt, 0);
    CuAssertStrEquals(tc, "Error", adt_str_cstr(str));
 
-   vt = (apx_valueTable_t*)apx_typeAttributes_get_computation(&attr, 2);
+   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 2);
    CuAssertPtrNotNull(tc, vt);
    CuAssertIntEquals(tc, 1, apx_valueTable_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
@@ -612,8 +612,8 @@ static void test_parse_port_attribute_queue_length(CuTest* tc)
    const char* attribute_string = "Q[10]";
    const uint8_t* begin = (const uint8_t*)attribute_string;
    const uint8_t* end = begin + strlen(attribute_string);
-   apx_attributeParser_t parser;
-   apx_portAttributes_t attr;
+   apx_attribute_parser_t parser;
+   apx_port_attributes_t attr;
    uint8_t const* result = NULL;
 
    apx_attributeParser_create(&parser);
@@ -634,8 +634,8 @@ static void test_parse_port_attribute_parameter(CuTest* tc)
    const char* attribute_string = "P";
    const uint8_t* begin = (const uint8_t*)attribute_string;
    const uint8_t* end = begin + strlen(attribute_string);
-   apx_attributeParser_t parser;
-   apx_portAttributes_t attr;
+   apx_attribute_parser_t parser;
+   apx_port_attributes_t attr;
    uint8_t const* result = NULL;
 
    apx_attributeParser_create(&parser);

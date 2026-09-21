@@ -28,7 +28,7 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_observedFile_create(apx_observedFile_t* self, rmf_extendedFileInfo_t* const file_info)
+void apx_observedFile_create(apx_observed_file_t* self, rmf_extended_file_info_t* const file_info)
 {
    if (self != NULL)
    {
@@ -36,7 +36,7 @@ void apx_observedFile_create(apx_observedFile_t* self, rmf_extendedFileInfo_t* c
    }
 }
 
-void apx_observedFile_destroy(apx_observedFile_t* self)
+void apx_observedFile_destroy(apx_observed_file_t* self)
 {
    if (self != NULL)
    {
@@ -44,9 +44,9 @@ void apx_observedFile_destroy(apx_observedFile_t* self)
    }
 }
 
-apx_observedFile_t* apx_observedFile_new(rmf_extendedFileInfo_t* const file_info)
+apx_observed_file_t* apx_observedFile_new(rmf_extended_file_info_t* const file_info)
 {
-   apx_observedFile_t* self = (apx_observedFile_t*)malloc(sizeof(apx_observedFile_t));
+   apx_observed_file_t* self = (apx_observed_file_t*)malloc(sizeof(apx_observed_file_t));
    if (self != NULL)
    {
       apx_observedFile_create(self, file_info);
@@ -54,7 +54,7 @@ apx_observedFile_t* apx_observedFile_new(rmf_extendedFileInfo_t* const file_info
    return self;
 }
 
-void apx_observedFile_delete(apx_observedFile_t* self)
+void apx_observedFile_delete(apx_observed_file_t* self)
 {
    if (self != NULL)
    {
@@ -65,7 +65,7 @@ void apx_observedFile_delete(apx_observedFile_t* self)
 
 void apx_observedFile_vdelete(void* arg)
 {
-   apx_observedFile_delete((apx_observedFile_t*)arg);
+   apx_observedFile_delete((apx_observed_file_t*)arg);
 }
 
 

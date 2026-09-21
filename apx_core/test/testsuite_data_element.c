@@ -84,7 +84,7 @@ static void test_apx_dataElement_derive_proper_init_value_uint8(CuTest* tc)
 /*
 Signature: C
 */
-   apx_dataElement_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
+   apx_data_element_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
    CuAssertPtrNotNull(tc, data_element);
    dtl_sv_t* parsed_init_value = dtl_sv_make_u32(7u);
    dtl_dv_t* proper_init_value = NULL;
@@ -101,9 +101,9 @@ static void test_apx_dataElement_derive_proper_init_value_array_of_records(CuTes
    APX:
    {\"Id\"S\"Value\"C}[2]:={ {0xFFFF,0}, {0xFFFF,0} }
    */
-   apx_dataElement_t* data_element = apx_dataElement_new(APX_TYPE_CODE_RECORD);
+   apx_data_element_t* data_element = apx_dataElement_new(APX_TYPE_CODE_RECORD);
    CuAssertPtrNotNull(tc, data_element);
-   apx_dataElement_t* child_element = apx_dataElement_new(APX_TYPE_CODE_UINT16);
+   apx_data_element_t* child_element = apx_dataElement_new(APX_TYPE_CODE_UINT16);
    CuAssertPtrNotNull(tc, child_element);
    CuAssertUIntEquals(tc, APX_NO_ERROR, apx_dataElement_set_name_cstr(child_element, "Id"));
    apx_dataElement_append_child(data_element, child_element);
@@ -134,7 +134,7 @@ static void test_apx_dataElement_derive_proper_init_value_array_of_records(CuTes
 
 static void test_apx_dataElement_to_string_uint8_without_limits(CuTest* tc)
 {
-   apx_dataElement_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
+   apx_data_element_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
    CuAssertPtrNotNull(tc, data_element);
    adt_str_t* str = apx_dataElement_to_string(data_element, false);
    CuAssertPtrNotNull(tc, str);
@@ -145,7 +145,7 @@ static void test_apx_dataElement_to_string_uint8_without_limits(CuTest* tc)
 
 static void test_apx_dataElement_to_string_uint8_with_limits(CuTest* tc)
 {
-   apx_dataElement_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
+   apx_data_element_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
    CuAssertPtrNotNull(tc, data_element);
    apx_dataElement_set_limits_uint32(data_element, 0u, 7u);
    adt_str_t* str = apx_dataElement_to_string(data_element, false);
@@ -157,7 +157,7 @@ static void test_apx_dataElement_to_string_uint8_with_limits(CuTest* tc)
 
 static void test_apx_dataElement_to_string_uint8_array_without_limits(CuTest* tc)
 {
-   apx_dataElement_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
+   apx_data_element_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
    CuAssertPtrNotNull(tc, data_element);
    apx_dataElement_set_array_length(data_element, 10u);
    adt_str_t* str = apx_dataElement_to_string(data_element, false);
@@ -169,7 +169,7 @@ static void test_apx_dataElement_to_string_uint8_array_without_limits(CuTest* tc
 
 static void test_apx_dataElement_to_string_uint8_array_with_limits(CuTest* tc)
 {
-   apx_dataElement_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
+   apx_data_element_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
    CuAssertPtrNotNull(tc, data_element);
    apx_dataElement_set_array_length(data_element, 10u);
    apx_dataElement_set_limits_uint32(data_element, 0u, 7u);
@@ -182,7 +182,7 @@ static void test_apx_dataElement_to_string_uint8_array_with_limits(CuTest* tc)
 
 static void test_apx_dataElement_to_string_dynamic_uint8_array_with_limits(CuTest* tc)
 {
-   apx_dataElement_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
+   apx_data_element_t* data_element = apx_dataElement_new(APX_TYPE_CODE_UINT8);
    CuAssertPtrNotNull(tc, data_element);
    apx_dataElement_set_array_length(data_element, 10u);
    apx_dataElement_set_dynamic_array(data_element);

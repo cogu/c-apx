@@ -87,12 +87,12 @@ static void test_node_containing_unsigned_types_without_limits(CuTest *tc)
       "R\"U8Signal3\"C:=7\n"
       "R\"U32Signal\"L:=0\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 3u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 2u, apx_nodeData_num_require_ports(node_data));
@@ -127,12 +127,12 @@ static void test_node_containing_unsigned_types_with_limits(CuTest* tc)
       "R\"U8Signal3\"C(0,7):=7\n"
       "R\"U32Signal\"L:=0\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 3u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 2u, apx_nodeData_num_require_ports(node_data));
@@ -163,7 +163,7 @@ static void test_node_containing_out_of_range_range_init_value(CuTest* tc)
       "N\"TestNode\"\n"
       "P\"CabTiltLockWarning\"C(0,7):=15\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_VALUE_RANGE_ERROR, apx_nodeManager_build_node(manager, apx_text));
    apx_nodeManager_delete(manager);
 }
@@ -177,12 +177,12 @@ static void test_node_containing_signed_types_without_limits(CuTest* tc)
       "P\"S16Value\"s:=2\n"
       "P\"S32Value\"l:=3\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 3u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 0u, apx_nodeData_num_require_ports(node_data));
@@ -211,12 +211,12 @@ static void test_node_containing_signed_types_with_limits(CuTest* tc)
       "P\"S16Value\"s(-1000, 1000):=0\n"
       "P\"S32Value\"l:=-1\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 3u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 0u, apx_nodeData_num_require_ports(node_data));
@@ -245,12 +245,12 @@ static void test_node_containing_signed_array_types(CuTest* tc)
       "P\"U16Array\"s[3]:={-1, -1, 0}\n"
       "P\"U32Array\"l[2]:={0, -1}\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 3u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 0u, apx_nodeData_num_require_ports(node_data));
@@ -287,12 +287,12 @@ static void test_node_containing_string_type(CuTest* tc)
       "N\"TestNode\"\n"
       "P\"String\"a[12]:=\"Hello World!\"\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 1u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 0u, apx_nodeData_num_require_ports(node_data));
@@ -324,12 +324,12 @@ static void test_node_containing_record_type(CuTest* tc)
       "P\"RecordPortOut\"{\"First\"C\"Second\"S}:={0x12, 0x1234}\n"
       "R\"RecordPortIn\"{\"First\"C\"Second\"S}:={0x12, 0x1234}\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 1u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 1u, apx_nodeData_num_require_ports(node_data));
@@ -358,12 +358,12 @@ static void test_provide_port_containing_type_reference(CuTest* tc)
       "T\"VehicleSpeed_T\"S:RS(0, 0xFDFF, 0, 1, 64, \"km/h\"), VT(0xFE00, 0xFEFF, \"Error\"), VT(0xFF00, 0xFFFF, \"NotAvailable\")\n"
       "P\"VehicleSpeed\"T[0]\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 1u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 0u, apx_nodeData_num_require_ports(node_data));
@@ -373,7 +373,7 @@ static void test_provide_port_containing_type_reference(CuTest* tc)
    CuAssertPtrNotNull(tc, provide_port_data);
    CuAssertUIntEquals(tc, 0x00u, provide_port_data[0]);
    CuAssertUIntEquals(tc, 0x00u, provide_port_data[1]);
-   apx_portInstance_t* port = apx_nodeInstance_get_provide_port(node_instance, 0u);
+   apx_port_instance_t* port = apx_nodeInstance_get_provide_port(node_instance, 0u);
    CuAssertPtrNotNull(tc, port);
    CuAssertUIntEquals(tc, 3u, apx_portInstance_get_computation_list_length(port));
    CuAssertUIntEquals(tc, 0u, apx_portInstance_get_computation_list_id(port));
@@ -383,7 +383,7 @@ static void test_provide_port_containing_type_reference(CuTest* tc)
    CuAssertUIntEquals(tc, 0u, apx_computation_get_lower_limit_unsigned(computation));
    CuAssertUIntEquals(tc, 0xFDFF, apx_computation_get_upper_limit_unsigned(computation));
    CuAssertUIntEquals(tc, APX_COMPUTATION_TYPE_RATIONAL_SCALING, apx_computation_type(computation));
-   apx_rationalScaling_t const* scaling = (apx_rationalScaling_t const*)computation;
+   apx_rational_scaling_t const* scaling = (apx_rational_scaling_t const*)computation;
    CuAssertDblEquals(tc, 0.0, apx_rationalScaling_offset(scaling), 0.001);
    CuAssertIntEquals(tc, 1u, apx_rationalScaling_numerator(scaling));
    CuAssertIntEquals(tc, 64u, apx_rationalScaling_denominator(scaling));
@@ -394,7 +394,7 @@ static void test_provide_port_containing_type_reference(CuTest* tc)
    CuAssertUIntEquals(tc, 0xFE00, apx_computation_get_lower_limit_unsigned(computation));
    CuAssertUIntEquals(tc, 0xFEFF, apx_computation_get_upper_limit_unsigned(computation));
    CuAssertUIntEquals(tc, APX_COMPUTATION_TYPE_VALUE_TABLE, apx_computation_type(computation));
-   apx_valueTable_t const* value_table = (apx_valueTable_t const*)computation;
+   apx_value_table_t const* value_table = (apx_value_table_t const*)computation;
    CuAssertStrEquals(tc, "Error", apx_valueTable_get_value_cstr(value_table, 0));
    computation = apx_portInstance_get_computation(port, 2);
    CuAssertPtrNotNull(tc, computation);
@@ -402,7 +402,7 @@ static void test_provide_port_containing_type_reference(CuTest* tc)
    CuAssertUIntEquals(tc, 0xFF00, apx_computation_get_lower_limit_unsigned(computation));
    CuAssertUIntEquals(tc, 0xFFFF, apx_computation_get_upper_limit_unsigned(computation));
    CuAssertUIntEquals(tc, APX_COMPUTATION_TYPE_VALUE_TABLE, apx_computation_type(computation));
-   value_table = (apx_valueTable_t const*)computation;
+   value_table = (apx_value_table_t const*)computation;
    CuAssertStrEquals(tc, "NotAvailable", apx_valueTable_get_value_cstr(value_table, 0));
 
    free(provide_port_data);
@@ -416,12 +416,12 @@ static void test_provide_port_containing_array_of_records(CuTest* tc)
       "N\"TestNode\"\n"
       "P\"ArrayPortOut\"{\"First\"S\"Second\"C}[2]:={ {0x1234, 0x12}, {0x1234, 0x12} }\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 1u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 0, apx_nodeData_num_require_ports(node_data));
@@ -446,12 +446,12 @@ static void test_provide_port_containing_record_inside_record(CuTest* tc)
       "N\"TestNode\"\n"
       "P\"RecordPortOut\"{\"First\"{\"Inner1\"C\"Inner2\"S}\"Second\"{\"Inner3\"S\"Inner4\"L}}:={ {0x12, 0x1234}, {0x1234, 0x12345678} }\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 1u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 0, apx_nodeData_num_require_ports(node_data));
@@ -482,11 +482,11 @@ static void test_node_instance_by_name(CuTest* tc)
       "APX/1.2\n"
       "N\"TestNode2\"\n"
       "R\"RequirePortSignal1\"C(0,3):=3\n";
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text1));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text2));
    CuAssertUIntEquals(tc, 2u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_find(manager, "TestNode1");
+   apx_node_instance_t* node_instance = apx_nodeManager_find(manager, "TestNode1");
    CuAssertPtrNotNull(tc, node_instance);
    node_instance = apx_nodeManager_find(manager, "TestNode2");
    CuAssertPtrNotNull(tc, node_instance);
@@ -506,20 +506,20 @@ static void test_client_node_require_port_byte_map_creation(CuTest* tc)
       "R\"U16Port\"S\n"
       "R\"NamePort\"A[21]\n";
 
-   apx_nodeManager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
+   apx_node_manager_t* manager = apx_nodeManager_new(APX_CLIENT_MODE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeManager_build_node(manager, apx_text));
    CuAssertUIntEquals(tc, 1u, apx_nodeManager_length(manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(manager);
+   apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(manager);
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 0u, apx_nodeData_num_provide_ports(node_data));
    CuAssertUIntEquals(tc, 4, apx_nodeData_num_require_ports(node_data));
    CuAssertUIntEquals(tc, 0u, apx_nodeData_provide_port_data_size(node_data));
    CuAssertUIntEquals(tc, 32u, apx_nodeData_require_port_data_size(node_data));
-   apx_bytePortMap_t const* byte_port_map = apx_nodeInstance_get_require_byte_port_map(node_instance);
+   apx_byte_port_map_t const* byte_port_map = apx_nodeInstance_get_require_byte_port_map(node_instance);
    CuAssertPtrNotNull(tc, byte_port_map);
-   apx_portId_t expected_map[32] = {
+   apx_port_id_t expected_map[32] = {
    0, 0, 0, 0, 0, 0, 0, 0,
    1,
    2, 2,

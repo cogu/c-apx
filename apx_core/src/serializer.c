@@ -32,35 +32,35 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-//apx_vm_writeBuffer_t API
-static void write_buffer_init(apx_vm_writeBuffer_t* self);
-static void write_buffer_reset(apx_vm_writeBuffer_t* self, uint8_t* data, size_t size);
-static bool write_buffer_is_valid(apx_vm_writeBuffer_t* self);
+//apx_vm_write_buffer_t API
+static void write_buffer_init(apx_vm_write_buffer_t* self);
+static void write_buffer_reset(apx_vm_write_buffer_t* self, uint8_t* data, size_t size);
+static bool write_buffer_is_valid(apx_vm_write_buffer_t* self);
 
-//apx_vm_writeState_t API
-static void state_reset(apx_vm_writeState_t* self, dtl_dv_type_id type_id);
-static void state_clear_value(apx_vm_writeState_t* self);
-static void state_set_value(apx_vm_writeState_t* self, dtl_dv_t const* dv);
-static apx_error_t state_determine_array_length_from_value(apx_vm_writeState_t* self);
-static bool state_is_num_or_bool_type(apx_vm_writeState_t* self);
-static bool state_is_record_type(apx_vm_writeState_t* self);
-static bool state_is_char_type(apx_vm_writeState_t* self);
-static bool state_is_bytes_type(apx_vm_writeState_t* self);
-static apx_error_t state_default_range_check_value(apx_vm_writeState_t* self);
-static apx_error_t state_read_scalar_value(apx_vm_writeState_t* self, apx_typeCode_t type_code);
-static apx_error_t state_read_scalar_array_value(apx_vm_writeState_t* self, int32_t index, apx_typeCode_t type_code);
-static apx_error_t state_read_scalar_value_internal(apx_vm_writeState_t* self, dtl_sv_t const* sv, apx_typeCode_t type_code);
-static apx_error_t state_default_range_check_scalar(apx_vm_writeState_t* self);
-static dtl_dv_t* state_get_child_value(apx_vm_writeState_t* self, char const* key);
-static apx_error_t state_set_field_name(apx_vm_writeState_t* self, char const* name);
+//apx_vm_write_state_t API
+static void state_reset(apx_vm_write_state_t* self, dtl_dv_type_id type_id);
+static void state_clear_value(apx_vm_write_state_t* self);
+static void state_set_value(apx_vm_write_state_t* self, dtl_dv_t const* dv);
+static apx_error_t state_determine_array_length_from_value(apx_vm_write_state_t* self);
+static bool state_is_num_or_bool_type(apx_vm_write_state_t* self);
+static bool state_is_record_type(apx_vm_write_state_t* self);
+static bool state_is_char_type(apx_vm_write_state_t* self);
+static bool state_is_bytes_type(apx_vm_write_state_t* self);
+static apx_error_t state_default_range_check_value(apx_vm_write_state_t* self);
+static apx_error_t state_read_scalar_value(apx_vm_write_state_t* self, apx_type_code_t type_code);
+static apx_error_t state_read_scalar_array_value(apx_vm_write_state_t* self, int32_t index, apx_type_code_t type_code);
+static apx_error_t state_read_scalar_value_internal(apx_vm_write_state_t* self, dtl_sv_t const* sv, apx_type_code_t type_code);
+static apx_error_t state_default_range_check_scalar(apx_vm_write_state_t* self);
+static dtl_dv_t* state_get_child_value(apx_vm_write_state_t* self, char const* key);
+static apx_error_t state_set_field_name(apx_vm_write_state_t* self, char const* name);
 
-//apx_vm_queuedWriteState_t API
-static void queued_write_state_init(apx_vm_queuedWriteState_t* self);
-static bool queued_write_state_is_active(apx_vm_queuedWriteState_t* self);
+//apx_vm_queued_write_state_t API
+static void queued_write_state_init(apx_vm_queued_write_state_t* self);
+static bool queued_write_state_is_active(apx_vm_queued_write_state_t* self);
 
 //apx_vm_serializer_t API
-static apx_error_t serializer_prepare_for_buffer_write(apx_vm_serializer_t* self, apx_typeCode_t type_code, uint32_t element_size);
-static apx_error_t serializer_prepare_for_array(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
+static apx_error_t serializer_prepare_for_buffer_write(apx_vm_serializer_t* self, apx_type_code_t type_code, uint32_t element_size);
+static apx_error_t serializer_prepare_for_array(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
 static apx_error_t serializer_pack_value(apx_vm_serializer_t* self);
 static apx_error_t serializer_write_dynamic_value_to_buffer(apx_vm_serializer_t* self, uint32_t value, uint32_t value_size);
 static apx_error_t serializer_pack_scalar_value(apx_vm_serializer_t* self);
@@ -82,7 +82,7 @@ static apx_error_t read_dynamic_value_from_buffer(uint8_t const* begin, uint8_t 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_vm_writeState_create(apx_vm_writeState_t* self)
+void apx_vm_writeState_create(apx_vm_write_state_t* self)
 {
    if (self != NULL)
    {
@@ -101,7 +101,7 @@ void apx_vm_writeState_create(apx_vm_writeState_t* self)
    }
 }
 
-void apx_vm_writeState_destroy(apx_vm_writeState_t* self)
+void apx_vm_writeState_destroy(apx_vm_write_state_t* self)
 {
    if (self != NULL)
    {
@@ -109,9 +109,9 @@ void apx_vm_writeState_destroy(apx_vm_writeState_t* self)
    }
 }
 
-apx_vm_writeState_t* apx_vm_writeState_new(void)
+apx_vm_write_state_t* apx_vm_writeState_new(void)
 {
-   apx_vm_writeState_t* self = (apx_vm_writeState_t*)malloc(sizeof(apx_vm_writeState_t));
+   apx_vm_write_state_t* self = (apx_vm_write_state_t*)malloc(sizeof(apx_vm_write_state_t));
    if (self != NULL)
    {
       apx_vm_writeState_create(self);
@@ -119,7 +119,7 @@ apx_vm_writeState_t* apx_vm_writeState_new(void)
    return self;
 }
 
-void apx_vm_writeState_delete(apx_vm_writeState_t* self)
+void apx_vm_writeState_delete(apx_vm_write_state_t* self)
 {
    if (self != NULL)
    {
@@ -130,7 +130,7 @@ void apx_vm_writeState_delete(apx_vm_writeState_t* self)
 
 void apx_vm_writeState_vdelete(void* arg)
 {
-   apx_vm_writeState_delete((apx_vm_writeState_t*)arg);
+   apx_vm_writeState_delete((apx_vm_write_state_t*)arg);
 }
 
 
@@ -247,7 +247,7 @@ apx_error_t apx_vm_serializer_set_value_hv(apx_vm_serializer_t* self, dtl_hv_t c
    return apx_vm_serializer_set_value_dv(self, (dtl_dv_t const*)hv);
 }
 
-apx_error_t apx_vm_serializer_pack_uint8(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_uint8(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -267,7 +267,7 @@ apx_error_t apx_vm_serializer_pack_uint8(apx_vm_serializer_t* self, uint32_t arr
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_uint16(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_uint16(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -287,7 +287,7 @@ apx_error_t apx_vm_serializer_pack_uint16(apx_vm_serializer_t* self, uint32_t ar
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_uint32(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_uint32(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -307,7 +307,7 @@ apx_error_t apx_vm_serializer_pack_uint32(apx_vm_serializer_t* self, uint32_t ar
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_uint64(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_uint64(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -327,7 +327,7 @@ apx_error_t apx_vm_serializer_pack_uint64(apx_vm_serializer_t* self, uint32_t ar
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_int8(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_int8(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -347,7 +347,7 @@ apx_error_t apx_vm_serializer_pack_int8(apx_vm_serializer_t* self, uint32_t arra
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_int16(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_int16(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -367,7 +367,7 @@ apx_error_t apx_vm_serializer_pack_int16(apx_vm_serializer_t* self, uint32_t arr
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_int32(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_int32(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -387,7 +387,7 @@ apx_error_t apx_vm_serializer_pack_int32(apx_vm_serializer_t* self, uint32_t arr
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_int64(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_int64(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -408,7 +408,7 @@ apx_error_t apx_vm_serializer_pack_int64(apx_vm_serializer_t* self, uint32_t arr
 }
 
 
-apx_error_t apx_vm_serializer_pack_char(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_char(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -428,7 +428,7 @@ apx_error_t apx_vm_serializer_pack_char(apx_vm_serializer_t* self, uint32_t arra
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_char8(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_char8(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -448,7 +448,7 @@ apx_error_t apx_vm_serializer_pack_char8(apx_vm_serializer_t* self, uint32_t arr
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_bool(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_bool(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -468,7 +468,7 @@ apx_error_t apx_vm_serializer_pack_bool(apx_vm_serializer_t* self, uint32_t arra
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_byte(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_byte(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if ( self != NULL)
    {
@@ -492,7 +492,7 @@ apx_error_t apx_vm_serializer_pack_byte(apx_vm_serializer_t* self, uint32_t arra
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_serializer_pack_record(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_serializer_pack_record(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -885,15 +885,15 @@ apx_error_t apx_vm_serializer_array_next(apx_vm_serializer_t* self, bool* is_las
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void write_buffer_init(apx_vm_writeBuffer_t* self)
+static void write_buffer_init(apx_vm_write_buffer_t* self)
 {
    if (self != NULL)
    {
-      memset(self, 0, sizeof(apx_vm_writeBuffer_t));
+      memset(self, 0, sizeof(apx_vm_write_buffer_t));
    }
 }
 
-static void write_buffer_reset(apx_vm_writeBuffer_t* self, uint8_t* data, size_t size)
+static void write_buffer_reset(apx_vm_write_buffer_t* self, uint8_t* data, size_t size)
 {
    assert(self != NULL);
    self->begin = self->next = data;
@@ -901,21 +901,21 @@ static void write_buffer_reset(apx_vm_writeBuffer_t* self, uint8_t* data, size_t
    self->padded_next = NULL;
 }
 
-static bool write_buffer_is_valid(apx_vm_writeBuffer_t* self)
+static bool write_buffer_is_valid(apx_vm_write_buffer_t* self)
 {
    assert(self != NULL);
    return ((self->next != NULL) && (self->end != NULL) && (self->next <= self->end));
 }
 
-//apx_vm_writeState_t API
-static void state_clear_value(apx_vm_writeState_t* self)
+//apx_vm_write_state_t API
+static void state_clear_value(apx_vm_write_state_t* self)
 {
    assert(self != NULL);
    self->value_type = DTL_DV_NULL;
    self->value.dv = NULL;
 }
 
-static void state_reset(apx_vm_writeState_t* self, dtl_dv_type_id type_id)
+static void state_reset(apx_vm_write_state_t* self, dtl_dv_type_id type_id)
 {
    assert(self != NULL);
    self->value_type = type_id;
@@ -931,7 +931,7 @@ static void state_reset(apx_vm_writeState_t* self, dtl_dv_type_id type_id)
    self->scalar_value.i32 = 0u;
 }
 
-static void state_set_value(apx_vm_writeState_t* self, dtl_dv_t const* dv)
+static void state_set_value(apx_vm_write_state_t* self, dtl_dv_t const* dv)
 {
    assert(self != NULL);
    state_reset(self, dtl_dv_type(dv));
@@ -952,7 +952,7 @@ static void state_set_value(apx_vm_writeState_t* self, dtl_dv_t const* dv)
    }
 }
 
-static apx_error_t state_determine_array_length_from_value(apx_vm_writeState_t* self)
+static apx_error_t state_determine_array_length_from_value(apx_vm_write_state_t* self)
 {
    assert(self != NULL);
    dtl_sv_type_id sv_type;
@@ -992,20 +992,20 @@ static apx_error_t state_determine_array_length_from_value(apx_vm_writeState_t* 
    return APX_NO_ERROR;
 }
 
-static bool state_is_num_or_bool_type(apx_vm_writeState_t* self)
+static bool state_is_num_or_bool_type(apx_vm_write_state_t* self)
 {
    assert(self != NULL);
    return ((self->type_code >= APX_TYPE_CODE_UINT8) && (self->type_code <= APX_TYPE_CODE_INT64)) ||
        (self->type_code == APX_TYPE_CODE_BOOL);
 }
 
-static bool state_is_record_type(apx_vm_writeState_t* self)
+static bool state_is_record_type(apx_vm_write_state_t* self)
 {
    assert(self != NULL);
    return (self->type_code == APX_TYPE_CODE_RECORD);
 }
 
-static bool state_is_char_type(apx_vm_writeState_t* self)
+static bool state_is_char_type(apx_vm_write_state_t* self)
 {
    assert(self != NULL);
    return (self->type_code == APX_TYPE_CODE_CHAR) ||
@@ -1014,13 +1014,13 @@ static bool state_is_char_type(apx_vm_writeState_t* self)
       (self->type_code == APX_TYPE_CODE_CHAR32);
 }
 
-static bool state_is_bytes_type(apx_vm_writeState_t* self)
+static bool state_is_bytes_type(apx_vm_write_state_t* self)
 {
    assert(self != NULL);
    return (self->type_code == APX_TYPE_CODE_BYTE);
 }
 
-static apx_error_t state_default_range_check_value(apx_vm_writeState_t* self)
+static apx_error_t state_default_range_check_value(apx_vm_write_state_t* self)
 {
    assert(self != NULL);
    apx_error_t retval = APX_NO_ERROR;
@@ -1056,7 +1056,7 @@ static apx_error_t state_default_range_check_value(apx_vm_writeState_t* self)
    return retval;
 }
 
-static apx_error_t state_read_scalar_value(apx_vm_writeState_t* self, apx_typeCode_t type_code)
+static apx_error_t state_read_scalar_value(apx_vm_write_state_t* self, apx_type_code_t type_code)
 {
    assert(self != NULL);
    if (self->value_type != DTL_DV_SCALAR)
@@ -1066,7 +1066,7 @@ static apx_error_t state_read_scalar_value(apx_vm_writeState_t* self, apx_typeCo
    return state_read_scalar_value_internal(self, self->value.sv, type_code);
 }
 
-static apx_error_t state_read_scalar_array_value(apx_vm_writeState_t* self, int32_t index, apx_typeCode_t type_code)
+static apx_error_t state_read_scalar_array_value(apx_vm_write_state_t* self, int32_t index, apx_type_code_t type_code)
 {
    if (self->value_type != DTL_DV_ARRAY)
    {
@@ -1085,7 +1085,7 @@ static apx_error_t state_read_scalar_array_value(apx_vm_writeState_t* self, int3
    return state_read_scalar_value_internal(self, sv, type_code);
 }
 
-static apx_error_t state_read_scalar_value_internal(apx_vm_writeState_t* self, dtl_sv_t const* sv, apx_typeCode_t type_code)
+static apx_error_t state_read_scalar_value_internal(apx_vm_write_state_t* self, dtl_sv_t const* sv, apx_type_code_t type_code)
 {
    apx_error_t retval = APX_NO_ERROR;
    bool ok = false;
@@ -1157,7 +1157,7 @@ static apx_error_t state_read_scalar_value_internal(apx_vm_writeState_t* self, d
    return retval;
 }
 
-static apx_error_t state_default_range_check_scalar(apx_vm_writeState_t* self)
+static apx_error_t state_default_range_check_scalar(apx_vm_write_state_t* self)
 {
    assert(self != NULL);
    if (self->type_code == APX_TYPE_CODE_BOOL)
@@ -1250,7 +1250,7 @@ static apx_error_t state_default_range_check_scalar(apx_vm_writeState_t* self)
    return retval;
 }
 
-static dtl_dv_t* state_get_child_value(apx_vm_writeState_t* self, char const* key)
+static dtl_dv_t* state_get_child_value(apx_vm_write_state_t* self, char const* key)
 {
    assert(self != NULL);
    if (self->value_type == DTL_DV_HASH)
@@ -1260,7 +1260,7 @@ static dtl_dv_t* state_get_child_value(apx_vm_writeState_t* self, char const* ke
    return NULL;
 }
 
-static apx_error_t state_set_field_name(apx_vm_writeState_t* self, char const* name)
+static apx_error_t state_set_field_name(apx_vm_write_state_t* self, char const* name)
 {
    assert( self != NULL);
    if (name == NULL)
@@ -1271,8 +1271,8 @@ static apx_error_t state_set_field_name(apx_vm_writeState_t* self, char const* n
 }
 
 
-//apx_vm_queuedWriteState_t API
-static void queued_write_state_init(apx_vm_queuedWriteState_t* self)
+//apx_vm_queued_write_state_t API
+static void queued_write_state_init(apx_vm_queued_write_state_t* self)
 {
    if (self != NULL)
    {
@@ -1285,7 +1285,7 @@ static void queued_write_state_init(apx_vm_queuedWriteState_t* self)
    }
 }
 
-static bool queued_write_state_is_active(apx_vm_queuedWriteState_t* self)
+static bool queued_write_state_is_active(apx_vm_queued_write_state_t* self)
 {
    assert(self != NULL);
    return self->is_active;
@@ -1293,7 +1293,7 @@ static bool queued_write_state_is_active(apx_vm_queuedWriteState_t* self)
 
 //apx_vm_serializer_t API
 
-static apx_error_t serializer_prepare_for_buffer_write(apx_vm_serializer_t* self, apx_typeCode_t type_code, uint32_t element_size)
+static apx_error_t serializer_prepare_for_buffer_write(apx_vm_serializer_t* self, apx_type_code_t type_code, uint32_t element_size)
 {
    assert(self != NULL);
    if (!write_buffer_is_valid(&self->buffer))
@@ -1314,7 +1314,7 @@ static apx_error_t serializer_prepare_for_buffer_write(apx_vm_serializer_t* self
    return APX_NO_ERROR;
 }
 
-static apx_error_t serializer_prepare_for_array(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+static apx_error_t serializer_prepare_for_array(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    assert(self != NULL);
    if (array_length > 0)
@@ -1688,7 +1688,7 @@ static void serializer_pop_state(apx_vm_serializer_t* self)
 static apx_error_t serializer_enter_new_child_state(apx_vm_serializer_t* self)
 {
    assert(self != NULL);
-   apx_vm_writeState_t* child_state = apx_vm_writeState_new();
+   apx_vm_write_state_t* child_state = apx_vm_writeState_new();
    if (child_state == NULL)
    {
       return APX_MEM_ERROR;

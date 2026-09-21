@@ -33,7 +33,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portConnectorChangeRef_create(apx_portConnectorChangeRef_t *self, apx_nodeInstance_t * node_instance, apx_portConnectorChangeTable_t * connector_changes)
+void apx_portConnectorChangeRef_create(apx_port_connector_change_ref_t *self, apx_node_instance_t * node_instance, apx_port_connector_change_table_t * connector_changes)
 {
    if (self != NULL)
    {
@@ -43,7 +43,7 @@ void apx_portConnectorChangeRef_create(apx_portConnectorChangeRef_t *self, apx_n
    }
 }
 
-void apx_portConnectorChangeRef_destroy(apx_portConnectorChangeRef_t *self)
+void apx_portConnectorChangeRef_destroy(apx_port_connector_change_ref_t *self)
 {
    if (self != NULL)
    {
@@ -54,9 +54,9 @@ void apx_portConnectorChangeRef_destroy(apx_portConnectorChangeRef_t *self)
    }
 }
 
-apx_portConnectorChangeRef_t *apx_portConnectorChangeRef_new(apx_nodeInstance_t *nodeInstance, apx_portConnectorChangeTable_t *connector_changes)
+apx_port_connector_change_ref_t *apx_portConnectorChangeRef_new(apx_node_instance_t *nodeInstance, apx_port_connector_change_table_t *connector_changes)
 {
-   apx_portConnectorChangeRef_t *self = (apx_portConnectorChangeRef_t*) malloc(sizeof(apx_portConnectorChangeRef_t));
+   apx_port_connector_change_ref_t *self = (apx_port_connector_change_ref_t*) malloc(sizeof(apx_port_connector_change_ref_t));
    if (self != NULL)
    {
       apx_portConnectorChangeRef_create(self, nodeInstance, connector_changes);
@@ -64,7 +64,7 @@ apx_portConnectorChangeRef_t *apx_portConnectorChangeRef_new(apx_nodeInstance_t 
    return self;
 }
 
-void apx_portConnectorChangeRef_delete(apx_portConnectorChangeRef_t *self)
+void apx_portConnectorChangeRef_delete(apx_port_connector_change_ref_t *self)
 {
    if (self != NULL)
    {
@@ -75,7 +75,7 @@ void apx_portConnectorChangeRef_delete(apx_portConnectorChangeRef_t *self)
 
 void apx_portConnectorChangeRef_vdelete(void *arg)
 {
-   apx_portConnectorChangeRef_delete( (apx_portConnectorChangeRef_t*) arg);
+   apx_portConnectorChangeRef_delete( (apx_port_connector_change_ref_t*) arg);
 }
 
 //////////////////////////////////////////////////////////////////////////////

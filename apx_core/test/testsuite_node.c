@@ -88,7 +88,7 @@ static void test_append_data_type(CuTest* tc)
 {
    apx_node_t node;
    apx_node_create(&node, "TestNode");
-   apx_dataType_t *data_type = apx_dataType_new("VehicleSpeed_T", 2u);
+   apx_data_type_t *data_type = apx_dataType_new("VehicleSpeed_T", 2u);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_append_data_type(&node, data_type));
    CuAssertIntEquals(tc, 1, apx_node_num_data_types(&node));
    CuAssertUIntEquals(tc, 0u, apx_dataType_get_id(data_type));
@@ -148,7 +148,7 @@ static void test_get_type_by_id(CuTest* tc)
 {
    apx_node_t node;
    apx_node_create(&node, "TestNode");
-   apx_dataType_t* data_type = apx_dataType_new("VehicleSpeed_T", 2u);
+   apx_data_type_t* data_type = apx_dataType_new("VehicleSpeed_T", 2u);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_append_data_type(&node, data_type));
    CuAssertIntEquals(tc, 1, apx_node_num_data_types(&node));
    CuAssertUIntEquals(tc, 0u, apx_dataType_get_id(data_type));

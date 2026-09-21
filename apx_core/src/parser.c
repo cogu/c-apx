@@ -35,9 +35,9 @@ static apx_error_t state_make_node(apx_parse_state_t* self, uint8_t const* name_
 static apx_error_t state_make_data_type(apx_parse_state_t* self, uint8_t const* name_begin, uint8_t const* name_end);
 static apx_error_t state_make_provide_port(apx_parse_state_t* self, uint8_t const* name_begin, uint8_t const* name_end);
 static apx_error_t state_make_require_port(apx_parse_state_t* self, uint8_t const* name_begin, uint8_t const* name_end);
-static apx_error_t state_parse_data_signature(apx_parse_state_t* self, apx_signatureParser_t* parser, uint8_t const* begin, uint8_t const* end);
-static apx_error_t state_parse_type_attributes(apx_parse_state_t* self, apx_attributeParser_t* parser, uint8_t const* begin, uint8_t const* end);
-static apx_error_t state_parse_port_attributes(apx_parse_state_t* self, apx_attributeParser_t* parser, uint8_t const* begin, uint8_t const* end);
+static apx_error_t state_parse_data_signature(apx_parse_state_t* self, apx_signature_parser_t* parser, uint8_t const* begin, uint8_t const* end);
+static apx_error_t state_parse_type_attributes(apx_parse_state_t* self, apx_attribute_parser_t* parser, uint8_t const* begin, uint8_t const* end);
+static apx_error_t state_parse_port_attributes(apx_parse_state_t* self, apx_attribute_parser_t* parser, uint8_t const* begin, uint8_t const* end);
 
 static void parser_clear_error(apx_parser_t *self);
 static void parser_set_error(apx_parser_t* self, apx_error_t error_code, int32_t error_line);
@@ -262,7 +262,7 @@ static apx_error_t state_make_require_port(apx_parse_state_t* self, uint8_t cons
    return APX_NO_ERROR;
 }
 
-static apx_error_t state_parse_data_signature(apx_parse_state_t* self, apx_signatureParser_t *parser, uint8_t const* begin, uint8_t const* end)
+static apx_error_t state_parse_data_signature(apx_parse_state_t* self, apx_signature_parser_t *parser, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* result = apx_signatureParser_parse_data_signature(parser, begin, end);
    if (result > begin)
@@ -281,7 +281,7 @@ static apx_error_t state_parse_data_signature(apx_parse_state_t* self, apx_signa
    return apx_signatureParser_get_last_error(parser, NULL);
 }
 
-static apx_error_t state_parse_type_attributes(apx_parse_state_t* self, apx_attributeParser_t* parser, uint8_t const* begin, uint8_t const* end)
+static apx_error_t state_parse_type_attributes(apx_parse_state_t* self, apx_attribute_parser_t* parser, uint8_t const* begin, uint8_t const* end)
 {
    assert(self->data_type != NULL);
    uint8_t const* result = apx_attributeParser_parse_type_attributes(parser, begin, end, apx_dataType_get_attributes(self->data_type));
@@ -292,7 +292,7 @@ static apx_error_t state_parse_type_attributes(apx_parse_state_t* self, apx_attr
    return apx_attributeParser_get_last_error(parser, NULL);
 }
 
-static apx_error_t state_parse_port_attributes(apx_parse_state_t* self, apx_attributeParser_t* parser, uint8_t const* begin, uint8_t const* end)
+static apx_error_t state_parse_port_attributes(apx_parse_state_t* self, apx_attribute_parser_t* parser, uint8_t const* begin, uint8_t const* end)
 {
    assert(self->port != NULL);
    uint8_t const* result = apx_attributeParser_parse_port_attributes(parser, begin, end, apx_port_get_attributes(self->port));
@@ -588,7 +588,7 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t* self, uint8_t co
       if (next < end)
       {
          uint8_t const* result;
-         apx_portType_t port_type;
+         apx_port_type_t port_type;
          if (c == 'R')
          {
             port_type = APX_REQUIRE_PORT;

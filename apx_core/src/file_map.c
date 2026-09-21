@@ -29,10 +29,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static adt_list_elem_t* auto_assign_address(apx_fileMap_t* self, apx_file_t* file);
-static adt_list_elem_t* find_last_element_of_type(apx_fileMap_t* self, apx_fileType_t file_type);
-static adt_list_elem_t* find_next_available_position(apx_fileMap_t* self, apx_file_t* file);
-static bool insert_item(apx_fileMap_t* self, apx_file_t* file, adt_list_elem_t* iterator_left);
+static adt_list_elem_t* auto_assign_address(apx_file_map_t* self, apx_file_t* file);
+static adt_list_elem_t* find_last_element_of_type(apx_file_map_t* self, apx_file_type_t file_type);
+static adt_list_elem_t* find_next_available_position(apx_file_map_t* self, apx_file_t* file);
+static bool insert_item(apx_file_map_t* self, apx_file_t* file, adt_list_elem_t* iterator_left);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -48,7 +48,7 @@ static bool insert_item(apx_fileMap_t* self, apx_file_t* file, adt_list_elem_t* 
 //////////////////////////////////////////////////////////////////////////////
 
 
-void apx_fileMap_create(apx_fileMap_t* self, bool is_remote)
+void apx_fileMap_create(apx_file_map_t* self, bool is_remote)
 {
    if (self != NULL)
    {
@@ -57,7 +57,7 @@ void apx_fileMap_create(apx_fileMap_t* self, bool is_remote)
       self->last_file = NULL;
    }
 }
-void apx_fileMap_destroy(apx_fileMap_t *self)
+void apx_fileMap_destroy(apx_file_map_t *self)
 {
    if (self != NULL)
    {
@@ -65,7 +65,7 @@ void apx_fileMap_destroy(apx_fileMap_t *self)
    }
 }
 
-bool apx_fileMap_is_remote(apx_fileMap_t const* self)
+bool apx_fileMap_is_remote(apx_file_map_t const* self)
 {
    if (self != NULL)
    {
@@ -74,7 +74,7 @@ bool apx_fileMap_is_remote(apx_fileMap_t const* self)
    return false;
 }
 
-apx_file_t* apx_fileMap_create_file(apx_fileMap_t* self, rmf_fileInfo_t const* file_info)
+apx_file_t* apx_fileMap_create_file(apx_file_map_t* self, rmf_file_info_t const* file_info)
 {
    if ( (self != NULL) && (file_info != NULL))
    {
@@ -113,7 +113,7 @@ apx_file_t* apx_fileMap_create_file(apx_fileMap_t* self, rmf_fileInfo_t const* f
    return NULL;
 }
 
-apx_error_t apx_fileMap_remove_file(apx_fileMap_t* self, apx_file_t* file)
+apx_error_t apx_fileMap_remove_file(apx_file_map_t* self, apx_file_t* file)
 {
    if ( (self != NULL) && (file != NULL) )
    {
@@ -124,7 +124,7 @@ apx_error_t apx_fileMap_remove_file(apx_fileMap_t* self, apx_file_t* file)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_file_t* apx_fileMap_find_by_address(apx_fileMap_t* self, uint32_t address)
+apx_file_t* apx_fileMap_find_by_address(apx_file_map_t* self, uint32_t address)
 {
    apx_file_t *retval = NULL;
    if (self != NULL)
@@ -155,7 +155,7 @@ apx_file_t* apx_fileMap_find_by_address(apx_fileMap_t* self, uint32_t address)
    return retval;
 }
 
-apx_file_t* apx_fileMap_find_by_name(apx_fileMap_t* self, const char* name)
+apx_file_t* apx_fileMap_find_by_name(apx_file_map_t* self, const char* name)
 {
    apx_file_t *retval = NULL;
    if (self != NULL)
@@ -186,7 +186,7 @@ apx_file_t* apx_fileMap_find_by_name(apx_fileMap_t* self, const char* name)
    return retval;
 }
 
-int32_t apx_fileMap_length(apx_fileMap_t const* self)
+int32_t apx_fileMap_length(apx_file_map_t const* self)
 {
    if (self != NULL)
    {
@@ -195,7 +195,7 @@ int32_t apx_fileMap_length(apx_fileMap_t const* self)
    return -1;
 }
 
-adt_list_t const* apx_fileMap_get_list(apx_fileMap_t const* self)
+adt_list_t const* apx_fileMap_get_list(apx_file_map_t const* self)
 {
    if (self != NULL)
    {
@@ -204,7 +204,7 @@ adt_list_t const* apx_fileMap_get_list(apx_fileMap_t const* self)
    return NULL;
 }
 
-bool apx_fileMap_exist(apx_fileMap_t const* self, apx_file_t* file)
+bool apx_fileMap_exist(apx_file_map_t const* self, apx_file_t* file)
 {
    if (self != NULL)
    {
@@ -225,11 +225,11 @@ bool apx_fileMap_exist(apx_fileMap_t const* self, apx_file_t* file)
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static adt_list_elem_t* auto_assign_address(apx_fileMap_t* self, apx_file_t* file)
+static adt_list_elem_t* auto_assign_address(apx_file_map_t* self, apx_file_t* file)
 {
    uint32_t start_address = 0u;
    uint32_t alignment = 0u;
-   apx_fileType_t file_type = apx_file_get_apx_file_type(file);
+   apx_file_type_t file_type = apx_file_get_apx_file_type(file);
    switch (file_type)
    {
    case APX_DEFINITION_FILE_TYPE:
@@ -277,7 +277,7 @@ static adt_list_elem_t* auto_assign_address(apx_fileMap_t* self, apx_file_t* fil
    return iterator_left;
 }
 
-static adt_list_elem_t* find_last_element_of_type(apx_fileMap_t* self, apx_fileType_t file_type)
+static adt_list_elem_t* find_last_element_of_type(apx_file_map_t* self, apx_file_type_t file_type)
 {
    assert(self != NULL);
    adt_list_t const* list = &self->file_list;
@@ -321,7 +321,7 @@ static adt_list_elem_t* find_last_element_of_type(apx_fileMap_t* self, apx_fileT
    return candidate;
 }
 
-static adt_list_elem_t* find_next_available_position(apx_fileMap_t* self, apx_file_t* file)
+static adt_list_elem_t* find_next_available_position(apx_file_map_t* self, apx_file_t* file)
 {
    assert((self != NULL) && (file != NULL));
    adt_list_t const* list = &self->file_list;
@@ -349,7 +349,7 @@ static adt_list_elem_t* find_next_available_position(apx_fileMap_t* self, apx_fi
    return iterator_prev;
 }
 
-static bool insert_item(apx_fileMap_t* self, apx_file_t* file, adt_list_elem_t* iterator_left)
+static bool insert_item(apx_file_map_t* self, apx_file_t* file, adt_list_elem_t* iterator_left)
 {
    assert((self != NULL) && (file != NULL));
    adt_list_t* list = &self->file_list;

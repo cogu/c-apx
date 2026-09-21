@@ -29,13 +29,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void publish_local_files(apx_fileManager_t* self);
-static apx_error_t process_message(apx_fileManager_t* self, uint32_t address, uint8_t const* data, apx_size_t size);
-static apx_error_t process_command_message(apx_fileManager_t* self, uint8_t const* data, apx_size_t size);
-static apx_error_t process_file_write_message(apx_fileManager_t* self, uint32_t address, uint8_t const* data, apx_size_t size);
-static apx_error_t process_open_file_request(apx_fileManager_t* self, uint32_t start_address);
-static apx_error_t process_close_file_request(apx_fileManager_t* self, uint32_t start_address);
-static apx_error_t process_remote_file_published(apx_fileManager_t* self, rmf_fileInfo_t const* file_info);
+static void publish_local_files(apx_file_manager_t* self);
+static apx_error_t process_message(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size);
+static apx_error_t process_command_message(apx_file_manager_t* self, uint8_t const* data, apx_size_t size);
+static apx_error_t process_file_write_message(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size);
+static apx_error_t process_open_file_request(apx_file_manager_t* self, uint32_t start_address);
+static apx_error_t process_close_file_request(apx_file_manager_t* self, uint32_t start_address);
+static apx_error_t process_remote_file_published(apx_file_manager_t* self, rmf_file_info_t const* file_info);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -45,7 +45,7 @@ static apx_error_t process_remote_file_published(apx_fileManager_t* self, rmf_fi
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_fileManager_create(apx_fileManager_t* self, uint8_t mode, apx_connectionInterface_t const* parent_connection, apx_allocator_t* allocator)
+apx_error_t apx_fileManager_create(apx_file_manager_t* self, uint8_t mode, apx_connection_interface_t const* parent_connection, apx_allocator_t* allocator)
 {
    if (self != NULL)
    {
@@ -69,7 +69,7 @@ apx_error_t apx_fileManager_create(apx_fileManager_t* self, uint8_t mode, apx_co
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_fileManager_destroy(apx_fileManager_t *self)
+void apx_fileManager_destroy(apx_file_manager_t *self)
 {
    if (self != NULL)
    {
@@ -79,7 +79,7 @@ void apx_fileManager_destroy(apx_fileManager_t *self)
    }
 }
 
-void apx_fileManager_start(apx_fileManager_t *self)
+void apx_fileManager_start(apx_file_manager_t *self)
 {
    if (self != NULL)
    {
@@ -95,7 +95,7 @@ void apx_fileManager_start(apx_fileManager_t *self)
    }
 }
 
-void apx_fileManager_stop(apx_fileManager_t *self)
+void apx_fileManager_stop(apx_file_manager_t *self)
 {
    if (self != NULL)
    {
@@ -111,7 +111,7 @@ void apx_fileManager_stop(apx_fileManager_t *self)
    }
 }
 
-void apx_fileManager_connected(apx_fileManager_t* self)
+void apx_fileManager_connected(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
@@ -122,7 +122,7 @@ void apx_fileManager_connected(apx_fileManager_t* self)
       else
       {
          apx_fileManagerShared_connected(&self->shared);
-         rmf_versionId_t const version_id = apx_fileManagerShared_get_remotefile_version_id(&self->shared);
+         rmf_version_id_t const version_id = apx_fileManagerShared_get_remotefile_version_id(&self->shared);
          if (version_id == RMF_PROTOCOL_VERSION_ID_1_1)
          {
             uint32_t connection_id = apx_fileManagerShared_get_connection_id(&self->shared);
@@ -136,7 +136,7 @@ void apx_fileManager_connected(apx_fileManager_t* self)
    }
 }
 
-void apx_fileManager_disconnected(apx_fileManager_t* self)
+void apx_fileManager_disconnected(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
@@ -144,7 +144,7 @@ void apx_fileManager_disconnected(apx_fileManager_t* self)
    }
 }
 
-apx_file_t* apx_fileManager_create_local_file(apx_fileManager_t* self, rmf_fileInfo_t const* file_info)
+apx_file_t* apx_fileManager_create_local_file(apx_file_manager_t* self, rmf_file_info_t const* file_info)
 {
    if (self != NULL)
    {
@@ -158,12 +158,12 @@ apx_file_t* apx_fileManager_create_local_file(apx_fileManager_t* self, rmf_fileI
    return NULL;
 }
 
-apx_error_t apx_fileManager_publish_local_file(apx_fileManager_t* self, rmf_fileInfo_t const* file_info)
+apx_error_t apx_fileManager_publish_local_file(apx_file_manager_t* self, rmf_file_info_t const* file_info)
 {
    if ((self != NULL) && (file_info != NULL))
    {
       apx_error_t retval = APX_MEM_ERROR;
-      rmf_fileInfo_t* cloned_info = rmf_fileInfo_clone(file_info);
+      rmf_file_info_t* cloned_info = rmf_fileInfo_clone(file_info);
       if (cloned_info != NULL)
       {
          retval = apx_fileManagerWorker_prepare_publish_local_file(&self->worker, cloned_info);
@@ -173,7 +173,7 @@ apx_error_t apx_fileManager_publish_local_file(apx_fileManager_t* self, rmf_file
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_file_t* apx_fileManager_find_file_by_address(apx_fileManager_t* self, uint32_t address)
+apx_file_t* apx_fileManager_find_file_by_address(apx_file_manager_t* self, uint32_t address)
 {
    if (self != NULL)
    {
@@ -182,7 +182,7 @@ apx_file_t* apx_fileManager_find_file_by_address(apx_fileManager_t* self, uint32
    return NULL;
 }
 
-apx_file_t* apx_fileManager_find_local_file_by_name(apx_fileManager_t* self, char const* name)
+apx_file_t* apx_fileManager_find_local_file_by_name(apx_file_manager_t* self, char const* name)
 {
    if (self != NULL)
    {
@@ -191,7 +191,7 @@ apx_file_t* apx_fileManager_find_local_file_by_name(apx_fileManager_t* self, cha
    return NULL;
 }
 
-apx_file_t* apx_fileManager_find_remote_file_by_name(apx_fileManager_t* self, char const* name)
+apx_file_t* apx_fileManager_find_remote_file_by_name(apx_file_manager_t* self, char const* name)
 {
    if (self != NULL)
    {
@@ -200,7 +200,7 @@ apx_file_t* apx_fileManager_find_remote_file_by_name(apx_fileManager_t* self, ch
    return NULL;
 }
 
-apx_error_t apx_fileManager_message_received(apx_fileManager_t* self, uint8_t const* msg_data, apx_size_t msg_len)
+apx_error_t apx_fileManager_message_received(apx_file_manager_t* self, uint8_t const* msg_data, apx_size_t msg_len)
 {
    if ( (self != NULL) && (msg_data != NULL) )
    {
@@ -210,7 +210,7 @@ apx_error_t apx_fileManager_message_received(apx_fileManager_t* self, uint8_t co
       if (header_size > 0)
       {
          apx_error_t error_code;
-         apx_fileManagerReceptionResult_t result;
+         apx_file_manager_reception_result_t result;
          assert(msg_len >= header_size);
          error_code = apx_fileManagerReceiver_write(&self->receiver, &result, address, msg_data + header_size, msg_len - header_size, more_bit);
          if (error_code != APX_NO_ERROR)
@@ -242,7 +242,7 @@ apx_error_t apx_fileManager_message_received(apx_fileManager_t* self, uint8_t co
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_local_const_data(apx_fileManager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
+apx_error_t apx_fileManager_send_local_const_data(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
 {
    if (self != NULL && data != NULL)
    {
@@ -260,7 +260,7 @@ apx_error_t apx_fileManager_send_local_const_data(apx_fileManager_t* self, uint3
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_local_data(apx_fileManager_t* self, uint32_t address, uint8_t* data, apx_size_t size)
+apx_error_t apx_fileManager_send_local_data(apx_file_manager_t* self, uint32_t address, uint8_t* data, apx_size_t size)
 {
    if (self != NULL && data != NULL)
    {
@@ -278,7 +278,7 @@ apx_error_t apx_fileManager_send_local_data(apx_fileManager_t* self, uint32_t ad
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_open_file_request(apx_fileManager_t* self, uint32_t address)
+apx_error_t apx_fileManager_send_open_file_request(apx_file_manager_t* self, uint32_t address)
 {
    if (self != NULL)
    {
@@ -287,7 +287,7 @@ apx_error_t apx_fileManager_send_open_file_request(apx_fileManager_t* self, uint
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_error_code(apx_fileManager_t* self, apx_error_t error_code)
+apx_error_t apx_fileManager_send_error_code(apx_file_manager_t* self, apx_error_t error_code)
 {
    if (self != NULL)
    {
@@ -298,7 +298,7 @@ apx_error_t apx_fileManager_send_error_code(apx_fileManager_t* self, apx_error_t
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_connection_create(apx_fileManager_t* self, apx_connectionId_t connection_id, apx_connectionState_t connection_state, char const* tag)
+apx_error_t apx_fileManager_send_connection_create(apx_file_manager_t* self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const* tag)
 {
    if (self != NULL)
    {
@@ -307,7 +307,7 @@ apx_error_t apx_fileManager_send_connection_create(apx_fileManager_t* self, apx_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self)
+uint16_t apx_fileManager_get_num_pending_worker_commands(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
@@ -318,7 +318,7 @@ uint16_t apx_fileManager_get_num_pending_worker_commands(apx_fileManager_t* self
 
 
 #ifdef UNIT_TEST
-bool apx_fileManager_run(apx_fileManager_t* self)
+bool apx_fileManager_run(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
@@ -335,7 +335,7 @@ bool apx_fileManager_run(apx_fileManager_t* self)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void publish_local_files(apx_fileManager_t* self)
+static void publish_local_files(apx_file_manager_t* self)
 {
    adt_ary_t local_file_list;
    int32_t i;
@@ -344,7 +344,7 @@ static void publish_local_files(apx_fileManager_t* self)
    num_files = apx_fileManagerShared_copy_local_file_info(&self->shared, &local_file_list);
    for (i=0; i < num_files; i++)
    {
-      rmf_fileInfo_t* file_info = (rmf_fileInfo_t*) adt_ary_value(&local_file_list, i);
+      rmf_file_info_t* file_info = (rmf_file_info_t*) adt_ary_value(&local_file_list, i);
       if (file_info != NULL)
       {
          //Worker takes memory ownership of file_info
@@ -358,7 +358,7 @@ static void publish_local_files(apx_fileManager_t* self)
    adt_ary_destroy(&local_file_list);
 }
 
-static apx_error_t process_message(apx_fileManager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
+static apx_error_t process_message(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
 {
    if (address == RMF_CMD_AREA_START_ADDRESS)
    {
@@ -371,7 +371,7 @@ static apx_error_t process_message(apx_fileManager_t* self, uint32_t address, ui
    return APX_INVALID_ADDRESS_ERROR;
 }
 
-static apx_error_t process_command_message(apx_fileManager_t* self, uint8_t const* data, apx_size_t size)
+static apx_error_t process_command_message(apx_file_manager_t* self, uint8_t const* data, apx_size_t size)
 {
    if (size < RMF_CMD_TYPE_SIZE)
    {
@@ -381,7 +381,7 @@ static apx_error_t process_command_message(apx_fileManager_t* self, uint8_t cons
    uint32_t const cmd_type = unpackLE(data, RMF_CMD_TYPE_SIZE);
    apx_size_t const cmd_size = size - RMF_CMD_TYPE_SIZE;
    uint8_t const* next = data + RMF_CMD_TYPE_SIZE;
-   rmf_fileInfo_t* file_info;
+   rmf_file_info_t* file_info;
    apx_size_t decoded_size;
    switch (cmd_type)
    {
@@ -435,7 +435,7 @@ static apx_error_t process_command_message(apx_fileManager_t* self, uint8_t cons
    return retval;
 }
 
-static apx_error_t process_file_write_message(apx_fileManager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
+static apx_error_t process_file_write_message(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
 {
    apx_file_t *file = apx_fileManagerShared_find_file_by_address(&self->shared, address | RMF_HIGH_ADDR_BIT);
    if (file == NULL)
@@ -447,7 +447,7 @@ static apx_error_t process_file_write_message(apx_fileManager_t* self, uint32_t 
       //Ignore writes on closed files
       return APX_NO_ERROR;
    }
-   apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(&self->shared);
+   apx_connection_interface_t const* connection = apx_fileManagerShared_connection(&self->shared);
    if (connection == NULL)
    {
       return APX_NULL_PTR_ERROR;
@@ -458,7 +458,7 @@ static apx_error_t process_file_write_message(apx_fileManager_t* self, uint32_t 
    return connection->remote_file_write_notification(connection->arg, file, offset, data, size);
 }
 
-static apx_error_t process_open_file_request(apx_fileManager_t* self, uint32_t start_address)
+static apx_error_t process_open_file_request(apx_file_manager_t* self, uint32_t start_address)
 {
    apx_file_t* file = apx_fileManagerShared_find_file_by_address(&self->shared, start_address);
    if (file == NULL)
@@ -470,14 +470,14 @@ static apx_error_t process_open_file_request(apx_fileManager_t* self, uint32_t s
    return APX_NO_ERROR;
 }
 
-static apx_error_t process_close_file_request(apx_fileManager_t* self, uint32_t start_address)
+static apx_error_t process_close_file_request(apx_file_manager_t* self, uint32_t start_address)
 {
    (void)self;
    (void)start_address;
    return APX_NOT_IMPLEMENTED_ERROR;
 }
 
-static apx_error_t process_remote_file_published(apx_fileManager_t* self, rmf_fileInfo_t const* file_info)
+static apx_error_t process_remote_file_published(apx_file_manager_t* self, rmf_file_info_t const* file_info)
 {
    apx_file_t* file = apx_fileManagerShared_create_remote_file(&self->shared, file_info);
    if (file == NULL)
@@ -485,7 +485,7 @@ static apx_error_t process_remote_file_published(apx_fileManager_t* self, rmf_fi
       return APX_FILE_CREATE_ERROR;
    }
    apx_file_set_file_manager(file, self);
-   apx_connectionInterface_t const* connection = apx_fileManagerShared_connection(&self->shared);
+   apx_connection_interface_t const* connection = apx_fileManagerShared_connection(&self->shared);
    if (connection == NULL)
    {
       return APX_NULL_PTR_ERROR;

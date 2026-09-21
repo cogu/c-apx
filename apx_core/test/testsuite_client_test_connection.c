@@ -70,7 +70,7 @@ CuSuite* testSuite_apx_clientTestConnection(void)
 
 static void test_create_test_connection(CuTest* tc)
 {
-   apx_clientTestConnection_t* connection;
+   apx_client_test_connection_t* connection;
    char const* apx_text =
       "APX/1.2\n"
       "N\"TestNode1\"\n"
@@ -84,7 +84,7 @@ static void test_create_test_connection(CuTest* tc)
 
 static void test_local_files_are_published_when_greeting_is_accepted(CuTest* tc)
 {
-   apx_clientTestConnection_t *connection;
+   apx_client_test_connection_t *connection;
    adt_bytearray_t *packet;
    int const message_size = 67;
    uint8_t actual[67];
@@ -157,7 +157,7 @@ static void test_local_files_are_published_when_greeting_is_accepted(CuTest* tc)
 
 static void test_definition_file_is_sent_when_file_open_is_requested(CuTest* tc)
 {
-   apx_clientTestConnection_t* connection;
+   apx_client_test_connection_t* connection;
    adt_bytearray_t* packet;
    uint8_t const* buffer;
    char const* apx_text =
@@ -197,7 +197,7 @@ static void test_definition_file_is_sent_when_file_open_is_requested(CuTest* tc)
 
 static void test_provide_port_file_is_sent_when_file_open_requested(CuTest* tc)
 {
-   apx_clientTestConnection_t* connection;
+   apx_client_test_connection_t* connection;
    adt_bytearray_t* packet;
    uint8_t const* buffer;
    char const* apx_text =
@@ -238,7 +238,7 @@ static void test_provide_port_file_is_sent_when_file_open_requested(CuTest* tc)
 
 static void test_require_port_file_is_requested_when_published_by_server(CuTest* tc)
 {
-   apx_clientTestConnection_t* connection;
+   apx_client_test_connection_t* connection;
    adt_bytearray_t* packet;
    uint8_t const* buffer;
    char const* apx_text =
@@ -283,7 +283,7 @@ static void test_require_port_file_is_requested_when_published_by_server(CuTest*
 
 static void test_node_data_is_updated_when_require_port_is_written(CuTest* tc)
 {
-   apx_clientTestConnection_t* connection;
+   apx_client_test_connection_t* connection;
    adt_bytearray_t* packet;
    char const* apx_text =
       "APX/1.2\n"
@@ -308,7 +308,7 @@ static void test_node_data_is_updated_when_require_port_is_written(CuTest* tc)
    CuAssertIntEquals(tc, 1u, apx_clientTestConnection_log_length(connection)); //This should be the file open request
    apx_clientTestConnection_clear_log(connection);
    CuAssertIntEquals(tc, 0u, apx_clientTestConnection_log_length(connection));
-   apx_nodeInstance_t* node_instance = apx_clientTestConnection_find_node(connection, "TestNode1");
+   apx_node_instance_t* node_instance = apx_clientTestConnection_find_node(connection, "TestNode1");
    CuAssertPtrNotNull(tc, node_instance);
    CuAssertUIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_require_port_data_state(node_instance));
 
@@ -316,7 +316,7 @@ static void test_node_data_is_updated_when_require_port_is_written(CuTest* tc)
    uint8_t buffer[UINT8_SIZE * 2] = { 0, 0 };
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_clientTestConnection_write_remote_data(connection, APX_PORT_DATA_ADDRESS_START, &data[0], (apx_size_t)sizeof(data)));
    CuAssertUIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_require_port_data_state(node_instance));
-   apx_nodeData_t* node_data = apx_nodeInstance_get_node_data(node_instance);
+   apx_node_data_t* node_data = apx_nodeInstance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_require_port_data(node_data, 0, &buffer[0], (apx_size_t) sizeof(buffer)));
    CuAssertUIntEquals(tc, data[0], buffer[0]);

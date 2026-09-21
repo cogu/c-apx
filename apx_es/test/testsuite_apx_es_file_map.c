@@ -59,7 +59,7 @@ CuSuite* testsuite_apx_es_filemap(void)
 
 static void apx_es_filemap_insert(CuTest* tc)
 {
-   apx_es_fileMap_t localMap;
+   apx_es_file_map_t localMap;
    apx_file_t file1;
    apx_file_t file2;
    memset(&file1,0,sizeof(apx_file_t));

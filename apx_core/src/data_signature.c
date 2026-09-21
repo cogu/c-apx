@@ -34,7 +34,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_dataSignature_create(apx_dataSignature_t* self)
+void apx_dataSignature_create(apx_data_signature_t* self)
 {
    if (self != NULL)
    {
@@ -43,7 +43,7 @@ void apx_dataSignature_create(apx_dataSignature_t* self)
    }
 }
 
-void apx_dataSignature_destroy(apx_dataSignature_t* self)
+void apx_dataSignature_destroy(apx_data_signature_t* self)
 {
    if (self != NULL)
    {
@@ -58,7 +58,7 @@ void apx_dataSignature_destroy(apx_dataSignature_t* self)
    }
 }
 
-apx_dataElement_t* apx_dataSignature_get_data_element(apx_dataSignature_t* self)
+apx_data_element_t* apx_dataSignature_get_data_element(apx_data_signature_t* self)
 {
    if (self != NULL)
    {
@@ -67,7 +67,7 @@ apx_dataElement_t* apx_dataSignature_get_data_element(apx_dataSignature_t* self)
    return NULL;
 }
 
-void apx_dataSignature_set_element(apx_dataSignature_t* self, apx_dataElement_t* data_element)
+void apx_dataSignature_set_element(apx_data_signature_t* self, apx_data_element_t* data_element)
 {
    if (self != NULL)
    {
@@ -75,7 +75,7 @@ void apx_dataSignature_set_element(apx_dataSignature_t* self, apx_dataElement_t*
    }
 }
 
-apx_dataElement_t* apx_dataSignature_get_effective_data_element(apx_dataSignature_t* self)
+apx_data_element_t* apx_dataSignature_get_effective_data_element(apx_data_signature_t* self)
 {
    if (self != NULL)
    {
@@ -84,7 +84,7 @@ apx_dataElement_t* apx_dataSignature_get_effective_data_element(apx_dataSignatur
    return NULL;
 }
 
-void apx_dataSignature_set_effective_element(apx_dataSignature_t* self, apx_dataElement_t* data_element)
+void apx_dataSignature_set_effective_element(apx_data_signature_t* self, apx_data_element_t* data_element)
 {
    if (self != NULL)
    {

@@ -29,12 +29,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_eventLoop_processEvent(apx_eventLoop_t *self, apx_event_t *event, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg);
+static void apx_eventLoop_processEvent(apx_event_loop_t *self, apx_event_t *event, apx_event_handler_func_t *eventHandler, void *eventHandlerArg);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_eventLoop_create(apx_eventLoop_t *self)
+apx_error_t apx_eventLoop_create(apx_event_loop_t *self)
 {
    if (self != NULL)
    {
@@ -51,7 +51,7 @@ apx_error_t apx_eventLoop_create(apx_eventLoop_t *self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_eventLoop_destroy(apx_eventLoop_t *self, void (*destructor)(void*, apx_event_t*), void *destructor_arg)
+void apx_eventLoop_destroy(apx_event_loop_t *self, void (*destructor)(void*, apx_event_t*), void *destructor_arg)
 {
    if (self != NULL)
    {
@@ -75,9 +75,9 @@ void apx_eventLoop_destroy(apx_eventLoop_t *self, void (*destructor)(void*, apx_
    }
 }
 
-apx_eventLoop_t *apx_eventLoop_new(void)
+apx_event_loop_t *apx_eventLoop_new(void)
 {
-   apx_eventLoop_t *self = (apx_eventLoop_t*) malloc(sizeof(apx_eventLoop_t));
+   apx_event_loop_t *self = (apx_event_loop_t*) malloc(sizeof(apx_event_loop_t));
    if (self != NULL)
    {
       apx_error_t errorType = apx_eventLoop_create(self);
@@ -90,7 +90,7 @@ apx_eventLoop_t *apx_eventLoop_new(void)
    return self;
 }
 
-void apx_eventLoop_delete(apx_eventLoop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg)
+void apx_eventLoop_delete(apx_event_loop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg)
 {
    if (self != NULL)
    {
@@ -99,7 +99,7 @@ void apx_eventLoop_delete(apx_eventLoop_t* self, void (*destructor)(void*, apx_e
    }
 }
 
-void apx_eventLoop_append(apx_eventLoop_t *self, apx_event_t *event)
+void apx_eventLoop_append(apx_event_loop_t *self, apx_event_t *event)
 {
    SPINLOCK_ENTER(self->lock);
    adt_rbfh_insert(&self->pendingEvents, (const uint8_t*) event);
@@ -109,7 +109,7 @@ void apx_eventLoop_append(apx_eventLoop_t *self, apx_event_t *event)
 #endif
 }
 
-void apx_eventLoop_exit(apx_eventLoop_t *self)
+void apx_eventLoop_exit(apx_event_loop_t *self)
 {
    if (self != NULL)
    {
@@ -123,7 +123,7 @@ void apx_eventLoop_exit(apx_eventLoop_t *self)
 /**
  * Executes events in an infinite loop. This function will only return when self->exitFlag is set to true
  */
-void apx_eventLoop_run(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg)
+void apx_eventLoop_run(apx_event_loop_t *self, apx_event_handler_func_t *eventHandler, void *eventHandlerArg)
 {
    bool exitFlag = false;
    while(exitFlag == false)
@@ -152,7 +152,7 @@ void apx_eventLoop_run(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandl
    }
 }
 
-uint16_t apx_eventLoop_numPendingEvents(apx_eventLoop_t *self)
+uint16_t apx_eventLoop_numPendingEvents(apx_event_loop_t *self)
 {
    if (self != NULL)
    {
@@ -167,7 +167,7 @@ uint16_t apx_eventLoop_numPendingEvents(apx_eventLoop_t *self)
 /**
  * Special version of apx_eventLoop_run that is suitable for unit tests (where no threads are used)
  */
-void apx_eventLoop_runAll(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg)
+void apx_eventLoop_runAll(apx_event_loop_t *self, apx_event_handler_func_t *eventHandler, void *eventHandlerArg)
 {
    while(true)
    {
@@ -190,7 +190,7 @@ void apx_eventLoop_runAll(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHa
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void apx_eventLoop_processEvent(apx_eventLoop_t *self, apx_event_t *event, apx_eventHandlerFunc_t *eventHandler, void *eventHandlerArg)
+static void apx_eventLoop_processEvent(apx_event_loop_t *self, apx_event_t *event, apx_event_handler_func_t *eventHandler, void *eventHandlerArg)
 {
    (void)self;
    if(eventHandler != 0)

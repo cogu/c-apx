@@ -23,45 +23,45 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_programDecoder_tag
+typedef struct apx_program_decoder_tag
 {
    uint8_t const* program_begin;
    uint8_t const* program_next;
    uint8_t const* program_end;
    uint8_t const* program_mark;
-   apx_operationType_t operation_type;
-   apx_typeCode_t last_type_code;
-   apx_packUnpackOperationInfo_t pack_unpack_info;
-   apx_rangeCheckUInt32OperationInfo_t range_check_uint32_info;
-   apx_rangeCheckUInt64OperationInfo_t range_check_uint64_info;
-   apx_rangeCheckInt32OperationInfo_t range_check_int32_info;
-   apx_rangeCheckInt64OperationInfo_t range_check_int64_info;
+   apx_operation_type_t operation_type;
+   apx_type_code_t last_type_code;
+   apx_pack_unpack_operation_info_t pack_unpack_info;
+   apx_range_check_uint32_operation_info_t range_check_uint32_info;
+   apx_range_check_uint64_operation_info_t range_check_uint64_info;
+   apx_range_check_int32_operation_info_t range_check_int32_info;
+   apx_range_check_int64_operation_info_t range_check_int64_info;
    adt_str_t field_name;
    bool is_first_field;
    bool is_array_limit;
-} apx_programDecoder_t;
+} apx_program_decoder_t;
 
-typedef apx_programDecoder_t apx_vm_decoder_t; // Backward compatibility
+typedef apx_program_decoder_t apx_vm_decoder_t; // Backward compatibility
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_programDecoder_create(apx_programDecoder_t* self);
-void apx_programDecoder_destroy(apx_programDecoder_t* self);
-apx_error_t apx_programDecoder_select_program(apx_programDecoder_t* self, uint8_t const* data, uint32_t size);
-apx_error_t apx_programDecoder_parse_program_header(apx_programDecoder_t* self, apx_programHeader_t* header);
-apx_error_t apx_programDecoder_parse_next_operation(apx_programDecoder_t* self, apx_operationType_t* operation_type);
-void apx_programDecoder_get_pack_unpack_info(apx_programDecoder_t const* self, apx_packUnpackOperationInfo_t* info);
-void apx_programDecoder_range_check_info_int32(apx_programDecoder_t const* self, apx_rangeCheckInt32OperationInfo_t* info);
-void apx_programDecoder_range_check_info_uint32(apx_programDecoder_t const* self, apx_rangeCheckUInt32OperationInfo_t* info);
-void apx_programDecoder_range_check_info_int64(apx_programDecoder_t const* self, apx_rangeCheckInt64OperationInfo_t* info);
-void apx_programDecoder_range_check_info_uint64(apx_programDecoder_t const* self, apx_rangeCheckUInt64OperationInfo_t* info);
-char const* apx_programDecoder_get_field_name(apx_programDecoder_t* self);
-void apx_programDecoder_save_program_position(apx_programDecoder_t* self);
-void apx_programDecoder_recall_program_position(apx_programDecoder_t* self);
-bool apx_programDecoder_has_saved_program_position(apx_programDecoder_t* self);
-bool apx_programDecoder_is_first_field(apx_programDecoder_t* self);
-bool apx_programDecoder_is_array_limit(apx_programDecoder_t* self);
+void apx_programDecoder_create(apx_program_decoder_t* self);
+void apx_programDecoder_destroy(apx_program_decoder_t* self);
+apx_error_t apx_programDecoder_select_program(apx_program_decoder_t* self, uint8_t const* data, uint32_t size);
+apx_error_t apx_programDecoder_parse_program_header(apx_program_decoder_t* self, apx_program_header_t* header);
+apx_error_t apx_programDecoder_parse_next_operation(apx_program_decoder_t* self, apx_operation_type_t* operation_type);
+void apx_programDecoder_get_pack_unpack_info(apx_program_decoder_t const* self, apx_pack_unpack_operation_info_t* info);
+void apx_programDecoder_range_check_info_int32(apx_program_decoder_t const* self, apx_range_check_int32_operation_info_t* info);
+void apx_programDecoder_range_check_info_uint32(apx_program_decoder_t const* self, apx_range_check_uint32_operation_info_t* info);
+void apx_programDecoder_range_check_info_int64(apx_program_decoder_t const* self, apx_range_check_int64_operation_info_t* info);
+void apx_programDecoder_range_check_info_uint64(apx_program_decoder_t const* self, apx_range_check_uint64_operation_info_t* info);
+char const* apx_programDecoder_get_field_name(apx_program_decoder_t* self);
+void apx_programDecoder_save_program_position(apx_program_decoder_t* self);
+void apx_programDecoder_recall_program_position(apx_program_decoder_t* self);
+bool apx_programDecoder_has_saved_program_position(apx_program_decoder_t* self);
+bool apx_programDecoder_is_first_field(apx_program_decoder_t* self);
+bool apx_programDecoder_is_array_limit(apx_program_decoder_t* self);
 
 // Backward compatibility macros
 #define apx_vm_decoder_create apx_programDecoder_create

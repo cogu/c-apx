@@ -34,11 +34,11 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_clientEventListener_t *apx_clientEventListener_clone(apx_clientEventListener_t *other)
+apx_client_event_listener_t *apx_clientEventListener_clone(apx_client_event_listener_t *other)
 {
    if (other != NULL)
    {
-      apx_clientEventListener_t *self = (apx_clientEventListener_t*) malloc(sizeof(apx_clientEventListener_t));
+      apx_client_event_listener_t *self = (apx_client_event_listener_t*) malloc(sizeof(apx_client_event_listener_t));
       if (self != NULL)
       {
          *self = *other;
@@ -48,7 +48,7 @@ apx_clientEventListener_t *apx_clientEventListener_clone(apx_clientEventListener
    return NULL;
 }
 
-void apx_clientEventListener_delete(apx_clientEventListener_t *self)
+void apx_clientEventListener_delete(apx_client_event_listener_t *self)
 {
    if (self != NULL)
    {
@@ -57,14 +57,14 @@ void apx_clientEventListener_delete(apx_clientEventListener_t *self)
 }
 void apx_clientEventListener_vdelete(void *arg)
 {
-   apx_clientEventListener_delete((apx_clientEventListener_t*) arg);
+   apx_clientEventListener_delete((apx_client_event_listener_t*) arg);
 }
 
-apx_serverEventListener_t *apx_serverEventListener_clone(apx_serverEventListener_t *other)
+apx_server_event_listener_t *apx_serverEventListener_clone(apx_server_event_listener_t *other)
 {
    if (other != NULL)
    {
-      apx_serverEventListener_t *self = (apx_serverEventListener_t*) malloc(sizeof(apx_serverEventListener_t));
+      apx_server_event_listener_t *self = (apx_server_event_listener_t*) malloc(sizeof(apx_server_event_listener_t));
       if (self != NULL)
       {
          *self = *other;
@@ -74,7 +74,7 @@ apx_serverEventListener_t *apx_serverEventListener_clone(apx_serverEventListener
    return NULL;
 }
 
-void apx_serverEventListener_delete(apx_serverEventListener_t *self)
+void apx_serverEventListener_delete(apx_server_event_listener_t *self)
 {
    if (self != NULL)
    {
@@ -84,15 +84,15 @@ void apx_serverEventListener_delete(apx_serverEventListener_t *self)
 
 void apx_serverEventListener_vdelete(void *arg)
 {
-   apx_serverEventListener_delete((apx_serverEventListener_t*) arg);
+   apx_serverEventListener_delete((apx_server_event_listener_t*) arg);
 }
 
 
-apx_serverConnectionEventListener_t *apx_connectionEventListener_clone(apx_serverConnectionEventListener_t *other)
+apx_server_connection_event_listener_t *apx_connectionEventListener_clone(apx_server_connection_event_listener_t *other)
 {
    if (other != NULL)
    {
-      apx_serverConnectionEventListener_t *self = (apx_serverConnectionEventListener_t*) malloc(sizeof(apx_serverConnectionEventListener_t));
+      apx_server_connection_event_listener_t *self = (apx_server_connection_event_listener_t*) malloc(sizeof(apx_server_connection_event_listener_t));
       if (self != NULL)
       {
          *self = *other;
@@ -101,7 +101,7 @@ apx_serverConnectionEventListener_t *apx_connectionEventListener_clone(apx_serve
    }
    return NULL;
 }
-void apx_connectionEventListener_delete(apx_serverConnectionEventListener_t *self)
+void apx_connectionEventListener_delete(apx_server_connection_event_listener_t *self)
 {
    if (self != NULL)
    {
@@ -111,7 +111,7 @@ void apx_connectionEventListener_delete(apx_serverConnectionEventListener_t *sel
 
 void apx_connectionEventListener_vdelete(void *arg)
 {
-   apx_connectionEventListener_delete((apx_serverConnectionEventListener_t*) arg);
+   apx_connectionEventListener_delete((apx_server_connection_event_listener_t*) arg);
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -48,7 +48,7 @@ CuSuite* testSuite_apx_computation(void)
 static void test_value_table_to_string(CuTest* tc)
 {
    adt_ary_t* values = adt_ary_new(adt_str_vdelete);
-   apx_valueTable_t* vt = apx_valueTable_new();
+   apx_value_table_t* vt = apx_valueTable_new();
    CuAssertPtrNotNull(tc, vt);
    adt_ary_push(values, adt_str_new_cstr("Off"));
    adt_ary_push(values, adt_str_new_cstr("On"));
@@ -64,7 +64,7 @@ static void test_value_table_to_string(CuTest* tc)
 
 static void test_rational_scaling_to_string(CuTest* tc)
 {
-   apx_rationalScaling_t* rs = apx_rationalScaling_new(0.0, 4, 10, "Percent");
+   apx_rational_scaling_t* rs = apx_rationalScaling_new(0.0, 4, 10, "Percent");
    CuAssertPtrNotNull(tc, rs);
    apx_rationalScaling_set_range_unsigned(rs, 0, 250);
    adt_str_t* str = apx_rationalScaling_to_string(rs);

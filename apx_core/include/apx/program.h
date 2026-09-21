@@ -28,17 +28,17 @@
 typedef adt_bytearray_t apx_program_t;
 
 
-typedef struct apx_programHeader_tag
+typedef struct apx_program_header_tag
 {
-   apx_programType_t program_type;
+   apx_program_type_t program_type;
    uint32_t data_size;
    uint32_t element_size;
    uint32_t queue_length;
    bool has_dynamic_data;
-} apx_programHeader_t;
+} apx_program_header_t;
 
-apx_error_t apx_program_encode_header(apx_program_t *program, apx_programType_t program_type, uint32_t element_size, uint32_t queue_size, bool is_dynamic);
-apx_error_t apx_program_decode_header(uint8_t const* begin, uint8_t const* end, uint8_t const** next, apx_programHeader_t *header);
+apx_error_t apx_program_encode_header(apx_program_t *program, apx_program_type_t program_type, uint32_t element_size, uint32_t queue_size, bool is_dynamic);
+apx_error_t apx_program_decode_header(uint8_t const* begin, uint8_t const* end, uint8_t const** next, apx_program_header_t *header);
 uint8_t apx_program_encode_instruction(uint8_t opcode, uint8_t variant, bool flag);
 void apx_program_decode_instruction(uint8_t const instruction, uint8_t* opcode, uint8_t* variant, bool* flag);
 void apx_program_dump(apx_program_t const* program);

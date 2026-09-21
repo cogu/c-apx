@@ -35,7 +35,7 @@
 typedef struct apx_connection_tag
 {
    apx_client_t *client;
-   adt_hash_t provide_port_lookup_table; //Key is provide port name, value is port instance (apx_portInstance_t*) (weak references)
+   adt_hash_t provide_port_lookup_table; //Key is provide port name, value is port instance (apx_port_instance_t*) (weak references)
    MUTEX_T mutex;
 } apx_connection_t;
 
@@ -54,7 +54,7 @@ void apx_connection_delete(apx_connection_t *self);
 void apx_connection_disconnect(apx_connection_t *self);
 apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_definition);
 int32_t apx_connection_getLastErrorLine(apx_connection_t *self);
-apx_nodeInstance_t *apx_connection_getLastAttachedNode(apx_connection_t *self);
+apx_node_instance_t *apx_connection_getLastAttachedNode(apx_connection_t *self);
 #ifndef _WIN32
 apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socketPath);
 #endif

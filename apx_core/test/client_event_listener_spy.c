@@ -28,9 +28,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientEventListenerSpy_onConnect(void *arg, apx_clientConnectionBase_t *clientConnection);
-static void apx_clientEventListenerSpy_onDisconnect(void *arg, apx_clientConnectionBase_t *clientConnection);
-static void apx_clientEventListenerSpy_onHeaderAccepted(void *arg, apx_connectionBase_t *clientConnection);
+static void apx_clientEventListenerSpy_onConnect(void *arg, apx_client_connection_base_t *clientConnection);
+static void apx_clientEventListenerSpy_onDisconnect(void *arg, apx_client_connection_base_t *clientConnection);
+static void apx_clientEventListenerSpy_onHeaderAccepted(void *arg, apx_connection_base_t *clientConnection);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -39,7 +39,7 @@ static void apx_clientEventListenerSpy_onHeaderAccepted(void *arg, apx_connectio
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_clientEventListenerSpy_create(apx_clientEventListenerSpy_t *self)
+void apx_clientEventListenerSpy_create(apx_client_event_listener_spy_t *self)
 {
    if (self != NULL)
    {
@@ -49,14 +49,14 @@ void apx_clientEventListenerSpy_create(apx_clientEventListenerSpy_t *self)
    }
 }
 
-void apx_clientEventListenerSpy_destroy(apx_clientEventListenerSpy_t *self)
+void apx_clientEventListenerSpy_destroy(apx_client_event_listener_spy_t *self)
 {
    //Nothing to do
 }
 
-apx_clientEventListenerSpy_t* apx_clientEventListenerSpy_new(void)
+apx_client_event_listener_spy_t* apx_clientEventListenerSpy_new(void)
 {
-   apx_clientEventListenerSpy_t *self = (apx_clientEventListenerSpy_t*) malloc(sizeof(apx_clientEventListenerSpy_t));
+   apx_client_event_listener_spy_t *self = (apx_client_event_listener_spy_t*) malloc(sizeof(apx_client_event_listener_spy_t));
    if (self != NULL)
    {
       apx_clientEventListenerSpy_create(self);
@@ -64,7 +64,7 @@ apx_clientEventListenerSpy_t* apx_clientEventListenerSpy_new(void)
    return self;
 }
 
-void apx_clientEventListenerSpy_delete(apx_clientEventListenerSpy_t *self)
+void apx_clientEventListenerSpy_delete(apx_client_event_listener_spy_t *self)
 {
    if (self != NULL)
    {
@@ -73,11 +73,11 @@ void apx_clientEventListenerSpy_delete(apx_clientEventListenerSpy_t *self)
    }
 }
 
-void* apx_clientEventListenerSpy_register(apx_clientEventListenerSpy_t *self, apx_client_t *client)
+void* apx_clientEventListenerSpy_register(apx_client_event_listener_spy_t *self, apx_client_t *client)
 {
    if ( (self != NULL) && (client != NULL) )
    {
-      apx_clientEventListener_t handler;
+      apx_client_event_listener_t handler;
       handler.arg = (void*) self;
       handler.connected = apx_clientEventListenerSpy_onConnect;
       handler.disconnected = apx_clientEventListenerSpy_onDisconnect;
@@ -87,7 +87,7 @@ void* apx_clientEventListenerSpy_register(apx_clientEventListenerSpy_t *self, ap
    return NULL;
 }
 
-uint32_t apx_clientEventListenerSpy_getConnectCount(apx_clientEventListenerSpy_t *self)
+uint32_t apx_clientEventListenerSpy_getConnectCount(apx_client_event_listener_spy_t *self)
 {
    if (self != NULL)
    {
@@ -96,7 +96,7 @@ uint32_t apx_clientEventListenerSpy_getConnectCount(apx_clientEventListenerSpy_t
    return 0;
 }
 
-uint32_t apx_clientEventListenerSpy_getDisconnectCount(apx_clientEventListenerSpy_t *self)
+uint32_t apx_clientEventListenerSpy_getDisconnectCount(apx_client_event_listener_spy_t *self)
 {
    if (self != NULL)
    {
@@ -105,7 +105,7 @@ uint32_t apx_clientEventListenerSpy_getDisconnectCount(apx_clientEventListenerSp
    return 0;
 }
 
-uint32_t apx_clientEventListenerSpy_getHeaderAccepted(apx_clientEventListenerSpy_t *self)
+uint32_t apx_clientEventListenerSpy_getHeaderAccepted(apx_client_event_listener_spy_t *self)
 {
    if (self != NULL)
    {
@@ -118,12 +118,12 @@ uint32_t apx_clientEventListenerSpy_getHeaderAccepted(apx_clientEventListenerSpy
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_clientEventListenerSpy_onConnect(void *arg, apx_clientConnectionBase_t *clientConnection)
+static void apx_clientEventListenerSpy_onConnect(void *arg, apx_client_connection_base_t *clientConnection)
 {
-   apx_clientEventListenerSpy_t *self = (apx_clientEventListenerSpy_t*) arg;
+   apx_client_event_listener_spy_t *self = (apx_client_event_listener_spy_t*) arg;
    if ( (self != NULL) && (clientConnection != NULL) )
    {
-      apx_connectionEventListener_t handler;
+      apx_connection_event_listener_t handler;
       self->connectCount++;
       memset(&handler, 0, sizeof(handler));
       handler.arg = (void*) self;
@@ -132,18 +132,18 @@ static void apx_clientEventListenerSpy_onConnect(void *arg, apx_clientConnection
    }
 }
 
-static void apx_clientEventListenerSpy_onDisconnect(void *arg, apx_clientConnectionBase_t *clientConnection)
+static void apx_clientEventListenerSpy_onDisconnect(void *arg, apx_client_connection_base_t *clientConnection)
 {
-   apx_clientEventListenerSpy_t *self = (apx_clientEventListenerSpy_t*) arg;
+   apx_client_event_listener_spy_t *self = (apx_client_event_listener_spy_t*) arg;
    if ( (self != NULL) && (clientConnection != NULL) )
    {
       self->disconnectCount++;
    }
 }
 
-static void apx_clientEventListenerSpy_onHeaderAccepted(void *arg, apx_connectionBase_t *clientConnection)
+static void apx_clientEventListenerSpy_onHeaderAccepted(void *arg, apx_connection_base_t *clientConnection)
 {
-   apx_clientEventListenerSpy_t *self = (apx_clientEventListenerSpy_t*) arg;
+   apx_client_event_listener_spy_t *self = (apx_client_event_listener_spy_t*) arg;
    if ( (self != NULL) && (clientConnection != NULL) )
    {
       self->headerAcceptedCount++;
