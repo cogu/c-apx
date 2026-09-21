@@ -43,3 +43,58 @@ def test_server_graceful_shutdown_and_socket_cleanup(apx_server: ApxServerInstan
 def test_wait_for_unix_socket_fallback(apx_server: ApxServerInstance):
     """Verify that active connect polling helper validates server readiness."""
     wait_for_unix_socket(apx_server.socket_path, timeout=1.0)
+
+
+def test_server_socket_config_override(tmp_path, apx_server_bin: str):
+    """Verify that --socket-config overrides socket settings in a base configuration file."""
+    import json
+    import subprocess
+    import select
+    from conftest import _set_pdeathsig
+
+    base_socket = str(tmp_path / "base.socket")
+    override_socket = str(tmp_path / "override.socket")
+    config_file = str(tmp_path / "server.json")
+
+    with open(config_file, "w", encoding="utf-8") as f:
+        json.dump({
+            "socket-server-extension": {
+                "unix-file": base_socket
+            }
+        }, f)
+
+    r_fd, w_fd = os.pipe()
+    os.set_inheritable(w_fd, True)
+
+    override_cfg = json.dumps({"unix-file": override_socket})
+    cmd = [
+        apx_server_bin,
+        "--ready-fd", str(w_fd),
+        "--socket-config", override_cfg,
+        config_file
+    ]
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        pass_fds=(w_fd,),
+        preexec_fn=_set_pdeathsig
+    )
+    os.close(w_fd)
+
+    rlist, _, _ = select.select([r_fd], [], [], 3.0)
+    assert rlist, "Server should signal ready"
+    os.read(r_fd, 1)
+    os.close(r_fd)
+
+    assert os.path.exists(override_socket), "Override socket should have been created"
+    assert not os.path.exists(base_socket), "Base socket should NOT have been created"
+
+    # Connect to override socket
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(override_socket)
+    s.close()
+
+    proc.terminate()
+    proc.wait(timeout=3.0)
+    assert not os.path.exists(override_socket), "Override socket should be cleaned up"

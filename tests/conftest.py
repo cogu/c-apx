@@ -53,7 +53,7 @@ def wait_for_unix_socket(socket_path: str, timeout: float = 3.0, poll_interval: 
 class ApxServerInstance:
     """Represents a running apx_server instance for testing."""
 
-    def __init__(self, process: subprocess.Popen, socket_path: str, config_path: str, tmp_dir: Path):
+    def __init__(self, process: subprocess.Popen, socket_path: str, tmp_dir: Path, config_path: str = ""):
         self.process = process
         self.socket_path = socket_path
         self.config_path = config_path
@@ -121,23 +121,14 @@ def apx_server(tmp_path: Path, apx_server_bin: str):
     - Graceful SIGTERM teardown.
     """
     socket_path = str(tmp_path / "apx.socket")
-    config_path = str(tmp_path / "server.json")
 
-    # 1. Generate an isolated configuration for this specific test
-    server_cfg = {
-        "socket-server-extension": {
-            "enabled": True,
-            "unix-file": socket_path
-        }
-    }
-    with open(config_path, "w", encoding="utf-8") as f:
-        json.dump(server_cfg, f, indent=2)
-
-    # 2. Create readiness pipe
+    # 1. Create readiness pipe
     r_fd, w_fd = os.pipe()
     os.set_inheritable(w_fd, True)
 
-    cmd = [apx_server_bin, "--ready-fd", str(w_fd), config_path]
+    # 2. Launch server using inline --socket-config (no config file on disk needed)
+    socket_cfg = json.dumps({"unix-file": socket_path})
+    cmd = [apx_server_bin, "--ready-fd", str(w_fd), "--socket-config", socket_cfg]
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -168,7 +159,7 @@ def apx_server(tmp_path: Path, apx_server_bin: str):
             f"apx_server exited before signaling readiness.\nStdout: {stdout.decode()}\nStderr: {stderr.decode()}"
         )
 
-    server = ApxServerInstance(proc, socket_path, config_path, tmp_path)
+    server = ApxServerInstance(proc, socket_path, tmp_path)
     yield server
 
     # 4. Graceful Teardown
