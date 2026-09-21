@@ -22,20 +22,20 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t decode_next_instruction_internal(apx_programDecoder_t* self);
-static void reset_pack_unpack_info(apx_programDecoder_t* self, apx_typeCode_t type_code);
-static apx_error_t decode_array_size(apx_programDecoder_t* self);
-static apx_error_t decode_range_check_uint32(apx_programDecoder_t* self, uint8_t variant);
-static apx_error_t decode_range_check_uint64(apx_programDecoder_t* self, uint8_t variant);
-static apx_error_t decode_range_check_int32(apx_programDecoder_t* self, uint8_t variant);
-static apx_error_t decode_range_check_int64(apx_programDecoder_t* self, uint8_t variant);
-static apx_error_t decode_record_select(apx_programDecoder_t* self, bool is_first_field);
-static apx_error_t decode_record_end(apx_programDecoder_t* self);
+static apx_error_t decode_next_instruction_internal(apx_program_decoder_t* self);
+static void reset_pack_unpack_info(apx_program_decoder_t* self, apx_type_code_t type_code);
+static apx_error_t decode_array_size(apx_program_decoder_t* self);
+static apx_error_t decode_range_check_uint32(apx_program_decoder_t* self, uint8_t variant);
+static apx_error_t decode_range_check_uint64(apx_program_decoder_t* self, uint8_t variant);
+static apx_error_t decode_range_check_int32(apx_program_decoder_t* self, uint8_t variant);
+static apx_error_t decode_range_check_int64(apx_program_decoder_t* self, uint8_t variant);
+static apx_error_t decode_record_select(apx_program_decoder_t* self, bool is_first_field);
+static apx_error_t decode_record_end(apx_program_decoder_t* self);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_programDecoder_create(apx_programDecoder_t* self)
+void apx_programDecoder_create(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -62,7 +62,7 @@ void apx_programDecoder_create(apx_programDecoder_t* self)
    }
 }
 
-void apx_programDecoder_destroy(apx_programDecoder_t* self)
+void apx_programDecoder_destroy(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -70,7 +70,7 @@ void apx_programDecoder_destroy(apx_programDecoder_t* self)
    }
 }
 
-apx_error_t apx_programDecoder_select_program(apx_programDecoder_t* self, uint8_t const* data, uint32_t size)
+apx_error_t apx_programDecoder_select_program(apx_program_decoder_t* self, uint8_t const* data, uint32_t size)
 {
    if ( (self != NULL) && (data != NULL) )
    {
@@ -98,7 +98,7 @@ apx_error_t apx_programDecoder_select_program(apx_programDecoder_t* self, uint8_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_programDecoder_parse_program_header(apx_programDecoder_t* self, apx_programHeader_t* header)
+apx_error_t apx_programDecoder_parse_program_header(apx_program_decoder_t* self, apx_program_header_t* header)
 {
    if ( (self == NULL) || (header == NULL) )
    {
@@ -206,7 +206,7 @@ apx_error_t apx_programDecoder_parse_program_header(apx_programDecoder_t* self, 
    return APX_NO_ERROR;
 }
 
-apx_error_t apx_programDecoder_parse_next_operation(apx_programDecoder_t* self, apx_operationType_t* operation_type)
+apx_error_t apx_programDecoder_parse_next_operation(apx_program_decoder_t* self, apx_operation_type_t* operation_type)
 {
    if ( (self != NULL) && (operation_type != NULL) )
    {
@@ -236,7 +236,7 @@ apx_error_t apx_programDecoder_parse_next_operation(apx_programDecoder_t* self, 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_programDecoder_get_pack_unpack_info(apx_programDecoder_t const* self, apx_packUnpackOperationInfo_t* info)
+void apx_programDecoder_get_pack_unpack_info(apx_program_decoder_t const* self, apx_pack_unpack_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -244,7 +244,7 @@ void apx_programDecoder_get_pack_unpack_info(apx_programDecoder_t const* self, a
    }
 }
 
-void apx_programDecoder_range_check_info_int32(apx_programDecoder_t const* self, apx_rangeCheckInt32OperationInfo_t* info)
+void apx_programDecoder_range_check_info_int32(apx_program_decoder_t const* self, apx_range_check_int32_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -252,7 +252,7 @@ void apx_programDecoder_range_check_info_int32(apx_programDecoder_t const* self,
    }
 }
 
-void apx_programDecoder_range_check_info_uint32(apx_programDecoder_t const* self, apx_rangeCheckUInt32OperationInfo_t* info)
+void apx_programDecoder_range_check_info_uint32(apx_program_decoder_t const* self, apx_range_check_uint32_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -260,7 +260,7 @@ void apx_programDecoder_range_check_info_uint32(apx_programDecoder_t const* self
    }
 }
 
-void apx_programDecoder_range_check_info_int64(apx_programDecoder_t const* self, apx_rangeCheckInt64OperationInfo_t* info)
+void apx_programDecoder_range_check_info_int64(apx_program_decoder_t const* self, apx_range_check_int64_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -268,7 +268,7 @@ void apx_programDecoder_range_check_info_int64(apx_programDecoder_t const* self,
    }
 }
 
-void apx_programDecoder_range_check_info_uint64(apx_programDecoder_t const* self, apx_rangeCheckUInt64OperationInfo_t* info)
+void apx_programDecoder_range_check_info_uint64(apx_program_decoder_t const* self, apx_range_check_uint64_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -276,7 +276,7 @@ void apx_programDecoder_range_check_info_uint64(apx_programDecoder_t const* self
    }
 }
 
-char const* apx_programDecoder_get_field_name(apx_programDecoder_t* self)
+char const* apx_programDecoder_get_field_name(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -285,7 +285,7 @@ char const* apx_programDecoder_get_field_name(apx_programDecoder_t* self)
    return NULL;
 }
 
-void apx_programDecoder_save_program_position(apx_programDecoder_t* self)
+void apx_programDecoder_save_program_position(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -296,7 +296,7 @@ void apx_programDecoder_save_program_position(apx_programDecoder_t* self)
    }
 }
 
-void apx_programDecoder_recall_program_position(apx_programDecoder_t* self)
+void apx_programDecoder_recall_program_position(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -307,7 +307,7 @@ void apx_programDecoder_recall_program_position(apx_programDecoder_t* self)
    }
 }
 
-bool apx_programDecoder_has_saved_program_position(apx_programDecoder_t* self)
+bool apx_programDecoder_has_saved_program_position(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -316,7 +316,7 @@ bool apx_programDecoder_has_saved_program_position(apx_programDecoder_t* self)
    return false;
 }
 
-bool apx_programDecoder_is_first_field(apx_programDecoder_t* self)
+bool apx_programDecoder_is_first_field(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -325,7 +325,7 @@ bool apx_programDecoder_is_first_field(apx_programDecoder_t* self)
    return false;
 }
 
-bool apx_programDecoder_is_array_limit(apx_programDecoder_t* self)
+bool apx_programDecoder_is_array_limit(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -337,7 +337,7 @@ bool apx_programDecoder_is_array_limit(apx_programDecoder_t* self)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t decode_next_instruction_internal(apx_programDecoder_t* self)
+static apx_error_t decode_next_instruction_internal(apx_program_decoder_t* self)
 {
    assert(self != NULL);
    uint8_t const instruction = *self->program_next++;
@@ -423,7 +423,7 @@ static apx_error_t decode_next_instruction_internal(apx_programDecoder_t* self)
 
    if ( (opcode == APX_VM_OPCODE_UNPACK) || (opcode == APX_VM_OPCODE_PACK) )
    {
-      apx_typeCode_t const type_code = apx_vm_variant_to_type_code(variant);
+      apx_type_code_t const type_code = apx_vm_variant_to_type_code(variant);
       if (type_code == APX_TYPE_CODE_NONE)
       {
          return APX_INVALID_INSTRUCTION_ERROR;
@@ -438,7 +438,7 @@ static apx_error_t decode_next_instruction_internal(apx_programDecoder_t* self)
    return APX_NO_ERROR;
 }
 
-static void reset_pack_unpack_info(apx_programDecoder_t* self, apx_typeCode_t type_code)
+static void reset_pack_unpack_info(apx_program_decoder_t* self, apx_type_code_t type_code)
 {
    assert(self != NULL);
    self->pack_unpack_info.array_length = 0u;
@@ -446,7 +446,7 @@ static void reset_pack_unpack_info(apx_programDecoder_t* self, apx_typeCode_t ty
    self->pack_unpack_info.type_code = type_code;
 }
 
-static apx_error_t decode_array_size(apx_programDecoder_t* self)
+static apx_error_t decode_array_size(apx_program_decoder_t* self)
 {
    assert(self != NULL);
    if (self->program_next < self->program_end)
@@ -480,7 +480,7 @@ static apx_error_t decode_array_size(apx_programDecoder_t* self)
    return APX_UNEXPECTED_END_ERROR;
 }
 
-static apx_error_t decode_range_check_uint32(apx_programDecoder_t* self, uint8_t variant)
+static apx_error_t decode_range_check_uint32(apx_program_decoder_t* self, uint8_t variant)
 {
    self->operation_type = APX_OPERATION_TYPE_RANGE_CHECK_UINT32;
    size_t const data_size = (size_t) apx_vm_variant_to_size(variant);
@@ -509,7 +509,7 @@ static apx_error_t decode_range_check_uint32(apx_programDecoder_t* self, uint8_t
    return APX_UNEXPECTED_END_ERROR;
 }
 
-static apx_error_t decode_range_check_uint64(apx_programDecoder_t* self, uint8_t variant)
+static apx_error_t decode_range_check_uint64(apx_program_decoder_t* self, uint8_t variant)
 {
    self->operation_type = APX_OPERATION_TYPE_RANGE_CHECK_UINT64;
    size_t const data_size = (size_t) apx_vm_variant_to_size(variant);
@@ -538,7 +538,7 @@ static apx_error_t decode_range_check_uint64(apx_programDecoder_t* self, uint8_t
    return APX_UNEXPECTED_END_ERROR;
 }
 
-static apx_error_t decode_range_check_int32(apx_programDecoder_t* self, uint8_t variant)
+static apx_error_t decode_range_check_int32(apx_program_decoder_t* self, uint8_t variant)
 {
    self->operation_type = APX_OPERATION_TYPE_RANGE_CHECK_INT32;
    size_t const data_size = (size_t) apx_vm_variant_to_size(variant);
@@ -567,7 +567,7 @@ static apx_error_t decode_range_check_int32(apx_programDecoder_t* self, uint8_t 
    return APX_UNEXPECTED_END_ERROR;
 }
 
-static apx_error_t decode_range_check_int64(apx_programDecoder_t* self, uint8_t variant)
+static apx_error_t decode_range_check_int64(apx_program_decoder_t* self, uint8_t variant)
 {
    self->operation_type = APX_OPERATION_TYPE_RANGE_CHECK_INT64;
    size_t const data_size = (size_t) apx_vm_variant_to_size(variant);
@@ -596,7 +596,7 @@ static apx_error_t decode_range_check_int64(apx_programDecoder_t* self, uint8_t 
    return APX_UNEXPECTED_END_ERROR;
 }
 
-static apx_error_t decode_record_select(apx_programDecoder_t* self, bool is_first_field)
+static apx_error_t decode_record_select(apx_program_decoder_t* self, bool is_first_field)
 {
    assert(self != NULL);
    self->last_type_code = APX_TYPE_CODE_NONE;
@@ -612,7 +612,7 @@ static apx_error_t decode_record_select(apx_programDecoder_t* self, bool is_firs
    return APX_INVALID_INSTRUCTION_ERROR;
 }
 
-static apx_error_t decode_record_end(apx_programDecoder_t* self)
+static apx_error_t decode_record_end(apx_program_decoder_t* self)
 {
    assert(self != NULL);
    self->last_type_code = APX_TYPE_CODE_NONE;

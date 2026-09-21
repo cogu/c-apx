@@ -50,7 +50,7 @@ void apx_computation_vtable_create(apx_computation_vtable_t* vtable, apx_void_pt
    }
 }
 
-void apx_computation_create(apx_computation_t* self, apx_computation_vtable_t const* vtable, apx_computationType_t computation_type)
+void apx_computation_create(apx_computation_t* self, apx_computation_vtable_t const* vtable, apx_computation_type_t computation_type)
 {
    if (self != NULL)
    {
@@ -194,7 +194,7 @@ void apx_computation_assign(apx_computation_t* lhs, apx_computation_t const* rhs
    }
 }
 
-apx_computationType_t apx_computation_type(apx_computation_t const* self)
+apx_computation_type_t apx_computation_type(apx_computation_t const* self)
 {
    if (self != NULL)
    {
@@ -203,8 +203,8 @@ apx_computationType_t apx_computation_type(apx_computation_t const* self)
    return APX_COMPUTATION_TYPE_VALUE_TABLE;
 }
 
-//apx_valueTable_t API
-void apx_valueTable_create(apx_valueTable_t* self)
+//apx_value_table_t API
+void apx_valueTable_create(apx_value_table_t* self)
 {
    if (self != NULL)
    {
@@ -215,7 +215,7 @@ void apx_valueTable_create(apx_valueTable_t* self)
    }
 }
 
-void apx_valueTable_destroy(apx_valueTable_t* self)
+void apx_valueTable_destroy(apx_value_table_t* self)
 {
    if (self != NULL)
    {
@@ -223,9 +223,9 @@ void apx_valueTable_destroy(apx_valueTable_t* self)
    }
 }
 
-apx_valueTable_t* apx_valueTable_new(void)
+apx_value_table_t* apx_valueTable_new(void)
 {
-   apx_valueTable_t* self = (apx_valueTable_t*)malloc(sizeof(apx_valueTable_t));
+   apx_value_table_t* self = (apx_value_table_t*)malloc(sizeof(apx_value_table_t));
    if (self != NULL)
    {
       apx_valueTable_create(self);
@@ -233,7 +233,7 @@ apx_valueTable_t* apx_valueTable_new(void)
    return self;
 }
 
-void apx_valueTable_delete(apx_valueTable_t* self)
+void apx_valueTable_delete(apx_value_table_t* self)
 {
    if (self != NULL)
    {
@@ -242,11 +242,11 @@ void apx_valueTable_delete(apx_valueTable_t* self)
    }
 }
 
-apx_valueTable_t* apx_valueTable_clone(apx_valueTable_t const* other)
+apx_value_table_t* apx_valueTable_clone(apx_value_table_t const* other)
 {
    if (other != NULL)
    {
-      apx_valueTable_t* self = apx_valueTable_new();
+      apx_value_table_t* self = apx_valueTable_new();
       if (self != NULL)
       {
          int32_t i;
@@ -272,7 +272,7 @@ apx_valueTable_t* apx_valueTable_clone(apx_valueTable_t const* other)
    return NULL;
 }
 
-void apx_valueTable_set_range_signed(apx_valueTable_t* self, int32_t lower_limit, int32_t upper_limit)
+void apx_valueTable_set_range_signed(apx_value_table_t* self, int32_t lower_limit, int32_t upper_limit)
 {
    if (self != NULL)
    {
@@ -280,7 +280,7 @@ void apx_valueTable_set_range_signed(apx_valueTable_t* self, int32_t lower_limit
    }
 }
 
-void apx_valueTable_set_range_unsigned(apx_valueTable_t* self, uint32_t lower_limit, uint32_t upper_limit)
+void apx_valueTable_set_range_unsigned(apx_value_table_t* self, uint32_t lower_limit, uint32_t upper_limit)
 {
    if (self != NULL)
    {
@@ -288,7 +288,7 @@ void apx_valueTable_set_range_unsigned(apx_valueTable_t* self, uint32_t lower_li
    }
 }
 
-void apx_valueTable_set_upper_limit_signed(apx_valueTable_t* self, int32_t upper_limit)
+void apx_valueTable_set_upper_limit_signed(apx_value_table_t* self, int32_t upper_limit)
 {
    if (self != NULL)
    {
@@ -296,7 +296,7 @@ void apx_valueTable_set_upper_limit_signed(apx_valueTable_t* self, int32_t upper
    }
 }
 
-void apx_valueTable_set_upper_limit_unsigned(apx_valueTable_t* self, uint32_t upper_limit)
+void apx_valueTable_set_upper_limit_unsigned(apx_value_table_t* self, uint32_t upper_limit)
 {
    if (self != NULL)
    {
@@ -304,7 +304,7 @@ void apx_valueTable_set_upper_limit_unsigned(apx_valueTable_t* self, uint32_t up
    }
 }
 
-int32_t apx_valueTable_length(apx_valueTable_t* self)
+int32_t apx_valueTable_length(apx_value_table_t* self)
 {
    if (self != NULL)
    {
@@ -313,7 +313,7 @@ int32_t apx_valueTable_length(apx_valueTable_t* self)
    return -1;
 }
 
-apx_error_t apx_valueTable_move_values(apx_valueTable_t* self, adt_ary_t* values)
+apx_error_t apx_valueTable_move_values(apx_value_table_t* self, adt_ary_t* values)
 {
    if (self != NULL && values != NULL)
    {
@@ -348,7 +348,7 @@ apx_error_t apx_valueTable_move_values(apx_valueTable_t* self, adt_ary_t* values
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-adt_str_t* apx_valueTable_get_value(apx_valueTable_t const* self, int32_t index)
+adt_str_t* apx_valueTable_get_value(apx_value_table_t const* self, int32_t index)
 {
    if (self != NULL)
    {
@@ -357,7 +357,7 @@ adt_str_t* apx_valueTable_get_value(apx_valueTable_t const* self, int32_t index)
    return NULL;
 }
 
-char const* apx_valueTable_get_value_cstr(apx_valueTable_t const* self, int32_t index)
+char const* apx_valueTable_get_value_cstr(apx_value_table_t const* self, int32_t index)
 {
    if (self != NULL)
    {
@@ -370,7 +370,7 @@ char const* apx_valueTable_get_value_cstr(apx_valueTable_t const* self, int32_t 
    return NULL;
 }
 
-adt_str_t* apx_valueTable_to_string(apx_valueTable_t const* self)
+adt_str_t* apx_valueTable_to_string(apx_value_table_t const* self)
 {
    if (self != NULL)
    {
@@ -406,8 +406,8 @@ adt_str_t* apx_valueTable_to_string(apx_valueTable_t const* self)
    return NULL;
 }
 
-//apx_rationalScaling_t API
-apx_error_t apx_rationalScaling_create(apx_rationalScaling_t* self, double offset, int32_t numerator, int32_t denominator, char const* unit)
+//apx_rational_scaling_t API
+apx_error_t apx_rationalScaling_create(apx_rational_scaling_t* self, double offset, int32_t numerator, int32_t denominator, char const* unit)
 {
    if (self != NULL)
    {
@@ -434,7 +434,7 @@ apx_error_t apx_rationalScaling_create(apx_rationalScaling_t* self, double offse
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_rationalScaling_destroy(apx_rationalScaling_t* self)
+void apx_rationalScaling_destroy(apx_rational_scaling_t* self)
 {
    if (self != NULL)
    {
@@ -445,9 +445,9 @@ void apx_rationalScaling_destroy(apx_rationalScaling_t* self)
    }
 }
 
-apx_rationalScaling_t* apx_rationalScaling_new(double offset, int32_t numerator, int32_t denominator, char const* unit)
+apx_rational_scaling_t* apx_rationalScaling_new(double offset, int32_t numerator, int32_t denominator, char const* unit)
 {
-   apx_rationalScaling_t* self = (apx_rationalScaling_t*)malloc(sizeof(apx_rationalScaling_t));
+   apx_rational_scaling_t* self = (apx_rational_scaling_t*)malloc(sizeof(apx_rational_scaling_t));
    if (self != NULL)
    {
       apx_error_t result = apx_rationalScaling_create(self, offset, numerator, denominator, unit);
@@ -460,7 +460,7 @@ apx_rationalScaling_t* apx_rationalScaling_new(double offset, int32_t numerator,
    return self;
 }
 
-void apx_rationalScaling_delete(apx_rationalScaling_t* self)
+void apx_rationalScaling_delete(apx_rational_scaling_t* self)
 {
    if (self != NULL)
    {
@@ -469,11 +469,11 @@ void apx_rationalScaling_delete(apx_rationalScaling_t* self)
    }
 }
 
-apx_rationalScaling_t* apx_rationalScaling_clone(apx_rationalScaling_t const* other)
+apx_rational_scaling_t* apx_rationalScaling_clone(apx_rational_scaling_t const* other)
 {
    if (other != NULL)
    {
-      apx_rationalScaling_t* self = apx_rationalScaling_new(other->offset, other->numerator, other->denominator, other->unit);
+      apx_rational_scaling_t* self = apx_rationalScaling_new(other->offset, other->numerator, other->denominator, other->unit);
       if (self != NULL)
       {
          apx_computation_assign(&self->base, &other->base);
@@ -483,7 +483,7 @@ apx_rationalScaling_t* apx_rationalScaling_clone(apx_rationalScaling_t const* ot
    return NULL;
 }
 
-void apx_rationalScaling_set_range_signed(apx_rationalScaling_t* self, int32_t lower_limit, int32_t upper_limit)
+void apx_rationalScaling_set_range_signed(apx_rational_scaling_t* self, int32_t lower_limit, int32_t upper_limit)
 {
    if (self != NULL)
    {
@@ -491,7 +491,7 @@ void apx_rationalScaling_set_range_signed(apx_rationalScaling_t* self, int32_t l
    }
 }
 
-void apx_rationalScaling_set_range_unsigned(apx_rationalScaling_t* self, uint32_t lower_limit, uint32_t upper_limit)
+void apx_rationalScaling_set_range_unsigned(apx_rational_scaling_t* self, uint32_t lower_limit, uint32_t upper_limit)
 {
    if (self != NULL)
    {
@@ -499,7 +499,7 @@ void apx_rationalScaling_set_range_unsigned(apx_rationalScaling_t* self, uint32_
    }
 }
 
-adt_str_t* apx_rationalScaling_to_string(apx_rationalScaling_t const* self)
+adt_str_t* apx_rationalScaling_to_string(apx_rational_scaling_t const* self)
 {
    if (self != NULL)
    {
@@ -533,7 +533,7 @@ adt_str_t* apx_rationalScaling_to_string(apx_rationalScaling_t const* self)
    return NULL;
 }
 
-double apx_rationalScaling_offset(apx_rationalScaling_t const* self)
+double apx_rationalScaling_offset(apx_rational_scaling_t const* self)
 {
    if (self != NULL)
    {
@@ -542,7 +542,7 @@ double apx_rationalScaling_offset(apx_rationalScaling_t const* self)
    return 0.0;
 }
 
-int32_t apx_rationalScaling_numerator(apx_rationalScaling_t const* self)
+int32_t apx_rationalScaling_numerator(apx_rational_scaling_t const* self)
 {
    if (self != NULL)
    {
@@ -551,7 +551,7 @@ int32_t apx_rationalScaling_numerator(apx_rationalScaling_t const* self)
    return 0;
 }
 
-int32_t apx_rationalScaling_denominator(apx_rationalScaling_t const* self)
+int32_t apx_rationalScaling_denominator(apx_rational_scaling_t const* self)
 {
    if (self != NULL)
    {
@@ -560,7 +560,7 @@ int32_t apx_rationalScaling_denominator(apx_rationalScaling_t const* self)
    return 0;
 }
 
-char const* apx_rationalScaling_unit(apx_rationalScaling_t const* self)
+char const* apx_rationalScaling_unit(apx_rational_scaling_t const* self)
 {
    {
       if (self != NULL)
@@ -572,8 +572,8 @@ char const* apx_rationalScaling_unit(apx_rationalScaling_t const* self)
 }
 
 
-//apx_computationList_t
-void apx_computationList_create(apx_computationList_t* self)
+//apx_computation_list_t
+void apx_computationList_create(apx_computation_list_t* self)
 {
    if (self != NULL)
    {
@@ -582,7 +582,7 @@ void apx_computationList_create(apx_computationList_t* self)
    }
 }
 
-void apx_computationList_destroy(apx_computationList_t* self)
+void apx_computationList_destroy(apx_computation_list_t* self)
 {
    if (self != NULL)
    {
@@ -590,9 +590,9 @@ void apx_computationList_destroy(apx_computationList_t* self)
    }
 }
 
-apx_computationList_t* apx_computationList_new(void)
+apx_computation_list_t* apx_computationList_new(void)
 {
-   apx_computationList_t* self = (apx_computationList_t*)malloc(sizeof(apx_computationList_t));
+   apx_computation_list_t* self = (apx_computation_list_t*)malloc(sizeof(apx_computation_list_t));
    if (self != NULL)
    {
       apx_computationList_create(self);
@@ -600,7 +600,7 @@ apx_computationList_t* apx_computationList_new(void)
    return self;
 }
 
-void apx_computationList_delete(apx_computationList_t* self)
+void apx_computationList_delete(apx_computation_list_t* self)
 {
    if (self != NULL)
    {
@@ -611,10 +611,10 @@ void apx_computationList_delete(apx_computationList_t* self)
 
 void apx_computationList_vdelete(void* arg)
 {
-   apx_computationList_delete((apx_computationList_t*)arg);
+   apx_computationList_delete((apx_computation_list_t*)arg);
 }
 
-void apx_computationList_set_id(apx_computationList_t* self, apx_computationListId_t computation_list_id)
+void apx_computationList_set_id(apx_computation_list_t* self, apx_computation_list_id_t computation_list_id)
 {
    if (self != NULL)
    {
@@ -622,18 +622,18 @@ void apx_computationList_set_id(apx_computationList_t* self, apx_computationList
    }
 }
 
-apx_error_t apx_computationList_append_clone_of_computation(apx_computationList_t* self, apx_computation_t const* computation)
+apx_error_t apx_computationList_append_clone_of_computation(apx_computation_list_t* self, apx_computation_t const* computation)
 {
    if ( (self != NULL) && (computation != NULL) )
    {
-      apx_valueTable_t* vt = NULL;
-      apx_rationalScaling_t* rs = NULL;
-      apx_valueTable_t const* vt_tmp = NULL;
-      apx_rationalScaling_t const* rs_tmp = NULL;
+      apx_value_table_t* vt = NULL;
+      apx_rational_scaling_t* rs = NULL;
+      apx_value_table_t const* vt_tmp = NULL;
+      apx_rational_scaling_t const* rs_tmp = NULL;
       switch (computation->computation_type)
       {
       case APX_COMPUTATION_TYPE_VALUE_TABLE:
-         vt_tmp = (apx_valueTable_t const*)computation;
+         vt_tmp = (apx_value_table_t const*)computation;
          vt = apx_valueTable_clone(vt_tmp);
          if (vt == NULL)
          {
@@ -642,7 +642,7 @@ apx_error_t apx_computationList_append_clone_of_computation(apx_computationList_
          adt_ary_push(&self->computations, vt);
          break;
       case APX_COMPUTATION_TYPE_RATIONAL_SCALING:
-         rs_tmp = (apx_rationalScaling_t const*)computation;
+         rs_tmp = (apx_rational_scaling_t const*)computation;
          rs = apx_rationalScaling_clone(rs_tmp);
          if (rs == NULL)
          {
@@ -676,22 +676,22 @@ static void apx_computation_delete(apx_computation_t* self)
 
 static void apx_valueTable_vdestroy(void* arg)
 {
-   apx_valueTable_destroy((apx_valueTable_t*)arg);
+   apx_valueTable_destroy((apx_value_table_t*)arg);
 }
 
 static adt_str_t* apx_valueTable_vto_string(void* arg)
 {
-   return apx_valueTable_to_string((apx_valueTable_t*)arg);
+   return apx_valueTable_to_string((apx_value_table_t*)arg);
 }
 
 static void apx_rationalScaling_vdestroy(void* arg)
 {
-   apx_rationalScaling_destroy((apx_rationalScaling_t*) arg);
+   apx_rationalScaling_destroy((apx_rational_scaling_t*) arg);
 }
 
 static adt_str_t* apx_rationalScaling_vto_string(void* arg)
 {
-   return apx_rationalScaling_to_string((apx_rationalScaling_t*)arg);
+   return apx_rationalScaling_to_string((apx_rational_scaling_t*)arg);
 }
 
 static adt_str_t* computation_limit_to_string(apx_computation_t const* self)

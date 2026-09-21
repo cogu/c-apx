@@ -76,9 +76,9 @@ CuSuite* testSuite_apx_client_socketConnection(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_connection_create(CuTest* tc)
 {
-   apx_clientSocketConnection_t conn;
+   apx_client_socket_connection_t conn;
    testsocket_t *sock1;
-   sock1 = testsocket_new(); //apx_clientSocketConnection_t takes ownership of this object. No need to manually delete it
+   sock1 = testsocket_new(); //apx_client_socket_connection_t takes ownership of this object. No need to manually delete it
    CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock1, APX_CONNECTION_TYPE_DEFAULT));
    CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
    CuAssertPtrEquals(tc, sock1, conn.socket_object);
@@ -92,7 +92,7 @@ static void test_send_greeting_on_connect(CuTest* tc)
    adt_str_t *str;
    const char *expected_greeting = "RMFP/1.0\nMessage-Size: 32\n\n";
    const char *data;
-   apx_clientSocketConnection_t conn;
+   apx_client_socket_connection_t conn;
 
    testsocket_spy_create();
    sock = testsocket_spy_server();
@@ -129,8 +129,8 @@ static void test_send_file_info_after_acknowledge_from_single_node(CuTest* tc)
    testsocket_t* sock;
    uint32_t len;
    const char* data;
-   apx_clientSocketConnection_t conn;
-   apx_nodeManager_t node_manager;
+   apx_client_socket_connection_t conn;
+   apx_node_manager_t node_manager;
    int const message_size = 67;
    uint8_t actual[67];
    uint8_t expected[67] = {

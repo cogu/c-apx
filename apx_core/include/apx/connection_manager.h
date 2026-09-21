@@ -31,12 +31,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_connectionManager_tag
+typedef struct apx_connection_manager_tag
 {
    SPINLOCK_T lock; //thread lock
    adt_u32Set_t connection_id_set; //used to keep track of which connection IDs are in use
-   adt_list_t active_connections; //Strong references to apx_serverConnection_t
-   adt_list_t inactive_connections; //Strong references to apx_serverConnection_t
+   adt_list_t active_connections; //Strong references to apx_server_connection_t
+   adt_list_t inactive_connections; //Strong references to apx_server_connection_t
    uint32_t next_connection_id;
    uint32_t num_connections;
    THREAD_T cleanup_thread; //garbage collector thread
@@ -45,21 +45,21 @@ typedef struct apx_connectionManager_tag
 #ifdef _MSC_VER
    unsigned int cleanup_thread_id;
 #endif
-} apx_connectionManager_t;
+} apx_connection_manager_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionManager_create(apx_connectionManager_t *self);
-void apx_connectionManager_destroy(apx_connectionManager_t *self);
-void apx_connectionManager_start(apx_connectionManager_t *self);
-void apx_connectionManager_stop(apx_connectionManager_t *self);
-void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConnection_t *connection);
-void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConnection_t *connection);
-apx_serverConnection_t* apx_connectionManager_get_last_connection(apx_connectionManager_t const* self);
-uint32_t apx_connectionManager_get_num_connections(apx_connectionManager_t *self);
+void apx_connectionManager_create(apx_connection_manager_t *self);
+void apx_connectionManager_destroy(apx_connection_manager_t *self);
+void apx_connectionManager_start(apx_connection_manager_t *self);
+void apx_connectionManager_stop(apx_connection_manager_t *self);
+void apx_connectionManager_attach(apx_connection_manager_t *self, apx_server_connection_t *connection);
+void apx_connectionManager_detach(apx_connection_manager_t *self, apx_server_connection_t *connection);
+apx_server_connection_t* apx_connectionManager_get_last_connection(apx_connection_manager_t const* self);
+uint32_t apx_connectionManager_get_num_connections(apx_connection_manager_t *self);
 #ifdef UNIT_TEST
-void apx_connectionManager_run(apx_connectionManager_t *self);
+void apx_connectionManager_run(apx_connection_manager_t *self);
 #endif
 
 

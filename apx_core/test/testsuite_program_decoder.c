@@ -72,8 +72,8 @@ CuSuite* testsuite_program_decoder(void)
 static void test_program_end_on_empty_program(CuTest* tc)
 {
    uint8_t program[1] = { 0 };
-   apx_programDecoder_t decoder;
-   apx_operationType_t operation_type = APX_OPERATION_TYPE_ARRAY_NEXT;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t operation_type = APX_OPERATION_TYPE_ARRAY_NEXT;
    apx_programDecoder_create(&decoder);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_programDecoder_select_program(&decoder, program, 0u));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_programDecoder_parse_next_operation(&decoder, &operation_type));
@@ -83,9 +83,9 @@ static void test_program_end_on_empty_program(CuTest* tc)
 
 static void test_parse_simple_pack_header_uint8(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_programHeader_t header;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_program_header_t header;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -106,9 +106,9 @@ static void test_parse_simple_pack_header_uint8(CuTest* tc)
 
 static void test_parse_simple_unpack_header_uint16(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_programHeader_t header;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_program_header_t header;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -129,9 +129,9 @@ static void test_parse_simple_unpack_header_uint16(CuTest* tc)
 
 static void test_parse_pack_header_uint32(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_programHeader_t header;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_program_header_t header;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -150,9 +150,9 @@ static void test_parse_pack_header_uint32(CuTest* tc)
 
 static void test_parse_queued_header(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_programHeader_t header;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_program_header_t header;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -174,8 +174,8 @@ static void test_parse_queued_header(CuTest* tc)
 static void test_parse_invalid_header_version(CuTest* tc)
 {
    uint8_t bad_header[] = { '3', '0', 0x08, 10u };
-   apx_programDecoder_t decoder;
-   apx_programHeader_t header;
+   apx_program_decoder_t decoder;
+   apx_program_header_t header;
 
    apx_programDecoder_create(&decoder);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_programDecoder_select_program(&decoder, bad_header, sizeof(bad_header)));
@@ -186,8 +186,8 @@ static void test_parse_invalid_header_version(CuTest* tc)
 static void test_parse_truncated_header(CuTest* tc)
 {
    uint8_t truncated[] = { '2', '1', 0x08 }; // Missing data_size byte
-   apx_programDecoder_t decoder;
-   apx_programHeader_t header;
+   apx_program_decoder_t decoder;
+   apx_program_header_t header;
 
    apx_programDecoder_create(&decoder);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_programDecoder_select_program(&decoder, truncated, sizeof(truncated)));
@@ -199,7 +199,7 @@ static void test_decode_pack_scalar_types(CuTest* tc)
 {
    struct {
       uint8_t variant;
-      apx_typeCode_t expected_type;
+      apx_type_code_t expected_type;
    } test_cases[] = {
       { APX_VM_VARIANT_UINT8, APX_TYPE_CODE_UINT8 },
       { APX_VM_VARIANT_UINT16, APX_TYPE_CODE_UINT16 },
@@ -219,10 +219,10 @@ static void test_decode_pack_scalar_types(CuTest* tc)
    size_t const num_cases = sizeof(test_cases) / sizeof(test_cases[0]);
    for (size_t i = 0u; i < num_cases; ++i)
    {
-      apx_programEncoder_t encoder;
-      apx_programDecoder_t decoder;
-      apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
-      apx_packUnpackOperationInfo_t info = { APX_TYPE_CODE_NONE, 0u, false };
+      apx_program_encoder_t encoder;
+      apx_program_decoder_t decoder;
+      apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+      apx_pack_unpack_operation_info_t info = { APX_TYPE_CODE_NONE, 0u, false };
 
       apx_programEncoder_create(&encoder);
       apx_programDecoder_create(&decoder);
@@ -244,10 +244,10 @@ static void test_decode_pack_scalar_types(CuTest* tc)
 
 static void test_decode_unpack_scalar_types(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
-   apx_packUnpackOperationInfo_t info = { APX_TYPE_CODE_NONE, 0u, false };
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+   apx_pack_unpack_operation_info_t info = { APX_TYPE_CODE_NONE, 0u, false };
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -268,10 +268,10 @@ static void test_decode_unpack_scalar_types(CuTest* tc)
 
 static void test_decode_fixed_array(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
-   apx_packUnpackOperationInfo_t info = { APX_TYPE_CODE_NONE, 0u, false };
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+   apx_pack_unpack_operation_info_t info = { APX_TYPE_CODE_NONE, 0u, false };
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -294,10 +294,10 @@ static void test_decode_fixed_array(CuTest* tc)
 
 static void test_decode_dynamic_array(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
-   apx_packUnpackOperationInfo_t info = { APX_TYPE_CODE_NONE, 0u, false };
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+   apx_pack_unpack_operation_info_t info = { APX_TYPE_CODE_NONE, 0u, false };
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -320,9 +320,9 @@ static void test_decode_dynamic_array(CuTest* tc)
 
 static void test_decode_range_checks_unsigned(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -333,7 +333,7 @@ static void test_decode_range_checks_unsigned(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_programDecoder_parse_next_operation(&decoder, &op_type));
    CuAssertIntEquals(tc, APX_OPERATION_TYPE_RANGE_CHECK_UINT32, op_type);
 
-   apx_rangeCheckUInt32OperationInfo_t info = { 0u, 0u };
+   apx_range_check_uint32_operation_info_t info = { 0u, 0u };
    apx_programDecoder_range_check_info_uint32(&decoder, &info);
    CuAssertUIntEquals(tc, 10u, info.lower_limit);
    CuAssertUIntEquals(tc, 50000u, info.upper_limit);
@@ -345,9 +345,9 @@ static void test_decode_range_checks_unsigned(CuTest* tc)
 
 static void test_decode_range_checks_signed(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -358,7 +358,7 @@ static void test_decode_range_checks_signed(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_programDecoder_parse_next_operation(&decoder, &op_type));
    CuAssertIntEquals(tc, APX_OPERATION_TYPE_RANGE_CHECK_INT32, op_type);
 
-   apx_rangeCheckInt32OperationInfo_t info = { 0, 0 };
+   apx_range_check_int32_operation_info_t info = { 0, 0 };
    apx_programDecoder_range_check_info_int32(&decoder, &info);
    CuAssertIntEquals(tc, -1000, info.lower_limit);
    CuAssertIntEquals(tc, 1000, info.upper_limit);
@@ -370,9 +370,9 @@ static void test_decode_range_checks_signed(CuTest* tc)
 
 static void test_decode_record_select_and_end(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -412,9 +412,9 @@ static void test_decode_record_select_and_end(CuTest* tc)
 
 static void test_decode_flow_ctrl_array_next(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);
@@ -430,10 +430,10 @@ static void test_decode_flow_ctrl_array_next(CuTest* tc)
 
 static void test_decode_position_save_and_recall(CuTest* tc)
 {
-   apx_programEncoder_t encoder;
-   apx_programDecoder_t decoder;
-   apx_operationType_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
-   apx_packUnpackOperationInfo_t info;
+   apx_program_encoder_t encoder;
+   apx_program_decoder_t decoder;
+   apx_operation_type_t op_type = APX_OPERATION_TYPE_PROGRAM_END;
+   apx_pack_unpack_operation_info_t info;
 
    apx_programEncoder_create(&encoder);
    apx_programDecoder_create(&decoder);

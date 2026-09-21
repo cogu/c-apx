@@ -32,24 +32,24 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_nodeCache_create(apx_nodeCache_t* self, apx_mode_t mode)
+void apx_nodeCache_create(apx_node_cache_t* self, apx_mode_t mode)
 {
    (void)self;
    (void)mode;
 }
 
-void apx_nodeCache_destroy(apx_nodeCache_t* self)
+void apx_nodeCache_destroy(apx_node_cache_t* self)
 {
    (void)self;
 }
 
-apx_nodeCache_t* apx_nodeCache_new(apx_mode_t mode)
+apx_node_cache_t* apx_nodeCache_new(apx_mode_t mode)
 {
    (void)mode;
    return NULL;
 }
 
-void apx_nodeCache_delete(apx_nodeCache_t* self)
+void apx_nodeCache_delete(apx_node_cache_t* self)
 {
    (void)self;
 }

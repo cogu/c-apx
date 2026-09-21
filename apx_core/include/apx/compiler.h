@@ -41,6 +41,6 @@ void apx_compiler_create(apx_compiler_t *self);
 void apx_compiler_destroy(apx_compiler_t *self);
 apx_compiler_t* apx_compiler_new(void);
 void apx_compiler_delete(apx_compiler_t *self);
-apx_program_t* apx_compiler_compile_port(apx_compiler_t* self, apx_port_t* port, apx_programType_t program_type, apx_error_t* error_code);
+apx_program_t* apx_compiler_compile_port(apx_compiler_t* self, apx_port_t* port, apx_program_type_t program_type, apx_error_t* error_code);
 
 #endif //APX_COMPILER_H

@@ -70,7 +70,7 @@ static void test_file_type_to_extension(CuTest* tc)
 
 static void test_detect_file_type_from_name(CuTest* tc)
 {
-   rmf_fileInfo_t* file_info = rmf_fileInfo_make_fixed("TestNode.apx", 40u, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* file_info = rmf_fileInfo_make_fixed("TestNode.apx", 40u, RMF_INVALID_ADDRESS);
    CuAssertPtrNotNull(tc, file_info);
    apx_file_t file;
    apx_file_create(&file, file_info);
@@ -109,7 +109,7 @@ static void test_detect_file_type_from_name(CuTest* tc)
 
 static void test_determine_local_or_remote_file(CuTest* tc)
 {
-   rmf_fileInfo_t* file_info = rmf_fileInfo_make_fixed("TestNode.apx", 40u, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* file_info = rmf_fileInfo_make_fixed("TestNode.apx", 40u, RMF_INVALID_ADDRESS);
    CuAssertPtrNotNull(tc, file_info);
    apx_file_t file;
    apx_file_create(&file, file_info);
@@ -146,7 +146,7 @@ static void test_digest_data_is_copied_between_files(CuTest* tc)
    {
       digest[i] = (uint8_t)i;
    }
-   rmf_fileInfo_t* file_info = rmf_fileInfo_make_fixed_with_digest("TestNode.apx", 40u, 0x1000u, RMF_DIGEST_TYPE_SHA256, digest);
+   rmf_file_info_t* file_info = rmf_fileInfo_make_fixed_with_digest("TestNode.apx", 40u, 0x1000u, RMF_DIGEST_TYPE_SHA256, digest);
    CuAssertPtrNotNull(tc, file_info);
    apx_file_t file;
    apx_file_create(&file, file_info);
@@ -158,8 +158,8 @@ static void test_digest_data_is_copied_between_files(CuTest* tc)
 
 static void test_less_than_function(CuTest* tc)
 {
-   rmf_fileInfo_t* file_info1 = rmf_fileInfo_make_fixed("TestNode1.apx", 40u, 0x10000);
-   rmf_fileInfo_t* file_info2 = rmf_fileInfo_make_fixed("TestNode2.apx", 40u, 0x20000);
+   rmf_file_info_t* file_info1 = rmf_fileInfo_make_fixed("TestNode1.apx", 40u, 0x10000);
+   rmf_file_info_t* file_info2 = rmf_fileInfo_make_fixed("TestNode2.apx", 40u, 0x20000);
    CuAssertPtrNotNull(tc, file_info1);
    CuAssertPtrNotNull(tc, file_info2);
    apx_file_t file1;

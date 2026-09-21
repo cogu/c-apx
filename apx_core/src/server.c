@@ -34,10 +34,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serverConnection_t *new_connection);
-static void apx_server_trigger_connected_event(apx_server_t *self, apx_serverConnection_t * server_connection);
-static void apx_server_trigger_disconnected_event(apx_server_t *self, apx_serverConnection_t *server_connection);
-static void apx_server_trigger_log_write_event(apx_server_t *self, apx_logLevel_t level, const char *label, const char *msg);
+static void apx_server_attach_and_start_connection(apx_server_t *self, apx_server_connection_t *new_connection);
+static void apx_server_trigger_connected_event(apx_server_t *self, apx_server_connection_t * server_connection);
+static void apx_server_trigger_disconnected_event(apx_server_t *self, apx_server_connection_t *server_connection);
+static void apx_server_trigger_log_write_event(apx_server_t *self, apx_log_level_t level, const char *label, const char *msg);
 static void apx_server_init_extensions(apx_server_t *self);
 static void apx_server_shutdown_extensions(apx_server_t *self);
 static void apx_server_handle_event(void *arg, apx_event_t *event);
@@ -157,7 +157,7 @@ void apx_server_stop(apx_server_t *self)
    }
 }
 
-void* apx_server_register_event_listener(apx_server_t* self, apx_serverEventListener_t* event_listener)
+void* apx_server_register_event_listener(apx_server_t* self, apx_server_event_listener_t* event_listener)
 {
    if ( (self != NULL) && (event_listener != NULL))
    {
@@ -188,7 +188,7 @@ void apx_server_unregister_event_listener(apx_server_t *self, void *handle)
    }
 }
 
-void apx_server_accept_connection(apx_server_t* self, apx_serverConnection_t* server_connection)
+void apx_server_accept_connection(apx_server_t* self, apx_server_connection_t* server_connection)
 {
    if ( (self != NULL) && (server_connection != NULL))
    {
@@ -196,7 +196,7 @@ void apx_server_accept_connection(apx_server_t* self, apx_serverConnection_t* se
    }
 }
 
-apx_error_t apx_server_detach_connection(apx_server_t* self, apx_serverConnection_t* server_connection)
+apx_error_t apx_server_detach_connection(apx_server_t* self, apx_server_connection_t* server_connection)
 {
    if ( (self != NULL) && (server_connection != NULL))
    {
@@ -212,11 +212,11 @@ apx_error_t apx_server_detach_connection(apx_server_t* self, apx_serverConnectio
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_serverExtensionHandler_t* handler, dtl_dv_t* config)
+apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_server_extension_handler_t* handler, dtl_dv_t* config)
 {
    if ( (self != NULL) && (handler != NULL) )
    {
-      apx_serverExtension_t *extension = apx_serverExtension_new(name, handler, config);
+      apx_server_extension_t *extension = apx_serverExtension_new(name, handler, config);
       if (extension == NULL)
       {
          return APX_MEM_ERROR;
@@ -227,7 +227,7 @@ apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_s
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_server_log_write(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
+void apx_server_log_write(apx_server_t* self, apx_log_level_t level, const char* label, const char* msg)
 {
    if ( (self != NULL) && (level <= APX_MAX_LOG_LEVEL) && (msg != NULL) )
    {
@@ -293,7 +293,7 @@ void apx_server_release_global_lock(apx_server_t* self)
    }
 }
 
-apx_error_t apx_server_connect_node_instance_provide_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
+apx_error_t apx_server_connect_node_instance_provide_ports(apx_server_t* self, apx_node_instance_t* node_instance)
 {
    if ( (self != NULL) && (node_instance != NULL) )
    {
@@ -302,7 +302,7 @@ apx_error_t apx_server_connect_node_instance_provide_ports(apx_server_t* self, a
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_server_connect_node_instance_require_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
+apx_error_t apx_server_connect_node_instance_require_ports(apx_server_t* self, apx_node_instance_t* node_instance)
 {
    if ( (self != NULL) && (node_instance != NULL) )
    {
@@ -311,7 +311,7 @@ apx_error_t apx_server_connect_node_instance_require_ports(apx_server_t* self, a
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_server_disconnect_node_instance_provide_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
+apx_error_t apx_server_disconnect_node_instance_provide_ports(apx_server_t* self, apx_node_instance_t* node_instance)
 {
    if ( (self != NULL) && (node_instance != NULL) )
    {
@@ -320,7 +320,7 @@ apx_error_t apx_server_disconnect_node_instance_provide_ports(apx_server_t* self
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_server_disconnect_node_instance_require_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
+apx_error_t apx_server_disconnect_node_instance_require_ports(apx_server_t* self, apx_node_instance_t* node_instance)
 {
    if ( (self != NULL) && (node_instance != NULL) )
    {
@@ -332,18 +332,18 @@ apx_error_t apx_server_disconnect_node_instance_require_ports(apx_server_t* self
 /**
  * Is is assumed that the server global lock is held by the caller of this function
  */
-apx_error_t apx_server_process_require_port_connector_changes(apx_server_t* self, apx_nodeInstance_t* require_node_instance, apx_portConnectorChangeTable_t* connector_changes)
+apx_error_t apx_server_process_require_port_connector_changes(apx_server_t* self, apx_node_instance_t* require_node_instance, apx_port_connector_change_table_t* connector_changes)
 {
    if ( (self != NULL) && (require_node_instance != NULL) && (connector_changes != NULL) )
    {
       apx_size_t num_require_ports;
-      apx_portId_t port_id;
+      apx_port_id_t port_id;
       num_require_ports = apx_nodeInstance_get_num_require_ports(require_node_instance);
       assert(connector_changes->num_ports == num_require_ports);
       for (port_id = 0u; port_id < num_require_ports; port_id++)
       {
-         apx_portInstance_t *require_port;
-         apx_portConnectorChangeEntry_t *entry;
+         apx_port_instance_t *require_port;
+         apx_port_connector_change_entry_t *entry;
          require_port = apx_nodeInstance_get_require_port(require_node_instance, port_id);
          entry = apx_portConnectorChangeTable_get_entry(connector_changes, port_id);
          assert( (require_port != NULL) && (entry != NULL));
@@ -352,7 +352,7 @@ apx_error_t apx_server_process_require_port_connector_changes(apx_server_t* self
             if (entry->count == 1)
             {
                apx_error_t rc;
-               apx_portInstance_t *provide_port = entry->data.port_instance;
+               apx_port_instance_t *provide_port = entry->data.port_instance;
                assert(provide_port != NULL);
                rc = apx_nodeInstance_handle_require_port_connected_to_provide_port(require_port, provide_port);
                if (rc != APX_NO_ERROR)
@@ -375,19 +375,19 @@ apx_error_t apx_server_process_require_port_connector_changes(apx_server_t* self
 /**
  * Is is assumed that the server global lock is held by the caller of this function
  */
-apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self, apx_nodeInstance_t* provide_node_instance, apx_portConnectorChangeTable_t* connector_changes)
+apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self, apx_node_instance_t* provide_node_instance, apx_port_connector_change_table_t* connector_changes)
 {
    if ((self != NULL) && (provide_node_instance != NULL) && (connector_changes != NULL))
    {
       apx_size_t num_provide_ports;
-      apx_portId_t port_id;
+      apx_port_id_t port_id;
       num_provide_ports = apx_nodeInstance_get_num_provide_ports(provide_node_instance);
       assert(connector_changes->num_ports == num_provide_ports);
       apx_nodeInstance_lock_port_connector_table(provide_node_instance);
       for (port_id = 0u; port_id < num_provide_ports; port_id++)
       {
-         apx_portInstance_t *provide_port;
-         apx_portConnectorChangeEntry_t *entry;
+         apx_port_instance_t *provide_port;
+         apx_port_connector_change_entry_t *entry;
          entry = apx_portConnectorChangeTable_get_entry(connector_changes, port_id);
          provide_port = apx_nodeInstance_get_provide_port(provide_node_instance, port_id);
          assert(entry != NULL);
@@ -397,7 +397,7 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
             if (entry->count == 1)
             {
                apx_error_t rc;
-               apx_portInstance_t *require_port = entry->data.port_instance;
+               apx_port_instance_t *require_port = entry->data.port_instance;
                assert(require_port != NULL);
                rc = apx_nodeInstance_handle_provide_port_connected_to_require_port(provide_port, require_port);
                if (rc != APX_NO_ERROR)
@@ -412,7 +412,7 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
                for(i=0; i < entry->count; i++)
                {
                   apx_error_t rc;
-                  apx_portInstance_t *require_port = adt_ary_value(entry->data.array, i);
+                  apx_port_instance_t *require_port = adt_ary_value(entry->data.array, i);
                   assert(require_port != NULL);
                   rc = apx_nodeInstance_handle_provide_port_connected_to_require_port(provide_port, require_port);
                   if (rc != APX_NO_ERROR)
@@ -433,7 +433,7 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
 /**
  * Note: Should only be used when caller holds globalLock
  */
-apx_error_t apx_server_insert_modified_node_instance(apx_server_t* self, apx_nodeInstance_t* node_instance)
+apx_error_t apx_server_insert_modified_node_instance(apx_server_t* self, apx_node_instance_t* node_instance)
 {
    if ( (self != NULL) && (node_instance != NULL))
    {
@@ -474,7 +474,7 @@ void apx_server_clear_port_connector_changes(apx_server_t* self)
       int32_t num_nodes = adt_ary_length(&self->modified_nodes);
       for(i=0; i < num_nodes; i++)
       {
-         apx_nodeInstance_t *node_instance = (apx_nodeInstance_t*) adt_ary_value(&self->modified_nodes, i);
+         apx_node_instance_t *node_instance = (apx_node_instance_t*) adt_ary_value(&self->modified_nodes, i);
          assert(node_instance != NULL);
          apx_nodeInstance_clear_provide_port_connector_changes(node_instance, true);
          apx_nodeInstance_clear_require_port_connector_changes(node_instance, true);
@@ -502,7 +502,7 @@ void apx_server_run(apx_server_t *self)
    }
 }
 
-apx_serverConnection_t* apx_server_get_last_connection(apx_server_t const* self)
+apx_server_connection_t* apx_server_get_last_connection(apx_server_t const* self)
 {
    if (self != NULL)
    {
@@ -511,11 +511,11 @@ apx_serverConnection_t* apx_server_get_last_connection(apx_server_t const* self)
    return NULL;
 }
 
-apx_portSignatureMap_t* apx_server_get_port_signature_map(apx_server_t const* self)
+apx_port_signature_map_t* apx_server_get_port_signature_map(apx_server_t const* self)
 {
    if (self != NULL)
    {
-      return (apx_portSignatureMap_t*) &self->port_signature_map;
+      return (apx_port_signature_map_t*) &self->port_signature_map;
    }
    return NULL;
 }
@@ -527,7 +527,7 @@ apx_portSignatureMap_t* apx_server_get_port_signature_map(apx_server_t const* se
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void apx_server_attach_and_start_connection(apx_server_t* self, apx_serverConnection_t* new_connection)
+static void apx_server_attach_and_start_connection(apx_server_t* self, apx_server_connection_t* new_connection)
 {
    if (apx_connectionManager_get_num_connections(&self->connection_manager) < APX_SERVER_MAX_CONCURRENT_CONNECTIONS)
    {
@@ -541,7 +541,7 @@ static void apx_server_attach_and_start_connection(apx_server_t* self, apx_serve
       printf("[SERVER] Concurrent connection limit exceeded\n");
    }
 }
-static void apx_server_trigger_connected_event(apx_server_t* self, apx_serverConnection_t* server_connection)
+static void apx_server_trigger_connected_event(apx_server_t* self, apx_server_connection_t* server_connection)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -558,7 +558,7 @@ static void apx_server_trigger_connected_event(apx_server_t* self, apx_serverCon
    adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
    while(iter != NULL)
    {
-      apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
+      apx_server_event_listener_t *listener = (apx_server_event_listener_t*) iter->pItem;
       if ( (listener != NULL) && (listener->new_connection != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -572,7 +572,7 @@ static void apx_server_trigger_connected_event(apx_server_t* self, apx_serverCon
    for (i = 0; i < length; i++)
    {
       void *arg = adt_ary_value(&args, i);
-      apx_serverConnectionEventFunc_t *callback = (apx_serverConnectionEventFunc_t*) adt_ary_value(&callbacks, i);
+      apx_server_connection_event_func_t *callback = (apx_server_connection_event_func_t*) adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, server_connection);
    }
@@ -580,7 +580,7 @@ static void apx_server_trigger_connected_event(apx_server_t* self, apx_serverCon
    adt_ary_destroy(&callbacks);
 }
 
-static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_serverConnection_t* server_connection)
+static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server_connection_t* server_connection)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -597,7 +597,7 @@ static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server
    adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
    while(iter != NULL)
    {
-      apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
+      apx_server_event_listener_t *listener = (apx_server_event_listener_t*) iter->pItem;
       if ( (listener != NULL) && (listener->connection_closed != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -611,7 +611,7 @@ static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server
    for (i = 0; i < length; i++)
    {
       void *arg = adt_ary_value(&args, i);
-      apx_serverConnectionEventFunc_t *callback = (apx_serverConnectionEventFunc_t*) adt_ary_value(&callbacks, i);
+      apx_server_connection_event_func_t *callback = (apx_server_connection_event_func_t*) adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, server_connection);
    }
@@ -626,7 +626,7 @@ static void apx_server_init_extensions(apx_server_t* self)
       adt_list_elem_t *iter = adt_list_iter_first(&self->extension_manager);
       while(iter != NULL)
       {
-         apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
+         apx_server_extension_t *extension = (apx_server_extension_t*) iter->pItem;
          if (extension->handler.init != NULL)
          {
             extension->handler.init(self, extension->config);
@@ -654,7 +654,7 @@ static void apx_server_shutdown_extensions(apx_server_t* self)
       adt_list_elem_t *iter = adt_list_iter_first(&self->extension_manager);
       while(iter != NULL)
       {
-        apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
+        apx_server_extension_t *extension = (apx_server_extension_t*) iter->pItem;
         if (extension->handler.shutdown != NULL)
         {
            extension->handler.shutdown();
@@ -669,12 +669,12 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
    apx_server_t *self = (apx_server_t*) arg;
    if ( (self != NULL) && (event != NULL) )
    {
-      apx_logLevel_t level;
+      apx_log_level_t level;
       char *label;
       adt_str_t *str;
       const char *msg = NULL;
-      rmf_fileInfo_t* file_info = NULL;
-      apx_serverConnection_t* server_connection = NULL;
+      rmf_file_info_t* file_info = NULL;
+      apx_server_connection_t* server_connection = NULL;
       switch(event->ev_type)
       {
       case APX_EVENT_LOG_WRITE:
@@ -695,7 +695,7 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
          adt_str_delete(str);
          break;
       case APX_EVENT_PROTOCOL_HEADER_ACCEPTED:
-         apx_event_unpack_protocol_header_accepted(event, (apx_connectionBase_t**)&server_connection);
+         apx_event_unpack_protocol_header_accepted(event, (apx_connection_base_t**)&server_connection);
          if (server_connection != NULL)
          {
             apx_server_connection_process_protocol_header_accepted_event(server_connection);
@@ -706,7 +706,7 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
          }
          break;
       case APX_EVENT_REMOTE_FILE_PUBLISHED:
-         apx_event_unpack_remote_file_published(event, (apx_connectionBase_t**)&server_connection, &file_info);
+         apx_event_unpack_remote_file_published(event, (apx_connection_base_t**)&server_connection, &file_info);
          if ((server_connection != NULL) && (file_info != NULL) )
          {
             apx_server_connection_process_remote_file_published_event(server_connection, file_info);
@@ -723,7 +723,7 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
    }
 }
 
-static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
+static void apx_server_trigger_log_write_event(apx_server_t* self, apx_log_level_t level, const char* label, const char* msg)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -737,7 +737,7 @@ static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_
    adt_list_elem_t* iter = adt_list_iter_first(&self->server_event_listeners);
    while (iter != NULL)
    {
-      apx_serverEventListener_t *listener = (apx_serverEventListener_t*) iter->pItem;
+      apx_server_event_listener_t *listener = (apx_server_event_listener_t*) iter->pItem;
       if ( (listener != NULL) && (listener->server_write_log != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -750,7 +750,7 @@ static void apx_server_trigger_log_write_event(apx_server_t* self, apx_logLevel_
    for (i = 0; i < length; i++)
    {
       void* arg = adt_ary_value(&args, i);
-      apx_serverLogWriteEventFunc_t* callback = (apx_serverLogWriteEventFunc_t*)adt_ary_value(&callbacks, i);
+      apx_server_log_write_event_func_t* callback = (apx_server_log_write_event_func_t*)adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, level, label, msg);
    }

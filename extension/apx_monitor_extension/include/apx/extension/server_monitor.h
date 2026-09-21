@@ -36,27 +36,27 @@
 
 struct apx_server_tag;
 
-typedef struct apx_serverMonitor_tag
+typedef struct apx_server_monitor_tag
 {
    struct apx_server_tag* server;
-   adt_list_t connection_observers; //strong references to apx_observedConnection_t
-   adt_list_t monitor_connections; //weak references to apx_serverConnection_t
+   adt_list_t connection_observers; //strong references to apx_observed_connection_t
+   adt_list_t monitor_connections; //weak references to apx_server_connection_t
    MUTEX_T lock;
-} apx_serverMonitor_t;
+} apx_server_monitor_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverMonitor_create(apx_serverMonitor_t* self, struct apx_server_tag* server);
-void apx_serverMonitor_destroy(apx_serverMonitor_t* self);
-apx_serverMonitor_t* apx_serverMonitor_new(struct apx_server_tag* server);
-void apx_serverMonitor_delete(apx_serverMonitor_t* self);
-int32_t apx_serverMonitor_num_connections(apx_serverMonitor_t* self);
-apx_observedConnection_t* apx_serverMonitor_get_last_observed_connection(apx_serverMonitor_t* self);
+void apx_serverMonitor_create(apx_server_monitor_t* self, struct apx_server_tag* server);
+void apx_serverMonitor_destroy(apx_server_monitor_t* self);
+apx_server_monitor_t* apx_serverMonitor_new(struct apx_server_tag* server);
+void apx_serverMonitor_delete(apx_server_monitor_t* self);
+int32_t apx_serverMonitor_num_connections(apx_server_monitor_t* self);
+apx_observed_connection_t* apx_serverMonitor_get_last_observed_connection(apx_server_monitor_t* self);
 
 //Virtual call points
-void apx_serverMonitor_virtual_on_new_connection(void* arg, apx_serverConnection_t* connection);
-void apx_serverMonitor_virtual_on_connection_closed(void* arg, apx_serverConnection_t* connection);
-void apx_serverMonitor_virtual_on_protocol_header_accepted(void* arg, apx_connectionBase_t* connection);
+void apx_serverMonitor_virtual_on_new_connection(void* arg, apx_server_connection_t* connection);
+void apx_serverMonitor_virtual_on_connection_closed(void* arg, apx_server_connection_t* connection);
+void apx_serverMonitor_virtual_on_protocol_header_accepted(void* arg, apx_connection_base_t* connection);
 
 #endif //APX_SERVER_MONITOR_H

@@ -72,7 +72,7 @@ CuSuite* testSuite_apx_portConnectorChangeTable(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_create_table(CuTest *tc)
 {
-   apx_portConnectorChangeTable_t *table = apx_portConnectorChangeTable_new(3);
+   apx_port_connector_change_table_t *table = apx_portConnectorChangeTable_new(3);
 
    CuAssertPtrNotNull(tc, table);
    CuAssertPtrNotNull(tc, table->entries);
@@ -82,12 +82,12 @@ static void test_create_table(CuTest *tc)
 
 static void test_connect_vehicle_speed_ports(CuTest *tc)
 {
-   apx_portConnectorChangeTable_t *port_connections;
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_portInstance_t *local_port;
-   apx_portInstance_t *remote_port;
+   apx_port_connector_change_table_t *port_connections;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_port_instance_t *local_port;
+   apx_port_instance_t *remote_port;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, node_manager);
@@ -118,14 +118,14 @@ static void test_connect_vehicle_speed_ports(CuTest *tc)
 
 static void test_disconnect_require_ports(CuTest *tc)
 {
-   apx_portConnectorChangeTable_t *node_connections;
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_nodeInstance_t *node_instance3;
-   apx_portInstance_t *provide_port;
-   apx_portInstance_t *require_port_ref1;
-   apx_portInstance_t *require_port_ref2;
+   apx_port_connector_change_table_t *node_connections;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_node_instance_t *node_instance3;
+   apx_port_instance_t *provide_port;
+   apx_port_instance_t *require_port_ref1;
+   apx_port_instance_t *require_port_ref2;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, node_manager);
@@ -163,15 +163,15 @@ static void test_disconnect_require_ports(CuTest *tc)
 
 static void test_disconnect_provide_ports(CuTest *tc)
 {
-   apx_portConnectorChangeTable_t *node2_require_connections;
-   apx_portConnectorChangeTable_t *node3_require_connections;
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_nodeInstance_t *node_instance3;
-   apx_portInstance_t *provide_port;
-   apx_portInstance_t *require_port1;
-   apx_portInstance_t *require_port2;
+   apx_port_connector_change_table_t *node2_require_connections;
+   apx_port_connector_change_table_t *node3_require_connections;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_node_instance_t *node_instance3;
+   apx_port_instance_t *provide_port;
+   apx_port_instance_t *require_port1;
+   apx_port_instance_t *require_port2;
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, node_manager);
 

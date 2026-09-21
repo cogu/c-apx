@@ -22,13 +22,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_program_encode_header(apx_program_t* program, apx_programType_t program_type, uint32_t element_size, uint32_t queue_size, bool is_dynamic)
+apx_error_t apx_program_encode_header(apx_program_t* program, apx_program_type_t program_type, uint32_t element_size, uint32_t queue_size, bool is_dynamic)
 {
    if (program == NULL)
    {
       return APX_INVALID_ARGUMENT_ERROR;
    }
-   apx_programEncoder_t encoder;
+   apx_program_encoder_t encoder;
    apx_programEncoder_create(&encoder);
    apx_error_t const result = apx_programEncoder_encode_program_header(&encoder, program_type, element_size, queue_size, is_dynamic);
    if (result == APX_NO_ERROR)
@@ -45,11 +45,11 @@ apx_error_t apx_program_encode_header(apx_program_t* program, apx_programType_t 
    return result;
 }
 
-apx_error_t apx_program_decode_header(uint8_t const* begin, uint8_t const* end, uint8_t const** next, apx_programHeader_t* header)
+apx_error_t apx_program_decode_header(uint8_t const* begin, uint8_t const* end, uint8_t const** next, apx_program_header_t* header)
 {
    if ((begin != NULL) && (end != NULL) && (next != NULL) && (header != NULL))
    {
-      apx_programDecoder_t decoder;
+      apx_program_decoder_t decoder;
       apx_programDecoder_create(&decoder);
       apx_error_t result = apx_programDecoder_select_program(&decoder, begin, (uint32_t)(end - begin));
       if (result == APX_NO_ERROR)

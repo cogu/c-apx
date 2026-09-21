@@ -28,8 +28,8 @@ typedef struct apx_vm_tag
 {
    apx_vm_serializer_t serializer;
    apx_vm_deserializer_t deserializer;
-   apx_programDecoder_t decoder;
-   apx_programHeader_t program_header;
+   apx_program_decoder_t decoder;
+   apx_program_header_t program_header;
 } apx_vm_t;
 
 //////////////////////////////////////////////////////////////////////////////

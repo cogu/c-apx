@@ -94,9 +94,9 @@ CuSuite* testSuite_apx_socketServerConnection(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_connection_create(CuTest* tc)
 {
-   apx_socketServerConnection_t conn;
+   apx_socket_server_connection_t conn;
    testsocket_t *sock1;
-   sock1 = testsocket_new(); //apx_socketServerConnection_t takes ownership of this object. No need to manually delete it
+   sock1 = testsocket_new(); //apx_socket_server_connection_t takes ownership of this object. No need to manually delete it
    CuAssertIntEquals(tc, 0, apx_socketServerConnection_create(&conn, sock1));
    CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
    CuAssertPtrEquals(tc, sock1, conn.socket_object);
@@ -107,7 +107,7 @@ static void test_each_connection_get_unique_id(CuTest* tc)
 {
    apx_server_t server;
    testsocket_t *sockets[11];
-   apx_serverConnection_t *lastConnection;
+   apx_server_connection_t *lastConnection;
    uint32_t connectionIdExpected = 0;
    int i;
    apx_server_create(&server);
@@ -194,13 +194,13 @@ static void test_server_parses_definition_data_after_transmission(CuTest *tc)
    SERVER_RUN(&server, sock);
    verify_file_open_request(tc, sock, definitionAddress);
    CuAssertPtrEquals(tc, NULL, (void*) testsocket_spy_getReceivedData(&dummy));
-   apx_serverConnection_t *connection = apx_server_get_last_connection(&server);
+   apx_server_connection_t *connection = apx_server_get_last_connection(&server);
    CuAssertPtrNotNull(tc, connection);
-   apx_nodeInstance_t *node_instance = apx_nodeManager_find(connection->base.node_manager, "TestNode");
+   apx_node_instance_t *node_instance = apx_nodeManager_find(connection->base.node_manager, "TestNode");
    CuAssertPtrNotNull(tc, node_instance);
    send_file_content(tc, sock, definitionAddress);
    SERVER_RUN(&server, sock);
-   apx_nodeData_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
+   apx_node_data_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
    CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
@@ -224,7 +224,7 @@ static void send_file_info_no_checksum(CuTest* tc, testsocket_t *sock, const cha
 {
    apx_size_t msgLen = 0;
    uint8_t buf[RMF_CMD_AREA_SIZE];
-   rmf_fileInfo_t* file_info = rmf_fileInfo_make_fixed(name, length, startAddress);
+   rmf_file_info_t* file_info = rmf_fileInfo_make_fixed(name, length, startAddress);
    CuAssertPtrNotNull(tc, file_info);
 
    msgLen += rmf_address_encode(&buf[1+msgLen], (apx_size_t)(sizeof(buf)-msgLen), RMF_CMD_AREA_START_ADDRESS, false);

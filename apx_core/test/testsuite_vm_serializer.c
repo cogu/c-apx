@@ -239,7 +239,7 @@ static void test_pack_uint8_from_int32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(7);
    apx_vm_serializer_create(&sr);
 
@@ -257,7 +257,7 @@ static void test_pack_uint8_from_uint32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(255);
    apx_vm_serializer_create(&sr);
 
@@ -277,7 +277,7 @@ static void test_pack_uint8_from_value_out_of_range_returns_range_error(CuTest* 
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(256);
    apx_vm_serializer_create(&sr);
 
@@ -295,7 +295,7 @@ static void test_pack_uint8_from_negative_value_returns_conversion_error(CuTest*
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(-1);
    apx_vm_serializer_create(&sr);
 
@@ -313,7 +313,7 @@ static void test_pack_uint8_array(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE*4];
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
 
@@ -339,7 +339,7 @@ static void test_pack_char_string(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE*4];
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_cstr("Test");
    apx_vm_serializer_create(&sr);
 
@@ -361,7 +361,7 @@ static void test_pack_shorter_char_string(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE * 6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
    uint32_t const array_length = 6u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_cstr("Tst");
    apx_vm_serializer_create(&sr);
 
@@ -385,7 +385,7 @@ static void test_pack_too_large_char_string(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE * 4];
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_cstr("Short");
    apx_vm_serializer_create(&sr);
 
@@ -403,7 +403,7 @@ static void test_pack_char8_string(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE * 4];
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_cstr("Test");
    apx_vm_serializer_create(&sr);
 
@@ -425,7 +425,7 @@ static void test_pack_record_uint8(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE * 3];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    memset(buf, 0xFF, sizeof(buf));
    dtl_hv_t* hv = dtl_hv_new();
    apx_vm_serializer_create(&sr);
@@ -455,7 +455,7 @@ static void test_pack_record_uint8_with_range_check(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE * 3];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    memset(buf, 0xFF, sizeof(buf));
    dtl_hv_t* hv = dtl_hv_new();
    apx_vm_serializer_create(&sr);
@@ -488,7 +488,7 @@ static void test_pack_uint16_from_int32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT16_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(0x1234);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -508,7 +508,7 @@ static void test_pack_uint16_from_uint32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT16_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_u32(0xffff);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -528,7 +528,7 @@ static void test_pack_uint16_array(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT16_SIZE * 5];
    uint32_t const array_length = 5u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
 
@@ -561,7 +561,7 @@ static void test_pack_uint16_array_with_range_check(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT16_SIZE * 2];
    uint32_t const array_length = 2u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
 
@@ -586,7 +586,7 @@ static void test_pack_uint32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT32_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_u32(0x12345678);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -608,7 +608,7 @@ static void test_pack_uint32_array(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT32_SIZE * 2];
    uint32_t const array_length = 2u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
 
@@ -636,7 +636,7 @@ static void test_pack_uint32_array_with_range_check(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT32_SIZE * 2];
    uint32_t const array_length = 2u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
 
@@ -815,7 +815,7 @@ static void test_pack_int8_from_int32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(-128);
    apx_vm_serializer_create(&sr);
 
@@ -834,7 +834,7 @@ static void test_pack_int8_from_value_out_of_range_returns_range_error(CuTest* t
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(128);
    apx_vm_serializer_create(&sr);
 
@@ -852,7 +852,7 @@ static void test_pack_int8_array(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE * 4];
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
 
@@ -878,7 +878,7 @@ static void test_pack_int16_from_int32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT16_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(-32768);
    apx_vm_serializer_create(&sr);
 
@@ -898,7 +898,7 @@ static void test_pack_int16_from_value_out_of_range_returns_range_error(CuTest* 
    apx_vm_serializer_t sr;
    uint8_t buf[UINT16_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(32768);
    apx_vm_serializer_create(&sr);
 
@@ -916,7 +916,7 @@ static void test_pack_int16_array(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT16_SIZE * 4];
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
 
@@ -946,7 +946,7 @@ static void test_pack_int32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT32_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(INT32_MIN);
    apx_vm_serializer_create(&sr);
 
@@ -968,7 +968,7 @@ static void test_pack_int32_from_value_out_of_range_returns_conversion_error(CuT
    apx_vm_serializer_t sr;
    uint8_t buf[UINT32_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_u32(0x80000000UL);
    apx_vm_serializer_create(&sr);
 
@@ -986,7 +986,7 @@ static void test_pack_int32_array(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT32_SIZE * 4];
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
 
@@ -1024,7 +1024,7 @@ static void test_pack_int64_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT64_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i64(INT64_MIN);
    apx_vm_serializer_create(&sr);
 
@@ -1050,7 +1050,7 @@ static void test_pack_int64_from_value_out_of_range_returns_conversion_error(CuT
    apx_vm_serializer_t sr;
    uint8_t buf[UINT32_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_u64(0x8000000000000000ULL);
    apx_vm_serializer_create(&sr);
 
@@ -1068,7 +1068,7 @@ static void test_pack_int64_array(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT64_SIZE * 4];
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1123,7 +1123,7 @@ static void test_pack_uint64_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT64_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_u64(UINT64_MAX);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1150,7 +1150,7 @@ static void test_pack_uint64_from_negative_value_returns_conversion_error(CuTest
    apx_vm_serializer_t sr;
    uint8_t buf[UINT32_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i64(-1);
    apx_vm_serializer_create(&sr);
 
@@ -1168,7 +1168,7 @@ static void test_pack_uint64_array(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT64_SIZE * 3];
    uint32_t const array_length = 3u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1214,7 +1214,7 @@ static void test_pack_bool_from_bool_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[BOOL_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_bool(false);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1240,7 +1240,7 @@ static void test_pack_bool_from_uint32_value(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[BOOL_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_u32(0u);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1267,7 +1267,7 @@ static void test_pack_single_byte(CuTest* tc)
    uint8_t buf[BYTE_SIZE];
    uint8_t data[] = { 0xaau };
    uint32_t const array_length = (uint32_t)sizeof(data);
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_bytearray_raw(&data[0], (uint32_t)sizeof(data));
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1287,7 +1287,7 @@ static void test_pack_byte_array(CuTest* tc)
    uint8_t buf[BYTE_SIZE * 2u];
    uint8_t data[] = { 0x12, 0x34 };
    uint32_t const array_length = (uint32_t)sizeof(data);
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_bytearray_raw(&data[0], (uint32_t)sizeof(data));
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1308,7 +1308,7 @@ static void test_pack_zero_length_byte_array_is_treated_as_length_one(CuTest* tc
    uint8_t buf[BYTE_SIZE];
    uint8_t data[] = { 0xaau };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_bytearray_raw(&data[0], (uint32_t)sizeof(data));
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1328,7 +1328,7 @@ static void test_pack_byte_array_with_inconsistent_length_returns_length_error(C
    uint8_t buf[BYTE_SIZE * 2];
    uint8_t data[] = { 0x11u };
    uint32_t const array_length = 2u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_bytearray_raw(&data[0], (uint32_t)sizeof(data));
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1346,7 +1346,7 @@ static void test_pack_dynamic_uint8_array_with_uint8_length(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + UINT8_SIZE * 4];
    uint32_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1395,7 +1395,7 @@ static void test_pack_dynamic_uint16_array_with_uint8_length(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + UINT16_SIZE * 4];
    uint32_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1422,7 +1422,7 @@ static void test_pack_dynamic_uint32_array_with_uint8_length(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + UINT32_SIZE * 4];
    uint32_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1453,7 +1453,7 @@ static void test_pack_dynamic_int8_array_with_uint8_length(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + INT8_SIZE * 4];
    uint32_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1478,7 +1478,7 @@ static void test_pack_dynamic_int16_array_with_uint8_length(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + INT16_SIZE * 4];
    uint32_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1505,7 +1505,7 @@ static void test_pack_dynamic_int32_array_with_uint8_length(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + INT32_SIZE * 4];
    uint32_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1535,7 +1535,7 @@ static void test_pack_dynamic_bool_array_with_uint8_length(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + BOOL_SIZE * 4];
    uint32_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_av_t* av = dtl_av_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1562,7 +1562,7 @@ static void test_pack_dynamic_byte_array_with_uint8_length(CuTest* tc)
    uint8_t buf[UINT8_SIZE + BYTE_SIZE * 4];
    uint8_t const data[] = { 1u, 2u, 3u, 4, };
    uint32_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_sv_t* sv = dtl_sv_make_bytearray_raw(&data[0], (uint32_t)sizeof(data));
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1588,7 +1588,7 @@ static void test_pack_dynamic_byte_array_with_uint16_length(CuTest* tc)
    uint8_t buf[UINT16_SIZE + BYTE_SIZE * 1023];
    uint8_t data[1023];
    uint32_t const max_array_length = 1023u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT16;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT16;
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
    uint32_t i;
@@ -1621,7 +1621,7 @@ static void test_pack_dynamic_string_with_uint8_length(CuTest* tc)
    uint8_t buf[UINT8_SIZE + CHAR_SIZE * 32];
    char const *data = "Name";
    uint32_t const max_array_length = 32u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_sv_t* sv = dtl_sv_make_cstr(data);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1644,7 +1644,7 @@ static void test_pack_string_in_record(CuTest* tc)
 {
    apx_vm_serializer_t sr;
    uint8_t buf[CHAR_SIZE * 20];
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_hv_t* hv = dtl_hv_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1688,7 +1688,7 @@ static void test_pack_dynamic_string_in_record(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + CHAR_SIZE * 10 + UINT8_SIZE + CHAR_SIZE * 10];
    uint32_t const max_array_length = 10u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_hv_t* hv = dtl_hv_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1727,8 +1727,8 @@ static void test_pack_dynamic_uint16_array_in_record(CuTest* tc)
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + UINT16_SIZE * 5 + UINT8_SIZE];
    uint32_t const max_array_length = 5u;
-   apx_sizeType_t const dynamic_size_type1 = APX_SIZE_TYPE_UINT8;
-   apx_sizeType_t const dynamic_size_type2 = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type1 = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type2 = APX_SIZE_TYPE_NONE;
    dtl_hv_t* hv = dtl_hv_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1770,7 +1770,7 @@ static void test_pack_uint8_queued_element(CuTest* tc)
    uint8_t buf[UINT8_SIZE + UINT8_SIZE * 5];
    uint32_t const queue_length = 5u;
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(7);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1795,7 +1795,7 @@ static void test_pack_uint8_multiple_queued_elements(CuTest* tc)
    uint8_t buf[UINT8_SIZE + UINT8_SIZE * 5];
    uint32_t const queue_length = 5u;
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = dtl_sv_make_i32(7);
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1826,7 +1826,7 @@ static void test_pack_record_inside_record__uint8_uint16__uint16_uint32(CuTest* 
    apx_vm_serializer_t sr;
    uint8_t buf[UINT8_SIZE + UINT16_SIZE * 2 + UINT32_SIZE];
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_hv_t* hv = dtl_hv_new();
    apx_vm_serializer_create(&sr);
    memset(buf, 0, sizeof(buf));
@@ -1879,7 +1879,7 @@ static void test_pack_array_of_record_uint16_uint8(CuTest* tc)
    uint8_t buf[(UINT16_SIZE + UINT8_SIZE) * 3];
    uint32_t const array_length = 3u;
    uint32_t const child_array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    bool is_last = false;
 
    apx_vm_serializer_create(&sr);

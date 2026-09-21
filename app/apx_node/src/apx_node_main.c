@@ -172,7 +172,7 @@ int main(int argc, char **argv)
             }
             else
             {
-               apx_nodeInstance_t *node_instance;
+               apx_node_instance_t *node_instance;
                apx_size_t num_provide_ports;
                apx_size_t num_require_ports;
                printf("OK\n");

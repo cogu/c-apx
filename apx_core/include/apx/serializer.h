@@ -24,7 +24,7 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-typedef struct apx_vm_writeState_tag
+typedef struct apx_vm_write_state_tag
 {
    union apx_vm_write_state_value_tag
    {
@@ -42,7 +42,7 @@ typedef struct apx_vm_writeState_tag
       uint64_t u64;
       bool bl;
    } scalar_value;
-   struct apx_vm_writeState_tag *parent;
+   struct apx_vm_write_state_tag *parent;
    adt_str_t field_name;
    uint32_t index; //array index
    uint32_t array_len; //array length of current object
@@ -50,36 +50,36 @@ typedef struct apx_vm_writeState_tag
    uint32_t element_size;
    dtl_dv_type_id value_type; //describes which part of the value union is currently active
    scalar_storage_type_t scalar_storage_type; //describes which part of the scalar_value union is currently active
-   apx_typeCode_t type_code;
-   apx_sizeType_t dynamic_size_type;
-   apx_rangeCheckState_t range_check_state;
-} apx_vm_writeState_t;
+   apx_type_code_t type_code;
+   apx_size_type_t dynamic_size_type;
+   apx_range_check_state_t range_check_state;
+} apx_vm_write_state_t;
 
-typedef struct apx_vm_writeBuffer_tag
+typedef struct apx_vm_write_buffer_tag
 {
    uint8_t *begin;
    uint8_t *end;
    uint8_t *next;
    uint8_t *padded_next;
    uint8_t* mark;
-} apx_vm_writeBuffer_t;
+} apx_vm_write_buffer_t;
 
-typedef struct apx_vm_queuedWriteState_tag
+typedef struct apx_vm_queued_write_state_tag
 {
    uint32_t max_length;
    uint32_t current_length;
    uint32_t element_size;
    uint8_t* length_ptr;
-   apx_sizeType_t size_type;
+   apx_size_type_t size_type;
    bool is_active;
-} apx_vm_queuedWriteState_t;
+} apx_vm_queued_write_state_t;
 
 typedef struct apx_vm_serializer_tag
 {
-   adt_stack_t stack; //stack containing strong references to apx_vm_writeState_t
-   apx_vm_writeState_t* state; //current inner state
-   apx_vm_writeBuffer_t buffer;
-   apx_vm_queuedWriteState_t queued_write_state;
+   adt_stack_t stack; //stack containing strong references to apx_vm_write_state_t
+   apx_vm_write_state_t* state; //current inner state
+   apx_vm_write_buffer_t buffer;
+   apx_vm_queued_write_state_t queued_write_state;
 } apx_vm_serializer_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -90,13 +90,13 @@ typedef struct apx_vm_serializer_tag
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-//apx_vm_writeState_t
-void apx_vm_writeState_create(apx_vm_writeState_t *self);
-void apx_vm_writeState_destroy(apx_vm_writeState_t *self);
-apx_vm_writeState_t* apx_vm_writeState_new(void);
-void apx_vm_writeState_delete(apx_vm_writeState_t *self);
+//apx_vm_write_state_t
+void apx_vm_writeState_create(apx_vm_write_state_t *self);
+void apx_vm_writeState_destroy(apx_vm_write_state_t *self);
+apx_vm_write_state_t* apx_vm_writeState_new(void);
+void apx_vm_writeState_delete(apx_vm_write_state_t *self);
 void apx_vm_writeState_vdelete(void *arg);
-void apx_vm_writeState_reset(apx_vm_writeState_t* self, dtl_dv_type_id type_id);
+void apx_vm_writeState_reset(apx_vm_write_state_t* self, dtl_dv_type_id type_id);
 
 
 //apx_vm_serializer_t
@@ -111,19 +111,19 @@ apx_error_t apx_vm_serializer_set_value_dv(apx_vm_serializer_t* self, dtl_dv_t c
 apx_error_t apx_vm_serializer_set_value_sv(apx_vm_serializer_t* self, dtl_sv_t const* sv);
 apx_error_t apx_vm_serializer_set_value_av(apx_vm_serializer_t* self, dtl_av_t const* av);
 apx_error_t apx_vm_serializer_set_value_hv(apx_vm_serializer_t* self, dtl_hv_t const* hv);
-apx_error_t apx_vm_serializer_pack_uint8(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_uint16(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_uint32(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_uint64(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_int8(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_int16(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_int32(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_int64(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_char(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_char8(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_bool(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_byte(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-apx_error_t apx_vm_serializer_pack_record(apx_vm_serializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_uint8(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_uint16(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_uint32(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_uint64(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_int8(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_int16(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_int32(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_int64(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_char(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_char8(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_bool(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_byte(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+apx_error_t apx_vm_serializer_pack_record(apx_vm_serializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
 apx_error_t apx_vm_serializer_record_select(apx_vm_serializer_t* self, char const* key, bool const is_first_field);
 apx_error_t apx_vm_serializer_record_end(apx_vm_serializer_t* self);
 apx_error_t apx_vm_serializer_check_value_range_int32(apx_vm_serializer_t* self, int32_t lower_limit, int32_t upper_limit);

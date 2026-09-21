@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_build_command_with_ptr(apx_command_t* self, apx_cmdType_t cmd_type, uint32_t d1, uint32_t d2, void* d3, void* d4)
+void apx_build_command_with_ptr(apx_command_t* self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, void* d3, void* d4)
 {
    if (self != NULL)
    {
@@ -38,7 +38,7 @@ void apx_build_command_with_ptr(apx_command_t* self, apx_cmdType_t cmd_type, uin
    }
 }
 
-void apx_build_command_with_data(apx_command_t* self, apx_cmdType_t cmd_type, uint32_t d1, uint32_t d2, uint8_t const* d3, void* d4)
+void apx_build_command_with_data(apx_command_t* self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, uint8_t const* d3, void* d4)
 {
    if (self != NULL)
    {

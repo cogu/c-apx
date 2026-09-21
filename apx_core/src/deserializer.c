@@ -28,49 +28,49 @@
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-//apx_vm_readState_t
-static void state_create(apx_vm_readState_t* self);
-static void state_destroy(apx_vm_readState_t* self);
-static apx_vm_readState_t* state_new(void);
-static void state_delete(apx_vm_readState_t* self);
+//apx_vm_read_state_t
+static void state_create(apx_vm_read_state_t* self);
+static void state_destroy(apx_vm_read_state_t* self);
+static apx_vm_read_state_t* state_new(void);
+static void state_delete(apx_vm_read_state_t* self);
 static void state_vdelete(void* arg);
-static void state_reset(apx_vm_readState_t* self);
-static void state_clear_value(apx_vm_readState_t* self);
-static void state_set_type_and_size(apx_vm_readState_t* self, apx_typeCode_t type_code, uint32_t element_size);
-static bool state_is_num_or_bool_type(apx_vm_readState_t* self);
-static bool state_is_record_type(apx_vm_readState_t* self);
-static bool state_is_char_type(apx_vm_readState_t* self);
-static bool state_is_byte_type(apx_vm_readState_t* self);
-static apx_error_t state_init_scalar_value(apx_vm_readState_t* self);
-static apx_error_t state_init_array_value(apx_vm_readState_t* self);
-static apx_error_t state_init_hash_value(apx_vm_readState_t* self);
-static apx_error_t state_read_scalar_value(apx_vm_readState_t* self, apx_vm_readBuffer_t* buffer);
-static apx_error_t state_set_scalar_value_from_storage(apx_vm_readState_t* self);
-static apx_error_t state_store_scalar_value(apx_vm_readState_t* self, dtl_sv_t* sv, apx_typeCode_t type_code);
-static apx_error_t state_store_scalar_array_value(apx_vm_readState_t* self, int32_t index, apx_typeCode_t type_code);
-static apx_error_t state_determine_array_length_from_read_buffer(apx_vm_readState_t* self, apx_vm_readBuffer_t* buffer);
-static dtl_sv_t* state_take_sv(apx_vm_readState_t* self);
-static apx_error_t state_push_array_value(apx_vm_readState_t* self, dtl_dv_t* dv);
-static apx_error_t state_read_byte_array(apx_vm_readState_t* self, apx_vm_readBuffer_t* buffer);
-static apx_error_t state_set_field_name(apx_vm_readState_t* self, char const* name);
-static apx_error_t state_create_child_value_from_child_state(apx_vm_readState_t* self, apx_vm_readState_t* child_state);
-static apx_error_t state_push_value_from_child_state(apx_vm_readState_t* self, apx_vm_readState_t* child_state);
+static void state_reset(apx_vm_read_state_t* self);
+static void state_clear_value(apx_vm_read_state_t* self);
+static void state_set_type_and_size(apx_vm_read_state_t* self, apx_type_code_t type_code, uint32_t element_size);
+static bool state_is_num_or_bool_type(apx_vm_read_state_t* self);
+static bool state_is_record_type(apx_vm_read_state_t* self);
+static bool state_is_char_type(apx_vm_read_state_t* self);
+static bool state_is_byte_type(apx_vm_read_state_t* self);
+static apx_error_t state_init_scalar_value(apx_vm_read_state_t* self);
+static apx_error_t state_init_array_value(apx_vm_read_state_t* self);
+static apx_error_t state_init_hash_value(apx_vm_read_state_t* self);
+static apx_error_t state_read_scalar_value(apx_vm_read_state_t* self, apx_vm_read_buffer_t* buffer);
+static apx_error_t state_set_scalar_value_from_storage(apx_vm_read_state_t* self);
+static apx_error_t state_store_scalar_value(apx_vm_read_state_t* self, dtl_sv_t* sv, apx_type_code_t type_code);
+static apx_error_t state_store_scalar_array_value(apx_vm_read_state_t* self, int32_t index, apx_type_code_t type_code);
+static apx_error_t state_determine_array_length_from_read_buffer(apx_vm_read_state_t* self, apx_vm_read_buffer_t* buffer);
+static dtl_sv_t* state_take_sv(apx_vm_read_state_t* self);
+static apx_error_t state_push_array_value(apx_vm_read_state_t* self, dtl_dv_t* dv);
+static apx_error_t state_read_byte_array(apx_vm_read_state_t* self, apx_vm_read_buffer_t* buffer);
+static apx_error_t state_set_field_name(apx_vm_read_state_t* self, char const* name);
+static apx_error_t state_create_child_value_from_child_state(apx_vm_read_state_t* self, apx_vm_read_state_t* child_state);
+static apx_error_t state_push_value_from_child_state(apx_vm_read_state_t* self, apx_vm_read_state_t* child_state);
 
 
-//apx_vm_queuedWriteState_t API
-static void queued_read_state_init(apx_vm_queuedReadState_t* self);
-static bool queued_read_state_is_active(apx_vm_queuedReadState_t* self);
+//apx_vm_queued_write_state_t API
+static void queued_read_state_init(apx_vm_queued_read_state_t* self);
+static bool queued_read_state_is_active(apx_vm_queued_read_state_t* self);
 
-//apx_vm_readBuffer_t API
-static void read_buffer_init(apx_vm_readBuffer_t* self);
-static void read_buffer_reset(apx_vm_readBuffer_t* self, uint8_t const* data, size_t size);
-static bool read_buffer_is_valid(apx_vm_readBuffer_t* self);
+//apx_vm_read_buffer_t API
+static void read_buffer_init(apx_vm_read_buffer_t* self);
+static void read_buffer_reset(apx_vm_read_buffer_t* self, uint8_t const* data, size_t size);
+static bool read_buffer_is_valid(apx_vm_read_buffer_t* self);
 
 //apx_vm_deserializer_t API
 //static void deserializer_reset(apx_vm_deserializer_t* self);
-static apx_error_t deserializer_prepare_for_buffer_read(apx_vm_deserializer_t* self, apx_typeCode_t type_code, uint32_t element_size);
-apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
-static apx_error_t deserializer_prepare_for_array(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type);
+static apx_error_t deserializer_prepare_for_buffer_read(apx_vm_deserializer_t* self, apx_type_code_t type_code, uint32_t element_size);
+apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
+static apx_error_t deserializer_prepare_for_array(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type);
 static apx_error_t deserializer_unpack_scalar_value(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_unpack_record_value(apx_vm_deserializer_t* self);
 static apx_error_t deserializer_unpack_array_of_scalar(apx_vm_deserializer_t* self);
@@ -204,7 +204,7 @@ dtl_hv_t* apx_vm_deserializer_take_hv(apx_vm_deserializer_t* self)
    return NULL;
 }
 
-apx_error_t apx_vm_deserializer_unpack_uint8(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_uint8(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -219,7 +219,7 @@ apx_error_t apx_vm_deserializer_unpack_uint8(apx_vm_deserializer_t* self, uint32
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_uint16(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_uint16(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -234,7 +234,7 @@ apx_error_t apx_vm_deserializer_unpack_uint16(apx_vm_deserializer_t* self, uint3
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_uint32(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_uint32(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -249,7 +249,7 @@ apx_error_t apx_vm_deserializer_unpack_uint32(apx_vm_deserializer_t* self, uint3
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_uint64(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_uint64(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -264,7 +264,7 @@ apx_error_t apx_vm_deserializer_unpack_uint64(apx_vm_deserializer_t* self, uint3
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_int8(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_int8(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -279,7 +279,7 @@ apx_error_t apx_vm_deserializer_unpack_int8(apx_vm_deserializer_t* self, uint32_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_int16(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_int16(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -294,7 +294,7 @@ apx_error_t apx_vm_deserializer_unpack_int16(apx_vm_deserializer_t* self, uint32
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_int32(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_int32(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -309,7 +309,7 @@ apx_error_t apx_vm_deserializer_unpack_int32(apx_vm_deserializer_t* self, uint32
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_int64(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_int64(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -324,7 +324,7 @@ apx_error_t apx_vm_deserializer_unpack_int64(apx_vm_deserializer_t* self, uint32
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_char(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_char(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -339,12 +339,12 @@ apx_error_t apx_vm_deserializer_unpack_char(apx_vm_deserializer_t* self, uint32_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_char8(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_char8(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    return apx_vm_deserializer_unpack_char(self, array_length, dynamic_size_type); //TODO: Implement correct version later
 }
 
-apx_error_t apx_vm_deserializer_unpack_bool(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_bool(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -359,7 +359,7 @@ apx_error_t apx_vm_deserializer_unpack_bool(apx_vm_deserializer_t* self, uint32_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_byte(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_byte(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -374,7 +374,7 @@ apx_error_t apx_vm_deserializer_unpack_byte(apx_vm_deserializer_t* self, uint32_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_vm_deserializer_unpack_record(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t apx_vm_deserializer_unpack_record(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    if (self != NULL)
    {
@@ -769,8 +769,8 @@ apx_error_t  apx_vm_deserializer_queued_read_next(apx_vm_deserializer_t* self, b
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-//apx_vm_readState_t
-static void state_create(apx_vm_readState_t* self)
+//apx_vm_read_state_t
+static void state_create(apx_vm_read_state_t* self)
 {
    if (self != NULL)
    {
@@ -789,7 +789,7 @@ static void state_create(apx_vm_readState_t* self)
    }
 }
 
-static void state_destroy(apx_vm_readState_t* self)
+static void state_destroy(apx_vm_read_state_t* self)
 {
    if (self != NULL)
    {
@@ -798,9 +798,9 @@ static void state_destroy(apx_vm_readState_t* self)
    }
 }
 
-static apx_vm_readState_t* state_new(void)
+static apx_vm_read_state_t* state_new(void)
 {
-   apx_vm_readState_t* self = (apx_vm_readState_t*)malloc(sizeof(apx_vm_readState_t));
+   apx_vm_read_state_t* self = (apx_vm_read_state_t*)malloc(sizeof(apx_vm_read_state_t));
    if (self != NULL)
    {
       state_create(self);
@@ -808,7 +808,7 @@ static apx_vm_readState_t* state_new(void)
    return self;
 }
 
-static void state_delete(apx_vm_readState_t* self)
+static void state_delete(apx_vm_read_state_t* self)
 {
    if (self != NULL)
    {
@@ -819,10 +819,10 @@ static void state_delete(apx_vm_readState_t* self)
 
 static void state_vdelete(void* arg)
 {
-   state_delete((apx_vm_readState_t*)arg);
+   state_delete((apx_vm_read_state_t*)arg);
 }
 
-static void state_reset(apx_vm_readState_t* self)
+static void state_reset(apx_vm_read_state_t* self)
 {
    assert(self != NULL);
    state_clear_value(self);
@@ -838,7 +838,7 @@ static void state_reset(apx_vm_readState_t* self)
    self->scalar_value.i32 = 0u;
 }
 
-static void state_clear_value(apx_vm_readState_t* self)
+static void state_clear_value(apx_vm_read_state_t* self)
 {
    assert(self != NULL);
    switch (self->value_type)
@@ -860,14 +860,14 @@ static void state_clear_value(apx_vm_readState_t* self)
    self->value.dv = NULL;
 }
 
-static void state_set_type_and_size(apx_vm_readState_t* self, apx_typeCode_t type_code, uint32_t element_size)
+static void state_set_type_and_size(apx_vm_read_state_t* self, apx_type_code_t type_code, uint32_t element_size)
 {
    assert(self != NULL);
    self->type_code = type_code;
    self->element_size = element_size;
 }
 
-static bool state_is_num_or_bool_type(apx_vm_readState_t* self)
+static bool state_is_num_or_bool_type(apx_vm_read_state_t* self)
 {
    assert(self != NULL);
    return ((self->type_code >= APX_TYPE_CODE_UINT8) && (self->type_code <= APX_TYPE_CODE_INT64)) ||
@@ -875,13 +875,13 @@ static bool state_is_num_or_bool_type(apx_vm_readState_t* self)
       ((self->type_code == APX_TYPE_CODE_CHAR) && (self->array_len == 0u));
 }
 
-static bool state_is_record_type(apx_vm_readState_t* self)
+static bool state_is_record_type(apx_vm_read_state_t* self)
 {
    assert(self != NULL);
    return (self->type_code == APX_TYPE_CODE_RECORD);
 }
 
-static bool state_is_char_type(apx_vm_readState_t* self)
+static bool state_is_char_type(apx_vm_read_state_t* self)
 {
    assert(self != NULL);
    return (self->type_code == APX_TYPE_CODE_CHAR) ||
@@ -890,13 +890,13 @@ static bool state_is_char_type(apx_vm_readState_t* self)
       (self->type_code == APX_TYPE_CODE_CHAR32);
 }
 
-static bool state_is_byte_type(apx_vm_readState_t* self)
+static bool state_is_byte_type(apx_vm_read_state_t* self)
 {
    assert(self != NULL);
    return (self->type_code == APX_TYPE_CODE_BYTE);
 }
 
-static apx_error_t state_init_scalar_value(apx_vm_readState_t* self)
+static apx_error_t state_init_scalar_value(apx_vm_read_state_t* self)
 {
    assert(self->value_type == DTL_DV_NULL); //If untrue we will cause a memory leak
    self->value.sv = dtl_sv_new();
@@ -911,7 +911,7 @@ static apx_error_t state_init_scalar_value(apx_vm_readState_t* self)
    return APX_NO_ERROR;
 }
 
-static apx_error_t state_init_array_value(apx_vm_readState_t* self)
+static apx_error_t state_init_array_value(apx_vm_read_state_t* self)
 {
    assert(self->value_type == DTL_DV_NULL); //If untrue we will cause a memory leak
    self->value.av = dtl_av_new();
@@ -926,7 +926,7 @@ static apx_error_t state_init_array_value(apx_vm_readState_t* self)
    return APX_NO_ERROR;
 }
 
-static apx_error_t state_init_hash_value(apx_vm_readState_t* self)
+static apx_error_t state_init_hash_value(apx_vm_read_state_t* self)
 {
    assert(self->value_type == DTL_DV_NULL); //If untrue we will cause a memory leak
    self->value.hv = dtl_hv_new();
@@ -941,7 +941,7 @@ static apx_error_t state_init_hash_value(apx_vm_readState_t* self)
    return APX_NO_ERROR;
 }
 
-static apx_error_t state_read_scalar_value(apx_vm_readState_t* self, apx_vm_readBuffer_t *buffer)
+static apx_error_t state_read_scalar_value(apx_vm_read_state_t* self, apx_vm_read_buffer_t *buffer)
 {
    assert( (self != NULL) && (buffer != NULL) );
    assert(self->element_size != 0u);
@@ -1011,7 +1011,7 @@ static apx_error_t state_read_scalar_value(apx_vm_readState_t* self, apx_vm_read
    return retval;
 }
 
-static apx_error_t state_set_scalar_value_from_storage(apx_vm_readState_t* self)
+static apx_error_t state_set_scalar_value_from_storage(apx_vm_read_state_t* self)
 {
    assert( (self != NULL) && (self->value_type == DTL_DV_SCALAR) );
    apx_error_t retval = APX_NO_ERROR;
@@ -1045,7 +1045,7 @@ static apx_error_t state_set_scalar_value_from_storage(apx_vm_readState_t* self)
    return retval;
 }
 
-static apx_error_t state_determine_array_length_from_read_buffer(apx_vm_readState_t* self, apx_vm_readBuffer_t* buffer)
+static apx_error_t state_determine_array_length_from_read_buffer(apx_vm_read_state_t* self, apx_vm_read_buffer_t* buffer)
 {
    if (self->dynamic_size_type == APX_SIZE_TYPE_NONE)
    {
@@ -1063,7 +1063,7 @@ static apx_error_t state_determine_array_length_from_read_buffer(apx_vm_readStat
    return APX_NO_ERROR;
 }
 
-static dtl_sv_t* state_take_sv(apx_vm_readState_t* self)
+static dtl_sv_t* state_take_sv(apx_vm_read_state_t* self)
 {
    if ((self != NULL) && (self->value_type == DTL_DV_SCALAR))
    {
@@ -1075,7 +1075,7 @@ static dtl_sv_t* state_take_sv(apx_vm_readState_t* self)
    return NULL;
 }
 
-static apx_error_t state_push_array_value(apx_vm_readState_t* self, dtl_dv_t* dv)
+static apx_error_t state_push_array_value(apx_vm_read_state_t* self, dtl_dv_t* dv)
 {
    if ( (self != NULL) && (dv != NULL) &&(self->value_type == DTL_DV_ARRAY))
    {
@@ -1085,7 +1085,7 @@ static apx_error_t state_push_array_value(apx_vm_readState_t* self, dtl_dv_t* dv
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t state_store_scalar_value(apx_vm_readState_t* self, dtl_sv_t *sv, apx_typeCode_t type_code)
+static apx_error_t state_store_scalar_value(apx_vm_read_state_t* self, dtl_sv_t *sv, apx_type_code_t type_code)
 {
    apx_error_t retval = APX_NO_ERROR;
    bool ok = false;
@@ -1157,7 +1157,7 @@ static apx_error_t state_store_scalar_value(apx_vm_readState_t* self, dtl_sv_t *
    return retval;
 }
 
-static apx_error_t state_store_scalar_array_value(apx_vm_readState_t* self, int32_t index, apx_typeCode_t type_code)
+static apx_error_t state_store_scalar_array_value(apx_vm_read_state_t* self, int32_t index, apx_type_code_t type_code)
 {
    if (self->value_type != DTL_DV_ARRAY)
    {
@@ -1176,7 +1176,7 @@ static apx_error_t state_store_scalar_array_value(apx_vm_readState_t* self, int3
    return state_store_scalar_value(self, sv, type_code);
 }
 
-static apx_error_t state_read_byte_array(apx_vm_readState_t* self, apx_vm_readBuffer_t* buffer)
+static apx_error_t state_read_byte_array(apx_vm_read_state_t* self, apx_vm_read_buffer_t* buffer)
 {
    if (buffer->next + self->array_len <= buffer->end)
    {
@@ -1190,7 +1190,7 @@ static apx_error_t state_read_byte_array(apx_vm_readState_t* self, apx_vm_readBu
    return APX_NO_ERROR;
 }
 
-static apx_error_t state_set_field_name(apx_vm_readState_t* self, char const* name)
+static apx_error_t state_set_field_name(apx_vm_read_state_t* self, char const* name)
 {
    if ((self != NULL) && (name != NULL))
    {
@@ -1206,7 +1206,7 @@ static apx_error_t state_set_field_name(apx_vm_readState_t* self, char const* na
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t state_create_child_value_from_child_state(apx_vm_readState_t* self, apx_vm_readState_t* child_state)
+static apx_error_t state_create_child_value_from_child_state(apx_vm_read_state_t* self, apx_vm_read_state_t* child_state)
 {
    assert( (self != NULL) && (child_state != NULL) );
    assert(self->value_type == DTL_DV_HASH);
@@ -1231,7 +1231,7 @@ static apx_error_t state_create_child_value_from_child_state(apx_vm_readState_t*
    return APX_NO_ERROR;
 }
 
-static apx_error_t state_push_value_from_child_state(apx_vm_readState_t* self, apx_vm_readState_t* child_state)
+static apx_error_t state_push_value_from_child_state(apx_vm_read_state_t* self, apx_vm_read_state_t* child_state)
 {
    assert((self != NULL) && (child_state != NULL));
    assert(self->value_type == DTL_DV_ARRAY);
@@ -1252,14 +1252,14 @@ static apx_error_t state_push_value_from_child_state(apx_vm_readState_t* self, a
    return APX_NO_ERROR;
 }
 
-//apx_vm_readBuffer_t API
-static void read_buffer_init(apx_vm_readBuffer_t* self)
+//apx_vm_read_buffer_t API
+static void read_buffer_init(apx_vm_read_buffer_t* self)
 {
    assert(self != NULL);
-   memset(self, 0, sizeof(apx_vm_readBuffer_t));
+   memset(self, 0, sizeof(apx_vm_read_buffer_t));
 }
 
-static void read_buffer_reset(apx_vm_readBuffer_t* self, uint8_t const* data, size_t size)
+static void read_buffer_reset(apx_vm_read_buffer_t* self, uint8_t const* data, size_t size)
 {
    assert(self != NULL);
    self->begin = self->next = data;
@@ -1267,14 +1267,14 @@ static void read_buffer_reset(apx_vm_readBuffer_t* self, uint8_t const* data, si
    self->padded_next = NULL;
 }
 
-static bool read_buffer_is_valid(apx_vm_readBuffer_t* self)
+static bool read_buffer_is_valid(apx_vm_read_buffer_t* self)
 {
    assert(self != NULL);
    return ((self->next != NULL) && (self->end != NULL) && (self->next <= self->end));
 }
 
-//apx_vm_queuedWriteState_t API
-static void queued_read_state_init(apx_vm_queuedReadState_t* self)
+//apx_vm_queued_write_state_t API
+static void queued_read_state_init(apx_vm_queued_read_state_t* self)
 {
    assert(self != NULL);
    self->max_length = 0u;
@@ -1285,7 +1285,7 @@ static void queued_read_state_init(apx_vm_queuedReadState_t* self)
    self->is_active = false;
 }
 
-static bool queued_read_state_is_active(apx_vm_queuedReadState_t* self)
+static bool queued_read_state_is_active(apx_vm_queued_read_state_t* self)
 {
    assert(self != NULL);
    return self->is_active;
@@ -1310,7 +1310,7 @@ static void deserializer_reset(apx_vm_deserializer_t* self)
 }
 */
 
-static apx_error_t deserializer_prepare_for_buffer_read(apx_vm_deserializer_t* self, apx_typeCode_t type_code, uint32_t element_size)
+static apx_error_t deserializer_prepare_for_buffer_read(apx_vm_deserializer_t* self, apx_type_code_t type_code, uint32_t element_size)
 {
    assert(self != NULL);
    if (!read_buffer_is_valid(&self->buffer))
@@ -1331,7 +1331,7 @@ static apx_error_t deserializer_prepare_for_buffer_read(apx_vm_deserializer_t* s
    return APX_NO_ERROR;
 }
 
-apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    assert(self != NULL);
    apx_error_t retval = APX_NO_ERROR;
@@ -1402,7 +1402,7 @@ apx_error_t deserializer_unpack_value(apx_vm_deserializer_t* self, uint32_t arra
    return retval;
 }
 
-static apx_error_t deserializer_prepare_for_array(apx_vm_deserializer_t* self, uint32_t array_length, apx_sizeType_t dynamic_size_type)
+static apx_error_t deserializer_prepare_for_array(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
    assert(self != NULL);
    if (array_length > 0)
@@ -1474,7 +1474,7 @@ static apx_error_t deserializer_unpack_array_of_scalar(apx_vm_deserializer_t* se
    apx_error_t retval = state_init_array_value(self->state);
    if (retval == APX_NO_ERROR)
    {
-      apx_vm_readState_t child_state;
+      apx_vm_read_state_t child_state;
       state_create(&child_state);
       state_set_type_and_size(&child_state, self->state->type_code, self->state->element_size);
 
@@ -1560,7 +1560,7 @@ static apx_error_t deserializer_pop_state(apx_vm_deserializer_t* self)
    assert(self->state != NULL);
    if (adt_stack_size(&self->stack) > 0)
    {
-      apx_vm_readState_t* child_state = self->state;
+      apx_vm_read_state_t* child_state = self->state;
       assert(child_state != NULL);
       self->state = adt_stack_top(&self->stack);
       adt_stack_pop(&self->stack);
@@ -1594,7 +1594,7 @@ static apx_error_t deserializer_pop_state(apx_vm_deserializer_t* self)
 static apx_error_t deserializer_enter_new_child_state(apx_vm_deserializer_t* self)
 {
    assert(self != NULL);
-   apx_vm_readState_t* child_state = state_new();
+   apx_vm_read_state_t* child_state = state_new();
    if (child_state == NULL)
    {
       return APX_MEM_ERROR;

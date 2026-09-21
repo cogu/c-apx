@@ -37,23 +37,23 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t remote_file_published_notification(apx_serverConnection_t* self, apx_file_t* file);
-static apx_error_t process_new_definition_data_file(apx_serverConnection_t* self, apx_file_t* file);
-static apx_error_t process_new_provide_port_data_file(apx_serverConnection_t* self, apx_file_t* file);
-static apx_error_t create_new_node_instance(apx_serverConnection_t* self, apx_nodeManager_t* node_manager,  apx_file_t* definition_file);
-static apx_error_t remote_file_write_notification(apx_serverConnection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
-static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint);
-static bool process_greeting_message(apx_serverConnection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
-static void apx_serverConnection_node_created_notification(apx_serverConnection_t* self, apx_nodeInstance_t* node_instance);
-static apx_error_t detach_all_nodes(apx_serverConnection_t* self);
-static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ary_t* node_instance_array);
+static apx_error_t remote_file_published_notification(apx_server_connection_t* self, apx_file_t* file);
+static apx_error_t process_new_definition_data_file(apx_server_connection_t* self, apx_file_t* file);
+static apx_error_t process_new_provide_port_data_file(apx_server_connection_t* self, apx_file_t* file);
+static apx_error_t create_new_node_instance(apx_server_connection_t* self, apx_node_manager_t* node_manager,  apx_file_t* definition_file);
+static apx_error_t remote_file_write_notification(apx_server_connection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
+static uint8_t const* parse_message(apx_server_connection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint);
+static bool process_greeting_message(apx_server_connection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
+static void apx_serverConnection_node_created_notification(apx_server_connection_t* self, apx_node_instance_t* node_instance);
+static apx_error_t detach_all_nodes(apx_server_connection_t* self);
+static void remove_nodes_from_signature_map(apx_server_connection_t* self, adt_ary_t* node_instance_array);
 static apx_error_t gather_provide_port_connector_changes(adt_ary_t* node_instance_array, adt_ary_t* provider_change_array);
 static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instance_array, adt_ary_t* requester_change_array);
 static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_change_array);
 static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_change_array);
-static void emit_remote_file_published_event(apx_serverConnection_t* self, apx_file_t* file);
-static void emit_protocol_header_accepted(apx_serverConnection_t* self);
-static apx_error_t parse_protocol_header_line(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end);
+static void emit_remote_file_published_event(apx_server_connection_t* self, apx_file_t* file);
+static void emit_protocol_header_accepted(apx_server_connection_t* self);
+static apx_error_t parse_protocol_header_line(apx_server_connection_t* self, uint8_t const* begin, uint8_t const* end);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -63,7 +63,7 @@ static apx_error_t parse_protocol_header_line(apx_serverConnection_t* self, uint
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_serverConnection_create(apx_serverConnection_t* self, apx_connectionBaseVTable_t* base_connection_vtable, apx_connectionInterface_t* connection_interface)
+apx_error_t apx_serverConnection_create(apx_server_connection_t* self, apx_connection_base_vtable_t* base_connection_vtable, apx_connection_interface_t* connection_interface)
 {
    if (self != NULL)
    {
@@ -84,7 +84,7 @@ apx_error_t apx_serverConnection_create(apx_serverConnection_t* self, apx_connec
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_serverConnection_destroy(apx_serverConnection_t* self)
+void apx_serverConnection_destroy(apx_server_connection_t* self)
 {
    if (self != NULL)
    {
@@ -98,7 +98,7 @@ void apx_serverConnection_destroy(apx_serverConnection_t* self)
    }
 }
 
-apx_fileManager_t* apx_serverConnection_get_file_manager(apx_serverConnection_t* self)
+apx_file_manager_t* apx_serverConnection_get_file_manager(apx_server_connection_t* self)
 {
    if (self != NULL)
    {
@@ -107,30 +107,30 @@ apx_fileManager_t* apx_serverConnection_get_file_manager(apx_serverConnection_t*
    return NULL;
 }
 
-void apx_serverConnection_start(apx_serverConnection_t* self)
+void apx_serverConnection_start(apx_server_connection_t* self)
 {
    (void)self;
 }
 
 
-void apx_serverConnection_close(apx_serverConnection_t* self)
+void apx_serverConnection_close(apx_server_connection_t* self)
 {
    (void)self;
 }
 
-uint32_t apx_serverConnection_get_total_bytes_received(apx_serverConnection_t* self)
-{
-   (void)self;
-   return 0u;
-}
-
-uint32_t apx_serverConnection_get_total_bytes_sent(apx_serverConnection_t* self)
+uint32_t apx_serverConnection_get_total_bytes_received(apx_server_connection_t* self)
 {
    (void)self;
    return 0u;
 }
 
-void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self, apx_serverConnectionEventListener_t* event_listener)
+uint32_t apx_serverConnection_get_total_bytes_sent(apx_server_connection_t* self)
+{
+   (void)self;
+   return 0u;
+}
+
+void* apx_serverConnection_register_event_listener(apx_server_connection_t* self, apx_server_connection_event_listener_t* event_listener)
 {
    if ((self != NULL) && (event_listener != NULL))
    {
@@ -146,7 +146,7 @@ void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self,
    return NULL;
 }
 
-void apx_serverConnection_unregister_event_listener(apx_serverConnection_t* self, void* handle)
+void apx_serverConnection_unregister_event_listener(apx_server_connection_t* self, void* handle)
 {
    if ((self != NULL) && (handle != NULL))
    {
@@ -161,7 +161,7 @@ void apx_serverConnection_unregister_event_listener(apx_serverConnection_t* self
    }
 }
 
-void apx_serverConnection_set_connection_type(apx_serverConnection_t* self, apx_connectionType_t connection_type)
+void apx_serverConnection_set_connection_type(apx_server_connection_t* self, apx_connection_type_t connection_type)
 {
    if (self != NULL)
    {
@@ -169,7 +169,7 @@ void apx_serverConnection_set_connection_type(apx_serverConnection_t* self, apx_
    }
 }
 
-apx_connectionType_t apx_serverConnection_get_connection_type(apx_serverConnection_t const* self)
+apx_connection_type_t apx_serverConnection_get_connection_type(apx_server_connection_t const* self)
 {
    if (self != NULL)
    {
@@ -178,7 +178,7 @@ apx_connectionType_t apx_serverConnection_get_connection_type(apx_serverConnecti
    return APX_CONNECTION_TYPE_DEFAULT;
 }
 
-void apx_serverConnection_set_num_header_size(apx_serverConnection_t* self, apx_size_t size)
+void apx_serverConnection_set_num_header_size(apx_server_connection_t* self, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -186,7 +186,7 @@ void apx_serverConnection_set_num_header_size(apx_serverConnection_t* self, apx_
    }
 }
 
-apx_size_t apx_serverConnection_get_num_header_size(apx_serverConnection_t const* self)
+apx_size_t apx_serverConnection_get_num_header_size(apx_server_connection_t const* self)
 {
    if (self != NULL)
    {
@@ -195,7 +195,7 @@ apx_size_t apx_serverConnection_get_num_header_size(apx_serverConnection_t const
    return 0u;
 }
 
-void apx_serverConnection_set_rmf_proto_id(apx_serverConnection_t* self, rmf_versionId_t version_id)
+void apx_serverConnection_set_rmf_proto_id(apx_server_connection_t* self, rmf_version_id_t version_id)
 {
    if (self != NULL)
    {
@@ -203,7 +203,7 @@ void apx_serverConnection_set_rmf_proto_id(apx_serverConnection_t* self, rmf_ver
    }
 }
 
-rmf_versionId_t apx_serverConnection_get_rmf_proto_id(apx_serverConnection_t const* self)
+rmf_version_id_t apx_serverConnection_get_rmf_proto_id(apx_server_connection_t const* self)
 {
    if (self != NULL)
    {
@@ -213,7 +213,7 @@ rmf_versionId_t apx_serverConnection_get_rmf_proto_id(apx_serverConnection_t con
 }
 
 
-void apx_serverConnection_greeting_header_accepted_notification(apx_serverConnection_t* self)
+void apx_serverConnection_greeting_header_accepted_notification(apx_server_connection_t* self)
 {
    if (self != NULL)
    {
@@ -223,7 +223,7 @@ void apx_serverConnection_greeting_header_accepted_notification(apx_serverConnec
    }
 }
 
-void apx_serverConnection_connected_notification(apx_serverConnection_t* self)
+void apx_serverConnection_connected_notification(apx_server_connection_t* self)
 {
    if (self != NULL)
    {
@@ -231,7 +231,7 @@ void apx_serverConnection_connected_notification(apx_serverConnection_t* self)
    }
 }
 
-apx_error_t apx_serverConnection_disconnected_notification(apx_serverConnection_t* self)
+apx_error_t apx_serverConnection_disconnected_notification(apx_server_connection_t* self)
 {
    if (self != NULL)
    {
@@ -241,7 +241,7 @@ apx_error_t apx_serverConnection_disconnected_notification(apx_serverConnection_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_serverConnection_attach_node_manager(apx_serverConnection_t* self, apx_nodeManager_t* node_manager)
+void apx_serverConnection_attach_node_manager(apx_server_connection_t* self, apx_node_manager_t* node_manager)
 {
    if (self != NULL)
    {
@@ -249,7 +249,7 @@ void apx_serverConnection_attach_node_manager(apx_serverConnection_t* self, apx_
    }
 }
 
-apx_nodeManager_t* apx_serverConnection_get_node_manager(apx_serverConnection_t* self)
+apx_node_manager_t* apx_serverConnection_get_node_manager(apx_server_connection_t* self)
 {
    if (self != NULL)
    {
@@ -258,7 +258,7 @@ apx_nodeManager_t* apx_serverConnection_get_node_manager(apx_serverConnection_t*
    return NULL;
 }
 
-int apx_serverConnection_on_data_received(apx_serverConnection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len, apx_size_t* msg_size_hint)
+int apx_serverConnection_on_data_received(apx_server_connection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len, apx_size_t* msg_size_hint)
 {
    if ((self != NULL) && (data != NULL) && (data_size > 0u) && (parse_len != NULL))
    {
@@ -304,12 +304,12 @@ int apx_serverConnection_on_data_received(apx_serverConnection_t* self, uint8_t 
    return -1;
 }
 
-void apx_serverConnection_vnode_created_notification(void* arg, apx_nodeInstance_t* node_instance)
+void apx_serverConnection_vnode_created_notification(void* arg, apx_node_instance_t* node_instance)
 {
-   apx_serverConnection_node_created_notification((apx_serverConnection_t*)arg, node_instance);
+   apx_serverConnection_node_created_notification((apx_server_connection_t*)arg, node_instance);
 }
 
-void apx_serverConnection_set_connection_id(apx_serverConnection_t* self, uint32_t connection_id)
+void apx_serverConnection_set_connection_id(apx_server_connection_t* self, uint32_t connection_id)
 {
    if (self != NULL)
    {
@@ -317,7 +317,7 @@ void apx_serverConnection_set_connection_id(apx_serverConnection_t* self, uint32
    }
 }
 
-uint32_t apx_serverConnection_get_connection_id(apx_serverConnection_t* self)
+uint32_t apx_serverConnection_get_connection_id(apx_server_connection_t* self)
 {
    if (self != NULL)
    {
@@ -326,7 +326,7 @@ uint32_t apx_serverConnection_get_connection_id(apx_serverConnection_t* self)
    return APX_INVALID_CONNECTION_ID;
 }
 
-void apx_serverConnection_set_server(apx_serverConnection_t* self, struct apx_server_tag* server)
+void apx_serverConnection_set_server(apx_server_connection_t* self, struct apx_server_tag* server)
 {
    if (self != NULL)
    {
@@ -334,7 +334,7 @@ void apx_serverConnection_set_server(apx_serverConnection_t* self, struct apx_se
    }
 }
 
-void apx_serverConnection_require_port_data_written(apx_serverConnection_t* self, apx_nodeInstance_t* node_instance, apx_size_t offset, apx_size_t size)
+void apx_serverConnection_require_port_data_written(apx_server_connection_t* self, apx_node_instance_t* node_instance, apx_size_t offset, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -344,18 +344,18 @@ void apx_serverConnection_require_port_data_written(apx_serverConnection_t* self
    }
 }
 
-apx_error_t apx_serverConnection_attach_node_instance(apx_serverConnection_t* self, apx_nodeInstance_t* node_instance)
+apx_error_t apx_serverConnection_attach_node_instance(apx_server_connection_t* self, apx_node_instance_t* node_instance)
 {
    if ((self != NULL) && (node_instance != NULL))
    {
-      apx_fileManager_t* file_manager = apx_connectionBase_get_file_manager(&self->base);
+      apx_file_manager_t* file_manager = apx_connectionBase_get_file_manager(&self->base);
       assert(file_manager != NULL);
       return apx_nodeInstance_attach_to_file_manager(node_instance, file_manager);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_serverConnection_set_tag(apx_serverConnection_t* self, char const* tag)
+void apx_serverConnection_set_tag(apx_server_connection_t* self, char const* tag)
 {
    if ((self != NULL) && (tag != NULL))
    {
@@ -363,7 +363,7 @@ void apx_serverConnection_set_tag(apx_serverConnection_t* self, char const* tag)
    }
 }
 
-adt_str_t* apx_serverConnection_get_tag(apx_serverConnection_t const* self)
+adt_str_t* apx_serverConnection_get_tag(apx_server_connection_t const* self)
 {
    if ( (self != NULL) && (self->tag != NULL))
    {
@@ -375,16 +375,16 @@ adt_str_t* apx_serverConnection_get_tag(apx_serverConnection_t const* self)
 //ConnectionInterface API
 apx_error_t apx_serverConnection_vremote_file_published_notification(void* arg, apx_file_t* file)
 {
-   return remote_file_published_notification((apx_serverConnection_t*)arg, file);
+   return remote_file_published_notification((apx_server_connection_t*)arg, file);
 }
 
 apx_error_t apx_serverConnection_vremote_file_write_notification(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
 {
-   return remote_file_write_notification((apx_serverConnection_t*)arg, file, offset, data, size);
+   return remote_file_write_notification((apx_server_connection_t*)arg, file, offset, data, size);
 }
 
 //Internal Event API
-void apx_server_connection_process_protocol_header_accepted_event(apx_serverConnection_t* self)
+void apx_server_connection_process_protocol_header_accepted_event(apx_server_connection_t* self)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -396,7 +396,7 @@ void apx_server_connection_process_protocol_header_accepted_event(apx_serverConn
    adt_list_elem_t* iter = adt_list_iter_first(&self->event_listeners);
    while (iter != NULL)
    {
-      apx_serverConnectionEventListener_t* listener = (apx_serverConnectionEventListener_t*)iter->pItem;
+      apx_server_connection_event_listener_t* listener = (apx_server_connection_event_listener_t*)iter->pItem;
       if ((listener != NULL) && (listener->protocol_header_accepted != NULL))
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -409,7 +409,7 @@ void apx_server_connection_process_protocol_header_accepted_event(apx_serverConn
    for (i = 0; i < length; i++)
    {
       void *arg = adt_ary_value(&args, i);
-      apx_protocolHeaderAcceptedFunc_t* callback = (apx_protocolHeaderAcceptedFunc_t*)adt_ary_value(&callbacks, i);
+      apx_protocol_header_accepted_func_t* callback = (apx_protocol_header_accepted_func_t*)adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, &self->base);
    }
@@ -417,7 +417,7 @@ void apx_server_connection_process_protocol_header_accepted_event(apx_serverConn
    adt_ary_destroy(&callbacks);
 }
 
-void apx_server_connection_process_remote_file_published_event(apx_serverConnection_t* self, rmf_fileInfo_t* file_info)
+void apx_server_connection_process_remote_file_published_event(apx_server_connection_t* self, rmf_file_info_t* file_info)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -429,7 +429,7 @@ void apx_server_connection_process_remote_file_published_event(apx_serverConnect
    adt_list_elem_t* iter = adt_list_iter_first(&self->event_listeners);
    while (iter != NULL)
    {
-      apx_serverConnectionEventListener_t* listener = (apx_serverConnectionEventListener_t*)iter->pItem;
+      apx_server_connection_event_listener_t* listener = (apx_server_connection_event_listener_t*)iter->pItem;
       if ((listener != NULL) && (listener->file_published != NULL))
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -442,7 +442,7 @@ void apx_server_connection_process_remote_file_published_event(apx_serverConnect
    for (i = 0; i < length; i++)
    {
       void* arg = adt_ary_value(&args, i);
-      apx_fileEventFunc_t* callback = (apx_fileEventFunc_t*)adt_ary_value(&callbacks, i);
+      apx_file_event_func_t* callback = (apx_file_event_func_t*)adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, &self->base, file_info);
    }
@@ -450,7 +450,7 @@ void apx_server_connection_process_remote_file_published_event(apx_serverConnect
    adt_ary_destroy(&callbacks);
 }
 
-apx_connectionState_t apx_serverConnection_get_connection_state(apx_serverConnection_t const* self)
+apx_connection_state_t apx_serverConnection_get_connection_state(apx_server_connection_t const* self)
 {
    if (self != NULL)
    {
@@ -461,7 +461,7 @@ apx_connectionState_t apx_serverConnection_get_connection_state(apx_serverConnec
 
 //Unit Test API
 #ifdef UNIT_TEST
-void apx_serverConnection_run(apx_serverConnection_t* self)
+void apx_serverConnection_run(apx_server_connection_t* self)
 {
    if (self != NULL)
    {
@@ -477,11 +477,11 @@ void apx_serverConnection_run(apx_serverConnection_t* self)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static apx_error_t remote_file_published_notification(apx_serverConnection_t* self, apx_file_t* file)
+static apx_error_t remote_file_published_notification(apx_server_connection_t* self, apx_file_t* file)
 {
    if ((self != NULL) && (file != NULL))
    {
-      apx_fileType_t file_type = apx_file_get_apx_file_type(file);
+      apx_file_type_t file_type = apx_file_get_apx_file_type(file);
       emit_remote_file_published_event(self, file);
       if (file_type == APX_PROVIDE_PORT_DATA_FILE_TYPE)
       {
@@ -500,15 +500,15 @@ static apx_error_t remote_file_published_notification(apx_serverConnection_t* se
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t process_new_definition_data_file(apx_serverConnection_t* self, apx_file_t* file)
+static apx_error_t process_new_definition_data_file(apx_server_connection_t* self, apx_file_t* file)
 {
    assert((self != NULL) && (file != NULL));
    char* base_name = rmf_fileInfo_base_name(apx_file_get_file_info(file));
    if (base_name != NULL)
    {
       apx_error_t retval = APX_NO_ERROR;
-      apx_nodeManager_t* node_manager = apx_connectionBase_get_node_manager(&self->base);
-      apx_nodeInstance_t* node_instance = apx_nodeManager_find(node_manager, base_name);
+      apx_node_manager_t* node_manager = apx_connectionBase_get_node_manager(&self->base);
+      apx_node_instance_t* node_instance = apx_nodeManager_find(node_manager, base_name);
       free(base_name);
       if (node_instance == NULL)
       {
@@ -524,13 +524,13 @@ static apx_error_t process_new_definition_data_file(apx_serverConnection_t* self
    return APX_MEM_ERROR;
 }
 
-static apx_error_t process_new_provide_port_data_file(apx_serverConnection_t* self, apx_file_t* file)
+static apx_error_t process_new_provide_port_data_file(apx_server_connection_t* self, apx_file_t* file)
 {
    assert((self != NULL) && (file != NULL));
    char* base_name = rmf_fileInfo_base_name(apx_file_get_file_info(file));
    if (base_name != NULL)
    {
-      apx_nodeInstance_t* node_instance = apx_nodeManager_find(self->base.node_manager, base_name);
+      apx_node_instance_t* node_instance = apx_nodeManager_find(self->base.node_manager, base_name);
       free(base_name);
       if (node_instance != NULL)
       {
@@ -544,23 +544,23 @@ static apx_error_t process_new_provide_port_data_file(apx_serverConnection_t* se
    return APX_NO_ERROR;
 }
 
-static apx_error_t create_new_node_instance(apx_serverConnection_t* self, apx_nodeManager_t* node_manager, apx_file_t* definition_file)
+static apx_error_t create_new_node_instance(apx_server_connection_t* self, apx_node_manager_t* node_manager, apx_file_t* definition_file)
 {
    apx_error_t retval = APX_NO_ERROR;
    assert( (self != NULL) && (node_manager != NULL) && (definition_file != NULL) );
    bool file_open_request = false;
-   rmf_fileInfo_t const* file_info = apx_file_get_file_info(definition_file);
+   rmf_file_info_t const* file_info = apx_file_get_file_info(definition_file);
    retval = apx_nodeManager_init_node_from_file_info(node_manager, file_info, &file_open_request);
    if (retval == APX_NO_ERROR)
    {
-      apx_nodeInstance_t* node_instance = apx_nodeManager_get_last_attached(node_manager);
+      apx_node_instance_t* node_instance = apx_nodeManager_get_last_attached(node_manager);
       if (node_instance != NULL)
       {
          apx_nodeInstance_remote_file_published_notification(node_instance, definition_file);
       }
       if (file_open_request)
       {
-         apx_fileManager_t* file_manager = apx_connectionBase_get_file_manager(&self->base);
+         apx_file_manager_t* file_manager = apx_connectionBase_get_file_manager(&self->base);
          if (file_manager != NULL)
          {
             apx_file_open(definition_file); //Should this be moved into file_manager?
@@ -577,7 +577,7 @@ static apx_error_t create_new_node_instance(apx_serverConnection_t* self, apx_no
 }
 
 
-static apx_error_t remote_file_write_notification(apx_serverConnection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
+static apx_error_t remote_file_write_notification(apx_server_connection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
 {
    if ((self != NULL) && (file != NULL))
    {
@@ -586,7 +586,7 @@ static apx_error_t remote_file_write_notification(apx_serverConnection_t* self, 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint)
+static uint8_t const* parse_message(apx_server_connection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint)
 {
    uint8_t const* msg_end = NULL;
    *error_code = APX_NO_ERROR;
@@ -656,7 +656,7 @@ static uint8_t const* parse_message(apx_serverConnection_t* self, uint8_t const*
    return msg_end;
 }
 
-static bool process_greeting_message(apx_serverConnection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code)
+static bool process_greeting_message(apx_server_connection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code)
 {
    const uint8_t* next = msg_data;
    const uint8_t* end = msg_data + msg_size;
@@ -695,7 +695,7 @@ static bool process_greeting_message(apx_serverConnection_t* self, uint8_t const
    return false;
 }
 
-static void apx_serverConnection_node_created_notification(apx_serverConnection_t* self, apx_nodeInstance_t* node_instance)
+static void apx_serverConnection_node_created_notification(apx_server_connection_t* self, apx_node_instance_t* node_instance)
 {
    if ( (self != NULL) && (node_instance != NULL))
    {
@@ -703,7 +703,7 @@ static void apx_serverConnection_node_created_notification(apx_serverConnection_
    }
 }
 
-static apx_error_t detach_all_nodes(apx_serverConnection_t* self)
+static apx_error_t detach_all_nodes(apx_server_connection_t* self)
 {
    if (self->parent != NULL)
    {
@@ -748,7 +748,7 @@ static apx_error_t detach_all_nodes(apx_serverConnection_t* self)
    return APX_NULL_PTR_ERROR;
 }
 
-static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ary_t* node_instance_array)
+static void remove_nodes_from_signature_map(apx_server_connection_t* self, adt_ary_t* node_instance_array)
 {
    int32_t i;
    int32_t num_nodes;
@@ -757,9 +757,9 @@ static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ar
    for (i = 0; i < num_nodes; i++)
    {
       apx_error_t result;
-      apx_dataState_t require_port_data_state;
-      apx_dataState_t provide_port_data_state;
-      apx_nodeInstance_t* node_instance = (apx_nodeInstance_t*)adt_ary_value(node_instance_array, i);
+      apx_data_state_t require_port_data_state;
+      apx_data_state_t provide_port_data_state;
+      apx_node_instance_t* node_instance = (apx_node_instance_t*)adt_ary_value(node_instance_array, i);
       assert(node_instance != NULL);
       require_port_data_state = apx_nodeInstance_get_require_port_data_state(node_instance);
       provide_port_data_state = apx_nodeInstance_get_provide_port_data_state(node_instance);
@@ -798,16 +798,16 @@ static apx_error_t gather_provide_port_connector_changes(adt_ary_t* node_instanc
    num_nodes = adt_ary_length(node_instance_array);
    for (i = 0; i < num_nodes; i++)
    {
-      apx_dataState_t provide_port_data_state;
-      apx_nodeInstance_t* node_instance = (apx_nodeInstance_t*)adt_ary_value(node_instance_array, i);
+      apx_data_state_t provide_port_data_state;
+      apx_node_instance_t* node_instance = (apx_node_instance_t*)adt_ary_value(node_instance_array, i);
       assert(node_instance != NULL);
       provide_port_data_state = apx_nodeInstance_get_provide_port_data_state(node_instance);
       if (provide_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
       {
-         apx_portConnectorChangeTable_t* connector_changes = apx_nodeInstance_get_provide_port_connector_changes(node_instance, false);
+         apx_port_connector_change_table_t* connector_changes = apx_nodeInstance_get_provide_port_connector_changes(node_instance, false);
          if (connector_changes != NULL)
          {
-            apx_portConnectorChangeRef_t* ref;
+            apx_port_connector_change_ref_t* ref;
             adt_error_t rc;
             ref = apx_portConnectorChangeRef_new(node_instance, connector_changes);
             if (ref == NULL)
@@ -839,16 +839,16 @@ static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instanc
    num_nodes = adt_ary_length(node_instance_array);
    for (i = 0; i < num_nodes; i++)
    {
-      apx_dataState_t require_port_data_state;
-      apx_nodeInstance_t* node_instance = (apx_nodeInstance_t*)adt_ary_value(node_instance_array, i);
+      apx_data_state_t require_port_data_state;
+      apx_node_instance_t* node_instance = (apx_node_instance_t*)adt_ary_value(node_instance_array, i);
       assert(node_instance != NULL);
       require_port_data_state = apx_nodeInstance_get_require_port_data_state(node_instance);
       if (require_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
       {
-         apx_portConnectorChangeTable_t* connector_changes = apx_nodeInstance_get_require_port_connector_changes(node_instance, false);
+         apx_port_connector_change_table_t* connector_changes = apx_nodeInstance_get_require_port_connector_changes(node_instance, false);
          if (connector_changes != NULL)
          {
-            apx_portConnectorChangeRef_t* ref;
+            apx_port_connector_change_ref_t* ref;
             adt_error_t rc;
             ref = apx_portConnectorChangeRef_new(node_instance, connector_changes);
             if (ref == NULL)
@@ -880,9 +880,9 @@ static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_chang
    numNodes = adt_ary_length(provider_change_array);
    for (i = 0; i < numNodes; i++)
    {
-      apx_nodeInstance_t* provider_node_instance;
-      apx_portConnectorChangeTable_t* connector_changes;
-      apx_portConnectorChangeRef_t* ref = (apx_portConnectorChangeRef_t*)adt_ary_value(provider_change_array, i);
+      apx_node_instance_t* provider_node_instance;
+      apx_port_connector_change_table_t* connector_changes;
+      apx_port_connector_change_ref_t* ref = (apx_port_connector_change_ref_t*)adt_ary_value(provider_change_array, i);
       provider_node_instance = ref->node_instance;
       connector_changes = ref->connector_changes;
       (void)connector_changes;
@@ -902,9 +902,9 @@ static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_cha
    num_nodes = adt_ary_length(requester_change_array);
    for (i = 0; i < num_nodes; i++)
    {
-      apx_nodeInstance_t* require_node_instance;
-      apx_portConnectorChangeTable_t* connector_changes;
-      apx_portConnectorChangeRef_t* ref = (apx_portConnectorChangeRef_t*)adt_ary_value(requester_change_array, i);
+      apx_node_instance_t* require_node_instance;
+      apx_port_connector_change_table_t* connector_changes;
+      apx_port_connector_change_ref_t* ref = (apx_port_connector_change_ref_t*)adt_ary_value(requester_change_array, i);
       require_node_instance = ref->node_instance;
       connector_changes = ref->connector_changes;
       assert(apx_nodeInstance_get_require_port_data_state(require_node_instance) == APX_DATA_STATE_SYNCHRONIZED);
@@ -915,11 +915,11 @@ static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_cha
    return APX_NO_ERROR;
 }
 
-static void emit_remote_file_published_event(apx_serverConnection_t* self, apx_file_t* file)
+static void emit_remote_file_published_event(apx_server_connection_t* self, apx_file_t* file)
 {
    if (self->parent != NULL)
    {
-      rmf_fileInfo_t* file_info = apx_file_clone_file_info(file);
+      rmf_file_info_t* file_info = apx_file_clone_file_info(file);
       if (file_info != NULL)
       {
          apx_event_t event;
@@ -930,7 +930,7 @@ static void emit_remote_file_published_event(apx_serverConnection_t* self, apx_f
    
 }
 
-static void emit_protocol_header_accepted(apx_serverConnection_t* self)
+static void emit_protocol_header_accepted(apx_server_connection_t* self)
 {
    if (self->parent != NULL)
    {
@@ -940,7 +940,7 @@ static void emit_protocol_header_accepted(apx_serverConnection_t* self)
    }
 }
 
-static apx_error_t parse_protocol_header_line(apx_serverConnection_t* self, uint8_t const* begin, uint8_t const* end)
+static apx_error_t parse_protocol_header_line(apx_server_connection_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* result;
    result = bstr_match_cstr(begin, end, "RMFP/1.0");

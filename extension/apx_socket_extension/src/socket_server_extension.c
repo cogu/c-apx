@@ -30,13 +30,13 @@
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
 static void apx_socketServerExtension_shutdown(void);
-static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg);
+static apx_error_t apx_socketServerExtension_configure(apx_socket_server_t *server, dtl_hv_t *cfg);
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-static apx_socketServer_t *m_instance = NULL; //singleton
+static apx_socket_server_t *m_instance = NULL; //singleton
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -44,7 +44,7 @@ static apx_socketServer_t *m_instance = NULL; //singleton
 
 apx_error_t apx_socketServerExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   apx_serverExtensionHandler_t handler = {apx_socketServerExtension_init, apx_socketServerExtension_shutdown};
+   apx_server_extension_handler_t handler = {apx_socketServerExtension_init, apx_socketServerExtension_shutdown};
    return apx_server_add_extension(apx_server, "SOCKET", &handler, config);
 }
 
@@ -96,7 +96,7 @@ static void apx_socketServerExtension_shutdown(void)
    }
 }
 
-static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *server, dtl_hv_t *cfg)
+static apx_error_t apx_socketServerExtension_configure(apx_socket_server_t *server, dtl_hv_t *cfg)
 {
    dtl_sv_t *sv_tcp_port;
 #ifndef _WIN32

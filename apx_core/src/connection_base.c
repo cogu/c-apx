@@ -33,19 +33,19 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-/*static apx_error_t apx_connectionBase_startWorkerThread(apx_connectionBase_t *self);
-static void apx_connectionBase_stopWorkerThread(apx_connectionBase_t *self);
-static void apx_connectionBase_stopWorkerThread(apx_connectionBase_t *self);
-static apx_error_t apx_connectionBase_initTransmitHandler(apx_connectionBase_t *self);
-static void apx_connectionBase_attach_node_instance(apx_connectionBase_t* self, apx_nodeInstance_t* nodeInstance);
+/*static apx_error_t apx_connectionBase_startWorkerThread(apx_connection_base_t *self);
+static void apx_connectionBase_stopWorkerThread(apx_connection_base_t *self);
+static void apx_connectionBase_stopWorkerThread(apx_connection_base_t *self);
+static apx_error_t apx_connectionBase_initTransmitHandler(apx_connection_base_t *self);
+static void apx_connectionBase_attach_node_instance(apx_connection_base_t* self, apx_node_instance_t* nodeInstance);
 
 //Internal event emit API
 
-static void apx_connectionBase_emitFileCreatedEvent(apx_connectionBase_t *self, const apx_fileInfo_t *fileInfo);
+static void apx_connectionBase_emitFileCreatedEvent(apx_connection_base_t *self, const apx_file_info_t *fileInfo);
 
-//static void apx_connectionBase_createNodeCompleteEvent(apx_event_t *event, apx_nodeData_t *nodeData);
-//static void apx_connectionBase_handlePortConnectEvent(apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable, apx_portType_t portType);
-//static void apx_connectionBase_handlePortDisconnectEvent(apx_nodeData_t *nodeData, apx_portConnectionTable_t *connectionTable, apx_portType_t portType);
+//static void apx_connectionBase_createNodeCompleteEvent(apx_event_t *event, apx_node_data_t *nodeData);
+//static void apx_connectionBase_handlePortConnectEvent(apx_node_data_t *nodeData, apx_port_connection_table_t *connectionTable, apx_port_type_t portType);
+//static void apx_connectionBase_handlePortDisconnectEvent(apx_node_data_t *nodeData, apx_port_connection_table_t *connectionTable, apx_port_type_t portType);
 
 
 #ifndef UNIT_TEST
@@ -60,29 +60,29 @@ static THREAD_PROTO(eventHandlerWorkThread,arg);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionBaseVTable_create(apx_connectionBaseVTable_t* self, apx_void_ptr_func_t* destructor, apx_void_ptr_func_t* start, apx_void_ptr_func_t* close)
+void apx_connectionBaseVTable_create(apx_connection_base_vtable_t* self, apx_void_ptr_func_t* destructor, apx_void_ptr_func_t* start, apx_void_ptr_func_t* close)
 {
    if (self != NULL)
    {
-      memset(self, 0, sizeof(apx_connectionBaseVTable_t));
+      memset(self, 0, sizeof(apx_connection_base_vtable_t));
       self->destructor = destructor;
       self->start = start;
       self->close = close;
    }
 }
 
-apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mode, apx_connectionBaseVTable_t* base_connection_vtable, apx_connectionInterface_t* connection_interface)
+apx_error_t apx_connectionBase_create(apx_connection_base_t *self, apx_mode_t mode, apx_connection_base_vtable_t* base_connection_vtable, apx_connection_interface_t* connection_interface)
 {
    if (self != NULL)
    {
       apx_error_t rc;
       if (base_connection_vtable != NULL)
       {
-         memcpy(&self->vtable, base_connection_vtable, sizeof(apx_connectionBaseVTable_t));
+         memcpy(&self->vtable, base_connection_vtable, sizeof(apx_connection_base_vtable_t));
       }
       else
       {
-         memset(&self->vtable, 0, sizeof(apx_connectionBaseVTable_t));
+         memset(&self->vtable, 0, sizeof(apx_connection_base_vtable_t));
       }
       if (connection_interface != NULL)
       {
@@ -90,11 +90,11 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
          connection_interface->get_connection_id = apx_connectionBase_vget_connection_id;
          connection_interface->get_remotefile_protocol_version_id = apx_connectionBase_vget_remotefile_protocol_version_id;
          connection_interface->get_connection_type = apx_connectionBase_vget_connection_type;
-         memcpy(&self->connection_interface, connection_interface, sizeof(apx_connectionInterface_t));
+         memcpy(&self->connection_interface, connection_interface, sizeof(apx_connection_interface_t));
       }
       else
       {
-         memset(&self->connection_interface, 0, sizeof(apx_connectionInterface_t));
+         memset(&self->connection_interface, 0, sizeof(apx_connection_interface_t));
       }
       self->node_manager = NULL;
       self->total_bytes_received = 0u;
@@ -121,7 +121,7 @@ apx_error_t apx_connectionBase_create(apx_connectionBase_t *self, apx_mode_t mod
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_connectionBase_destroy(apx_connectionBase_t *self)
+void apx_connectionBase_destroy(apx_connection_base_t *self)
 {
    if (self != NULL)
    {
@@ -131,7 +131,7 @@ void apx_connectionBase_destroy(apx_connectionBase_t *self)
    }
 }
 
-void apx_connectionBase_delete(apx_connectionBase_t *self)
+void apx_connectionBase_delete(apx_connection_base_t *self)
 {
    if(self != NULL)
    {
@@ -145,19 +145,19 @@ void apx_connectionBase_delete(apx_connectionBase_t *self)
 
 void apx_connectionBase_vdelete(void *arg)
 {
-   apx_connectionBase_delete((apx_connectionBase_t*) arg);
+   apx_connectionBase_delete((apx_connection_base_t*) arg);
 }
 
-apx_fileManager_t* apx_connectionBase_get_file_manager(apx_connectionBase_t const* self)
+apx_file_manager_t* apx_connectionBase_get_file_manager(apx_connection_base_t const* self)
 {
    if (self != NULL)
    {
-      return (apx_fileManager_t*) &self->file_manager;
+      return (apx_file_manager_t*) &self->file_manager;
    }
    return NULL;
 }
 
-void apx_connectionBase_start(apx_connectionBase_t* self)
+void apx_connectionBase_start(apx_connection_base_t* self)
 {
    if (self != NULL)
    {
@@ -179,7 +179,7 @@ void apx_connectionBase_start(apx_connectionBase_t* self)
    }
 }
 
-void apx_connectionBase_stop(apx_connectionBase_t* self)
+void apx_connectionBase_stop(apx_connection_base_t* self)
 {
    if (self != NULL)
    {
@@ -192,7 +192,7 @@ void apx_connectionBase_stop(apx_connectionBase_t* self)
    }
 }
 
-void apx_connectionBase_close(apx_connectionBase_t* self)
+void apx_connectionBase_close(apx_connection_base_t* self)
 {
    if ((self != NULL) && (self->vtable.close != NULL))
    {
@@ -200,7 +200,7 @@ void apx_connectionBase_close(apx_connectionBase_t* self)
    }
 }
 
-void apx_connectionBase_attach_node_manager(apx_connectionBase_t* self, apx_nodeManager_t* node_manager)
+void apx_connectionBase_attach_node_manager(apx_connection_base_t* self, apx_node_manager_t* node_manager)
 {
    if ( (self != NULL) && (node_manager != NULL) )
    {
@@ -209,7 +209,7 @@ void apx_connectionBase_attach_node_manager(apx_connectionBase_t* self, apx_node
    }
 }
 
-apx_nodeManager_t* apx_connectionBase_get_node_manager(apx_connectionBase_t const* self)
+apx_node_manager_t* apx_connectionBase_get_node_manager(apx_connection_base_t const* self)
 {
    if (self != NULL)
    {
@@ -218,7 +218,7 @@ apx_nodeManager_t* apx_connectionBase_get_node_manager(apx_connectionBase_t cons
    return NULL;
 }
 
-apx_connectionInterface_t const* apx_connectionBase_get_connection(apx_connectionBase_t const* self)
+apx_connection_interface_t const* apx_connectionBase_get_connection(apx_connection_base_t const* self)
 {
    if (self != NULL)
    {
@@ -227,7 +227,7 @@ apx_connectionInterface_t const* apx_connectionBase_get_connection(apx_connectio
    return NULL;
 }
 
-apx_error_t apx_connectionBase_message_received(apx_connectionBase_t* self, const uint8_t* data, apx_size_t size)
+apx_error_t apx_connectionBase_message_received(apx_connection_base_t* self, const uint8_t* data, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -236,7 +236,7 @@ apx_error_t apx_connectionBase_message_received(apx_connectionBase_t* self, cons
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t* self)
+uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connection_base_t* self)
 {
    if (self != NULL)
    {
@@ -245,7 +245,7 @@ uint16_t apx_connectionBase_get_num_pending_worker_commands(apx_connectionBase_t
    return 0u;
 }
 
-void apx_connectionBase_set_connection_id(apx_connectionBase_t* self, uint32_t connection_id)
+void apx_connectionBase_set_connection_id(apx_connection_base_t* self, uint32_t connection_id)
 {
    if (self != NULL)
    {
@@ -254,7 +254,7 @@ void apx_connectionBase_set_connection_id(apx_connectionBase_t* self, uint32_t c
    }
 }
 
-uint32_t apx_connectionBase_get_connection_id(apx_connectionBase_t const* self)
+uint32_t apx_connectionBase_get_connection_id(apx_connection_base_t const* self)
 {
    if (self != NULL)
    {
@@ -263,7 +263,7 @@ uint32_t apx_connectionBase_get_connection_id(apx_connectionBase_t const* self)
    return APX_INVALID_CONNECTION_ID;
 }
 
-void apx_connectionBase_set_connection_type(apx_connectionBase_t* self, apx_connectionType_t connection_type)
+void apx_connectionBase_set_connection_type(apx_connection_base_t* self, apx_connection_type_t connection_type)
 {
    if (self != NULL)
    {
@@ -271,7 +271,7 @@ void apx_connectionBase_set_connection_type(apx_connectionBase_t* self, apx_conn
    }
 }
 
-apx_connectionType_t apx_connectionBase_get_connection_type(apx_connectionBase_t const* self)
+apx_connection_type_t apx_connectionBase_get_connection_type(apx_connection_base_t const* self)
 {
    if (self != NULL)
    {
@@ -280,7 +280,7 @@ apx_connectionType_t apx_connectionBase_get_connection_type(apx_connectionBase_t
    return APX_CONNECTION_TYPE_DEFAULT;
 }
 
-void apx_connectionBase_set_num_header_size(apx_connectionBase_t* self, apx_size_t size)
+void apx_connectionBase_set_num_header_size(apx_connection_base_t* self, apx_size_t size)
 {
    if ( (self != NULL) && ( (size == UINT16_SIZE) || (size == UINT32_SIZE) ))
    {
@@ -288,7 +288,7 @@ void apx_connectionBase_set_num_header_size(apx_connectionBase_t* self, apx_size
    }
 }
 
-apx_size_t apx_connectionBase_get_num_header_size(apx_connectionBase_t const* self)
+apx_size_t apx_connectionBase_get_num_header_size(apx_connection_base_t const* self)
 {
    if (self != NULL)
    {
@@ -297,7 +297,7 @@ apx_size_t apx_connectionBase_get_num_header_size(apx_connectionBase_t const* se
    return 0u;
 }
 
-void apx_connectionBase_set_rmf_proto_id(apx_connectionBase_t* self, rmf_versionId_t version_id)
+void apx_connectionBase_set_rmf_proto_id(apx_connection_base_t* self, rmf_version_id_t version_id)
 {
    if (self != NULL)
    {
@@ -305,7 +305,7 @@ void apx_connectionBase_set_rmf_proto_id(apx_connectionBase_t* self, rmf_version
    }
 }
 
-rmf_versionId_t apx_connectionBase_get_rmf_proto_id(apx_connectionBase_t const* self)
+rmf_version_id_t apx_connectionBase_get_rmf_proto_id(apx_connection_base_t const* self)
 {
    if (self != NULL)
    {
@@ -317,7 +317,7 @@ rmf_versionId_t apx_connectionBase_get_rmf_proto_id(apx_connectionBase_t const* 
 
 //Virtual function call-points
 
-void apx_connectionBase_node_created_notification(apx_connectionBase_t const* self, apx_nodeInstance_t* node_instance)
+void apx_connectionBase_node_created_notification(apx_connection_base_t const* self, apx_node_instance_t* node_instance)
 {
    if ( (self != NULL) && (node_instance != NULL))
    {
@@ -328,7 +328,7 @@ void apx_connectionBase_node_created_notification(apx_connectionBase_t const* se
    }
 }
 
-void apx_connectionBase_require_port_write_notification(apx_connectionBase_t const* self, apx_portInstance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size)
+void apx_connectionBase_require_port_write_notification(apx_connection_base_t const* self, apx_port_instance_t* port_instance, uint8_t const* raw_data, apx_size_t data_size)
 {
    if ((self != NULL) && (port_instance != NULL))
    {
@@ -342,7 +342,7 @@ void apx_connectionBase_require_port_write_notification(apx_connectionBase_t con
 
 uint32_t apx_connectionBase_vget_connection_id(void* arg)
 {
-   apx_connectionBase_t const* self = (apx_connectionBase_t const*) arg;
+   apx_connection_base_t const* self = (apx_connection_base_t const*) arg;
    if (self != NULL)
    {
       return self->connection_id;
@@ -350,9 +350,9 @@ uint32_t apx_connectionBase_vget_connection_id(void* arg)
    return APX_INVALID_CONNECTION_ID;
 }
 
-rmf_versionId_t apx_connectionBase_vget_remotefile_protocol_version_id(void* arg)
+rmf_version_id_t apx_connectionBase_vget_remotefile_protocol_version_id(void* arg)
 {
-   apx_connectionBase_t const* self = (apx_connectionBase_t const*)arg;
+   apx_connection_base_t const* self = (apx_connection_base_t const*)arg;
    if (self != NULL)
    {
       return self->rmf_version_id;
@@ -360,9 +360,9 @@ rmf_versionId_t apx_connectionBase_vget_remotefile_protocol_version_id(void* arg
    return RMF_PROTOCOL_VERSION_ID_NONE;
 }
 
-apx_connectionType_t apx_connectionBase_vget_connection_type(void* arg)
+apx_connection_type_t apx_connectionBase_vget_connection_type(void* arg)
 {
-   apx_connectionBase_t const* self = (apx_connectionBase_t const*)arg;
+   apx_connection_base_t const* self = (apx_connection_base_t const*)arg;
    if (self != NULL)
    {
       return self->connection_type;
@@ -375,7 +375,7 @@ apx_connectionType_t apx_connectionBase_vget_connection_type(void* arg)
 /*** Internal Callback API ***/
 
 //Callbacks triggered due to events happening locally
-void apx_connectionBase_disconnect_notification(apx_connectionBase_t* self)
+void apx_connectionBase_disconnect_notification(apx_connection_base_t* self)
 {
    if (self != NULL)
    {

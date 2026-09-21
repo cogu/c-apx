@@ -65,7 +65,7 @@ CuSuite* testSuite_file_info(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_create_local_file(CuTest* tc)
 {
-   rmf_fileInfo_t* info = rmf_fileInfo_make_fixed("TestNode.apx", 40, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info = rmf_fileInfo_make_fixed("TestNode.apx", 40, RMF_INVALID_ADDRESS);
    CuAssertPtrNotNull(tc, info);
    CuAssertStrEquals(tc, "TestNode.apx", rmf_fileInfo_name(info));
    CuAssertUIntEquals(tc, RMF_FILE_TYPE_FIXED, rmf_fileInfo_rmf_file_type(info));
@@ -77,19 +77,19 @@ static void test_create_local_file(CuTest* tc)
 
 static void test_name_ends_with(CuTest* tc)
 {
-   rmf_fileInfo_t* info1 = rmf_fileInfo_make_fixed("TestNode.apx", 40, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info1 = rmf_fileInfo_make_fixed("TestNode.apx", 40, RMF_INVALID_ADDRESS);
    CuAssertTrue(tc, rmf_fileInfo_name_ends_with(info1, ".apx"));
    CuAssertFalse(tc, rmf_fileInfo_name_ends_with(info1, ".out"));
    CuAssertFalse(tc, rmf_fileInfo_name_ends_with(info1, ".in"));
    rmf_fileInfo_delete(info1);
 
-   rmf_fileInfo_t* info2 = rmf_fileInfo_make_fixed("TestNode.out", 1, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info2 = rmf_fileInfo_make_fixed("TestNode.out", 1, RMF_INVALID_ADDRESS);
    CuAssertFalse(tc, rmf_fileInfo_name_ends_with(info2, ".apx"));
    CuAssertTrue(tc, rmf_fileInfo_name_ends_with(info2, ".out"));
    CuAssertFalse(tc, rmf_fileInfo_name_ends_with(info2, ".in"));
    rmf_fileInfo_delete(info2);
 
-   rmf_fileInfo_t* info3 = rmf_fileInfo_make_fixed("TestNode.in", 1, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info3 = rmf_fileInfo_make_fixed("TestNode.in", 1, RMF_INVALID_ADDRESS);
    CuAssertFalse(tc, rmf_fileInfo_name_ends_with(info3, ".apx"));
    CuAssertFalse(tc, rmf_fileInfo_name_ends_with(info3, ".out"));
    CuAssertTrue(tc, rmf_fileInfo_name_ends_with(info3, ".in"));
@@ -99,9 +99,9 @@ static void test_name_ends_with(CuTest* tc)
 
 static void test_base_name(CuTest* tc)
 {
-   rmf_fileInfo_t* info1 = rmf_fileInfo_make_fixed("TestNode.apx", 40, RMF_INVALID_ADDRESS);
-   rmf_fileInfo_t* info2 = rmf_fileInfo_make_fixed("TestNode.out", 1, RMF_INVALID_ADDRESS);
-   rmf_fileInfo_t* info3 = rmf_fileInfo_make_fixed("TestNode.in", 1, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info1 = rmf_fileInfo_make_fixed("TestNode.apx", 40, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info2 = rmf_fileInfo_make_fixed("TestNode.out", 1, RMF_INVALID_ADDRESS);
+   rmf_file_info_t* info3 = rmf_fileInfo_make_fixed("TestNode.in", 1, RMF_INVALID_ADDRESS);
    char* base_name1 = rmf_fileInfo_base_name(info1);
    char* base_name2 = rmf_fileInfo_base_name(info2);
    char* base_name3 = rmf_fileInfo_base_name(info3);

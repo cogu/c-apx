@@ -246,48 +246,48 @@
 #define APX_VM_INT32_SIZE  ((uint32_t) sizeof(int32_t))
 #define APX_VM_INT64_SIZE  ((uint32_t) sizeof(int64_t))
 
-typedef uint8_t apx_operationType_t;
-#define APX_OPERATION_TYPE_PROGRAM_END         ((apx_operationType_t) 0u)
-#define APX_OPERATION_TYPE_UNPACK              ((apx_operationType_t) 1u)
-#define APX_OPERATION_TYPE_PACK                ((apx_operationType_t) 2u)
-#define APX_OPERATION_TYPE_RANGE_CHECK_INT32   ((apx_operationType_t) 3u)
-#define APX_OPERATION_TYPE_RANGE_CHECK_UINT32  ((apx_operationType_t) 4u)
-#define APX_OPERATION_TYPE_RANGE_CHECK_INT64   ((apx_operationType_t) 5u)
-#define APX_OPERATION_TYPE_RANGE_CHECK_UINT64  ((apx_operationType_t) 6u)
-#define APX_OPERATION_TYPE_RECORD_SELECT       ((apx_operationType_t) 7u)
-#define APX_OPERATION_TYPE_RECORD_END          ((apx_operationType_t) 8u)
-#define APX_OPERATION_TYPE_ARRAY_NEXT          ((apx_operationType_t) 9u)
+typedef uint8_t apx_operation_type_t;
+#define APX_OPERATION_TYPE_PROGRAM_END         ((apx_operation_type_t) 0u)
+#define APX_OPERATION_TYPE_UNPACK              ((apx_operation_type_t) 1u)
+#define APX_OPERATION_TYPE_PACK                ((apx_operation_type_t) 2u)
+#define APX_OPERATION_TYPE_RANGE_CHECK_INT32   ((apx_operation_type_t) 3u)
+#define APX_OPERATION_TYPE_RANGE_CHECK_UINT32  ((apx_operation_type_t) 4u)
+#define APX_OPERATION_TYPE_RANGE_CHECK_INT64   ((apx_operation_type_t) 5u)
+#define APX_OPERATION_TYPE_RANGE_CHECK_UINT64  ((apx_operation_type_t) 6u)
+#define APX_OPERATION_TYPE_RECORD_SELECT       ((apx_operation_type_t) 7u)
+#define APX_OPERATION_TYPE_RECORD_END          ((apx_operation_type_t) 8u)
+#define APX_OPERATION_TYPE_ARRAY_NEXT          ((apx_operation_type_t) 9u)
 
-typedef struct apx_packUnpackOperationInfo_tag
+typedef struct apx_pack_unpack_operation_info_tag
 {
-   apx_typeCode_t type_code;
+   apx_type_code_t type_code;
    uint32_t array_length;
    bool is_dynamic_array;
-} apx_packUnpackOperationInfo_t;
+} apx_pack_unpack_operation_info_t;
 
-typedef struct apx_rangeCheckUInt32OperationInfo_tag
+typedef struct apx_range_check_uint32_operation_info_tag
 {
    uint32_t lower_limit;
    uint32_t upper_limit;
-} apx_rangeCheckUInt32OperationInfo_t;
+} apx_range_check_uint32_operation_info_t;
 
-typedef struct apx_rangeCheckUInt64OperationInfo_tag
+typedef struct apx_range_check_uint64_operation_info_tag
 {
    uint64_t lower_limit;
    uint64_t upper_limit;
-} apx_rangeCheckUInt64OperationInfo_t;
+} apx_range_check_uint64_operation_info_t;
 
-typedef struct apx_rangeCheckInt32OperationInfo_tag
+typedef struct apx_range_check_int32_operation_info_tag
 {
    int32_t lower_limit;
    int32_t upper_limit;
-} apx_rangeCheckInt32OperationInfo_t;
+} apx_range_check_int32_operation_info_t;
 
-typedef struct apx_rangeCheckInt64OperationInfo_tag
+typedef struct apx_range_check_int64_operation_info_tag
 {
    int64_t lower_limit;
    int64_t upper_limit;
-} apx_rangeCheckInt64OperationInfo_t;
+} apx_range_check_int64_operation_info_t;
 
 
 

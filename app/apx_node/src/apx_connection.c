@@ -22,10 +22,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_connection_on_connect(void *arg, apx_clientConnection_t *client_connection);
-static void apx_connection_on_disconnect(void *arg, apx_clientConnection_t *client_connection);
-static void apx_connection_on_require_port_write(void* arg, struct apx_portInstance_tag* port_instance, uint8_t const* data, apx_size_t size);
-static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t *self, apx_nodeInstance_t *node_instance);
+static void apx_connection_on_connect(void *arg, apx_client_connection_t *client_connection);
+static void apx_connection_on_disconnect(void *arg, apx_client_connection_t *client_connection);
+static void apx_connection_on_require_port_write(void* arg, struct apx_port_instance_tag* port_instance, uint8_t const* data, apx_size_t size);
+static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t *self, apx_node_instance_t *node_instance);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -42,7 +42,7 @@ apx_error_t apx_connection_create(apx_connection_t *self)
 {
    if (self != NULL)
    {
-      apx_clientEventListener_t listener;
+      apx_client_event_listener_t listener;
       self->client = apx_client_new();
       if (self->client == NULL)
       {
@@ -116,7 +116,7 @@ apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_def
       apx_error_t retval = apx_client_build_node(self->client, adt_str_cstr(apx_definition));
       if (retval == APX_NO_ERROR)
       {
-         apx_nodeInstance_t *nodeInstance = apx_client_get_last_attached_node(self->client);
+         apx_node_instance_t *nodeInstance = apx_client_get_last_attached_node(self->client);
          if (nodeInstance != NULL)
          {
             retval = apx_connection_prepare_provide_ports(self, nodeInstance);
@@ -141,7 +141,7 @@ int32_t apx_connection_getLastErrorLine(apx_connection_t *self)
    return -1;
 }
 
-apx_nodeInstance_t *apx_connection_getLastAttachedNode(apx_connection_t *self)
+apx_node_instance_t *apx_connection_getLastAttachedNode(apx_connection_t *self)
 {
    if (self != NULL)
    {
@@ -176,7 +176,7 @@ apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const ch
    {
       apx_error_t result;
       MUTEX_LOCK(self->mutex);
-      apx_portInstance_t *port_instance = (apx_portInstance_t*) adt_hash_value(&self->provide_port_lookup_table, providePortName);
+      apx_port_instance_t *port_instance = (apx_port_instance_t*) adt_hash_value(&self->provide_port_lookup_table, providePortName);
       if (port_instance == NULL)
       {
          MUTEX_UNLOCK(self->mutex);
@@ -193,20 +193,20 @@ apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const ch
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void apx_connection_on_connect(void* arg, apx_clientConnection_t* client_connection)
+static void apx_connection_on_connect(void* arg, apx_client_connection_t* client_connection)
 {
    (void)arg;
    (void)client_connection;
    printf("[APX-CONNECTION] connected to APX server\n");
 }
 
-static void apx_connection_on_disconnect(void* arg, apx_clientConnection_t* client_connection)
+static void apx_connection_on_disconnect(void* arg, apx_client_connection_t* client_connection)
 {
    (void)arg;
    printf("[APX-CONNECTION] Disconnected from APX server\n");
 }
 
-static void apx_connection_on_require_port_write(void* arg, struct apx_portInstance_tag* port_instance, uint8_t const* data, apx_size_t size)
+static void apx_connection_on_require_port_write(void* arg, struct apx_port_instance_tag* port_instance, uint8_t const* data, apx_size_t size)
 {
    apx_connection_t* self = (apx_connection_t*)arg;
    (void)data;
@@ -242,18 +242,18 @@ static void apx_connection_on_require_port_write(void* arg, struct apx_portInsta
    }
 }
 
-static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t* self, apx_nodeInstance_t* node_instance)
+static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t* self, apx_node_instance_t* node_instance)
 {
    apx_error_t retval = APX_NO_ERROR;
    if ( (self != NULL) && (node_instance != NULL) )
    {
       apx_size_t num_provide_ports;
-      apx_portId_t port_id;
+      apx_port_id_t port_id;
       num_provide_ports = apx_nodeInstance_get_num_provide_ports(node_instance);
       for(port_id = 0; port_id < num_provide_ports; port_id++)
       {
          char const *port_name = NULL;
-         apx_portInstance_t *port_instance = apx_nodeInstance_get_provide_port(node_instance, port_id);
+         apx_port_instance_t *port_instance = apx_nodeInstance_get_provide_port(node_instance, port_id);
          if (port_instance != NULL)
          {
             port_name = apx_portInstance_name(port_instance);

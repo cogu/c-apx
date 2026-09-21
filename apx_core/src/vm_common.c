@@ -88,7 +88,7 @@ uint8_t const* apx_vm_parse_int64_by_variant(uint8_t const* begin, uint8_t const
    return next + unpack_size;
 }
 
-uint8_t const* apx_vm_parse_uint32_by_size_type(uint8_t const* begin, uint8_t const* end, apx_sizeType_t size_type, uint32_t* number)
+uint8_t const* apx_vm_parse_uint32_by_size_type(uint8_t const* begin, uint8_t const* end, apx_size_type_t size_type, uint32_t* number)
 {
    uint8_t variant = apx_vm_size_type_to_variant(size_type);
    if (variant == APX_VM_VARIANT_INVALID)
@@ -178,9 +178,9 @@ uint32_t apx_vm_variant_to_size(uint8_t variant)
    return retval;
 }
 
-apx_typeCode_t apx_vm_variant_to_type_code(uint8_t variant)
+apx_type_code_t apx_vm_variant_to_type_code(uint8_t variant)
 {
-   apx_typeCode_t retval;
+   apx_type_code_t retval;
    switch (variant)
    {
    case APX_VM_VARIANT_UINT8:
@@ -234,7 +234,7 @@ apx_typeCode_t apx_vm_variant_to_type_code(uint8_t variant)
    return retval;
 }
 
-uint32_t apx_vm_size_type_to_size(apx_sizeType_t size_type)
+uint32_t apx_vm_size_type_to_size(apx_size_type_t size_type)
 {
    uint32_t value_size;
    switch (size_type)
@@ -254,9 +254,9 @@ uint32_t apx_vm_size_type_to_size(apx_sizeType_t size_type)
    return value_size;
 }
 
-apx_sizeType_t apx_vm_size_to_size_type(uint32_t size)
+apx_size_type_t apx_vm_size_to_size_type(uint32_t size)
 {
-   apx_sizeType_t size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t size_type = APX_SIZE_TYPE_NONE;
    if (size > 0u)
    {
       if (size <= UINT8_MAX)
@@ -276,7 +276,7 @@ apx_sizeType_t apx_vm_size_to_size_type(uint32_t size)
 
 }
 
-uint8_t apx_vm_size_type_to_variant(apx_sizeType_t size_type)
+uint8_t apx_vm_size_type_to_variant(apx_size_type_t size_type)
 {
    uint8_t variant = APX_VM_VARIANT_INVALID;
    switch (size_type)

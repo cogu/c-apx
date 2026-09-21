@@ -30,30 +30,30 @@
 //forward declarations
 typedef struct apx_port_tag
 {
-   apx_portType_t port_type;
-   apx_portId_t port_id;
+   apx_port_type_t port_type;
+   apx_port_id_t port_id;
    int32_t line_number;
    char *name;
-   apx_dataSignature_t data_signature;
-   apx_portAttributes_t* attributes; //Strong reference
+   apx_data_signature_t data_signature;
+   apx_port_attributes_t* attributes; //Strong reference
    dtl_dv_t* proper_init_value;
 } apx_port_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_port_create(apx_port_t* self, apx_portType_t port_type, const char* name, int32_t line_number);
+void apx_port_create(apx_port_t* self, apx_port_type_t port_type, const char* name, int32_t line_number);
 void apx_port_destroy(apx_port_t *self);
-apx_port_t* apx_port_new(apx_portType_t port_type, const char* name, int32_t line_number);
+apx_port_t* apx_port_new(apx_port_type_t port_type, const char* name, int32_t line_number);
 void apx_port_delete(apx_port_t *self);
 void apx_port_vdelete(void *arg);
 
-apx_dataElement_t* apx_port_get_data_element(apx_port_t const* self);
-apx_dataElement_t* apx_port_get_effective_data_element(apx_port_t const* self);
-apx_portAttributes_t* apx_port_get_attributes(apx_port_t* self);
+apx_data_element_t* apx_port_get_data_element(apx_port_t const* self);
+apx_data_element_t* apx_port_get_effective_data_element(apx_port_t const* self);
+apx_port_attributes_t* apx_port_get_attributes(apx_port_t* self);
 bool apx_port_has_attributes(apx_port_t* self);
 apx_error_t apx_port_init_attributes(apx_port_t* self);
-apx_typeAttributes_t* apx_port_get_referenced_type_attributes(apx_port_t const* self); //Will return NULL if this port isn't referencing a data type
+apx_type_attributes_t* apx_port_get_referenced_type_attributes(apx_port_t const* self); //Will return NULL if this port isn't referencing a data type
 apx_error_t apx_port_derive_types(apx_port_t* self, adt_ary_t const* type_list, adt_hash_t const* type_map);
 apx_error_t apx_port_derive_proper_init_value(apx_port_t* self);
 bool apx_port_is_queued(apx_port_t* self);
@@ -61,9 +61,9 @@ bool apx_port_is_parameter(apx_port_t* self);
 uint32_t apx_port_get_queue_length(apx_port_t* self);
 apx_error_t apx_port_flatten_data_element(apx_port_t* self);
 const char* apx_port_get_name(apx_port_t const* self);
-apx_portType_t apx_port_get_port_type(apx_port_t const* self);
-void apx_port_set_id(apx_port_t* self, apx_portId_t port_id);
-apx_portId_t apx_port_get_id(apx_port_t* self);
+apx_port_type_t apx_port_get_port_type(apx_port_t const* self);
+void apx_port_set_id(apx_port_t* self, apx_port_id_t port_id);
+apx_port_id_t apx_port_get_id(apx_port_t* self);
 dtl_dv_t* apx_port_get_proper_init_value(apx_port_t* self);
 
 #endif //APX_PORT_H

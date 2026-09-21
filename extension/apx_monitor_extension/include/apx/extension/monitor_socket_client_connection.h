@@ -32,30 +32,30 @@
 #endif
 SOCKET_TYPE; //this is a forward declaration of the declared type just above
 
-typedef struct apx_monitorSocketClientConnection_tag
+typedef struct apx_monitor_socket_client_connection_tag
 {
-   apx_clientConnection_t base;
+   apx_client_connection_t base;
    adt_bytearray_t send_buffer;
    apx_size_t default_buffer_size;
    apx_size_t pending_bytes;
    SOCKET_TYPE* socket_object;
    MUTEX_T lock;
-} apx_monitorSocketClientConnection_t;
+} apx_monitor_socket_client_connection_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_monitorSocketClientConnection_create(apx_monitorSocketClientConnection_t* self, SOCKET_TYPE* socket_object);
-void apx_monitorSocketClientConnection_destroy(apx_monitorSocketClientConnection_t* self);
+apx_error_t apx_monitorSocketClientConnection_create(apx_monitor_socket_client_connection_t* self, SOCKET_TYPE* socket_object);
+void apx_monitorSocketClientConnection_destroy(apx_monitor_socket_client_connection_t* self);
 void apx_monitorSocketClientConnection_vdestroy(void* arg);
-apx_monitorSocketClientConnection_t* apx_monitorSocketClientConnection_new(SOCKET_TYPE* socket_object);
-apx_connectionType_t apx_monitorSocketClientConnection_get_connection_type(apx_monitorSocketClientConnection_t const* self);
+apx_monitor_socket_client_connection_t* apx_monitorSocketClientConnection_new(SOCKET_TYPE* socket_object);
+apx_connection_type_t apx_monitorSocketClientConnection_get_connection_type(apx_monitor_socket_client_connection_t const* self);
 
 #ifndef UNIT_TEST
-apx_error_t apx_monitorSocketClientConnection_connect_tcp(apx_monitorSocketClientConnection_t* self, const char* address, uint16_t port);
+apx_error_t apx_monitorSocketClientConnection_connect_tcp(apx_monitor_socket_client_connection_t* self, const char* address, uint16_t port);
 # ifndef _WIN32
-apx_error_t apx_monitorSocketClientConnection_connect_unix(apx_monitorSocketClientConnection_t* self, const char* socket_path);
+apx_error_t apx_monitorSocketClientConnection_connect_unix(apx_monitor_socket_client_connection_t* self, const char* socket_path);
 # endif
 #endif
 
@@ -68,7 +68,7 @@ apx_error_t apx_monitorSocketClientConnection_vtransmit_data_message(void* arg, 
 apx_error_t apx_monitorSocketClientConnection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
 
 #ifdef UNIT_TEST
-void apx_monitorSocketClientConnection_run(apx_monitorSocketClientConnection_t* self);
+void apx_monitorSocketClientConnection_run(apx_monitor_socket_client_connection_t* self);
 #endif
 
 #undef SOCKET_TYPE

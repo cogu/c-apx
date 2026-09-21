@@ -24,31 +24,31 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-typedef struct apx_observedConnection_tag
+typedef struct apx_observed_connection_tag
 {
-   apx_serverConnection_t* server_connection;
-   apx_connectionId_t connection_id;
-   apx_connectionType_t connection_type;
-   apx_connectionState_t connection_state;
+   apx_server_connection_t* server_connection;
+   apx_connection_id_t connection_id;
+   apx_connection_type_t connection_type;
+   apx_connection_state_t connection_state;
    adt_str_t* tag;
    adt_list_t file_list; //strong references to apx_observed_file_t
-} apx_observedConnection_t;
+} apx_observed_connection_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
 
-void apx_observedConnection_create(apx_observedConnection_t* self, apx_serverConnection_t* server_connection);
-void apx_observedConnection_destroy(apx_observedConnection_t* self);
-apx_observedConnection_t* apx_observedConnection_new(apx_serverConnection_t* server_connection);
-void apx_observedConnection_delete(apx_observedConnection_t* self);
+void apx_observedConnection_create(apx_observed_connection_t* self, apx_server_connection_t* server_connection);
+void apx_observedConnection_destroy(apx_observed_connection_t* self);
+apx_observed_connection_t* apx_observedConnection_new(apx_server_connection_t* server_connection);
+void apx_observedConnection_delete(apx_observed_connection_t* self);
 void apx_observedConnection_vdelete(void* arg);
-char const* apx_observedConnection_tag(apx_observedConnection_t* const self);
-apx_connectionId_t apx_observedConnection_connection_id(apx_observedConnection_t* const self);
-apx_connectionType_t apx_observedConnection_get_connection_type(apx_observedConnection_t* const self);
-void apx_observedConnection_set_connection_type(apx_observedConnection_t* self, apx_connectionType_t connection_type);
-apx_connectionState_t apx_observedConnection_get_connection_state(apx_observedConnection_t* const self);
-void apx_observedConnection_set_connection_state(apx_observedConnection_t* self, apx_connectionState_t connection_state);
+char const* apx_observed_connection_tag(apx_observed_connection_t* const self);
+apx_connection_id_t apx_observedConnection_connection_id(apx_observed_connection_t* const self);
+apx_connection_type_t apx_observedConnection_get_connection_type(apx_observed_connection_t* const self);
+void apx_observedConnection_set_connection_type(apx_observed_connection_t* self, apx_connection_type_t connection_type);
+apx_connection_state_t apx_observedConnection_get_connection_state(apx_observed_connection_t* const self);
+void apx_observedConnection_set_connection_state(apx_observed_connection_t* self, apx_connection_state_t connection_state);
 
 #endif //APX_OBSERVED_CONNECTION_H

@@ -19,17 +19,17 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_nodeCache_tag
+typedef struct apx_node_cache_tag
 {
    apx_mode_t mode;
-} apx_nodeCache_t;
+} apx_node_cache_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_nodeCache_create(apx_nodeCache_t* self, apx_mode_t mode);
-void apx_nodeCache_destroy(apx_nodeCache_t* self);
-apx_nodeCache_t* apx_nodeCache_new(apx_mode_t mode);
-void apx_nodeCache_delete(apx_nodeCache_t* self);
+void apx_nodeCache_create(apx_node_cache_t* self, apx_mode_t mode);
+void apx_nodeCache_destroy(apx_node_cache_t* self);
+apx_node_cache_t* apx_nodeCache_new(apx_mode_t mode);
+void apx_nodeCache_delete(apx_node_cache_t* self);
 
 #endif //APX_FILE_CACHE_H

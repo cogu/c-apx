@@ -72,9 +72,9 @@ CuSuite* testSuite_apx_client_socket_monitor_connection(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_connection_create(CuTest* tc)
 {
-   apx_clientSocketConnection_t conn;
+   apx_client_socket_connection_t conn;
    testsocket_t* sock1;
-   sock1 = testsocket_new(); //apx_clientSocketConnection_t takes ownership of this object. No need to manually delete it
+   sock1 = testsocket_new(); //apx_client_socket_connection_t takes ownership of this object. No need to manually delete it
    CuAssertIntEquals(tc, 0, apx_clientSocketConnection_create(&conn, sock1, APX_CONNECTION_TYPE_MONITOR));
    CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
    CuAssertPtrEquals(tc, sock1, conn.socket_object);
@@ -89,7 +89,7 @@ static void test_send_greeting_on_connect(CuTest* tc)
    adt_str_t* str;
    const char* expected_greeting = "RMFP/1.1\nMessage-Size: 32\nConnection-Type: Monitor\n\n";
    const char* data;
-   apx_clientSocketConnection_t conn;
+   apx_client_socket_connection_t conn;
 
    testsocket_spy_create();
    sock = testsocket_spy_server();

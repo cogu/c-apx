@@ -29,9 +29,9 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 //Client internal API (do not call as end-user)
-void apx_clientInternal_connect_notification(apx_client_t *self, apx_clientConnection_t *connection);
-void apx_clientInternal_disconnect_notification(apx_client_t *self, apx_clientConnection_t *connection);
-void apx_clientInternal_require_port_write_notification(apx_client_t *self, apx_clientConnection_t *connection, apx_portInstance_t *port_instance, const uint8_t *data, apx_size_t size);
+void apx_clientInternal_connect_notification(apx_client_t *self, apx_client_connection_t *connection);
+void apx_clientInternal_disconnect_notification(apx_client_t *self, apx_client_connection_t *connection);
+void apx_clientInternal_require_port_write_notification(apx_client_t *self, apx_client_connection_t *connection, apx_port_instance_t *port_instance, const uint8_t *data, apx_size_t size);
 
 
 #endif //APX_CLIENT_INTERNAL_H

@@ -28,20 +28,20 @@
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_serverTextLogExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
 void apx_serverTextLogExtension_shutdown(void);
-static apx_error_t apx_serverTextLogExtension_configure(apx_serverTextLog_t *instance, dtl_hv_t *cfg);
+static apx_error_t apx_serverTextLogExtension_configure(apx_server_text_log_t *instance, dtl_hv_t *cfg);
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-apx_serverTextLog_t *m_instance = NULL;
+apx_server_text_log_t *m_instance = NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_serverTextLogExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   apx_serverExtensionHandler_t handler = {apx_serverTextLogExtension_init, apx_serverTextLogExtension_shutdown};
+   apx_server_extension_handler_t handler = {apx_serverTextLogExtension_init, apx_serverTextLogExtension_shutdown};
    return apx_server_add_extension(apx_server, "TEXTLOG", &handler, config);
 }
 
@@ -82,7 +82,7 @@ void apx_serverTextLogExtension_shutdown(void)
    }
 }
 
-static apx_error_t apx_serverTextLogExtension_configure(apx_serverTextLog_t *instance, dtl_hv_t *cfg)
+static apx_error_t apx_serverTextLogExtension_configure(apx_server_text_log_t *instance, dtl_hv_t *cfg)
 {
    dtl_sv_t *svFileEnabled;
    dtl_sv_t *svFilePath;

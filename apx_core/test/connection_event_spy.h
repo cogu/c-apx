@@ -21,13 +21,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-typedef struct apx_connectionEventSpy_tag
+typedef struct apx_connection_event_spy_tag
 {
    int32_t headerAcceptedCount;
    int32_t fileCreateCount;
-   apx_connectionBase_t *lastConnection;
-   apx_fileInfo_t *lastFileInfo;
-}apx_connectionEventSpy_t;
+   apx_connection_base_t *lastConnection;
+   apx_file_info_t *lastFileInfo;
+}apx_connection_event_spy_t;
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -35,12 +35,12 @@ typedef struct apx_connectionEventSpy_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionEventSpy_create(apx_connectionEventSpy_t *self);
-void apx_connectionEventSpy_destroy(apx_connectionEventSpy_t *self);
-void apx_connectionEventSpy_register(apx_connectionEventSpy_t *self, apx_connectionBase_t *connection);
+void apx_connectionEventSpy_create(apx_connection_event_spy_t *self);
+void apx_connectionEventSpy_destroy(apx_connection_event_spy_t *self);
+void apx_connectionEventSpy_register(apx_connection_event_spy_t *self, apx_connection_base_t *connection);
 
-void apx_connectionEventSpy_headerAccepted(void *arg, apx_connectionBase_t *connection);
-void apx_connectionEventSpy_fileCreate(void *arg, apx_connectionBase_t *connection, const apx_fileInfo_t *fileInfo);
+void apx_connectionEventSpy_headerAccepted(void *arg, apx_connection_base_t *connection);
+void apx_connectionEventSpy_fileCreate(void *arg, apx_connection_base_t *connection, const apx_file_info_t *fileInfo);
 
 
 

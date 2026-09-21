@@ -87,7 +87,7 @@ CuSuite* testSuite_apx_serverConnection(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_acknowledge_is_sent_when_greeting_is_seen(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    uint8_t actual[9];
    uint8_t expected[9] = {
@@ -122,8 +122,8 @@ static void test_acknowledge_is_sent_when_greeting_is_seen(CuTest* tc)
 
 static void test_node_instance_is_created_when_definition_file_is_seen(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
-   apx_nodeManager_t* node_manager;
+   apx_server_test_connection_t* connection;
+   apx_node_manager_t* node_manager;
    adt_bytearray_t* packet;
    int const acknowledge_size = 9;
    char const* apx_text =
@@ -147,9 +147,9 @@ static void test_node_instance_is_created_when_definition_file_is_seen(CuTest* t
    CuAssertIntEquals(tc, 0, apx_nodeManager_length(node_manager));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_publish_remote_file(connection, APX_DEFINITION_ADDRESS_START, "TestNode1.apx", definition_size));
    CuAssertIntEquals(tc, 1, apx_nodeManager_length(node_manager));
-   apx_nodeInstance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
+   apx_node_instance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
    CuAssertPtrNotNull(tc, node_instance);
-   apx_nodeData_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
+   apx_node_data_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_definition_data_state(node_instance));
@@ -160,7 +160,7 @@ static void test_node_instance_is_created_when_definition_file_is_seen(CuTest* t
 
 static void test_file_open_request_is_sent_after_definition_file_is_seen(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    int const acknowledge_size = 9;
    int const open_request_size = 13;
@@ -215,7 +215,7 @@ static void test_file_open_request_is_sent_after_definition_file_is_seen(CuTest*
 
 static void test_file_open_request_is_sent_after_definition_file_is_seen_in_compatibility_mode(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    int const acknowledge_size = 9;
    int const open_request_size = 13;
@@ -271,9 +271,9 @@ static void test_file_open_request_is_sent_after_definition_file_is_seen_in_comp
 
 static void test_definition_is_parsed_after_file_has_been_sent(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
-   apx_nodeManager_t* node_manager;
+   apx_node_manager_t* node_manager;
    int const acknowledge_size = 9;
    int const open_request_size = 13;
 
@@ -304,8 +304,8 @@ static void test_definition_is_parsed_after_file_has_been_sent(CuTest* tc)
    apx_serverTestConnection_clear_log(connection);
    node_manager = apx_serverTestConnection_get_node_manager(connection);
    CuAssertPtrNotNull(tc, node_manager);
-   apx_nodeInstance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
-   apx_nodeData_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
+   apx_node_instance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
+   apx_node_data_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_definition_data_state(node_instance));
@@ -317,9 +317,9 @@ static void test_definition_is_parsed_after_file_has_been_sent(CuTest* tc)
 
 static void test_provide_port_data_is_requested_after_definition_file_has_been_parsed(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
-   apx_nodeManager_t* node_manager;
+   apx_node_manager_t* node_manager;
    int const acknowledge_size = 9;
    int const open_request_size = 13;
    int const provide_port_data_size = 2u;
@@ -375,8 +375,8 @@ static void test_provide_port_data_is_requested_after_definition_file_has_been_p
    apx_serverTestConnection_clear_log(connection);
    node_manager = apx_serverTestConnection_get_node_manager(connection);
    CuAssertPtrNotNull(tc, node_manager);
-   apx_nodeInstance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
-   apx_nodeData_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
+   apx_node_instance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
+   apx_node_data_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_definition_data_state(node_instance));
@@ -395,9 +395,9 @@ static void test_provide_port_data_is_requested_after_definition_file_has_been_p
 
 static void test_provide_port_data_is_received_after_request(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
-   apx_nodeManager_t* node_manager;
+   apx_node_manager_t* node_manager;
    int const acknowledge_size = 9;
    int const open_request_size = 13;
    int const provide_port_data_size = 2u;
@@ -433,8 +433,8 @@ static void test_provide_port_data_is_received_after_request(CuTest* tc)
    apx_serverTestConnection_clear_log(connection);
    node_manager = apx_serverTestConnection_get_node_manager(connection);
    CuAssertPtrNotNull(tc, node_manager);
-   apx_nodeInstance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
-   apx_nodeData_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
+   apx_node_instance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
+   apx_node_data_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_definition_data_state(node_instance));
@@ -455,9 +455,9 @@ static void test_provide_port_data_is_received_after_request(CuTest* tc)
 
 static void test_require_port_data_is_published_after_definition_has_been_parsed(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
-   apx_nodeManager_t* node_manager;
+   apx_node_manager_t* node_manager;
    int const acknowledge_size = 9;
    int const open_request_size = 13;
    int const require_port_data_size = 2u;
@@ -527,8 +527,8 @@ static void test_require_port_data_is_published_after_definition_has_been_parsed
    apx_serverTestConnection_clear_log(connection);
    node_manager = apx_serverTestConnection_get_node_manager(connection);
    CuAssertPtrNotNull(tc, node_manager);
-   apx_nodeInstance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
-   apx_nodeData_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
+   apx_node_instance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
+   apx_node_data_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_definition_data_state(node_instance));
@@ -547,9 +547,9 @@ static void test_require_port_data_is_published_after_definition_has_been_parsed
 
 static void test_require_port_data_is_sent_after_file_open_request_received(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
-   apx_nodeManager_t* node_manager;
+   apx_node_manager_t* node_manager;
    int const acknowledge_size = 9;
    int const open_request_size = 13;
    int const file_info_publish_size = 66;
@@ -596,8 +596,8 @@ static void test_require_port_data_is_sent_after_file_open_request_received(CuTe
    apx_serverTestConnection_clear_log(connection);
    node_manager = apx_serverTestConnection_get_node_manager(connection);
    CuAssertPtrNotNull(tc, node_manager);
-   apx_nodeInstance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
-   apx_nodeData_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
+   apx_node_instance_t* node_instance = apx_nodeManager_find(node_manager, "TestNode1");
+   apx_node_data_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
    CuAssertIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, apx_nodeInstance_get_definition_data_state(node_instance));
@@ -626,7 +626,7 @@ static void test_require_port_data_is_sent_after_file_open_request_received(CuTe
 
 static void test_remotefile_protocol_version_is_parsed_from_greeting_header(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    char const* greeting = "RMFP/1.1\n\n";
    connection = apx_serverTestConnection_new();
    CuAssertPtrNotNull(tc, connection);
@@ -639,7 +639,7 @@ static void test_remotefile_protocol_version_is_parsed_from_greeting_header(CuTe
 
 static void test_message_format_is_parsed_from_greeting_header(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    char const* greeting = "RMFP/1.1\n"
       "Message-Size: 16\n"
       "\n";
@@ -654,7 +654,7 @@ static void test_message_format_is_parsed_from_greeting_header(CuTest* tc)
 
 static void test_default_connection_type_is_parsed_from_greeting_header(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    char const* greeting = "RMFP/1.1\n"
       "Connection-Type: Default\n"
       "\n";
@@ -669,7 +669,7 @@ static void test_default_connection_type_is_parsed_from_greeting_header(CuTest* 
 
 static void test_monitor_connection_type_is_parsed_from_greeting_header(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    char const* greeting = "RMFP/1.1\n"
       "Connection-Type: Monitor\n"
       "\n";
@@ -684,7 +684,7 @@ static void test_monitor_connection_type_is_parsed_from_greeting_header(CuTest* 
 
 static void test_event_connection_type_is_parsed_from_greeting_header(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    char const* greeting = "RMFP/1.1\n"
       "Connection-Type: Event\n"
       "\n";
@@ -700,7 +700,7 @@ static void test_event_connection_type_is_parsed_from_greeting_header(CuTest* tc
 static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* tc)
 {
    uint32_t const connection_id = 0u;
-   apx_serverTestConnection_t* connection;
+   apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    uint8_t actual[13];
    uint8_t expected[13] = {
@@ -729,7 +729,7 @@ static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* 
    apx_serverTestConnection_set_tester_connection_type(connection, APX_CONNECTION_TYPE_MONITOR);
    apx_serverTestConnection_set_connection_id(connection, connection_id);
    CuAssertIntEquals(tc, 0u, apx_serverTestConnection_log_length(connection));
-   apx_connectionBase_start((apx_connectionBase_t*)connection);
+   apx_connectionBase_start((apx_connection_base_t*)connection);
    CuAssertUIntEquals(tc, APX_NO_ERROR, apx_serverTestConnection_send_greeting_header(connection));
    apx_serverTestConnection_run(connection);
    CuAssertIntEquals(tc, 1u, apx_serverTestConnection_log_length(connection));
@@ -744,9 +744,9 @@ static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* 
 
 static void test_msg_size_hint_returned_for_partial_message(CuTest* tc)
 {
-   apx_serverTestConnection_t* connection = apx_serverTestConnection_new();
+   apx_server_test_connection_t* connection = apx_serverTestConnection_new();
    CuAssertPtrNotNull(tc, connection);
-   apx_connectionBase_start((apx_connectionBase_t*)connection);
+   apx_connectionBase_start((apx_connection_base_t*)connection);
 
    /* Encode a message header declaring payload size of 1000 bytes, but only provide a partial buffer */
    uint8_t buffer[16];

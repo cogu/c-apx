@@ -62,7 +62,7 @@ CuSuite* testSuite_apx_nodeData(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_create_empty_node_data(CuTest *tc)
 {
-   apx_nodeData_t * node_data;
+   apx_node_data_t * node_data;
    node_data =  apx_nodeData_new();
    CuAssertPtrNotNull(tc, node_data);
    CuAssertUIntEquals(tc, 0u, apx_nodeData_definition_data_size(node_data));
@@ -73,7 +73,7 @@ static void test_create_empty_node_data(CuTest *tc)
 
 static void test_write_provide_port_data_uint8(CuTest* tc)
 {
-   apx_nodeData_t* node_data;
+   apx_node_data_t* node_data;
    uint8_t const init_data[UINT8_SIZE] = { 0x07u };
    uint8_t buf[sizeof(init_data)];
    uint8_t new_value[sizeof(init_data)] = { 0x03 };
@@ -91,7 +91,7 @@ static void test_write_provide_port_data_uint8(CuTest* tc)
 
 static void test_write_provide_port_data_uint16(CuTest* tc)
 {
-   apx_nodeData_t* node_data;
+   apx_node_data_t* node_data;
    uint8_t const init_data[UINT16_SIZE] = { 0xffu, 0xffu };
    uint8_t buf[sizeof(init_data)];
    uint8_t new_value[sizeof(init_data)] = { 0x34u, 0x12u };
@@ -111,7 +111,7 @@ static void test_write_provide_port_data_uint16(CuTest* tc)
 
 static void test_write_require_port_data_uint8(CuTest* tc)
 {
-   apx_nodeData_t* node_data;
+   apx_node_data_t* node_data;
    uint8_t const init_data[UINT8_SIZE] = { 0x07u };
    uint8_t buf[sizeof(init_data)];
    uint8_t new_value[sizeof(init_data)] = { 0x03 };
@@ -129,7 +129,7 @@ static void test_write_require_port_data_uint8(CuTest* tc)
 
 static void test_write_require_port_data_uint16(CuTest* tc)
 {
-   apx_nodeData_t* node_data;
+   apx_node_data_t* node_data;
    uint8_t const init_data[UINT16_SIZE] = { 0xffu, 0xffu };
    uint8_t buf[sizeof(init_data)];
    uint8_t new_value[sizeof(init_data)] = { 0x34u, 0x12u };
@@ -149,7 +149,7 @@ static void test_write_require_port_data_uint16(CuTest* tc)
 
 static void test_take_provide_port_data_snapshot(CuTest* tc)
 {
-   apx_nodeData_t* node_data;
+   apx_node_data_t* node_data;
    uint8_t const init_data[UINT32_SIZE] = { 0x78, 0x56, 0x34, 0x12 };
    uint8_t* snapshot;
    node_data = apx_nodeData_new();

@@ -165,7 +165,7 @@ static void test_unpack_uint8(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE] = { 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -196,7 +196,7 @@ static void test_unpack_uint8_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE*2] = { 0x03u, 0x07u };
    uint32_t const array_length = 2u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -225,7 +225,7 @@ static void test_unpack_uint8_array_with_too_small_buffer(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE * 2] = { 0x03u, 0x07u };
    uint32_t const array_length = 3;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, array_length, dynamic_size_type));
@@ -239,7 +239,7 @@ static void test_unpack_uint16(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT16_SIZE] = { 0u, 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -270,7 +270,7 @@ static void test_unpack_uint16_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT16_SIZE * 3] = { 0x00u, 0x00u, 0x34, 0x12, 0xff, 0xff };
    uint32_t const array_length = 3u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -303,7 +303,7 @@ static void test_unpack_uint32(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT32_SIZE] = { 0u, 0u, 0u, 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -334,7 +334,7 @@ static void test_unpack_uint32_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT32_SIZE * 3] = { 0x00u, 0x00u, 0x00u, 0x00u, 0x78, 0x56, 0x34, 0x12, 0xff, 0xff, 0xff, 0xff };
    uint32_t const array_length = 3u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -367,7 +367,7 @@ static void test_unpack_uint64(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT64_SIZE] = { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -400,7 +400,7 @@ static void test_unpack_uint64_array(CuTest* tc)
         0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
    uint32_t const array_length = 3u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -433,7 +433,7 @@ static void test_unpack_int8(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[INT8_SIZE] = { 0u, };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -474,7 +474,7 @@ static void test_unpack_int8_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE * 4] = { 0x80u, 0xff, 0x00, 0x7f };
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -511,7 +511,7 @@ static void test_unpack_int16(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[INT16_SIZE] = { 0u, 0u};
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -552,7 +552,7 @@ static void test_unpack_int16_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT16_SIZE * 4] = { 0x00u, 0x80u, 0xff, 0xff, 0x00, 0x00, 0xff, 0x7f };
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -589,7 +589,7 @@ static void test_unpack_int32(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[INT32_SIZE] = { 0u, 0u, 0u, 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -630,7 +630,7 @@ static void test_unpack_int32_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT32_SIZE * 4] = { 0x00u, 0x00u, 0x00u, 0x80u, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x7f };
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -667,7 +667,7 @@ static void test_unpack_int64(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[INT64_SIZE] = { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -711,7 +711,7 @@ static void test_unpack_int64_array(CuTest* tc)
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f };
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -748,7 +748,7 @@ static void test_unpack_char(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[CHAR_SIZE] = { 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -789,7 +789,7 @@ static void test_unpack_char_array_with_trailing_null(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[CHAR_SIZE * 8] = { 'a', 'b', 'c', 'd', '\0', '\0', '\0', '\0' };
    uint32_t const array_length = 8u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -810,7 +810,7 @@ static void test_unpack_filled_char_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[CHAR_SIZE * 8] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
    uint32_t const array_length = 8u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -832,7 +832,7 @@ static void test_unpack_dynamic_uint8_array_with_uint8_size(CuTest* tc)
    uint8_t const current_array_length = 2u;
    uint8_t buf[UINT8_SIZE + UINT8_SIZE * 4] = { current_array_length, 0x03, 0x7, 0, 0 };
    uint8_t const max_array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -862,7 +862,7 @@ static void test_unpack_dynamic_char_array_with_uint8_size(CuTest* tc)
    uint8_t const current_array_length = 3u;
    uint8_t buf[UINT8_SIZE + CHAR_SIZE * 3] = { current_array_length, 'a', 'b', 'c' };
    uint8_t const max_array_length = 10u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -884,7 +884,7 @@ static void test_unpack_dynamic_char_array_with_embedded_null(CuTest* tc)
    uint8_t const current_array_length = 5u;
    uint8_t buf[UINT8_SIZE + CHAR_SIZE * 5] = { current_array_length, 'a', 'b', '\0', 'c', 'd' };
    uint8_t const max_array_length = 10u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_sv_t* sv = NULL;
    adt_str_t* str = NULL;
    bool ok = false;
@@ -908,7 +908,7 @@ static void test_unpack_boolean(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[BOOL_SIZE] = { 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -939,7 +939,7 @@ static void test_unpack_boolean_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[BOOL_SIZE * 3] = { 0, 1, 0 };
    uint32_t const array_length = 3u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_av_t* av = NULL;
    dtl_sv_t* sv = NULL;
    bool ok = false;
@@ -972,7 +972,7 @@ static void test_unpack_byte(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[BYTE_SIZE] = { 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    adt_bytearray_t const* array = NULL;
    apx_vm_deserializer_create(&dsr);
@@ -1007,7 +1007,7 @@ static void test_unpack_byte_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[BYTE_SIZE * 4] = { 0u, 1u, 2u, 3u };
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    adt_bytearray_t const* array = NULL;
    apx_vm_deserializer_create(&dsr);
@@ -1032,7 +1032,7 @@ static void test_unpack_dynamic_byte_array_with_uint8_size(CuTest* tc)
    uint8_t buf[BYTE_SIZE * 10] = { 3u, 0xb, 0xc, 0xd, 0, 0, 0, 0, 0, 0 };
    uint32_t const max_array_length = 10u;
    uint32_t const current_array_length = 3u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_UINT8;
    dtl_sv_t* sv = NULL;
    adt_bytearray_t const* array = NULL;
    apx_vm_deserializer_create(&dsr);
@@ -1055,7 +1055,7 @@ static void test_unpack_record_u8_u8(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE + UINT8_SIZE] = { 3u, 7u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_hv_t* hv = NULL;
    dtl_sv_t* child_sv = NULL;
    bool ok = false;
@@ -1091,7 +1091,7 @@ static void test_unpack_record_u8array_u16(CuTest* tc)
    uint32_t const outer_array_length = 0u;
    uint32_t const inner_array_length1 = 3u;
    uint32_t const inner_array_length2 = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_hv_t* hv = NULL;
    dtl_av_t* child_av = NULL;
    dtl_sv_t* child_sv = NULL;
@@ -1141,7 +1141,7 @@ static void test_unpack_record_string_string_bool(CuTest* tc)
    uint32_t const array_length = 0u;
    uint32_t const str_max_length1 = 5u;
    uint32_t const str_max_length2 = 5u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_hv_t* hv = NULL;
    dtl_sv_t* child_sv = NULL;
    bool ok = false;
@@ -1187,9 +1187,9 @@ static void test_unpack_record_dynstring_u32array(CuTest* tc)
    uint8_t buf[UINT8_SIZE + CHAR_SIZE * 10 + UINT32_SIZE * 2] = { (uint8_t)current_string_length,
       'D', 'a', 't', 'a', '1', 0xee, 0xee, 0xee, 0xee, 0xee,
       0x0, 0x0, 0x0, 0x0, 0x78, 0x56, 0x34, 0x12 };
-   apx_sizeType_t const record_dynamic_size_type = APX_SIZE_TYPE_NONE;
-   apx_sizeType_t const str_dynamic_size_type = APX_SIZE_TYPE_UINT8;
-   apx_sizeType_t const u32_array_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const record_dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const str_dynamic_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const u32_array_size_type = APX_SIZE_TYPE_NONE;
    dtl_hv_t* hv = NULL;
    dtl_av_t* child_av = NULL;
    dtl_sv_t* child_sv = NULL;
@@ -1232,9 +1232,9 @@ static void test_unpack_record_bool_dynstring(CuTest* tc)
    uint32_t const max_string_length = 10u;
    uint8_t buf[BOOL_SIZE + UINT8_SIZE + CHAR_SIZE * 4] = { (uint8_t)current_string_length,
       (uint8_t)current_string_length, 'D', 'a', 't', 'a'};
-   apx_sizeType_t const record_size_type = APX_SIZE_TYPE_NONE;
-   apx_sizeType_t const first_field_size_type = APX_SIZE_TYPE_NONE;
-   apx_sizeType_t const second_field_size_type = APX_SIZE_TYPE_UINT8;
+   apx_size_type_t const record_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const first_field_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const second_field_size_type = APX_SIZE_TYPE_UINT8;
    dtl_hv_t* hv = NULL;
    dtl_sv_t* child_sv = NULL;
    bool ok = false;
@@ -1408,7 +1408,7 @@ static void test_unpack_uint8_queued_element(CuTest* tc)
    uint8_t buf[UINT8_SIZE + UINT8_SIZE * 5] = { 1, 0x12, 0xee, 0xee, 0xee, 0xee };
    uint32_t const queue_length = 5u;
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -1434,7 +1434,7 @@ static void test_unpack_uint8_multiple_queued_elements(CuTest* tc)
    uint8_t buf[UINT8_SIZE + UINT8_SIZE * 5] = { 3, 7u, 8u, 9u, 0xee, 0xee };
    uint32_t const queue_length = 5u;
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    dtl_sv_t* sv = NULL;
    bool ok = false;
    apx_vm_deserializer_create(&dsr);
@@ -1476,7 +1476,7 @@ static void test_range_check_uint8_scalar(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE] = { 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, array_length, dynamic_size_type));
@@ -1493,7 +1493,7 @@ static void test_range_check_uint8_with_out_of_range_value(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE] = { 8u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, array_length, dynamic_size_type));
@@ -1506,7 +1506,7 @@ static void test_range_check_uint8_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE * 2] = { 0x03u, 0x07u };
    uint32_t const array_length = 2u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, array_length, dynamic_size_type));
@@ -1520,7 +1520,7 @@ static void test_range_check_uint8_array_with_out_of_range_value(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE * 2] = { 0x03u, 0x08u };
    uint32_t const array_length = 2u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint8(&dsr, array_length, dynamic_size_type));
@@ -1533,7 +1533,7 @@ static void test_range_check_int8_scalar(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT8_SIZE] = { (uint8_t)-10 };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_int8(&dsr, array_length, dynamic_size_type));
@@ -1550,7 +1550,7 @@ static void test_range_check_int8_with_out_of_range_value(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[INT8_SIZE] = { (uint8_t)-11 };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_int8(&dsr, array_length, dynamic_size_type));
@@ -1567,7 +1567,7 @@ static void test_range_check_int8_array(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[INT8_SIZE * 4] = { (uint8_t)-10, (uint8_t)-1, 1, 10 };
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_int8(&dsr, array_length, dynamic_size_type));
@@ -1581,7 +1581,7 @@ static void test_range_check_int8_array_with_out_of_range_value(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[INT8_SIZE * 4] = { (uint8_t)-10, (uint8_t)-1, 1, 15 };
    uint32_t const array_length = 4u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_int8(&dsr, array_length, dynamic_size_type));
@@ -1596,7 +1596,7 @@ static void test_range_check_uint64_scalar(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT64_SIZE] = { 0xFF, 0xFF, 0xFF, 0u, 0u, 0u, 0u, 0u };
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_uint64(&dsr, array_length, dynamic_size_type));
@@ -1616,7 +1616,7 @@ static void test_range_check_int64_scalar(CuTest* tc)
    apx_vm_deserializer_t dsr;
    uint8_t buf[UINT64_SIZE] = { 0x18, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }; //-1000 encoded as little endian
    uint32_t const array_length = 0u;
-   apx_sizeType_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
+   apx_size_type_t const dynamic_size_type = APX_SIZE_TYPE_NONE;
    apx_vm_deserializer_create(&dsr);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_set_read_buffer(&dsr, &buf[0], sizeof(buf)));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_vm_deserializer_unpack_int64(&dsr, array_length, dynamic_size_type));

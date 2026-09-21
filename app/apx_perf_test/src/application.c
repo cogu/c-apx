@@ -30,9 +30,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void onClientConnected(void* arg, apx_clientConnection_t* client_connection);
-static void onClientDisconnected(void* arg, apx_clientConnection_t* client_connection);
-static void onRequirePortWrite(void *arg, apx_portInstance_t *port_instance, uint8_t const* data, apx_size_t size);
+static void onClientConnected(void* arg, apx_client_connection_t* client_connection);
+static void onClientDisconnected(void* arg, apx_client_connection_t* client_connection);
+static void onRequirePortWrite(void *arg, apx_port_instance_t *port_instance, uint8_t const* data, apx_size_t size);
 static double calculate_average_events_per_second(void);
 
 
@@ -40,14 +40,14 @@ static double calculate_average_events_per_second(void);
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static apx_client_t *m_client = NULL;
-static apx_nodeInstance_t *m_node_instance = NULL;
+static apx_node_instance_t *m_node_instance = NULL;
 static uint32_t m_event_count;
 static bool m_is_connected;
 static bool m_has_pending_start_cmd;
 static bool m_is_test_ongoing;
 static bool m_is_requester;
-static apx_portInstance_t *m_rqst_handle;
-static apx_portInstance_t *m_rsp_handle;
+static apx_port_instance_t *m_rqst_handle;
+static apx_port_instance_t *m_rsp_handle;
 static dtl_sv_t *m_sv;
 static uint32_t m_timer = 0u;
 static application_cfg_t m_cfg;
@@ -61,7 +61,7 @@ static application_cfg_t m_cfg;
 */
 bool application_init(const application_cfg_t *cfg)
 {
-   apx_clientEventListener_t handlerTable;
+   apx_client_event_listener_t handlerTable;
    apx_error_t result;
    memset(&handlerTable, 0, sizeof(handlerTable));
    handlerTable.connected = onClientConnected;
@@ -99,14 +99,14 @@ bool application_init(const application_cfg_t *cfg)
       {
          printf("Running in requester mode\n");
          m_is_requester = true;
-         m_rqst_handle = apx_nodeInstance_get_provide_port(m_node_instance, (apx_portId_t) 0u);
-         m_rsp_handle = apx_nodeInstance_get_require_port(m_node_instance, (apx_portId_t)0u);
+         m_rqst_handle = apx_nodeInstance_get_provide_port(m_node_instance, (apx_port_id_t) 0u);
+         m_rsp_handle = apx_nodeInstance_get_require_port(m_node_instance, (apx_port_id_t)0u);
       }
       else
       {
          printf("Running in responder mode\n");
-         m_rqst_handle = apx_nodeInstance_get_require_port(m_node_instance, (apx_portId_t)0u);
-         m_rsp_handle = apx_nodeInstance_get_provide_port(m_node_instance, (apx_portId_t)0u);
+         m_rqst_handle = apx_nodeInstance_get_require_port(m_node_instance, (apx_port_id_t)0u);
+         m_rsp_handle = apx_nodeInstance_get_provide_port(m_node_instance, (apx_port_id_t)0u);
       }
       assert(m_rqst_handle != NULL);
       assert(m_rsp_handle != NULL);
@@ -203,7 +203,7 @@ bool application_run(void)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void onClientConnected(void* arg, apx_clientConnection_t* client_connection)
+static void onClientConnected(void* arg, apx_client_connection_t* client_connection)
 {
    (void)arg;
    (void)client_connection;
@@ -211,7 +211,7 @@ static void onClientConnected(void* arg, apx_clientConnection_t* client_connecti
    printf("Connected to server\n");
 }
 
-static void onClientDisconnected(void* arg, apx_clientConnection_t* client_connection)
+static void onClientDisconnected(void* arg, apx_client_connection_t* client_connection)
 {
    (void)arg;
    (void)client_connection;
@@ -223,7 +223,7 @@ static void onClientDisconnected(void* arg, apx_clientConnection_t* client_conne
 }
 
 
-static void onRequirePortWrite(void* arg, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size)
+static void onRequirePortWrite(void* arg, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size)
 {
    (void)arg;
    (void)data;

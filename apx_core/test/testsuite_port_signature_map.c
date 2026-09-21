@@ -81,10 +81,10 @@ CuSuite* testSuite_apx_portSignatureMap(void)
 
 static void test_connecting_first_require_port_table(CuTest* tc)
 {
-   apx_nodeManager_t *nodeManager;
-   apx_nodeInstance_t *nodeInstance;
-   apx_portSignatureMap_t *map;
-   apx_portConnectorChangeTable_t *requirePortChanges;
+   apx_node_manager_t *nodeManager;
+   apx_node_instance_t *nodeInstance;
+   apx_port_signature_map_t *map;
+   apx_port_connector_change_table_t *requirePortChanges;
 
    nodeManager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, nodeManager);
@@ -108,15 +108,15 @@ static void test_connecting_first_require_port_table(CuTest* tc)
 
 static void test_connecting_provide_port_when_require_ports_are_waiting(CuTest* tc)
 {
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_nodeInstance_t *node_instance3;
-   apx_portSignatureMap_t *map;
-   apx_portConnectorChangeTable_t *require_port_changes1; //associated with node_instance1
-   apx_portConnectorChangeTable_t *require_port_changes2; //associated with node_instance2
-   apx_portConnectorChangeTable_t *provide_port_changes3; //associated with node_instance3
-   apx_portConnectorChangeEntry_t *entry;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_node_instance_t *node_instance3;
+   apx_port_signature_map_t *map;
+   apx_port_connector_change_table_t *require_port_changes1; //associated with node_instance1
+   apx_port_connector_change_table_t *require_port_changes2; //associated with node_instance2
+   apx_port_connector_change_table_t *provide_port_changes3; //associated with node_instance3
+   apx_port_connector_change_entry_t *entry;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, node_manager);
@@ -174,15 +174,15 @@ static void test_connecting_provide_port_when_require_ports_are_waiting(CuTest* 
 
 static void test_connecting_require_port_when_provide_port_is_available(CuTest* tc)
 {
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_nodeInstance_t *node_instance3;
-   apx_portSignatureMap_t *map;
-   apx_portConnectorChangeTable_t *require_port_changes1; //associated with node_instance1
-   apx_portConnectorChangeTable_t *require_port_changes2; //associated with node_instance2
-   apx_portConnectorChangeTable_t *provide_port_changes3; //associated with node_instance3
-   apx_portConnectorChangeEntry_t *entry;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_node_instance_t *node_instance3;
+   apx_port_signature_map_t *map;
+   apx_port_connector_change_table_t *require_port_changes1; //associated with node_instance1
+   apx_port_connector_change_table_t *require_port_changes2; //associated with node_instance2
+   apx_port_connector_change_table_t *provide_port_changes3; //associated with node_instance3
+   apx_port_connector_change_entry_t *entry;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, node_manager);
@@ -260,13 +260,13 @@ static void test_connecting_require_port_when_provide_port_is_available(CuTest* 
 
 static void test_disconnecting_require_port_when_connected_to_provide_port(CuTest* tc)
 {
-   apx_nodeManager_t *node_manager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance3;
-   apx_portSignatureMap_t *map;
-   apx_portConnectorChangeTable_t *require_port_changes1; //associated with node_instance1
-   apx_portConnectorChangeTable_t *provide_port_changes3; //associated with node_instance3
-   apx_portConnectorChangeEntry_t *entry;
+   apx_node_manager_t *node_manager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance3;
+   apx_port_signature_map_t *map;
+   apx_port_connector_change_table_t *require_port_changes1; //associated with node_instance1
+   apx_port_connector_change_table_t *provide_port_changes3; //associated with node_instance3
+   apx_port_connector_change_entry_t *entry;
 
    node_manager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, node_manager);
@@ -317,15 +317,15 @@ static void test_disconnecting_require_port_when_connected_to_provide_port(CuTes
 
 static void test_disconnecting_provide_port_when_connected_to_require_port(CuTest* tc)
 {
-   apx_nodeManager_t *nodeManager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_nodeInstance_t *node_instance3;
-   apx_portSignatureMap_t *map;
-   apx_portConnectorChangeTable_t *require_port_changes1; //associated with node_instance1
-   apx_portConnectorChangeTable_t *require_port_changes2; //associated with node_instance2
-   apx_portConnectorChangeTable_t *provide_port_changes3; //associated with node_instance3
-   apx_portConnectorChangeEntry_t *entry;
+   apx_node_manager_t *nodeManager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_node_instance_t *node_instance3;
+   apx_port_signature_map_t *map;
+   apx_port_connector_change_table_t *require_port_changes1; //associated with node_instance1
+   apx_port_connector_change_table_t *require_port_changes2; //associated with node_instance2
+   apx_port_connector_change_table_t *provide_port_changes3; //associated with node_instance3
+   apx_port_connector_change_entry_t *entry;
 
    nodeManager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, nodeManager);
@@ -393,11 +393,11 @@ static void test_disconnecting_provide_port_when_connected_to_require_port(CuTes
 
 static void test_disconnecting_provide_port_when_not_connected_to_anything(CuTest* tc)
 {
-   apx_nodeManager_t *nodeManager;
-   apx_nodeInstance_t *node_instance1;
-   apx_nodeInstance_t *node_instance2;
-   apx_nodeInstance_t *node_instance3;
-   apx_portSignatureMap_t *map;
+   apx_node_manager_t *nodeManager;
+   apx_node_instance_t *node_instance1;
+   apx_node_instance_t *node_instance2;
+   apx_node_instance_t *node_instance3;
+   apx_port_signature_map_t *map;
 
    nodeManager = apx_nodeManager_new(APX_SERVER_MODE);
    CuAssertPtrNotNull(tc, nodeManager);

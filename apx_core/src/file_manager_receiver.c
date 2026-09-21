@@ -27,9 +27,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t start_new_reception(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
-static apx_error_t continue_reception(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
-static void process_more_bit(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, bool more_bit);
+static apx_error_t start_new_reception(apx_file_manager_receiver_t* self, apx_file_manager_reception_result_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
+static apx_error_t continue_reception(apx_file_manager_receiver_t* self, apx_file_manager_reception_result_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
+static void process_more_bit(apx_file_manager_receiver_t* self, apx_file_manager_reception_result_t* result, bool more_bit);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -43,7 +43,7 @@ static void process_more_bit(apx_fileManagerReceiver_t* self, apx_fileManagerRec
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_fileManagerReceiver_create(apx_fileManagerReceiver_t* self)
+apx_error_t apx_fileManagerReceiver_create(apx_file_manager_receiver_t* self)
 {
    if (self != NULL)
    {
@@ -56,7 +56,7 @@ apx_error_t apx_fileManagerReceiver_create(apx_fileManagerReceiver_t* self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_fileManagerReceiver_destroy(apx_fileManagerReceiver_t* self)
+void apx_fileManagerReceiver_destroy(apx_file_manager_receiver_t* self)
 {
    if (self != NULL)
    {
@@ -67,7 +67,7 @@ void apx_fileManagerReceiver_destroy(apx_fileManagerReceiver_t* self)
    }
 }
 
-void apx_fileManagerReceiver_reset(apx_fileManagerReceiver_t* self)
+void apx_fileManagerReceiver_reset(apx_file_manager_receiver_t* self)
 {
    if (self != NULL)
    {
@@ -76,7 +76,7 @@ void apx_fileManagerReceiver_reset(apx_fileManagerReceiver_t* self)
    }
 }
 
-apx_error_t apx_fileManagerReceiver_reserve(apx_fileManagerReceiver_t* self, apx_size_t size)
+apx_error_t apx_fileManagerReceiver_reserve(apx_file_manager_receiver_t* self, apx_size_t size)
 {
    if ( (self != NULL) && (size > 0u) )
    {
@@ -104,7 +104,7 @@ apx_error_t apx_fileManagerReceiver_reserve(apx_fileManagerReceiver_t* self, apx
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_size_t apx_fileManagerReceiver_buffer_size(apx_fileManagerReceiver_t const* self)
+apx_size_t apx_fileManagerReceiver_buffer_size(apx_file_manager_receiver_t const* self)
 {
    if (self != NULL)
    {
@@ -113,7 +113,7 @@ apx_size_t apx_fileManagerReceiver_buffer_size(apx_fileManagerReceiver_t const* 
    return 0u;
 }
 
-apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
+apx_error_t apx_fileManagerReceiver_write(apx_file_manager_receiver_t* self, apx_file_manager_reception_result_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
 {
    if ( (self != NULL) && (result != NULL) && (data != NULL) && (address < RMF_INVALID_ADDRESS) )
    {
@@ -147,7 +147,7 @@ apx_error_t apx_fileManagerReceiver_write(apx_fileManagerReceiver_t* self, apx_f
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static apx_error_t start_new_reception(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
+static apx_error_t start_new_reception(apx_file_manager_receiver_t* self, apx_file_manager_reception_result_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
 {
    assert(data != NULL);
    apx_error_t retval = APX_NO_ERROR;
@@ -173,7 +173,7 @@ static apx_error_t start_new_reception(apx_fileManagerReceiver_t* self, apx_file
    return retval;
 }
 
-static apx_error_t continue_reception(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
+static apx_error_t continue_reception(apx_file_manager_receiver_t* self, apx_file_manager_reception_result_t* result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit)
 {
    apx_error_t retval = APX_NO_ERROR;
    assert( (self->start_address != RMF_INVALID_ADDRESS) && (data != NULL));
@@ -206,7 +206,7 @@ static apx_error_t continue_reception(apx_fileManagerReceiver_t* self, apx_fileM
    return retval;
 }
 
-static void process_more_bit(apx_fileManagerReceiver_t* self, apx_fileManagerReceptionResult_t* result, bool more_bit)
+static void process_more_bit(apx_file_manager_receiver_t* self, apx_file_manager_reception_result_t* result, bool more_bit)
 {
    if (!more_bit)
    {

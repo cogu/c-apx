@@ -40,8 +40,8 @@ typedef struct apx_parse_state_tag
    int32_t minor_version;
    uint32_t lineno;
    apx_node_t* node; //Strong reference
-   apx_dataElement_t* data_element; //Weak reference
-   apx_dataType_t* data_type; //Weak reference
+   apx_data_element_t* data_element; //Weak reference
+   apx_data_type_t* data_type; //Weak reference
    apx_port_t* port; //Weak reference
 } apx_parse_state_t;
 
@@ -51,8 +51,8 @@ typedef struct apx_parser_tag
    apx_error_t last_error;
    int32_t last_error_line;
    apx_parse_state_t state;
-   apx_attributeParser_t attribute_parser;
-   apx_signatureParser_t signature_parser;
+   apx_attribute_parser_t attribute_parser;
+   apx_signature_parser_t signature_parser;
 } apx_parser_t;
 
 //////////////////////////////////////////////////////////////////////////////

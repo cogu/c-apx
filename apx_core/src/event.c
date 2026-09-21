@@ -34,7 +34,7 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_event_pack_log_write(apx_event_t* event, apx_logLevel_t level, char* label, adt_str_t* msg)
+void apx_event_pack_log_write(apx_event_t* event, apx_log_level_t level, char* label, adt_str_t* msg)
 {
    if ((event != NULL) && (label != NULL) && (msg != NULL))
    {
@@ -45,17 +45,17 @@ void apx_event_pack_log_write(apx_event_t* event, apx_logLevel_t level, char* la
    }
 }
 
-void apx_event_unpack_log_write(apx_event_t const* event, apx_logLevel_t* level, char** label, adt_str_t** msg)
+void apx_event_unpack_log_write(apx_event_t const* event, apx_log_level_t* level, char** label, adt_str_t** msg)
 {
    if ( (event != NULL) && (level != NULL) && (label != NULL) && (msg != NULL))
    {
-      *level = (apx_logLevel_t)event->data1;
+      *level = (apx_log_level_t)event->data1;
       *label = (char*)event->data3;
       *msg = (adt_str_t*)event->data4;
    }
 }
 
-void apx_event_pack_protocol_header_accepted(apx_event_t* event, struct apx_connectionBase_tag* connection)
+void apx_event_pack_protocol_header_accepted(apx_event_t* event, struct apx_connection_base_tag* connection)
 {
    if (event != NULL)
    {
@@ -65,15 +65,15 @@ void apx_event_pack_protocol_header_accepted(apx_event_t* event, struct apx_conn
    }
 }
 
-void apx_event_unpack_protocol_header_accepted(apx_event_t const* event, struct apx_connectionBase_tag** connection)
+void apx_event_unpack_protocol_header_accepted(apx_event_t const* event, struct apx_connection_base_tag** connection)
 {
    if ((event != NULL) && (connection != NULL))
    {
-      *connection = (apx_connectionBase_t*)event->data3;
+      *connection = (apx_connection_base_t*)event->data3;
    }
 }
 
-void apx_event_pack_remote_file_published(apx_event_t* event, struct apx_connectionBase_tag* connection, struct rmf_fileInfo_tag* file_info)
+void apx_event_pack_remote_file_published(apx_event_t* event, struct apx_connection_base_tag* connection, struct rmf_file_info_tag* file_info)
 {
    if (event != NULL)
    {
@@ -84,23 +84,23 @@ void apx_event_pack_remote_file_published(apx_event_t* event, struct apx_connect
    }
 }
 
-void apx_event_unpack_remote_file_published(apx_event_t const* event, struct apx_connectionBase_tag** connection, struct rmf_fileInfo_tag** file_info)
+void apx_event_unpack_remote_file_published(apx_event_t const* event, struct apx_connection_base_tag** connection, struct rmf_file_info_tag** file_info)
 {
    if ((event != NULL) && (connection != NULL) && (file_info != NULL))
    {
-      *connection = (apx_connectionBase_t*)event->data3;
-      *file_info = (rmf_fileInfo_t*)event->data4;
+      *connection = (apx_connection_base_t*)event->data3;
+      *file_info = (rmf_file_info_t*)event->data4;
    }
 }
 
 void apx_event_destroy(apx_event_t* event, soa_t* allocator)
 {
    if (event != NULL)
-   {      
+   {
       size_t label_size;
       char* label;
-      adt_str_t* str;      
-      rmf_fileInfo_t* file_info = NULL;      
+      adt_str_t* str;
+      rmf_file_info_t* file_info = NULL;
       switch (event->ev_type)
       {
       case APX_EVENT_LOG_WRITE:
@@ -117,7 +117,7 @@ void apx_event_destroy(apx_event_t* event, soa_t* allocator)
          //Weak references only
          break;
       case APX_EVENT_REMOTE_FILE_PUBLISHED:
-         file_info = (rmf_fileInfo_t*)event->data4;
+         file_info = (rmf_file_info_t*)event->data4;
          rmf_fileInfo_delete(file_info);
          break;
       default:

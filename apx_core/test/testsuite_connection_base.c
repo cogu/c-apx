@@ -54,7 +54,7 @@ CuSuite* testSuite_apx_connectionBase(void)
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_connectionBase_alloc(CuTest* tc)
 {
-   apx_connectionBase_t connection;
+   apx_connection_base_t connection;
    uint8_t *ptr;
    size_t size;
    int i;

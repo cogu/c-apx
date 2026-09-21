@@ -17,15 +17,15 @@
 #include "apx/types.h"
 
 //forward declarations
-struct apx_serverConnection_tag;
-struct apx_clientConnection_tag;
-struct apx_portConnectionTable_tag;
-struct rmf_fileInfo_tag;
-struct apx_fileInfo_tag;
+struct apx_server_connection_tag;
+struct apx_client_connection_tag;
+struct apx_port_connection_table_tag;
+struct rmf_file_info_tag;
+struct apx_file_info_tag;
 struct apx_file_tag;
-struct apx_connectionBase_tag;
-struct apx_nodeInstance_tag;
-struct apx_portInstance_tag;
+struct apx_connection_base_tag;
+struct apx_node_instance_tag;
+struct apx_port_instance_tag;
 
 
 
@@ -34,53 +34,53 @@ struct apx_portInstance_tag;
 //////////////////////////////////////////////////////////////////////////////
 
 //Client/Server typedefs
-typedef void (apx_clientConnectionEventFunc_t)(void* arg, struct apx_clientConnection_tag* connection);
-typedef void (apx_serverConnectionEventFunc_t)(void* arg, struct apx_serverConnection_tag* connection);
-typedef void (apx_serverLogWriteEventFunc_t)(void* arg, apx_logLevel_t level, const char* label, const char* msg);
+typedef void (apx_client_connection_event_func_t)(void* arg, struct apx_client_connection_tag* connection);
+typedef void (apx_server_connection_event_func_t)(void* arg, struct apx_server_connection_tag* connection);
+typedef void (apx_server_log_write_event_func_t)(void* arg, apx_log_level_t level, const char* label, const char* msg);
 
 //Connection typedefs
-typedef void (apx_protocolHeaderAcceptedFunc_t)(void* arg, struct apx_connectionBase_tag* connection);
-typedef void (apx_portDataWriteFunc_t)(void* arg, struct apx_portInstance_tag* port_instance, uint8_t const* data, apx_size_t size);
-typedef void (apx_fileEventFunc_t)(void* arg, struct apx_connectionBase_tag* connection, const struct rmf_fileInfo_tag* file_info);
+typedef void (apx_protocol_header_accepted_func_t)(void* arg, struct apx_connection_base_tag* connection);
+typedef void (apx_port_data_write_func_t)(void* arg, struct apx_port_instance_tag* port_instance, uint8_t const* data, apx_size_t size);
+typedef void (apx_file_event_func_t)(void* arg, struct apx_connection_base_tag* connection, const struct rmf_file_info_tag* file_info);
 
-typedef struct apx_clientEventListener_tag
+typedef struct apx_client_event_listener_tag
 {
    void *arg;
-   apx_clientConnectionEventFunc_t* connected;
-   apx_clientConnectionEventFunc_t* disconnected;
-   apx_portDataWriteFunc_t* require_port_write;
-} apx_clientEventListener_t;
+   apx_client_connection_event_func_t* connected;
+   apx_client_connection_event_func_t* disconnected;
+   apx_port_data_write_func_t* require_port_write;
+} apx_client_event_listener_t;
 
-typedef struct apx_serverEventListener_tag
+typedef struct apx_server_event_listener_tag
 {
    void *arg;
-   apx_serverConnectionEventFunc_t* new_connection;
-   apx_serverConnectionEventFunc_t* connection_closed;
-   apx_serverLogWriteEventFunc_t* server_write_log;
-} apx_serverEventListener_t;
+   apx_server_connection_event_func_t* new_connection;
+   apx_server_connection_event_func_t* connection_closed;
+   apx_server_log_write_event_func_t* server_write_log;
+} apx_server_event_listener_t;
 
-typedef struct apx_serverConnectionEventListener_tag
+typedef struct apx_server_connection_event_listener_tag
 {
    void *arg;
-   apx_protocolHeaderAcceptedFunc_t* protocol_header_accepted;
-   apx_fileEventFunc_t* file_published;
-   apx_fileEventFunc_t* file_revoked;
-} apx_serverConnectionEventListener_t;
+   apx_protocol_header_accepted_func_t* protocol_header_accepted;
+   apx_file_event_func_t* file_published;
+   apx_file_event_func_t* file_revoked;
+} apx_server_connection_event_listener_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_clientEventListener_t *apx_clientEventListener_clone(apx_clientEventListener_t *other);
-void apx_clientEventListener_delete(apx_clientEventListener_t *self);
+apx_client_event_listener_t *apx_clientEventListener_clone(apx_client_event_listener_t *other);
+void apx_clientEventListener_delete(apx_client_event_listener_t *self);
 void apx_clientEventListener_vdelete(void *arg);
 
-apx_serverEventListener_t *apx_serverEventListener_clone(apx_serverEventListener_t *other);
-void apx_serverEventListener_delete(apx_serverEventListener_t *self);
+apx_server_event_listener_t *apx_serverEventListener_clone(apx_server_event_listener_t *other);
+void apx_serverEventListener_delete(apx_server_event_listener_t *self);
 void apx_serverEventListener_vdelete(void *arg);
 
-apx_serverConnectionEventListener_t *apx_connectionEventListener_clone(apx_serverConnectionEventListener_t *other);
-void apx_connectionEventListener_delete(apx_serverConnectionEventListener_t *self);
+apx_server_connection_event_listener_t *apx_connectionEventListener_clone(apx_server_connection_event_listener_t *other);
+void apx_connectionEventListener_delete(apx_server_connection_event_listener_t *self);
 void apx_connectionEventListener_vdelete(void *arg);
 
 

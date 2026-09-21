@@ -21,18 +21,18 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-typedef uint8_t rmf_fileType_t;
-#define RMF_FILE_TYPE_FIXED     ((rmf_fileType_t) 0u)
-#define RMF_FILE_TYPE_DYNAMIC8  ((rmf_fileType_t) 1u)
-#define RMF_FILE_TYPE_DYNAMIC16 ((rmf_fileType_t) 2u)
-#define RMF_FILE_TYPE_DYNAMIC32 ((rmf_fileType_t) 3u)
-#define RMF_FILE_TYPE_DEVICE    ((rmf_fileType_t) 4u)
-#define RMF_FILE_TYPE_STREAM    ((rmf_fileType_t) 5u)
+typedef uint8_t rmf_file_type_t;
+#define RMF_FILE_TYPE_FIXED     ((rmf_file_type_t) 0u)
+#define RMF_FILE_TYPE_DYNAMIC8  ((rmf_file_type_t) 1u)
+#define RMF_FILE_TYPE_DYNAMIC16 ((rmf_file_type_t) 2u)
+#define RMF_FILE_TYPE_DYNAMIC32 ((rmf_file_type_t) 3u)
+#define RMF_FILE_TYPE_DEVICE    ((rmf_file_type_t) 4u)
+#define RMF_FILE_TYPE_STREAM    ((rmf_file_type_t) 5u)
 
-typedef uint8_t rmf_digestType_t;
-#define RMF_DIGEST_TYPE_NONE   ((rmf_digestType_t) 0u)
-#define RMF_DIGEST_TYPE_SHA1   ((rmf_digestType_t) 1u)
-#define RMF_DIGEST_TYPE_SHA256 ((rmf_digestType_t) 2u)
+typedef uint8_t rmf_digest_type_t;
+#define RMF_DIGEST_TYPE_NONE   ((rmf_digest_type_t) 0u)
+#define RMF_DIGEST_TYPE_SHA1   ((rmf_digest_type_t) 1u)
+#define RMF_DIGEST_TYPE_SHA256 ((rmf_digest_type_t) 2u)
 
 #define RMF_REMOTE_ADDRESS_BIT    ((uint32_t) 0x80000000) //This is overlayed with RMF_HIGH_ADDR_BIT
 #define RMF_INVALID_ADDRESS       ((uint32_t) 0x7FFFFFFF) //This is outside the valid address region of 30 bits
@@ -102,13 +102,13 @@ typedef uint8_t rmf_digestType_t;
 #define RMF_MESSAGE_SIZE_HDR "Message-Size"
 #define RMF_CONNECTION_TYPE_MONITOR_HDR "Connection-Type"
 
-typedef uint8_t rmf_versionId_t;
+typedef uint8_t rmf_version_id_t;
 //RMF protocol version id to version numbers
 // VERSION ID 1: RMFP/1.0
 // VERSION_ID 2: RMFP/1.1
-#define RMF_PROTOCOL_VERSION_ID_NONE ((rmf_versionId_t)0u)
-#define RMF_PROTOCOL_VERSION_ID_1_0 ((rmf_versionId_t)1u)
-#define RMF_PROTOCOL_VERSION_ID_1_1 ((rmf_versionId_t)2u)
+#define RMF_PROTOCOL_VERSION_ID_NONE ((rmf_version_id_t)0u)
+#define RMF_PROTOCOL_VERSION_ID_1_0 ((rmf_version_id_t)1u)
+#define RMF_PROTOCOL_VERSION_ID_1_1 ((rmf_version_id_t)2u)
 
 apx_size_t rmf_needed_encoding_size(uint32_t address);
 apx_size_t rmf_address_encode(uint8_t* buf, apx_size_t buf_size, uint32_t address, bool more_bit);

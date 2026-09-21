@@ -28,13 +28,13 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 /* Keep in case it's needed later
-typedef struct apx_textLogBaseVTable_tag
+typedef struct apx_text_log_base_vtable_tag
 {
 
-} apx_textLogBaseVTable_t;
+} apx_text_log_base_vtable_t;
 */
 
-typedef struct apx_textLogBase_tag
+typedef struct apx_text_log_base_tag
 {
    bool fileEnabled;
    bool syslogEnabled;
@@ -42,21 +42,21 @@ typedef struct apx_textLogBase_tag
    FILE *file; //this can point to stdout if configured
    MUTEX_T mutex;
    char lineEnding[2+1]; //"\n" or "\r\n"
-} apx_textLogBase_t;
+} apx_text_log_base_t;
 
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-//void apx_textLogVTable_init(apx_connectionBaseVTable_t *self, void (*destructor)(void *arg)); //Keep in case it's needed later
-void apx_textLogBase_create(apx_textLogBase_t *self);
-void apx_textLogBase_destroy(apx_textLogBase_t *self);
-void apx_textLogBase_enableSysLog(apx_textLogBase_t *self, const char *label);
-void apx_textLogBase_enableStdout(apx_textLogBase_t *self);
-void apx_textLogBase_enableFile(apx_textLogBase_t *self, const char *path);
-void apx_textLogBase_closeAll(apx_textLogBase_t *self);
-void apx_textLogBase_print(apx_textLogBase_t *self, const char *msg);
-void apx_textLogBase_printf(apx_textLogBase_t *self, const char *format, ...);
+//void apx_textLogVTable_init(apx_connection_base_vtable_t *self, void (*destructor)(void *arg)); //Keep in case it's needed later
+void apx_textLogBase_create(apx_text_log_base_t *self);
+void apx_textLogBase_destroy(apx_text_log_base_t *self);
+void apx_textLogBase_enableSysLog(apx_text_log_base_t *self, const char *label);
+void apx_textLogBase_enableStdout(apx_text_log_base_t *self);
+void apx_textLogBase_enableFile(apx_text_log_base_t *self, const char *path);
+void apx_textLogBase_closeAll(apx_text_log_base_t *self);
+void apx_textLogBase_print(apx_text_log_base_t *self, const char *msg);
+void apx_textLogBase_printf(apx_text_log_base_t *self, const char *format, ...);
 
 #endif //APX_TEXT_LOG_BASE_H

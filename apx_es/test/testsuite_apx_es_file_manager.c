@@ -49,7 +49,7 @@ typedef struct apx_file_container_tag
    apx_file_t definitionFile;
    apx_file_t outDataFile;
    apx_file_t inDataFile;
-}apx_fileContainer_t;
+}apx_file_container_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -74,8 +74,8 @@ static void testHelper_mockAutoReset(void);
 static int32_t testHelper_mockNumMessages(void);
 static int32_t testHelper_mockGetMessage(void);
 static int32_t testHelper_mockGetWriteAvail(void);
-static void testHelper_setTransmitHandler(apx_es_fileManager_t* fileManager);
-static void testHelper_attachNode(apx_es_fileManager_t *fileManager, apx_nodeData_t *nodeData, apx_fileContainer_t *fileContainer);
+static void testHelper_setTransmitHandler(apx_es_file_manager_t* fileManager);
+static void testHelper_attachNode(apx_es_file_manager_t *fileManager, apx_node_data_t *nodeData, apx_file_container_t *fileContainer);
 static int32_t testHelper_serialize_FileOpen(CuTest* tc, uint32_t fileAddress);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -125,7 +125,7 @@ CuSuite* testsuite_apx_es_filemanager(void)
 static void test_apx_es_fileManager_create(CuTest* tc)
 {
    int8_t rc;
-   apx_es_fileManager_t fileManager;
+   apx_es_file_manager_t fileManager;
    uint8_t messageQueueBuf[APX_FILE_MANAGER_MSG_QUEUE_SIZE];
    rc = apx_es_fileManager_create(&fileManager, messageQueueBuf, APX_FILE_MANAGER_MAX_NUM_MESSAGES, 0, 0);
    CuAssertIntEquals(tc, 0, rc);
@@ -149,11 +149,11 @@ static void test_apx_es_fileManager_create(CuTest* tc)
 
 static void test_apx_es_fileManager_sendFileInfoWhenConnected(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
-   apx_nodeData_t *nodeData;
-   apx_fileContainer_t fileContainer;
+   apx_es_file_manager_t fileManager;
+   apx_node_data_t *nodeData;
+   apx_file_container_t fileContainer;
    rmf_msg_t msg;
-   rmf_fileInfo_t fileInfo;
+   rmf_file_info_t fileInfo;
    testHelper_mockInit();
    apx_es_fileManager_create(&fileManager, m_messageQueueBuf, APX_FILE_MANAGER_MAX_NUM_MESSAGES, 0, 0);
    ApxNode_Init_ButtonStatus();
@@ -190,9 +190,9 @@ static void test_apx_es_fileManager_sendFileInfoWhenConnected(CuTest* tc)
  */
 static void test_apx_es_fileManager_sendDefinitionInOneCycle(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
-   apx_nodeData_t *nodeData;
-   apx_fileContainer_t fileContainer;
+   apx_es_file_manager_t fileManager;
+   apx_node_data_t *nodeData;
+   apx_file_container_t fileContainer;
    rmf_msg_t msg;
    int32_t msgLen;
    uint32_t definitionFileAddress = 0x4000000u;
@@ -248,9 +248,9 @@ static void test_apx_es_fileManager_sendDefinitionInOneCycle(CuTest* tc)
  */
 static void test_apx_es_fileManager_sendDefinitionOverTwoCycles(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
-   apx_nodeData_t *nodeData;
-   apx_fileContainer_t fileContainer;
+   apx_es_file_manager_t fileManager;
+   apx_node_data_t *nodeData;
+   apx_file_container_t fileContainer;
    rmf_msg_t msg;
    int i;
    int32_t msgLen;
@@ -347,11 +347,11 @@ static void test_apx_es_fileManager_sendDefinitionOverTwoCycles(CuTest* tc)
 static void test_apx_es_fileManager_triggerFileUpdate_unaligned(CuTest* tc)
 {
 
-   apx_es_fileManager_t fileManager;
+   apx_es_file_manager_t fileManager;
    uint8_t messageQueueBuf[APX_FILE_MANAGER_MSG_QUEUE_SIZE];
 
    apx_file_t file;
-   apx_nodeData_t node;
+   apx_node_data_t node;
    uint8_t outPortData[OUTPUT_DATA_SIZE];
    apx_msg_t topOfQueue;
    apx_msg_t prevQueued;
@@ -411,11 +411,11 @@ static void test_apx_es_fileManager_triggerFileUpdate_unaligned(CuTest* tc)
 
 static void test_apx_es_fileManager_triggerFileUpdate_aligned(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
+   apx_es_file_manager_t fileManager;
    uint8_t messageQueueBuf[APX_FILE_MANAGER_MSG_QUEUE_SIZE];
 
    apx_file_t file;
-   apx_nodeData_t node;
+   apx_node_data_t node;
    uint8_t outPortData[OUTPUT_DATA_SIZE];
    const uint8_t one_byte_write = 1u;
    uint32_t offset = 0;
@@ -460,12 +460,12 @@ static void test_apx_es_fileManager_triggerFileUpdate_aligned(CuTest* tc)
 
 static void test_apx_es_fileManager_triggerFileUpdate_aligned_large(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
+   apx_es_file_manager_t fileManager;
    uint8_t messageQueueBuf[APX_FILE_MANAGER_MSG_QUEUE_SIZE];
    apx_msg_t topOfQueue;
    apx_msg_t prevQueued;
    apx_file_t file;
-   apx_nodeData_t node;
+   apx_node_data_t node;
    uint8_t outPortData[OUTPUT_DATA_SIZE];
    const uint8_t one_byte_write = 1u;
    const uint8_t small_write_size = APX_ES_FILE_WRITE_FRAGMENTATION_THRESHOLD-RMF_HIGH_ADDRESS_SIZE-one_byte_write;
@@ -534,16 +534,16 @@ static void test_apx_es_fileManager_triggerFileUpdate_aligned_large(CuTest* tc)
 
 static void test_apx_es_fileManager_openRequestedFiles(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
-   apx_nodeData_t *nodeData;
-   apx_fileContainer_t fileContainer;
+   apx_es_file_manager_t fileManager;
+   apx_node_data_t *nodeData;
+   apx_file_container_t fileContainer;
    uint8_t msgBuf[1024];
    int32_t bufRemain = (int32_t) sizeof(msgBuf);
    int32_t msgLen;
    int32_t bytesUsed;
    uint32_t inDataFileAddress = 0x0u;
-   rmf_fileInfo_t fileInfo;
-   rmf_cmdOpenFile_t openFile;
+   rmf_file_info_t fileInfo;
+   rmf_cmd_open_file_t openFile;
    rmf_msg_t msg;
 
    testHelper_mockInit();
@@ -583,16 +583,16 @@ static void test_apx_es_fileManager_openRequestedFiles(CuTest* tc)
 
 static void test_node_isConnected(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
-   apx_nodeData_t *nodeData;
-   apx_fileContainer_t fileContainer;
+   apx_es_file_manager_t fileManager;
+   apx_node_data_t *nodeData;
+   apx_file_container_t fileContainer;
    uint8_t msgBuf[1024];
    int32_t bufRemain = (int32_t) sizeof(msgBuf);
    int32_t msgLen;
    int32_t bytesUsed;
    uint32_t inDataFileAddress = 0x0u;
-   rmf_fileInfo_t fileInfo;
-   rmf_cmdOpenFile_t openFile;
+   rmf_file_info_t fileInfo;
+   rmf_cmd_open_file_t openFile;
    rmf_msg_t msg;
 
    testHelper_mockInit();
@@ -643,16 +643,16 @@ static void test_node_isConnected(CuTest* tc)
 
 static void test_node_writeNormal(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
-   apx_nodeData_t *nodeData;
-   apx_fileContainer_t fileContainer;
+   apx_es_file_manager_t fileManager;
+   apx_node_data_t *nodeData;
+   apx_file_container_t fileContainer;
    uint8_t msgBuf[1024];
    int32_t bufRemain = (int32_t) sizeof(msgBuf);
    int32_t msgLen;
    int32_t bytesUsed;
    uint32_t inDataFileAddress = 0x0u;
-   rmf_fileInfo_t fileInfo;
-   rmf_cmdOpenFile_t openFile;
+   rmf_file_info_t fileInfo;
+   rmf_cmd_open_file_t openFile;
    rmf_msg_t msg;
    PushButtonStatus_T button;
 
@@ -696,16 +696,16 @@ static void test_node_writeNormal(CuTest* tc)
 
 static void test_node_writeDirect(CuTest* tc)
 {
-   apx_es_fileManager_t fileManager;
-   apx_nodeData_t *nodeData;
-   apx_fileContainer_t fileContainer;
+   apx_es_file_manager_t fileManager;
+   apx_node_data_t *nodeData;
+   apx_file_container_t fileContainer;
    uint8_t msgBuf[1024];
    int32_t bufRemain = (int32_t) sizeof(msgBuf);
    int32_t msgLen;
    int32_t bytesUsed;
    uint32_t inDataFileAddress = 0x0u;
-   rmf_fileInfo_t fileInfo;
-   rmf_cmdOpenFile_t openFile;
+   rmf_file_info_t fileInfo;
+   rmf_cmd_open_file_t openFile;
    rmf_msg_t msg;
    PushButtonStatus_T button;
 
@@ -796,9 +796,9 @@ static int32_t testHelper_mockGetWriteAvail(void)
    return mockTransmitter_writeAvail(&m_mockTransmitter);
 }
 
-static void testHelper_setTransmitHandler(apx_es_fileManager_t* fileManager)
+static void testHelper_setTransmitHandler(apx_es_file_manager_t* fileManager)
 {
-   apx_transmitHandler_t transmitHandler;
+   apx_transmit_handler_t transmitHandler;
    memset(&transmitHandler, 0, sizeof(transmitHandler));
    transmitHandler.getMsgBuffer = testStub_getMsgBuffer;
    transmitHandler.sendMsg = testStub_sendMsg;
@@ -806,9 +806,9 @@ static void testHelper_setTransmitHandler(apx_es_fileManager_t* fileManager)
 }
 
 
-static void testHelper_attachNode(apx_es_fileManager_t *fileManager, apx_nodeData_t *nodeData, apx_fileContainer_t *fileContainer)
+static void testHelper_attachNode(apx_es_file_manager_t *fileManager, apx_node_data_t *nodeData, apx_file_container_t *fileContainer)
 {
-   memset(fileContainer, 0, sizeof(apx_fileContainer_t));
+   memset(fileContainer, 0, sizeof(apx_file_container_t));
    apx_file_createLocalFile(&fileContainer->definitionFile, APX_DEFINITION_FILE, nodeData);
    apx_es_fileManager_attachLocalFile(fileManager, &fileContainer->definitionFile);
 
@@ -829,7 +829,7 @@ static void testHelper_attachNode(apx_es_fileManager_t *fileManager, apx_nodeDat
 
 static int32_t testHelper_serialize_FileOpen(CuTest* tc, uint32_t fileAddress)
 {
-   rmf_cmdOpenFile_t cmd;
+   rmf_cmd_open_file_t cmd;
    int32_t msgLen = 0;
    uint8_t *pNext = &m_test_receive_buffer[0];
    int32_t bufRemain = (int32_t) sizeof(m_test_receive_buffer);

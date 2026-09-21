@@ -20,12 +20,12 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 
-typedef struct apx_dataSignature_tag
+typedef struct apx_data_signature_tag
 {
-   apx_dataElement_t *data_element; //strong reference
-   apx_dataElement_t *effective_data_element; //strong reference
+   apx_data_element_t *data_element; //strong reference
+   apx_data_element_t *effective_data_element; //strong reference
    //TODO: Add support for client-server interfaces
-} apx_dataSignature_t;
+} apx_data_signature_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -35,10 +35,10 @@ typedef struct apx_dataSignature_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_dataSignature_create(apx_dataSignature_t *self);
-void apx_dataSignature_destroy(apx_dataSignature_t *self);
-apx_dataElement_t* apx_dataSignature_get_data_element(apx_dataSignature_t* self);
-void apx_dataSignature_set_element(apx_dataSignature_t* self, apx_dataElement_t* data_element);
-apx_dataElement_t* apx_dataSignature_get_effective_data_element(apx_dataSignature_t* self);
-void apx_dataSignature_set_effective_element(apx_dataSignature_t* self, apx_dataElement_t* data_element);
+void apx_dataSignature_create(apx_data_signature_t *self);
+void apx_dataSignature_destroy(apx_data_signature_t *self);
+apx_data_element_t* apx_dataSignature_get_data_element(apx_data_signature_t* self);
+void apx_dataSignature_set_element(apx_data_signature_t* self, apx_data_element_t* data_element);
+apx_data_element_t* apx_dataSignature_get_effective_data_element(apx_data_signature_t* self);
+void apx_dataSignature_set_effective_element(apx_data_signature_t* self, apx_data_element_t* data_element);
 #endif //APX_DATA_SIGNATURE_H

@@ -25,7 +25,7 @@
 typedef apx_error_t (apx_connection_transmit_data_message_func)(void* arg, uint32_t write_address, bool more_bit, uint8_t const* data, int32_t size, int32_t* bytes_available);
 typedef apx_error_t (apx_connection_transmit_direct_message_func)(void* arg, uint8_t const* data, int32_t size, int32_t* bytes_available);
 
-typedef struct apx_connectionInterface_tag
+typedef struct apx_connection_interface_tag
 {
    void* arg;
    //Transmit methods
@@ -38,14 +38,14 @@ typedef struct apx_connectionInterface_tag
 
    //Connection details
    uint32_t(*get_connection_id)(void* arg);
-   rmf_versionId_t(*get_remotefile_protocol_version_id)(void* arg);
-   apx_connectionType_t(*get_connection_type)(void* arg);
+   rmf_version_id_t(*get_remotefile_protocol_version_id)(void* arg);
+   apx_connection_type_t(*get_connection_type)(void* arg);
 
 
    // Notification callbacks
    apx_error_t (*remote_file_published_notification)(void* arg, apx_file_t* file);
    apx_error_t (*remote_file_write_notification)(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
-} apx_connectionInterface_t;
+} apx_connection_interface_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES

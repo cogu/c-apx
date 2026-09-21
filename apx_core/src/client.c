@@ -47,9 +47,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, apx_clientConnection_t *connection);
-static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *self, apx_clientConnection_t *connection);
-static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self, apx_clientConnection_t* connection, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size);
+static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection);
+static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection);
+static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self, apx_client_connection_t* connection, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size);
 static void apx_client_attach_local_nodes_to_connection(apx_client_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ apx_error_t apx_client_create(apx_client_t *self)
       {
          return APX_MEM_ERROR;
       }
-      self->connection = (apx_clientConnection_t*) NULL;
+      self->connection = (apx_client_connection_t*) NULL;
       self->vm = (apx_vm_t*) NULL;
       self->node_manager = apx_nodeManager_new(APX_CLIENT_MODE);
       self->is_connected = false;
@@ -148,7 +148,7 @@ apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_
 {
    if (self != NULL)
    {
-      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new(socketObject, APX_CONNECTION_TYPE_DEFAULT);
+      apx_client_socket_connection_t *socketConnection = apx_clientSocketConnection_new(socketObject, APX_CONNECTION_TYPE_DEFAULT);
       if (socketConnection)
       {
          apx_error_t result;
@@ -175,11 +175,11 @@ apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint
 {
    if (self != NULL)
    {
-      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
+      apx_client_socket_connection_t *socketConnection = apx_clientSocketConnection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
       if (socketConnection != NULL)
       {
          apx_error_t result;
-         apx_client_attach_connection(self, (apx_clientConnection_t*) socketConnection);
+         apx_client_attach_connection(self, (apx_client_connection_t*) socketConnection);
          result = apx_clientSocketConnection_connect_tcp(socketConnection, address, port);
          if (result == APX_NO_ERROR)
          {
@@ -202,11 +202,11 @@ apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socketPath)
 {
    if (self != NULL)
    {
-      apx_clientSocketConnection_t *socketConnection = apx_clientSocketConnection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
+      apx_client_socket_connection_t *socketConnection = apx_clientSocketConnection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
       if (socketConnection != NULL)
       {
          apx_error_t result;
-         apx_client_attach_connection(self, (apx_clientConnection_t*) socketConnection);
+         apx_client_attach_connection(self, (apx_client_connection_t*) socketConnection);
          result = apx_clientSocketConnection_connect_unix(socketConnection, socketPath);
          if (result == APX_NO_ERROR)
          {
@@ -240,7 +240,7 @@ void apx_client_disconnect(apx_client_t *self)
 }
 
 
-void* apx_client_register_event_listener(apx_client_t *self, struct apx_clientEventListener_tag *listener)
+void* apx_client_register_event_listener(apx_client_t *self, struct apx_client_event_listener_tag *listener)
 {
    if ( (self != NULL) && (listener != NULL))
    {
@@ -298,7 +298,7 @@ int32_t apx_client_get_num_event_listeners(apx_client_t *self)
    return -1;
 }
 
-void apx_client_attach_connection(apx_client_t *self, apx_clientConnection_t *connection)
+void apx_client_attach_connection(apx_client_t *self, apx_client_connection_t *connection)
 {
    if ( (self != NULL) && (connection != NULL) )
    {
@@ -310,7 +310,7 @@ void apx_client_attach_connection(apx_client_t *self, apx_clientConnection_t *co
    }
 }
 
-apx_clientConnection_t *apx_client_get_connection(apx_client_t *self)
+apx_client_connection_t *apx_client_get_connection(apx_client_t *self)
 {
    if (self != NULL)
    {
@@ -337,7 +337,7 @@ int32_t apx_client_get_error_line(apx_client_t *self)
    return -1;
 }
 
-apx_nodeInstance_t *apx_client_get_last_attached_node(apx_client_t *self)
+apx_node_instance_t *apx_client_get_last_attached_node(apx_client_t *self)
 {
    if (self != NULL)
    {
@@ -346,7 +346,7 @@ apx_nodeInstance_t *apx_client_get_last_attached_node(apx_client_t *self)
    return NULL;
 }
 
-struct apx_fileManager_tag *apx_client_get_file_manager(apx_client_t *self)
+struct apx_file_manager_tag *apx_client_get_file_manager(apx_client_t *self)
 {
    if ( (self != NULL) && (self->connection != NULL))
    {
@@ -355,7 +355,7 @@ struct apx_fileManager_tag *apx_client_get_file_manager(apx_client_t *self)
    return NULL;
 }
 
-struct apx_nodeManager_tag *apx_client_get_node_manager(apx_client_t *self)
+struct apx_node_manager_tag *apx_client_get_node_manager(apx_client_t *self)
 {
    if (self != NULL)
    {
@@ -365,11 +365,11 @@ struct apx_nodeManager_tag *apx_client_get_node_manager(apx_client_t *self)
 }
 
 /*** Port Handle API ***/
-apx_portInstance_t* apx_client_get_port_instance_by_name(apx_client_t* self, const char* node_name, const char* port_name)
+apx_port_instance_t* apx_client_get_port_instance_by_name(apx_client_t* self, const char* node_name, const char* port_name)
 {
    if ( (self != NULL) && (port_name != NULL))
    {
-      apx_nodeInstance_t *node_instance = NULL;
+      apx_node_instance_t *node_instance = NULL;
       if (node_name == NULL)
       {
          node_instance = apx_client_get_last_attached_node(self);
@@ -386,11 +386,11 @@ apx_portInstance_t* apx_client_get_port_instance_by_name(apx_client_t* self, con
    return NULL;
 }
 
-apx_portInstance_t* apx_client_get_provide_port_instance_by_id(apx_client_t* self, const char* node_name, apx_portId_t port_id)
+apx_port_instance_t* apx_client_get_provide_port_instance_by_id(apx_client_t* self, const char* node_name, apx_port_id_t port_id)
 {
    if ( (self != NULL) && (port_id >= 0))
    {
-      apx_nodeInstance_t *node_instance = NULL;
+      apx_node_instance_t *node_instance = NULL;
       if (node_name == NULL)
       {
          node_instance = apx_client_get_last_attached_node(self);
@@ -407,11 +407,11 @@ apx_portInstance_t* apx_client_get_provide_port_instance_by_id(apx_client_t* sel
    return (void*) NULL;
 }
 
-apx_portInstance_t* apx_client_get_require_port_instance_by_id(apx_client_t* self, const char* node_name, apx_portId_t port_id)
+apx_port_instance_t* apx_client_get_require_port_instance_by_id(apx_client_t* self, const char* node_name, apx_port_id_t port_id)
 {
    if ( (self != NULL) && (port_id >= 0))
    {
-      apx_nodeInstance_t *node_instance = NULL;
+      apx_node_instance_t *node_instance = NULL;
       if (node_name == NULL)
       {
          node_instance = apx_client_get_last_attached_node(self);
@@ -428,7 +428,7 @@ apx_portInstance_t* apx_client_get_require_port_instance_by_id(apx_client_t* sel
    return NULL;
 }
 
-apx_error_t apx_client_write_port_data(apx_client_t* self, apx_portInstance_t* port_instance, const dtl_dv_t* dv)
+apx_error_t apx_client_write_port_data(apx_client_t* self, apx_port_instance_t* port_instance, const dtl_dv_t* dv)
 {
    if ((self != NULL) && (port_instance != NULL) && (dv != NULL))
    {
@@ -494,14 +494,14 @@ apx_error_t apx_client_write_port_data(apx_client_t* self, apx_portInstance_t* p
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_client_read_port_data(apx_client_t* self, apx_portInstance_t* port_instance, dtl_dv_t** dv)
+apx_error_t apx_client_read_port_data(apx_client_t* self, apx_port_instance_t* port_instance, dtl_dv_t** dv)
 {
    if ((self != NULL) && (port_instance != NULL) && (dv != NULL))
    {
       uint8_t stack_buffer[MAX_STACK_BUFFER_SIZE];
       apx_error_t result;
       uint8_t* read_buffer;
-      apx_nodeData_t* node_data = NULL;
+      apx_node_data_t* node_data = NULL;
       bool is_heap_allocated_buffer = false;
       uint32_t const data_size = apx_portInstance_data_size(port_instance);
       uint32_t const offset = apx_portInstance_data_offset(port_instance);
@@ -571,7 +571,7 @@ apx_error_t apx_client_read_port_data(apx_client_t* self, apx_portInstance_t* po
 
 /////////////////////// BEGIN CLIENT INTERNAL API /////////////////////
 
-void apx_clientInternal_connect_notification(apx_client_t* self, apx_clientConnection_t* connection)
+void apx_clientInternal_connect_notification(apx_client_t* self, apx_client_connection_t* connection)
 {
    if ((self != NULL) && (connection != NULL))
    {
@@ -579,7 +579,7 @@ void apx_clientInternal_connect_notification(apx_client_t* self, apx_clientConne
    }
 }
 
-void apx_clientInternal_disconnect_notification(apx_client_t* self, apx_clientConnection_t* connection)
+void apx_clientInternal_disconnect_notification(apx_client_t* self, apx_client_connection_t* connection)
 {
    if ((self != NULL) && (connection != NULL))
    {
@@ -587,7 +587,7 @@ void apx_clientInternal_disconnect_notification(apx_client_t* self, apx_clientCo
    }
 }
 
-void apx_clientInternal_require_port_write_notification(apx_client_t* self, apx_clientConnection_t* connection, apx_portInstance_t* port_instance, const uint8_t* data, apx_size_t size)
+void apx_clientInternal_require_port_write_notification(apx_client_t* self, apx_client_connection_t* connection, apx_port_instance_t* port_instance, const uint8_t* data, apx_size_t size)
 {
    if ((self != NULL) && (connection != NULL))
    {
@@ -622,7 +622,7 @@ void apx_client_run(apx_client_t *self)
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, apx_clientConnection_t *connection)
+static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -639,7 +639,7 @@ static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, 
    adt_list_elem_t *iter = adt_list_iter_first(self->event_listeners);
    while (iter != NULL)
    {
-      apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
+      apx_client_event_listener_t *listener = (apx_client_event_listener_t*) iter->pItem;
       if ( (listener != NULL) && (listener->connected != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -653,7 +653,7 @@ static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, 
    for (i = 0; i < length; i++)
    {
       void *arg = adt_ary_value(&args, i);
-      apx_clientConnectionEventFunc_t *callback = (apx_clientConnectionEventFunc_t*) adt_ary_value(&callbacks, i);
+      apx_client_connection_event_func_t *callback = (apx_client_connection_event_func_t*) adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, connection);
    }
@@ -661,7 +661,7 @@ static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, 
    adt_ary_destroy(&callbacks);
 }
 
-static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *self, apx_clientConnection_t *connection)
+static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -678,7 +678,7 @@ static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *sel
    adt_list_elem_t *iter = adt_list_iter_first(self->event_listeners);
    while (iter != NULL)
    {
-      apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
+      apx_client_event_listener_t *listener = (apx_client_event_listener_t*) iter->pItem;
       if ( (listener != NULL) && (listener->disconnected != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -692,7 +692,7 @@ static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *sel
    for (i = 0; i < length; i++)
    {
       void *arg = adt_ary_value(&args, i);
-      apx_clientConnectionEventFunc_t *callback = (apx_clientConnectionEventFunc_t*) adt_ary_value(&callbacks, i);
+      apx_client_connection_event_func_t *callback = (apx_client_connection_event_func_t*) adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, connection);
    }
@@ -700,7 +700,7 @@ static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *sel
    adt_ary_destroy(&callbacks);
 }
 
-static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self, apx_clientConnection_t* connection, apx_portInstance_t* port_instance, uint8_t const* data, apx_size_t size)
+static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self, apx_client_connection_t* connection, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size)
 {
    adt_ary_t args;
    adt_ary_t callbacks;
@@ -716,7 +716,7 @@ static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self,
    adt_list_elem_t *iter = adt_list_iter_first(self->event_listeners);
    while (iter != NULL)
    {
-      apx_clientEventListener_t *listener = (apx_clientEventListener_t*) iter->pItem;
+      apx_client_event_listener_t *listener = (apx_client_event_listener_t*) iter->pItem;
       if ( (listener != NULL) && (listener->require_port_write != NULL) )
       {
          adt_ary_push(&args, (void*)listener->arg);
@@ -730,7 +730,7 @@ static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self,
    for (i = 0; i < length; i++)
    {
       void *arg = adt_ary_value(&args, i);
-      apx_portDataWriteFunc_t *callback = (apx_portDataWriteFunc_t*) adt_ary_value(&callbacks, i);
+      apx_port_data_write_func_t *callback = (apx_port_data_write_func_t*) adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, port_instance, data, size);
    }
@@ -751,7 +751,7 @@ static void apx_client_attach_local_nodes_to_connection(apx_client_t *self)
          numNodes = apx_nodeManager_values(self->node_manager, nodeList);
          for (i=0; i<numNodes; i++)
          {
-            apx_nodeInstance_t *nodeInstance = (apx_nodeInstance_t*) adt_ary_value(nodeList, i);
+            apx_node_instance_t *nodeInstance = (apx_node_instance_t*) adt_ary_value(nodeList, i);
             apx_clientConnection_attach_node_instance(self->connection, nodeInstance);
          }
          adt_ary_delete(nodeList);

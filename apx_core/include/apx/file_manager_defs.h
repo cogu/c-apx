@@ -21,25 +21,25 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //forward declarations
-struct apx_nodeData_tag;
-struct apx_nodeManager_tag;
-struct apx_serverEventRecorder_tag;
-struct apx_serverEventPlayer_tag;
-struct apx_clientEventRecorder_tag;
-struct apx_clientEventPlayer_tag;
+struct apx_node_data_tag;
+struct apx_node_manager_tag;
+struct apx_server_event_recorder_tag;
+struct apx_server_event_player_tag;
+struct apx_client_event_recorder_tag;
+struct apx_client_event_player_tag;
 struct apx_file_tag;
 
-typedef struct apx_serverEventContainer_tag
+typedef struct apx_server_event_container_tag
 {
-   struct apx_serverEventRecorder_tag *recorder;
-   struct apx_serverEventPlayer_tag *player;
-}apx_serverEventContainer_t;
+   struct apx_server_event_recorder_tag *recorder;
+   struct apx_server_event_player_tag *player;
+}apx_server_event_container_t;
 
-typedef struct apx_clientEventContainer_tag
+typedef struct apx_client_event_container_tag
 {
-   struct apx_clientEventRecorder_tag *recorder;
-   struct apx_clientEventPlayer_tag *player;
-}apx_clientEventContainer_t;
+   struct apx_client_event_recorder_tag *recorder;
+   struct apx_client_event_player_tag *player;
+}apx_client_event_container_t;
 
 
 #endif //APX_FILE_MANAGER_COMMON_H
