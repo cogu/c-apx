@@ -72,6 +72,7 @@ static apx_server_t m_server;
 static bool m_display_help = false;
 static bool m_display_version = false;
 static adt_str_t *m_config_path = NULL;
+static adt_str_t *m_socket_config = NULL;
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
 static int m_ready_fd = -1;
 //////////////////////////////////////////////////////////////////////////////
@@ -104,27 +105,71 @@ int main(int argc, char **argv)
       print_version();
       return 0;
    }
-   if (m_config_path == NULL)
+   if (m_config_path == NULL && m_socket_config == NULL)
    {
       print_usage(argv[0]);
       return 0;
    }
 
-   const char* config_path = adt_str_cstr(m_config_path);
    printf("APX Server %s\n\n", SW_VERSION_STR);
-   printf("Loading %s: ", config_path);
-   fflush(stdout);
-   result = apx_server_load_config(config_path, &config);
-   adt_str_delete(m_config_path);
-   if (result != APX_NO_ERROR)
+   if (m_config_path != NULL)
    {
-      printf("Error %d: %s\n", (int) result, apx_strerror(result));
-      return 1;
+      const char* config_path = adt_str_cstr(m_config_path);
+      printf("Loading %s: ", config_path);
+      fflush(stdout);
+      result = apx_server_load_config(config_path, &config);
+      adt_str_delete(m_config_path);
+      m_config_path = NULL;
+      if (result != APX_NO_ERROR)
+      {
+         printf("Error %d: %s\n", (int) result, apx_strerror(result));
+         if (m_socket_config != NULL)
+         {
+            adt_str_delete(m_socket_config);
+            m_socket_config = NULL;
+         }
+         return 1;
+      }
+      else
+      {
+         printf("OK\n");
+         fflush(stdout);
+      }
    }
    else
    {
-      printf("OK\n");
-      fflush(stdout);
+      config = dtl_hv_new();
+      if (config == NULL)
+      {
+         fprintf(stderr, "Failed to allocate configuration hash\n");
+         if (m_socket_config != NULL)
+         {
+            adt_str_delete(m_socket_config);
+            m_socket_config = NULL;
+         }
+         return 1;
+      }
+   }
+
+   if (m_socket_config != NULL)
+   {
+      dtl_dv_t *socket_dv = dtl_json_load_cstr(adt_str_cstr(m_socket_config));
+      adt_str_delete(m_socket_config);
+      m_socket_config = NULL;
+      if (socket_dv == NULL || dtl_dv_type(socket_dv) != DTL_DV_HASH)
+      {
+         fprintf(stderr, "Error: --socket-config must be a valid JSON object\n");
+         if (socket_dv != NULL)
+         {
+            dtl_dec_ref(socket_dv);
+         }
+         if (config != NULL)
+         {
+            dtl_dec_ref(config);
+         }
+         return 1;
+      }
+      dtl_hv_set_cstr(config, "socket-server-extension", socket_dv, false);
    }
 
 #ifndef _WIN32
@@ -208,7 +253,7 @@ static void print_version(void)
 
 static void print_usage(const char *name)
 {
-   printf("Usage:\n%s [-h | --help] [--version] [-r <fd> | --ready-fd <fd>] <config_file | config_dir>\n", name);
+   printf("Usage:\n%s [-h | --help] [--version] [-r <fd> | --ready-fd <fd>] [-s <json> | --socket-config <json>] [<config_file | config_dir>]\n", name);
 }
 
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value)
@@ -233,6 +278,15 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
             return ARGPARSE_VALUE_ERROR;
          }
          m_ready_fd = (int) fd;
+         return ARGPARSE_SUCCESS;
+      }
+      if (strcmp(short_name, "s") == 0)
+      {
+         if (value == NULL)
+         {
+            return ARGPARSE_NEED_VALUE;
+         }
+         m_socket_config = adt_str_new_cstr(value);
          return ARGPARSE_SUCCESS;
       }
       return ARGPARSE_NAME_ERROR;
@@ -262,6 +316,15 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
             return ARGPARSE_VALUE_ERROR;
          }
          m_ready_fd = (int) fd;
+         return ARGPARSE_SUCCESS;
+      }
+      if (strcmp(long_name, "socket-config") == 0)
+      {
+         if (value == NULL)
+         {
+            return ARGPARSE_NEED_VALUE;
+         }
+         m_socket_config = adt_str_new_cstr(value);
          return ARGPARSE_SUCCESS;
       }
       return ARGPARSE_NAME_ERROR;
