@@ -85,8 +85,8 @@ static uint16_t m_connect_port;
 static adt_str_t *m_bind_address = NULL;
 static adt_str_t *m_connect_address = NULL;
 static adt_str_t m_definition_file;
-static apx_resource_type_t m_bind_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
-static apx_resource_type_t m_connect_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
+static msocket_endpoint_type_t m_bind_resource_type = MSOCKET_ENDPOINT_UNKNOWN;
+static msocket_endpoint_type_t m_connect_resource_type = MSOCKET_ENDPOINT_UNKNOWN;
 
 /*** Other local variables***/
 static adt_str_t *m_apx_definition_str = NULL;
@@ -106,19 +106,19 @@ int main(int argc, char **argv)
    argparse_result_t result = argparse_exec(argc, (const char**) argv, argparse_cbk);
    if (result == ARGPARSE_SUCCESS)
    {
-      if (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
+      if (m_bind_resource_type == MSOCKET_ENDPOINT_UNKNOWN)
       {
          uint16_t dummy_port;
-         m_bind_resource_type = apx_parse_resource_name(m_bind_address_default, &m_bind_address, &dummy_port);
+         m_bind_resource_type = msocket_parse_endpoint(m_bind_address_default, &m_bind_address, &dummy_port);
          (void) dummy_port;
-         assert( (m_bind_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_bind_resource_type != APX_RESOURCE_TYPE_ERROR) );
+         assert( (m_bind_resource_type != MSOCKET_ENDPOINT_UNKNOWN) && (m_bind_resource_type != MSOCKET_ENDPOINT_ERROR) );
       }
-      if (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
+      if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN)
       {
          uint16_t dummy_port;
-         m_connect_resource_type = apx_parse_resource_name(m_connect_address_default, &m_connect_address, &dummy_port);
+         m_connect_resource_type = msocket_parse_endpoint(m_connect_address_default, &m_connect_address, &dummy_port);
          (void) dummy_port;
-         assert( (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) );
+         assert( (m_connect_resource_type != MSOCKET_ENDPOINT_UNKNOWN) && (m_connect_resource_type != MSOCKET_ENDPOINT_ERROR) );
       }
       if (m_display_version)
       {
@@ -352,9 +352,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          else if (strcmp(short_name,"b")==0)
          {
             if (m_bind_address != NULL) adt_str_delete(m_bind_address);
-            m_bind_resource_type = apx_parse_resource_name(value, &m_bind_address, &m_bind_port);
-            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
-                 (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            m_bind_resource_type = msocket_parse_endpoint(value, &m_bind_address, &m_bind_port);
+            if ( (m_bind_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
+                 (m_bind_resource_type == MSOCKET_ENDPOINT_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -362,9 +362,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          else if (strcmp(short_name,"c")==0)
          {
             if (m_connect_address != NULL) adt_str_delete(m_connect_address);
-            m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
-            if ( (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
-                 (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
+            m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
+            if ( (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
+                 (m_connect_resource_type == MSOCKET_ENDPOINT_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -401,9 +401,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          else if (strcmp(long_name,"bind")==0)
          {
             if (m_bind_address != NULL) adt_str_delete(m_bind_address);
-            m_bind_resource_type = apx_parse_resource_name(value, &m_bind_address, &m_bind_port);
-            if ( (m_bind_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
-                 (m_bind_resource_type == APX_RESOURCE_TYPE_ERROR))
+            m_bind_resource_type = msocket_parse_endpoint(value, &m_bind_address, &m_bind_port);
+            if ( (m_bind_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
+                 (m_bind_resource_type == MSOCKET_ENDPOINT_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -411,9 +411,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          else if (strcmp(long_name,"connect")==0)
          {
             if (m_connect_address != NULL) adt_str_delete(m_connect_address);
-            m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
-            if ( (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
-                 (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
+            m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
+            if ( (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
+                 (m_connect_resource_type == MSOCKET_ENDPOINT_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -511,20 +511,20 @@ static apx_error_t connect_to_apx_server(void)
    const char *connect_address = adt_str_cstr(m_connect_address);
    switch(m_connect_resource_type)
    {
-   case APX_RESOURCE_TYPE_UNKNOWN:
+   case MSOCKET_ENDPOINT_UNKNOWN:
       return APX_INVALID_ARGUMENT_ERROR;
-   case APX_RESOURCE_TYPE_IPV4:
+   case MSOCKET_ENDPOINT_IPV4:
       return apx_connection_connect_tcp(m_apx_connection, connect_address, m_connect_port);
-   case APX_RESOURCE_TYPE_IPV6:
+   case MSOCKET_ENDPOINT_IPV6:
       return APX_NOT_IMPLEMENTED_ERROR;
-   case APX_RESOURCE_TYPE_FILE:
+   case MSOCKET_ENDPOINT_FILE:
 #ifdef _WIN32
       printf("UNIX domain sockets not supported in Windows\n");
       return APX_NOT_IMPLEMENTED_ERROR;
 #else
       return apx_connection_connect_unix(m_apx_connection, connect_address);
 #endif
-   case APX_RESOURCE_TYPE_NAME:
+   case MSOCKET_ENDPOINT_NAME:
       if ( (strlen(connect_address) == 0) || (strcmp(connect_address, "localhost") == 0) )
       {
          return apx_connection_connect_tcp(m_apx_connection, "127.0.0.1", m_connect_port);
@@ -539,13 +539,13 @@ static apx_error_t init_json_message_server(void)
    const char* bind_address = adt_str_cstr(m_bind_address);
    switch (m_bind_resource_type)
    {
-   case APX_RESOURCE_TYPE_IPV4:
+   case MSOCKET_ENDPOINT_IPV4:
       address_family = MSOCKET_ADDR_INET;
       break;
-   case APX_RESOURCE_TYPE_IPV6:
+   case MSOCKET_ENDPOINT_IPV6:
       address_family = MSOCKET_ADDR_INET6;
       break;
-   case APX_RESOURCE_TYPE_FILE:
+   case MSOCKET_ENDPOINT_FILE:
 #ifdef _WIN32
       printf("UNIX domain sockets not supported in Windows\n");
       return APX_NOT_IMPLEMENTED_ERROR;
@@ -553,7 +553,7 @@ static apx_error_t init_json_message_server(void)
       address_family = MSOCKET_ADDR_UNIX;
       break;
 #endif
-   case APX_RESOURCE_TYPE_NAME:
+   case MSOCKET_ENDPOINT_NAME:
       if ((strlen(bind_address) == 0) || (strcmp(bind_address, "localhost") == 0))
       {
          address_family = MSOCKET_ADDR_INET;
@@ -574,19 +574,19 @@ static apx_error_t start_json_message_server(void)
    const char *bind_address = adt_str_cstr(m_bind_address);
    switch(m_bind_resource_type)
    {
-   case APX_RESOURCE_TYPE_UNKNOWN:
+   case MSOCKET_ENDPOINT_UNKNOWN:
       return APX_INVALID_ARGUMENT_ERROR;
-   case APX_RESOURCE_TYPE_IPV4: //fall-through
-   case APX_RESOURCE_TYPE_IPV6:
+   case MSOCKET_ENDPOINT_IPV4: //fall-through
+   case MSOCKET_ENDPOINT_IPV6:
       return json_server_start_tcp(bind_address, m_bind_port);
-   case APX_RESOURCE_TYPE_FILE:
+   case MSOCKET_ENDPOINT_FILE:
 #ifdef _WIN32
       printf("UNIX domain sockets not supported in Windows\n");
       return APX_NOT_IMPLEMENTED_ERROR;
 #else
       return json_server_start_unix(bind_address);
 #endif
-   case APX_RESOURCE_TYPE_NAME:
+   case MSOCKET_ENDPOINT_NAME:
       if ( (strlen(bind_address) == 0) || (strcmp(bind_address, "localhost") == 0) )
       {
          return json_server_start_tcp("127.0.0.1", m_bind_port);
