@@ -146,7 +146,7 @@ Configuration for the APX server daemon and all extensions is centralized in a s
     "enabled": true,
     "unix": {
       "tag": "UNIX",
-      "path": "/tmp/apx_server.socket"
+      "path": "/tmp/apx.socket"
     }
   },
   "security-extension": {

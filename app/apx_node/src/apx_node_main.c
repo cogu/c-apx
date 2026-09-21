@@ -75,7 +75,7 @@ static const char *m_bind_address_default = "127.0.0.1";
 static const char *m_connect_address_default = "127.0.0.1";
 #else
 static const char *m_bind_address_default = "/tmp/apx_node.socket";
-static const char *m_connect_address_default = "/tmp/apx_server.socket";
+static const char *m_connect_address_default = "/tmp/apx.socket";
 #endif
 static bool m_no_bind = false;
 static bool m_display_help = false;

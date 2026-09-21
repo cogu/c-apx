@@ -59,7 +59,7 @@ file     path to an APX definition file (.apx)
 
 ```text
 --bind-path     /tmp/apx_node.socket
---connect-path  /tmp/apx_server.socket
+--connect-path  /tmp/apx.socket
 --bind-port     5100
 --connect-port  5000
 ```
@@ -76,7 +76,7 @@ file     path to an APX definition file (.apx)
 ## Example Usage
 
 ```bash
-apx_node -b /tmp/vehicle.socket -c /tmp/apx_server.socket vehicle.apx
+apx_node -b /tmp/vehicle.socket -c /tmp/apx.socket vehicle.apx
 apx_node -b /tmp/vehicle.socket -c 192.168.1.19 vehicle.apx
 apx_node -p 5101 -r 5001 vehicle.apx
 ```

@@ -75,7 +75,7 @@ static const uint16_t connect_port_default = 5000;
 #ifdef _WIN32
 static const char* m_connect_address_default = "127.0.0.1";
 #else
-static const char* m_connect_address_default = "/tmp/apx_server.socket";
+static const char* m_connect_address_default = "/tmp/apx.socket";
 #endif
 static bool m_display_help = false;
 static bool m_display_version = false;

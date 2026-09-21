@@ -54,7 +54,7 @@ static const uint16_t connect_port_default = 5000u;
 #ifdef _WIN32
 static const char* m_connect_address_default = "127.0.0.1";
 #else
-static const char* m_connect_address_default = "/tmp/apx_server.socket";
+static const char* m_connect_address_default = "/tmp/apx.socket";
 #endif
 static const uint32_t m_timer_default = 5u;
 static bool m_display_help = false;
