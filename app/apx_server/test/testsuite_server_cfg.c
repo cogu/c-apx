@@ -111,7 +111,6 @@ static void test_load_config_from_file_valid(CuTest *tc)
    const char *content =
       "{\n"
       "    \"apx-server\": {\n"
-      "        \"shutdown-timer\": 10,\n"
       "        \"max-num-events\": 200\n"
       "    },\n"
       "    \"socket-server-extension\": {\n"
@@ -132,10 +131,10 @@ static void test_load_config_from_file_valid(CuTest *tc)
    dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
    CuAssertPtrNotNull(tc, server_node);
    CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(server_node));
-   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "shutdown-timer");
+   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "max-num-events");
    CuAssertPtrNotNull(tc, sv);
    bool ok = false;
-   CuAssertIntEquals(tc, 10, dtl_sv_to_i32(sv, &ok));
+   CuAssertIntEquals(tc, 200, dtl_sv_to_i32(sv, &ok));
    CuAssertTrue(tc, ok);
 
    dtl_dv_t *ext_node = dtl_hv_get_cstr(cfg, "socket-server-extension");
@@ -156,7 +155,7 @@ static void test_load_config_from_dir_valid(CuTest *tc)
    const char *content =
       "{\n"
       "    \"apx-server\": {\n"
-      "        \"shutdown-timer\": 20\n"
+      "        \"max-num-events\": 200\n"
       "    },\n"
       "    \"socket-server-extension\": {\n"
       "        \"enabled\": true\n"
@@ -171,10 +170,10 @@ static void test_load_config_from_dir_valid(CuTest *tc)
 
    dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
    CuAssertPtrNotNull(tc, server_node);
-   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "shutdown-timer");
+   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "max-num-events");
    CuAssertPtrNotNull(tc, sv);
    bool ok = false;
-   CuAssertIntEquals(tc, 20, dtl_sv_to_i32(sv, &ok));
+   CuAssertIntEquals(tc, 200, dtl_sv_to_i32(sv, &ok));
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(cfg);
@@ -193,7 +192,7 @@ static void test_load_config_from_dir_fallback(CuTest *tc)
    const char *content =
       "{\n"
       "    \"apx-server\": {\n"
-      "        \"shutdown-timer\": 30\n"
+      "        \"max-num-events\": 300\n"
       "    }\n"
       "}\n";
    write_test_file(filepath, content);
@@ -205,10 +204,10 @@ static void test_load_config_from_dir_fallback(CuTest *tc)
 
    dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
    CuAssertPtrNotNull(tc, server_node);
-   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "shutdown-timer");
+   dtl_sv_t *sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "max-num-events");
    CuAssertPtrNotNull(tc, sv);
    bool ok = false;
-   CuAssertIntEquals(tc, 30, dtl_sv_to_i32(sv, &ok));
+   CuAssertIntEquals(tc, 300, dtl_sv_to_i32(sv, &ok));
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(cfg);
@@ -279,7 +278,7 @@ static void test_register_extensions_with_single_config(CuTest *tc)
    const char *content =
       "{\n"
       "    \"apx-server\": {\n"
-      "        \"shutdown-timer\": 0\n"
+      "        \"max-num-events\": 200\n"
       "    },\n"
       "    \"socket-server-extension\": {\n"
       "        \"enabled\": true\n"

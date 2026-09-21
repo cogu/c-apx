@@ -125,9 +125,6 @@ def apx_server(tmp_path: Path, apx_server_bin: str):
 
     # 1. Generate an isolated configuration for this specific test
     server_cfg = {
-        "apx-server": {
-            "shutdown-timer": 0
-        },
         "socket-server-extension": {
             "enabled": True,
             "unix-file": socket_path

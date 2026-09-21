@@ -8,16 +8,15 @@
 * SPDX-License-Identifier: MIT
 * See LICENSE in project root for full license terms.
 ******************************************************************************/
-#define CLEANUP_TEST 1                  //0=no cleanup test (default), 1=enable cleanup test
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #ifdef _WIN32
-#if CLEANUP_TEST
+# if defined(_DEBUG)
 #   define _CRTDBG_MAP_ALLOC
 #   include <stdlib.h>
 #   include <crtdbg.h>
-#endif
+# endif
 # ifndef WIN32_LEAN_AND_MEAN
 # define WIN32_LEAN_AND_MEAN
 # endif
@@ -45,12 +44,6 @@
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 #define APP_NAME "apx_server"
-#define SHUTDOWN_TIMER_WARN_THRESHOLD 10
-#if CLEANUP_TEST
-#define SHUTDOWN_TIMER_INIT 10     //number of seconds before server shutdown is triggered in a cleanup test
-#else
-#define SHUTDOWN_TIMER_INIT 0
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
@@ -76,7 +69,6 @@ int m_runFlag = 1;
 // LOCAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static apx_server_t m_server;
-static int32_t m_shutdownTimer;
 static bool m_display_help = false;
 static bool m_display_version = false;
 static adt_str_t *m_config_path = NULL;
@@ -90,7 +82,6 @@ int main(int argc, char **argv)
    apx_error_t result;
    dtl_hv_t *config = NULL;
 
-   m_shutdownTimer = SHUTDOWN_TIMER_INIT;
    m_runFlag = 1;
    m_display_help = false;
    m_display_version = false;
@@ -134,24 +125,6 @@ int main(int argc, char **argv)
    {
       printf("OK\n");
       fflush(stdout);
-      if (config != NULL)
-      {
-         dtl_dv_t *server_node = dtl_hv_get_cstr(config, "apx-server");
-         if (server_node != NULL && dtl_dv_type(server_node) == DTL_DV_HASH)
-         {
-            dtl_sv_t *svShutdownTimer = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) server_node, "shutdown-timer");
-            if (svShutdownTimer != NULL)
-            {
-               int32_t i32;
-               bool ok;
-               i32 = dtl_sv_to_i32(svShutdownTimer, &ok);
-               if (ok)
-               {
-                  m_shutdownTimer = i32;
-               }
-            }
-         }
-      }
    }
 
 #ifndef _WIN32
@@ -185,19 +158,6 @@ int main(int argc, char **argv)
    while(m_runFlag != 0)
    {
       SLEEP(1000); //main thread is sleeping while child threads do all the work
-      if (m_shutdownTimer > 0)
-      {
-         if (--m_shutdownTimer==0) //this counter is used during a cleanup test to verify that all resources are properly cleaned up
-         {
-            break;
-         }
-         if (m_shutdownTimer < SHUTDOWN_TIMER_WARN_THRESHOLD)
-         {
-            char msg[40];
-            sprintf(msg, "Shutdown in %ds", m_shutdownTimer);
-            apx_server_log_write(&m_server, APX_LOG_LEVEL_INFO, "main", msg);
-         }
-      }
    }
    printf("Server shutdown started\n");
    apx_server_destroy(&m_server);
@@ -206,7 +166,7 @@ int main(int argc, char **argv)
       dtl_dec_ref(config);
    }
    printf("Server shutdown complete\n");
-#if defined(_MSC_VER) && (CLEANUP_TEST != 0)
+#if defined(_MSC_VER) && defined(_DEBUG)
    _CrtDumpMemoryLeaks();
 #endif
    return 0;
