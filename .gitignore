@@ -17,3 +17,7 @@ massif.out.*
 Testing/
 TODO.md
 /CMakeUserPresets.json
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
