@@ -140,7 +140,7 @@ Configuration for the APX server daemon and all extensions is centralized in a s
 ```json
 {
   "apx-server": {
-    "shutdown-timer": 0
+    "max-num-events": 200
   },
   "socket-server-extension": {
     "enabled": true,
