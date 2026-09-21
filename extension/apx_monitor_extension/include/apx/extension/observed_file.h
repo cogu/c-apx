@@ -31,10 +31,10 @@ typedef struct apx_observed_file_tag
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_observedFile_create(apx_observed_file_t* self, rmf_extended_file_info_t* const file_info);
-void apx_observedFile_destroy(apx_observed_file_t* self);
-apx_observed_file_t* apx_observedFile_new(rmf_extended_file_info_t* const file_info);
-void apx_observedFile_delete(apx_observed_file_t* self);
-void apx_observedFile_vdelete(void* arg);
+void apx_observed_file_create(apx_observed_file_t* self, rmf_extended_file_info_t* const file_info);
+void apx_observed_file_destroy(apx_observed_file_t* self);
+apx_observed_file_t* apx_observed_file_new(rmf_extended_file_info_t* const file_info);
+void apx_observed_file_delete(apx_observed_file_t* self);
+void apx_observed_file_vdelete(void* arg);
 
 #endif //APX_OBSERVED_FILE_H

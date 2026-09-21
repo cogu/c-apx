@@ -29,10 +29,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_socketServerExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
+apx_error_t apx_socket_server_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
 
 #ifdef UNIT_TEST
-void apx_socketServerExtension_accept_testsocket(testsocket_t *sock);
+void apx_socket_server_extension_accept_testsocket(testsocket_t *sock);
 #endif
 
 #endif //APX_SERVER_SOCKET_EXTENSION_H

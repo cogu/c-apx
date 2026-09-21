@@ -40,10 +40,10 @@
  * If the value is less than 32896 it writes 2 bytes of data
  * Returns -1 on error, otherwise it returns number of bytes written into buf
  */
-int32_t numheader_encode16(uint8_t *buf, int32_t maxBufLen, uint16_t value)
+int32_t numheader_encode16(uint8_t *buf, int32_t max_buf_len, uint16_t value)
 {
    int32_t retval = 0;
-   if ( (buf == NULL) || (maxBufLen == 0) || (value > NUMHEADER16_MAX_NUM_LONG) )
+   if ( (buf == NULL) || (max_buf_len == 0) || (value > NUMHEADER16_MAX_NUM_LONG) )
    {
       return -1;
    }
@@ -54,7 +54,7 @@ int32_t numheader_encode16(uint8_t *buf, int32_t maxBufLen, uint16_t value)
    }
    else
    {
-      if(maxBufLen<(int32_t) sizeof(uint16_t))
+      if(max_buf_len<(int32_t) sizeof(uint16_t))
       {
          return -1;
       }
@@ -77,17 +77,17 @@ int32_t numheader_encode16(uint8_t *buf, int32_t maxBufLen, uint16_t value)
  * Returns 0 on error, otherwise it returns the end pointer of the written data
  * (pointer is at offset 1 or 2 from start of buf depending on value counting from zeo)
  */
-const uint8_t *numheader_decode16(const uint8_t *pBegin, const uint8_t *pEnd, uint16_t *value)
+const uint8_t *numheader_decode16(const uint8_t *p_begin, const uint8_t *p_end, uint16_t *value)
 {
-   const uint8_t*pNext=pBegin;
-   if(pBegin<pEnd)
+   const uint8_t*pNext=p_begin;
+   if(p_begin<p_end)
    {
       uint8_t c = *pNext++;
       if(c & 0x80) //is long_bit set?
       {
-         if(pNext<pEnd)
+         if(pNext<p_end)
          {
-            uint16_t tmp = (uint16_t) unpackBE(pBegin,2);
+            uint16_t tmp = (uint16_t) unpackBE(p_begin,2);
             tmp&=(uint16_t)0x7FFF;
             if(tmp<128)
             {
@@ -111,10 +111,10 @@ const uint8_t *numheader_decode16(const uint8_t *pBegin, const uint8_t *pEnd, ui
    return pNext;
 }
 
-int32_t numheader_encode32(uint8_t *buf, int32_t maxBufLen, uint32_t value)
+int32_t numheader_encode32(uint8_t *buf, int32_t max_buf_len, uint32_t value)
 {
    int32_t retval = 0;
-   if ( (buf == NULL) || (maxBufLen == 0) || (value > NUMHEADER32_MAX_NUM_LONG) )
+   if ( (buf == NULL) || (max_buf_len == 0) || (value > NUMHEADER32_MAX_NUM_LONG) )
    {
       return -1;
    }
@@ -125,7 +125,7 @@ int32_t numheader_encode32(uint8_t *buf, int32_t maxBufLen, uint32_t value)
    }
    else
    {
-      if(maxBufLen< (int32_t) sizeof(uint32_t))
+      if(max_buf_len< (int32_t) sizeof(uint32_t))
       {
          return -1; //buffer to small
       }
@@ -136,15 +136,15 @@ int32_t numheader_encode32(uint8_t *buf, int32_t maxBufLen, uint32_t value)
    return retval;
 }
 
-const uint8_t *numheader_decode32(const uint8_t *pBegin, const uint8_t *pEnd, uint32_t *value)
+const uint8_t *numheader_decode32(const uint8_t *p_begin, const uint8_t *p_end, uint32_t *value)
 {
-   const uint8_t*pNext=pBegin;
-   if(pBegin<pEnd)
+   const uint8_t*pNext=p_begin;
+   if(p_begin<p_end)
    {
       uint8_t c = *pNext;
       if(c & 0x80) //is long_bit set?
       {
-         if( pNext+4<=pEnd ) //an additional 3 bytes is needed from buffer
+         if( pNext+4<=p_end ) //an additional 3 bytes is needed from buffer
          {
             if (value != NULL)
             {

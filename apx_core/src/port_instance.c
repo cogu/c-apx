@@ -30,7 +30,7 @@ static apx_error_t process_info_from_program_header(apx_port_instance_t* self, a
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_portInstance_create(apx_port_instance_t* self, struct apx_node_instance_tag* parent, apx_port_type_t port_type, apx_port_id_t port_id,
+apx_error_t apx_port_instance_create(apx_port_instance_t* self, struct apx_node_instance_tag* parent, apx_port_type_t port_type, apx_port_id_t port_id,
    char const* name, apx_program_t const* pack_program, apx_program_t const* unpack_program)
 {
    if (self != NULL)
@@ -61,7 +61,7 @@ apx_error_t apx_portInstance_create(apx_port_instance_t* self, struct apx_node_i
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_portInstance_destroy(apx_port_instance_t* self)
+void apx_port_instance_destroy(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -84,13 +84,13 @@ void apx_portInstance_destroy(apx_port_instance_t* self)
    }
 }
 
-apx_port_instance_t* apx_portInstance_new(struct apx_node_instance_tag* parent, apx_port_type_t port_type, apx_port_id_t port_id,
+apx_port_instance_t* apx_port_instance_new(struct apx_node_instance_tag* parent, apx_port_type_t port_type, apx_port_id_t port_id,
    char const* name, apx_program_t const* pack_program, apx_program_t const* unpack_program)
 {
    apx_port_instance_t* self = (apx_port_instance_t*)malloc(sizeof(apx_port_instance_t));
    if (self != NULL)
    {
-      apx_error_t rc = apx_portInstance_create(self, parent, port_type, port_id, name, pack_program, unpack_program);
+      apx_error_t rc = apx_port_instance_create(self, parent, port_type, port_id, name, pack_program, unpack_program);
       if (rc != APX_NO_ERROR)
       {
          free(self);
@@ -100,21 +100,21 @@ apx_port_instance_t* apx_portInstance_new(struct apx_node_instance_tag* parent, 
    return self;
 }
 
-void apx_portInstance_delete(apx_port_instance_t* self)
+void apx_port_instance_delete(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
-      apx_portInstance_destroy(self);
+      apx_port_instance_destroy(self);
       free(self);
    }
 }
 
-void apx_portInstance_vdelete(void* arg)
+void apx_port_instance_vdelete(void* arg)
 {
-   apx_portInstance_delete((apx_port_instance_t*)arg);
+   apx_port_instance_delete((apx_port_instance_t*)arg);
 }
 
-struct apx_node_instance_tag* apx_portInstance_parent(apx_port_instance_t* self)
+struct apx_node_instance_tag* apx_port_instance_parent(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -123,7 +123,7 @@ struct apx_node_instance_tag* apx_portInstance_parent(apx_port_instance_t* self)
    return NULL;
 }
 
-apx_port_type_t apx_portInstance_port_type(apx_port_instance_t* self)
+apx_port_type_t apx_port_instance_port_type(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -132,7 +132,7 @@ apx_port_type_t apx_portInstance_port_type(apx_port_instance_t* self)
    return APX_REQUIRE_PORT;
 }
 
-apx_port_id_t apx_portInstance_port_id(apx_port_instance_t* self)
+apx_port_id_t apx_port_instance_port_id(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -141,7 +141,7 @@ apx_port_id_t apx_portInstance_port_id(apx_port_instance_t* self)
    return APX_INVALID_PORT_ID;
 }
 
-char const* apx_portInstance_name(apx_port_instance_t* self)
+char const* apx_port_instance_name(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -150,7 +150,7 @@ char const* apx_portInstance_name(apx_port_instance_t* self)
    return NULL;
 }
 
-uint32_t apx_portInstance_data_offset(apx_port_instance_t const* self)
+uint32_t apx_port_instance_data_offset(apx_port_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -159,7 +159,7 @@ uint32_t apx_portInstance_data_offset(apx_port_instance_t const* self)
    return 0u;
 }
 
-uint32_t apx_portInstance_data_size(apx_port_instance_t const* self)
+uint32_t apx_port_instance_data_size(apx_port_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -168,7 +168,7 @@ uint32_t apx_portInstance_data_size(apx_port_instance_t const* self)
    return 0u;
 }
 
-uint32_t apx_portInstance_queue_length(apx_port_instance_t const* self)
+uint32_t apx_port_instance_queue_length(apx_port_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -177,7 +177,7 @@ uint32_t apx_portInstance_queue_length(apx_port_instance_t const* self)
    return 0u;
 }
 
-uint32_t apx_portInstance_element_size(apx_port_instance_t const* self)
+uint32_t apx_port_instance_element_size(apx_port_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -186,7 +186,7 @@ uint32_t apx_portInstance_element_size(apx_port_instance_t const* self)
    return 0u;
 }
 
-bool apx_portInstance_has_dynamic_data(apx_port_instance_t const* self)
+bool apx_port_instance_has_dynamic_data(apx_port_instance_t const* self)
 {
    if (self != NULL)
    {
@@ -195,7 +195,7 @@ bool apx_portInstance_has_dynamic_data(apx_port_instance_t const* self)
    return false;
 }
 
-apx_program_t const* apx_portInstance_pack_program(apx_port_instance_t* self)
+apx_program_t const* apx_port_instance_pack_program(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -204,7 +204,7 @@ apx_program_t const* apx_portInstance_pack_program(apx_port_instance_t* self)
    return NULL;
 }
 
-apx_program_t const* apx_portInstance_unpack_program(apx_port_instance_t* self)
+apx_program_t const* apx_port_instance_unpack_program(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -213,7 +213,7 @@ apx_program_t const* apx_portInstance_unpack_program(apx_port_instance_t* self)
    return NULL;
 }
 
-void apx_portInstance_set_effective_element(apx_port_instance_t* self, apx_data_element_t* data_element)
+void apx_port_instance_set_effective_element(apx_port_instance_t* self, apx_data_element_t* data_element)
 {
    if (self != NULL)
    {
@@ -221,7 +221,7 @@ void apx_portInstance_set_effective_element(apx_port_instance_t* self, apx_data_
    }
 }
 
-apx_data_element_t* apx_portInstance_get_effective_element(apx_port_instance_t* self)
+apx_data_element_t* apx_port_instance_get_effective_element(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -230,16 +230,16 @@ apx_data_element_t* apx_portInstance_get_effective_element(apx_port_instance_t* 
    return NULL;
 }
 
-apx_element_id_t apx_portInstance_element_id(apx_port_instance_t* self)
+apx_element_id_t apx_port_instance_element_id(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
-      return apx_dataElement_get_id(self->effective_data_element);
+      return apx_data_element_get_id(self->effective_data_element);
    }
    return APX_INVALID_ELEMENT_ID;
 }
 
-apx_error_t apx_portInstance_derive_properties(apx_port_instance_t* self, uint32_t offset, uint32_t* size)
+apx_error_t apx_port_instance_derive_properties(apx_port_instance_t* self, uint32_t offset, uint32_t* size)
 {
    if ( (self != NULL) && (size != NULL) )
    {
@@ -256,7 +256,7 @@ apx_error_t apx_portInstance_derive_properties(apx_port_instance_t* self, uint32
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_portInstance_set_computation_list(apx_port_instance_t* self, apx_computation_list_t const* computation_list)
+void apx_port_instance_set_computation_list(apx_port_instance_t* self, apx_computation_list_t const* computation_list)
 {
    if (self != NULL)
    {
@@ -264,7 +264,7 @@ void apx_portInstance_set_computation_list(apx_port_instance_t* self, apx_comput
    }
 }
 
-apx_computation_list_t const* apx_portInstance_get_computation_list(apx_port_instance_t* self)
+apx_computation_list_t const* apx_port_instance_get_computation_list(apx_port_instance_t* self)
 {
    if (self != NULL)
    {
@@ -273,7 +273,7 @@ apx_computation_list_t const* apx_portInstance_get_computation_list(apx_port_ins
    return NULL;
 }
 
-apx_computation_t const* apx_portInstance_get_computation(apx_port_instance_t* self, int32_t index)
+apx_computation_t const* apx_port_instance_get_computation(apx_port_instance_t* self, int32_t index)
 {
    if ((self != NULL) && (self->computation_list != NULL))
    {
@@ -282,7 +282,7 @@ apx_computation_t const* apx_portInstance_get_computation(apx_port_instance_t* s
    return NULL;
 }
 
-int32_t apx_portInstance_get_computation_list_length(apx_port_instance_t* self)
+int32_t apx_port_instance_get_computation_list_length(apx_port_instance_t* self)
 {
    if ((self != NULL) && (self->computation_list != NULL))
    {
@@ -291,7 +291,7 @@ int32_t apx_portInstance_get_computation_list_length(apx_port_instance_t* self)
    return 0;
 }
 
-apx_computation_list_id_t apx_portInstance_get_computation_list_id(apx_port_instance_t* self)
+apx_computation_list_id_t apx_port_instance_get_computation_list_id(apx_port_instance_t* self)
 {
    if ((self != NULL) && (self->computation_list != NULL))
    {
@@ -319,10 +319,10 @@ apx_error_t apx_port_instance_create_port_signature(apx_port_instance_t* self)
                   retval = convert_from_adt_to_apx_error(adt_str_push(str, '"'));
                   if (retval == APX_NO_ERROR)
                   {
-                     apx_data_element_t* data_element = apx_portInstance_get_effective_element(self);
+                     apx_data_element_t* data_element = apx_port_instance_get_effective_element(self);
                      if (data_element != NULL)
                      {
-                        adt_str_t* data_signature = apx_dataElement_to_string(data_element, true);
+                        adt_str_t* data_signature = apx_data_element_to_string(data_element, true);
                         if (data_signature != NULL)
                         {
                            retval = convert_from_adt_to_apx_error(adt_str_append(str, data_signature));
@@ -370,7 +370,7 @@ apx_error_t apx_port_instance_create_port_signature(apx_port_instance_t* self)
 
 }
 
-char const* apx_portInstance_get_port_signature(apx_port_instance_t const* self, bool *has_dynamic_data)
+char const* apx_port_instance_get_port_signature(apx_port_instance_t const* self, bool *has_dynamic_data)
 {
    if ( (self != NULL) && (has_dynamic_data != NULL) )
    {

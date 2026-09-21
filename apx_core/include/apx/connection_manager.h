@@ -50,16 +50,16 @@ typedef struct apx_connection_manager_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionManager_create(apx_connection_manager_t *self);
-void apx_connectionManager_destroy(apx_connection_manager_t *self);
-void apx_connectionManager_start(apx_connection_manager_t *self);
-void apx_connectionManager_stop(apx_connection_manager_t *self);
-void apx_connectionManager_attach(apx_connection_manager_t *self, apx_server_connection_t *connection);
-void apx_connectionManager_detach(apx_connection_manager_t *self, apx_server_connection_t *connection);
-apx_server_connection_t* apx_connectionManager_get_last_connection(apx_connection_manager_t const* self);
-uint32_t apx_connectionManager_get_num_connections(apx_connection_manager_t *self);
+void apx_connection_manager_create(apx_connection_manager_t *self);
+void apx_connection_manager_destroy(apx_connection_manager_t *self);
+void apx_connection_manager_start(apx_connection_manager_t *self);
+void apx_connection_manager_stop(apx_connection_manager_t *self);
+void apx_connection_manager_attach(apx_connection_manager_t *self, apx_server_connection_t *connection);
+void apx_connection_manager_detach(apx_connection_manager_t *self, apx_server_connection_t *connection);
+apx_server_connection_t* apx_connection_manager_get_last_connection(apx_connection_manager_t const* self);
+uint32_t apx_connection_manager_get_num_connections(apx_connection_manager_t *self);
 #ifdef UNIT_TEST
-void apx_connectionManager_run(apx_connection_manager_t *self);
+void apx_connection_manager_run(apx_connection_manager_t *self);
 #endif
 
 

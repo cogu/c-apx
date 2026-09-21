@@ -41,10 +41,10 @@ typedef struct apx_server_extension_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverExtension_create(apx_server_extension_t *self, const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config);
-void apx_serverExtension_destroy(apx_server_extension_t *self);
-apx_server_extension_t* apx_serverExtension_new(const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config);
-void apx_serverExtension_delete(apx_server_extension_t *self);
-void apx_serverExtension_vdelete(void *arg);
+void apx_server_extension_create(apx_server_extension_t *self, const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config);
+void apx_server_extension_destroy(apx_server_extension_t *self);
+apx_server_extension_t* apx_server_extension_new(const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config);
+void apx_server_extension_delete(apx_server_extension_t *self);
+void apx_server_extension_vdelete(void *arg);
 
 #endif //APX_SERVER_EXTENTION_H

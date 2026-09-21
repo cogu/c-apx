@@ -82,7 +82,7 @@ static apx_error_t read_dynamic_value_from_buffer(uint8_t const* begin, uint8_t 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_vm_writeState_create(apx_vm_write_state_t* self)
+void apx_vm_write_state_create(apx_vm_write_state_t* self)
 {
    if (self != NULL)
    {
@@ -101,7 +101,7 @@ void apx_vm_writeState_create(apx_vm_write_state_t* self)
    }
 }
 
-void apx_vm_writeState_destroy(apx_vm_write_state_t* self)
+void apx_vm_write_state_destroy(apx_vm_write_state_t* self)
 {
    if (self != NULL)
    {
@@ -109,28 +109,28 @@ void apx_vm_writeState_destroy(apx_vm_write_state_t* self)
    }
 }
 
-apx_vm_write_state_t* apx_vm_writeState_new(void)
+apx_vm_write_state_t* apx_vm_write_state_new(void)
 {
    apx_vm_write_state_t* self = (apx_vm_write_state_t*)malloc(sizeof(apx_vm_write_state_t));
    if (self != NULL)
    {
-      apx_vm_writeState_create(self);
+      apx_vm_write_state_create(self);
    }
    return self;
 }
 
-void apx_vm_writeState_delete(apx_vm_write_state_t* self)
+void apx_vm_write_state_delete(apx_vm_write_state_t* self)
 {
    if (self != NULL)
    {
-      apx_vm_writeState_destroy(self);
+      apx_vm_write_state_destroy(self);
       free(self);
    }
 }
 
-void apx_vm_writeState_vdelete(void* arg)
+void apx_vm_write_state_vdelete(void* arg)
 {
-   apx_vm_writeState_delete((apx_vm_write_state_t*)arg);
+   apx_vm_write_state_delete((apx_vm_write_state_t*)arg);
 }
 
 
@@ -139,8 +139,8 @@ apx_error_t apx_vm_serializer_create(apx_vm_serializer_t* self)
 {
    if (self != NULL)
    {
-      adt_stack_create(&self->stack, apx_vm_writeState_vdelete);
-      self->state = apx_vm_writeState_new();
+      adt_stack_create(&self->stack, apx_vm_write_state_vdelete);
+      self->state = apx_vm_write_state_new();
       if (self->state == NULL)
       {
          return APX_MEM_ERROR;
@@ -159,7 +159,7 @@ void apx_vm_serializer_destroy(apx_vm_serializer_t* self)
       adt_stack_destroy(&self->stack);
       if (self->state != NULL)
       {
-         apx_vm_writeState_delete(self->state);
+         apx_vm_write_state_delete(self->state);
       }
    }
 }
@@ -195,7 +195,7 @@ void apx_vm_serializer_reset(apx_vm_serializer_t* self)
       while (adt_stack_size(&self->stack) > 0)
       {
          assert(self->state != NULL);
-         apx_vm_writeState_delete(self->state);
+         apx_vm_write_state_delete(self->state);
          self->state = adt_stack_top(&self->stack);
          adt_stack_pop(&self->stack);
       }
@@ -1679,7 +1679,7 @@ static void serializer_pop_state(apx_vm_serializer_t* self)
    if (adt_stack_size(&self->stack) > 0)
    {
       assert(self->state != NULL);
-      apx_vm_writeState_delete(self->state);
+      apx_vm_write_state_delete(self->state);
       self->state = adt_stack_top(&self->stack);
       adt_stack_pop(&self->stack);
    }
@@ -1688,7 +1688,7 @@ static void serializer_pop_state(apx_vm_serializer_t* self)
 static apx_error_t serializer_enter_new_child_state(apx_vm_serializer_t* self)
 {
    assert(self != NULL);
-   apx_vm_write_state_t* child_state = apx_vm_writeState_new();
+   apx_vm_write_state_t* child_state = apx_vm_write_state_new();
    if (child_state == NULL)
    {
       return APX_MEM_ERROR;

@@ -91,12 +91,12 @@ typedef struct apx_vm_serializer_tag
 //////////////////////////////////////////////////////////////////////////////
 
 //apx_vm_write_state_t
-void apx_vm_writeState_create(apx_vm_write_state_t *self);
-void apx_vm_writeState_destroy(apx_vm_write_state_t *self);
-apx_vm_write_state_t* apx_vm_writeState_new(void);
-void apx_vm_writeState_delete(apx_vm_write_state_t *self);
-void apx_vm_writeState_vdelete(void *arg);
-void apx_vm_writeState_reset(apx_vm_write_state_t* self, dtl_dv_type_id type_id);
+void apx_vm_write_state_create(apx_vm_write_state_t *self);
+void apx_vm_write_state_destroy(apx_vm_write_state_t *self);
+apx_vm_write_state_t* apx_vm_write_state_new(void);
+void apx_vm_write_state_delete(apx_vm_write_state_t *self);
+void apx_vm_write_state_vdelete(void *arg);
+void apx_vm_write_state_reset(apx_vm_write_state_t* self, dtl_dv_type_id type_id);
 
 
 //apx_vm_serializer_t

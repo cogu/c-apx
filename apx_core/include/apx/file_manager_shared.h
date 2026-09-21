@@ -49,25 +49,25 @@ typedef struct apx_file_manager_shared_tag
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_fileManagerShared_create(apx_file_manager_shared_t *self, apx_connection_interface_t const *parent_connection, apx_allocator_t* allocator);
-void apx_fileManagerShared_destroy(apx_file_manager_shared_t *self);
-void apx_fileManagerShared_start(apx_file_manager_shared_t* self);
-apx_file_t *apx_fileManagerShared_create_local_file(apx_file_manager_shared_t *self, const rmf_file_info_t *fileInfo);
-apx_file_t *apx_fileManagerShared_create_remote_file(apx_file_manager_shared_t *self, const rmf_file_info_t *fileInfo);
-int32_t apx_fileManagerShared_get_num_local_files(apx_file_manager_shared_t* self);
-int32_t apx_fileManagerShared_get_num_remote_files(apx_file_manager_shared_t* self);
-apx_file_t *apx_fileManagerShared_find_local_file_by_name(apx_file_manager_shared_t* self, const char *name);
-apx_file_t *apx_fileManagerShared_find_remote_file_by_name(apx_file_manager_shared_t* self, const char *name);
-apx_file_t *apx_fileManagerShared_find_file_by_address(apx_file_manager_shared_t* self, uint32_t address);
-uint32_t apx_fileManagerShared_get_connection_id(apx_file_manager_shared_t const* self);
-apx_connection_type_t apx_fileManagerShared_get_connection_type(apx_file_manager_shared_t const* self);
-rmf_version_id_t apx_fileManagerShared_get_remotefile_version_id(apx_file_manager_shared_t const* self);
-int32_t apx_fileManagerShared_copy_local_file_info(apx_file_manager_shared_t *self, adt_ary_t *array);
-void apx_fileManagerShared_connected(apx_file_manager_shared_t *self);
-void apx_fileManagerShared_disconnected(apx_file_manager_shared_t *self);
-bool apx_fileManagerShared_is_connected(apx_file_manager_shared_t *self);
-apx_connection_interface_t const* apx_fileManagerShared_connection(apx_file_manager_shared_t const* self);
-apx_allocator_t* apx_fileManagerShared_allocator(apx_file_manager_shared_t const* self);
+void apx_file_manager_shared_create(apx_file_manager_shared_t *self, apx_connection_interface_t const *parent_connection, apx_allocator_t* allocator);
+void apx_file_manager_shared_destroy(apx_file_manager_shared_t *self);
+void apx_file_manager_shared_start(apx_file_manager_shared_t* self);
+apx_file_t *apx_file_manager_shared_create_local_file(apx_file_manager_shared_t *self, const rmf_file_info_t *file_info);
+apx_file_t *apx_file_manager_shared_create_remote_file(apx_file_manager_shared_t *self, const rmf_file_info_t *file_info);
+int32_t apx_file_manager_shared_get_num_local_files(apx_file_manager_shared_t* self);
+int32_t apx_file_manager_shared_get_num_remote_files(apx_file_manager_shared_t* self);
+apx_file_t *apx_file_manager_shared_find_local_file_by_name(apx_file_manager_shared_t* self, const char *name);
+apx_file_t *apx_file_manager_shared_find_remote_file_by_name(apx_file_manager_shared_t* self, const char *name);
+apx_file_t *apx_file_manager_shared_find_file_by_address(apx_file_manager_shared_t* self, uint32_t address);
+uint32_t apx_file_manager_shared_get_connection_id(apx_file_manager_shared_t const* self);
+apx_connection_type_t apx_file_manager_shared_get_connection_type(apx_file_manager_shared_t const* self);
+rmf_version_id_t apx_file_manager_shared_get_remotefile_version_id(apx_file_manager_shared_t const* self);
+int32_t apx_file_manager_shared_copy_local_file_info(apx_file_manager_shared_t *self, adt_ary_t *array);
+void apx_file_manager_shared_connected(apx_file_manager_shared_t *self);
+void apx_file_manager_shared_disconnected(apx_file_manager_shared_t *self);
+bool apx_file_manager_shared_is_connected(apx_file_manager_shared_t *self);
+apx_connection_interface_t const* apx_file_manager_shared_connection(apx_file_manager_shared_t const* self);
+apx_allocator_t* apx_file_manager_shared_allocator(apx_file_manager_shared_t const* self);
 
 
 #endif //APX_FILE_MANAGER_SHARED_H

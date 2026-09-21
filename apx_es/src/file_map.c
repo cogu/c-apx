@@ -9,7 +9,7 @@
 * See LICENSE in project root for full license terms.
 ******************************************************************************/
 /**
- * embedded version of apx_fileMap.c. This version uses fixed-size linear list instead of a dynamic linked list (no malloc required)
+ * embedded version of apx_file_map.c. This version uses fixed-size linear list instead of a dynamic linked list (no malloc required)
  *
  */
 //////////////////////////////////////////////////////////////////////////////
@@ -17,7 +17,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include <assert.h>
-#include "apx_es_fileMap.h"
+#include "apx_es_file_map.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -35,9 +35,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static int8_t apx_es_fileMap_autoInsertInternal(apx_es_file_map_t *self, apx_file_t *pFile, uint32_t start_address, uint32_t end_address, uint32_t address_boundary);
-static int8_t apx_es_fileMap_insertAt(apx_es_file_map_t *self, apx_file_t *pFile, int32_t index);
-static int8_t apx_es_fileMap_removeAt(apx_es_file_map_t *self, int32_t index);
+static int8_t apx_es_file_map_auto_insert_internal(apx_es_file_map_t *self, apx_file_t *p_file, uint32_t start_address, uint32_t end_address, uint32_t address_boundary);
+static int8_t apx_es_file_map_insert_at(apx_es_file_map_t *self, apx_file_t *p_file, int32_t index);
+static int8_t apx_es_file_map_remove_at(apx_es_file_map_t *self, int32_t index);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -47,7 +47,7 @@ static int8_t apx_es_fileMap_removeAt(apx_es_file_map_t *self, int32_t index);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_es_fileMap_create(apx_es_file_map_t *self)
+void apx_es_file_map_create(apx_es_file_map_t *self)
 {
    if (self != NULL)
    {
@@ -57,19 +57,19 @@ void apx_es_fileMap_create(apx_es_file_map_t *self)
    }
 }
 
-int8_t apx_es_fileMap_autoInsert(apx_es_file_map_t *self, apx_file_t *pFile)
+int8_t apx_es_file_map_auto_insert(apx_es_file_map_t *self, apx_file_t *p_file)
 {
-   if ( (self != NULL) && (pFile != NULL) )
+   if ( (self != NULL) && (p_file != NULL) )
    {
-      switch(pFile->fileType)
+      switch(p_file->fileType)
       {
          case APX_OUTDATA_FILE: //fall-through
          case APX_INDATA_FILE:
-            return apx_es_fileMap_autoInsertInternal(self, pFile, PORT_DATA_START, DEFINITION_START, PORT_DATA_BOUNDARY);
+            return apx_es_file_map_auto_insert_internal(self, p_file, PORT_DATA_START, DEFINITION_START, PORT_DATA_BOUNDARY);
          case APX_DEFINITION_FILE:
-            return apx_es_fileMap_autoInsertInternal(self, pFile, DEFINITION_START, USER_DATA_START, DEFINITION_BOUNDARY);
+            return apx_es_file_map_auto_insert_internal(self, p_file, DEFINITION_START, USER_DATA_START, DEFINITION_BOUNDARY);
          case APX_USER_DATA_FILE:
-            return apx_es_fileMap_autoInsertInternal(self, pFile, USER_DATA_START, USER_DATA_END, USER_DATA_BOUNDARY);
+            return apx_es_file_map_auto_insert_internal(self, p_file, USER_DATA_START, USER_DATA_END, USER_DATA_BOUNDARY);
          default:
             return -1;
       }
@@ -78,9 +78,9 @@ int8_t apx_es_fileMap_autoInsert(apx_es_file_map_t *self, apx_file_t *pFile)
    return -1;
 }
 
-int8_t apx_es_fileMap_insert(apx_es_file_map_t *self, apx_file_t *pFile)
+int8_t apx_es_file_map_insert(apx_es_file_map_t *self, apx_file_t *p_file)
 {
-   if ( (self != NULL) && (pFile != NULL) )
+   if ( (self != NULL) && (p_file != NULL) )
    {
       int32_t i;
       int32_t placementIndex=-1;
@@ -95,45 +95,45 @@ int8_t apx_es_fileMap_insert(apx_es_file_map_t *self, apx_file_t *pFile)
          for(i=0;i<self->curLen;i++)
          {
             pCurrent = self->fileList[i];
-            if (pCurrent->fileInfo.address > pFile->fileInfo.address )
+            if (pCurrent->fileInfo.address > p_file->fileInfo.address )
             {
                placementIndex = i;
                break;
             }
          }
       }
-      return apx_es_fileMap_insertAt(self, pFile, placementIndex);
+      return apx_es_file_map_insert_at(self, p_file, placementIndex);
    }
    return -1;
 }
 
-int8_t apx_es_fileMap_remove(apx_es_file_map_t *self, apx_file_t *pFile)
+int8_t apx_es_file_map_remove(apx_es_file_map_t *self, apx_file_t *p_file)
 {
-   if ( (self != NULL) && (pFile != NULL) )
+   if ( (self != NULL) && (p_file != NULL) )
    {
       int32_t i;
       apx_file_t *pCurrent = NULL;
       for(i=0;i<self->curLen;i++)
       {
          pCurrent = self->fileList[i];
-         if (pCurrent == pFile)
+         if (pCurrent == p_file)
          {
-            return apx_es_fileMap_removeAt(self, i);
+            return apx_es_file_map_remove_at(self, i);
          }
       }
    }
    return -1;
 }
 
-void apx_es_fileMap_clear(apx_es_file_map_t *self)
+void apx_es_file_map_clear(apx_es_file_map_t *self)
 {
    if (self != NULL)
    {
-      apx_es_fileMap_create(self);
+      apx_es_file_map_create(self);
    }
 }
 
-apx_file_t *apx_es_fileMap_findByAddress(apx_es_file_map_t *self, uint32_t address)
+apx_file_t *apx_es_file_map_find_by_address(apx_es_file_map_t *self, uint32_t address)
 {
    if (self != NULL)
    {
@@ -164,9 +164,9 @@ apx_file_t *apx_es_fileMap_findByAddress(apx_es_file_map_t *self, uint32_t addre
    }
    return NULL;
 }
-apx_file_t *apx_es_fileMap_findByName(apx_es_file_map_t *self, const char *name);
+apx_file_t *apx_es_file_map_find_by_name(apx_es_file_map_t *self, const char *name);
 
-int32_t apx_es_fileMap_length(apx_es_file_map_t *self)
+int32_t apx_es_file_map_length(apx_es_file_map_t *self)
 {
    if (self != NULL)
    {
@@ -175,7 +175,7 @@ int32_t apx_es_fileMap_length(apx_es_file_map_t *self)
    return -1;
 }
 
-apx_file_t *apx_es_fileMap_get(apx_es_file_map_t *self, int32_t index)
+apx_file_t *apx_es_file_map_get(apx_es_file_map_t *self, int32_t index)
 {
    if ( (self != NULL) && (index>=0) && (index<self->curLen) )
    {
@@ -187,16 +187,16 @@ apx_file_t *apx_es_fileMap_get(apx_es_file_map_t *self, int32_t index)
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static int8_t apx_es_fileMap_autoInsertInternal(apx_es_file_map_t *self, apx_file_t *pFile, uint32_t start_address, uint32_t end_address, uint32_t address_boundary)
+static int8_t apx_es_file_map_auto_insert_internal(apx_es_file_map_t *self, apx_file_t *p_file, uint32_t start_address, uint32_t end_address, uint32_t address_boundary)
 {
-   if ( (self != NULL) && (pFile != NULL) )
+   if ( (self != NULL) && (p_file != NULL) )
    {
       int32_t i;
       int32_t found=-1;
       int32_t placementIndex=-1;
       if (self->curLen == 0)
       {
-         pFile->fileInfo.address = start_address;
+         p_file->fileInfo.address = start_address;
          placementIndex=0;
       }
       else
@@ -239,19 +239,19 @@ static int8_t apx_es_fileMap_autoInsertInternal(apx_es_file_map_t *self, apx_fil
            }
            placementIndex = found+1;
          }
-         pFile->fileInfo.address = placement_address;
+         p_file->fileInfo.address = placement_address;
       }
-      return apx_es_fileMap_insertAt(self, pFile, placementIndex);
+      return apx_es_file_map_insert_at(self, p_file, placementIndex);
    }
    return -1;
 }
 
 /**
- * inserts pFile at index and moves everything at index (and forward) ahead one slot
+ * inserts p_file at index and moves everything at index (and forward) ahead one slot
  */
-static int8_t apx_es_fileMap_insertAt(apx_es_file_map_t *self, apx_file_t *pFile, int32_t index)
+static int8_t apx_es_file_map_insert_at(apx_es_file_map_t *self, apx_file_t *p_file, int32_t index)
 {
-   if ( (self != NULL) && (pFile != NULL) && (index >= 0) )
+   if ( (self != NULL) && (p_file != NULL) && (index >= 0) )
    {
       if (self->curLen >= APX_ES_FILEMAP_MAX_NUM_FILES)
       {
@@ -260,7 +260,7 @@ static int8_t apx_es_fileMap_insertAt(apx_es_file_map_t *self, apx_file_t *pFile
       if (self->curLen==index)
       {
          //insert at end of list
-         self->fileList[index]=pFile;
+         self->fileList[index]=p_file;
          self->curLen++;
       }
       else if (self->curLen>index)
@@ -272,7 +272,7 @@ static int8_t apx_es_fileMap_insertAt(apx_es_file_map_t *self, apx_file_t *pFile
             self->fileList[i]=self->fileList[i-1];
          }
          self->curLen++;
-         self->fileList[index]=pFile;
+         self->fileList[index]=p_file;
       }
       else
       {
@@ -283,7 +283,7 @@ static int8_t apx_es_fileMap_insertAt(apx_es_file_map_t *self, apx_file_t *pFile
    return -1;
 }
 
-static int8_t apx_es_fileMap_removeAt(apx_es_file_map_t *self, int32_t index)
+static int8_t apx_es_file_map_remove_at(apx_es_file_map_t *self, int32_t index)
 {
    if ( (self != NULL) && (self->curLen>0) && (index >= 0) && (index < self->curLen) )
    {

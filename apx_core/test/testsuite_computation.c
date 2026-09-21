@@ -32,7 +32,7 @@ static void test_rational_scaling_to_string(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testSuite_apx_computation(void)
+CuSuite* testsuite_apx_computation(void)
 {
    CuSuite* suite = CuSuiteNew();
 
@@ -48,28 +48,28 @@ CuSuite* testSuite_apx_computation(void)
 static void test_value_table_to_string(CuTest* tc)
 {
    adt_ary_t* values = adt_ary_new(adt_str_vdelete);
-   apx_value_table_t* vt = apx_valueTable_new();
+   apx_value_table_t* vt = apx_value_table_new();
    CuAssertPtrNotNull(tc, vt);
    adt_ary_push(values, adt_str_new_cstr("Off"));
    adt_ary_push(values, adt_str_new_cstr("On"));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_valueTable_move_values(vt, values));
-   apx_valueTable_set_range_unsigned(vt, 0, 1);
-   adt_str_t* str = apx_valueTable_to_string(vt);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_value_table_move_values(vt, values));
+   apx_value_table_set_range_unsigned(vt, 0, 1);
+   adt_str_t* str = apx_value_table_to_string(vt);
    CuAssertPtrNotNull(tc, str);
    CuAssertStrEquals(tc, "VT(0,1,\"Off\",\"On\")", adt_str_cstr(str));
    adt_str_delete(str);
-   apx_valueTable_delete(vt);
+   apx_value_table_delete(vt);
    adt_ary_delete(values);
 }
 
 static void test_rational_scaling_to_string(CuTest* tc)
 {
-   apx_rational_scaling_t* rs = apx_rationalScaling_new(0.0, 4, 10, "Percent");
+   apx_rational_scaling_t* rs = apx_rational_scaling_new(0.0, 4, 10, "Percent");
    CuAssertPtrNotNull(tc, rs);
-   apx_rationalScaling_set_range_unsigned(rs, 0, 250);
-   adt_str_t* str = apx_rationalScaling_to_string(rs);
+   apx_rational_scaling_set_range_unsigned(rs, 0, 250);
+   adt_str_t* str = apx_rational_scaling_to_string(rs);
    CuAssertPtrNotNull(tc, str);
    CuAssertStrEquals(tc, "RS(0,250,0.00000000,4,10,\"Percent\")", adt_str_cstr(str));
    adt_str_delete(str);
-   apx_rationalScaling_delete(rs);
+   apx_rational_scaling_delete(rs);
 }

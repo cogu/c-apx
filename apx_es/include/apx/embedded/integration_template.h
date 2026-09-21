@@ -27,8 +27,8 @@
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_es_nodeData_lock(void); //If needed, this can be converted into a function-like macro
-void apx_es_nodeData_unlock(void); //If needed, this can be converted into a function-like macro
+void apx_es_node_data_lock(void); //If needed, this can be converted into a function-like macro
+void apx_es_node_data_unlock(void); //If needed, this can be converted into a function-like macro
 
 #endif //APX_ES_INTEGRATION_TEMPLATE_H
 

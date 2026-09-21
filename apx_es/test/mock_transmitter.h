@@ -30,18 +30,18 @@ typedef struct mock_transmitter_tag
    int32_t maxBufLen;
    int32_t numWrites;
    uint8_t dataBuf[MOCK_TRANSMIT_MAX_LEN];
-} mockTransmitter_t;
+} mock_transmitter_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void mockTransmitter_create(mockTransmitter_t *self);
-void mockTransmitter_reset(mockTransmitter_t *self, int32_t newBufLen);
-void mockTransmitter_autoReset(mockTransmitter_t *self);
-int32_t mockTransmitter_writeAvail(mockTransmitter_t *self);
-int32_t mockTransmitter_readAvail(mockTransmitter_t *self);
-uint8_t* mockTransmitter_getData(mockTransmitter_t *self);
-int32_t mockTransmitter_write(mockTransmitter_t *self, const uint8_t *masg, int32_t msgLen);
-int32_t mockTransmitter_getNumWrites(mockTransmitter_t *self);
-void mockTransmitter_trimLeft(mockTransmitter_t *self, int32_t dataLen);
+void mock_transmitter_create(mock_transmitter_t *self);
+void mock_transmitter_reset(mock_transmitter_t *self, int32_t new_buf_len);
+void mock_transmitter_auto_reset(mock_transmitter_t *self);
+int32_t mock_transmitter_write_avail(mock_transmitter_t *self);
+int32_t mock_transmitter_read_avail(mock_transmitter_t *self);
+uint8_t* mock_transmitter_get_data(mock_transmitter_t *self);
+int32_t mock_transmitter_write(mock_transmitter_t *self, const uint8_t *masg, int32_t msg_len);
+int32_t mock_transmitter_get_num_writes(mock_transmitter_t *self);
+void mock_transmitter_trim_left(mock_transmitter_t *self, int32_t data_len);
 #endif //MOCK_TRANSMITTER_H

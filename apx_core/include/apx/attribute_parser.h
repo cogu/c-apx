@@ -85,34 +85,34 @@ typedef struct apx_attribute_parser_tag
 //////////////////////////////////////////////////////////////////////////////
 
 //apx_attribute_parse_state_t API
-void apx_attributeParseState_create(apx_attribute_parse_state_t* self);
-void apx_attributeParseState_destroy(apx_attribute_parse_state_t* self);
-apx_attribute_parse_state_t* apx_attributeParseState_new(void);
-void apx_attributeParseState_delete(apx_attribute_parse_state_t* self);
-void apx_attributeParseState_vdelete(void* arg);
-bool apx_attributeParseState_has_value(apx_attribute_parse_state_t* self);
+void apx_attribute_parse_state_create(apx_attribute_parse_state_t* self);
+void apx_attribute_parse_state_destroy(apx_attribute_parse_state_t* self);
+apx_attribute_parse_state_t* apx_attribute_parse_state_new(void);
+void apx_attribute_parse_state_delete(apx_attribute_parse_state_t* self);
+void apx_attribute_parse_state_vdelete(void* arg);
+bool apx_attribute_parse_state_has_value(apx_attribute_parse_state_t* self);
 
 //apx_range_t API
 void apx_range_create(apx_range_t* self);
 
 //apx_attribute_parser_value_table_state_t API
-void apx_attributeParserValueTableState_create(apx_attribute_parser_value_table_state_t* self);
-void apx_attributeParserValueTableState_destroy(apx_attribute_parser_value_table_state_t* self);
-void apx_attributeParserValueTableState_append(apx_attribute_parser_value_table_state_t* self, adt_str_t* str);
-int32_t apx_attributeParserValueTableState_length(apx_attribute_parser_value_table_state_t* self);
+void apx_attribute_parser_value_table_state_create(apx_attribute_parser_value_table_state_t* self);
+void apx_attribute_parser_value_table_state_destroy(apx_attribute_parser_value_table_state_t* self);
+void apx_attribute_parser_value_table_state_append(apx_attribute_parser_value_table_state_t* self, adt_str_t* str);
+int32_t apx_attribute_parser_value_table_state_length(apx_attribute_parser_value_table_state_t* self);
 
 //apx_attribute_parser_rational_scaling_state_t API
-void apx_attributeParserRationalScalingState_create(apx_attribute_parser_rational_scaling_state_t* self);
-void apx_attributeParserRationalScalingState_destroy(apx_attribute_parser_rational_scaling_state_t* self);
+void apx_attribute_parser_rational_scaling_state_create(apx_attribute_parser_rational_scaling_state_t* self);
+void apx_attribute_parser_rational_scaling_state_destroy(apx_attribute_parser_rational_scaling_state_t* self);
 
 //apx_attribute_parser_t API
-void apx_attributeParser_create(apx_attribute_parser_t *self);
-void apx_attributeParser_destroy(apx_attribute_parser_t *self);
+void apx_attribute_parser_create(apx_attribute_parser_t *self);
+void apx_attribute_parser_destroy(apx_attribute_parser_t *self);
 
-uint8_t const* apx_attributeParser_parse_port_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr);
-uint8_t const* apx_attributeParser_parse_type_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr);
-uint8_t const* apx_attributeParser_parse_initializer(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, dtl_dv_t** dv);
-apx_error_t apx_attributeParser_get_last_error(apx_attribute_parser_t* self, uint8_t const** error_next);
+uint8_t const* apx_attribute_parser_parse_port_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr);
+uint8_t const* apx_attribute_parser_parse_type_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr);
+uint8_t const* apx_attribute_parser_parse_initializer(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, dtl_dv_t** dv);
+apx_error_t apx_attribute_parser_get_last_error(apx_attribute_parser_t* self, uint8_t const** error_next);
 
 
 #endif //APX_ATTRIBUTE_PARSER_H

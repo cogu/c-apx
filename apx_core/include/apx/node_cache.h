@@ -27,9 +27,9 @@ typedef struct apx_node_cache_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_nodeCache_create(apx_node_cache_t* self, apx_mode_t mode);
-void apx_nodeCache_destroy(apx_node_cache_t* self);
-apx_node_cache_t* apx_nodeCache_new(apx_mode_t mode);
-void apx_nodeCache_delete(apx_node_cache_t* self);
+void apx_node_cache_create(apx_node_cache_t* self, apx_mode_t mode);
+void apx_node_cache_destroy(apx_node_cache_t* self);
+apx_node_cache_t* apx_node_cache_new(apx_mode_t mode);
+void apx_node_cache_delete(apx_node_cache_t* self);
 
 #endif //APX_FILE_CACHE_H

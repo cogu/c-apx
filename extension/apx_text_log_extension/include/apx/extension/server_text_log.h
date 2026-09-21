@@ -37,21 +37,21 @@ typedef struct apx_server_text_log_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverTextLog_create(apx_server_text_log_t *self, struct apx_server_tag *server);
-void apx_serverTextLog_destroy(apx_server_text_log_t *self);
-void apx_serverTextLog_vdestroy(void *arg);
-apx_server_text_log_t *apx_serverTextLog_new(struct apx_server_tag *server);
-void apx_serverTextLog_delete(apx_server_text_log_t *self);
+void apx_server_text_log_create(apx_server_text_log_t *self, struct apx_server_tag *server);
+void apx_server_text_log_destroy(apx_server_text_log_t *self);
+void apx_server_text_log_vdestroy(void *arg);
+apx_server_text_log_t *apx_server_text_log_new(struct apx_server_tag *server);
+void apx_server_text_log_delete(apx_server_text_log_t *self);
 
-void apx_serverTextLog_enableFile(apx_server_text_log_t *self, const char *path);
-void apx_serverTextLog_enableStdOut(apx_server_text_log_t *self);
-void apx_serverTextLog_enableSysLog(apx_server_text_log_t *self, const char *label);
-void apx_serverTextLog_closeAll(apx_server_text_log_t *self);
+void apx_server_text_log_enable_file(apx_server_text_log_t *self, const char *path);
+void apx_server_text_log_enable_std_out(apx_server_text_log_t *self);
+void apx_server_text_log_enable_sys_log(apx_server_text_log_t *self, const char *label);
+void apx_server_text_log_close_all(apx_server_text_log_t *self);
 
 //Virtual functions
-void apx_serverTextLog_virtual_on_protocol_header_accepted(void* arg, struct apx_connection_base_tag* connection);
-void apx_serverTextLog_virtual_on_file_published(void* arg, struct apx_connection_base_tag* connection, const struct rmf_file_info_tag* file_info);
-void apx_serverTextLog_virtual_on_file_revoked(void* arg, struct apx_connection_base_tag* connection, const struct rmf_file_info_tag* file_info);
+void apx_server_text_log_virtual_on_protocol_header_accepted(void* arg, struct apx_connection_base_tag* connection);
+void apx_server_text_log_virtual_on_file_published(void* arg, struct apx_connection_base_tag* connection, const struct rmf_file_info_tag* file_info);
+void apx_server_text_log_virtual_on_file_revoked(void* arg, struct apx_connection_base_tag* connection, const struct rmf_file_info_tag* file_info);
 
 
 #endif //APX_SERVER_TEXT_LOG_H

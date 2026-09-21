@@ -47,16 +47,16 @@ typedef struct apx_server_monitor_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverMonitor_create(apx_server_monitor_t* self, struct apx_server_tag* server);
-void apx_serverMonitor_destroy(apx_server_monitor_t* self);
-apx_server_monitor_t* apx_serverMonitor_new(struct apx_server_tag* server);
-void apx_serverMonitor_delete(apx_server_monitor_t* self);
-int32_t apx_serverMonitor_num_connections(apx_server_monitor_t* self);
-apx_observed_connection_t* apx_serverMonitor_get_last_observed_connection(apx_server_monitor_t* self);
+void apx_server_monitor_create(apx_server_monitor_t* self, struct apx_server_tag* server);
+void apx_server_monitor_destroy(apx_server_monitor_t* self);
+apx_server_monitor_t* apx_server_monitor_new(struct apx_server_tag* server);
+void apx_server_monitor_delete(apx_server_monitor_t* self);
+int32_t apx_server_monitor_num_connections(apx_server_monitor_t* self);
+apx_observed_connection_t* apx_server_monitor_get_last_observed_connection(apx_server_monitor_t* self);
 
 //Virtual call points
-void apx_serverMonitor_virtual_on_new_connection(void* arg, apx_server_connection_t* connection);
-void apx_serverMonitor_virtual_on_connection_closed(void* arg, apx_server_connection_t* connection);
-void apx_serverMonitor_virtual_on_protocol_header_accepted(void* arg, apx_connection_base_t* connection);
+void apx_server_monitor_virtual_on_new_connection(void* arg, apx_server_connection_t* connection);
+void apx_server_monitor_virtual_on_connection_closed(void* arg, apx_server_connection_t* connection);
+void apx_server_monitor_virtual_on_protocol_header_accepted(void* arg, apx_connection_base_t* connection);
 
 #endif //APX_SERVER_MONITOR_H

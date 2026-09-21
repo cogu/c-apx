@@ -118,7 +118,7 @@ void apx_event_destroy(apx_event_t* event, soa_t* allocator)
          break;
       case APX_EVENT_REMOTE_FILE_PUBLISHED:
          file_info = (rmf_file_info_t*)event->data4;
-         rmf_fileInfo_delete(file_info);
+         rmf_file_info_delete(file_info);
          break;
       default:
          assert(0);

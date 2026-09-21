@@ -34,10 +34,10 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 #ifndef UNIT_TEST
-static int8_t apx_allocator_startThread(apx_allocator_t *self);
-static THREAD_PROTO(threadTask,arg);
+static int8_t apx_allocator_start_thread(apx_allocator_t *self);
+static THREAD_PROTO(thread_task,arg);
 #endif
-static bool apx_allocator_processEvent(apx_allocator_t *self);
+static bool apx_allocator_process_event(apx_allocator_t *self);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -52,15 +52,15 @@ static bool apx_allocator_processEvent(apx_allocator_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
+apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t max_pending_messages)
 {
    if (self != NULL)
    {
-      size_t elemSize = sizeof(rbf_data_t);
-      adt_buf_err_t bufResult;
+      size_t elem_size = sizeof(rbf_data_t);
+      adt_buf_err_t buf_result;
 
-      bufResult = adt_rbfh_create_with_params(&self->messages, (uint8_t) elemSize, ADT_RBFSH_MIN_NUM_ELEMS_DEFAULT, maxPendingMessages);
-      if (bufResult != BUF_E_OK)
+      buf_result = adt_rbfh_create_with_params(&self->messages, (uint8_t) elem_size, ADT_RBFSH_MIN_NUM_ELEMS_DEFAULT, max_pending_messages);
+      if (buf_result != BUF_E_OK)
       {
          return APX_MEM_ERROR;
       }
@@ -100,7 +100,7 @@ void apx_allocator_start(apx_allocator_t *self)
 #ifndef UNIT_TEST
    if( (self != NULL) && (self->workerThreadValid == false) )
    {
-      apx_allocator_startThread(self);
+      apx_allocator_start_thread(self);
    }
 #else
    (void)self;
@@ -196,7 +196,7 @@ void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size)
    }
 }
 
-bool apx_allocator_isRunning(apx_allocator_t *self)
+bool apx_allocator_is_running(apx_allocator_t *self)
 {
    if ( self != NULL)
    {
@@ -206,16 +206,16 @@ bool apx_allocator_isRunning(apx_allocator_t *self)
 }
 
 #ifdef UNIT_TEST
-void apx_allocator_processAll(apx_allocator_t *self)
+void apx_allocator_process_all(apx_allocator_t *self)
 {
    bool result = true;
    while(result)
    {
-      result = apx_allocator_processEvent(self);
+      result = apx_allocator_process_event(self);
    }
 }
 
-int32_t apx_allocator_numPendingMessages(apx_allocator_t *self)
+int32_t apx_allocator_num_pending_messages(apx_allocator_t *self)
 {
    if (self != NULL)
    {
@@ -229,19 +229,19 @@ int32_t apx_allocator_numPendingMessages(apx_allocator_t *self)
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 #ifndef UNIT_TEST
-static int8_t apx_allocator_startThread(apx_allocator_t *self)
+static int8_t apx_allocator_start_thread(apx_allocator_t *self)
 {
    if( self != NULL){
    self->isRunning = true;
    self->workerThreadValid = true;
 #ifdef _WIN32
-      THREAD_CREATE(self->workerThread,threadTask,self,self->threadId);
+      THREAD_CREATE(self->workerThread,thread_task,self,self->threadId);
       if(self->workerThread == INVALID_HANDLE_VALUE){
          self->workerThreadValid = false;
          return -1;
       }
 #else
-      int rc = THREAD_CREATE(self->workerThread,threadTask,self);
+      int rc = THREAD_CREATE(self->workerThread,thread_task,self);
       if(rc != 0){
          self->workerThreadValid = false;
          return -1;
@@ -253,7 +253,7 @@ static int8_t apx_allocator_startThread(apx_allocator_t *self)
    return -1;
 }
 
-static THREAD_PROTO(threadTask,arg)
+static THREAD_PROTO(thread_task,arg)
 {
    if(arg != NULL)
    {
@@ -273,7 +273,7 @@ static THREAD_PROTO(threadTask,arg)
          {
             bool processing_result;
             messages_processed++;
-            processing_result = apx_allocator_processEvent(self);
+            processing_result = apx_allocator_process_event(self);
             if (!processing_result)
             {
                break;
@@ -297,12 +297,12 @@ static THREAD_PROTO(threadTask,arg)
 }
 #endif //UNIT_TEST
 
-static bool apx_allocator_processEvent(apx_allocator_t *self)
+static bool apx_allocator_process_event(apx_allocator_t *self)
 {
    bool retval = true;
    uint8_t rc;
    rbf_data_t data;
-   bool delayedFree = false;
+   bool delayed_free = false;
    SPINLOCK_ENTER(self->lock);
    rc = adt_rbfh_remove(&self->messages,(uint8_t*) &data);
    if (rc == BUF_E_OK)
@@ -315,7 +315,7 @@ static bool apx_allocator_processEvent(apx_allocator_t *self)
          }
          else
          {
-            delayedFree = true;
+            delayed_free = true;
          }
       }
       else
@@ -329,7 +329,7 @@ static bool apx_allocator_processEvent(apx_allocator_t *self)
    }
    SPINLOCK_LEAVE(self->lock);
 
-   if (delayedFree == true)
+   if (delayed_free == true)
    {
       free(data.ptr);
    }
@@ -339,7 +339,7 @@ static bool apx_allocator_processEvent(apx_allocator_t *self)
    }
    else
    {
-      //Already handled by soa_free or bufResult != E_BUF_OK
+      //Already handled by soa_free or buf_result != E_BUF_OK
    }
    return retval;
 }

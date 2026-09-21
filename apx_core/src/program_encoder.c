@@ -29,7 +29,7 @@ static uint8_t calc_data_size_variant(uint8_t elem_variant, uint8_t queue_varian
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_programEncoder_create(apx_program_encoder_t* self)
+void apx_program_encoder_create(apx_program_encoder_t* self)
 {
    if (self != NULL)
    {
@@ -39,7 +39,7 @@ void apx_programEncoder_create(apx_program_encoder_t* self)
    }
 }
 
-void apx_programEncoder_destroy(apx_program_encoder_t* self)
+void apx_program_encoder_destroy(apx_program_encoder_t* self)
 {
    if (self != NULL)
    {
@@ -48,7 +48,7 @@ void apx_programEncoder_destroy(apx_program_encoder_t* self)
    }
 }
 
-void apx_programEncoder_clear(apx_program_encoder_t* self)
+void apx_program_encoder_clear(apx_program_encoder_t* self)
 {
    if (self != NULL)
    {
@@ -58,7 +58,7 @@ void apx_programEncoder_clear(apx_program_encoder_t* self)
    }
 }
 
-apx_error_t apx_programEncoder_encode_instruction(apx_program_encoder_t* self, uint8_t opcode, uint8_t variant, bool flag)
+apx_error_t apx_program_encoder_encode_instruction(apx_program_encoder_t* self, uint8_t opcode, uint8_t variant, bool flag)
 {
    if (self == NULL)
    {
@@ -77,7 +77,7 @@ apx_error_t apx_programEncoder_encode_instruction(apx_program_encoder_t* self, u
    return (rc == ADT_NO_ERROR) ? APX_NO_ERROR : APX_MEM_ERROR;
 }
 
-apx_error_t apx_programEncoder_encode_header_instruction(apx_program_encoder_t* self, uint8_t opcode, uint8_t variant, bool flag)
+apx_error_t apx_program_encoder_encode_header_instruction(apx_program_encoder_t* self, uint8_t opcode, uint8_t variant, bool flag)
 {
    if (self == NULL)
    {
@@ -88,7 +88,7 @@ apx_error_t apx_programEncoder_encode_header_instruction(apx_program_encoder_t* 
    return (rc == ADT_NO_ERROR) ? APX_NO_ERROR : APX_MEM_ERROR;
 }
 
-apx_error_t apx_programEncoder_encode_array_size(apx_program_encoder_t* self, uint32_t array_size, bool is_dynamic)
+apx_error_t apx_program_encoder_encode_array_size(apx_program_encoder_t* self, uint32_t array_size, bool is_dynamic)
 {
    if (self == NULL)
    {
@@ -115,7 +115,7 @@ apx_error_t apx_programEncoder_encode_array_size(apx_program_encoder_t* self, ui
       packLE(&encoded_bytes[0], array_size, (uint8_t)UINT32_SIZE);
       byte_count = UINT32_SIZE;
    }
-   apx_error_t err = apx_programEncoder_encode_instruction(self, APX_VM_OPCODE_DATA_SIZE, variant, is_dynamic);
+   apx_error_t err = apx_program_encoder_encode_instruction(self, APX_VM_OPCODE_DATA_SIZE, variant, is_dynamic);
    if (err == APX_NO_ERROR)
    {
       adt_error_t rc = adt_bytearray_append(&self->buffer, &encoded_bytes[0], byte_count);
@@ -127,7 +127,7 @@ apx_error_t apx_programEncoder_encode_array_size(apx_program_encoder_t* self, ui
    return err;
 }
 
-apx_error_t apx_programEncoder_encode_limit_check_instruction(apx_program_encoder_t* self, uint8_t variant, int64_t lower_limit, int64_t upper_limit, bool is_array)
+apx_error_t apx_program_encoder_encode_limit_check_instruction(apx_program_encoder_t* self, uint8_t variant, int64_t lower_limit, int64_t upper_limit, bool is_array)
 {
    if (self == NULL)
    {
@@ -141,15 +141,15 @@ apx_error_t apx_programEncoder_encode_limit_check_instruction(apx_program_encode
    {
       return APX_INVALID_INSTRUCTION_ERROR;
    }
-   apx_error_t err = apx_programEncoder_encode_instruction(self, APX_VM_OPCODE_DATA_CTRL, variant, is_array);
+   apx_error_t err = apx_program_encoder_encode_instruction(self, APX_VM_OPCODE_DATA_CTRL, variant, is_array);
    if (err == APX_NO_ERROR)
    {
-      err = apx_programEncoder_encode_limit_values(self, variant, lower_limit, upper_limit);
+      err = apx_program_encoder_encode_limit_values(self, variant, lower_limit, upper_limit);
    }
    return err;
 }
 
-apx_error_t apx_programEncoder_encode_limit_values(apx_program_encoder_t* self, uint8_t variant, int64_t lower_limit, int64_t upper_limit)
+apx_error_t apx_program_encoder_encode_limit_values(apx_program_encoder_t* self, uint8_t variant, int64_t lower_limit, int64_t upper_limit)
 {
    if (self == NULL)
    {
@@ -206,7 +206,7 @@ apx_error_t apx_programEncoder_encode_limit_values(apx_program_encoder_t* self, 
    return (rc == ADT_NO_ERROR) ? APX_NO_ERROR : APX_MEM_ERROR;
 }
 
-apx_error_t apx_programEncoder_encode_program_header(apx_program_encoder_t* self, apx_program_type_t program_type, uint32_t elem_size, uint32_t queue_size, bool is_dynamic)
+apx_error_t apx_program_encoder_encode_program_header(apx_program_encoder_t* self, apx_program_type_t program_type, uint32_t elem_size, uint32_t queue_size, bool is_dynamic)
 {
    if (self == NULL)
    {
@@ -272,7 +272,7 @@ apx_error_t apx_programEncoder_encode_program_header(apx_program_encoder_t* self
 
    if (is_queued)
    {
-      apx_error_t const err = apx_programEncoder_encode_header_instruction(self, APX_VM_OPCODE_DATA_SIZE, data_size_variant, false);
+      apx_error_t const err = apx_program_encoder_encode_header_instruction(self, APX_VM_OPCODE_DATA_SIZE, data_size_variant, false);
       if (err != APX_NO_ERROR)
       {
          return err;
@@ -289,7 +289,7 @@ apx_error_t apx_programEncoder_encode_program_header(apx_program_encoder_t* self
    return APX_NO_ERROR;
 }
 
-apx_error_t apx_programEncoder_encode_field_name(apx_program_encoder_t* self, const char* name)
+apx_error_t apx_program_encoder_encode_field_name(apx_program_encoder_t* self, const char* name)
 {
    if ( (self == NULL) || (name == NULL) )
    {
@@ -304,17 +304,17 @@ apx_error_t apx_programEncoder_encode_field_name(apx_program_encoder_t* self, co
    return (rc == ADT_NO_ERROR) ? APX_NO_ERROR : APX_MEM_ERROR;
 }
 
-apx_program_t const* apx_programEncoder_get_header(apx_program_encoder_t const* self)
+apx_program_t const* apx_program_encoder_get_header(apx_program_encoder_t const* self)
 {
    return (self != NULL) ? &self->header : NULL;
 }
 
-apx_program_t const* apx_programEncoder_get_buffer(apx_program_encoder_t const* self)
+apx_program_t const* apx_program_encoder_get_buffer(apx_program_encoder_t const* self)
 {
    return (self != NULL) ? &self->buffer : NULL;
 }
 
-apx_error_t apx_programEncoder_get_program(apx_program_encoder_t const* self, apx_program_t* out_program)
+apx_error_t apx_program_encoder_get_program(apx_program_encoder_t const* self, apx_program_t* out_program)
 {
    if ( (self == NULL) || (out_program == NULL) )
    {

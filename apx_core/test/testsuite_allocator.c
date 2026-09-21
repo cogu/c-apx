@@ -46,7 +46,7 @@ static void test_apx_allocator_create(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 
 
-CuSuite* testSuite_apx_allocator(void)
+CuSuite* testsuite_apx_allocator(void)
 {
    CuSuite* suite = CuSuiteNew();
 
@@ -83,8 +83,8 @@ static void test_apx_allocator_create(CuTest* tc)
    apx_allocator_free(&allocator,data3, 3);
    apx_allocator_free(&allocator,data4, 4);
    apx_allocator_free(&allocator,data128, 128);
-   CuAssertIntEquals(tc, 5, apx_allocator_numPendingMessages(&allocator));
-   apx_allocator_processAll(&allocator);
+   CuAssertIntEquals(tc, 5, apx_allocator_num_pending_messages(&allocator));
+   apx_allocator_process_all(&allocator);
    apx_allocator_stop(&allocator);
    apx_allocator_destroy(&allocator);
 }

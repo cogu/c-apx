@@ -40,15 +40,15 @@ typedef struct apx_port_connector_list_tag
 //////////////////////////////////////////////////////////////////////////////
 
 //dataTriggerTable
-void apx_portConnectorList_create(apx_port_connector_list_t *self);
-void apx_portConnectorList_destroy(apx_port_connector_list_t *self);
-apx_port_connector_list_t* apx_portConnectorList_new(void);
-void apx_portConnectorList_delete(apx_port_connector_list_t *self);
+void apx_port_connector_list_create(apx_port_connector_list_t *self);
+void apx_port_connector_list_destroy(apx_port_connector_list_t *self);
+apx_port_connector_list_t* apx_port_connector_list_new(void);
+void apx_port_connector_list_delete(apx_port_connector_list_t *self);
 
-apx_error_t apx_portConnectorList_insert(apx_port_connector_list_t *self, apx_port_instance_t* port_instance);
-void apx_portConnectorList_remove(apx_port_connector_list_t *self, apx_port_instance_t* port_instance);
-void apx_portConnectorList_clear(apx_port_connector_list_t *self);
-int32_t apx_portConnectorList_length(apx_port_connector_list_t *self);
-apx_port_instance_t*apx_portConnectorList_get(apx_port_connector_list_t *self, int32_t index);
+apx_error_t apx_port_connector_list_insert(apx_port_connector_list_t *self, apx_port_instance_t* port_instance);
+void apx_port_connector_list_remove(apx_port_connector_list_t *self, apx_port_instance_t* port_instance);
+void apx_port_connector_list_clear(apx_port_connector_list_t *self);
+int32_t apx_port_connector_list_length(apx_port_connector_list_t *self);
+apx_port_instance_t*apx_port_connector_list_get(apx_port_connector_list_t *self, int32_t index);
 
 #endif //APX_PORT_CONNECTOR_LIST_H

@@ -37,7 +37,7 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 ////////////////// Constructor/Destructor //////////////////
-apx_error_t apx_nodeData_create(apx_node_data_t *self, apx_node_data_buffers_t *buffers)
+apx_error_t apx_node_data_create(apx_node_data_t *self, apx_node_data_buffers_t *buffers)
 {
    if (self != NULL)
    {
@@ -54,7 +54,7 @@ apx_error_t apx_nodeData_create(apx_node_data_t *self, apx_node_data_buffers_t *
          self->provide_port_connection_count = buffers->provide_port_connection_count;
          self->num_require_ports = buffers->num_require_ports;
          self->num_provide_ports = buffers->num_provide_ports;
-         apx_nodeData_set_checksum_data(self, buffers->checksum_type, &buffers->checksum_data[0]);
+         apx_node_data_set_checksum_data(self, buffers->checksum_type, &buffers->checksum_data[0]);
       }
       else
       {
@@ -79,7 +79,7 @@ apx_error_t apx_nodeData_create(apx_node_data_t *self, apx_node_data_buffers_t *
    return APX_NO_ERROR;
 }
 
-void apx_nodeData_destroy(apx_node_data_t *self)
+void apx_node_data_destroy(apx_node_data_t *self)
 {
    if ( (self != NULL)  )
    {
@@ -112,31 +112,31 @@ void apx_nodeData_destroy(apx_node_data_t *self)
    }
 }
 
-apx_node_data_t *apx_nodeData_new(void)
+apx_node_data_t *apx_node_data_new(void)
 {
    apx_node_data_t *self = (apx_node_data_t*) malloc(sizeof(apx_node_data_t));
    if (self != NULL)
    {
-      apx_nodeData_create(self, (apx_node_data_buffers_t*) NULL);
+      apx_node_data_create(self, (apx_node_data_buffers_t*) NULL);
    }
    return self;
 }
 
-void apx_nodeData_delete(apx_node_data_t *self)
+void apx_node_data_delete(apx_node_data_t *self)
 {
    if (self != NULL)
    {
-      apx_nodeData_destroy(self);
+      apx_node_data_destroy(self);
       free(self);
    }
 }
-void apx_nodeData_vdelete(void *arg)
+void apx_node_data_vdelete(void *arg)
 {
-   apx_nodeData_delete((apx_node_data_t*) arg);
+   apx_node_data_delete((apx_node_data_t*) arg);
 }
 
 ////////////////// Data API //////////////////
-apx_size_t apx_nodeData_definition_data_size(apx_node_data_t const* self)
+apx_size_t apx_node_data_definition_data_size(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -144,7 +144,7 @@ apx_size_t apx_nodeData_definition_data_size(apx_node_data_t const* self)
    }
    return 0u;
 }
-apx_size_t apx_nodeData_provide_port_data_size(apx_node_data_t const* self)
+apx_size_t apx_node_data_provide_port_data_size(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -153,7 +153,7 @@ apx_size_t apx_nodeData_provide_port_data_size(apx_node_data_t const* self)
    return 0u;
 }
 
-apx_size_t apx_nodeData_require_port_data_size(apx_node_data_t const* self)
+apx_size_t apx_node_data_require_port_data_size(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -162,7 +162,7 @@ apx_size_t apx_nodeData_require_port_data_size(apx_node_data_t const* self)
    return 0u;
 }
 
-apx_size_t apx_nodeData_num_provide_ports(apx_node_data_t const* self)
+apx_size_t apx_node_data_num_provide_ports(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -171,7 +171,7 @@ apx_size_t apx_nodeData_num_provide_ports(apx_node_data_t const* self)
    return 0u;
 }
 
-apx_size_t apx_nodeData_num_require_ports(apx_node_data_t const* self)
+apx_size_t apx_node_data_num_require_ports(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -180,7 +180,7 @@ apx_size_t apx_nodeData_num_require_ports(apx_node_data_t const* self)
    return 0u;
 }
 
-apx_error_t apx_nodeData_create_definition_data(apx_node_data_t* self, uint8_t const* init_data, apx_size_t data_size)
+apx_error_t apx_node_data_create_definition_data(apx_node_data_t* self, uint8_t const* init_data, apx_size_t data_size)
 {
    if (self != NULL)
    {
@@ -213,7 +213,7 @@ apx_error_t apx_nodeData_create_definition_data(apx_node_data_t* self, uint8_t c
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeData_create_provide_port_data(apx_node_data_t* self, apx_size_t num_ports, uint8_t const* init_data, apx_size_t data_size)
+apx_error_t apx_node_data_create_provide_port_data(apx_node_data_t* self, apx_size_t num_ports, uint8_t const* init_data, apx_size_t data_size)
 {
    if (self != NULL)
    {
@@ -247,7 +247,7 @@ apx_error_t apx_nodeData_create_provide_port_data(apx_node_data_t* self, apx_siz
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeData_create_require_port_data(apx_node_data_t* self, apx_size_t num_ports, uint8_t const* init_data, apx_size_t data_size)
+apx_error_t apx_node_data_create_require_port_data(apx_node_data_t* self, apx_size_t num_ports, uint8_t const* init_data, apx_size_t data_size)
 {
    if (self != NULL)
    {
@@ -281,7 +281,7 @@ apx_error_t apx_nodeData_create_require_port_data(apx_node_data_t* self, apx_siz
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeData_write_definition_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
+apx_error_t apx_node_data_write_definition_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -298,7 +298,7 @@ apx_error_t apx_nodeData_write_definition_data(apx_node_data_t* self, apx_size_t
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeData_write_provide_port_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
+apx_error_t apx_node_data_write_provide_port_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -315,7 +315,7 @@ apx_error_t apx_nodeData_write_provide_port_data(apx_node_data_t* self, apx_size
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeData_read_provide_port_data(apx_node_data_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size)
+apx_error_t apx_node_data_read_provide_port_data(apx_node_data_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -332,7 +332,7 @@ apx_error_t apx_nodeData_read_provide_port_data(apx_node_data_t* self, apx_size_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeData_write_require_port_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
+apx_error_t apx_node_data_write_require_port_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -349,7 +349,7 @@ apx_error_t apx_nodeData_write_require_port_data(apx_node_data_t* self, apx_size
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_nodeData_read_require_port_data(apx_node_data_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size)
+apx_error_t apx_node_data_read_require_port_data(apx_node_data_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size)
 {
    if (self != NULL)
    {
@@ -366,7 +366,7 @@ apx_error_t apx_nodeData_read_require_port_data(apx_node_data_t* self, apx_size_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-uint8_t const* apx_nodeData_get_definition_data(apx_node_data_t const* self)
+uint8_t const* apx_node_data_get_definition_data(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -375,7 +375,7 @@ uint8_t const* apx_nodeData_get_definition_data(apx_node_data_t const* self)
    return NULL;
 }
 
-uint8_t const* apx_nodeData_get_provide_port_data(apx_node_data_t const* self)
+uint8_t const* apx_node_data_get_provide_port_data(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -384,7 +384,7 @@ uint8_t const* apx_nodeData_get_provide_port_data(apx_node_data_t const* self)
    return NULL;
 }
 
-uint8_t const* apx_nodeData_get_require_port_data(apx_node_data_t const* self)
+uint8_t const* apx_node_data_get_require_port_data(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -393,7 +393,7 @@ uint8_t const* apx_nodeData_get_require_port_data(apx_node_data_t const* self)
    return NULL;
 }
 
-uint8_t* apx_nodeData_take_definition_data_snapshot(apx_node_data_t* self)
+uint8_t* apx_node_data_take_definition_data_snapshot(apx_node_data_t* self)
 {
    if (self != NULL)
    {
@@ -413,7 +413,7 @@ uint8_t* apx_nodeData_take_definition_data_snapshot(apx_node_data_t* self)
    return NULL;
 }
 
-uint8_t* apx_nodeData_take_provide_port_data_snapshot(apx_node_data_t* self)
+uint8_t* apx_node_data_take_provide_port_data_snapshot(apx_node_data_t* self)
 {
    if (self != NULL)
    {
@@ -433,7 +433,7 @@ uint8_t* apx_nodeData_take_provide_port_data_snapshot(apx_node_data_t* self)
    return NULL;
 }
 
-uint8_t* apx_nodeData_take_require_port_data_snapshot(apx_node_data_t* self)
+uint8_t* apx_node_data_take_require_port_data_snapshot(apx_node_data_t* self)
 {
    if (self != NULL)
    {
@@ -453,7 +453,7 @@ uint8_t* apx_nodeData_take_require_port_data_snapshot(apx_node_data_t* self)
    return NULL;
 }
 
-void apx_nodeData_set_checksum_data(apx_node_data_t* self, rmf_digest_type_t checksum_type, uint8_t const* checksum_data)
+void apx_node_data_set_checksum_data(apx_node_data_t* self, rmf_digest_type_t checksum_type, uint8_t const* checksum_data)
 {
    if ((self != NULL) && (checksum_data))
    {
@@ -462,7 +462,7 @@ void apx_nodeData_set_checksum_data(apx_node_data_t* self, rmf_digest_type_t che
    }
 }
 
-rmf_digest_type_t apx_nodeData_get_checksum_type(apx_node_data_t const* self)
+rmf_digest_type_t apx_node_data_get_checksum_type(apx_node_data_t const* self)
 {
    if (self != NULL)
    {
@@ -471,7 +471,7 @@ rmf_digest_type_t apx_nodeData_get_checksum_type(apx_node_data_t const* self)
    return RMF_DIGEST_TYPE_NONE;
 }
 
-const uint8_t* apx_nodeData_get_checksum_data(apx_node_data_t const* self)
+const uint8_t* apx_node_data_get_checksum_data(apx_node_data_t const* self)
 {
    if (self != NULL)
    {

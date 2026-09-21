@@ -41,15 +41,15 @@ typedef struct message_client_connection_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-int32_t message_client_connection_create(message_client_connection_t *self, uint8_t addressFamily);
+int32_t message_client_connection_create(message_client_connection_t *self, uint8_t address_family);
 void message_client_connection_destroy(message_client_connection_t *self);
-message_client_connection_t *message_client_connection_new(uint8_t addressFamily);
+message_client_connection_t *message_client_connection_new(uint8_t address_family);
 void message_client_connection_delete(message_client_connection_t *self);
 
 adt_error_t message_client_prepare_message(message_client_connection_t *self, adt_str_t *message);
 int32_t message_client_connect_tcp(message_client_connection_t *self, const char *address, uint16_t port);
 #ifndef _WIN32
-int32_t message_client_connect_unix(message_client_connection_t *self, const char *socketPath);
+int32_t message_client_connect_unix(message_client_connection_t *self, const char *socket_path);
 #endif
 int32_t message_client_wait_for_message_transmitted(message_client_connection_t *self);
 

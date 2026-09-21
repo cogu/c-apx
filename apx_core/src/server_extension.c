@@ -33,7 +33,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-void apx_serverExtension_create(apx_server_extension_t *self, const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config)
+void apx_server_extension_create(apx_server_extension_t *self, const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config)
 {
    if ( (self != NULL) && (name != NULL) && (handler != NULL) )
    {
@@ -47,7 +47,7 @@ void apx_serverExtension_create(apx_server_extension_t *self, const char *name, 
    }
 }
 
-void apx_serverExtension_destroy(apx_server_extension_t *self)
+void apx_server_extension_destroy(apx_server_extension_t *self)
 {
    if (self != NULL)
    {
@@ -63,29 +63,29 @@ void apx_serverExtension_destroy(apx_server_extension_t *self)
    }
 }
 
-apx_server_extension_t* apx_serverExtension_new(const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config)
+apx_server_extension_t* apx_server_extension_new(const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config)
 {
    apx_server_extension_t *self = (apx_server_extension_t*) malloc(sizeof(apx_server_extension_t));
    if (self != NULL)
    {
-      apx_serverExtension_create(self, name, handler, config);
+      apx_server_extension_create(self, name, handler, config);
    }
    return self;
 }
 
 
-void apx_serverExtension_delete(apx_server_extension_t *self)
+void apx_server_extension_delete(apx_server_extension_t *self)
 {
    if (self != NULL)
    {
-      apx_serverExtension_destroy(self);
+      apx_server_extension_destroy(self);
       free(self);
    }
 }
 
-void apx_serverExtension_vdelete(void *arg)
+void apx_server_extension_vdelete(void *arg)
 {
-   apx_serverExtension_delete((apx_server_extension_t*) arg);
+   apx_server_extension_delete((apx_server_extension_t*) arg);
 }
 
 //////////////////////////////////////////////////////////////////////////////

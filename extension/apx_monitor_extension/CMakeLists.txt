@@ -37,7 +37,7 @@ if(APX_SERVER_ENABLE_MONITOR_EXTENSION)
         TARGET apx_monitor_extension
         NAME "monitor"
         HEADER "apx/extension/monitor_extension.h"
-        REGISTER_FN "apx_monitorExtension_register"
+        REGISTER_FN "apx_monitor_extension_register"
     )
 endif()
 

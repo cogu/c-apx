@@ -34,7 +34,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionEventSpy_create(apx_connection_event_spy_t *self)
+void apx_connection_event_spy_create(apx_connection_event_spy_t *self)
 {
    if (self != NULL)
    {
@@ -45,31 +45,31 @@ void apx_connectionEventSpy_create(apx_connection_event_spy_t *self)
    }
 }
 
-void apx_connectionEventSpy_destroy(apx_connection_event_spy_t *self)
+void apx_connection_event_spy_destroy(apx_connection_event_spy_t *self)
 {
    if (self != NULL)
    {
       if (self->lastFileInfo != NULL)
       {
-         apx_fileInfo_delete(self->lastFileInfo);
+         apx_file_info_delete(self->lastFileInfo);
       }
    }
 }
 
-void apx_connectionEventSpy_register(apx_connection_event_spy_t *self, apx_connection_base_t *connection)
+void apx_connection_event_spy_register(apx_connection_event_spy_t *self, apx_connection_base_t *connection)
 {
    if ((self != NULL) && (connection != NULL) )
    {
       apx_connection_event_listener_t handler;
       memset(&handler, 0, sizeof(handler));
       handler.arg = (void*) self;
-      handler.headerAccepted2 = apx_connectionEventSpy_headerAccepted;
-      handler.fileCreate2 = apx_connectionEventSpy_fileCreate;
-      (void)apx_connectionBase_registerEventListener(connection, &handler);
+      handler.headerAccepted2 = apx_connection_event_spy_header_accepted;
+      handler.fileCreate2 = apx_connection_event_spy_file_create;
+      (void)apx_connection_base_register_event_listener(connection, &handler);
    }
 }
 
-void apx_connectionEventSpy_headerAccepted(void *arg, apx_connection_base_t *connection)
+void apx_connection_event_spy_header_accepted(void *arg, apx_connection_base_t *connection)
 {
    apx_connection_event_spy_t *self = (apx_connection_event_spy_t*) arg;
    if ( (self != NULL) && (connection != NULL) )
@@ -80,18 +80,18 @@ void apx_connectionEventSpy_headerAccepted(void *arg, apx_connection_base_t *con
    }
 }
 
-void apx_connectionEventSpy_fileCreate(void *arg, apx_connection_base_t *connection, const apx_file_info_t *fileInfo)
+void apx_connection_event_spy_file_create(void *arg, apx_connection_base_t *connection, const apx_file_info_t *file_info)
 {
    apx_connection_event_spy_t *self = (apx_connection_event_spy_t*) arg;
-   if ( (self != NULL) && (connection != NULL) && (fileInfo != NULL))
+   if ( (self != NULL) && (connection != NULL) && (file_info != NULL))
    {
       self->fileCreateCount++;
       self->lastConnection = connection;
       if (self->lastFileInfo != NULL)
       {
-         apx_fileInfo_delete(self->lastFileInfo);
+         apx_file_info_delete(self->lastFileInfo);
       }
-      self->lastFileInfo = apx_fileInfo_clone(fileInfo);
+      self->lastFileInfo = apx_file_info_clone(file_info);
    }
 }
 

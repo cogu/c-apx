@@ -31,10 +31,10 @@ typedef struct apx_port_connector_change_ref_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portConnectorChangeRef_create(apx_port_connector_change_ref_t *self, apx_node_instance_t * node_instance, apx_port_connector_change_table_t * connector_changes);
-void apx_portConnectorChangeRef_destroy(apx_port_connector_change_ref_t *self);
-apx_port_connector_change_ref_t *apx_portConnectorChangeRef_new(apx_node_instance_t * node_instance, apx_port_connector_change_table_t * connector_changes);
-void apx_portConnectorChangeRef_delete(apx_port_connector_change_ref_t *self);
-void apx_portConnectorChangeRef_vdelete(void *arg);
+void apx_port_connector_change_ref_create(apx_port_connector_change_ref_t *self, apx_node_instance_t * node_instance, apx_port_connector_change_table_t * connector_changes);
+void apx_port_connector_change_ref_destroy(apx_port_connector_change_ref_t *self);
+apx_port_connector_change_ref_t *apx_port_connector_change_ref_new(apx_node_instance_t * node_instance, apx_port_connector_change_table_t * connector_changes);
+void apx_port_connector_change_ref_delete(apx_port_connector_change_ref_t *self);
+void apx_port_connector_change_ref_vdelete(void *arg);
 
 #endif //APX_PORT_CONNECTOR_CHANGE_REF_H

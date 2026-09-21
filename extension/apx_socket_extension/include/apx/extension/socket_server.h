@@ -46,19 +46,19 @@ typedef struct apx_socket_server_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_socketServer_create(apx_socket_server_t *self, struct apx_server_tag *apx_server);
-void apx_socketServer_destroy(apx_socket_server_t *self);
-apx_socket_server_t* apx_socketServer_new(struct apx_server_tag *apx_server);
-void apx_socketServer_delete(apx_socket_server_t *self);
+void apx_socket_server_create(apx_socket_server_t *self, struct apx_server_tag *apx_server);
+void apx_socket_server_destroy(apx_socket_server_t *self);
+apx_socket_server_t* apx_socket_server_new(struct apx_server_tag *apx_server);
+void apx_socket_server_delete(apx_socket_server_t *self);
 
-void apx_socketServer_start_tcp_server(apx_socket_server_t *self, uint16_t tcp_port, const char *tag);
+void apx_socket_server_start_tcp_server(apx_socket_server_t *self, uint16_t tcp_port, const char *tag);
 #if !defined(UNIT_TEST) && !defined(_WIN32)
-void apx_socketServer_start_unix_server(apx_socket_server_t *self, const char *file_path, const char *tag);
-void apx_socketServer_stop_unix_server(apx_socket_server_t *self);
+void apx_socket_server_start_unix_server(apx_socket_server_t *self, const char *file_path, const char *tag);
+void apx_socket_server_stop_unix_server(apx_socket_server_t *self);
 #endif
-void apx_socketServer_stop_all(apx_socket_server_t *self);
-void apx_socketServer_stop_tcp_server(apx_socket_server_t *self);
+void apx_socket_server_stop_all(apx_socket_server_t *self);
+void apx_socket_server_stop_tcp_server(apx_socket_server_t *self);
 #ifdef UNIT_TEST
-void apx_socketServer_accept_testsocket(apx_socket_server_t *self, testsocket_t *sock);
+void apx_socket_server_accept_testsocket(apx_socket_server_t *self, testsocket_t *sock);
 #endif
 #endif //APX_SOCKET_SERVER_H

@@ -56,7 +56,7 @@ apx_error_t apx_file_create(apx_file_t* self, const rmf_file_info_t* file_info)
       self->file_manager = (apx_file_manager_t*) NULL;
       self->apx_file_type = APX_UNKNOWN_FILE_TYPE;
       memset(&self->notification_handler, 0, sizeof(apx_file_notification_handler_t));
-      retval = rmf_fileInfo_create_copy(&self->file_info, file_info);
+      retval = rmf_file_info_create_copy(&self->file_info, file_info);
       if (retval == APX_NO_ERROR)
       {
          apx_file_calc_file_type(self);
@@ -71,7 +71,7 @@ void apx_file_destroy(apx_file_t *self)
 {
    if (self != NULL)
    {
-      rmf_fileInfo_destroy(&self->file_info);
+      rmf_file_info_destroy(&self->file_info);
       MUTEX_DESTROY(self->lock);
    }
 }
@@ -177,7 +177,7 @@ bool apx_file_is_local(apx_file_t *self)
 {
    if (self != NULL)
    {
-      uint32_t const address = rmf_fileInfo_address(&self->file_info);
+      uint32_t const address = rmf_file_info_address(&self->file_info);
       uint32_t const address_without_flags = address & APX_ADDRESS_MASK_INTERNAL;
       return (address_without_flags != RMF_INVALID_ADDRESS) && ((address & RMF_REMOTE_ADDRESS_BIT) == 0u);
    }
@@ -188,7 +188,7 @@ bool apx_file_is_remote(apx_file_t *self)
 {
    if (self != NULL)
    {
-      uint32_t const address = rmf_fileInfo_address(&self->file_info);
+      uint32_t const address = rmf_file_info_address(&self->file_info);
       uint32_t const address_without_flags = address & APX_ADDRESS_MASK_INTERNAL;
       return (address_without_flags != RMF_INVALID_ADDRESS) && ((address & RMF_REMOTE_ADDRESS_BIT) != 0u);
    }
@@ -199,7 +199,7 @@ bool apx_file_has_valid_address(apx_file_t* self)
 {
    if (self != NULL)
    {
-      uint32_t const address_without_flags = rmf_fileInfo_address_without_flags(&self->file_info);
+      uint32_t const address_without_flags = rmf_file_info_address_without_flags(&self->file_info);
       return (address_without_flags != RMF_INVALID_ADDRESS);
    }
    return false;
@@ -235,7 +235,7 @@ uint32_t apx_file_get_address(const apx_file_t *self)
 {
    if (self != NULL)
    {
-      return rmf_fileInfo_address(&self->file_info);
+      return rmf_file_info_address(&self->file_info);
    }
    return RMF_INVALID_ADDRESS;
 }
@@ -244,7 +244,7 @@ uint32_t apx_file_get_address_without_flags(const apx_file_t* self)
 {
    if (self != NULL)
    {
-      return rmf_fileInfo_address_without_flags(&self->file_info);
+      return rmf_file_info_address_without_flags(&self->file_info);
    }
    return RMF_INVALID_ADDRESS;
 }
@@ -253,7 +253,7 @@ void apx_file_set_address(apx_file_t* self, uint32_t address)
 {
    if (self != NULL)
    {
-      rmf_fileInfo_set_address(&self->file_info, address);
+      rmf_file_info_set_address(&self->file_info, address);
    }
 }
 
@@ -261,7 +261,7 @@ uint32_t apx_file_get_size(const apx_file_t* self)
 {
    if (self != NULL)
    {
-      rmf_fileInfo_size(&self->file_info);
+      rmf_file_info_size(&self->file_info);
    }
    return 0;
 }
@@ -270,7 +270,7 @@ const char* apx_file_get_name(const apx_file_t* self)
 {
    if (self != NULL)
    {
-      return rmf_fileInfo_name(&self->file_info);
+      return rmf_file_info_name(&self->file_info);
    }
    return NULL;
 }
@@ -288,7 +288,7 @@ uint32_t apx_file_get_end_address_without_flags(const apx_file_t* self)
 {
    if (self != NULL)
    {
-      return rmf_fileInfo_address_without_flags(&self->file_info) + self->file_info.size;
+      return rmf_file_info_address_without_flags(&self->file_info) + self->file_info.size;
    }
    return RMF_INVALID_ADDRESS;
 }
@@ -297,7 +297,7 @@ bool apx_file_address_in_range(const apx_file_t* self, uint32_t address)
 {
    if (self != NULL)
    {
-      return rmf_fileInfo_address_in_range(&self->file_info, address);
+      return rmf_file_info_address_in_range(&self->file_info, address);
    }
    return false;
 }
@@ -315,7 +315,7 @@ rmf_digest_type_t apx_file_get_digest_type(apx_file_t const* self)
 {
    if (self != NULL)
    {
-      return rmf_fileInfo_digest_type(&self->file_info);
+      return rmf_file_info_digest_type(&self->file_info);
    }
    return RMF_DIGEST_TYPE_NONE;
 }
@@ -324,7 +324,7 @@ uint8_t const* apx_file_get_digest_data(const apx_file_t* self)
 {
    if (self != NULL)
    {
-      return rmf_fileInfo_digest_data(&self->file_info);
+      return rmf_file_info_digest_data(&self->file_info);
    }
    return NULL;
 }
@@ -333,7 +333,7 @@ rmf_file_info_t* apx_file_clone_file_info(const apx_file_t* self)
 {
    if (self != NULL)
    {
-      return rmf_fileInfo_clone(&self->file_info);
+      return rmf_file_info_clone(&self->file_info);
    }
    return NULL;
 }
@@ -406,23 +406,23 @@ bool apx_file_less_than(const apx_file_t* a, const apx_file_t* b)
 
 static void apx_file_calc_file_type(apx_file_t *self)
 {
-   if (rmf_fileInfo_name_ends_with(&self->file_info, APX_DEFINITION_FILE_EXT))
+   if (rmf_file_info_name_ends_with(&self->file_info, APX_DEFINITION_FILE_EXT))
    {
       self->apx_file_type = APX_DEFINITION_FILE_TYPE;
    }
-   else if (rmf_fileInfo_name_ends_with(&self->file_info, APX_PROVIDE_PORT_DATA_EXT))
+   else if (rmf_file_info_name_ends_with(&self->file_info, APX_PROVIDE_PORT_DATA_EXT))
    {
       self->apx_file_type = APX_PROVIDE_PORT_DATA_FILE_TYPE;
    }
-   else if (rmf_fileInfo_name_ends_with(&self->file_info, APX_REQUIRE_PORT_DATA_EXT))
+   else if (rmf_file_info_name_ends_with(&self->file_info, APX_REQUIRE_PORT_DATA_EXT))
    {
       self->apx_file_type = APX_REQUIRE_PORT_DATA_FILE_TYPE;
    }
-   else if (rmf_fileInfo_name_ends_with(&self->file_info, APX_PROVIDE_PORT_COUNT_EXT))
+   else if (rmf_file_info_name_ends_with(&self->file_info, APX_PROVIDE_PORT_COUNT_EXT))
    {
       self->apx_file_type = APX_PROVIDE_PORT_COUNT_FILE_TYPE;
    }
-   else if (rmf_fileInfo_name_ends_with(&self->file_info, APX_REQUIRE_PORT_COUNT_EXT))
+   else if (rmf_file_info_name_ends_with(&self->file_info, APX_REQUIRE_PORT_COUNT_EXT))
    {
       self->apx_file_type = APX_REQUIRE_PORT_COUNT_FILE_TYPE;
    }

@@ -31,7 +31,7 @@ if(APX_SERVER_ENABLE_SOCKET_EXTENSION)
         TARGET apx_socket_extension
         NAME "socket-server"
         HEADER "apx/extension/socket_server_extension.h"
-        REGISTER_FN "apx_socketServerExtension_register"
+        REGISTER_FN "apx_socket_server_extension_register"
     )
 endif()
 

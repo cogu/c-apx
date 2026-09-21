@@ -35,11 +35,11 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-int32_t numheader_encode16(uint8_t *buf, int32_t maxBufLen, uint16_t value);
-const uint8_t * numheader_decode16(const uint8_t *pBegin, const uint8_t *pEnd, uint16_t *value);
+int32_t numheader_encode16(uint8_t *buf, int32_t max_buf_len, uint16_t value);
+const uint8_t * numheader_decode16(const uint8_t *p_begin, const uint8_t *p_end, uint16_t *value);
 
-int32_t numheader_encode32(uint8_t *buf, int32_t maxBufLen, uint32_t value);
-const uint8_t *numheader_decode32(const uint8_t *pBegin, const uint8_t *pEnd, uint32_t *value);
+int32_t numheader_encode32(uint8_t *buf, int32_t max_buf_len, uint32_t value);
+const uint8_t *numheader_decode32(const uint8_t *p_begin, const uint8_t *p_end, uint32_t *value);
 
 
 #endif //NUMHEADER_H

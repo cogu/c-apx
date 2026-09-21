@@ -69,12 +69,12 @@ static void test_apx_compiler_unpack_uint8_reference(CuTest* tc);
 static void test_apx_compiler_unpack_record_reference_with_child_references(CuTest* tc);
 static void test_apx_compiler_unpack_array_of_records(CuTest* tc);
 static void test_apx_compiler_unpack_dynamic_array_of_records(CuTest* tc);
-static void test_apx_compiler_unpack_record_DYNU8_U16(CuTest* tc);
+static void test_apx_compiler_unpack_record_dynu8_u16(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testSuite_apx_compiler_unpack(void)
+CuSuite* testsuite_apx_compiler_unpack(void)
 {
    CuSuite* suite = CuSuiteNew();
 
@@ -115,7 +115,7 @@ CuSuite* testSuite_apx_compiler_unpack(void)
    SUITE_ADD_TEST(suite, test_apx_compiler_unpack_record_reference_with_child_references);
    SUITE_ADD_TEST(suite, test_apx_compiler_unpack_array_of_records);
    SUITE_ADD_TEST(suite, test_apx_compiler_unpack_dynamic_array_of_records);
-   SUITE_ADD_TEST(suite, test_apx_compiler_unpack_record_DYNU8_U16);
+   SUITE_ADD_TEST(suite, test_apx_compiler_unpack_record_dynu8_u16);
 
    return suite;
 }
@@ -1656,7 +1656,7 @@ static void test_apx_compiler_unpack_dynamic_array_of_records(CuTest* tc)
    apx_istream_destroy(&stream);
 }
 
-static void test_apx_compiler_unpack_record_DYNU8_U16(CuTest* tc)
+static void test_apx_compiler_unpack_record_dynu8_u16(CuTest* tc)
 {
    const char* apx_text =
       "APX/1.3\n"

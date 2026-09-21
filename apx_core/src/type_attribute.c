@@ -35,7 +35,7 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_typeAttributes_create(apx_type_attributes_t* self)
+void apx_type_attributes_create(apx_type_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -43,7 +43,7 @@ void apx_typeAttributes_create(apx_type_attributes_t* self)
    }
 }
 
-void apx_typeAttributes_destroy(apx_type_attributes_t* self)
+void apx_type_attributes_destroy(apx_type_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -51,26 +51,26 @@ void apx_typeAttributes_destroy(apx_type_attributes_t* self)
    }
 }
 
-apx_type_attributes_t* apx_typeAttributes_new()
+apx_type_attributes_t* apx_type_attributes_new()
 {
    apx_type_attributes_t *self = (apx_type_attributes_t*) malloc(sizeof(apx_type_attributes_t));
    if (self != NULL)
    {
-      apx_typeAttributes_create(self);
+      apx_type_attributes_create(self);
    }
    return self;
 }
 
-void apx_typeAttributes_delete(apx_type_attributes_t* self)
+void apx_type_attributes_delete(apx_type_attributes_t* self)
 {
    if (self != NULL)
    {
-      apx_typeAttributes_destroy(self);
+      apx_type_attributes_destroy(self);
       free(self);
    }
 }
 
-void apx_typeAttributes_append_computation(apx_type_attributes_t* self, struct apx_computation_tag* computation)
+void apx_type_attributes_append_computation(apx_type_attributes_t* self, struct apx_computation_tag* computation)
 {
    if ( (self != NULL) && (computation != NULL) )
    {
@@ -78,7 +78,7 @@ void apx_typeAttributes_append_computation(apx_type_attributes_t* self, struct a
    }
 }
 
-int32_t apx_typeAttributes_num_computations(apx_type_attributes_t* self)
+int32_t apx_type_attributes_num_computations(apx_type_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -87,7 +87,7 @@ int32_t apx_typeAttributes_num_computations(apx_type_attributes_t* self)
    return -1;
 }
 
-apx_computation_t* apx_typeAttributes_get_computation(apx_type_attributes_t* self, int32_t index)
+apx_computation_t* apx_type_attributes_get_computation(apx_type_attributes_t* self, int32_t index)
 {
    if (self != NULL)
    {

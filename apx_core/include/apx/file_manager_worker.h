@@ -56,23 +56,23 @@ typedef struct apx_file_manager_worker_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileManagerWorker_create(apx_file_manager_worker_t *self, apx_file_manager_shared_t *shared, apx_mode_t mode);
-void apx_fileManagerWorker_destroy(apx_file_manager_worker_t *self);
-uint16_t apx_fileManagerWorker_num_pending_commands(apx_file_manager_worker_t* self);
+apx_error_t apx_file_manager_worker_create(apx_file_manager_worker_t *self, apx_file_manager_shared_t *shared, apx_mode_t mode);
+void apx_file_manager_worker_destroy(apx_file_manager_worker_t *self);
+uint16_t apx_file_manager_worker_num_pending_commands(apx_file_manager_worker_t* self);
 #ifdef UNIT_TEST
-bool apx_fileManagerWorker_run(apx_file_manager_worker_t* self);
+bool apx_file_manager_worker_run(apx_file_manager_worker_t* self);
 #else
-apx_error_t apx_fileManagerWorker_start(apx_file_manager_worker_t* self);
-void apx_fileManagerWorker_stop(apx_file_manager_worker_t* self);
+apx_error_t apx_file_manager_worker_start(apx_file_manager_worker_t* self);
+void apx_file_manager_worker_stop(apx_file_manager_worker_t* self);
 #endif
 
 //Command API
-apx_error_t apx_fileManagerWorker_prepare_acknowledge(apx_file_manager_worker_t* self);
-apx_error_t apx_fileManagerWorker_prepare_header_accepted(apx_file_manager_worker_t* self, uint32_t connection_id);
-apx_error_t apx_fileManagerWorker_prepare_publish_local_file(apx_file_manager_worker_t* self, rmf_file_info_t* file_info); //ownership is taken of the file_info object
-apx_error_t apx_fileManagerWorker_prepare_send_local_const_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
-apx_error_t apx_fileManagerWorker_prepare_send_local_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t* data, uint32_t size);
-apx_error_t apx_fileManagerWorker_prepare_send_open_file_request(apx_file_manager_worker_t* self, uint32_t address);
-apx_error_t apx_fileManagerWorker_prepare_send_connection_create(apx_file_manager_worker_t* self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const* tag);
+apx_error_t apx_file_manager_worker_prepare_acknowledge(apx_file_manager_worker_t* self);
+apx_error_t apx_file_manager_worker_prepare_header_accepted(apx_file_manager_worker_t* self, uint32_t connection_id);
+apx_error_t apx_file_manager_worker_prepare_publish_local_file(apx_file_manager_worker_t* self, rmf_file_info_t* file_info); //ownership is taken of the file_info object
+apx_error_t apx_file_manager_worker_prepare_send_local_const_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
+apx_error_t apx_file_manager_worker_prepare_send_local_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t* data, uint32_t size);
+apx_error_t apx_file_manager_worker_prepare_send_open_file_request(apx_file_manager_worker_t* self, uint32_t address);
+apx_error_t apx_file_manager_worker_prepare_send_connection_create(apx_file_manager_worker_t* self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const* tag);
 
 #endif //APX_FILE_MANAGER_WORKER_H

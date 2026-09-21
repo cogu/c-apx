@@ -73,7 +73,7 @@ static void test_apx_parser_provide_port_with_invalid_data_signature(CuTest* tc)
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-CuSuite* testSuite_apx_parser(void)
+CuSuite* testsuite_apx_parser(void)
 {
    CuSuite* suite = CuSuiteNew();
 
@@ -145,12 +145,12 @@ static void test_parse_uint8_type_declaration(CuTest* tc)
    CuAssertPtrNotNull(tc, node);
    data_type = apx_node_get_last_data_type(node);
    CuAssertPtrNotNull(tc, data_type);
-   CuAssertStrEquals(tc, "Percentage_T", apx_dataType_get_name(data_type));
-   CuAssertFalse(tc, apx_dataType_has_attributes(data_type));
-   data_element = apx_dataType_get_data_element(data_type);
+   CuAssertStrEquals(tc, "Percentage_T", apx_data_type_get_name(data_type));
+   CuAssertFalse(tc, apx_data_type_has_attributes(data_type));
+   data_element = apx_data_type_get_data_element(data_type);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -181,26 +181,26 @@ static void test_parse_uint8_type_declaration_with_attributes(CuTest* tc)
    CuAssertPtrNotNull(tc, node);
    data_type = apx_node_get_last_data_type(node);
    CuAssertPtrNotNull(tc, data_type);
-   CuAssertStrEquals(tc, "OnOff_T", apx_dataType_get_name(data_type));
-   CuAssertTrue(tc, apx_dataType_has_attributes(data_type));
-   data_element = apx_dataType_get_data_element(data_type);
+   CuAssertStrEquals(tc, "OnOff_T", apx_data_type_get_name(data_type));
+   CuAssertTrue(tc, apx_data_type_has_attributes(data_type));
+   data_element = apx_data_type_get_data_element(data_type);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(data_element, &lower_limit, &upper_limit));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 3u, upper_limit);
-   attributes = apx_dataType_get_attributes(data_type);
+   attributes = apx_data_type_get_attributes(data_type);
    CuAssertPtrNotNull(tc, attributes);
-   value_table = (apx_value_table_t*)apx_typeAttributes_get_computation(attributes, 0);
+   value_table = (apx_value_table_t*)apx_type_attributes_get_computation(attributes, 0);
    CuAssertPtrNotNull(tc, value_table);
-   CuAssertIntEquals(tc, 4, apx_valueTable_length(value_table));
-   str = apx_valueTable_get_value(value_table, 0);
+   CuAssertIntEquals(tc, 4, apx_value_table_length(value_table));
+   str = apx_value_table_get_value(value_table, 0);
    CuAssertStrEquals(tc, "OnOff_Off", adt_str_cstr(str));
-   str = apx_valueTable_get_value(value_table, 1);
+   str = apx_value_table_get_value(value_table, 1);
    CuAssertStrEquals(tc, "OnOff_On", adt_str_cstr(str));
-   str = apx_valueTable_get_value(value_table, 2);
+   str = apx_value_table_get_value(value_table, 2);
    CuAssertStrEquals(tc, "OnOff_Error", adt_str_cstr(str));
-   str = apx_valueTable_get_value(value_table, 3);
+   str = apx_value_table_get_value(value_table, 3);
    CuAssertStrEquals(tc, "OnOff_NotAvailable", adt_str_cstr(str));
 
    apx_node_delete(node);
@@ -230,37 +230,37 @@ static void test_parse_record_type_declaration(CuTest* tc)
    CuAssertPtrNotNull(tc, node);
    data_type = apx_node_get_last_data_type(node);
    CuAssertPtrNotNull(tc, data_type);
-   CuAssertStrEquals(tc, "Notification_T", apx_dataType_get_name(data_type));
-   CuAssertFalse(tc, apx_dataType_has_attributes(data_type));
-   record_data_element = apx_dataType_get_data_element(data_type);
+   CuAssertStrEquals(tc, "Notification_T", apx_data_type_get_name(data_type));
+   CuAssertFalse(tc, apx_data_type_has_attributes(data_type));
+   record_data_element = apx_data_type_get_data_element(data_type);
    CuAssertPtrNotNull(tc, record_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_dataElement_get_type_code(record_data_element));
-   CuAssertUIntEquals(tc, 3, apx_dataElement_get_num_child_elements(record_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_data_element_get_type_code(record_data_element));
+   CuAssertUIntEquals(tc, 3, apx_data_element_get_num_child_elements(record_data_element));
 
-   child_data_element = apx_dataElement_get_child_at(record_data_element, 0);
+   child_data_element = apx_data_element_get_child_at(record_data_element, 0);
    CuAssertPtrNotNull(tc, child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(child_data_element));
-   CuAssertStrEquals(tc, "ID", apx_dataElement_get_name(child_data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(child_data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(child_data_element));
+   CuAssertStrEquals(tc, "ID", apx_data_element_get_name(child_data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(child_data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 127u, upper_limit);
 
-   child_data_element = apx_dataElement_get_child_at(record_data_element, 1);
+   child_data_element = apx_data_element_get_child_at(record_data_element, 1);
    CuAssertPtrNotNull(tc, child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(child_data_element));
-   CuAssertStrEquals(tc, "Stat", apx_dataElement_get_name(child_data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(child_data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(child_data_element));
+   CuAssertStrEquals(tc, "Stat", apx_data_element_get_name(child_data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(child_data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 3u, upper_limit);
 
-   child_data_element = apx_dataElement_get_child_at(record_data_element, 2);
+   child_data_element = apx_data_element_get_child_at(record_data_element, 2);
    CuAssertPtrNotNull(tc, child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(child_data_element));
-   CuAssertStrEquals(tc, "Type", apx_dataElement_get_name(child_data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(child_data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(child_data_element));
+   CuAssertStrEquals(tc, "Type", apx_data_element_get_name(child_data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(child_data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 7u, upper_limit);
 
@@ -312,8 +312,8 @@ static void test_parse_uint8_require_port_no_init(CuTest* tc)
    CuAssertFalse(tc, apx_port_has_attributes(port));
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(data_element));
 
 
    apx_node_delete(node);
@@ -348,11 +348,11 @@ static void test_parse_uint8_require_port_with_init(CuTest* tc)
    CuAssertTrue(tc, apx_port_has_attributes(port));
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(data_element));
    attributes = apx_port_get_attributes(port);
    CuAssertPtrNotNull(tc, attributes);
-   init_value = (dtl_sv_t*)apx_portAttributes_get_init_value(attributes);
+   init_value = (dtl_sv_t*)apx_port_attributes_get_init_value(attributes);
    CuAssertPtrNotNull(tc, init_value);
    CuAssertIntEquals(tc, 255, dtl_sv_to_i32(init_value, &ok));
    CuAssertTrue(tc, ok);
@@ -385,11 +385,11 @@ static void test_parse_uint8_array_require_port_no_init(CuTest* tc)
    CuAssertFalse(tc, apx_port_has_attributes(port));
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(data_element));
-   CuAssertTrue(tc, apx_dataElement_is_array(data_element));
-   CuAssertFalse(tc, apx_dataElement_is_dynamic_array(data_element));
-   CuAssertUIntEquals(tc, 8, apx_dataElement_get_array_length(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(data_element));
+   CuAssertTrue(tc, apx_data_element_is_array(data_element));
+   CuAssertFalse(tc, apx_data_element_is_dynamic_array(data_element));
+   CuAssertUIntEquals(tc, 8, apx_data_element_get_array_length(data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -420,11 +420,11 @@ static void test_parse_uint8_array_require_port_with_init(CuTest* tc)
    CuAssertTrue(tc, apx_port_has_attributes(port));
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(data_element));
-   CuAssertTrue(tc, apx_dataElement_is_array(data_element));
-   CuAssertFalse(tc, apx_dataElement_is_dynamic_array(data_element));
-   CuAssertUIntEquals(tc, 2, apx_dataElement_get_array_length(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(data_element));
+   CuAssertTrue(tc, apx_data_element_is_array(data_element));
+   CuAssertFalse(tc, apx_data_element_is_dynamic_array(data_element));
+   CuAssertUIntEquals(tc, 2, apx_data_element_get_array_length(data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -456,9 +456,9 @@ static void test_parse_uint8_require_port_with_range_and_no_init(CuTest* tc)
    CuAssertTrue(tc, apx_port_has_attributes(port));
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertTrue(tc, apx_dataElement_has_limits(data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(data_element, &lower_limit, &upper_limit));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertTrue(tc, apx_data_element_has_limits(data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 3u, upper_limit);
 
@@ -494,14 +494,14 @@ static void test_parse_uint8_type_reference_require_port_no_init(CuTest* tc)
    CuAssertFalse(tc, apx_port_has_attributes(port));
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(data_element));
-   data_type = apx_dataElement_get_type_ref_ptr(data_element);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(data_element));
+   data_type = apx_data_element_get_type_ref_ptr(data_element);
    CuAssertPtrNotNull(tc, data_type);
-   ref_data_element = apx_dataType_get_data_element(data_type);
+   ref_data_element = apx_data_type_get_data_element(data_type);
    CuAssertPtrNotNull(tc, ref_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(ref_data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(ref_data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(ref_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(ref_data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(ref_data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(ref_data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -535,14 +535,14 @@ static void test_parse_uint8_type_reference_require_port_with_value_table(CuTest
    CuAssertStrEquals(tc, "UInt8Port", apx_port_get_name(port));
    ref_data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, ref_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(ref_data_element));
-   data_type = apx_dataElement_get_type_ref_ptr(ref_data_element);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(ref_data_element));
+   data_type = apx_data_element_get_type_ref_ptr(ref_data_element);
    CuAssertPtrNotNull(tc, data_type);
-   data_element = apx_dataType_get_data_element(data_type);
+   data_element = apx_data_type_get_data_element(data_type);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(data_element, &lower_limit, &upper_limit));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 3u, upper_limit);
 
@@ -583,37 +583,37 @@ static void test_parse_uint8_type_references_inside_record_reference_require_por
    CuAssertStrEquals(tc, "RecordPort", apx_port_get_name(port));
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(data_element));
-   data_type = apx_dataElement_get_type_ref_ptr(data_element);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(data_element));
+   data_type = apx_data_element_get_type_ref_ptr(data_element);
    CuAssertPtrNotNull(tc, data_type);
-   record_data_element = apx_dataType_get_data_element(data_type);
+   record_data_element = apx_data_type_get_data_element(data_type);
    CuAssertPtrNotNull(tc, record_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_dataElement_get_type_code(record_data_element));
-   CuAssertUIntEquals(tc, 2, apx_dataElement_get_num_child_elements(record_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_data_element_get_type_code(record_data_element));
+   CuAssertUIntEquals(tc, 2, apx_data_element_get_num_child_elements(record_data_element));
 
-   ref_child_data_element = apx_dataElement_get_child_at(record_data_element, 0);
+   ref_child_data_element = apx_data_element_get_child_at(record_data_element, 0);
    CuAssertPtrNotNull(tc, ref_child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(ref_child_data_element));
-   child_data_type = apx_dataElement_get_type_ref_ptr(ref_child_data_element);
-   CuAssertStrEquals(tc, "FirstType_T", apx_dataType_get_name(child_data_type));
-   child_data_element = apx_dataType_get_data_element(child_data_type);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(ref_child_data_element));
+   child_data_type = apx_data_element_get_type_ref_ptr(ref_child_data_element);
+   CuAssertStrEquals(tc, "FirstType_T", apx_data_type_get_name(child_data_type));
+   child_data_element = apx_data_type_get_data_element(child_data_type);
    CuAssertPtrNotNull(tc, child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(child_data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(child_data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(child_data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(child_data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 3u, upper_limit);
 
-   ref_child_data_element = apx_dataElement_get_child_at(record_data_element, 1);
+   ref_child_data_element = apx_data_element_get_child_at(record_data_element, 1);
    CuAssertPtrNotNull(tc, ref_child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(ref_child_data_element));
-   child_data_type = apx_dataElement_get_type_ref_ptr(ref_child_data_element);
-   CuAssertStrEquals(tc, "SecondType_T", apx_dataType_get_name(child_data_type));
-   child_data_element = apx_dataType_get_data_element(child_data_type);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(ref_child_data_element));
+   child_data_type = apx_data_element_get_type_ref_ptr(ref_child_data_element);
+   CuAssertStrEquals(tc, "SecondType_T", apx_data_type_get_name(child_data_type));
+   child_data_element = apx_data_type_get_data_element(child_data_type);
    CuAssertPtrNotNull(tc, child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(child_data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(child_data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(child_data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(child_data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(child_data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 7u, upper_limit);
 
@@ -646,12 +646,12 @@ static void test_parse_queued_uint8_provide_port(CuTest* tc)
    CuAssertPtrNotNull(tc, port);
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(data_element));
    attributes = apx_port_get_attributes(port);
    CuAssertPtrNotNull(tc, attributes);
-   CuAssertTrue(tc, apx_portAttributes_is_queued(attributes));
-   CuAssertUIntEquals(tc, 10u, apx_portAttributes_get_queue_length(attributes));
+   CuAssertTrue(tc, apx_port_attributes_is_queued(attributes));
+   CuAssertUIntEquals(tc, 10u, apx_port_attributes_get_queue_length(attributes));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -680,8 +680,8 @@ static void test_parse_char_provide_port(CuTest* tc)
    CuAssertPtrNotNull(tc, port);
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_CHAR, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_CHAR, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -710,10 +710,10 @@ static void test_parse_char_array_provide_port(CuTest* tc)
    CuAssertPtrNotNull(tc, port);
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_CHAR, apx_dataElement_get_type_code(data_element));
-   CuAssertTrue(tc, apx_dataElement_is_array(data_element));
-   CuAssertFalse(tc, apx_dataElement_is_dynamic_array(data_element));
-   CuAssertUIntEquals(tc, 10, apx_dataElement_get_array_length(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_CHAR, apx_data_element_get_type_code(data_element));
+   CuAssertTrue(tc, apx_data_element_is_array(data_element));
+   CuAssertFalse(tc, apx_data_element_is_dynamic_array(data_element));
+   CuAssertUIntEquals(tc, 10, apx_data_element_get_array_length(data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -745,13 +745,13 @@ static void test_parse_char_array_provide_port_with_empty_initializer(CuTest* tc
    CuAssertPtrNotNull(tc, port);
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_CHAR, apx_dataElement_get_type_code(data_element));
-   CuAssertTrue(tc, apx_dataElement_is_array(data_element));
-   CuAssertFalse(tc, apx_dataElement_is_dynamic_array(data_element));
-   CuAssertUIntEquals(tc, 10, apx_dataElement_get_array_length(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_CHAR, apx_data_element_get_type_code(data_element));
+   CuAssertTrue(tc, apx_data_element_is_array(data_element));
+   CuAssertFalse(tc, apx_data_element_is_dynamic_array(data_element));
+   CuAssertUIntEquals(tc, 10, apx_data_element_get_array_length(data_element));
    attributes = apx_port_get_attributes(port);
    CuAssertPtrNotNull(tc, attributes);
-   init_value = (dtl_sv_t*)apx_portAttributes_get_init_value(attributes);
+   init_value = (dtl_sv_t*)apx_port_attributes_get_init_value(attributes);
    CuAssertPtrNotNull(tc, init_value);
    CuAssertIntEquals(tc, DTL_SV_STR, dtl_sv_type(init_value));
    str = dtl_sv_to_str(init_value, &ok);
@@ -786,8 +786,8 @@ static void test_parse_char8_provide_port(CuTest* tc)
    CuAssertPtrNotNull(tc, port);
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_CHAR8, apx_dataElement_get_type_code(data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_CHAR8, apx_data_element_get_type_code(data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -829,59 +829,59 @@ static void test_parse_record_inside_record_type_reference_require_port(CuTest* 
    CuAssertStrEquals(tc, "RecordPort", apx_port_get_name(port));
    data_element = apx_port_get_data_element(port);
    CuAssertPtrNotNull(tc, data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(data_element));
-   data_type = apx_dataElement_get_type_ref_ptr(data_element);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(data_element));
+   data_type = apx_data_element_get_type_ref_ptr(data_element);
    CuAssertPtrNotNull(tc, data_type);
-   record_data_element = apx_dataType_get_data_element(data_type);
+   record_data_element = apx_data_type_get_data_element(data_type);
    CuAssertPtrNotNull(tc, record_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_dataElement_get_type_code(record_data_element));
-   CuAssertUIntEquals(tc, 2, apx_dataElement_get_num_child_elements(record_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_data_element_get_type_code(record_data_element));
+   CuAssertUIntEquals(tc, 2, apx_data_element_get_num_child_elements(record_data_element));
 
-   ref_child_data_element = apx_dataElement_get_child_at(record_data_element, 0);
+   ref_child_data_element = apx_data_element_get_child_at(record_data_element, 0);
    CuAssertPtrNotNull(tc, ref_child_data_element);
-   CuAssertStrEquals(tc, "First", apx_dataElement_get_name(ref_child_data_element));
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(ref_child_data_element));
-   child_data_type = apx_dataElement_get_type_ref_ptr(ref_child_data_element);
-   CuAssertStrEquals(tc, "FirstType_T", apx_dataType_get_name(child_data_type));
-   child_data_element = apx_dataType_get_data_element(child_data_type);
+   CuAssertStrEquals(tc, "First", apx_data_element_get_name(ref_child_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(ref_child_data_element));
+   child_data_type = apx_data_element_get_type_ref_ptr(ref_child_data_element);
+   CuAssertStrEquals(tc, "FirstType_T", apx_data_type_get_name(child_data_type));
+   child_data_element = apx_data_type_get_data_element(child_data_type);
    CuAssertPtrNotNull(tc, child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_dataElement_get_type_code(child_data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(child_data_element));
-   CuAssertUIntEquals(tc, 2, apx_dataElement_get_num_child_elements(child_data_element));
-   grand_child_data_element = apx_dataElement_get_child_at(child_data_element, 0);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_data_element_get_type_code(child_data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(child_data_element));
+   CuAssertUIntEquals(tc, 2, apx_data_element_get_num_child_elements(child_data_element));
+   grand_child_data_element = apx_data_element_get_child_at(child_data_element, 0);
    CuAssertPtrNotNull(tc, grand_child_data_element);
-   CuAssertStrEquals(tc, "Inner1", apx_dataElement_get_name(grand_child_data_element));
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(grand_child_data_element));
-   CuAssertTrue(tc, apx_dataElement_get_limits_uint32(grand_child_data_element, &lower_limit, &upper_limit));
+   CuAssertStrEquals(tc, "Inner1", apx_data_element_get_name(grand_child_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(grand_child_data_element));
+   CuAssertTrue(tc, apx_data_element_get_limits_uint32(grand_child_data_element, &lower_limit, &upper_limit));
    CuAssertUIntEquals(tc, 0u, lower_limit);
    CuAssertUIntEquals(tc, 3u, upper_limit);
-   grand_child_data_element = apx_dataElement_get_child_at(child_data_element, 1);
+   grand_child_data_element = apx_data_element_get_child_at(child_data_element, 1);
    CuAssertPtrNotNull(tc, grand_child_data_element);
-   CuAssertStrEquals(tc, "Inner2", apx_dataElement_get_name(grand_child_data_element));
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT16, apx_dataElement_get_type_code(grand_child_data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(grand_child_data_element));
+   CuAssertStrEquals(tc, "Inner2", apx_data_element_get_name(grand_child_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT16, apx_data_element_get_type_code(grand_child_data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(grand_child_data_element));
 
-   ref_child_data_element = apx_dataElement_get_child_at(record_data_element, 1);
+   ref_child_data_element = apx_data_element_get_child_at(record_data_element, 1);
    CuAssertPtrNotNull(tc, ref_child_data_element);
-   CuAssertStrEquals(tc, "Second", apx_dataElement_get_name(ref_child_data_element));
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(ref_child_data_element));
-   child_data_type = apx_dataElement_get_type_ref_ptr(ref_child_data_element);
-   CuAssertStrEquals(tc, "SecondType_T", apx_dataType_get_name(child_data_type));
-   child_data_element = apx_dataType_get_data_element(child_data_type);
+   CuAssertStrEquals(tc, "Second", apx_data_element_get_name(ref_child_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(ref_child_data_element));
+   child_data_type = apx_data_element_get_type_ref_ptr(ref_child_data_element);
+   CuAssertStrEquals(tc, "SecondType_T", apx_data_type_get_name(child_data_type));
+   child_data_element = apx_data_type_get_data_element(child_data_type);
    CuAssertPtrNotNull(tc, child_data_element);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_dataElement_get_type_code(child_data_element));
-   CuAssertFalse(tc, apx_dataElement_is_array(child_data_element));
-   CuAssertUIntEquals(tc, 2, apx_dataElement_get_num_child_elements(child_data_element));
-   grand_child_data_element = apx_dataElement_get_child_at(child_data_element, 0);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_data_element_get_type_code(child_data_element));
+   CuAssertFalse(tc, apx_data_element_is_array(child_data_element));
+   CuAssertUIntEquals(tc, 2, apx_data_element_get_num_child_elements(child_data_element));
+   grand_child_data_element = apx_data_element_get_child_at(child_data_element, 0);
    CuAssertPtrNotNull(tc, grand_child_data_element);
-   CuAssertStrEquals(tc, "Inner3", apx_dataElement_get_name(grand_child_data_element));
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT16, apx_dataElement_get_type_code(grand_child_data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(grand_child_data_element));
-   grand_child_data_element = apx_dataElement_get_child_at(child_data_element, 1);
+   CuAssertStrEquals(tc, "Inner3", apx_data_element_get_name(grand_child_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT16, apx_data_element_get_type_code(grand_child_data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(grand_child_data_element));
+   grand_child_data_element = apx_data_element_get_child_at(child_data_element, 1);
    CuAssertPtrNotNull(tc, grand_child_data_element);
-   CuAssertStrEquals(tc, "Inner4", apx_dataElement_get_name(grand_child_data_element));
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT32, apx_dataElement_get_type_code(grand_child_data_element));
-   CuAssertFalse(tc, apx_dataElement_has_limits(grand_child_data_element));
+   CuAssertStrEquals(tc, "Inner4", apx_data_element_get_name(grand_child_data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT32, apx_data_element_get_type_code(grand_child_data_element));
+   CuAssertFalse(tc, apx_data_element_has_limits(grand_child_data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);
@@ -910,17 +910,17 @@ static void test_parse_array_of_records(CuTest* tc)
    port = apx_node_get_last_require_port(node);
    CuAssertPtrNotNull(tc, port);
    data_element = apx_port_get_data_element(port);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_dataElement_get_type_code(data_element));
-   CuAssertTrue(tc, apx_dataElement_is_array(data_element));
-   CuAssertUIntEquals(tc, 2, apx_dataElement_get_array_length(data_element));
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_RECORD, apx_data_element_get_type_code(data_element));
+   CuAssertTrue(tc, apx_data_element_is_array(data_element));
+   CuAssertUIntEquals(tc, 2, apx_data_element_get_array_length(data_element));
 
-   child_data_element = apx_dataElement_get_child_at(data_element, 0);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT16, apx_dataElement_get_type_code(child_data_element));
-   CuAssertStrEquals(tc, "Id", apx_dataElement_get_name(child_data_element));
+   child_data_element = apx_data_element_get_child_at(data_element, 0);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT16, apx_data_element_get_type_code(child_data_element));
+   CuAssertStrEquals(tc, "Id", apx_data_element_get_name(child_data_element));
 
-   child_data_element = apx_dataElement_get_child_at(data_element, 1);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(child_data_element));
-   CuAssertStrEquals(tc, "Value", apx_dataElement_get_name(child_data_element));
+   child_data_element = apx_data_element_get_child_at(data_element, 1);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(child_data_element));
+   CuAssertStrEquals(tc, "Value", apx_data_element_get_name(child_data_element));
 
 
    apx_node_delete(node);
@@ -952,23 +952,23 @@ static void test_parse_array_of_records_type_reference_require_port(CuTest* tc)
    port = apx_node_get_last_require_port(node);
    CuAssertPtrNotNull(tc, port);
    data_element = apx_port_get_data_element(port);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_dataElement_get_type_code(data_element));
-   CuAssertTrue(tc, apx_dataElement_is_array(data_element));
-   CuAssertUIntEquals(tc, 2, apx_dataElement_get_array_length(data_element));
-   data_type = apx_dataElement_get_type_ref_ptr(data_element);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_REF_PTR, apx_data_element_get_type_code(data_element));
+   CuAssertTrue(tc, apx_data_element_is_array(data_element));
+   CuAssertUIntEquals(tc, 2, apx_data_element_get_array_length(data_element));
+   data_type = apx_data_element_get_type_ref_ptr(data_element);
    CuAssertPtrNotNull(tc, data_type);
-   CuAssertStrEquals(tc, "RecordType_T", apx_dataType_get_name(data_type));
-   record_data_element = apx_dataType_get_data_element(data_type);
+   CuAssertStrEquals(tc, "RecordType_T", apx_data_type_get_name(data_type));
+   record_data_element = apx_data_type_get_data_element(data_type);
    CuAssertPtrNotNull(tc, record_data_element);
-   CuAssertUIntEquals(tc, 2, apx_dataElement_get_num_child_elements(record_data_element));
+   CuAssertUIntEquals(tc, 2, apx_data_element_get_num_child_elements(record_data_element));
 
-   child_data_element = apx_dataElement_get_child_at(record_data_element, 0);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT16, apx_dataElement_get_type_code(child_data_element));
-   CuAssertStrEquals(tc, "Id", apx_dataElement_get_name(child_data_element));
+   child_data_element = apx_data_element_get_child_at(record_data_element, 0);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT16, apx_data_element_get_type_code(child_data_element));
+   CuAssertStrEquals(tc, "Id", apx_data_element_get_name(child_data_element));
 
-   child_data_element = apx_dataElement_get_child_at(record_data_element, 1);
-   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_dataElement_get_type_code(child_data_element));
-   CuAssertStrEquals(tc, "Value", apx_dataElement_get_name(child_data_element));
+   child_data_element = apx_data_element_get_child_at(record_data_element, 1);
+   CuAssertUIntEquals(tc, APX_TYPE_CODE_UINT8, apx_data_element_get_type_code(child_data_element));
+   CuAssertStrEquals(tc, "Value", apx_data_element_get_name(child_data_element));
 
    apx_node_delete(node);
    apx_parser_destroy(&parser);

@@ -69,8 +69,8 @@ void apx_parser_create(apx_parser_t *self, apx_istream_t* stream)
       parser_init_handler(self, &handler);
       apx_istream_set_handler(stream, &handler);
       self->stream = stream;
-      apx_attributeParser_create(&self->attribute_parser);
-      apx_signatureParser_create(&self->signature_parser);
+      apx_attribute_parser_create(&self->attribute_parser);
+      apx_signature_parser_create(&self->signature_parser);
    }
 }
 
@@ -79,8 +79,8 @@ void apx_parser_destroy(apx_parser_t*self)
    if (self != NULL)
    {
       state_clear(&self->state);
-      apx_attributeParser_destroy(&self->attribute_parser);
-      apx_signatureParser_destroy(&self->signature_parser);
+      apx_attribute_parser_destroy(&self->attribute_parser);
+      apx_signature_parser_destroy(&self->signature_parser);
    }
 }
 
@@ -218,7 +218,7 @@ static apx_error_t state_make_data_type(apx_parse_state_t* self, uint8_t const* 
    }
    memcpy(&node_name[0], name_begin, name_size);
    node_name[name_size] = '\0';
-   self->data_type = apx_dataType_new(node_name, (int32_t)self->lineno);
+   self->data_type = apx_data_type_new(node_name, (int32_t)self->lineno);
    if (self->data_type == NULL)
    {
       return APX_MEM_ERROR;
@@ -264,12 +264,12 @@ static apx_error_t state_make_require_port(apx_parse_state_t* self, uint8_t cons
 
 static apx_error_t state_parse_data_signature(apx_parse_state_t* self, apx_signature_parser_t *parser, uint8_t const* begin, uint8_t const* end)
 {
-   uint8_t const* result = apx_signatureParser_parse_data_signature(parser, begin, end);
+   uint8_t const* result = apx_signature_parser_parse_data_signature(parser, begin, end);
    if (result > begin)
    {
       if (result == end)
       {
-         self->data_element = apx_signatureParser_take_data_element(parser);
+         self->data_element = apx_signature_parser_take_data_element(parser);
          assert(self->data_element != NULL);
       }
       else
@@ -278,29 +278,29 @@ static apx_error_t state_parse_data_signature(apx_parse_state_t* self, apx_signa
       }
       return APX_NO_ERROR;
    }
-   return apx_signatureParser_get_last_error(parser, NULL);
+   return apx_signature_parser_get_last_error(parser, NULL);
 }
 
 static apx_error_t state_parse_type_attributes(apx_parse_state_t* self, apx_attribute_parser_t* parser, uint8_t const* begin, uint8_t const* end)
 {
    assert(self->data_type != NULL);
-   uint8_t const* result = apx_attributeParser_parse_type_attributes(parser, begin, end, apx_dataType_get_attributes(self->data_type));
+   uint8_t const* result = apx_attribute_parser_parse_type_attributes(parser, begin, end, apx_data_type_get_attributes(self->data_type));
    if (result > begin)
    {
       return APX_NO_ERROR;
    }
-   return apx_attributeParser_get_last_error(parser, NULL);
+   return apx_attribute_parser_get_last_error(parser, NULL);
 }
 
 static apx_error_t state_parse_port_attributes(apx_parse_state_t* self, apx_attribute_parser_t* parser, uint8_t const* begin, uint8_t const* end)
 {
    assert(self->port != NULL);
-   uint8_t const* result = apx_attributeParser_parse_port_attributes(parser, begin, end, apx_port_get_attributes(self->port));
+   uint8_t const* result = apx_attribute_parser_parse_port_attributes(parser, begin, end, apx_port_get_attributes(self->port));
    if (result > begin)
    {
       return APX_NO_ERROR;
    }
-   return apx_attributeParser_get_last_error(parser, NULL);
+   return apx_attribute_parser_get_last_error(parser, NULL);
 }
 
 static void parser_reset(apx_parser_t* self)
@@ -417,7 +417,7 @@ static apx_error_t parser_accept_version_line(apx_parser_t* self, uint8_t const*
    if ((result > begin) && (result <= end))
    {
       uint8_t const* next = result;
-      result = apx_parserBase_parse_i32(next, end, &self->state.major_version);
+      result = apx_parser_base_parse_i32(next, end, &self->state.major_version);
       if ( (result > next) && (result < end) )
       {
          uint8_t c;
@@ -425,7 +425,7 @@ static apx_error_t parser_accept_version_line(apx_parser_t* self, uint8_t const*
          c = *next++;
          if ((c == '.') && (next < end))
          {
-            result = apx_parserBase_parse_i32(next, end, &self->state.minor_version);
+            result = apx_parser_base_parse_i32(next, end, &self->state.minor_version);
             if (result > next)
             {
                if (result == end)
@@ -452,7 +452,7 @@ static apx_error_t parser_accept_node_declaration(apx_parser_t* self, uint8_t co
       uint8_t c = *next++;
       if ( (c == 'N') && (next < end) )
       {
-         uint8_t const* result = apx_parserBase_parse_string_literal(next, end);
+         uint8_t const* result = apx_parser_base_parse_string_literal(next, end);
          if (result > next)
          {
             apx_error_t rc = state_make_node(&self->state, next + 1, result);
@@ -511,7 +511,7 @@ static apx_error_t parser_accept_type_declaration(apx_parser_t* self, uint8_t co
       assert(self->state.node != NULL);
       if ((c == 'T') && (next < end))
       {
-         uint8_t const* result = apx_parserBase_parse_string_literal(next, end);
+         uint8_t const* result = apx_parser_base_parse_string_literal(next, end);
          if (result > next)
          {
             apx_error_t rc = state_make_data_type(&self->state, next + 1, result);
@@ -529,31 +529,31 @@ static apx_error_t parser_accept_type_declaration(apx_parser_t* self, uint8_t co
                rc = state_parse_data_signature(&self->state, &self->signature_parser, next, mark);
                if (rc != APX_NO_ERROR)
                {
-                  apx_dataType_delete(self->state.data_type);
-                  return apx_signatureParser_get_last_error(&self->signature_parser, NULL);
+                  apx_data_type_delete(self->state.data_type);
+                  return apx_signature_parser_get_last_error(&self->signature_parser, NULL);
                }
-               apx_dataSignature_set_element(&self->state.data_type->data_signature, self->state.data_element);
+               apx_data_signature_set_element(&self->state.data_type->data_signature, self->state.data_element);
                self->state.data_element = NULL;
                next = mark + 1;
                if (next < end)
                {
-                  rc = apx_dataType_init_attributes(self->state.data_type);
+                  rc = apx_data_type_init_attributes(self->state.data_type);
                   if (rc != APX_NO_ERROR)
                   {
-                     apx_dataType_delete(self->state.data_type);
+                     apx_data_type_delete(self->state.data_type);
                      return rc;
                   }
                   rc = state_parse_type_attributes(&self->state, &self->attribute_parser, next, end);
                   if (rc != APX_NO_ERROR)
                   {
-                     apx_dataType_delete(self->state.data_type);
-                     return apx_signatureParser_get_last_error(&self->signature_parser, NULL);
+                     apx_data_type_delete(self->state.data_type);
+                     return apx_signature_parser_get_last_error(&self->signature_parser, NULL);
                   }
                }
                else
                {
                   //No characters found after the ':' character
-                  apx_dataType_delete(self->state.data_type);
+                  apx_data_type_delete(self->state.data_type);
                   return APX_PARSE_ERROR;
                }
             }
@@ -563,10 +563,10 @@ static apx_error_t parser_accept_type_declaration(apx_parser_t* self, uint8_t co
                rc = state_parse_data_signature(&self->state, &self->signature_parser, next, end);
                if (rc != APX_NO_ERROR)
                {
-                  apx_dataType_delete(self->state.data_type);
-                  return apx_signatureParser_get_last_error(&self->signature_parser, NULL);
+                  apx_data_type_delete(self->state.data_type);
+                  return apx_signature_parser_get_last_error(&self->signature_parser, NULL);
                }
-               apx_dataSignature_set_element(&self->state.data_type->data_signature, self->state.data_element);
+               apx_data_signature_set_element(&self->state.data_type->data_signature, self->state.data_element);
                self->state.data_element = NULL;
             }
             apx_node_append_data_type(self->state.node, self->state.data_type);
@@ -602,7 +602,7 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t* self, uint8_t co
             return APX_PARSE_ERROR;
          }
 
-         result = apx_parserBase_parse_string_literal(next, end);
+         result = apx_parser_base_parse_string_literal(next, end);
          if (result > next)
          {
             apx_error_t rc = (port_type == APX_PROVIDE_PORT)? state_make_provide_port(&self->state, next + 1, result) :
@@ -624,7 +624,7 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t* self, uint8_t co
                   apx_port_delete(self->state.port);
                   return rc;
                }
-               apx_dataSignature_set_element(&self->state.port->data_signature, self->state.data_element);
+               apx_data_signature_set_element(&self->state.port->data_signature, self->state.data_element);
                self->state.data_element = NULL;
                next = mark + 1;
                if (next < end)
@@ -658,7 +658,7 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t* self, uint8_t co
                   apx_port_delete(self->state.port);
                   return rc;
                }
-               apx_dataSignature_set_element(&self->state.port->data_signature, self->state.data_element);
+               apx_data_signature_set_element(&self->state.port->data_signature, self->state.data_element);
                self->state.data_element = NULL;
             }
             apx_node_append_port(self->state.node, self->state.port);

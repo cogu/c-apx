@@ -65,7 +65,7 @@ static void test_decode_remote_file_request(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 
 
-CuSuite* testSuite_remotefile(void)
+CuSuite* testsuite_remotefile(void)
 {
    CuSuite* suite = CuSuiteNew();
 
@@ -205,7 +205,7 @@ static void test_encode_accept_header(CuTest* tc)
 }
 
 static void test_decode_accept_header(CuTest* tc)
-{   
+{
    uint8_t buffer[RMF_CMD_TYPE_SIZE + UINT32_SIZE] = {
       (uint8_t)RMF_CMD_ACCEPT_HEADER,
       0x00,
@@ -241,7 +241,7 @@ static void test_encode_connection_create_without_tag(CuTest* tc)
    };
    uint32_t connection_id = 0u;
    uint8_t connection_state = APX_CONNECTION_STATE_CONNECTING;
-   CuAssertUIntEquals(tc, (unsigned int)sizeof(actual), rmf_encode_connection_create(actual, 
+   CuAssertUIntEquals(tc, (unsigned int)sizeof(actual), rmf_encode_connection_create(actual,
       (apx_size_t)sizeof(actual), connection_id, connection_state, NULL));
    CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(expected)));
    connection_id = 0xFFFFFF;

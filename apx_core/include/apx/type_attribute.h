@@ -32,13 +32,13 @@ typedef struct apx_type_attributes_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_typeAttributes_create(apx_type_attributes_t *self);
-void apx_typeAttributes_destroy(apx_type_attributes_t *self);
-apx_type_attributes_t *apx_typeAttributes_new(void);
-void apx_typeAttributes_delete(apx_type_attributes_t *self);
+void apx_type_attributes_create(apx_type_attributes_t *self);
+void apx_type_attributes_destroy(apx_type_attributes_t *self);
+apx_type_attributes_t *apx_type_attributes_new(void);
+void apx_type_attributes_delete(apx_type_attributes_t *self);
 
-void apx_typeAttributes_append_computation(apx_type_attributes_t* self, struct apx_computation_tag* computation);
-int32_t apx_typeAttributes_num_computations(apx_type_attributes_t* self);
-struct apx_computation_tag* apx_typeAttributes_get_computation(apx_type_attributes_t* self, int32_t index);
+void apx_type_attributes_append_computation(apx_type_attributes_t* self, struct apx_computation_tag* computation);
+int32_t apx_type_attributes_num_computations(apx_type_attributes_t* self);
+struct apx_computation_tag* apx_type_attributes_get_computation(apx_type_attributes_t* self, int32_t index);
 
 #endif //APX_TYPE_ATTRIBUTE_H

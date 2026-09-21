@@ -52,13 +52,13 @@ apx_connection_t *apx_connection_new(void);
 void apx_connection_delete(apx_connection_t *self);
 
 void apx_connection_disconnect(apx_connection_t *self);
-apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_definition);
-int32_t apx_connection_getLastErrorLine(apx_connection_t *self);
-apx_node_instance_t *apx_connection_getLastAttachedNode(apx_connection_t *self);
+apx_error_t apx_connection_attach_node(apx_connection_t *self, adt_str_t *apx_definition);
+int32_t apx_connection_get_last_error_line(apx_connection_t *self);
+apx_node_instance_t *apx_connection_get_last_attached_node(apx_connection_t *self);
 #ifndef _WIN32
-apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socketPath);
+apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socket_path);
 #endif
 apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port);
-apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const char *providePortName, dtl_dv_t *dv_value);
+apx_error_t apx_connection_write_provide_port_data(apx_connection_t *self, const char *provide_port_name, dtl_dv_t *dv_value);
 
 #endif //APX_CONNECTION_H

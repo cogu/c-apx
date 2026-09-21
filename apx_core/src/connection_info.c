@@ -26,7 +26,7 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_connectionInfo_create(apx_connection_info_t* self, apx_connection_id_t connection_id, adt_str_t* tag)
+void apx_connection_info_create(apx_connection_info_t* self, apx_connection_id_t connection_id, adt_str_t* tag)
 {
    if (self != NULL)
    {
@@ -38,7 +38,7 @@ void apx_connectionInfo_create(apx_connection_info_t* self, apx_connection_id_t 
    }
 }
 
-void apx_connectionInfo_destroy(apx_connection_info_t* self)
+void apx_connection_info_destroy(apx_connection_info_t* self)
 {
    if (self != NULL)
    {
@@ -46,21 +46,21 @@ void apx_connectionInfo_destroy(apx_connection_info_t* self)
    }
 }
 
-apx_connection_info_t* apx_connectionInfo_new(apx_connection_id_t connection_id, adt_str_t* tag)
+apx_connection_info_t* apx_connection_info_new(apx_connection_id_t connection_id, adt_str_t* tag)
 {
    apx_connection_info_t* self = (apx_connection_info_t*)malloc(sizeof(apx_connection_info_t));
    if (self != NULL)
    {
-      apx_connectionInfo_create(self, connection_id, tag);
+      apx_connection_info_create(self, connection_id, tag);
    }
    return self;
 }
 
-void apx_connectionInfo_delete(apx_connection_info_t* self)
+void apx_connection_info_delete(apx_connection_info_t* self)
 {
    if (self != NULL)
    {
-      apx_connectionInfo_destroy(self);
+      apx_connection_info_destroy(self);
       free(self);
    }
 }

@@ -189,9 +189,9 @@ void apx_istream_vopen(void *arg)
    apx_istream_open((apx_istream_t*) arg);
 }
 
-void apx_istream_vwrite(void *arg, const uint8_t *pChunk, uint32_t chunkLen)
+void apx_istream_vwrite(void *arg, const uint8_t *p_chunk, uint32_t chunk_len)
 {
-   apx_istream_write((apx_istream_t*) arg,pChunk,chunkLen);
+   apx_istream_write((apx_istream_t*) arg,p_chunk,chunk_len);
 }
 
 void apx_istream_vclose(void *arg)

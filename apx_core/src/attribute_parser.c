@@ -33,25 +33,25 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_attributeParser_set_error(apx_attribute_parser_t* self, apx_error_t error, uint8_t const* error_next);
-static void apx_attributeParser_reset(apx_attribute_parser_t* self);
-apx_value_table_t* apx_attributeParser_create_value_table_from_state(apx_attribute_parser_t* self, apx_attribute_parser_value_table_state_t* vts);
-apx_rational_scaling_t* apx_attributeParser_create_rational_scaling_from_state(apx_attribute_parser_rational_scaling_state_t* vts);
-static uint8_t const* apx_attributeParser_parse_single_port_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr);
-static uint8_t const* apx_attributeParser_parse_single_type_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr);
-static uint8_t const* apx_attributeParser_parse_initializer_list(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static bool apx_attributeParser_push_value_to_parent(apx_attribute_parser_t* self);
-static uint8_t const* apx_attributeParser_parse_scalar(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static uint8_t const* apx_attributeParser_parse_integer_literal(uint8_t const* next, uint8_t const* end, bool unary_minus, dtl_sv_t* sv);
-static uint8_t const* apx_attributeParser_parse_string_literal(uint8_t const* begin, uint8_t const* end, dtl_sv_t* sv);
-static uint8_t const* apx_attributeParser_parse_array_length(uint8_t const* begin, uint8_t const* end, uint32_t* length);
-static uint8_t const* apx_attributeParser_parse_value_table(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_value_table_t** vt);
-static uint8_t const* apx_attributeParser_parse_rational_scaling(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_rational_scaling_t** rs);
-static uint8_t const* apx_attributeParser_parse_value_table_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_value_table_state_t* vts);
-static uint8_t const* apx_attributeParser_parse_rational_scaling_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_rational_scaling_state_t* rss);
-static uint8_t const* apx_attributeParser_parse_lower_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range);
-static uint8_t const* apx_attributeParser_parse_upper_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range);
-static bool apx_attributeParser_is_initializer_list(apx_attribute_parser_t* self);
+static void apx_attribute_parser_set_error(apx_attribute_parser_t* self, apx_error_t error, uint8_t const* error_next);
+static void apx_attribute_parser_reset(apx_attribute_parser_t* self);
+apx_value_table_t* apx_attribute_parser_create_value_table_from_state(apx_attribute_parser_t* self, apx_attribute_parser_value_table_state_t* vts);
+apx_rational_scaling_t* apx_attribute_parser_create_rational_scaling_from_state(apx_attribute_parser_rational_scaling_state_t* vts);
+static uint8_t const* apx_attribute_parser_parse_single_port_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr);
+static uint8_t const* apx_attribute_parser_parse_single_type_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr);
+static uint8_t const* apx_attribute_parser_parse_initializer_list(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static bool apx_attribute_parser_push_value_to_parent(apx_attribute_parser_t* self);
+static uint8_t const* apx_attribute_parser_parse_scalar(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static uint8_t const* apx_attribute_parser_parse_integer_literal(uint8_t const* next, uint8_t const* end, bool unary_minus, dtl_sv_t* sv);
+static uint8_t const* apx_attribute_parser_parse_string_literal(uint8_t const* begin, uint8_t const* end, dtl_sv_t* sv);
+static uint8_t const* apx_attribute_parser_parse_array_length(uint8_t const* begin, uint8_t const* end, uint32_t* length);
+static uint8_t const* apx_attribute_parser_parse_value_table(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_value_table_t** vt);
+static uint8_t const* apx_attribute_parser_parse_rational_scaling(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_rational_scaling_t** rs);
+static uint8_t const* apx_attribute_parser_parse_value_table_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_value_table_state_t* vts);
+static uint8_t const* apx_attribute_parser_parse_rational_scaling_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_rational_scaling_state_t* rss);
+static uint8_t const* apx_attribute_parser_parse_lower_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range);
+static uint8_t const* apx_attribute_parser_parse_upper_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range);
+static bool apx_attribute_parser_is_initializer_list(apx_attribute_parser_t* self);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -63,7 +63,7 @@ static bool apx_attributeParser_is_initializer_list(apx_attribute_parser_t* self
 //////////////////////////////////////////////////////////////////////////////
 
 //apx_attribute_parse_state_t API
-void apx_attributeParseState_create(apx_attribute_parse_state_t* self)
+void apx_attribute_parse_state_create(apx_attribute_parse_state_t* self)
 {
    if (self != NULL)
    {
@@ -73,7 +73,7 @@ void apx_attributeParseState_create(apx_attribute_parse_state_t* self)
    }
 }
 
-void apx_attributeParseState_destroy(apx_attribute_parse_state_t* self)
+void apx_attribute_parse_state_destroy(apx_attribute_parse_state_t* self)
 {
    if (self != NULL)
    {
@@ -88,32 +88,32 @@ void apx_attributeParseState_destroy(apx_attribute_parse_state_t* self)
    }
 }
 
-apx_attribute_parse_state_t* apx_attributeParseState_new(void)
+apx_attribute_parse_state_t* apx_attribute_parse_state_new(void)
 {
    apx_attribute_parse_state_t* self = (apx_attribute_parse_state_t*)malloc(sizeof(apx_attribute_parse_state_t));
    if (self != NULL)
    {
-      apx_attributeParseState_create(self);
+      apx_attribute_parse_state_create(self);
    }
    return self;
 }
 
-void apx_attributeParseState_delete(apx_attribute_parse_state_t* self)
+void apx_attribute_parse_state_delete(apx_attribute_parse_state_t* self)
 {
    if (self != NULL)
    {
-      apx_attributeParseState_destroy(self);
+      apx_attribute_parse_state_destroy(self);
       free(self);
    }
 }
 
-void apx_attributeParseState_vdelete(void* arg)
+void apx_attribute_parse_state_vdelete(void* arg)
 {
-   apx_attributeParseState_delete((apx_attribute_parse_state_t*)arg);
+   apx_attribute_parse_state_delete((apx_attribute_parse_state_t*)arg);
 }
 
 
-bool apx_attributeParseState_has_value(apx_attribute_parse_state_t* self)
+bool apx_attribute_parse_state_has_value(apx_attribute_parse_state_t* self)
 {
    if (self != NULL)
    {
@@ -134,7 +134,7 @@ void apx_range_create(apx_range_t* self)
 }
 
 //apx_attribute_parser_value_table_state_t API
-void apx_attributeParserValueTableState_create(apx_attribute_parser_value_table_state_t* self)
+void apx_attribute_parser_value_table_state_create(apx_attribute_parser_value_table_state_t* self)
 {
    if (self != NULL)
    {
@@ -145,7 +145,7 @@ void apx_attributeParserValueTableState_create(apx_attribute_parser_value_table_
    }
 }
 
-void apx_attributeParserValueTableState_destroy(apx_attribute_parser_value_table_state_t* self)
+void apx_attribute_parser_value_table_state_destroy(apx_attribute_parser_value_table_state_t* self)
 {
    if (self != NULL)
    {
@@ -153,7 +153,7 @@ void apx_attributeParserValueTableState_destroy(apx_attribute_parser_value_table
    }
 }
 
-void apx_attributeParserValueTableState_append(apx_attribute_parser_value_table_state_t* self, adt_str_t* str)
+void apx_attribute_parser_value_table_state_append(apx_attribute_parser_value_table_state_t* self, adt_str_t* str)
 {
    if ((self != NULL) && (str != NULL))
    {
@@ -165,7 +165,7 @@ void apx_attributeParserValueTableState_append(apx_attribute_parser_value_table_
    }
 }
 
-int32_t apx_attributeParserValueTableState_length(apx_attribute_parser_value_table_state_t* self)
+int32_t apx_attribute_parser_value_table_state_length(apx_attribute_parser_value_table_state_t* self)
 {
    if (self != NULL)
    {
@@ -175,7 +175,7 @@ int32_t apx_attributeParserValueTableState_length(apx_attribute_parser_value_tab
 }
 
 //apx_attribute_parser_rational_scaling_state_t API
-void apx_attributeParserRationalScalingState_create(apx_attribute_parser_rational_scaling_state_t* self)
+void apx_attribute_parser_rational_scaling_state_create(apx_attribute_parser_rational_scaling_state_t* self)
 {
    if (self != NULL)
    {
@@ -188,7 +188,7 @@ void apx_attributeParserRationalScalingState_create(apx_attribute_parser_rationa
    }
 }
 
-void apx_attributeParserRationalScalingState_destroy(apx_attribute_parser_rational_scaling_state_t* self)
+void apx_attribute_parser_rational_scaling_state_destroy(apx_attribute_parser_rational_scaling_state_t* self)
 {
    if (self != NULL)
    {
@@ -200,31 +200,31 @@ void apx_attributeParserRationalScalingState_destroy(apx_attribute_parser_ration
 }
 
 //apx_attribute_parser_t API
-void apx_attributeParser_create(apx_attribute_parser_t* self)
+void apx_attribute_parser_create(apx_attribute_parser_t* self)
 {
    if (self != NULL)
    {
-      adt_stack_create(&self->stack, apx_attributeParseState_vdelete);
+      adt_stack_create(&self->stack, apx_attribute_parse_state_vdelete);
       self->state = NULL;
       self->last_error = APX_NO_ERROR;
       self->error_next = NULL;
    }
 }
 
-void apx_attributeParser_destroy(apx_attribute_parser_t* self)
+void apx_attribute_parser_destroy(apx_attribute_parser_t* self)
 {
    if (self != NULL)
    {
-      apx_attributeParser_reset(self);
+      apx_attribute_parser_reset(self);
    }
 }
 
-uint8_t const* apx_attributeParser_parse_port_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr)
+uint8_t const* apx_attribute_parser_parse_port_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr)
 {
    uint8_t const* next = begin;
    if ((end < begin) || (begin == NULL) || (end == NULL))
    {
-      apx_attributeParser_set_error(self, APX_INVALID_ARGUMENT_ERROR, NULL);
+      apx_attribute_parser_set_error(self, APX_INVALID_ARGUMENT_ERROR, NULL);
       return NULL;
    }
    while (next < end)
@@ -234,7 +234,7 @@ uint8_t const* apx_attributeParser_parse_port_attributes(apx_attribute_parser_t*
       {
          break;
       }
-      uint8_t const* result = apx_attributeParser_parse_single_port_attribute(self, next, end, attr);
+      uint8_t const* result = apx_attribute_parser_parse_single_port_attribute(self, next, end, attr);
       if (result > next)
       {
          next = bstr_lstrip(result, end);
@@ -248,7 +248,7 @@ uint8_t const* apx_attributeParser_parse_port_attributes(apx_attribute_parser_t*
          }
          else
          {
-            apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+            apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
             next = NULL;
             break;
          }
@@ -262,12 +262,12 @@ uint8_t const* apx_attributeParser_parse_port_attributes(apx_attribute_parser_t*
 
 }
 
-uint8_t const* apx_attributeParser_parse_type_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr)
+uint8_t const* apx_attribute_parser_parse_type_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr)
 {
    uint8_t const* next = begin;
    if ((end < begin) || (begin == NULL) || (end == NULL))
    {
-      apx_attributeParser_set_error(self, APX_INVALID_ARGUMENT_ERROR, begin);
+      apx_attribute_parser_set_error(self, APX_INVALID_ARGUMENT_ERROR, begin);
       return NULL;
    }
    while (next < end)
@@ -277,7 +277,7 @@ uint8_t const* apx_attributeParser_parse_type_attributes(apx_attribute_parser_t*
       {
          break;
       }
-      uint8_t const* result = apx_attributeParser_parse_single_type_attribute(self, next, end, attr);
+      uint8_t const* result = apx_attribute_parser_parse_single_type_attribute(self, next, end, attr);
       if (result > next)
       {
          next = bstr_lstrip(result, end);
@@ -291,7 +291,7 @@ uint8_t const* apx_attributeParser_parse_type_attributes(apx_attribute_parser_t*
          }
          else
          {
-            apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+            apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
             next = NULL;
             break;
          }
@@ -304,18 +304,18 @@ uint8_t const* apx_attributeParser_parse_type_attributes(apx_attribute_parser_t*
    return next;
 }
 
-uint8_t const* apx_attributeParser_parse_initializer(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, dtl_dv_t** dv)
+uint8_t const* apx_attribute_parser_parse_initializer(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, dtl_dv_t** dv)
 {
    if ((self != NULL) && (begin != NULL) && (end != NULL) && (begin <= end) && (dv != NULL))
    {
       uint8_t const* next;
-      apx_attributeParser_reset(self);
-      self->state = apx_attributeParseState_new();
+      apx_attribute_parser_reset(self);
+      self->state = apx_attribute_parse_state_new();
       if (self->state == NULL)
       {
-         apx_attributeParser_set_error(self, APX_MEM_ERROR, begin);
+         apx_attribute_parser_set_error(self, APX_MEM_ERROR, begin);
       }
-      next = apx_attributeParser_parse_initializer_list(self, begin, end);
+      next = apx_attribute_parser_parse_initializer_list(self, begin, end);
       if (next > begin)
       {
          assert(next <= end);
@@ -332,16 +332,16 @@ uint8_t const* apx_attributeParser_parse_initializer(apx_attribute_parser_t* sel
       }
       if (next == NULL)
       {
-         apx_attributeParser_set_error(self, APX_PARSE_ERROR, begin);
+         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, begin);
       }
-      apx_attributeParseState_delete(self->state);
+      apx_attribute_parse_state_delete(self->state);
       self->state = NULL;
       return next;
    }
    return NULL;
 }
 
-apx_error_t apx_attributeParser_get_last_error(apx_attribute_parser_t* self, uint8_t const** error_next)
+apx_error_t apx_attribute_parser_get_last_error(apx_attribute_parser_t* self, uint8_t const** error_next)
 {
    if (self != NULL)
    {
@@ -358,14 +358,14 @@ apx_error_t apx_attributeParser_get_last_error(apx_attribute_parser_t* self, uin
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_attributeParser_set_error(apx_attribute_parser_t* self, apx_error_t error, uint8_t const* error_next)
+static void apx_attribute_parser_set_error(apx_attribute_parser_t* self, apx_error_t error, uint8_t const* error_next)
 {
    assert(self != NULL);
    self->last_error = error;
    self->error_next = error_next;
 }
 
-static void apx_attributeParser_reset(apx_attribute_parser_t* self)
+static void apx_attribute_parser_reset(apx_attribute_parser_t* self)
 {
    assert(self != NULL);
    self->last_error = APX_NO_ERROR;
@@ -373,17 +373,17 @@ static void apx_attributeParser_reset(apx_attribute_parser_t* self)
    adt_stack_clear(&self->stack);
    if (self->state != NULL)
    {
-      apx_attributeParseState_delete(self->state);
+      apx_attribute_parse_state_delete(self->state);
       self->state = NULL;
    }
 }
 
 
-apx_value_table_t* apx_attributeParser_create_value_table_from_state(apx_attribute_parser_t* self, apx_attribute_parser_value_table_state_t* vts)
+apx_value_table_t* apx_attribute_parser_create_value_table_from_state(apx_attribute_parser_t* self, apx_attribute_parser_value_table_state_t* vts)
 {
    bool auto_upper_limit = false;
-   apx_value_table_t* vt = apx_valueTable_new();
-   int32_t num_values = apx_attributeParserValueTableState_length(vts);
+   apx_value_table_t* vt = apx_value_table_new();
+   int32_t num_values = apx_attribute_parser_value_table_state_length(vts);
    apx_error_t result;
    if (vt == NULL)
    {
@@ -397,11 +397,11 @@ apx_value_table_t* apx_attributeParser_create_value_table_from_state(apx_attribu
       }
       if (vts->range.is_signed_range)
       {
-         apx_valueTable_set_range_signed(vt, vts->range.lower.i32, auto_upper_limit ? vts->range.lower.i32 : vts->range.upper.i32);
+         apx_value_table_set_range_signed(vt, vts->range.lower.i32, auto_upper_limit ? vts->range.lower.i32 : vts->range.upper.i32);
       }
       else
       {
-         apx_valueTable_set_range_unsigned(vt, vts->range.lower.u32, auto_upper_limit ? vts->range.lower.u32 : vts->range.upper.u32);
+         apx_value_table_set_range_unsigned(vt, vts->range.lower.u32, auto_upper_limit ? vts->range.lower.u32 : vts->range.upper.u32);
       }
    }
    else
@@ -433,34 +433,34 @@ apx_value_table_t* apx_attributeParser_create_value_table_from_state(apx_attribu
          u32_index++;
       }
    }
-   result = apx_valueTable_move_values(vt, &vts->values);
+   result = apx_value_table_move_values(vt, &vts->values);
    if (result != APX_NO_ERROR)
    {
-      apx_attributeParser_set_error(self, result, NULL);
-      apx_valueTable_delete(vt);
+      apx_attribute_parser_set_error(self, result, NULL);
+      apx_value_table_delete(vt);
       vt = NULL;
    }
    return vt;
 }
 
-apx_rational_scaling_t* apx_attributeParser_create_rational_scaling_from_state(apx_attribute_parser_rational_scaling_state_t* vts)
+apx_rational_scaling_t* apx_attribute_parser_create_rational_scaling_from_state(apx_attribute_parser_rational_scaling_state_t* vts)
 {
-   apx_rational_scaling_t* rs = apx_rationalScaling_new(vts->offset, vts->numerator, vts->denominator, vts->unit);
+   apx_rational_scaling_t* rs = apx_rational_scaling_new(vts->offset, vts->numerator, vts->denominator, vts->unit);
    if (rs != NULL)
    {
       if (vts->range.is_signed_range)
       {
-         apx_rationalScaling_set_range_signed(rs, vts->range.lower.i32, vts->range.upper.i32);
+         apx_rational_scaling_set_range_signed(rs, vts->range.lower.i32, vts->range.upper.i32);
       }
       else
       {
-         apx_rationalScaling_set_range_unsigned(rs, vts->range.lower.u32, vts->range.upper.u32);
+         apx_rational_scaling_set_range_unsigned(rs, vts->range.lower.u32, vts->range.upper.u32);
       }
    }
    return rs;
 }
 
-static uint8_t const* apx_attributeParser_parse_single_port_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr)
+static uint8_t const* apx_attribute_parser_parse_single_port_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr)
 {
    uint8_t const* next = begin;
    char c = (char)*next;
@@ -485,17 +485,17 @@ static uint8_t const* apx_attributeParser_parse_single_port_attribute(apx_attrib
       switch (attribute_type)
       {
       case APX_ATTRIBUTE_PARSE_TYPE_INIT_VALUE:
-         result = apx_attributeParser_parse_initializer(self, next + 1, end, &attr->init_value);
+         result = apx_attribute_parser_parse_initializer(self, next + 1, end, &attr->init_value);
          break;
       case APX_ATTRIBUTE_PARSE_TYPE_PARAMETER:
          result = next + 1;
          attr->is_parameter = true;
          break;
       case APX_ATTRIBUTE_PARSE_TYPE_QUEUE_LENGTH:
-         result = apx_attributeParser_parse_array_length(next + 1, end, &attr->queue_length);
+         result = apx_attribute_parser_parse_array_length(next + 1, end, &attr->queue_length);
          break;
       default:
-         apx_attributeParser_set_error(self, APX_INTERNAL_ERROR, NULL);
+         apx_attribute_parser_set_error(self, APX_INTERNAL_ERROR, NULL);
          return NULL;
       }
       if (result > next)
@@ -504,20 +504,20 @@ static uint8_t const* apx_attributeParser_parse_single_port_attribute(apx_attrib
       }
       else
       {
-         apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
          next = NULL;
       }
    }
    else
    {
-      apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+      apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
       next = NULL;
    }
    return next;
 
 }
 
-static uint8_t const* apx_attributeParser_parse_single_type_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr)
+static uint8_t const* apx_attribute_parser_parse_single_type_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr)
 {
    {
       uint8_t const* next = begin;
@@ -544,18 +544,18 @@ static uint8_t const* apx_attributeParser_parse_single_type_attribute(apx_attrib
       switch (attr_type)
       {
       case APX_ATTRIBUTE_PARSE_TYPE_NONE:
-         apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
          result = NULL;
          break;
       case APX_ATTRIBUTE_PARSE_TYPE_VALUE_TABLE:
-         result = apx_attributeParser_parse_value_table(self, next, end, &vt);
+         result = apx_attribute_parser_parse_value_table(self, next, end, &vt);
          if (result > next)
          {
             computation = (apx_computation_t*)vt;
          }
          break;
       case APX_ATTRIBUTE_PARSE_TYPE_RATIONAL_SCALING:
-         result = apx_attributeParser_parse_rational_scaling(self, next, end, &rs);
+         result = apx_attribute_parser_parse_rational_scaling(self, next, end, &rs);
          if (result > next)
          {
             computation = (apx_computation_t*)rs;
@@ -568,7 +568,7 @@ static uint8_t const* apx_attributeParser_parse_single_type_attribute(apx_attrib
          next = result;
          if (computation != NULL)
          {
-            apx_typeAttributes_append_computation(attr, computation);
+            apx_type_attributes_append_computation(attr, computation);
          }
       }
       else
@@ -577,14 +577,14 @@ static uint8_t const* apx_attributeParser_parse_single_type_attribute(apx_attrib
          {
             apx_computation_vdelete((void*)computation);
          }
-         apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
          next = NULL;
       }
       return next;
    }
 }
 
-static uint8_t const* apx_attributeParser_parse_initializer_list(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_attribute_parser_parse_initializer_list(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* next = begin;
    while (next < end)
@@ -599,10 +599,10 @@ static uint8_t const* apx_attributeParser_parse_initializer_list(apx_attribute_p
          next++;
          self->state->initializer_list = dtl_av_new();
          adt_stack_push(&self->stack, self->state);
-         child_state = apx_attributeParseState_new();
+         child_state = apx_attribute_parse_state_new();
          if (child_state == NULL)
          {
-            apx_attributeParser_set_error(self, APX_MEM_ERROR, next);
+            apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
             return NULL;
          }
          else
@@ -614,7 +614,7 @@ static uint8_t const* apx_attributeParser_parse_initializer_list(apx_attribute_p
       }
       else
       {
-         uint8_t const* result = apx_attributeParser_parse_scalar(self, next, end);
+         uint8_t const* result = apx_attribute_parser_parse_scalar(self, next, end);
          if (result > next)
          {
             next = result;
@@ -625,13 +625,13 @@ static uint8_t const* apx_attributeParser_parse_initializer_list(apx_attribute_p
          }
       }
    POST_VALUE_HANDLER:
-      if (apx_attributeParser_is_initializer_list(self))
+      if (apx_attribute_parser_is_initializer_list(self))
       {
          next = bstr_lstrip(next, end);
          c = *next;
-         if (apx_attributeParseState_has_value(self->state))
+         if (apx_attribute_parse_state_has_value(self->state))
          {
-            if (!apx_attributeParser_push_value_to_parent(self))
+            if (!apx_attribute_parser_push_value_to_parent(self))
             {
                return NULL;
             }
@@ -645,7 +645,7 @@ static uint8_t const* apx_attributeParser_parse_initializer_list(apx_attribute_p
             next++;
             if (adt_stack_size(&self->stack) > 0)
             {
-               apx_attributeParseState_delete(self->state);
+               apx_attribute_parse_state_delete(self->state);
                self->state = adt_stack_top(&self->stack);
                adt_stack_pop(&self->stack);
                if (adt_stack_size(&self->stack) == 0u )
@@ -677,7 +677,7 @@ static uint8_t const* apx_attributeParser_parse_initializer_list(apx_attribute_p
    return next;
 }
 
-static bool apx_attributeParser_push_value_to_parent(apx_attribute_parser_t* self)
+static bool apx_attribute_parser_push_value_to_parent(apx_attribute_parser_t* self)
 {
    assert(self != NULL);
    if (self->state->parent != NULL)
@@ -701,7 +701,7 @@ static bool apx_attributeParser_push_value_to_parent(apx_attribute_parser_t* sel
    return true;
 }
 
-static uint8_t const* apx_attributeParser_parse_scalar(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_attribute_parser_parse_scalar(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* next = begin;
    uint8_t c = *next;
@@ -712,7 +712,7 @@ static uint8_t const* apx_attributeParser_parse_scalar(apx_attribute_parser_t* s
       {
          uint8_t const* result;
          self->state->sv = dtl_sv_new();
-         result = apx_attributeParser_parse_integer_literal(next, end, false, self->state->sv);
+         result = apx_attribute_parser_parse_integer_literal(next, end, false, self->state->sv);
          if (result > next)
          {
             assert(result <= end);
@@ -726,7 +726,7 @@ static uint8_t const* apx_attributeParser_parse_scalar(apx_attribute_parser_t* s
          {
             uint8_t const* result;
             self->state->sv = dtl_sv_new();
-            result = apx_attributeParser_parse_integer_literal(next, end, true, self->state->sv);
+            result = apx_attribute_parser_parse_integer_literal(next, end, true, self->state->sv);
             if (result > next)
             {
                assert(result <= end);
@@ -742,7 +742,7 @@ static uint8_t const* apx_attributeParser_parse_scalar(apx_attribute_parser_t* s
       {
          uint8_t const* result;
          self->state->sv = dtl_sv_new();
-         result = apx_attributeParser_parse_string_literal(next, end, self->state->sv);
+         result = apx_attribute_parser_parse_string_literal(next, end, self->state->sv);
          if (result > next)
          {
             assert(result <= end);
@@ -753,7 +753,7 @@ static uint8_t const* apx_attributeParser_parse_scalar(apx_attribute_parser_t* s
    return next;
 }
 
-static uint8_t const* apx_attributeParser_parse_integer_literal(uint8_t const* next, uint8_t const* end, bool unary_minus, dtl_sv_t* sv)
+static uint8_t const* apx_attribute_parser_parse_integer_literal(uint8_t const* next, uint8_t const* end, bool unary_minus, dtl_sv_t* sv)
 {
    uint8_t* end_ptr = NULL;
    unsigned long value;
@@ -782,7 +782,7 @@ static uint8_t const* apx_attributeParser_parse_integer_literal(uint8_t const* n
    return next;
 }
 
-static uint8_t const* apx_attributeParser_parse_string_literal(uint8_t const* begin, uint8_t const* end, dtl_sv_t* sv)
+static uint8_t const* apx_attribute_parser_parse_string_literal(uint8_t const* begin, uint8_t const* end, dtl_sv_t* sv)
 {
    assert(begin < end);
    uint8_t const* next = bstr_match_pair(begin, end, '"', '"', '\\');
@@ -795,7 +795,7 @@ static uint8_t const* apx_attributeParser_parse_string_literal(uint8_t const* be
    return next;
 }
 
-static uint8_t const* apx_attributeParser_parse_array_length(uint8_t const* begin, uint8_t const* end, uint32_t* length)
+static uint8_t const* apx_attribute_parser_parse_array_length(uint8_t const* begin, uint8_t const* end, uint32_t* length)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -805,7 +805,7 @@ static uint8_t const* apx_attributeParser_parse_array_length(uint8_t const* begi
          next = bstr_lstrip(next, end);
          if (next < end)
          {
-            uint8_t const* result = apx_parserBase_parse_u32(next, end, length);
+            uint8_t const* result = apx_parser_base_parse_u32(next, end, length);
             if (result > next)
             {
                next = bstr_lstrip(result, end);
@@ -835,7 +835,7 @@ static uint8_t const* apx_attributeParser_parse_array_length(uint8_t const* begi
    return begin;
 }
 
-static uint8_t const* apx_attributeParser_parse_value_table(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_value_table_t** vt)
+static uint8_t const* apx_attribute_parser_parse_value_table(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_value_table_t** vt)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -845,12 +845,12 @@ static uint8_t const* apx_attributeParser_parse_value_table(apx_attribute_parser
       {
          return NULL;
       }
-      apx_attributeParserValueTableState_create(&state);
+      apx_attribute_parser_value_table_state_create(&state);
 
       while (next < end)
       {
          next = bstr_lstrip(next, end);
-         uint8_t const* result = apx_attributeParser_parse_value_table_arg(self, next, end, &state);
+         uint8_t const* result = apx_attribute_parser_parse_value_table_arg(self, next, end, &state);
          if (result > next)
          {
             assert(result <= end);
@@ -871,7 +871,7 @@ static uint8_t const* apx_attributeParser_parse_value_table(apx_attribute_parser
          else if (c == ')')
          {
             //that was the last argument
-            *vt = apx_attributeParser_create_value_table_from_state(self, &state);
+            *vt = apx_attribute_parser_create_value_table_from_state(self, &state);
             if (*vt == NULL)
             {
                self->error_next = next;
@@ -883,7 +883,7 @@ static uint8_t const* apx_attributeParser_parse_value_table(apx_attribute_parser
    return begin; //not enough characters in stream
 }
 
-static uint8_t const* apx_attributeParser_parse_rational_scaling(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_rational_scaling_t** rs)
+static uint8_t const* apx_attribute_parser_parse_rational_scaling(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_rational_scaling_t** rs)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -893,12 +893,12 @@ static uint8_t const* apx_attributeParser_parse_rational_scaling(apx_attribute_p
       {
          return NULL;
       }
-      apx_attributeParserRationalScalingState_create(&state);
+      apx_attribute_parser_rational_scaling_state_create(&state);
       while (next < end)
       {
          uint8_t const* result;
          next = bstr_lstrip(next, end);
-         result = apx_attributeParser_parse_rational_scaling_arg(self, next, end, &state);
+         result = apx_attribute_parser_parse_rational_scaling_arg(self, next, end, &state);
          if (result > next)
          {
             assert(result <= end);
@@ -919,11 +919,11 @@ static uint8_t const* apx_attributeParser_parse_rational_scaling(apx_attribute_p
          else if (c == ')')
          {
             //that was the last argument
-            *rs = apx_attributeParser_create_rational_scaling_from_state(&state);
-            apx_attributeParserRationalScalingState_destroy(&state);
+            *rs = apx_attribute_parser_create_rational_scaling_from_state(&state);
+            apx_attribute_parser_rational_scaling_state_destroy(&state);
             if (*rs == NULL)
             {
-               apx_attributeParser_set_error(self, APX_MEM_ERROR, next);
+               apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
                return NULL;
             }
             return next + 1;
@@ -932,14 +932,14 @@ static uint8_t const* apx_attributeParser_parse_rational_scaling(apx_attribute_p
       //This is the error path, we should not normally end up here.
       if (self->error_next == APX_NO_ERROR)
       {
-         apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
       }
-      apx_attributeParserRationalScalingState_destroy(&state);
+      apx_attribute_parser_rational_scaling_state_destroy(&state);
    }
    return begin; //not enough characters in stream
 }
 
-static uint8_t const* apx_attributeParser_parse_value_table_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_value_table_state_t* vts)
+static uint8_t const* apx_attribute_parser_parse_value_table_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_value_table_state_t* vts)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -982,11 +982,11 @@ static uint8_t const* apx_attributeParser_parse_value_table_arg(apx_attribute_pa
       case APX_ARGUMENT_TYPE_INTEGER_LITERAL:
          if (vts->num_count == 0)
          {
-            result = apx_attributeParser_parse_lower_limit(next, end, unary_minus, &vts->range);
+            result = apx_attribute_parser_parse_lower_limit(next, end, unary_minus, &vts->range);
          }
          else if (vts->num_count == 1)
          {
-            result = apx_attributeParser_parse_upper_limit(next, end, unary_minus, &vts->range);
+            result = apx_attribute_parser_parse_upper_limit(next, end, unary_minus, &vts->range);
          }
          else
          {
@@ -1006,17 +1006,17 @@ static uint8_t const* apx_attributeParser_parse_value_table_arg(apx_attribute_pa
             adt_str_t* str = adt_str_new_bstr(next + 1, result);
             if (str == NULL)
             {
-               apx_attributeParser_set_error(self, APX_MEM_ERROR, next);
+               apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
                return NULL; //TODO: clean memory
             }
-            apx_attributeParserValueTableState_append(vts, str);
+            apx_attribute_parser_value_table_state_append(vts, str);
             next = result + 1; //skip past ending '"' character
          }
          break;
       }
       if (result == NULL)
       {
-         apx_attributeParser_set_error(self, APX_PARSE_ERROR, next);
+         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
          return result;
       }
    }
@@ -1024,7 +1024,7 @@ static uint8_t const* apx_attributeParser_parse_value_table_arg(apx_attribute_pa
 
 }
 
-static uint8_t const* apx_attributeParser_parse_rational_scaling_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_rational_scaling_state_t* rss)
+static uint8_t const* apx_attribute_parser_parse_rational_scaling_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_rational_scaling_state_t* rss)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -1042,7 +1042,7 @@ static uint8_t const* apx_attributeParser_parse_rational_scaling_arg(apx_attribu
             unary_minus = true;
             next++;
          }
-         result = apx_attributeParser_parse_lower_limit(next, end, unary_minus, &rss->range);
+         result = apx_attribute_parser_parse_lower_limit(next, end, unary_minus, &rss->range);
          break;
       case APX_RATIONAL_ARG_INDEX_1: //UPPER RANGE LIMIT (integer)
          if (*next == '-')
@@ -1050,24 +1050,24 @@ static uint8_t const* apx_attributeParser_parse_rational_scaling_arg(apx_attribu
             unary_minus = true;
             next++;
          }
-         result = apx_attributeParser_parse_upper_limit(next, end, unary_minus, &rss->range);
+         result = apx_attribute_parser_parse_upper_limit(next, end, unary_minus, &rss->range);
          break;
       case APX_RATIONAL_ARG_INDEX_2: //OFFSET (double)
-         result = apx_parserBase_parse_double(next, end, &d);
+         result = apx_parser_base_parse_double(next, end, &d);
          if (result > next)
          {
             rss->offset = d;
          }
          break;
       case APX_RATIONAL_ARG_INDEX_3: //NUMERATOR (integer)
-         result = apx_parserBase_parse_i32(next, end, &i32);
+         result = apx_parser_base_parse_i32(next, end, &i32);
          if (result > next)
          {
             rss->numerator = i32;
          }
          break;
       case APX_RATIONAL_ARG_INDEX_4: //DENOMINATOR (integer)
-         result = apx_parserBase_parse_i32(next, end, &i32);
+         result = apx_parser_base_parse_i32(next, end, &i32);
          if (result > next)
          {
             rss->denominator = i32;
@@ -1080,7 +1080,7 @@ static uint8_t const* apx_attributeParser_parse_rational_scaling_arg(apx_attribu
             rss->unit = bstr_make_cstr(next + 1, result);
             if (rss->unit == NULL)
             {
-               apx_attributeParser_set_error(self, APX_MEM_ERROR, next);
+               apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
                return NULL;
             }
             result++;
@@ -1095,7 +1095,7 @@ static uint8_t const* apx_attributeParser_parse_rational_scaling_arg(apx_attribu
    return next;
 }
 
-static uint8_t const* apx_attributeParser_parse_lower_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range)
+static uint8_t const* apx_attribute_parser_parse_lower_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range)
 {
    const char* next = (const char*) begin;
    char* end_ptr;
@@ -1124,7 +1124,7 @@ static uint8_t const* apx_attributeParser_parse_lower_limit(uint8_t const* begin
    return (uint8_t const*) next;
 }
 
-static uint8_t const* apx_attributeParser_parse_upper_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range)
+static uint8_t const* apx_attribute_parser_parse_upper_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range)
 {
    const char* next = (const char*)begin;
    char* end_ptr;
@@ -1170,7 +1170,7 @@ static uint8_t const* apx_attributeParser_parse_upper_limit(uint8_t const* begin
    return (uint8_t const*)next;
 }
 
-static bool apx_attributeParser_is_initializer_list(apx_attribute_parser_t* self)
+static bool apx_attribute_parser_is_initializer_list(apx_attribute_parser_t* self)
 {
    assert(self != NULL);
    return self->state->parent != NULL? true : false;

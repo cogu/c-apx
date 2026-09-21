@@ -24,11 +24,11 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-uint8_t const* apx_parserBase_parse_double(uint8_t const* begin, uint8_t const* end, double* v);
-uint8_t const* apx_parserBase_parse_i32(uint8_t const* begin, uint8_t const* end, int32_t* v);
-uint8_t const* apx_parserBase_parse_u32(uint8_t const* begin, uint8_t const* end, uint32_t* v);
-uint8_t const* apx_parserBase_parse_i64(uint8_t const* begin, uint8_t const* end, int64_t* v);
-uint8_t const* apx_parserBase_parse_u64(uint8_t const* begin, uint8_t const* end, uint64_t* v);
-uint8_t const* apx_parserBase_parse_string_literal(uint8_t const* begin, uint8_t const* end);
+uint8_t const* apx_parser_base_parse_double(uint8_t const* begin, uint8_t const* end, double* v);
+uint8_t const* apx_parser_base_parse_i32(uint8_t const* begin, uint8_t const* end, int32_t* v);
+uint8_t const* apx_parser_base_parse_u32(uint8_t const* begin, uint8_t const* end, uint32_t* v);
+uint8_t const* apx_parser_base_parse_i64(uint8_t const* begin, uint8_t const* end, int64_t* v);
+uint8_t const* apx_parser_base_parse_u64(uint8_t const* begin, uint8_t const* end, uint64_t* v);
+uint8_t const* apx_parser_base_parse_string_literal(uint8_t const* begin, uint8_t const* end);
 
 #endif //APX_PARSER_BASE_H

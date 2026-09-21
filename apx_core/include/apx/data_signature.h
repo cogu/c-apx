@@ -35,10 +35,10 @@ typedef struct apx_data_signature_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_dataSignature_create(apx_data_signature_t *self);
-void apx_dataSignature_destroy(apx_data_signature_t *self);
-apx_data_element_t* apx_dataSignature_get_data_element(apx_data_signature_t* self);
-void apx_dataSignature_set_element(apx_data_signature_t* self, apx_data_element_t* data_element);
-apx_data_element_t* apx_dataSignature_get_effective_data_element(apx_data_signature_t* self);
-void apx_dataSignature_set_effective_element(apx_data_signature_t* self, apx_data_element_t* data_element);
+void apx_data_signature_create(apx_data_signature_t *self);
+void apx_data_signature_destroy(apx_data_signature_t *self);
+apx_data_element_t* apx_data_signature_get_data_element(apx_data_signature_t* self);
+void apx_data_signature_set_element(apx_data_signature_t* self, apx_data_element_t* data_element);
+apx_data_element_t* apx_data_signature_get_effective_data_element(apx_data_signature_t* self);
+void apx_data_signature_set_effective_element(apx_data_signature_t* self, apx_data_element_t* data_element);
 #endif //APX_DATA_SIGNATURE_H

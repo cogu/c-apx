@@ -37,7 +37,7 @@ static void set_connection(apx_file_manager_shared_t* self, apx_connection_inter
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_fileManagerShared_create(apx_file_manager_shared_t* self, apx_connection_interface_t const* parent_connection, apx_allocator_t* allocator)
+void apx_file_manager_shared_create(apx_file_manager_shared_t* self, apx_connection_interface_t const* parent_connection, apx_allocator_t* allocator)
 {
    if (self != NULL)
    {
@@ -45,23 +45,23 @@ void apx_fileManagerShared_create(apx_file_manager_shared_t* self, apx_connectio
       self->connection_id = APX_INVALID_CONNECTION_ID;
       self->is_connected = false;
       self->allocator = allocator;
-      apx_fileMap_create(&self->local_file_map, false);
-      apx_fileMap_create(&self->remote_file_map, true);
+      apx_file_map_create(&self->local_file_map, false);
+      apx_file_map_create(&self->remote_file_map, true);
       MUTEX_INIT(self->lock);
    }
 }
 
-void apx_fileManagerShared_destroy(apx_file_manager_shared_t *self)
+void apx_file_manager_shared_destroy(apx_file_manager_shared_t *self)
 {
    if (self != NULL)
    {
-      apx_fileMap_destroy(&self->local_file_map);
-      apx_fileMap_destroy(&self->remote_file_map);
+      apx_file_map_destroy(&self->local_file_map);
+      apx_file_map_destroy(&self->remote_file_map);
       MUTEX_DESTROY(self->lock);
    }
 }
 
-void apx_fileManagerShared_start(apx_file_manager_shared_t* self)
+void apx_file_manager_shared_start(apx_file_manager_shared_t* self)
 {
    if (self != NULL)
    {
@@ -70,85 +70,85 @@ void apx_fileManagerShared_start(apx_file_manager_shared_t* self)
    }
 }
 
-apx_file_t* apx_fileManagerShared_create_local_file(apx_file_manager_shared_t* self, const rmf_file_info_t* file_info)
+apx_file_t* apx_file_manager_shared_create_local_file(apx_file_manager_shared_t* self, const rmf_file_info_t* file_info)
 {
    if ( (self != NULL) && (file_info != NULL) )
    {
       apx_file_t* file = NULL;
       MUTEX_LOCK(self->lock);
-      file = apx_fileMap_create_file(&self->local_file_map, file_info);
+      file = apx_file_map_create_file(&self->local_file_map, file_info);
       MUTEX_UNLOCK(self->lock);
       return file;
    }
    return NULL;
 }
 
-apx_file_t* apx_fileManagerShared_create_remote_file(apx_file_manager_shared_t* self, const rmf_file_info_t* file_info)
+apx_file_t* apx_file_manager_shared_create_remote_file(apx_file_manager_shared_t* self, const rmf_file_info_t* file_info)
 {
    if ((self != NULL) && (file_info != NULL))
    {
       apx_file_t* file = NULL;
       MUTEX_LOCK(self->lock);
-      file = apx_fileMap_create_file(&self->remote_file_map, file_info);
+      file = apx_file_map_create_file(&self->remote_file_map, file_info);
       MUTEX_UNLOCK(self->lock);
       return file;
    }
    return NULL;
 }
 
-int32_t apx_fileManagerShared_get_num_local_files(apx_file_manager_shared_t* self)
+int32_t apx_file_manager_shared_get_num_local_files(apx_file_manager_shared_t* self)
 {
    if (self != NULL)
    {
       int32_t retval;
       MUTEX_LOCK(self->lock);
-      retval = apx_fileMap_length(&self->local_file_map);
+      retval = apx_file_map_length(&self->local_file_map);
       MUTEX_UNLOCK(self->lock);
       return retval;
    }
    return -1;
 }
 
-int32_t apx_fileManagerShared_get_num_remote_files(apx_file_manager_shared_t* self)
+int32_t apx_file_manager_shared_get_num_remote_files(apx_file_manager_shared_t* self)
 {
    if (self != NULL)
    {
       int32_t retval;
       MUTEX_LOCK(self->lock);
-      retval = apx_fileMap_length(&self->remote_file_map);
+      retval = apx_file_map_length(&self->remote_file_map);
       MUTEX_UNLOCK(self->lock);
       return retval;
    }
    return -1;
 }
 
-apx_file_t* apx_fileManagerShared_find_local_file_by_name(apx_file_manager_shared_t* self, const char* name)
+apx_file_t* apx_file_manager_shared_find_local_file_by_name(apx_file_manager_shared_t* self, const char* name)
 {
    if ( (self != NULL) && (name != NULL) )
    {
       apx_file_t *file;
       MUTEX_LOCK(self->lock);
-      file = apx_fileMap_find_by_name(&self->local_file_map, name);
+      file = apx_file_map_find_by_name(&self->local_file_map, name);
       MUTEX_UNLOCK(self->lock);
       return file;
    }
    return NULL;
 }
 
-apx_file_t* apx_fileManagerShared_find_remote_file_by_name(apx_file_manager_shared_t* self, const char* name)
+apx_file_t* apx_file_manager_shared_find_remote_file_by_name(apx_file_manager_shared_t* self, const char* name)
 {
    if ( (self != NULL) && (name != NULL) )
    {
       apx_file_t *localFile;
       MUTEX_LOCK(self->lock);
-      localFile = apx_fileMap_find_by_name(&self->remote_file_map, name);
+      localFile = apx_file_map_find_by_name(&self->remote_file_map, name);
       MUTEX_UNLOCK(self->lock);
       return localFile;
    }
    return NULL;
 }
 
-apx_file_t* apx_fileManagerShared_find_file_by_address(apx_file_manager_shared_t* self, uint32_t address)
+apx_file_t* apx_file_manager_shared_find_file_by_address(apx_file_manager_shared_t* self, uint32_t address)
 {
    if ( (self != NULL) && (address != RMF_INVALID_ADDRESS))
    {
@@ -157,11 +157,11 @@ apx_file_t* apx_fileManagerShared_find_file_by_address(apx_file_manager_shared_t
       MUTEX_LOCK(self->lock);
       if ( (address & RMF_REMOTE_ADDRESS_BIT) != 0u)
       {
-         file = apx_fileMap_find_by_address(&self->remote_file_map, address_without_flags);
+         file = apx_file_map_find_by_address(&self->remote_file_map, address_without_flags);
       }
       else
       {
-         file = apx_fileMap_find_by_address(&self->local_file_map, address_without_flags);
+         file = apx_file_map_find_by_address(&self->local_file_map, address_without_flags);
       }
       MUTEX_UNLOCK(self->lock);
       return file;
@@ -169,7 +169,7 @@ apx_file_t* apx_fileManagerShared_find_file_by_address(apx_file_manager_shared_t
    return (apx_file_t*) NULL;
 }
 
-uint32_t apx_fileManagerShared_get_connection_id(apx_file_manager_shared_t const* self)
+uint32_t apx_file_manager_shared_get_connection_id(apx_file_manager_shared_t const* self)
 {
    if (self != NULL)
    {
@@ -178,7 +178,7 @@ uint32_t apx_fileManagerShared_get_connection_id(apx_file_manager_shared_t const
    return APX_INVALID_CONNECTION_ID;
 }
 
-apx_connection_type_t apx_fileManagerShared_get_connection_type(apx_file_manager_shared_t const* self)
+apx_connection_type_t apx_file_manager_shared_get_connection_type(apx_file_manager_shared_t const* self)
 {
    if (self != NULL)
    {
@@ -188,7 +188,7 @@ apx_connection_type_t apx_fileManagerShared_get_connection_type(apx_file_manager
 }
 
 
-rmf_version_id_t apx_fileManagerShared_get_remotefile_version_id(apx_file_manager_shared_t const* self)
+rmf_version_id_t apx_file_manager_shared_get_remotefile_version_id(apx_file_manager_shared_t const* self)
 {
    if (self != NULL)
    {
@@ -197,7 +197,7 @@ rmf_version_id_t apx_fileManagerShared_get_remotefile_version_id(apx_file_manage
    return RMF_PROTOCOL_VERSION_ID_NONE;
 }
 
-int32_t apx_fileManagerShared_copy_local_file_info(apx_file_manager_shared_t* self, adt_ary_t* array)
+int32_t apx_file_manager_shared_copy_local_file_info(apx_file_manager_shared_t* self, adt_ary_t* array)
 {
    if ( (self != NULL) && (array != NULL) )
    {
@@ -205,14 +205,14 @@ int32_t apx_fileManagerShared_copy_local_file_info(apx_file_manager_shared_t* se
       adt_list_t const* list;
       adt_list_elem_t* iter;
       MUTEX_LOCK(self->lock);
-      list = apx_fileMap_get_list(&self->local_file_map);
+      list = apx_file_map_get_list(&self->local_file_map);
       assert(list != NULL);
       iter = adt_list_iter_first(list);
       while (iter != NULL)
       {
          apx_file_t* file = (apx_file_t*)iter->pItem;
          assert(file != NULL);
-         rmf_file_info_t* file_info = rmf_fileInfo_clone(apx_file_get_file_info(file));
+         rmf_file_info_t* file_info = rmf_file_info_clone(apx_file_get_file_info(file));
          if (file_info == NULL)
          {
             //out of memory error occured
@@ -229,7 +229,7 @@ int32_t apx_fileManagerShared_copy_local_file_info(apx_file_manager_shared_t* se
    return -1;
 }
 
-void apx_fileManagerShared_connected(apx_file_manager_shared_t* self)
+void apx_file_manager_shared_connected(apx_file_manager_shared_t* self)
 {
    if (self != NULL)
    {
@@ -243,7 +243,7 @@ void apx_fileManagerShared_connected(apx_file_manager_shared_t* self)
    }
 }
 
-void apx_fileManagerShared_disconnected(apx_file_manager_shared_t* self)
+void apx_file_manager_shared_disconnected(apx_file_manager_shared_t* self)
 {
    if (self != NULL)
    {
@@ -256,7 +256,7 @@ void apx_fileManagerShared_disconnected(apx_file_manager_shared_t* self)
    }
 }
 
-bool apx_fileManagerShared_is_connected(apx_file_manager_shared_t* self)
+bool apx_file_manager_shared_is_connected(apx_file_manager_shared_t* self)
 {
    if (self != NULL)
    {
@@ -269,7 +269,7 @@ bool apx_fileManagerShared_is_connected(apx_file_manager_shared_t* self)
    return false;
 }
 
-apx_connection_interface_t const* apx_fileManagerShared_connection(apx_file_manager_shared_t const* self)
+apx_connection_interface_t const* apx_file_manager_shared_connection(apx_file_manager_shared_t const* self)
 {
    if (self != NULL)
    {
@@ -278,7 +278,7 @@ apx_connection_interface_t const* apx_fileManagerShared_connection(apx_file_mana
    return NULL;
 }
 
-apx_allocator_t* apx_fileManagerShared_allocator(apx_file_manager_shared_t const* self)
+apx_allocator_t* apx_file_manager_shared_allocator(apx_file_manager_shared_t const* self)
 {
    if (self != NULL)
    {

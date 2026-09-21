@@ -38,7 +38,7 @@ void apx_node_create(apx_node_t* self, const char* name)
 {
    if (self != NULL)
    {
-      adt_ary_create(&self->data_types, apx_dataType_vdelete);
+      adt_ary_create(&self->data_types, apx_data_type_vdelete);
       adt_ary_create(&self->require_ports, apx_port_vdelete);
       adt_ary_create(&self->provide_ports, apx_port_vdelete);
       adt_hash_create(&self->type_map, NULL);
@@ -93,7 +93,7 @@ apx_error_t apx_node_append_data_type(apx_node_t* self, apx_data_type_t* data_ty
 {
    if ((self != NULL) && (data_type != NULL))
    {
-      const char* name = apx_dataType_get_name(data_type);
+      const char* name = apx_data_type_get_name(data_type);
       if (name == NULL)
       {
          return APX_NAME_MISSING_ERROR;
@@ -105,7 +105,7 @@ apx_error_t apx_node_append_data_type(apx_node_t* self, apx_data_type_t* data_ty
       }
       else
       {
-         apx_dataType_set_id(data_type, (apx_type_id_t)adt_ary_length(&self->data_types));
+         apx_data_type_set_id(data_type, (apx_type_id_t)adt_ary_length(&self->data_types));
          adt_ary_push(&self->data_types, data_type);
          adt_hash_set(&self->type_map, name, data_type);
       }

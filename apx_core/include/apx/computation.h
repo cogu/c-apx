@@ -93,43 +93,43 @@ void apx_computation_assign(apx_computation_t* lhs, apx_computation_t const* rhs
 apx_computation_type_t apx_computation_type(apx_computation_t const* self);
 
 //apx_value_table_t API
-void apx_valueTable_create(apx_value_table_t* self);
-void apx_valueTable_destroy(apx_value_table_t* self);
-apx_value_table_t* apx_valueTable_new(void);
-void apx_valueTable_delete(apx_value_table_t* self);
-apx_value_table_t* apx_valueTable_clone(apx_value_table_t const* other);
-void apx_valueTable_set_range_signed(apx_value_table_t* self, int32_t lower_limit, int32_t upper_limit);
-void apx_valueTable_set_range_unsigned(apx_value_table_t* self, uint32_t lower_limit, uint32_t upper_limit);
-void apx_valueTable_set_upper_limit_signed(apx_value_table_t* self, int32_t upper_limit);
-void apx_valueTable_set_upper_limit_unsigned(apx_value_table_t* self, uint32_t upper_limit);
-int32_t apx_valueTable_length(apx_value_table_t* self);
-apx_error_t apx_valueTable_move_values(apx_value_table_t* self, adt_ary_t* values);
-adt_str_t* apx_valueTable_get_value(apx_value_table_t const* self, int32_t index);
-char const* apx_valueTable_get_value_cstr(apx_value_table_t const* self, int32_t index);
-adt_str_t* apx_valueTable_to_string(apx_value_table_t const* self);
+void apx_value_table_create(apx_value_table_t* self);
+void apx_value_table_destroy(apx_value_table_t* self);
+apx_value_table_t* apx_value_table_new(void);
+void apx_value_table_delete(apx_value_table_t* self);
+apx_value_table_t* apx_value_table_clone(apx_value_table_t const* other);
+void apx_value_table_set_range_signed(apx_value_table_t* self, int32_t lower_limit, int32_t upper_limit);
+void apx_value_table_set_range_unsigned(apx_value_table_t* self, uint32_t lower_limit, uint32_t upper_limit);
+void apx_value_table_set_upper_limit_signed(apx_value_table_t* self, int32_t upper_limit);
+void apx_value_table_set_upper_limit_unsigned(apx_value_table_t* self, uint32_t upper_limit);
+int32_t apx_value_table_length(apx_value_table_t* self);
+apx_error_t apx_value_table_move_values(apx_value_table_t* self, adt_ary_t* values);
+adt_str_t* apx_value_table_get_value(apx_value_table_t const* self, int32_t index);
+char const* apx_value_table_get_value_cstr(apx_value_table_t const* self, int32_t index);
+adt_str_t* apx_value_table_to_string(apx_value_table_t const* self);
 
 //apx_rational_scaling_t API
-apx_error_t apx_rationalScaling_create(apx_rational_scaling_t* self, double offset, int32_t numerator, int32_t denominator, char const* unit);
-void apx_rationalScaling_destroy(apx_rational_scaling_t* self);
-apx_rational_scaling_t* apx_rationalScaling_new(double offset, int32_t numerator, int32_t denominator, char const* unit);
-void apx_rationalScaling_delete(apx_rational_scaling_t* self);
-apx_rational_scaling_t* apx_rationalScaling_clone(apx_rational_scaling_t const* other);
-void apx_rationalScaling_set_range_signed(apx_rational_scaling_t* self, int32_t lower_limit, int32_t upper_limit);
-void apx_rationalScaling_set_range_unsigned(apx_rational_scaling_t* self, uint32_t lower_limit, uint32_t upper_limit);
-adt_str_t* apx_rationalScaling_to_string(apx_rational_scaling_t const* self);
-double apx_rationalScaling_offset(apx_rational_scaling_t const* self);
-int32_t apx_rationalScaling_numerator(apx_rational_scaling_t const* self);
-int32_t apx_rationalScaling_denominator(apx_rational_scaling_t const* self);
-char const* apx_rationalScaling_unit(apx_rational_scaling_t const* self);
+apx_error_t apx_rational_scaling_create(apx_rational_scaling_t* self, double offset, int32_t numerator, int32_t denominator, char const* unit);
+void apx_rational_scaling_destroy(apx_rational_scaling_t* self);
+apx_rational_scaling_t* apx_rational_scaling_new(double offset, int32_t numerator, int32_t denominator, char const* unit);
+void apx_rational_scaling_delete(apx_rational_scaling_t* self);
+apx_rational_scaling_t* apx_rational_scaling_clone(apx_rational_scaling_t const* other);
+void apx_rational_scaling_set_range_signed(apx_rational_scaling_t* self, int32_t lower_limit, int32_t upper_limit);
+void apx_rational_scaling_set_range_unsigned(apx_rational_scaling_t* self, uint32_t lower_limit, uint32_t upper_limit);
+adt_str_t* apx_rational_scaling_to_string(apx_rational_scaling_t const* self);
+double apx_rational_scaling_offset(apx_rational_scaling_t const* self);
+int32_t apx_rational_scaling_numerator(apx_rational_scaling_t const* self);
+int32_t apx_rational_scaling_denominator(apx_rational_scaling_t const* self);
+char const* apx_rational_scaling_unit(apx_rational_scaling_t const* self);
 
 //apx_computation_list_t
-void apx_computationList_create(apx_computation_list_t* self);
-void apx_computationList_destroy(apx_computation_list_t* self);
-apx_computation_list_t* apx_computationList_new(void);
-void apx_computationList_delete(apx_computation_list_t* self);
-void apx_computationList_vdelete(void* arg);
-void apx_computationList_set_id(apx_computation_list_t* self, apx_computation_list_id_t computation_list_id);
-apx_error_t apx_computationList_append_clone_of_computation(apx_computation_list_t* self, apx_computation_t const* computation);
+void apx_computation_list_create(apx_computation_list_t* self);
+void apx_computation_list_destroy(apx_computation_list_t* self);
+apx_computation_list_t* apx_computation_list_new(void);
+void apx_computation_list_delete(apx_computation_list_t* self);
+void apx_computation_list_vdelete(void* arg);
+void apx_computation_list_set_id(apx_computation_list_t* self, apx_computation_list_id_t computation_list_id);
+apx_error_t apx_computation_list_append_clone_of_computation(apx_computation_list_t* self, apx_computation_t const* computation);
 
 
 #endif //APX_COMPUTATION_H

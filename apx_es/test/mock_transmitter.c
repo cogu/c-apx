@@ -14,7 +14,7 @@
 #include <assert.h>
 #include <string.h>
 #include "mockTransmitter.h"
-#include "apx_transmitHandler.h"
+#include "apx_transmit_handler.h"
 #include "headerutil.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -32,31 +32,31 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void mockTransmitter_create(mockTransmitter_t *self)
+void mock_transmitter_create(mock_transmitter_t *self)
 {
    self->maxBufLen = MOCK_TRANSMIT_MAX_LEN;
-   mockTransmitter_autoReset(self);
+   mock_transmitter_auto_reset(self);
 }
 
-void mockTransmitter_reset(mockTransmitter_t *self, int32_t newBufLen)
+void mock_transmitter_reset(mock_transmitter_t *self, int32_t new_buf_len)
 {
    if (self != NULL)
    {
-      self->currentBufLen = newBufLen;
+      self->currentBufLen = new_buf_len;
       self->numWrites = 0;
       self->writeOffset = 0;
       self->readOffset = 0;
    }
 }
-void mockTransmitter_autoReset(mockTransmitter_t *self)
+void mock_transmitter_auto_reset(mock_transmitter_t *self)
 {
    if (self != NULL)
    {
-      mockTransmitter_reset(self, self->maxBufLen);
+      mock_transmitter_reset(self, self->maxBufLen);
    }
 }
 
-int32_t mockTransmitter_writeAvail(mockTransmitter_t *self)
+int32_t mock_transmitter_write_avail(mock_transmitter_t *self)
 {
    if (self != NULL)
    {
@@ -65,7 +65,7 @@ int32_t mockTransmitter_writeAvail(mockTransmitter_t *self)
    return -1;
 }
 
-int32_t mockTransmitter_readAvail(mockTransmitter_t *self)
+int32_t mock_transmitter_read_avail(mock_transmitter_t *self)
 {
    if (self != NULL)
    {
@@ -74,7 +74,7 @@ int32_t mockTransmitter_readAvail(mockTransmitter_t *self)
    return -1;
 }
 
-uint8_t* mockTransmitter_getData(mockTransmitter_t *self)
+uint8_t* mock_transmitter_get_data(mock_transmitter_t *self)
 {
    if (self != NULL)
    {
@@ -83,19 +83,19 @@ uint8_t* mockTransmitter_getData(mockTransmitter_t *self)
    return NULL;
 }
 
-int32_t mockTransmitter_write(mockTransmitter_t *self, const uint8_t *msg, int32_t msgLen)
+int32_t mock_transmitter_write(mock_transmitter_t *self, const uint8_t *msg, int32_t msg_len)
 {
-   if ( (self != NULL) && (msgLen <= HEADERUTIL16_MAX_NUM_LONG) )
+   if ( (self != NULL) && (msg_len <= HEADERUTIL16_MAX_NUM_LONG) )
    {
-      int32_t writeAvail = mockTransmitter_writeAvail(self);
-      int32_t headerLen = (msgLen <= HEADERUTIL16_MAX_NUM_SHORT)? HEADERUTIL16_SIZE_SHORT : HEADERUTIL16_SIZE_LONG;
-      int32_t totaLen = headerLen+msgLen;
+      int32_t writeAvail = mock_transmitter_write_avail(self);
+      int32_t headerLen = (msg_len <= HEADERUTIL16_MAX_NUM_SHORT)? HEADERUTIL16_SIZE_SHORT : HEADERUTIL16_SIZE_LONG;
+      int32_t totaLen = headerLen+msg_len;
       if (writeAvail >= totaLen )
       {
-         (void) headerutil_numEncode16(&self->dataBuf[self->writeOffset], (uint32_t) writeAvail, (uint16_t) msgLen);
+         (void) headerutil_numEncode16(&self->dataBuf[self->writeOffset], (uint32_t) writeAvail, (uint16_t) msg_len);
          self->writeOffset+=headerLen;
-         memcpy(&self->dataBuf[self->writeOffset], msg, msgLen);
-         self->writeOffset+=msgLen;
+         memcpy(&self->dataBuf[self->writeOffset], msg, msg_len);
+         self->writeOffset+=msg_len;
          self->numWrites++;
          assert(self->writeOffset <= self->currentBufLen);
          return totaLen;
@@ -105,7 +105,7 @@ int32_t mockTransmitter_write(mockTransmitter_t *self, const uint8_t *msg, int32
    return APX_TRANSMIT_HANDLER_INVALID_ARGUMENT_ERROR;
 }
 
-int32_t mockTransmitter_getNumWrites(mockTransmitter_t *self)
+int32_t mock_transmitter_get_num_writes(mock_transmitter_t *self)
 {
    if (self != NULL)
    {
@@ -114,14 +114,14 @@ int32_t mockTransmitter_getNumWrites(mockTransmitter_t *self)
    return -1;
 }
 
-void mockTransmitter_trimLeft(mockTransmitter_t *self, int32_t dataLen)
+void mock_transmitter_trim_left(mock_transmitter_t *self, int32_t data_len)
 {
-   if ( (self != NULL) && ((self->readOffset+dataLen)<=self->writeOffset))
+   if ( (self != NULL) && ((self->readOffset+data_len)<=self->writeOffset))
    {
-      self->readOffset+=dataLen;
+      self->readOffset+=data_len;
       if (self->readOffset >= self->writeOffset)
       {
-         mockTransmitter_reset(self, self->currentBufLen);
+         mock_transmitter_reset(self, self->currentBufLen);
       }
    }
 }

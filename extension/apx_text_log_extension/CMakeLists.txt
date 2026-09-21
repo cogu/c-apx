@@ -31,7 +31,7 @@ if(APX_SERVER_ENABLE_TEXT_LOG_EXTENSION)
         TARGET apx_text_log_extension
         NAME "textlog"
         HEADER "apx/extension/server_text_log_extension.h"
-        REGISTER_FN "apx_serverTextLogExtension_register"
+        REGISTER_FN "apx_server_text_log_extension_register"
     )
 endif()
 

@@ -132,7 +132,7 @@ static void test_apx_client_read_array_of_structs(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testSuite_apx_client(void)
+CuSuite* testsuite_apx_client(void)
 {
    CuSuite* suite = CuSuiteNew();
 
@@ -170,8 +170,8 @@ static void test_apx_client_build_node_from_string1(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition1));
    apx_node_instance_t *node_instance = apx_client_get_last_attached_node(client);
    CuAssertPtrNotNull(tc, node_instance);
-   CuAssertIntEquals(tc, 3, apx_nodeInstance_get_num_provide_ports(node_instance));
-   CuAssertIntEquals(tc, 0, apx_nodeInstance_get_num_require_ports(node_instance));
+   CuAssertIntEquals(tc, 3, apx_node_instance_get_num_provide_ports(node_instance));
+   CuAssertIntEquals(tc, 0, apx_node_instance_get_num_require_ports(node_instance));
    apx_client_delete(client);
 }
 
@@ -181,8 +181,8 @@ static void test_apx_client_build_node_from_string2(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition2));
    apx_node_instance_t* node_instance = apx_client_get_last_attached_node(client);
    CuAssertPtrNotNull(tc, node_instance);
-   CuAssertIntEquals(tc, 0, apx_nodeInstance_get_num_provide_ports(node_instance));
-   CuAssertIntEquals(tc, 3, apx_nodeInstance_get_num_require_ports(node_instance));
+   CuAssertIntEquals(tc, 0, apx_node_instance_get_num_provide_ports(node_instance));
+   CuAssertIntEquals(tc, 3, apx_node_instance_get_num_require_ports(node_instance));
    apx_client_delete(client);
 }
 
@@ -201,9 +201,9 @@ static void test_apx_client_port_instance_without_defining_node_name1(CuTest* tc
    uint8_port_instance = apx_client_get_port_instance_by_name(client, NULL, "U8Value");
    uint16_port_instance = apx_client_get_port_instance_by_name(client, NULL, "U16Value");
    uint32_port_instance = apx_client_get_port_instance_by_name(client, NULL, "U32Value");
-   CuAssertPtrEquals(tc, apx_nodeInstance_get_provide_port(node, 0), uint8_port_instance);
-   CuAssertPtrEquals(tc, apx_nodeInstance_get_provide_port(node, 1), uint16_port_instance);
-   CuAssertPtrEquals(tc, apx_nodeInstance_get_provide_port(node, 2), uint32_port_instance);
+   CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(node, 0), uint8_port_instance);
+   CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(node, 1), uint16_port_instance);
+   CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(node, 2), uint32_port_instance);
 
    apx_client_delete(client);
 }
@@ -223,9 +223,9 @@ static void test_apx_client_port_instance_without_defining_node_name2(CuTest* tc
    uint8_port_instance = apx_client_get_port_instance_by_name(client, NULL, "U8Value");
    uint16_port_instance = apx_client_get_port_instance_by_name(client, NULL, "U16Value");
    uint32_port_instance = apx_client_get_port_instance_by_name(client, NULL, "U32Value");
-   CuAssertPtrEquals(tc, apx_nodeInstance_get_require_port(node, 0), uint8_port_instance);
-   CuAssertPtrEquals(tc, apx_nodeInstance_get_require_port(node, 1), uint16_port_instance);
-   CuAssertPtrEquals(tc, apx_nodeInstance_get_require_port(node, 2), uint32_port_instance);
+   CuAssertPtrEquals(tc, apx_node_instance_get_require_port(node, 0), uint8_port_instance);
+   CuAssertPtrEquals(tc, apx_node_instance_get_require_port(node, 1), uint16_port_instance);
+   CuAssertPtrEquals(tc, apx_node_instance_get_require_port(node, 2), uint32_port_instance);
    apx_client_delete(client);
 }
 
@@ -241,25 +241,25 @@ static void test_apx_client_write_port_dtl_u8(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition1));
    port_instance = apx_client_get_port_instance_by_name(client, NULL, "U8Value");
    node_instance = apx_client_get_last_attached_node(client);
-   node_data = apx_nodeInstance_get_node_data(node_instance);
+   node_data = apx_node_instance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
 
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], UINT8_SIZE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], UINT8_SIZE));
    CuAssertUIntEquals(tc, 0xffu, raw_data[0]);
 
    dtl_sv_set_u32(sv, 0x00);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], UINT8_SIZE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], UINT8_SIZE));
    CuAssertUIntEquals(tc, 0x00, raw_data[0]);
 
    dtl_sv_set_u32(sv, 0x12);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], UINT8_SIZE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], UINT8_SIZE));
    CuAssertUIntEquals(tc, 0x12u, raw_data[0]);
 
    dtl_sv_set_u32(sv, 0xff);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], UINT8_SIZE));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], UINT8_SIZE));
    CuAssertUIntEquals(tc, 0xffu, raw_data[0]);
 
    apx_client_delete(client);
@@ -282,7 +282,7 @@ static void test_apx_client_read_port_dtl_u8(CuTest* tc)
    port_instance = apx_client_get_port_instance_by_name(client, NULL, "U8Value");
    node_instance = apx_client_get_last_attached_node(client);
    CuAssertPtrNotNull(tc, port_instance);
-   node_data = apx_nodeInstance_get_node_data(node_instance);
+   node_data = apx_node_instance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
 
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
@@ -294,7 +294,7 @@ static void test_apx_client_read_port_dtl_u8(CuTest* tc)
    ok = false;
 
    packLE(raw_data, 0x12, UINT8_SIZE);
-   apx_nodeData_write_require_port_data(node_data, offset, raw_data, UINT8_SIZE);
+   apx_node_data_write_require_port_data(node_data, offset, raw_data, UINT8_SIZE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
    CuAssertPtrNotNull(tc, dv);
    CuAssertUIntEquals(tc, 0x12, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
@@ -304,7 +304,7 @@ static void test_apx_client_read_port_dtl_u8(CuTest* tc)
    ok = false;
 
    packLE(raw_data, 0x00, UINT8_SIZE);
-   apx_nodeData_write_require_port_data(node_data, offset, raw_data, UINT8_SIZE);
+   apx_node_data_write_require_port_data(node_data, offset, raw_data, UINT8_SIZE);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
    CuAssertPtrNotNull(tc, dv);
    CuAssertUIntEquals(tc, 0x00, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
@@ -326,28 +326,28 @@ static void test_apx_client_write_port_dtl_u16(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition1));
    port_instance = apx_client_get_port_instance_by_name(client, NULL, "U16Value");
    node_instance = apx_client_get_last_attached_node(client);
-   node_data = apx_nodeInstance_get_node_data(node_instance);
+   node_data = apx_node_instance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
 
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
    CuAssertUIntEquals(tc, 0xffu, raw_data[0]);
    CuAssertUIntEquals(tc, 0xffu, raw_data[1]);
 
    dtl_sv_set_u32(sv, 0x0000);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
    CuAssertUIntEquals(tc, 0x00, raw_data[0]);
    CuAssertUIntEquals(tc, 0x00, raw_data[1]);
 
    dtl_sv_set_u32(sv, 0x1234);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
    CuAssertUIntEquals(tc, 0x34u, raw_data[0]);
    CuAssertUIntEquals(tc, 0x12u, raw_data[1]);
 
    dtl_sv_set_u32(sv, 0xffff);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
    CuAssertUIntEquals(tc, 0xffu, raw_data[0]);
    CuAssertUIntEquals(tc, 0xffu, raw_data[1]);
 
@@ -371,7 +371,7 @@ static void test_apx_client_read_port_dtl_u16(CuTest* tc)
    port_instance = apx_client_get_port_instance_by_name(client, NULL, "U16Value");
    node_instance = apx_client_get_last_attached_node(client);
    CuAssertPtrNotNull(tc, port_instance);
-   node_data = apx_nodeInstance_get_node_data(node_instance);
+   node_data = apx_node_instance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
 
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
@@ -383,7 +383,7 @@ static void test_apx_client_read_port_dtl_u16(CuTest* tc)
    ok = false;
 
    packLE(raw_data, 0x1234, UINT16_SIZE);
-   apx_nodeData_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
+   apx_node_data_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
    CuAssertPtrNotNull(tc, dv);
    CuAssertUIntEquals(tc, 0x1234, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
@@ -393,7 +393,7 @@ static void test_apx_client_read_port_dtl_u16(CuTest* tc)
    ok = false;
 
    packLE(raw_data, 0x0, UINT16_SIZE);
-   apx_nodeData_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
+   apx_node_data_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
    CuAssertPtrNotNull(tc, dv);
    CuAssertUIntEquals(tc, 0x0, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
@@ -415,10 +415,10 @@ static void test_apx_client_write_port_dtl_u32(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition1));
    port_instance = apx_client_get_port_instance_by_name(client, NULL, "U32Value");
    node_instance = apx_client_get_last_attached_node(client);
-   node_data = apx_nodeInstance_get_node_data(node_instance);
+   node_data = apx_node_instance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
 
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
    CuAssertUIntEquals(tc, 0xffu, raw_data[0]);
    CuAssertUIntEquals(tc, 0xffu, raw_data[1]);
    CuAssertUIntEquals(tc, 0xffu, raw_data[2]);
@@ -426,7 +426,7 @@ static void test_apx_client_write_port_dtl_u32(CuTest* tc)
 
    dtl_sv_set_u32(sv, 0x0000);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
    CuAssertUIntEquals(tc, 0x00, raw_data[0]);
    CuAssertUIntEquals(tc, 0x00, raw_data[1]);
    CuAssertUIntEquals(tc, 0x00, raw_data[2]);
@@ -434,7 +434,7 @@ static void test_apx_client_write_port_dtl_u32(CuTest* tc)
 
    dtl_sv_set_u32(sv, 0x12345678);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
    CuAssertUIntEquals(tc, 0x78u, raw_data[0]);
    CuAssertUIntEquals(tc, 0x56u, raw_data[1]);
    CuAssertUIntEquals(tc, 0x34u, raw_data[2]);
@@ -442,7 +442,7 @@ static void test_apx_client_write_port_dtl_u32(CuTest* tc)
 
    dtl_sv_set_u32(sv, 0xffffffff);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_write_port_data(client, port_instance, (dtl_dv_t*)sv));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_nodeData_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_read_provide_port_data(node_data, offset, &raw_data[0], (apx_size_t)sizeof(raw_data)));
    CuAssertUIntEquals(tc, 0xffu, raw_data[0]);
    CuAssertUIntEquals(tc, 0xffu, raw_data[1]);
    CuAssertUIntEquals(tc, 0xffu, raw_data[2]);
@@ -468,7 +468,7 @@ static void test_apx_client_read_port_dtl_u32(CuTest* tc)
    port_instance = apx_client_get_port_instance_by_name(client, NULL, "U32Value");
    node_instance = apx_client_get_last_attached_node(client);
    CuAssertPtrNotNull(tc, port_instance);
-   node_data = apx_nodeInstance_get_node_data(node_instance);
+   node_data = apx_node_instance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
 
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
@@ -480,7 +480,7 @@ static void test_apx_client_read_port_dtl_u32(CuTest* tc)
    ok = false;
 
    packLE(raw_data, 0x12345678, UINT32_SIZE);
-   apx_nodeData_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
+   apx_node_data_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
    CuAssertPtrNotNull(tc, dv);
    CuAssertUIntEquals(tc, 0x12345678, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
@@ -490,7 +490,7 @@ static void test_apx_client_read_port_dtl_u32(CuTest* tc)
    ok = false;
 
    packLE(raw_data, 0x0, UINT32_SIZE);
-   apx_nodeData_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
+   apx_node_data_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, &dv));
    CuAssertPtrNotNull(tc, dv);
    CuAssertUIntEquals(tc, 0x0, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
@@ -519,9 +519,9 @@ static void test_apx_client_read_struct_with_array(CuTest* tc)
    CuAssertPtrNotNull(tc, port_instance);
    node_instance = apx_client_get_last_attached_node(client);
    CuAssertPtrNotNull(tc, node_instance);
-   node_data = apx_nodeInstance_get_node_data(node_instance);
+   node_data = apx_node_instance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
-   apx_nodeData_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
+   apx_node_data_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, (dtl_dv_t**)&hv));
    CuAssertPtrNotNull(tc, hv);
    child_sv = (dtl_sv_t*)dtl_hv_get_cstr(hv, "First");
@@ -572,9 +572,9 @@ static void test_apx_client_read_array_of_structs(CuTest* tc)
    CuAssertPtrNotNull(tc, port_instance);
    node_instance = apx_client_get_last_attached_node(client);
    CuAssertPtrNotNull(tc, node_instance);
-   node_data = apx_nodeInstance_get_node_data(node_instance);
+   node_data = apx_node_instance_get_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
-   apx_nodeData_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
+   apx_node_data_write_require_port_data(node_data, offset, raw_data, (apx_size_t)sizeof(raw_data));
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_read_port_data(client, port_instance, (dtl_dv_t**)&av));
    CuAssertPtrNotNull(tc, av);
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type((dtl_dv_t*)av));

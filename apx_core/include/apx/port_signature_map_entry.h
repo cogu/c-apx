@@ -36,26 +36,26 @@ typedef struct apx_port_signature_map_entry_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portSignatureMapEntry_create(apx_port_signature_map_entry_t *self);
-void apx_portSignatureMapEntry_destroy(apx_port_signature_map_entry_t *self);
-apx_port_signature_map_entry_t *apx_portSignatureMapEntry_new(void);
-void apx_portSignatureMapEntry_delete(apx_port_signature_map_entry_t *self);
-void apx_portSignatureMapEntry_vdelete(void *arg);
-void apx_portSignatureMapEntry_attach_require_port(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance);
-void apx_portSignatureMapEntry_attach_provide_port(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance, bool is_preferred);
-void apx_portSignatureMapEntry_detach_require_port(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance);
-void apx_portSignatureMapEntry_detach_provide_port(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance);
+void apx_port_signature_map_entry_create(apx_port_signature_map_entry_t *self);
+void apx_port_signature_map_entry_destroy(apx_port_signature_map_entry_t *self);
+apx_port_signature_map_entry_t *apx_port_signature_map_entry_new(void);
+void apx_port_signature_map_entry_delete(apx_port_signature_map_entry_t *self);
+void apx_port_signature_map_entry_vdelete(void *arg);
+void apx_port_signature_map_entry_attach_require_port(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance);
+void apx_port_signature_map_entry_attach_provide_port(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance, bool is_preferred);
+void apx_port_signature_map_entry_detach_require_port(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance);
+void apx_port_signature_map_entry_detach_provide_port(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance);
 
-bool apx_portSignatureMapEntry_is_empty(apx_port_signature_map_entry_t *self);
-int32_t apx_portSignatureMapEntry_get_num_providers(apx_port_signature_map_entry_t* self);
-int32_t apx_portSignatureMapEntry_get_num_requesters(apx_port_signature_map_entry_t* self);
-apx_port_instance_t*apx_portSignatureMapEntry_get_first_provider(apx_port_signature_map_entry_t *self);
-apx_port_instance_t*apx_portSignatureMapEntry_get_last_provider(apx_port_signature_map_entry_t *self);
-apx_port_instance_t* apx_portSignatureMapEntry_get_first_requester(apx_port_signature_map_entry_t* self);
-apx_port_instance_t* apx_portSignatureMapEntry_get_last_requester(apx_port_signature_map_entry_t* self);
-void apx_portSignatureMapEntry_set_preferred_provider(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance);
-apx_port_instance_t*apx_portSignatureMapEntry_get_preferred_provider(apx_port_signature_map_entry_t *self);
-apx_error_t apx_portSignatureMapEntry_notify_require_ports_about_provide_port_change(apx_port_signature_map_entry_t *self, apx_port_instance_t* provide_port, apx_port_connector_event_t event_type);
-apx_error_t apx_portSignatureMapEntry_notify_provide_ports_about_require_port_change(apx_port_signature_map_entry_t *self, apx_port_instance_t* require_port, apx_port_connector_event_t event_type);
+bool apx_port_signature_map_entry_is_empty(apx_port_signature_map_entry_t *self);
+int32_t apx_port_signature_map_entry_get_num_providers(apx_port_signature_map_entry_t* self);
+int32_t apx_port_signature_map_entry_get_num_requesters(apx_port_signature_map_entry_t* self);
+apx_port_instance_t*apx_port_signature_map_entry_get_first_provider(apx_port_signature_map_entry_t *self);
+apx_port_instance_t*apx_port_signature_map_entry_get_last_provider(apx_port_signature_map_entry_t *self);
+apx_port_instance_t* apx_port_signature_map_entry_get_first_requester(apx_port_signature_map_entry_t* self);
+apx_port_instance_t* apx_port_signature_map_entry_get_last_requester(apx_port_signature_map_entry_t* self);
+void apx_port_signature_map_entry_set_preferred_provider(apx_port_signature_map_entry_t *self, apx_port_instance_t* port_instance);
+apx_port_instance_t*apx_port_signature_map_entry_get_preferred_provider(apx_port_signature_map_entry_t *self);
+apx_error_t apx_port_signature_map_entry_notify_require_ports_about_provide_port_change(apx_port_signature_map_entry_t *self, apx_port_instance_t* provide_port, apx_port_connector_event_t event_type);
+apx_error_t apx_port_signature_map_entry_notify_provide_ports_about_require_port_change(apx_port_signature_map_entry_t *self, apx_port_instance_t* require_port, apx_port_connector_event_t event_type);
 
 #endif //APX_ROUTING_TABLE_ENTRY_H

@@ -36,34 +36,34 @@ typedef struct rmf_file_info_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-rmf_file_info_t* rmf_fileInfo_make_empty(void);
-rmf_file_info_t* rmf_fileInfo_make_fixed(char const* name, uint32_t size, uint32_t address);
-rmf_file_info_t* rmf_fileInfo_make_fixed_with_digest(char const* name, uint32_t size, uint32_t address, rmf_digest_type_t digest_type, uint8_t const* digest_data);
+rmf_file_info_t* rmf_file_info_make_empty(void);
+rmf_file_info_t* rmf_file_info_make_fixed(char const* name, uint32_t size, uint32_t address);
+rmf_file_info_t* rmf_file_info_make_fixed_with_digest(char const* name, uint32_t size, uint32_t address, rmf_digest_type_t digest_type, uint8_t const* digest_data);
 
-apx_error_t rmf_fileInfo_create(rmf_file_info_t *self, uint32_t address, uint32_t size, const char *name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t *digest_data);
-apx_error_t rmf_fileInfo_create_copy(rmf_file_info_t* self, rmf_file_info_t const* other);
-void rmf_fileInfo_destroy(rmf_file_info_t *self);
-rmf_file_info_t* rmf_fileInfo_new(uint32_t address, uint32_t size, const char *name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t *digest_data);
-void rmf_fileInfo_delete(rmf_file_info_t* self);
-void rmf_fileInfo_vdelete(void* arg);
+apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32_t size, const char *name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t *digest_data);
+apx_error_t rmf_file_info_create_copy(rmf_file_info_t* self, rmf_file_info_t const* other);
+void rmf_file_info_destroy(rmf_file_info_t *self);
+rmf_file_info_t* rmf_file_info_new(uint32_t address, uint32_t size, const char *name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t *digest_data);
+void rmf_file_info_delete(rmf_file_info_t* self);
+void rmf_file_info_vdelete(void* arg);
 
-const char* rmf_fileInfo_name(rmf_file_info_t const* self);
-uint32_t rmf_fileInfo_address(rmf_file_info_t const* self);
-uint32_t rmf_fileInfo_address_without_flags(rmf_file_info_t const* self);
-uint32_t rmf_fileInfo_size(rmf_file_info_t const* self);
-rmf_file_type_t rmf_fileInfo_rmf_file_type(rmf_file_info_t const* self);
-rmf_digest_type_t rmf_fileInfo_digest_type(rmf_file_info_t const* self);
-uint8_t const* rmf_fileInfo_digest_data(rmf_file_info_t const* self);
-apx_error_t rmf_fileInfo_assign(rmf_file_info_t *self, const rmf_file_info_t *other);
-rmf_file_info_t* rmf_fileInfo_clone(const rmf_file_info_t *other);
-void rmf_fileInfo_set_address(rmf_file_info_t *self, uint32_t address);
-bool rmf_fileInfo_is_remote_address(rmf_file_info_t const* self);
-bool rmf_fileInfo_name_ends_with(rmf_file_info_t const* self, const char* suffix);
-char *rmf_fileInfo_base_name(rmf_file_info_t const* self);
-void rmf_fileInfo_copy_base_name(rmf_file_info_t const* self, char *dest, uint32_t max_dest_len);
+const char* rmf_file_info_name(rmf_file_info_t const* self);
+uint32_t rmf_file_info_address(rmf_file_info_t const* self);
+uint32_t rmf_file_info_address_without_flags(rmf_file_info_t const* self);
+uint32_t rmf_file_info_size(rmf_file_info_t const* self);
+rmf_file_type_t rmf_file_info_rmf_file_type(rmf_file_info_t const* self);
+rmf_digest_type_t rmf_file_info_digest_type(rmf_file_info_t const* self);
+uint8_t const* rmf_file_info_digest_data(rmf_file_info_t const* self);
+apx_error_t rmf_file_info_assign(rmf_file_info_t *self, const rmf_file_info_t *other);
+rmf_file_info_t* rmf_file_info_clone(const rmf_file_info_t *other);
+void rmf_file_info_set_address(rmf_file_info_t *self, uint32_t address);
+bool rmf_file_info_is_remote_address(rmf_file_info_t const* self);
+bool rmf_file_info_name_ends_with(rmf_file_info_t const* self, const char* suffix);
+char *rmf_file_info_base_name(rmf_file_info_t const* self);
+void rmf_file_info_copy_base_name(rmf_file_info_t const* self, char *dest, uint32_t max_dest_len);
 
-bool rmf_fileInfo_address_in_range(rmf_file_info_t const* self, uint32_t address);
-apx_error_t rmf_fileInfo_set_digest_data(rmf_file_info_t* self, rmf_digest_type_t digest_type, const uint8_t* digest_data);
+bool rmf_file_info_address_in_range(rmf_file_info_t const* self, uint32_t address);
+apx_error_t rmf_file_info_set_digest_data(rmf_file_info_t* self, rmf_digest_type_t digest_type, const uint8_t* digest_data);
 
 //stateless functions
 apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_file_info_t const* file);

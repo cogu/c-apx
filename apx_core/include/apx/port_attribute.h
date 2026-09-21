@@ -32,19 +32,19 @@ typedef struct apx_port_attributes_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-void apx_portAttributes_create(apx_port_attributes_t *self);
-void apx_portAttributes_destroy(apx_port_attributes_t *self);
-apx_port_attributes_t* apx_portAttributes_new(void);
-void apx_portAttributes_delete(apx_port_attributes_t *self);
-void apx_portAttributes_vdelete(void *arg);
-void apx_portAttributes_set_parameter(apx_port_attributes_t* self);
-bool apx_portAttributes_is_parameter(apx_port_attributes_t* self);
-bool apx_portAttributes_is_queued(apx_port_attributes_t* self);
-void apx_portAttributes_set_queue_length(apx_port_attributes_t* self, uint32_t queue_length);
-uint32_t apx_portAttributes_get_queue_length(apx_port_attributes_t* self);
-bool apx_portAttributes_has_init_value(apx_port_attributes_t* self);
-dtl_dv_t* apx_portAttributes_get_init_value(apx_port_attributes_t* self);
-void apx_portAttributes_set_init_value(apx_port_attributes_t* self, dtl_dv_t* init_value);
+void apx_port_attributes_create(apx_port_attributes_t *self);
+void apx_port_attributes_destroy(apx_port_attributes_t *self);
+apx_port_attributes_t* apx_port_attributes_new(void);
+void apx_port_attributes_delete(apx_port_attributes_t *self);
+void apx_port_attributes_vdelete(void *arg);
+void apx_port_attributes_set_parameter(apx_port_attributes_t* self);
+bool apx_port_attributes_is_parameter(apx_port_attributes_t* self);
+bool apx_port_attributes_is_queued(apx_port_attributes_t* self);
+void apx_port_attributes_set_queue_length(apx_port_attributes_t* self, uint32_t queue_length);
+uint32_t apx_port_attributes_get_queue_length(apx_port_attributes_t* self);
+bool apx_port_attributes_has_init_value(apx_port_attributes_t* self);
+dtl_dv_t* apx_port_attributes_get_init_value(apx_port_attributes_t* self);
+void apx_port_attributes_set_init_value(apx_port_attributes_t* self, dtl_dv_t* init_value);
 
 
 

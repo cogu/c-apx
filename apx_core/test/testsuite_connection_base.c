@@ -29,7 +29,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_connectionBase_alloc(CuTest* tc);
+static void test_apx_connection_base_alloc(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -41,50 +41,50 @@ static void test_apx_connectionBase_alloc(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testSuite_apx_connectionBase(void)
+CuSuite* testsuite_apx_connection_base(void)
 {
    CuSuite* suite = CuSuiteNew();
 
-   SUITE_ADD_TEST(suite, test_apx_connectionBase_alloc);
+   SUITE_ADD_TEST(suite, test_apx_connection_base_alloc);
 
    return suite;
 }
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void test_apx_connectionBase_alloc(CuTest* tc)
+static void test_apx_connection_base_alloc(CuTest* tc)
 {
    apx_connection_base_t connection;
    uint8_t *ptr;
    size_t size;
    int i;
-   apx_connectionBase_create(&connection, APX_SERVER_MODE, NULL);
+   apx_connection_base_create(&connection, APX_SERVER_MODE, NULL);
    //allocate small objects
    for(i=1;i<SOA_SMALL_OBJECT_MAX_SIZE;i++)
    {
       char msg[20];
       size = i;
-      ptr = apx_connectionBase_alloc(&connection, size);
+      ptr = apx_connection_base_alloc(&connection, size);
       sprintf(msg, "size=%d", i);
       CuAssertPtrNotNullMsg(tc, msg, ptr);
-      apx_connectionBase_free(&connection, ptr, size);
-      apx_allocator_processAll(&connection.allocator);
+      apx_connection_base_free(&connection, ptr, size);
+      apx_allocator_process_all(&connection.allocator);
    }
    //allocate some large objects
    size = 100;
-   ptr = apx_connectionBase_alloc(&connection, size);
+   ptr = apx_connection_base_alloc(&connection, size);
    CuAssertPtrNotNull(tc, ptr);
-   apx_connectionBase_free(&connection, ptr, size);
+   apx_connection_base_free(&connection, ptr, size);
    size = 1000;
-   ptr = apx_connectionBase_alloc(&connection, size);
+   ptr = apx_connection_base_alloc(&connection, size);
    CuAssertPtrNotNull(tc, ptr);
-   apx_connectionBase_free(&connection, ptr, size);
+   apx_connection_base_free(&connection, ptr, size);
    size = 10000;
-   ptr = apx_connectionBase_alloc(&connection, size);
+   ptr = apx_connection_base_alloc(&connection, size);
    CuAssertPtrNotNull(tc, ptr);
-   apx_connectionBase_free(&connection, ptr, size);
-   apx_allocator_processAll(&connection.allocator);
+   apx_connection_base_free(&connection, ptr, size);
+   apx_allocator_process_all(&connection.allocator);
 
-   apx_connectionBase_destroy(&connection);
+   apx_connection_base_destroy(&connection);
 }
 
