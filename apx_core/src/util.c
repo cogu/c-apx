@@ -11,24 +11,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include "apx/util.h"
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE CONSTANTS AND DATA TYPES
-//////////////////////////////////////////////////////////////////////////////
-#define ASCII_ZERO 0x30
-#define MAX_PORT_NUMBER 65535
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTION PROTOTYPES
-//////////////////////////////////////////////////////////////////////////////
-static bool apx_util_verify_ipv4_address(const char *p_begin, const char *p_end);
-static bool apx_util_verify_name(const char *p_begin, const char *p_end);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -68,121 +55,7 @@ void apx_fprint_hex_bytes(FILE *file, int32_t max_columns, const uint8_t *data_b
    }
 }
 
-/**
- * Parses a string and tries to guess whether it is a file path, IP address or name (for example "localhost").
- *
- * - If the string contains a slash it assumes it is a file path.
- * - If the string is just alpha-numerical letters (potentially separated by dots) it assumes it is a name.
- * - If the string seems to be a IP address it parses it as an IP address
- * - IPV6 address support is not yet implemented (Maybe later).
- *
- * A parsed name will be allocated and assigned to the "name" parameter. The caller is responsible for disposing its memory.
- *
- * Additionally, if the string (the text argument) ends with the ":\d+" pattern as in ":8080" it parses the number as
- * a port number. If no port number is present the port parameter will be assigned to 0.
- *
- * The port argument can be NULL meaning its optional to use in call.
- *
- * Note:
- * Given these rules, if you want to refer to a UNIX socket name in current directory you must start with "./".
- *   Example:
- *    Socket name in current directory is "test.socket".
- *    Then you must type "./test.socket" to get it identified as a file resource by this function.
- *
- * Returns the resource type (integer) which is the best guess this function can make.
- * In case of parse failure the value APX_RESOURCE_TYPE_ERROR will be returned.
- */
 
-apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, uint16_t *port)
-{
-   apx_resource_type_t retval = APX_RESOURCE_TYPE_UNKNOWN;
-   if ( (text != NULL) && (name != NULL) )
-   {
-
-      adt_str_t *parsed_name = NULL;
-      unsigned long parsed_port = 0u;
-      char *cstr_result = strchr(text, '/');
-      if (cstr_result != NULL )
-      {
-         retval = APX_RESOURCE_TYPE_FILE;
-         parsed_name = adt_str_new_cstr(text);
-      }
-      else
-      {
-         bool isValid;
-         char *parse_end = NULL;
-         const char *str_end;
-         char *port_begin = strrchr(text, ':'); //TODO: This check needs to be improved for IPV6 support
-         str_end = text + strlen(text);
-         if (port_begin == NULL)
-         {
-            port_begin = (char*) str_end;
-         }
-         else
-         {
-            parsed_port = strtoul(port_begin+1, &parse_end, 10);
-            if (parse_end == NULL )
-            {
-               parsed_port = 0u;
-               retval = APX_RESOURCE_TYPE_ERROR;
-            }
-         }
-         if (retval != APX_RESOURCE_TYPE_ERROR)
-         {
-            isValid = apx_util_verify_ipv4_address(text, port_begin);
-            if (isValid)
-            {
-               parsed_name = adt_str_new_bstr((const uint8_t*) text, (const uint8_t*) port_begin);
-               retval = APX_RESOURCE_TYPE_IPV4;
-            }
-            else
-            {
-               //TODO: check for IPV6 address here
-               isValid = apx_util_verify_name(text, port_begin);
-               if (isValid)
-               {
-                  parsed_name = adt_str_new_bstr((const uint8_t*) text, (const uint8_t*) port_begin);
-                  retval = APX_RESOURCE_TYPE_NAME;
-               }
-               else
-               {
-                  retval = APX_RESOURCE_TYPE_ERROR;
-               }
-            }
-         }
-      }
-
-      if ( parsed_port > MAX_PORT_NUMBER )
-      {
-         retval = APX_RESOURCE_TYPE_ERROR;
-      }
-
-
-      if (parsed_name != NULL)
-      {
-         if ( (retval != APX_RESOURCE_TYPE_UNKNOWN) && (retval != APX_RESOURCE_TYPE_ERROR) )
-         {
-            *name = parsed_name;
-         }
-         else
-         {
-            adt_str_delete(parsed_name);
-         }
-      }
-      if ( (parsed_name == NULL) && (retval != APX_RESOURCE_TYPE_UNKNOWN) && (retval != APX_RESOURCE_TYPE_ERROR) )
-      {
-         //Something has gone wrong when allocating memory for the string parsed_name
-         retval = APX_RESOURCE_TYPE_ERROR;
-      }
-
-
-      if ( (retval != APX_RESOURCE_TYPE_ERROR) && (port != NULL) )
-      {
-         *port = (uint16_t) parsed_port;
-      }
-   }
-   return retval;
-}
 
 apx_error_t convert_from_adt_to_apx_error(adt_error_t error_code)
 {
@@ -378,90 +251,4 @@ const char *apx_strerror(apx_error_t error_code)
    default:
       return "Unknown error";
    }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTIONS
-//////////////////////////////////////////////////////////////////////////////
-static bool apx_util_verify_ipv4_address(const char *p_begin, const char *p_end)
-{
-   const char *pNext = p_begin;
-   int c;
-   const int number_base = 10;
-   int number_in_group = 0;
-   int group_length = 0;
-   int group_count = 1u; //verifies that we have exactly 4 groups of numbers separated by '.'
-   assert((p_begin != NULL) && (p_end != NULL) && (p_begin <= p_end));
-   for(c = (unsigned char)*pNext; pNext < p_end; c = (unsigned char)*(++pNext))
-   {
-      if (c == '.')
-      {
-         if (group_length > 0)
-         {
-            ++group_count;
-            number_in_group=0u;
-            group_length = 0;
-         }
-         else
-         {
-            //This happens when user enters two consecutive dots without a number in between.
-            return false;
-         }
-      }
-      else if (isdigit(c))
-      {
-         group_length++;
-         number_in_group = number_in_group*number_base + (c-ASCII_ZERO);
-         if (number_in_group > 255)
-         {
-            //invalid IP number in group
-            return false;
-         }
-      }
-      else
-      {
-         return false;
-      }
-   }
-   if (group_count == 4)
-   {
-      return true;
-   }
-   return false;
-}
-
-/**
- * Verifies that given bounded text string contains a name (such as "localhost") or is a computer name (such as DNS name).
- * First character must not be a digit (otherwise it can get confused with an IP number)
- */
-static bool apx_util_verify_name(const char *p_begin, const char *p_end)
-{
-   bool first = true;
-   const char *pNext = p_begin;
-   int c;
-   assert((p_begin != NULL) && (p_end != NULL) && (p_begin <= p_end));
-   if (p_begin==p_end)
-   {
-      //empty string
-      return true;
-   }
-   for(c = (unsigned char)*pNext; pNext < p_end; c = (unsigned char)*(++pNext))
-   {
-      if (first)
-      {
-         first = false;
-         if ( (c != '.') && (c != '_') && (c != '-') && (c!= '~') && !isalpha(c))
-         {
-            return false;
-         }
-      }
-      else
-      {
-         if ( (c != '.') && (c != '_') && (c != '-') && (c!= '~') && !isalnum(c))
-         {
-            return false;
-         }
-      }
-   }
-   return true;
 }

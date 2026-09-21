@@ -29,6 +29,7 @@
 #include "apx_app_cmd.h"
 #include "apx/util.h"
 #include "apx/socket_client_connection.h"
+#include "msocket.h"
 #include "argparse.h"
 //#include "filestream.h"
 #ifdef USE_CONFIGURATION_FILE
@@ -81,7 +82,7 @@ static bool m_display_version = false;
 static apx_app_cmd_t m_command = APX_APP_CMD_NONE;
 static uint16_t m_connect_port;
 static adt_str_t* m_connect_address = NULL;
-static apx_resource_type_t m_connect_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
+static msocket_endpoint_type_t m_connect_resource_type = MSOCKET_ENDPOINT_UNKNOWN;
 
 /*** Other local variables***/
 static apx_client_socket_connection_t* m_client_connection = NULL;
@@ -109,12 +110,12 @@ int main(int argc, char** argv)
    if (result == ARGPARSE_SUCCESS)
    {
       apx_error_t rc;
-      if (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
+      if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN)
       {
          uint16_t dummy_port;
-         m_connect_resource_type = apx_parse_resource_name(m_connect_address_default, &m_connect_address, &dummy_port);
+         m_connect_resource_type = msocket_parse_endpoint(m_connect_address_default, &m_connect_address, &dummy_port);
          (void)dummy_port;
-         assert((m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR));
+         assert((m_connect_resource_type != MSOCKET_ENDPOINT_UNKNOWN) && (m_connect_resource_type != MSOCKET_ENDPOINT_ERROR));
       }
       if (m_display_version)
       {
@@ -216,9 +217,9 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
          if (strcmp(short_name, "c") == 0)
          {
             if (m_connect_address != NULL) adt_str_delete(m_connect_address);
-            m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
-            if ((m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
-               (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
+            m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
+            if ((m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
+               (m_connect_resource_type == MSOCKET_ENDPOINT_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -229,9 +230,9 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
          if (strcmp(long_name, "connect") == 0)
          {
             if (m_connect_address != NULL) adt_str_delete(m_connect_address);
-            m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
-            if ((m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
-               (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
+            m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
+            if ((m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
+               (m_connect_resource_type == MSOCKET_ENDPOINT_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -312,20 +313,20 @@ static apx_error_t connect_to_apx_server(void)
 
    switch (m_connect_resource_type)
    {
-   case APX_RESOURCE_TYPE_UNKNOWN:
+   case MSOCKET_ENDPOINT_UNKNOWN:
       return APX_INVALID_ARGUMENT_ERROR;
-   case APX_RESOURCE_TYPE_IPV4:
+   case MSOCKET_ENDPOINT_IPV4:
       return apx_client_socket_connection_connect_tcp(m_client_connection, connect_address, m_connect_port);
-   case APX_RESOURCE_TYPE_IPV6:
+   case MSOCKET_ENDPOINT_IPV6:
       return APX_NOT_IMPLEMENTED_ERROR;
-   case APX_RESOURCE_TYPE_FILE:
+   case MSOCKET_ENDPOINT_FILE:
 #ifdef _WIN32
       printf("UNIX domain sockets not supported in Windows\n");
       return APX_NOT_IMPLEMENTED_ERROR;
 #else
       return apx_client_socket_connection_connect_unix(m_client_connection, connect_address);
 #endif
-   case APX_RESOURCE_TYPE_NAME:
+   case MSOCKET_ENDPOINT_NAME:
       if ((strlen(connect_address) == 0) || (strcmp(connect_address, "localhost") == 0))
       {
          return apx_client_socket_connection_connect_tcp(m_client_connection, "127.0.0.1", m_connect_port);

@@ -67,7 +67,7 @@ static adt_str_t* m_message = NULL;
 static adt_str_t* m_input_file_path = NULL;
 static adt_str_t* m_name = NULL;
 static adt_str_t* m_value = NULL;
-static apx_resource_type_t m_connect_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
+static msocket_endpoint_type_t m_connect_resource_type = MSOCKET_ENDPOINT_UNKNOWN;
 uint32_t m_timer_init = 0u;
 
 static const char* requester_apx_def =
@@ -95,12 +95,12 @@ int main(int argc, char **argv)
    argparse_result_t result = argparse_exec(argc, (const char**)argv, argparse_cbk);
    if (result == ARGPARSE_SUCCESS)
    {
-      if (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN)
+      if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN)
       {
          uint16_t dummy_port;
-         m_connect_resource_type = apx_parse_resource_name(m_connect_address_default, &m_connect_address, &dummy_port);
+         m_connect_resource_type = msocket_parse_endpoint(m_connect_address_default, &m_connect_address, &dummy_port);
          (void)dummy_port;
-         assert((m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR));
+         assert((m_connect_resource_type != MSOCKET_ENDPOINT_UNKNOWN) && (m_connect_resource_type != MSOCKET_ENDPOINT_ERROR));
       }
       memset(&cfg, 0, sizeof(cfg));
       cfg.apx_definition = m_is_requester ? requester_apx_def : responder_apx_def;
@@ -215,9 +215,9 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
          else if (strcmp(short_name, "c") == 0)
          {
             if (m_connect_address != NULL) adt_str_delete(m_connect_address);
-            m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
-            if ((m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
-               (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
+            m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
+            if ((m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
+               (m_connect_resource_type == MSOCKET_ENDPOINT_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }
@@ -246,9 +246,9 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
          else if (strcmp(long_name, "connect") == 0)
          {
             if (m_connect_address != NULL) adt_str_delete(m_connect_address);
-            m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
-            if ((m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
-               (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
+            m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
+            if ((m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
+               (m_connect_resource_type == MSOCKET_ENDPOINT_ERROR))
             {
                return ARGPARSE_VALUE_ERROR;
             }

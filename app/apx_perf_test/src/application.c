@@ -113,8 +113,8 @@ bool application_init(const application_cfg_t *cfg)
       printf("Connecting to %s\n", m_cfg.server_address);
       switch(m_cfg.resource_type)
       {
-      case APX_RESOURCE_TYPE_IPV4: //fall-trough
-      case APX_RESOURCE_TYPE_IPV6:
+      case MSOCKET_ENDPOINT_IPV4: //fall-trough
+      case MSOCKET_ENDPOINT_IPV6:
          result = apx_client_connect_tcp(m_client, m_cfg.server_address, m_cfg.tcp_port);
          if (result != APX_NO_ERROR)
          {
@@ -122,7 +122,7 @@ bool application_init(const application_cfg_t *cfg)
             return false;
          }
          break;
-      case APX_RESOURCE_TYPE_FILE:
+      case MSOCKET_ENDPOINT_FILE:
 #ifdef _WIN32
          printf("UNIX domain socket path not supported in Windows\n");
          return false;
@@ -135,7 +135,7 @@ bool application_init(const application_cfg_t *cfg)
          }
 #endif
          break;
-      case APX_RESOURCE_TYPE_NAME:
+      case MSOCKET_ENDPOINT_NAME:
          if ( strcmp(m_cfg.server_address, "localhost") == 0 )
          {
             result = apx_client_connect_tcp(m_client, "127.0.0.1", m_cfg.tcp_port);

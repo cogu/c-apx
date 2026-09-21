@@ -31,7 +31,6 @@
 void apx_fprint_hex_bytes(FILE *file, int32_t max_columns, const uint8_t *data_buf, apx_size_t data_size);
 #define apx_print_hex_bytes(c, b, s) apx_fprint_hex_bytes(stdout, c, b, s)
 
-apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **address, uint16_t *port);
 apx_error_t convert_from_adt_to_apx_error(adt_error_t error_code);
 
 
