@@ -664,9 +664,9 @@ apx_error_t apx_computationList_append_clone_of_computation(apx_computationList_
 //////////////////////////////////////////////////////////////////////////////
 static void apx_computation_delete(apx_computation_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (self->vtable.destructor != 0)
+      if (self->vtable.destructor != NULL)
       {
          self->vtable.destructor((void*)self);
       }

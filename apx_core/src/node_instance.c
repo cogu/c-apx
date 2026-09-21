@@ -72,7 +72,7 @@ static apx_error_t trigger_require_port_write_callbacks(apx_nodeInstance_t* self
 
 void apx_nodeInstance_create(apx_nodeInstance_t* self, apx_mode_t mode, char const* name)
 {
-   if ( (self != 0) && ( (mode == APX_CLIENT_MODE) || (mode == APX_SERVER_MODE) ))
+   if ( (self != NULL) && ( (mode == APX_CLIENT_MODE) || (mode == APX_SERVER_MODE) ))
    {
       memset(self, 0, sizeof(apx_nodeInstance_t));
       self->mode = mode;
@@ -109,7 +109,7 @@ void apx_nodeInstance_create(apx_nodeInstance_t* self, apx_mode_t mode, char con
 
 void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
 
       if (self->name != NULL) free(self->name);
@@ -182,7 +182,7 @@ void apx_nodeInstance_destroy(apx_nodeInstance_t *self)
 apx_nodeInstance_t* apx_nodeInstance_new(apx_mode_t mode, char const* name)
 {
    apx_nodeInstance_t *self = (apx_nodeInstance_t*) malloc(sizeof(apx_nodeInstance_t));
-   if(self != 0)
+   if(self != NULL)
    {
       apx_nodeInstance_create(self, mode, name);
    }
@@ -191,7 +191,7 @@ apx_nodeInstance_t* apx_nodeInstance_new(apx_mode_t mode, char const* name)
 
 void apx_nodeInstance_delete(apx_nodeInstance_t *self)
 {
-   if(self != 0)
+   if(self != NULL)
    {
       apx_nodeInstance_destroy(self);
       free(self);
@@ -876,7 +876,7 @@ void apx_nodeInstance_clear_require_port_connector_changes(apx_nodeInstance_t* s
 
 void apx_nodeInstance_clear_provide_port_connector_changes(apx_nodeInstance_t* self, bool release_memory)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       if (release_memory && (self->provide_port_changes != NULL))
       {

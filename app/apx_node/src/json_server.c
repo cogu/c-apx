@@ -40,15 +40,15 @@ static apx_connection_t *m_apx_connection = (apx_connection_t*) NULL;
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t json_server_init(struct apx_connection_tag *apx_connection, uint8_t addressFamily)
 {
-   assert(apx_connection != 0);
+   assert(apx_connection != NULL);
    m_apx_connection = apx_connection;
    m_server = msocket_server_new(addressFamily, json_server_connection_vdelete);
-   if (m_server != 0)
+   if (m_server != NULL)
    {
       msocket_handler_t handler;
       memset(&handler, 0, sizeof(msocket_handler_t));
       handler.tcp_accept = json_server_accept;
-      msocket_server_sethandler(m_server, &handler, (void*) 0);
+      msocket_server_sethandler(m_server, &handler, NULL);
    }
    return APX_NO_ERROR;
 }
@@ -68,20 +68,20 @@ apx_error_t json_server_start_tcp(const char *bind_address, uint16_t port)
 
 void json_server_cleanup_connection(json_server_connection_t *connection)
 {
-   if (connection != 0)
+   if (connection != NULL)
    {
-      assert(m_server != 0);
+      assert(m_server != NULL);
       msocket_server_cleanup_connection(m_server, connection);
    }
 }
 
 void json_server_shutdown(void)
 {
-   if (m_server != 0)
+   if (m_server != NULL)
    {
       m_apx_connection = (apx_connection_t*) NULL;
       msocket_server_delete(m_server);
-      m_server = (msocket_server_t*) 0;
+      m_server = NULL;
    }
 }
 
@@ -92,10 +92,10 @@ static void json_server_accept(void *arg, struct msocket_server_tag *srv, void *
 {
    (void)arg;
    (void)srv;
-   if (m_apx_connection != 0)
+   if (m_apx_connection != NULL)
    {
       json_server_connection_t *connection = json_server_connection_new(msocket, m_apx_connection);
-      if (connection != 0)
+      if (connection != NULL)
       {
          json_server_connection_start(connection);
       }

@@ -35,12 +35,12 @@
 //////////////////////////////////////////////////////////////////////////////
 void apx_serverExtension_create(apx_serverExtension_t *self, const char *name, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
 {
-   if ( (self != 0) && (name != 0) && (handler != 0) )
+   if ( (self != NULL) && (name != NULL) && (handler != NULL) )
    {
       self->name = STRDUP(name);
       memcpy(&self->handler, handler, sizeof(apx_serverExtensionHandler_t));
       self->config = config;
-      if (self->config != 0)
+      if (self->config != NULL)
       {
          dtl_dv_inc_ref(self->config);
       }
@@ -49,16 +49,16 @@ void apx_serverExtension_create(apx_serverExtension_t *self, const char *name, c
 
 void apx_serverExtension_destroy(apx_serverExtension_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (self->name != 0)
+      if (self->name != NULL)
       {
          free(self->name);
       }
-      if (self->config != 0)
+      if (self->config != NULL)
       {
          dtl_dv_dec_ref(self->config);
-         self->config = (dtl_dv_t*) 0;
+         self->config = NULL;
       }
    }
 }
@@ -66,7 +66,7 @@ void apx_serverExtension_destroy(apx_serverExtension_t *self)
 apx_serverExtension_t* apx_serverExtension_new(const char *name, const apx_serverExtensionHandler_t *handler, dtl_dv_t *config)
 {
    apx_serverExtension_t *self = (apx_serverExtension_t*) malloc(sizeof(apx_serverExtension_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_serverExtension_create(self, name, handler, config);
    }
@@ -76,7 +76,7 @@ apx_serverExtension_t* apx_serverExtension_new(const char *name, const apx_serve
 
 void apx_serverExtension_delete(apx_serverExtension_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_serverExtension_destroy(self);
       free(self);

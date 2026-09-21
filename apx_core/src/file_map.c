@@ -54,7 +54,7 @@ void apx_fileMap_create(apx_fileMap_t* self, bool is_remote)
    {
       self->is_remote_map = is_remote;
       adt_list_create(&self->file_list, apx_file_vdelete);
-      self->last_file = (apx_file_t*) 0;
+      self->last_file = NULL;
    }
 }
 void apx_fileMap_destroy(apx_fileMap_t *self)
@@ -201,7 +201,7 @@ adt_list_t const* apx_fileMap_get_list(apx_fileMap_t const* self)
    {
       return &self->file_list;
    }
-   return (adt_list_t*) 0;
+   return NULL;
 }
 
 bool apx_fileMap_exist(apx_fileMap_t const* self, apx_file_t* file)

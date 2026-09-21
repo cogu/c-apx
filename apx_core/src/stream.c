@@ -68,7 +68,7 @@ void apx_istream_create(apx_istream_t* self)
 }
 
 void apx_istream_destroy(apx_istream_t *self){
-   if(self != 0)
+   if(self != NULL)
    {
       adt_bytearray_destroy(&self->buf);
    }
@@ -91,7 +91,7 @@ void apx_istream_set_handler(apx_istream_t* self, apx_istream_handler_t const* h
 
 void apx_istream_reset(apx_istream_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       adt_bytearray_clear(&self->buf);
       self->last_error = APX_NO_ERROR;

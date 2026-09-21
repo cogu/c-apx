@@ -34,7 +34,7 @@ static apx_error_t apx_serverTextLogExtension_configure(apx_serverTextLog_t *ins
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-apx_serverTextLog_t *m_instance = (apx_serverTextLog_t*) 0;
+apx_serverTextLog_t *m_instance = NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -50,14 +50,14 @@ apx_error_t apx_serverTextLogExtension_register(struct apx_server_tag *apx_serve
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_serverTextLogExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   if (m_instance == 0)
+   if (m_instance == NULL)
    {
       m_instance = apx_serverTextLog_new(apx_server);
-      if (m_instance == 0)
+      if (m_instance == NULL)
       {
          return APX_MEM_ERROR;
       }
-      if (config != 0)
+      if (config != NULL)
       {
          if (dtl_dv_type(config) == DTL_DV_HASH)
          {
@@ -74,11 +74,11 @@ apx_error_t apx_serverTextLogExtension_init(struct apx_server_tag *apx_server, d
 
 void apx_serverTextLogExtension_shutdown(void)
 {
-   if (m_instance != 0)
+   if (m_instance != NULL)
    {
       apx_serverTextLog_closeAll(m_instance);
       apx_serverTextLog_delete(m_instance);
-      m_instance = (apx_serverTextLog_t*) 0;
+      m_instance = NULL;
    }
 }
 
@@ -90,9 +90,9 @@ static apx_error_t apx_serverTextLogExtension_configure(apx_serverTextLog_t *ins
    svFileEnabled = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "file-enabled");
    svFilePath = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "file-path");
    (void)instance;
-   if ( (svFileEnabled != 0) && (dtl_sv_to_bool(svFileEnabled, &ok) != false) )
+   if ( (svFileEnabled != NULL) && (dtl_sv_to_bool(svFileEnabled, &ok) != false) )
    {
-      if (svFilePath != 0)
+      if (svFilePath != NULL)
       {
          const char *filePath = dtl_sv_to_cstr(svFilePath, &ok);
          if (strlen(filePath) == 0u)

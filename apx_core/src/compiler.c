@@ -55,7 +55,7 @@ static apx_error_t compile_array_next_instruction(apx_compiler_t* self);
 
 void apx_compiler_create(apx_compiler_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->program = NULL;
       self->last_error = APX_NO_ERROR;
@@ -65,7 +65,7 @@ void apx_compiler_create(apx_compiler_t *self)
 
 void apx_compiler_destroy(apx_compiler_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       if (self->program != NULL)
       {
@@ -77,7 +77,7 @@ void apx_compiler_destroy(apx_compiler_t *self)
 apx_compiler_t* apx_compiler_new(void)
 {
    apx_compiler_t *self = (apx_compiler_t*) malloc(sizeof(apx_compiler_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_compiler_create(self);
    }
@@ -86,7 +86,7 @@ apx_compiler_t* apx_compiler_new(void)
 
 void apx_compiler_delete(apx_compiler_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_compiler_destroy(self);
       free(self);

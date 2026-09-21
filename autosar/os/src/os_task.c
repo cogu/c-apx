@@ -51,12 +51,12 @@
  */
 int8_t os_task_create(os_task_t *self, THREAD_PROTO_PTR(thread_func, arg), uint16_t u16MaxNumEvents)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->eventQueueBufIsWeakRef = false;
       self->workerThreadValid = false;
       self->eventQueueBuf = (uint16_t*) malloc(sizeof(uint16_t)*((size_t)u16MaxNumEvents));
-      if (self->eventQueueBuf != 0)
+      if (self->eventQueueBuf != NULL)
       {
          self->thread_func = thread_func;
          rbfu16_create(&self->eventQueue, self->eventQueueBuf, u16MaxNumEvents);
@@ -70,10 +70,10 @@ int8_t os_task_create(os_task_t *self, THREAD_PROTO_PTR(thread_func, arg), uint1
 
 void os_task_destroy(os_task_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       SPINLOCK_DESTROY(self->lock);
-      if ( (self->eventQueueBuf != 0) && (self->eventQueueBufIsWeakRef == false) )
+      if ( (self->eventQueueBuf != NULL) && (self->eventQueueBufIsWeakRef == false) )
       {
          free(self->eventQueueBuf);
       }
@@ -82,7 +82,7 @@ void os_task_destroy(os_task_t *self)
 
 void os_task_start(os_task_t *self)
 {
-   if ( (self != 0) && (self->workerThreadValid == false) )
+   if ( (self != NULL) && (self->workerThreadValid == false) )
    {
 #ifndef _MSC_VER
       pthread_attr_t attr;
@@ -106,7 +106,7 @@ void os_task_start(os_task_t *self)
 
 void os_task_stop(os_task_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       os_task_setEvent(self, OS_SHUTDOWN_EVENT_ID);      
       THREAD_JOIN(self->workerThread);
@@ -117,7 +117,7 @@ void os_task_stop(os_task_t *self)
 
 void os_task_setEvent(os_task_t *self, uint16_t eventId)
 {
-   if ((self != 0) && (self->workerThreadValid != false))
+   if ((self != NULL) && (self->workerThreadValid != false))
    {
       SPINLOCK_ENTER(self->lock);
       rbfu16_insert(&self->eventQueue, eventId);
@@ -128,7 +128,7 @@ void os_task_setEvent(os_task_t *self, uint16_t eventId)
 
 uint16_t os_task_waitEvent(os_task_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
    #ifdef _MSC_VER
       DWORD result = WaitForSingleObject(self->semaphore, INFINITE);

@@ -43,7 +43,7 @@
 int32_t numheader_encode16(uint8_t *buf, int32_t maxBufLen, uint16_t value)
 {
    int32_t retval = 0;
-   if ( (buf == 0) || (maxBufLen == 0) || (value > NUMHEADER16_MAX_NUM_LONG) )
+   if ( (buf == NULL) || (maxBufLen == 0) || (value > NUMHEADER16_MAX_NUM_LONG) )
    {
       return -1;
    }
@@ -93,7 +93,7 @@ const uint8_t *numheader_decode16(const uint8_t *pBegin, const uint8_t *pEnd, ui
             {
                tmp+=32768;
             }
-            if(value != 0)
+            if(value != NULL)
             {
                *value=tmp;
             }
@@ -102,7 +102,7 @@ const uint8_t *numheader_decode16(const uint8_t *pBegin, const uint8_t *pEnd, ui
       }
       else
       {
-         if(value != 0)
+         if(value != NULL)
          {
             *value=(uint8_t) c;
          }
@@ -114,7 +114,7 @@ const uint8_t *numheader_decode16(const uint8_t *pBegin, const uint8_t *pEnd, ui
 int32_t numheader_encode32(uint8_t *buf, int32_t maxBufLen, uint32_t value)
 {
    int32_t retval = 0;
-   if ( (buf == 0) || (maxBufLen == 0) || (value > NUMHEADER32_MAX_NUM_LONG) )
+   if ( (buf == NULL) || (maxBufLen == 0) || (value > NUMHEADER32_MAX_NUM_LONG) )
    {
       return -1;
    }
@@ -146,7 +146,7 @@ const uint8_t *numheader_decode32(const uint8_t *pBegin, const uint8_t *pEnd, ui
       {
          if( pNext+4<=pEnd ) //an additional 3 bytes is needed from buffer
          {
-            if (value != 0)
+            if (value != NULL)
             {
                *value = (uint32_t) unpackBE(pNext,(uint8_t) 4);
                *value &= 0x7FFFFFFF; //deactivate highest significant bit
@@ -156,7 +156,7 @@ const uint8_t *numheader_decode32(const uint8_t *pBegin, const uint8_t *pEnd, ui
       }
       else
       {
-         if(value != 0)
+         if(value != NULL)
          {
             *value=(uint8_t) c;
          }

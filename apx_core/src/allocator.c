@@ -54,7 +54,7 @@ static bool apx_allocator_processEvent(apx_allocator_t *self);
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       size_t elemSize = sizeof(rbf_data_t);
       adt_buf_err_t bufResult;
@@ -84,7 +84,7 @@ apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessa
 
 void apx_allocator_destroy(apx_allocator_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       adt_rbfh_destroy(&self->messages);
       soa_destroy(&self->soa);
@@ -98,7 +98,7 @@ void apx_allocator_destroy(apx_allocator_t *self)
 void apx_allocator_start(apx_allocator_t *self)
 {
 #ifndef UNIT_TEST
-   if( (self != 0) && (self->workerThreadValid == false) )
+   if( (self != NULL) && (self->workerThreadValid == false) )
    {
       apx_allocator_startThread(self);
    }
@@ -109,7 +109,7 @@ void apx_allocator_start(apx_allocator_t *self)
 
 void apx_allocator_stop(apx_allocator_t *self)
 {
-   if( (self != 0) && (self->workerThreadValid == true) )
+   if( (self != NULL) && (self->workerThreadValid == true) )
    {
 #ifdef _MSC_VER
       DWORD result;
@@ -159,8 +159,8 @@ void apx_allocator_stop(apx_allocator_t *self)
 
 uint8_t *apx_allocator_alloc(apx_allocator_t *self, size_t size)
 {
-   uint8_t *data = 0;
-   if ( (self != 0) && (size > 0) )
+   uint8_t *data = NULL;
+   if ( (self != NULL) && (size > 0) )
    {
       if (size <= SOA_SMALL_OBJECT_MAX_SIZE)
       {
@@ -180,7 +180,7 @@ uint8_t *apx_allocator_alloc(apx_allocator_t *self, size_t size)
 
 void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       rbf_data_t data;
       data.ptr=ptr;
@@ -198,7 +198,7 @@ void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size)
 
 bool apx_allocator_isRunning(apx_allocator_t *self)
 {
-   if ( self != 0)
+   if ( self != NULL)
    {
       return self->isRunning;
    }
@@ -217,7 +217,7 @@ void apx_allocator_processAll(apx_allocator_t *self)
 
 int32_t apx_allocator_numPendingMessages(apx_allocator_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return adt_rbfh_length(&self->messages);
    }
@@ -231,7 +231,7 @@ int32_t apx_allocator_numPendingMessages(apx_allocator_t *self)
 #ifndef UNIT_TEST
 static int8_t apx_allocator_startThread(apx_allocator_t *self)
 {
-   if( self != 0){
+   if( self != NULL){
    self->isRunning = true;
    self->workerThreadValid = true;
 #ifdef _WIN32
@@ -256,7 +256,7 @@ static int8_t apx_allocator_startThread(apx_allocator_t *self)
 
 static THREAD_PROTO(threadTask,arg)
 {
-   if(arg!=0)
+   if(arg != NULL)
    {
 
       apx_allocator_t *self;
@@ -308,7 +308,7 @@ static bool apx_allocator_processEvent(apx_allocator_t *self)
    rc = adt_rbfh_remove(&self->messages,(uint8_t*) &data);
    if (rc == BUF_E_OK)
    {
-      if (data.ptr != 0)
+      if (data.ptr != NULL)
       {
          if (data.size<=SOA_SMALL_OBJECT_MAX_SIZE)
          {
@@ -334,7 +334,7 @@ static bool apx_allocator_processEvent(apx_allocator_t *self)
    {
       free(data.ptr);
    }
-   else if ( (rc == BUF_E_OK) && (data.ptr == 0) )
+   else if ( (rc == BUF_E_OK) && (data.ptr == NULL) )
    {
       retval = false; //NULL data pointer is a valid exit message
    }

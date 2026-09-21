@@ -115,7 +115,7 @@ void apx_nodeData_destroy(apx_nodeData_t *self)
 apx_nodeData_t *apx_nodeData_new(void)
 {
    apx_nodeData_t *self = (apx_nodeData_t*) malloc(sizeof(apx_nodeData_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_nodeData_create(self, (apx_nodeDataBuffers_t*) NULL);
    }
@@ -124,7 +124,7 @@ apx_nodeData_t *apx_nodeData_new(void)
 
 void apx_nodeData_delete(apx_nodeData_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_nodeData_destroy(self);
       free(self);

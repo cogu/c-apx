@@ -80,12 +80,12 @@ bool application_init(const application_cfg_t *cfg)
    m_has_pending_start_cmd = true;
    m_is_test_ongoing = false;
    m_sv = dtl_sv_new();
-   if (m_cfg.timer_init == 0)
+   if (m_cfg.timer_init == NULL)
    {
       m_cfg.timer_init = 1u; //Default to 1 second
    }
    m_client = apx_client_new();
-   if (m_client != 0)
+   if (m_client != NULL)
    {
       apx_client_register_event_listener(m_client, &handlerTable);
       result = apx_client_build_node(m_client, m_cfg.apx_definition);

@@ -69,7 +69,7 @@ void apx_node_destroy(apx_node_t* self)
 apx_node_t* apx_node_new(const char* name)
 {
    apx_node_t* self = (apx_node_t*)malloc(sizeof(apx_node_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_node_create(self, name);
    }
@@ -78,7 +78,7 @@ apx_node_t* apx_node_new(const char* name)
 
 void apx_node_delete(apx_node_t* self)
 {
-   if (self != 0) {
+   if (self != NULL) {
       apx_node_destroy(self);
       free(self);
    }
@@ -168,7 +168,7 @@ void apx_node_set_name(apx_node_t* self, const char* name)
 
 const char* apx_node_get_name(const apx_node_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->name;
    }

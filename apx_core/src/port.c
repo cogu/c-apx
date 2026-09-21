@@ -48,7 +48,7 @@ void apx_port_create(apx_port_t* self, apx_portType_t port_type, const char* nam
       self->port_type = port_type;
       self->port_id = APX_INVALID_PORT_ID;
       self->line_number = line_number;
-      self->name = (name != 0) ? STRDUP(name) : 0;
+      self->name = (name != NULL) ? STRDUP(name) : 0;
       apx_dataSignature_create(&self->data_signature);
       self->attributes = NULL;
       self->proper_init_value = NULL;

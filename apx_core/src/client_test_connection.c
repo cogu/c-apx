@@ -86,7 +86,7 @@ void apx_clientTestConnection_destroy(apx_clientTestConnection_t *self)
    if (self != NULL)
    {
       adt_bytearray_destroy(&self->transmit_buffer);
-      if (self->transmit_log != 0)
+      if (self->transmit_log != NULL)
       {
          adt_ary_delete(self->transmit_log);
       }
@@ -109,7 +109,7 @@ apx_clientTestConnection_t *apx_clientTestConnection_new(void)
       if (result != APX_NO_ERROR)
       {
          free(self);
-         self = 0;
+         self = NULL;
       }
    }
    return self;

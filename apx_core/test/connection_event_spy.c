@@ -36,20 +36,20 @@
 //////////////////////////////////////////////////////////////////////////////
 void apx_connectionEventSpy_create(apx_connectionEventSpy_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->headerAcceptedCount = 0;
       self->fileCreateCount = 0;
-      self->lastConnection = (apx_connectionBase_t*) 0;
-      self->lastFileInfo = (apx_fileInfo_t*) 0;
+      self->lastConnection = NULL;
+      self->lastFileInfo = NULL;
    }
 }
 
 void apx_connectionEventSpy_destroy(apx_connectionEventSpy_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (self->lastFileInfo != 0)
+      if (self->lastFileInfo != NULL)
       {
          apx_fileInfo_delete(self->lastFileInfo);
       }
@@ -58,7 +58,7 @@ void apx_connectionEventSpy_destroy(apx_connectionEventSpy_t *self)
 
 void apx_connectionEventSpy_register(apx_connectionEventSpy_t *self, apx_connectionBase_t *connection)
 {
-   if ((self != 0) && (connection != 0) )
+   if ((self != NULL) && (connection != NULL) )
    {
       apx_connectionEventListener_t handler;
       memset(&handler, 0, sizeof(handler));
@@ -72,7 +72,7 @@ void apx_connectionEventSpy_register(apx_connectionEventSpy_t *self, apx_connect
 void apx_connectionEventSpy_headerAccepted(void *arg, apx_connectionBase_t *connection)
 {
    apx_connectionEventSpy_t *self = (apx_connectionEventSpy_t*) arg;
-   if ( (self != 0) && (connection != 0) )
+   if ( (self != NULL) && (connection != NULL) )
    {
 
       self->headerAcceptedCount++;
@@ -83,11 +83,11 @@ void apx_connectionEventSpy_headerAccepted(void *arg, apx_connectionBase_t *conn
 void apx_connectionEventSpy_fileCreate(void *arg, apx_connectionBase_t *connection, const apx_fileInfo_t *fileInfo)
 {
    apx_connectionEventSpy_t *self = (apx_connectionEventSpy_t*) arg;
-   if ( (self != 0) && (connection != 0) && (fileInfo != 0))
+   if ( (self != NULL) && (connection != NULL) && (fileInfo != NULL))
    {
       self->fileCreateCount++;
       self->lastConnection = connection;
-      if (self->lastFileInfo != 0)
+      if (self->lastFileInfo != NULL)
       {
          apx_fileInfo_delete(self->lastFileInfo);
       }

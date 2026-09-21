@@ -70,11 +70,11 @@ static bool m_display_help = false;
 static bool m_display_version = false;
 static uint16_t m_pos_arg_count = 0u;
 static uint16_t m_connect_port;
-static adt_str_t *m_connect_address = (adt_str_t*) 0;
-static adt_str_t *m_message = (adt_str_t*) 0;
-static adt_str_t *m_input_file_path = (adt_str_t*) 0;
-static adt_str_t *m_name = (adt_str_t*) 0;
-static adt_str_t *m_value = (adt_str_t*) 0;
+static adt_str_t *m_connect_address = NULL;
+static adt_str_t *m_message = NULL;
+static adt_str_t *m_input_file_path = NULL;
+static adt_str_t *m_name = NULL;
+static adt_str_t *m_value = NULL;
 static apx_resource_type_t m_connect_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
             (void) dummy_port;
             assert( (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) );
          }
-         if (m_input_file_path != 0)
+         if (m_input_file_path != NULL)
          {
             const char *input_file_path = adt_str_cstr(m_input_file_path);
             apx_error_t apx_result = read_message_from_file(input_file_path);
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
             else
             {
                dtl_dv_t *dv = dtl_json_load_cstr(adt_str_cstr(m_message));
-               if (dv == 0)
+               if (dv == NULL)
                {
                   fprintf(stderr, "Error: JSON data validation error while parsing %s\n", input_file_path);
                   retval = -1;
@@ -130,9 +130,9 @@ int main(int argc, char **argv)
          }
          else
          {
-            if (m_name != 0)
+            if (m_name != NULL)
             {
-               if (m_value == 0)
+               if (m_value == NULL)
                {
                   printf("Error: missing value argument\n");
                   print_usage(argv[0]);
@@ -149,11 +149,11 @@ int main(int argc, char **argv)
                }
             }
          }
-         if ( (m_message != 0) && (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) )
+         if ( (m_message != NULL) && (m_connect_resource_type != APX_RESOURCE_TYPE_UNKNOWN) && (m_connect_resource_type != APX_RESOURCE_TYPE_ERROR) )
          {
             const char *address;
             address = adt_str_cstr(m_connect_address);
-            assert(address != 0);
+            assert(address != NULL);
             switch(m_connect_resource_type)
             {
             case APX_RESOURCE_TYPE_IPV4: //fall-trough
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
                break;
             }
          }
-         else if (m_message == 0)
+         else if (m_message == NULL)
          {
             if (!m_display_version && !m_display_help)
             {
@@ -212,9 +212,9 @@ void vfree(void *arg)
 //////////////////////////////////////////////////////////////////////////////
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value)
 {
-   if (value == 0)
+   if (value == NULL)
    {
-      if ( short_name != 0 )
+      if ( short_name != NULL )
       {
          if ( (strcmp(short_name,"i")==0) || (strcmp(short_name,"p")==0) ||
               (strcmp(short_name,"c")==0) )
@@ -231,7 +231,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
             return ARGPARSE_NAME_ERROR;
          }
       }
-      else if ( (long_name != 0) )
+      else if ( (long_name != NULL) )
       {
          if ( (strcmp(long_name,"connect")==0) || (strcmp(long_name,"port")==0) )
          {
@@ -255,7 +255,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
    }
    else
    {
-      if ( short_name != 0 )
+      if ( short_name != NULL )
       {
          char *end;
          long lval;
@@ -273,7 +273,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          }
          else if (strcmp(short_name,"c")==0)
          {
-            if (m_connect_address != 0) adt_str_delete(m_connect_address);
+            if (m_connect_address != NULL) adt_str_delete(m_connect_address);
             m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
             if ( (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
                  (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
@@ -284,7 +284,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          else if (strcmp(short_name, "i") == 0)
          {
             m_input_file_path = adt_str_new_cstr(value);
-            if (m_input_file_path == 0)
+            if (m_input_file_path == NULL)
             {
                return ARGPARSE_MEM_ERROR;
             }
@@ -294,7 +294,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
             return ARGPARSE_PARSE_ERROR;
          }
       }
-      else if (long_name != 0)
+      else if (long_name != NULL)
       {
          char *end;
          long lval;
@@ -312,7 +312,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          }
          else if (strcmp(long_name,"connect")==0)
          {
-            if (m_connect_address != 0) adt_str_delete(m_connect_address);
+            if (m_connect_address != NULL) adt_str_delete(m_connect_address);
             m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
             if ( (m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
                  (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
@@ -324,7 +324,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
       else
       {
          adt_str_t *tmp = adt_str_new_cstr(value);
-         if (tmp == 0)
+         if (tmp == NULL)
          {
             return ARGPARSE_MEM_ERROR;
          }
@@ -363,17 +363,17 @@ static void print_usage(const char *arg0)
 
 static void application_cleanup(void)
 {
-   if (m_connect_address != 0) adt_str_delete(m_connect_address);
-   if (m_message != 0) adt_str_delete(m_message);
-   if (m_input_file_path != 0) adt_str_delete(m_input_file_path);
+   if (m_connect_address != NULL) adt_str_delete(m_connect_address);
+   if (m_message != NULL) adt_str_delete(m_message);
+   if (m_input_file_path != NULL) adt_str_delete(m_input_file_path);
 }
 
 #ifndef _WIN32
 static void connect_and_send_message_unix(const char *socketPath)
 {
    message_client_connection_t *connection = message_client_connection_new(MSOCKET_ADDR_UNIX);
-   assert(m_message != 0);
-   if (connection != 0)
+   assert(m_message != NULL);
+   if (connection != NULL)
    {
       adt_error_t rc = message_client_prepare_message(connection, m_message);
       if (rc == ADT_NO_ERROR)
@@ -407,8 +407,8 @@ static void connect_and_send_message_tcp(const char *address, uint16_t port, uin
    if ((addressFamily == MSOCKET_ADDR_INET) || (addressFamily == MSOCKET_ADDR_INET6))
    {
       message_client_connection_t* connection = message_client_connection_new(addressFamily);
-      assert(m_message != 0);
-      if (connection != 0)
+      assert(m_message != NULL);
+      if (connection != NULL)
       {
          adt_error_t rc = message_client_prepare_message(connection, m_message);
          if (rc == ADT_NO_ERROR)
@@ -441,11 +441,11 @@ static apx_error_t read_message_from_file(const char *file_path)
 {
    apx_error_t retval = APX_NO_ERROR;
    adt_bytearray_t *bytes = ifstream_util_readTextFile(file_path);
-   if (bytes != 0)
+   if (bytes != NULL)
    {
       m_message = adt_str_new_bytearray(bytes);
       adt_bytearray_delete(bytes);
-      if (m_message == 0)
+      if (m_message == NULL)
       {
          retval = APX_MEM_ERROR;
       }
@@ -477,7 +477,7 @@ static adt_error_t build_json_message(const adt_str_t *name, const adt_str_t *va
    result = adt_str_push(json_message, '}');
    if (result != ADT_NO_ERROR) return result;
    dv = dtl_json_load_cstr(adt_str_cstr(json_message));
-   if (dv == 0)
+   if (dv == NULL)
    {
       fprintf(stderr, "Error: Failed to validate JSON data\n");
       return ADT_INVALID_ARGUMENT_ERROR;

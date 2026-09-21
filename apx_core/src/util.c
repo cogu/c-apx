@@ -40,7 +40,7 @@ static bool apx_util_verify_name(const char *pBegin, const char *pEnd);
 //////////////////////////////////////////////////////////////////////////////
 void apx_fprint_hex_bytes(FILE *file, int32_t maxColumns, const uint8_t *dataBuf, apx_size_t dataSize)
 {
-   if ( (file != 0) && (dataBuf != 0) && (maxColumns > 0) && (dataSize > 0) )
+   if ( (file != NULL) && (dataBuf != NULL) && (maxColumns > 0) && (dataSize > 0) )
    {
       int32_t column;
       apx_size_t byteCount = 0u;
@@ -96,13 +96,13 @@ void apx_fprint_hex_bytes(FILE *file, int32_t maxColumns, const uint8_t *dataBuf
 apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, uint16_t *port)
 {
    apx_resource_type_t retval = APX_RESOURCE_TYPE_UNKNOWN;
-   if ( (text != 0) && (name != 0) )
+   if ( (text != NULL) && (name != NULL) )
    {
 
-      adt_str_t *parsed_name = 0;
+      adt_str_t *parsed_name = NULL;
       unsigned long parsed_port = 0u;
       char *cstr_result = strchr(text, '/');
-      if (cstr_result != 0 )
+      if (cstr_result != NULL )
       {
          retval = APX_RESOURCE_TYPE_FILE;
          parsed_name = adt_str_new_cstr(text);
@@ -110,18 +110,18 @@ apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, 
       else
       {
          bool isValid;
-         char *parse_end = 0;
+         char *parse_end = NULL;
          const char *str_end;
          char *port_begin = strrchr(text, ':'); //TODO: This check needs to be improved for IPV6 support
          str_end = text + strlen(text);
-         if (port_begin == 0)
+         if (port_begin == NULL)
          {
             port_begin = (char*) str_end;
          }
          else
          {
             parsed_port = strtoul(port_begin+1, &parse_end, 10);
-            if (parse_end == 0 )
+            if (parse_end == NULL )
             {
                parsed_port = 0u;
                retval = APX_RESOURCE_TYPE_ERROR;
@@ -158,7 +158,7 @@ apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, 
       }
 
 
-      if (parsed_name != 0)
+      if (parsed_name != NULL)
       {
          if ( (retval != APX_RESOURCE_TYPE_UNKNOWN) && (retval != APX_RESOURCE_TYPE_ERROR) )
          {
@@ -169,14 +169,14 @@ apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, 
             adt_str_delete(parsed_name);
          }
       }
-      if ( (parsed_name == 0) && (retval != APX_RESOURCE_TYPE_UNKNOWN) && (retval != APX_RESOURCE_TYPE_ERROR) )
+      if ( (parsed_name == NULL) && (retval != APX_RESOURCE_TYPE_UNKNOWN) && (retval != APX_RESOURCE_TYPE_ERROR) )
       {
          //Something has gone wrong when allocating memory for the string parsed_name
          retval = APX_RESOURCE_TYPE_ERROR;
       }
 
 
-      if ( (retval != APX_RESOURCE_TYPE_ERROR) && (port != 0) )
+      if ( (retval != APX_RESOURCE_TYPE_ERROR) && (port != NULL) )
       {
          *port = (uint16_t) parsed_port;
       }
@@ -391,7 +391,7 @@ static bool apx_util_verifyIPV4Address(const char *pBegin, const char *pEnd)
    int number_in_group = 0;
    int group_length = 0;
    int group_count = 1u; //verifies that we have exactly 4 groups of numbers separated by '.'
-   assert((pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd));
+   assert((pBegin != NULL) && (pEnd != NULL) && (pBegin <= pEnd));
    for(c = (unsigned char)*pNext; pNext < pEnd; c = (unsigned char)*(++pNext))
    {
       if (c == '.')
@@ -439,7 +439,7 @@ static bool apx_util_verify_name(const char *pBegin, const char *pEnd)
    bool first = true;
    const char *pNext = pBegin;
    int c;
-   assert((pBegin != 0) && (pEnd != 0) && (pBegin <= pEnd));
+   assert((pBegin != NULL) && (pEnd != NULL) && (pBegin <= pEnd));
    if (pBegin==pEnd)
    {
       //empty string

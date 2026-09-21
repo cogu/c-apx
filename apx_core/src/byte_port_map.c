@@ -85,7 +85,7 @@ apx_bytePortMap_t* apx_bytePortMap_new(apx_size_t total_size, apx_portInstance_t
 
 void apx_bytePortMap_delete(apx_bytePortMap_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_bytePortMap_destroy(self);
       free(self);
@@ -95,7 +95,7 @@ void apx_bytePortMap_delete(apx_bytePortMap_t *self)
 
 apx_portId_t apx_bytePortMap_lookup(const apx_bytePortMap_t *self, uint32_t offset)
 {
-   if ( (self != 0) && (offset < self->map_len) )
+   if ( (self != NULL) && (offset < self->map_len) )
    {
       return self->map_data[offset];
    }
@@ -104,7 +104,7 @@ apx_portId_t apx_bytePortMap_lookup(const apx_bytePortMap_t *self, uint32_t offs
 
 apx_size_t apx_bytePortMap_length(const apx_bytePortMap_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->map_len;
    }

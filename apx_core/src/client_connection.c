@@ -55,7 +55,7 @@ static bool parse_greeting(apx_clientConnection_t* self, uint8_t const* msg_data
 
 apx_error_t apx_clientConnection_create(apx_clientConnection_t* self, apx_connectionBaseVTable_t* base_connection_vtable, apx_connectionInterface_t* connection_interface)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t error_code;
       //init non-overridable virtual functions
@@ -75,7 +75,7 @@ apx_error_t apx_clientConnection_create(apx_clientConnection_t* self, apx_connec
 
 void apx_clientConnection_destroy(apx_clientConnection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_connectionBase_destroy(&self->base);
    }
@@ -260,7 +260,7 @@ rmf_versionId_t apx_clientConnection_get_rmf_proto_id(apx_clientConnection_t* se
 
 apx_fileManager_t* apx_clientConnection_get_file_manager(apx_clientConnection_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_connectionBase_get_file_manager(&self->base);
    }
@@ -313,7 +313,7 @@ apx_error_t apx_clientConnection_vremote_file_write_notification(void* arg, apx_
 #ifdef UNIT_TEST
 void apx_clientConnection_run(apx_clientConnection_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       //apx_connectionBase_runAll(&self->base);
       apx_fileManager_run(&self->base.file_manager);

@@ -38,13 +38,13 @@
 apx_dataType_t* apx_dataType_new(const char* name, int32_t line_number)
 {
    apx_dataType_t* self = (apx_dataType_t*)malloc(sizeof(apx_dataType_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t result = apx_dataType_create(self, name, line_number);
       if (result != APX_NO_ERROR)
       {
          free(self);
-         self = 0;
+         self = NULL;
       }
    }
    return self;
@@ -52,7 +52,7 @@ apx_dataType_t* apx_dataType_new(const char* name, int32_t line_number)
 
 void apx_dataType_delete(apx_dataType_t* self)
 {
-   if(self != 0){
+   if(self != NULL){
       apx_dataType_destroy(self);
       free(self);
    }
@@ -65,12 +65,12 @@ void apx_dataType_vdelete(void* arg)
 
 apx_error_t apx_dataType_create(apx_dataType_t* self, const char* name, int32_t line_number)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (name != 0)
+      if (name != NULL)
       {
          self->name = STRDUP(name);
-         if (self->name == 0)
+         if (self->name == NULL)
          {
             return APX_MEM_ERROR;
          }
@@ -88,7 +88,7 @@ apx_error_t apx_dataType_create(apx_dataType_t* self, const char* name, int32_t 
 
 void apx_dataType_destroy(apx_dataType_t* self)
 {
-   if ( self !=0 )
+   if ( self != NULL )
    {
       if (self->name != NULL)
       {
@@ -115,7 +115,7 @@ apx_dataElement_t* apx_dataType_get_data_element(apx_dataType_t* self)
 
 int32_t apx_dataType_get_line_number(apx_dataType_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->line_number;
    }

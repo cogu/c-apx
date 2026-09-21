@@ -273,7 +273,7 @@ static void test_apx_client_read_port_dtl_u8(CuTest* tc)
    uint8_t raw_data[UINT8_SIZE] = { 0xff };
    apx_nodeInstance_t* node_instance;
    apx_nodeData_t* node_data;
-   dtl_dv_t* dv = 0;
+   dtl_dv_t* dv = NULL;
    bool ok = false;
    apx_client_t* client;
 
@@ -290,7 +290,7 @@ static void test_apx_client_read_port_dtl_u8(CuTest* tc)
    CuAssertUIntEquals(tc, 255, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dv_dec_ref(dv);
-   dv = 0;
+   dv = NULL;
    ok = false;
 
    packLE(raw_data, 0x12, UINT8_SIZE);
@@ -300,7 +300,7 @@ static void test_apx_client_read_port_dtl_u8(CuTest* tc)
    CuAssertUIntEquals(tc, 0x12, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dv_dec_ref(dv);
-   dv = 0;
+   dv = NULL;
    ok = false;
 
    packLE(raw_data, 0x00, UINT8_SIZE);
@@ -362,7 +362,7 @@ static void test_apx_client_read_port_dtl_u16(CuTest* tc)
    uint8_t raw_data[UINT16_SIZE] = { 0xff, 0xff };
    apx_nodeInstance_t* node_instance;
    apx_nodeData_t* node_data;
-   dtl_dv_t* dv = 0;
+   dtl_dv_t* dv = NULL;
    bool ok = false;
    apx_client_t* client;
 
@@ -379,7 +379,7 @@ static void test_apx_client_read_port_dtl_u16(CuTest* tc)
    CuAssertUIntEquals(tc, UINT16_MAX, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dv_dec_ref(dv);
-   dv = 0;
+   dv = NULL;
    ok = false;
 
    packLE(raw_data, 0x1234, UINT16_SIZE);
@@ -389,7 +389,7 @@ static void test_apx_client_read_port_dtl_u16(CuTest* tc)
    CuAssertUIntEquals(tc, 0x1234, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dv_dec_ref(dv);
-   dv = 0;
+   dv = NULL;
    ok = false;
 
    packLE(raw_data, 0x0, UINT16_SIZE);
@@ -459,7 +459,7 @@ static void test_apx_client_read_port_dtl_u32(CuTest* tc)
    uint8_t raw_data[UINT32_SIZE] = { 0xff, 0xff,  0xff, 0xff };
    apx_nodeInstance_t* node_instance;
    apx_nodeData_t* node_data;
-   dtl_dv_t* dv = 0;
+   dtl_dv_t* dv = NULL;
    bool ok = false;
    apx_client_t* client;
 
@@ -476,7 +476,7 @@ static void test_apx_client_read_port_dtl_u32(CuTest* tc)
    CuAssertUIntEquals(tc, UINT32_MAX, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dv_dec_ref(dv);
-   dv = 0;
+   dv = NULL;
    ok = false;
 
    packLE(raw_data, 0x12345678, UINT32_SIZE);
@@ -486,7 +486,7 @@ static void test_apx_client_read_port_dtl_u32(CuTest* tc)
    CuAssertUIntEquals(tc, 0x12345678, dtl_sv_to_u32((dtl_sv_t*)dv, &ok));
    CuAssertTrue(tc, ok);
    dtl_dv_dec_ref(dv);
-   dv = 0;
+   dv = NULL;
    ok = false;
 
    packLE(raw_data, 0x0, UINT32_SIZE);

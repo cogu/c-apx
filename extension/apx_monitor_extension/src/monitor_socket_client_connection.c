@@ -89,7 +89,7 @@ static void send_packet(apx_monitorSocketClientConnection_t* self);
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_monitorSocketClientConnection_create(apx_monitorSocketClientConnection_t* self, SOCKET_TYPE* socket_object)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_connectionBaseVTable_t base_connection_vtable;
       apx_connectionInterface_t connection_interface;
@@ -117,7 +117,7 @@ apx_error_t apx_monitorSocketClientConnection_create(apx_monitorSocketClientConn
 
 void apx_monitorSocketClientConnection_destroy(apx_monitorSocketClientConnection_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_clientConnection_destroy(&self->base);
       adt_bytearray_destroy(&self->send_buffer);
@@ -134,13 +134,13 @@ void apx_monitorSocketClientConnection_vdestroy(void* arg)
 apx_monitorSocketClientConnection_t* apx_monitorSocketClientConnection_new(SOCKET_TYPE* socket_object)
 {
    apx_monitorSocketClientConnection_t* self = (apx_monitorSocketClientConnection_t*)malloc(sizeof(apx_monitorSocketClientConnection_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t errorCode = apx_monitorSocketClientConnection_create(self, socket_object);
       if (errorCode != APX_NO_ERROR)
       {
          free(self);
-         self = (apx_monitorSocketClientConnection_t*)0;
+         self = NULL;
       }
    }
    return self;
@@ -158,11 +158,11 @@ apx_connectionType_t apx_monitorSocketClientConnection_get_connection_type(apx_m
 #ifndef UNIT_TEST
 apx_error_t apx_monitorSocketClientConnectio_connect_tcp(apx_monitorSocketClientConnection_t* self, const char* address, uint16_t port)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t retval = APX_NO_ERROR;
       msocket_t* socketObject = msocket_new(MSOCKET_ADDR_INET);
-      if (socketObject != 0)
+      if (socketObject != NULL)
       {
          int8_t result = 0;
          register_msocket_handler(self, socketObject);
@@ -189,11 +189,11 @@ apx_error_t apx_monitorSocketClientConnectio_connect_tcp(apx_monitorSocketClient
 # ifndef _WIN32
 apx_error_t apx_monitorSocketClientConnection_connect_unix(apx_monitorSocketClientConnection_t* self, const char* socket_path)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t retval = APX_NO_ERROR;
       msocket_t* socket_object = msocket_new(MSOCKET_ADDR_UNIX);
-      if (socket_object != 0)
+      if (socket_object != NULL)
       {
          int8_t result = 0;
          register_msocket_handler(self, socket_object);

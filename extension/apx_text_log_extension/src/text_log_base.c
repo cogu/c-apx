@@ -46,12 +46,12 @@ void apx_textLogVTable_init(apx_connectionBaseVTable_t *self, void (*destructor)
 
 void apx_textLogBase_create(apx_textLogBase_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      self->file = (FILE*) 0;
+      self->file = NULL;
       self->fileEnabled = false;
       self->syslogEnabled = false;
-      self->syslogLabel = (char*) 0;
+      self->syslogLabel = NULL;
       strcpy(self->lineEnding, "\n");
       MUTEX_INIT(self->mutex);
    }
@@ -59,9 +59,9 @@ void apx_textLogBase_create(apx_textLogBase_t *self)
 
 void apx_textLogBase_destroy(apx_textLogBase_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if ( (self->file != 0) && (self->file != stdout ) )
+      if ( (self->file != NULL) && (self->file != stdout ) )
       {
          fflush(self->file);
          fclose(self->file);
@@ -72,7 +72,7 @@ void apx_textLogBase_destroy(apx_textLogBase_t *self)
 
 void apx_textLogBase_enableSysLog(apx_textLogBase_t *self, const char *label)
 {
-   if ( (self != 0) && (label != 0))
+   if ( (self != NULL) && (label != NULL))
    {
       self->syslogEnabled = true;
       self->syslogLabel = STRDUP(label);
@@ -84,7 +84,7 @@ void apx_textLogBase_enableSysLog(apx_textLogBase_t *self, const char *label)
 
 void apx_textLogBase_enableStdout(apx_textLogBase_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->fileEnabled = true;
       self->file = stdout;
@@ -93,10 +93,10 @@ void apx_textLogBase_enableStdout(apx_textLogBase_t *self)
 
 void apx_textLogBase_enableFile(apx_textLogBase_t *self, const char *path)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       FILE *fh = fopen(path, "w");
-      if (fh != 0)
+      if (fh != NULL)
       {
          self->fileEnabled = true;
          self->file = fh;
@@ -106,7 +106,7 @@ void apx_textLogBase_enableFile(apx_textLogBase_t *self, const char *path)
 
 void apx_textLogBase_closeAll(apx_textLogBase_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       if (self->fileEnabled != 0)
       {
@@ -130,7 +130,7 @@ void apx_textLogBase_closeAll(apx_textLogBase_t *self)
 
 void apx_textLogBase_print(apx_textLogBase_t *self, const char *msg)
 {
-   if ( (self != 0) && (msg != 0))
+   if ( (self != NULL) && (msg != NULL))
    {
       MUTEX_LOCK(self->mutex);
       if(self->fileEnabled)

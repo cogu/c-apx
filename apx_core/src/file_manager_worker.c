@@ -616,7 +616,7 @@ static apx_error_t stop_worker_thread(apx_fileManagerWorker_t* self)
 
 static THREAD_PROTO(worker_main, arg)
 {
-   if (arg != 0)
+   if (arg != NULL)
    {
       apx_fileManagerWorker_t* self;
       bool is_running = true;

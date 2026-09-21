@@ -89,7 +89,7 @@ void apx_serverTestConnection_destroy(apx_serverTestConnection_t *self)
    if (self != NULL)
    {
       adt_bytearray_destroy(&self->transmit_buffer);
-      if (self->transmit_log != 0)
+      if (self->transmit_log != NULL)
       {
          adt_ary_delete(self->transmit_log);
       }
@@ -106,13 +106,13 @@ void apx_serverTestConnection_vdestroy(void *arg)
 apx_serverTestConnection_t *apx_serverTestConnection_new(void)
 {
    apx_serverTestConnection_t *self = (apx_serverTestConnection_t*) malloc(sizeof(apx_serverTestConnection_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t result = apx_serverTestConnection_create(self);
       if (result != APX_NO_ERROR)
       {
          free(self);
-         self = 0;
+         self = NULL;
       }
    }
    return self;
@@ -120,7 +120,7 @@ apx_serverTestConnection_t *apx_serverTestConnection_new(void)
 
 void apx_serverTestConnection_delete(apx_serverTestConnection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_serverTestConnection_destroy(self);
       free(self);

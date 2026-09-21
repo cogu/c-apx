@@ -57,7 +57,7 @@ void apx_event_unpack_log_write(apx_event_t const* event, apx_logLevel_t* level,
 
 void apx_event_pack_protocol_header_accepted(apx_event_t* event, struct apx_connectionBase_tag* connection)
 {
-   if (event != 0)
+   if (event != NULL)
    {
       memset(event, 0, APX_EVENT_SIZE);
       event->ev_type = APX_EVENT_PROTOCOL_HEADER_ACCEPTED;
@@ -75,7 +75,7 @@ void apx_event_unpack_protocol_header_accepted(apx_event_t const* event, struct 
 
 void apx_event_pack_remote_file_published(apx_event_t* event, struct apx_connectionBase_tag* connection, struct rmf_fileInfo_tag* file_info)
 {
-   if (event != 0)
+   if (event != NULL)
    {
       memset(event, 0, APX_EVENT_SIZE);
       event->ev_type = APX_EVENT_REMOTE_FILE_PUBLISHED;
