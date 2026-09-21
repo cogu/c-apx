@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_node_data.c
+* \author    Conny Gustafsson
+* \date      2019-05-27
+* \brief     Unit tests for node data
+*
+* Copyright (c) 2019-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

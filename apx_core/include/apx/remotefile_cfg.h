@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      remotefile_cfg.h
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     Remote file configuration definitions
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 #ifndef RMF_CFG_H
 #define RMF_CFG_H
 

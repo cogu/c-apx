@@ -3,13 +3,11 @@
 * \author    Conny Gustafsson
 * \date      2014-01-29
 * \brief     portable helper macros for sockets, threads etc. for Windows and Linux
-* \details   https://github.com/cogu/msocket
 *
-* Copyright (c) 2014-2016 Conny Gustafsson
-*
+* Copyright (c) 2014-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
 ******************************************************************************/
-
-
 #ifndef OS_MACRO_H
 #define OS_MACRO_H
 

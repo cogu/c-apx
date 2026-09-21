@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_attribute_parser.c
+* \author    Conny Gustafsson
+* \date      2017-07-30
+* \brief     Unit tests for apx_attribute_parser
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

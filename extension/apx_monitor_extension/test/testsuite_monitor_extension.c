@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_monitor_extension.c
+* \author    Conny Gustafsson
+* \date      2026-08-26
+* \brief     Unit tests for monitor extension
+*
+* Copyright (c) 2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

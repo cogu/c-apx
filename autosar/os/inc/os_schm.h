@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      os_schm.h
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     OS schedule manager
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 #ifndef OS_TIMER_H
 #define OS_TIMER_H
 

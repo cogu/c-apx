@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_node_manager_client.c
+* \author    Conny Gustafsson
+* \date      2021-02-04
+* \brief     Unit tests for node manager (client)
+*
+* Copyright (c) 2021-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

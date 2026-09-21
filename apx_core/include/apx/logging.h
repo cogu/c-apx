@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      logging.h
+* \author    Conny Gustafsson
+* \date      2017-02-20
+* \brief     APX logging macros
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 #ifndef APX_LOGGING_H
 #define APX_LOGGING_H
 

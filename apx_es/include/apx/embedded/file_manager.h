@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      file_manager.h
+* \author    Conny Gustafsson
+* \date      2017-03-12
+* \brief     APX embedded file manager
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 /**
  * description: embedded version of the APX fileManager. The intention is to:
  * 1. apply to MISRA rules

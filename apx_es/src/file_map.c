@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      file_map.c
+* \author    Conny Gustafsson
+* \date      2017-03-12
+* \brief     APX embedded file map
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 /**
  * embedded version of apx_fileMap.c. This version uses fixed-size linear list instead of a dynamic linked list (no malloc required)
  *

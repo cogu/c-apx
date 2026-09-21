@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      file_map.h
+* \author    Conny Gustafsson
+* \date      2017-03-12
+* \brief     APX embedded file map
+*
+* Copyright (c) 2017-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 #ifndef APX_ES_FILE_MAP_H
 #define APX_ES_FILE_MAP_H
 

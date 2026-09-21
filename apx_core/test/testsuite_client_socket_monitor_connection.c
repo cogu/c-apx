@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_client_socket_monitor_connection.c
+* \author    Conny Gustafsson
+* \date      2021-03-01
+* \brief     Unit tests for client socket monitor connection
+*
+* Copyright (c) 2021-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

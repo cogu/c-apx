@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      connection_event_spy.c
+* \author    Conny Gustafsson
+* \date      2019-05-27
+* \brief     Connection event spy
+*
+* Copyright (c) 2019-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

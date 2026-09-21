@@ -1,3 +1,13 @@
+/*****************************************************************************
+* \file      testsuite_port_connector_change_table.c
+* \author    Conny Gustafsson
+* \date      2019-08-04
+* \brief     Unit tests for port connector change table
+*
+* Copyright (c) 2019-2026 Conny Gustafsson
+* SPDX-License-Identifier: MIT
+* See LICENSE in project root for full license terms.
+******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
