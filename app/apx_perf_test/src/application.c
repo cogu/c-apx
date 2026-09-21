@@ -80,7 +80,7 @@ bool application_init(const application_cfg_t *cfg)
    m_has_pending_start_cmd = true;
    m_is_test_ongoing = false;
    m_sv = dtl_sv_new();
-   if (m_cfg.timer_init == NULL)
+   if (m_cfg.timer_init == 0u)
    {
       m_cfg.timer_init = 1u; //Default to 1 second
    }
