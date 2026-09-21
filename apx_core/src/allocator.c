@@ -250,7 +250,6 @@ static int8_t apx_allocator_startThread(apx_allocator_t *self)
       //from this point forward all access to self must be protected by spin lock
       return 0;
    }
-   errno = EINVAL;
    return -1;
 }
 

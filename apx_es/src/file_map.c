@@ -17,7 +17,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include <assert.h>
-#include <errno.h>
 #include "apx_es_fileMap.h"
 
 
@@ -229,14 +228,13 @@ static int8_t apx_es_fileMap_autoInsertInternal(apx_es_fileMap_t *self, apx_file
            uint32_t other_end_address;
            uint32_t other_start_address;
            apx_file_t *pOther = (apx_file_t*) self->fileList[found];
-           assert(pOther != 0);
+           assert(pOther != NULL);
            other_start_address=pOther->fileInfo.address;
            other_end_address=other_start_address + pOther->fileInfo.length;
            placement_address  = (other_end_address + (address_boundary-1)) & (~(address_boundary-1)); //note that address_boundary must be a power of 2 for this code to work
            if (placement_address >= end_address)
            {
               //memory map full, cannot fit any more files into this region
-              errno = ENOMEM;
               return -1;
            }
            placementIndex = found+1;
@@ -257,7 +255,6 @@ static int8_t apx_es_fileMap_insertAt(apx_es_fileMap_t *self, apx_file_t *pFile,
    {
       if (self->curLen >= APX_ES_FILEMAP_MAX_NUM_FILES)
       {
-         errno = ENOMEM;
          return -1; //no more items can be inserted in the map
       }
       if (self->curLen==index)

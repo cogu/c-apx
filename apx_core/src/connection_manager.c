@@ -12,7 +12,6 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
-#include <errno.h>
 #include "apx/connection_manager.h"
 #ifdef _WIN32
 #include <process.h>
