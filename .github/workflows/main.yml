@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: GCC Latest
+          - name: GCC latest
             os: ubuntu-latest
             cc: gcc
             cxx: g++
