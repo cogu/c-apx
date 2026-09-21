@@ -13,7 +13,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <malloc.h>
 #include <string.h>
-#include <errno.h>
 #include "apx/error.h"
 #include "apx/file.h"
 #include "bstr.h"
