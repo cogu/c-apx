@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: GCC
+          - name: GCC Latest
             os: ubuntu-latest
             cc: gcc
             cxx: g++
@@ -27,6 +27,10 @@ jobs:
             os: ubuntu-latest
             cc: clang
             cxx: clang++
+          - name: GCC Ubuntu 22.04
+            os: ubuntu-22.04
+            cc: gcc
+            cxx: g++
           - name: MSVC
             os: windows-latest
 
