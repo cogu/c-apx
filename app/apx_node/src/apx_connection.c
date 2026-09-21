@@ -108,7 +108,7 @@ void apx_connection_disconnect(apx_connection_t *self)
    }
 }
 
-apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_definition)
+apx_error_t apx_connection_attach_node(apx_connection_t *self, adt_str_t *apx_definition)
 {
    if ( (self != NULL) && (apx_definition != NULL) )
    {
@@ -116,10 +116,10 @@ apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_def
       apx_error_t retval = apx_client_build_node(self->client, adt_str_cstr(apx_definition));
       if (retval == APX_NO_ERROR)
       {
-         apx_node_instance_t *nodeInstance = apx_client_get_last_attached_node(self->client);
-         if (nodeInstance != NULL)
+         apx_node_instance_t *node_instance = apx_client_get_last_attached_node(self->client);
+         if (node_instance != NULL)
          {
-            retval = apx_connection_prepare_provide_ports(self, nodeInstance);
+            retval = apx_connection_prepare_provide_ports(self, node_instance);
          }
          else
          {
@@ -132,7 +132,7 @@ apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_def
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-int32_t apx_connection_getLastErrorLine(apx_connection_t *self)
+int32_t apx_connection_get_last_error_line(apx_connection_t *self)
 {
    if (self != NULL)
    {
@@ -141,7 +141,7 @@ int32_t apx_connection_getLastErrorLine(apx_connection_t *self)
    return -1;
 }
 
-apx_node_instance_t *apx_connection_getLastAttachedNode(apx_connection_t *self)
+apx_node_instance_t *apx_connection_get_last_attached_node(apx_connection_t *self)
 {
    if (self != NULL)
    {
@@ -151,11 +151,11 @@ apx_node_instance_t *apx_connection_getLastAttachedNode(apx_connection_t *self)
 }
 
 #ifndef _WIN32
-apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socketPath)
+apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socket_path)
 {
    if (self != NULL)
    {
-      return apx_client_connect_unix(self->client, socketPath);
+      return apx_client_connect_unix(self->client, socket_path);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -170,13 +170,13 @@ apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *addre
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const char *providePortName, dtl_dv_t *dv_value)
+apx_error_t apx_connection_write_provide_port_data(apx_connection_t *self, const char *provide_port_name, dtl_dv_t *dv_value)
 {
-   if ( (self != NULL) && (providePortName != NULL) && (dv_value != NULL) )
+   if ( (self != NULL) && (provide_port_name != NULL) && (dv_value != NULL) )
    {
       apx_error_t result;
       MUTEX_LOCK(self->mutex);
-      apx_port_instance_t *port_instance = (apx_port_instance_t*) adt_hash_value(&self->provide_port_lookup_table, providePortName);
+      apx_port_instance_t *port_instance = (apx_port_instance_t*) adt_hash_value(&self->provide_port_lookup_table, provide_port_name);
       if (port_instance == NULL)
       {
          MUTEX_UNLOCK(self->mutex);
@@ -217,7 +217,7 @@ static void apx_connection_on_require_port_write(void* arg, struct apx_port_inst
       char const* port_name;
       dtl_dv_t* dv = NULL;
       MUTEX_LOCK(self->mutex);
-      port_name = apx_portInstance_name(port_instance);
+      port_name = apx_port_instance_name(port_instance);
       result = apx_client_read_port_data(self->client, port_instance, &dv);
       MUTEX_UNLOCK(self->mutex);
       if (result != APX_NO_ERROR)
@@ -249,14 +249,14 @@ static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t* self, 
    {
       apx_size_t num_provide_ports;
       apx_port_id_t port_id;
-      num_provide_ports = apx_nodeInstance_get_num_provide_ports(node_instance);
+      num_provide_ports = apx_node_instance_get_num_provide_ports(node_instance);
       for(port_id = 0; port_id < num_provide_ports; port_id++)
       {
          char const *port_name = NULL;
-         apx_port_instance_t *port_instance = apx_nodeInstance_get_provide_port(node_instance, port_id);
+         apx_port_instance_t *port_instance = apx_node_instance_get_provide_port(node_instance, port_id);
          if (port_instance != NULL)
          {
-            port_name = apx_portInstance_name(port_instance);
+            port_name = apx_port_instance_name(port_instance);
          }
 
          if ( port_name == NULL)

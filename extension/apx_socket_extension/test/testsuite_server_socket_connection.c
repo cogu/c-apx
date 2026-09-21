@@ -78,7 +78,7 @@ static const char *m_TestNodeDefinition = "APX/1.2\n"
 //////////////////////////////////////////////////////////////////////////////
 
 
-CuSuite* testSuite_apx_socketServerConnection(void)
+CuSuite* testsuite_apx_socket_server_connection(void)
 {
    CuSuite* suite = CuSuiteNew();
    SUITE_ADD_TEST(suite, test_connection_create);
@@ -97,10 +97,10 @@ static void test_connection_create(CuTest* tc)
    apx_socket_server_connection_t conn;
    testsocket_t *sock1;
    sock1 = testsocket_new(); //apx_socket_server_connection_t takes ownership of this object. No need to manually delete it
-   CuAssertIntEquals(tc, 0, apx_socketServerConnection_create(&conn, sock1));
+   CuAssertIntEquals(tc, 0, apx_socket_server_connection_create(&conn, sock1));
    CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
    CuAssertPtrEquals(tc, sock1, conn.socket_object);
-   apx_socketServerConnection_destroy(&conn);
+   apx_socket_server_connection_destroy(&conn);
 }
 
 static void test_each_connection_get_unique_id(CuTest* tc)
@@ -111,26 +111,26 @@ static void test_each_connection_get_unique_id(CuTest* tc)
    uint32_t connectionIdExpected = 0;
    int i;
    apx_server_create(&server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socketServerExtension_register(&server, NULL));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
    apx_server_start(&server);
 
    for (i=0;i<10;i++)
    {
       char msg[15];
       sockets[i] = testsocket_new();
-      apx_socketServerExtension_accept_testsocket(sockets[i]);
+      apx_socket_server_extension_accept_testsocket(sockets[i]);
       lastConnection = apx_server_get_last_connection(&server);
       CuAssertPtrNotNull(tc, lastConnection);
       sprintf(msg, "i=%d",i);
-      CuAssertUIntEquals_Msg(tc, &msg[0], connectionIdExpected++, apx_serverConnection_get_connection_id(lastConnection));
+      CuAssertUIntEquals_Msg(tc, &msg[0], connectionIdExpected++, apx_server_connection_get_connection_id(lastConnection));
    }
    //resetting internal variable nextConnectionId to 0 shall still yield next generated ID to be unique
    server.connection_manager.next_connection_id = 0;
    sockets[10] = testsocket_new();
-   apx_socketServerExtension_accept_testsocket(sockets[10]);
+   apx_socket_server_extension_accept_testsocket(sockets[10]);
    lastConnection = apx_server_get_last_connection(&server);
    CuAssertPtrNotNull(tc, lastConnection);
-   CuAssertUIntEquals(tc, 10, apx_serverConnection_get_connection_id(lastConnection));
+   CuAssertUIntEquals(tc, 10, apx_server_connection_get_connection_id(lastConnection));
    apx_server_destroy(&server);
 }
 
@@ -141,10 +141,10 @@ static void test_server_sends_acknowledge_after_accepting_header(CuTest* tc)
    testsocket_spy_create();
    sock = testsocket_spy_client();
    apx_server_create(&server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socketServerExtension_register(&server, NULL));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
    apx_server_start(&server);
-   apx_socketServerExtension_accept_testsocket(sock);
-   testsocket_onConnect(sock);
+   apx_socket_server_extension_accept_testsocket(sock);
+   testsocket_on_connect(sock);
    send_header(sock);
    SERVER_RUN(&server, sock);
    verify_acknowledge(tc, sock);
@@ -159,10 +159,10 @@ static void test_server_opens_definition_file_after_publication(CuTest *tc)
    testsocket_spy_create();
    sock = testsocket_spy_client();
    apx_server_create(&server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socketServerExtension_register(&server, NULL));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
    apx_server_start(&server);
-   apx_socketServerExtension_accept_testsocket(sock);
-   testsocket_onConnect(sock);
+   apx_socket_server_extension_accept_testsocket(sock);
+   testsocket_on_connect(sock);
    send_header(sock);
    SERVER_RUN(&server, sock);
    verify_acknowledge(tc, sock);
@@ -183,27 +183,27 @@ static void test_server_parses_definition_data_after_transmission(CuTest *tc)
    testsocket_spy_create();
    sock = testsocket_spy_client();
    apx_server_create(&server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socketServerExtension_register(&server, NULL));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
    apx_server_start(&server);
-   apx_socketServerExtension_accept_testsocket(sock);
-   testsocket_onConnect(sock);
+   apx_socket_server_extension_accept_testsocket(sock);
+   testsocket_on_connect(sock);
    send_header(sock);
    SERVER_RUN(&server, sock);
-   testsocket_spy_clearReceivedData();
+   testsocket_spy_clear_received_data();
    send_file_info_no_checksum(tc, sock, "TestNode.apx", definitionAddress, (uint32_t)definition_size);
    SERVER_RUN(&server, sock);
    verify_file_open_request(tc, sock, definitionAddress);
-   CuAssertPtrEquals(tc, NULL, (void*) testsocket_spy_getReceivedData(&dummy));
+   CuAssertPtrEquals(tc, NULL, (void*) testsocket_spy_get_received_data(&dummy));
    apx_server_connection_t *connection = apx_server_get_last_connection(&server);
    CuAssertPtrNotNull(tc, connection);
-   apx_node_instance_t *node_instance = apx_nodeManager_find(connection->base.node_manager, "TestNode");
+   apx_node_instance_t *node_instance = apx_node_manager_find(connection->base.node_manager, "TestNode");
    CuAssertPtrNotNull(tc, node_instance);
    send_file_content(tc, sock, definitionAddress);
    SERVER_RUN(&server, sock);
-   apx_node_data_t const* node_data = apx_nodeInstance_get_const_node_data(node_instance);
+   apx_node_data_t const* node_data = apx_node_instance_get_const_node_data(node_instance);
    CuAssertPtrNotNull(tc, node_data);
-   CuAssertUIntEquals(tc, definition_size, apx_nodeData_definition_data_size(node_data));
-   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_nodeInstance_get_definition_data_state(node_instance));
+   CuAssertUIntEquals(tc, definition_size, apx_node_data_definition_data_size(node_data));
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_node_instance_get_definition_data_state(node_instance));
 
    apx_server_destroy(&server);
    testsocket_spy_destroy();
@@ -217,22 +217,22 @@ static void send_header(testsocket_t *sock)
    msgLen = (int32_t) strlen(greeting);
    msg[0] = (uint8_t) msgLen;
    memcpy(&msg[1], greeting, msgLen);
-   testsocket_clientSend(sock, &msg[0], 1+msgLen);
+   testsocket_client_send(sock, &msg[0], 1+msgLen);
 }
 
 static void send_file_info_no_checksum(CuTest* tc, testsocket_t *sock, const char *name, uint32_t startAddress, uint32_t length)
 {
    apx_size_t msgLen = 0;
    uint8_t buf[RMF_CMD_AREA_SIZE];
-   rmf_file_info_t* file_info = rmf_fileInfo_make_fixed(name, length, startAddress);
+   rmf_file_info_t* file_info = rmf_file_info_make_fixed(name, length, startAddress);
    CuAssertPtrNotNull(tc, file_info);
 
    msgLen += rmf_address_encode(&buf[1+msgLen], (apx_size_t)(sizeof(buf)-msgLen), RMF_CMD_AREA_START_ADDRESS, false);
    msgLen += rmf_encode_publish_file_cmd(&buf[1+msgLen], (apx_size_t)(sizeof(buf)-msgLen), file_info);
-   rmf_fileInfo_delete(file_info);
+   rmf_file_info_delete(file_info);
    CuAssertUIntEquals(tc, 65, msgLen);
    buf[0]=(uint8_t) msgLen;
-   testsocket_clientSend(sock, &buf[0], (uint32_t)(1+msgLen));
+   testsocket_client_send(sock, &buf[0], (uint32_t)(1+msgLen));
 
 }
 
@@ -243,7 +243,7 @@ static void verify_acknowledge(CuTest* tc, testsocket_t *sock)
    const uint8_t expected[9] = {8, 0xBF, 0xFF, 0xFC, 0x00, 0, 0, 0, 0};
    const uint8_t *data;
    (void)sock;
-   data = testsocket_spy_getReceivedData(&len);
+   data = testsocket_spy_get_received_data(&len);
    CuAssertUIntEquals(tc, RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + 1, len);
    for(i=0;i<(int32_t) sizeof(expected);i++)
    {
@@ -251,7 +251,7 @@ static void verify_acknowledge(CuTest* tc, testsocket_t *sock)
       sprintf(msg, "i=%d",i);
       CuAssertIntEquals_Msg(tc, msg, expected[i], data[i]);
    }
-   testsocket_spy_clearReceivedData();
+   testsocket_spy_clear_received_data();
 }
 
 static void verify_file_open_request(CuTest* tc, testsocket_t *sock, uint32_t address)
@@ -262,7 +262,7 @@ static void verify_file_open_request(CuTest* tc, testsocket_t *sock, uint32_t ad
    const uint8_t *data;
    (void)sock;
    packLE(&expected[9], address, 4);
-   data = testsocket_spy_getReceivedData(&len);
+   data = testsocket_spy_get_received_data(&len);
    CuAssertUIntEquals(tc, RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + UINT32_SIZE+ 1, len);
    for(i=0;i<(int32_t) sizeof(expected);i++)
    {
@@ -270,7 +270,7 @@ static void verify_file_open_request(CuTest* tc, testsocket_t *sock, uint32_t ad
       sprintf(msg, "i=%d",i);
       CuAssertIntEquals_Msg(tc, msg, expected[i], data[i]);
    }
-   testsocket_spy_clearReceivedData();
+   testsocket_spy_clear_received_data();
 }
 
 static void send_file_content(CuTest* tc, testsocket_t *sock, uint32_t address)
@@ -286,5 +286,5 @@ static void send_file_content(CuTest* tc, testsocket_t *sock, uint32_t address)
    bufData[1+msgLen] = '\0';
    assert((uint32_t) msgLen <= NUMHEADER32_MAX_NUM_SHORT);
    bufData[0]=(uint8_t) msgLen;
-   testsocket_clientSend(sock, &bufData[0], (uint32_t)(1+msgLen));
+   testsocket_client_send(sock, &bufData[0], (uint32_t)(1+msgLen));
 }

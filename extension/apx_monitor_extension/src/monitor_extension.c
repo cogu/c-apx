@@ -36,7 +36,7 @@ static apx_server_monitor_t* m_instance = NULL;
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_monitorExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
+apx_error_t apx_monitor_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
    apx_server_extension_handler_t handler = {init, shutdown};
    return apx_server_add_extension(apx_server, "MONITOR", &handler, config);
@@ -50,7 +50,7 @@ static apx_error_t init(struct apx_server_tag *apx_server, dtl_dv_t *config)
    (void)config;
    if (m_instance == NULL)
    {
-      m_instance = apx_serverMonitor_new(apx_server);
+      m_instance = apx_server_monitor_new(apx_server);
       if (m_instance == NULL)
       {
          return APX_MEM_ERROR;
@@ -61,7 +61,7 @@ static apx_error_t init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 
 static void shutdown(void)
 {
-   apx_serverMonitor_delete(m_instance);
+   apx_server_monitor_delete(m_instance);
    m_instance = NULL;
 }
 

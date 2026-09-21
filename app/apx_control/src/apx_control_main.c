@@ -45,9 +45,9 @@ static void print_version(void);
 static void print_usage(const char *arg0);
 static void application_cleanup(void);
 #ifndef _WIN32
-static void connect_and_send_message_unix(const char *socketPath);
+static void connect_and_send_message_unix(const char *socket_path);
 #endif
-static void connect_and_send_message_tcp(const char *address, uint16_t port, uint8_t addressFamily);
+static void connect_and_send_message_tcp(const char *address, uint16_t port, uint8_t address_family);
 static apx_error_t read_message_from_file(const char *file_path);
 static adt_error_t build_json_message(const adt_str_t *name, const adt_str_t *value);
 
@@ -369,7 +369,7 @@ static void application_cleanup(void)
 }
 
 #ifndef _WIN32
-static void connect_and_send_message_unix(const char *socketPath)
+static void connect_and_send_message_unix(const char *socket_path)
 {
    message_client_connection_t *connection = message_client_connection_new(MSOCKET_ADDR_UNIX);
    assert(m_message != NULL);
@@ -379,10 +379,10 @@ static void connect_and_send_message_unix(const char *socketPath)
       if (rc == ADT_NO_ERROR)
       {
          int32_t result;
-         result = message_client_connect_unix(connection, socketPath);
+         result = message_client_connect_unix(connection, socket_path);
          if (result != 0)
          {
-            printf("Failed to connect at %s\n", socketPath);
+            printf("Failed to connect at %s\n", socket_path);
          }
          else
          {
@@ -402,11 +402,11 @@ static void connect_and_send_message_unix(const char *socketPath)
 }
 #endif
 
-static void connect_and_send_message_tcp(const char *address, uint16_t port, uint8_t addressFamily)
+static void connect_and_send_message_tcp(const char *address, uint16_t port, uint8_t address_family)
 {
-   if ((addressFamily == MSOCKET_ADDR_INET) || (addressFamily == MSOCKET_ADDR_INET6))
+   if ((address_family == MSOCKET_ADDR_INET) || (address_family == MSOCKET_ADDR_INET6))
    {
-      message_client_connection_t* connection = message_client_connection_new(addressFamily);
+      message_client_connection_t* connection = message_client_connection_new(address_family);
       assert(m_message != NULL);
       if (connection != NULL)
       {

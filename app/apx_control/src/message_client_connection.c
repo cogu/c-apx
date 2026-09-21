@@ -26,8 +26,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void message_client_connection_onConnect(void *arg, void *socket, const char *addr, uint16_t port);
-static void message_client_connection_onDisconnect(void *arg, void *socket);
+static void message_client_connection_on_connect(void *arg, void *socket, const char *addr, uint16_t port);
+static void message_client_connection_on_disconnect(void *arg, void *socket);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -36,12 +36,12 @@ static void message_client_connection_onDisconnect(void *arg, void *socket);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-int32_t message_client_connection_create(message_client_connection_t *self, uint8_t addressFamily)
+int32_t message_client_connection_create(message_client_connection_t *self, uint8_t address_family)
 {
    if (self != NULL)
    {
       self->pendingMessage = NULL;
-      self->msocket = msocket_new(addressFamily);
+      self->msocket = msocket_new(address_family);
       if (self->msocket == NULL)
       {
          return 1;
@@ -50,8 +50,8 @@ int32_t message_client_connection_create(message_client_connection_t *self, uint
       {
          msocket_handler_t handler;
          memset(&handler, 0, sizeof(handler));
-         handler.tcp_connected = message_client_connection_onConnect;
-         handler.tcp_disconnected = message_client_connection_onDisconnect;
+         handler.tcp_connected = message_client_connection_on_connect;
+         handler.tcp_disconnected = message_client_connection_on_disconnect;
          msocket_sethandler(self->msocket, &handler, (void*) self);
          SEMAPHORE_CREATE(self->messageTransmitted);
       }
@@ -72,12 +72,12 @@ void message_client_connection_destroy(message_client_connection_t *self)
    }
 }
 
-message_client_connection_t *message_client_connection_new(uint8_t addressFamily)
+message_client_connection_t *message_client_connection_new(uint8_t address_family)
 {
    message_client_connection_t *self = (message_client_connection_t*) malloc(sizeof(message_client_connection_t));
    if (self != NULL)
    {
-      int32_t result = message_client_connection_create(self, addressFamily);
+      int32_t result = message_client_connection_create(self, address_family);
       if (result != 0)
       {
          free(self);
@@ -154,11 +154,11 @@ int32_t message_client_connect_tcp(message_client_connection_t *self, const char
 }
 
 #ifndef _WIN32
-int32_t message_client_connect_unix(message_client_connection_t *self, const char *socketPath)
+int32_t message_client_connect_unix(message_client_connection_t *self, const char *socket_path)
 {
    if (self != NULL)
    {
-      return (int32_t) msocket_unix_connect(self->msocket, socketPath);
+      return (int32_t) msocket_unix_connect(self->msocket, socket_path);
    }
    return -1;
 }
@@ -192,7 +192,7 @@ int32_t message_client_wait_for_message_transmitted(message_client_connection_t 
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void message_client_connection_onConnect(void *arg, void *socket, const char *addr, uint16_t port)
+static void message_client_connection_on_connect(void *arg, void *socket, const char *addr, uint16_t port)
 {
    message_client_connection_t *self = (message_client_connection_t*) arg;
    (void)socket;
@@ -214,7 +214,7 @@ static void message_client_connection_onConnect(void *arg, void *socket, const c
    }
 }
 
-static void message_client_connection_onDisconnect(void *arg, void *socket)
+static void message_client_connection_on_disconnect(void *arg, void *socket)
 {
    (void)arg;
    (void)socket;

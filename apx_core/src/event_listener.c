@@ -34,7 +34,7 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_client_event_listener_t *apx_clientEventListener_clone(apx_client_event_listener_t *other)
+apx_client_event_listener_t *apx_client_event_listener_clone(apx_client_event_listener_t *other)
 {
    if (other != NULL)
    {
@@ -48,19 +48,19 @@ apx_client_event_listener_t *apx_clientEventListener_clone(apx_client_event_list
    return NULL;
 }
 
-void apx_clientEventListener_delete(apx_client_event_listener_t *self)
+void apx_client_event_listener_delete(apx_client_event_listener_t *self)
 {
    if (self != NULL)
    {
       free(self);
    }
 }
-void apx_clientEventListener_vdelete(void *arg)
+void apx_client_event_listener_vdelete(void *arg)
 {
-   apx_clientEventListener_delete((apx_client_event_listener_t*) arg);
+   apx_client_event_listener_delete((apx_client_event_listener_t*) arg);
 }
 
-apx_server_event_listener_t *apx_serverEventListener_clone(apx_server_event_listener_t *other)
+apx_server_event_listener_t *apx_server_event_listener_clone(apx_server_event_listener_t *other)
 {
    if (other != NULL)
    {
@@ -74,7 +74,7 @@ apx_server_event_listener_t *apx_serverEventListener_clone(apx_server_event_list
    return NULL;
 }
 
-void apx_serverEventListener_delete(apx_server_event_listener_t *self)
+void apx_server_event_listener_delete(apx_server_event_listener_t *self)
 {
    if (self != NULL)
    {
@@ -82,13 +82,13 @@ void apx_serverEventListener_delete(apx_server_event_listener_t *self)
    }
 }
 
-void apx_serverEventListener_vdelete(void *arg)
+void apx_server_event_listener_vdelete(void *arg)
 {
-   apx_serverEventListener_delete((apx_server_event_listener_t*) arg);
+   apx_server_event_listener_delete((apx_server_event_listener_t*) arg);
 }
 
 
-apx_server_connection_event_listener_t *apx_connectionEventListener_clone(apx_server_connection_event_listener_t *other)
+apx_server_connection_event_listener_t *apx_connection_event_listener_clone(apx_server_connection_event_listener_t *other)
 {
    if (other != NULL)
    {
@@ -101,7 +101,7 @@ apx_server_connection_event_listener_t *apx_connectionEventListener_clone(apx_se
    }
    return NULL;
 }
-void apx_connectionEventListener_delete(apx_server_connection_event_listener_t *self)
+void apx_connection_event_listener_delete(apx_server_connection_event_listener_t *self)
 {
    if (self != NULL)
    {
@@ -109,9 +109,9 @@ void apx_connectionEventListener_delete(apx_server_connection_event_listener_t *
    }
 }
 
-void apx_connectionEventListener_vdelete(void *arg)
+void apx_connection_event_listener_vdelete(void *arg)
 {
-   apx_connectionEventListener_delete((apx_server_connection_event_listener_t*) arg);
+   apx_connection_event_listener_delete((apx_server_connection_event_listener_t*) arg);
 }
 
 //////////////////////////////////////////////////////////////////////////////

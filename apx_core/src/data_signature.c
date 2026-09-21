@@ -34,7 +34,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_dataSignature_create(apx_data_signature_t* self)
+void apx_data_signature_create(apx_data_signature_t* self)
 {
    if (self != NULL)
    {
@@ -43,22 +43,22 @@ void apx_dataSignature_create(apx_data_signature_t* self)
    }
 }
 
-void apx_dataSignature_destroy(apx_data_signature_t* self)
+void apx_data_signature_destroy(apx_data_signature_t* self)
 {
    if (self != NULL)
    {
       if (self->data_element != NULL)
       {
-         apx_dataElement_delete(self->data_element);
+         apx_data_element_delete(self->data_element);
       }
       if (self->effective_data_element != NULL)
       {
-         apx_dataElement_delete(self->effective_data_element);
+         apx_data_element_delete(self->effective_data_element);
       }
    }
 }
 
-apx_data_element_t* apx_dataSignature_get_data_element(apx_data_signature_t* self)
+apx_data_element_t* apx_data_signature_get_data_element(apx_data_signature_t* self)
 {
    if (self != NULL)
    {
@@ -67,7 +67,7 @@ apx_data_element_t* apx_dataSignature_get_data_element(apx_data_signature_t* sel
    return NULL;
 }
 
-void apx_dataSignature_set_element(apx_data_signature_t* self, apx_data_element_t* data_element)
+void apx_data_signature_set_element(apx_data_signature_t* self, apx_data_element_t* data_element)
 {
    if (self != NULL)
    {
@@ -75,7 +75,7 @@ void apx_dataSignature_set_element(apx_data_signature_t* self, apx_data_element_
    }
 }
 
-apx_data_element_t* apx_dataSignature_get_effective_data_element(apx_data_signature_t* self)
+apx_data_element_t* apx_data_signature_get_effective_data_element(apx_data_signature_t* self)
 {
    if (self != NULL)
    {
@@ -84,7 +84,7 @@ apx_data_element_t* apx_dataSignature_get_effective_data_element(apx_data_signat
    return NULL;
 }
 
-void apx_dataSignature_set_effective_element(apx_data_signature_t* self, apx_data_element_t* data_element)
+void apx_data_signature_set_effective_element(apx_data_signature_t* self, apx_data_element_t* data_element)
 {
    if (self != NULL)
    {

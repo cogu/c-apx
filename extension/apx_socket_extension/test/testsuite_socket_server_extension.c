@@ -34,7 +34,7 @@ static void test_extension_init_shutdown(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testsuite_apx_socketServerExtension(void)
+CuSuite* testsuite_apx_socket_server_extension(void)
 {
    CuSuite* suite = CuSuiteNew();
    SUITE_ADD_TEST(suite, test_extension_init_shutdown);
@@ -49,10 +49,10 @@ static void test_extension_init_shutdown(CuTest* tc)
    apx_server_t apx_server;
    dtl_hv_t *extension_cfg = NULL;
    apx_server_create(&apx_server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socketServerExtension_register(&apx_server, (dtl_dv_t*) extension_cfg));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&apx_server, (dtl_dv_t*) extension_cfg));
    apx_server_start(&apx_server);
    apx_server_run(&apx_server);
    apx_server_stop(&apx_server);
-   apx_server_destroy(&apx_server);   
+   apx_server_destroy(&apx_server);
 }
 

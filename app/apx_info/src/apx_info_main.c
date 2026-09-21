@@ -155,7 +155,7 @@ int main(int argc, char** argv)
       printf("Error parsing argument (%d)\n", (int)result);
       print_usage(argv[0]);
    }
-   
+
 SHUTDOWN:
    application_shutdown();
    application_cleanup();
@@ -306,16 +306,16 @@ static void signal_handler(int signum)
 
 static apx_error_t connect_to_apx_server(void)
 {
-   const char* connect_address; 
-   m_client_connection = apx_clientSocketConnection_new(NULL, APX_CONNECTION_TYPE_MONITOR);
+   const char* connect_address;
+   m_client_connection = apx_client_socket_connection_new(NULL, APX_CONNECTION_TYPE_MONITOR);
    connect_address = adt_str_cstr(m_connect_address);
 
    switch (m_connect_resource_type)
    {
    case APX_RESOURCE_TYPE_UNKNOWN:
       return APX_INVALID_ARGUMENT_ERROR;
-   case APX_RESOURCE_TYPE_IPV4:      
-      return apx_clientSocketConnection_connect_tcp(m_client_connection, connect_address, m_connect_port);
+   case APX_RESOURCE_TYPE_IPV4:
+      return apx_client_socket_connection_connect_tcp(m_client_connection, connect_address, m_connect_port);
    case APX_RESOURCE_TYPE_IPV6:
       return APX_NOT_IMPLEMENTED_ERROR;
    case APX_RESOURCE_TYPE_FILE:
@@ -323,12 +323,12 @@ static apx_error_t connect_to_apx_server(void)
       printf("UNIX domain sockets not supported in Windows\n");
       return APX_NOT_IMPLEMENTED_ERROR;
 #else
-      return apx_clientSocketConnection_connect_unix(m_client_connection, connect_address);
+      return apx_client_socket_connection_connect_unix(m_client_connection, connect_address);
 #endif
    case APX_RESOURCE_TYPE_NAME:
       if ((strlen(connect_address) == 0) || (strcmp(connect_address, "localhost") == 0))
       {
-         return apx_clientSocketConnection_connect_tcp(m_client_connection, "127.0.0.1", m_connect_port);
+         return apx_client_socket_connection_connect_tcp(m_client_connection, "127.0.0.1", m_connect_port);
       }
    }
    return APX_INVALID_ARGUMENT_ERROR;

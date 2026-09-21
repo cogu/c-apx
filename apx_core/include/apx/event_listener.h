@@ -71,17 +71,17 @@ typedef struct apx_server_connection_event_listener_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_client_event_listener_t *apx_clientEventListener_clone(apx_client_event_listener_t *other);
-void apx_clientEventListener_delete(apx_client_event_listener_t *self);
-void apx_clientEventListener_vdelete(void *arg);
+apx_client_event_listener_t *apx_client_event_listener_clone(apx_client_event_listener_t *other);
+void apx_client_event_listener_delete(apx_client_event_listener_t *self);
+void apx_client_event_listener_vdelete(void *arg);
 
-apx_server_event_listener_t *apx_serverEventListener_clone(apx_server_event_listener_t *other);
-void apx_serverEventListener_delete(apx_server_event_listener_t *self);
-void apx_serverEventListener_vdelete(void *arg);
+apx_server_event_listener_t *apx_server_event_listener_clone(apx_server_event_listener_t *other);
+void apx_server_event_listener_delete(apx_server_event_listener_t *self);
+void apx_server_event_listener_vdelete(void *arg);
 
-apx_server_connection_event_listener_t *apx_connectionEventListener_clone(apx_server_connection_event_listener_t *other);
-void apx_connectionEventListener_delete(apx_server_connection_event_listener_t *self);
-void apx_connectionEventListener_vdelete(void *arg);
+apx_server_connection_event_listener_t *apx_connection_event_listener_clone(apx_server_connection_event_listener_t *other);
+void apx_connection_event_listener_delete(apx_server_connection_event_listener_t *self);
+void apx_connection_event_listener_vdelete(void *arg);
 
 
 

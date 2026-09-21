@@ -36,7 +36,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portAttributes_create(apx_port_attributes_t *self)
+void apx_port_attributes_create(apx_port_attributes_t *self)
 {
    if (self != NULL)
    {
@@ -46,7 +46,7 @@ void apx_portAttributes_create(apx_port_attributes_t *self)
    }
 }
 
-void apx_portAttributes_destroy(apx_port_attributes_t *self)
+void apx_port_attributes_destroy(apx_port_attributes_t *self)
 {
    if (self != NULL)
    {
@@ -57,32 +57,32 @@ void apx_portAttributes_destroy(apx_port_attributes_t *self)
    }
 }
 
-apx_port_attributes_t* apx_portAttributes_new(void)
+apx_port_attributes_t* apx_port_attributes_new(void)
 {
    apx_port_attributes_t *self = NULL;
    self = (apx_port_attributes_t*) malloc(sizeof(apx_port_attributes_t));
    if (self != NULL)
    {
-      apx_portAttributes_create(self);
+      apx_port_attributes_create(self);
    }
    return self;
 }
 
-void apx_portAttributes_delete(apx_port_attributes_t *self)
+void apx_port_attributes_delete(apx_port_attributes_t *self)
 {
    if (self != NULL)
    {
-      apx_portAttributes_destroy(self);
+      apx_port_attributes_destroy(self);
       free(self);
    }
 }
 
-void apx_portAttributes_vdelete(void *arg)
+void apx_port_attributes_vdelete(void *arg)
 {
-   apx_portAttributes_delete((apx_port_attributes_t*) arg);
+   apx_port_attributes_delete((apx_port_attributes_t*) arg);
 }
 
-void apx_portAttributes_set_parameter(apx_port_attributes_t* self)
+void apx_port_attributes_set_parameter(apx_port_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -90,7 +90,7 @@ void apx_portAttributes_set_parameter(apx_port_attributes_t* self)
    }
 }
 
-bool apx_portAttributes_is_parameter(apx_port_attributes_t* self)
+bool apx_port_attributes_is_parameter(apx_port_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -99,7 +99,7 @@ bool apx_portAttributes_is_parameter(apx_port_attributes_t* self)
    return false;
 }
 
-bool apx_portAttributes_is_queued(apx_port_attributes_t* self)
+bool apx_port_attributes_is_queued(apx_port_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -108,7 +108,7 @@ bool apx_portAttributes_is_queued(apx_port_attributes_t* self)
    return false;
 }
 
-void apx_portAttributes_set_queue_length(apx_port_attributes_t* self, uint32_t queue_length)
+void apx_port_attributes_set_queue_length(apx_port_attributes_t* self, uint32_t queue_length)
 {
    if (self != NULL)
    {
@@ -116,7 +116,7 @@ void apx_portAttributes_set_queue_length(apx_port_attributes_t* self, uint32_t q
    }
 }
 
-uint32_t apx_portAttributes_get_queue_length(apx_port_attributes_t* self)
+uint32_t apx_port_attributes_get_queue_length(apx_port_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -125,7 +125,7 @@ uint32_t apx_portAttributes_get_queue_length(apx_port_attributes_t* self)
    return 0u;
 }
 
-bool apx_portAttributes_has_init_value(apx_port_attributes_t* self)
+bool apx_port_attributes_has_init_value(apx_port_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -134,7 +134,7 @@ bool apx_portAttributes_has_init_value(apx_port_attributes_t* self)
    return false;
 }
 
-dtl_dv_t* apx_portAttributes_get_init_value(apx_port_attributes_t* self)
+dtl_dv_t* apx_port_attributes_get_init_value(apx_port_attributes_t* self)
 {
    if (self != NULL)
    {
@@ -143,7 +143,7 @@ dtl_dv_t* apx_portAttributes_get_init_value(apx_port_attributes_t* self)
    return NULL;
 }
 
-void apx_portAttributes_set_init_value(apx_port_attributes_t* self, dtl_dv_t* init_value)
+void apx_port_attributes_set_init_value(apx_port_attributes_t* self, dtl_dv_t* init_value)
 {
    if (self != NULL)
    {

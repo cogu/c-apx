@@ -48,8 +48,8 @@
 #define SOCKET_TYPE testsocket_t
 #define SOCKET_DELETE testsocket_delete
 #define SOCKET_START_IO(x)
-#define SOCKET_SET_HANDLER testsocket_setServerHandler
-#define SOCKET_SEND testsocket_serverSend
+#define SOCKET_SET_HANDLER testsocket_set_server_handler
+#define SOCKET_SEND testsocket_server_send
 #define SOCKET_OBJECT_CLOSE(x)
 #else
 #define SOCKET_DELETE msocket_delete
@@ -92,7 +92,7 @@ static void connection_send_packet(apx_socket_server_connection_t* self);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_socketServerConnection_create(apx_socket_server_connection_t *self, SOCKET_TYPE *socket_object)
+apx_error_t apx_socket_server_connection_create(apx_socket_server_connection_t *self, SOCKET_TYPE *socket_object)
 {
    if ( (self != NULL) && (socket_object != NULL) )
    {
@@ -101,12 +101,12 @@ apx_error_t apx_socketServerConnection_create(apx_socket_server_connection_t *se
       MUTEX_INIT(self->lock);
       self->default_buffer_size = SEND_BUFFER_GROW_SIZE;
       self->pending_bytes = 0u;
-      apx_connectionBaseVTable_create(&base_connection_vtable,
-         apx_socketServerConnection_vdestroy,
-         apx_socketServerConnection_vstart,
-         apx_socketServerConnection_vclose);
+      apx_connection_base_vtable_create(&base_connection_vtable,
+         apx_socket_server_connection_vdestroy,
+         apx_socket_server_connection_vstart,
+         apx_socket_server_connection_vclose);
       create_connection_interface_vtable(self, &connection_interface);
-      apx_error_t retval = apx_serverConnection_create(&self->base, &base_connection_vtable, &connection_interface);
+      apx_error_t retval = apx_server_connection_create(&self->base, &base_connection_vtable, &connection_interface);
       if (retval == APX_NO_ERROR)
       {
          adt_bytearray_create(&self->send_buffer);
@@ -114,39 +114,39 @@ apx_error_t apx_socketServerConnection_create(apx_socket_server_connection_t *se
       }
       if (retval == APX_NO_ERROR)
       {
-         apx_nodeManager_create(&self->node_manager, APX_SERVER_MODE);
-         apx_serverConnection_attach_node_manager(&self->base, &self->node_manager);
+         apx_node_manager_create(&self->node_manager, APX_SERVER_MODE);
+         apx_server_connection_attach_node_manager(&self->base, &self->node_manager);
       }
       return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_socketServerConnection_destroy(apx_socket_server_connection_t *self)
+void apx_socket_server_connection_destroy(apx_socket_server_connection_t *self)
 {
    if (self != NULL)
    {
-      apx_serverConnection_destroy(&self->base);
+      apx_server_connection_destroy(&self->base);
       adt_bytearray_destroy(&self->send_buffer);
-      apx_nodeManager_destroy(&self->node_manager);
+      apx_node_manager_destroy(&self->node_manager);
       SOCKET_DELETE(self->socket_object);
       MUTEX_DESTROY(self->lock);
    }
 }
 
-void apx_socketServerConnection_vdestroy(void *arg)
+void apx_socket_server_connection_vdestroy(void *arg)
 {
-   apx_socketServerConnection_destroy((apx_socket_server_connection_t*) arg);
+   apx_socket_server_connection_destroy((apx_socket_server_connection_t*) arg);
 }
 
-apx_socket_server_connection_t *apx_socketServerConnection_new(SOCKET_TYPE *socket_object)
+apx_socket_server_connection_t *apx_socket_server_connection_new(SOCKET_TYPE *socket_object)
 {
    if (socket_object != NULL)
    {
       apx_socket_server_connection_t *self = (apx_socket_server_connection_t*) malloc(sizeof(apx_socket_server_connection_t));
       if (self != NULL)
       {
-         apx_error_t result = apx_socketServerConnection_create(self, socket_object);
+         apx_error_t result = apx_socket_server_connection_create(self, socket_object);
          if (result != APX_NO_ERROR)
          {
             free(self);
@@ -158,75 +158,75 @@ apx_socket_server_connection_t *apx_socketServerConnection_new(SOCKET_TYPE *sock
    return (apx_socket_server_connection_t*)NULL;
 }
 
-void apx_socketServerConnection_delete(apx_socket_server_connection_t *self)
+void apx_socket_server_connection_delete(apx_socket_server_connection_t *self)
 {
    if (self != NULL)
    {
-      apx_socketServerConnection_destroy(self);
+      apx_socket_server_connection_destroy(self);
       free(self);
    }
 }
 
-void apx_socketServerConnection_vdelete(void *arg)
+void apx_socket_server_connection_vdelete(void *arg)
 {
-   apx_socketServerConnection_delete((apx_socket_server_connection_t*) arg);
+   apx_socket_server_connection_delete((apx_socket_server_connection_t*) arg);
 }
 
-void apx_socketServerConnection_vstart(void *arg)
+void apx_socket_server_connection_vstart(void *arg)
 {
    connection_start((apx_socket_server_connection_t*) arg);
 }
 
-void apx_socketServerConnection_vclose(void *arg)
+void apx_socket_server_connection_vclose(void *arg)
 {
    connection_close((apx_socket_server_connection_t*) arg);
 }
 
-void apx_socketServerConnection_set_tag(apx_socket_server_connection_t* self, char const* tag)
+void apx_socket_server_connection_set_tag(apx_socket_server_connection_t* self, char const* tag)
 {
    if (self != NULL && tag != NULL)
    {
-      apx_serverConnection_set_tag(&self->base, tag);
+      apx_server_connection_set_tag(&self->base, tag);
    }
 }
 
 // ConnectionInterface API
-int32_t apx_socketServerConnection_vtransmit_max_bytes_avaiable(void* arg)
+int32_t apx_socket_server_connection_vtransmit_max_bytes_avaiable(void* arg)
 {
    return connection_transmit_max_bytes_avaiable((apx_socket_server_connection_t*)arg);
 }
 
-int32_t apx_socketServerConnection_vtransmit_current_bytes_avaiable(void* arg)
+int32_t apx_socket_server_connection_vtransmit_current_bytes_avaiable(void* arg)
 {
    return connection_transmit_current_bytes_avaiable((apx_socket_server_connection_t*)arg);
 }
 
-void apx_socketServerConnection_vtransmit_begin(void* arg)
+void apx_socket_server_connection_vtransmit_begin(void* arg)
 {
    connection_transmit_begin((apx_socket_server_connection_t*)arg);
 }
 
-void apx_socketServerConnection_vtransmit_end(void* arg)
+void apx_socket_server_connection_vtransmit_end(void* arg)
 {
    connection_transmit_end((apx_socket_server_connection_t*)arg);
 }
 
-apx_error_t apx_socketServerConnection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+apx_error_t apx_socket_server_connection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
 {
    return connection_transmit_data_message((apx_socket_server_connection_t*)arg, write_address, more_bit, msg_data, msg_size, bytes_available);
 }
 
-apx_error_t apx_socketServerConnection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+apx_error_t apx_socket_server_connection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
 {
    return connection_transmit_direct_message((apx_socket_server_connection_t*)arg, msg_data, msg_size, bytes_available);
 }
 
 #ifdef UNIT_TEST
-void apx_socketServerConnection_run(apx_socket_server_connection_t* self)
+void apx_socket_server_connection_run(apx_socket_server_connection_t* self)
 {
    if (self != NULL)
    {
-      apx_serverConnection_run(&self->base);
+      apx_server_connection_run(&self->base);
    }
 }
 #endif
@@ -249,12 +249,12 @@ static void create_connection_interface_vtable(apx_socket_server_connection_t* s
 {
    memset(interface, 0, sizeof(apx_connection_interface_t));
    interface->arg = (void*)self;
-   interface->transmit_max_buffer_size = apx_socketServerConnection_vtransmit_max_bytes_avaiable;
-   interface->transmit_current_bytes_avaiable = apx_socketServerConnection_vtransmit_current_bytes_avaiable;
-   interface->transmit_begin = apx_socketServerConnection_vtransmit_begin;
-   interface->transmit_end = apx_socketServerConnection_vtransmit_end;
-   interface->transmit_data_message = apx_socketServerConnection_vtransmit_data_message;
-   interface->transmit_direct_message = apx_socketServerConnection_vtransmit_direct_message;
+   interface->transmit_max_buffer_size = apx_socket_server_connection_vtransmit_max_bytes_avaiable;
+   interface->transmit_current_bytes_avaiable = apx_socket_server_connection_vtransmit_current_bytes_avaiable;
+   interface->transmit_begin = apx_socket_server_connection_vtransmit_begin;
+   interface->transmit_end = apx_socket_server_connection_vtransmit_end;
+   interface->transmit_data_message = apx_socket_server_connection_vtransmit_data_message;
+   interface->transmit_direct_message = apx_socket_server_connection_vtransmit_direct_message;
 }
 
 //msocket API
@@ -276,7 +276,7 @@ static msocket_error_t socket_data_notification(void* arg, void* socket, const u
 {
    (void) socket;
    apx_socket_server_connection_t* self = (apx_socket_server_connection_t*)arg;
-   int retval = apx_serverConnection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
+   int retval = apx_server_connection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
    return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
@@ -292,7 +292,7 @@ static void connection_close(apx_socket_server_connection_t* self)
 static void connection_start(apx_socket_server_connection_t* self)
 {
    assert(self->socket_object != NULL);
-   apx_serverConnection_start(&self->base);
+   apx_server_connection_start(&self->base);
    SOCKET_START_IO(self->socket_object);
 }
 

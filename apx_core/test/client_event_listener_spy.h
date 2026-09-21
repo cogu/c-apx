@@ -33,13 +33,13 @@ typedef struct apx_client_event_listener_spy_tag
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_clientEventListenerSpy_create(apx_client_event_listener_spy_t *self);
-void apx_clientEventListenerSpy_destroy(apx_client_event_listener_spy_t *self);
-apx_client_event_listener_spy_t* apx_clientEventListenerSpy_new(void);
-void apx_clientEventListenerSpy_delete(apx_client_event_listener_spy_t *self);
-void* apx_clientEventListenerSpy_register(apx_client_event_listener_spy_t *self, apx_client_t *client);
-uint32_t apx_clientEventListenerSpy_getConnectCount(apx_client_event_listener_spy_t *self);
-uint32_t apx_clientEventListenerSpy_getDisconnectCount(apx_client_event_listener_spy_t *self);
-uint32_t apx_clientEventListenerSpy_getHeaderAccepted(apx_client_event_listener_spy_t *self);
+void apx_client_event_listener_spy_create(apx_client_event_listener_spy_t *self);
+void apx_client_event_listener_spy_destroy(apx_client_event_listener_spy_t *self);
+apx_client_event_listener_spy_t* apx_client_event_listener_spy_new(void);
+void apx_client_event_listener_spy_delete(apx_client_event_listener_spy_t *self);
+void* apx_client_event_listener_spy_register(apx_client_event_listener_spy_t *self, apx_client_t *client);
+uint32_t apx_client_event_listener_spy_get_connect_count(apx_client_event_listener_spy_t *self);
+uint32_t apx_client_event_listener_spy_get_disconnect_count(apx_client_event_listener_spy_t *self);
+uint32_t apx_client_event_listener_spy_get_header_accepted(apx_client_event_listener_spy_t *self);
 
 #endif //APX_CLIENT_EVENT_LISTENER_SPY_H

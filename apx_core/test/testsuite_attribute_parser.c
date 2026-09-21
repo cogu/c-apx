@@ -66,7 +66,7 @@ static void test_parse_port_attribute_parameter(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 
 
-CuSuite* testsuite_apx_attributesParser(void)
+CuSuite* testsuite_apx_attributes_parser(void)
 {
    CuSuite* suite = CuSuiteNew();
 
@@ -106,8 +106,8 @@ static void test_parse_init_value_zero(CuTest* tc)
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
@@ -117,7 +117,7 @@ static void test_parse_init_value_zero(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_minus_one(CuTest* tc)
@@ -131,13 +131,13 @@ static void test_parse_init_value_minus_one(CuTest* tc)
    bool ok = false;
    uint8_t const* result;
 
-   apx_attributeParser_create(&parser);
-   result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, NULL, result);
-   CuAssertIntEquals(tc, APX_PARSE_ERROR, apx_attributeParser_get_last_error(&parser, NULL));
+   CuAssertIntEquals(tc, APX_PARSE_ERROR, apx_attribute_parser_get_last_error(&parser, NULL));
    begin = (const uint8_t*)init_value2;
    end = begin + strlen(init_value2);
-   result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
@@ -147,7 +147,7 @@ static void test_parse_init_value_minus_one(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_uint32_max(CuTest* tc)
@@ -159,8 +159,8 @@ static void test_parse_init_value_uint32_max(CuTest* tc)
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
@@ -170,7 +170,7 @@ static void test_parse_init_value_uint32_max(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_int32_min(CuTest* tc)
@@ -182,8 +182,8 @@ static void test_parse_init_value_int32_min(CuTest* tc)
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
@@ -193,7 +193,7 @@ static void test_parse_init_value_int32_min(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_int32_max(CuTest* tc)
@@ -205,8 +205,8 @@ static void test_parse_init_value_int32_max(CuTest* tc)
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
@@ -216,7 +216,7 @@ static void test_parse_init_value_int32_max(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_int32_list(CuTest* tc)
@@ -228,8 +228,8 @@ static void test_parse_init_value_int32_list(CuTest* tc)
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
@@ -245,7 +245,7 @@ static void test_parse_init_value_int32_list(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_empty_list(CuTest* tc)
@@ -256,8 +256,8 @@ static void test_parse_init_value_empty_list(CuTest* tc)
    apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
@@ -265,7 +265,7 @@ static void test_parse_init_value_empty_list(CuTest* tc)
    CuAssertTrue(tc, dtl_av_is_empty(av));
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 
 }
 
@@ -278,8 +278,8 @@ static void test_parse_init_value_int32_lists_in_list(CuTest* tc)
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_ARRAY, dtl_dv_type(dv));
@@ -319,7 +319,7 @@ static void test_parse_init_value_int32_lists_in_list(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_empty_string(CuTest* tc)
@@ -331,8 +331,8 @@ static void test_parse_init_value_empty_string(CuTest* tc)
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
@@ -344,7 +344,7 @@ static void test_parse_init_value_empty_string(CuTest* tc)
 
    adt_str_delete(tmp);
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_string_literal(CuTest* tc)
@@ -356,8 +356,8 @@ static void test_parse_init_value_string_literal(CuTest* tc)
    dtl_dv_t* dv = NULL;
    bool ok = false;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertPtrNotNull(tc, dv);
    CuAssertIntEquals(tc, DTL_DV_SCALAR, dtl_dv_type(dv));
@@ -369,7 +369,7 @@ static void test_parse_init_value_string_literal(CuTest* tc)
 
    adt_str_delete(tmp);
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_init_value_with_stray_characters(CuTest* tc)
@@ -380,13 +380,13 @@ static void test_parse_init_value_with_stray_characters(CuTest* tc)
    apx_attribute_parser_t parser;
    dtl_dv_t* dv = NULL;
 
-   apx_attributeParser_create(&parser);
-   uint8_t const* result = apx_attributeParser_parse_initializer(&parser, begin, end, &dv);
+   apx_attribute_parser_create(&parser);
+   uint8_t const* result = apx_attribute_parser_parse_initializer(&parser, begin, end, &dv);
    CuAssertConstPtrEquals(tc, end-2, result);
    CuAssertPtrNotNull(tc, dv);
 
    dtl_dec_ref(dv);
-   apx_attributeParser_destroy(&parser);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_type_attribute_default_value_table(CuTest* tc)
@@ -400,28 +400,28 @@ static void test_parse_type_attribute_default_value_table(CuTest* tc)
    apx_value_table_t* vt = NULL;
    adt_str_t* str = NULL;
 
-   apx_attributeParser_create(&parser);
-   apx_typeAttributes_create(&attr);
-   result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
+   apx_attribute_parser_create(&parser);
+   apx_type_attributes_create(&attr);
+   result = apx_attribute_parser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
-   CuAssertIntEquals(tc, 1, apx_typeAttributes_num_computations(&attr));
-   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 0);
+   CuAssertIntEquals(tc, 1, apx_type_attributes_num_computations(&attr));
+   vt = (apx_value_table_t*)apx_type_attributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, vt);
-   CuAssertIntEquals(tc, 4, apx_valueTable_length(vt));
+   CuAssertIntEquals(tc, 4, apx_value_table_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
    CuAssertIntEquals(tc, 0, vt->base.lower_limit.u32);
    CuAssertIntEquals(tc, 3, vt->base.upper_limit.u32);
-   str = apx_valueTable_get_value(vt, 0);
+   str = apx_value_table_get_value(vt, 0);
    CuAssertStrEquals(tc, "OnOff_Off", adt_str_cstr(str));
-   str = apx_valueTable_get_value(vt, 1);
+   str = apx_value_table_get_value(vt, 1);
    CuAssertStrEquals(tc, "OnOff_On", adt_str_cstr(str));
-   str = apx_valueTable_get_value(vt, 2);
+   str = apx_value_table_get_value(vt, 2);
    CuAssertStrEquals(tc, "OnOff_Error", adt_str_cstr(str));
-   str = apx_valueTable_get_value(vt, 3);
+   str = apx_value_table_get_value(vt, 3);
    CuAssertStrEquals(tc, "OnOff_NotAvailable", adt_str_cstr(str));
 
-   apx_typeAttributes_destroy(&attr);
-   apx_attributeParser_destroy(&parser);
+   apx_type_attributes_destroy(&attr);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_type_attribute_value_table_with_offset(CuTest* tc)
@@ -434,20 +434,20 @@ static void test_parse_type_attribute_value_table_with_offset(CuTest* tc)
    apx_type_attributes_t attr;
    apx_value_table_t* vt = NULL;
 
-   apx_attributeParser_create(&parser);
-   apx_typeAttributes_create(&attr);
-   result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
+   apx_attribute_parser_create(&parser);
+   apx_type_attributes_create(&attr);
+   result = apx_attribute_parser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
-   CuAssertIntEquals(tc, 1, apx_typeAttributes_num_computations(&attr));
-   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 0);
+   CuAssertIntEquals(tc, 1, apx_type_attributes_num_computations(&attr));
+   vt = (apx_value_table_t*)apx_type_attributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, vt);
-   CuAssertIntEquals(tc, 4, apx_valueTable_length(vt));
+   CuAssertIntEquals(tc, 4, apx_value_table_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
    CuAssertIntEquals(tc, 4, vt->base.lower_limit.u32);
    CuAssertIntEquals(tc, 7, vt->base.upper_limit.u32);
 
-   apx_typeAttributes_destroy(&attr);
-   apx_attributeParser_destroy(&parser);
+   apx_type_attributes_destroy(&attr);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_type_attribute_value_table_with_negative_range(CuTest* tc)
@@ -461,29 +461,29 @@ static void test_parse_type_attribute_value_table_with_negative_range(CuTest* tc
    apx_value_table_t* vt = NULL;
    adt_str_t* str = NULL;
 
-   apx_attributeParser_create(&parser);
-   apx_typeAttributes_create(&attr);
-   result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
+   apx_attribute_parser_create(&parser);
+   apx_type_attributes_create(&attr);
+   result = apx_attribute_parser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
-   CuAssertIntEquals(tc, 1, apx_typeAttributes_num_computations(&attr));
-   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 0);
+   CuAssertIntEquals(tc, 1, apx_type_attributes_num_computations(&attr));
+   vt = (apx_value_table_t*)apx_type_attributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, vt);
-   CuAssertIntEquals(tc, 4, apx_valueTable_length(vt));
+   CuAssertIntEquals(tc, 4, apx_value_table_length(vt));
    CuAssertTrue(tc, vt->base.is_signed_range);
    CuAssertIntEquals(tc, -3, vt->base.lower_limit.i32);
    CuAssertIntEquals(tc, 0, vt->base.upper_limit.i32);
 
-   str = apx_valueTable_get_value(vt, 0);
+   str = apx_value_table_get_value(vt, 0);
    CuAssertStrEquals(tc, "ErrorCode3", adt_str_cstr(str));
-   str = apx_valueTable_get_value(vt, 1);
+   str = apx_value_table_get_value(vt, 1);
    CuAssertStrEquals(tc, "ErrorCode2", adt_str_cstr(str));
-   str = apx_valueTable_get_value(vt, 2);
+   str = apx_value_table_get_value(vt, 2);
    CuAssertStrEquals(tc, "ErrorCode1", adt_str_cstr(str));
-   str = apx_valueTable_get_value(vt, 3);
+   str = apx_value_table_get_value(vt, 3);
    CuAssertStrEquals(tc, "NoError", adt_str_cstr(str));
 
-   apx_typeAttributes_destroy(&attr);
-   apx_attributeParser_destroy(&parser);
+   apx_type_attributes_destroy(&attr);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_type_attribute_value_table_ranges(CuTest* tc)
@@ -497,31 +497,31 @@ static void test_parse_type_attribute_value_table_ranges(CuTest* tc)
    apx_value_table_t* vt = NULL;
    adt_str_t* str = NULL;
 
-   apx_attributeParser_create(&parser);
-   apx_typeAttributes_create(&attr);
-   result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
+   apx_attribute_parser_create(&parser);
+   apx_type_attributes_create(&attr);
+   result = apx_attribute_parser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
-   CuAssertIntEquals(tc, 2, apx_typeAttributes_num_computations(&attr));
-   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 0);
+   CuAssertIntEquals(tc, 2, apx_type_attributes_num_computations(&attr));
+   vt = (apx_value_table_t*)apx_type_attributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, vt);
-   CuAssertIntEquals(tc, 1, apx_valueTable_length(vt));
+   CuAssertIntEquals(tc, 1, apx_value_table_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
    CuAssertIntEquals(tc, 251, vt->base.lower_limit.u32);
    CuAssertIntEquals(tc, 254, vt->base.upper_limit.u32);
-   str = apx_valueTable_get_value(vt, 0);
+   str = apx_value_table_get_value(vt, 0);
    CuAssertStrEquals(tc, "Error", adt_str_cstr(str));
 
-   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 1);
+   vt = (apx_value_table_t*)apx_type_attributes_get_computation(&attr, 1);
    CuAssertPtrNotNull(tc, vt);
-   CuAssertIntEquals(tc, 1, apx_valueTable_length(vt));
+   CuAssertIntEquals(tc, 1, apx_value_table_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
    CuAssertIntEquals(tc, 255, vt->base.lower_limit.u32);
    CuAssertIntEquals(tc, 255, vt->base.upper_limit.u32);
-   str = apx_valueTable_get_value(vt, 0);
+   str = apx_value_table_get_value(vt, 0);
    CuAssertStrEquals(tc, "NotAvailable", adt_str_cstr(str));
 
-   apx_typeAttributes_destroy(&attr);
-   apx_attributeParser_destroy(&parser);
+   apx_type_attributes_destroy(&attr);
+   apx_attribute_parser_destroy(&parser);
 
 }
 
@@ -535,13 +535,13 @@ static void test_parse_type_attribute_rational_scaling_vehicle_speed(CuTest* tc)
    apx_type_attributes_t attr;
    apx_rational_scaling_t* rs = NULL;
 
-   apx_attributeParser_create(&parser);
-   apx_typeAttributes_create(&attr);
-   result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
+   apx_attribute_parser_create(&parser);
+   apx_type_attributes_create(&attr);
+   result = apx_attribute_parser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
-   CuAssertIntEquals(tc, 1, apx_typeAttributes_num_computations(&attr));
+   CuAssertIntEquals(tc, 1, apx_type_attributes_num_computations(&attr));
 
-   rs = (apx_rational_scaling_t*)apx_typeAttributes_get_computation(&attr, 0);
+   rs = (apx_rational_scaling_t*)apx_type_attributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, rs);
    CuAssertFalse(tc, rs->base.is_signed_range);
    CuAssertIntEquals(tc, 0u, rs->base.lower_limit.u32);
@@ -551,8 +551,8 @@ static void test_parse_type_attribute_rational_scaling_vehicle_speed(CuTest* tc)
    CuAssertIntEquals(tc, 64, rs->denominator);
    CuAssertStrEquals(tc, "km/h", rs->unit);
 
-   apx_typeAttributes_destroy(&attr);
-   apx_attributeParser_destroy(&parser);
+   apx_type_attributes_destroy(&attr);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_combined_type_attributes(CuTest* tc)
@@ -567,13 +567,13 @@ static void test_parse_combined_type_attributes(CuTest* tc)
    apx_value_table_t* vt = NULL;
    adt_str_t* str = NULL;
 
-   apx_attributeParser_create(&parser);
-   apx_typeAttributes_create(&attr);
-   result = apx_attributeParser_parse_type_attributes(&parser, begin, end, &attr);
+   apx_attribute_parser_create(&parser);
+   apx_type_attributes_create(&attr);
+   result = apx_attribute_parser_parse_type_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
-   CuAssertIntEquals(tc, 3, apx_typeAttributes_num_computations(&attr));
+   CuAssertIntEquals(tc, 3, apx_type_attributes_num_computations(&attr));
 
-   rs = (apx_rational_scaling_t*)apx_typeAttributes_get_computation(&attr, 0);
+   rs = (apx_rational_scaling_t*)apx_type_attributes_get_computation(&attr, 0);
    CuAssertPtrNotNull(tc, rs);
    CuAssertFalse(tc, rs->base.is_signed_range);
    CuAssertIntEquals(tc, 0u, rs->base.lower_limit.u32);
@@ -583,26 +583,26 @@ static void test_parse_combined_type_attributes(CuTest* tc)
    CuAssertIntEquals(tc, 64, rs->denominator);
    CuAssertStrEquals(tc, "km/h", rs->unit);
 
-   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 1);
+   vt = (apx_value_table_t*)apx_type_attributes_get_computation(&attr, 1);
    CuAssertPtrNotNull(tc, vt);
-   CuAssertIntEquals(tc, 1, apx_valueTable_length(vt));
+   CuAssertIntEquals(tc, 1, apx_value_table_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
    CuAssertIntEquals(tc, 0xFE00u, vt->base.lower_limit.u32);
    CuAssertIntEquals(tc, 0xFEFFu, vt->base.upper_limit.u32);
-   str = apx_valueTable_get_value(vt, 0);
+   str = apx_value_table_get_value(vt, 0);
    CuAssertStrEquals(tc, "Error", adt_str_cstr(str));
 
-   vt = (apx_value_table_t*)apx_typeAttributes_get_computation(&attr, 2);
+   vt = (apx_value_table_t*)apx_type_attributes_get_computation(&attr, 2);
    CuAssertPtrNotNull(tc, vt);
-   CuAssertIntEquals(tc, 1, apx_valueTable_length(vt));
+   CuAssertIntEquals(tc, 1, apx_value_table_length(vt));
    CuAssertFalse(tc, vt->base.is_signed_range);
    CuAssertIntEquals(tc, 0xFF00u, vt->base.lower_limit.u32);
    CuAssertIntEquals(tc, 0xFFFFu, vt->base.upper_limit.u32);
-   str = apx_valueTable_get_value(vt, 0);
+   str = apx_value_table_get_value(vt, 0);
    CuAssertStrEquals(tc, "NotAvailable", adt_str_cstr(str));
 
-   apx_typeAttributes_destroy(&attr);
-   apx_attributeParser_destroy(&parser);
+   apx_type_attributes_destroy(&attr);
+   apx_attribute_parser_destroy(&parser);
 
 }
 
@@ -616,16 +616,16 @@ static void test_parse_port_attribute_queue_length(CuTest* tc)
    apx_port_attributes_t attr;
    uint8_t const* result = NULL;
 
-   apx_attributeParser_create(&parser);
-   apx_portAttributes_create(&attr);
+   apx_attribute_parser_create(&parser);
+   apx_port_attributes_create(&attr);
 
-   result = apx_attributeParser_parse_port_attributes(&parser, begin, end, &attr);
+   result = apx_attribute_parser_parse_port_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertFalse(tc, attr.is_parameter);
    CuAssertUIntEquals(tc, 10u, attr.queue_length);
 
-   apx_portAttributes_destroy(&attr);
-   apx_attributeParser_destroy(&parser);
+   apx_port_attributes_destroy(&attr);
+   apx_attribute_parser_destroy(&parser);
 }
 
 static void test_parse_port_attribute_parameter(CuTest* tc)
@@ -638,14 +638,14 @@ static void test_parse_port_attribute_parameter(CuTest* tc)
    apx_port_attributes_t attr;
    uint8_t const* result = NULL;
 
-   apx_attributeParser_create(&parser);
-   apx_portAttributes_create(&attr);
+   apx_attribute_parser_create(&parser);
+   apx_port_attributes_create(&attr);
 
-   result = apx_attributeParser_parse_port_attributes(&parser, begin, end, &attr);
+   result = apx_attribute_parser_parse_port_attributes(&parser, begin, end, &attr);
    CuAssertConstPtrEquals(tc, end, result);
    CuAssertTrue(tc, attr.is_parameter);
 
-   apx_portAttributes_destroy(&attr);
-   apx_attributeParser_destroy(&parser);
+   apx_port_attributes_destroy(&attr);
+   apx_attribute_parser_destroy(&parser);
 
 }

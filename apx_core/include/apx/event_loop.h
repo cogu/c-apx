@@ -48,18 +48,18 @@ typedef struct apx_event_loop_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_eventLoop_create(apx_event_loop_t *self);
-void apx_eventLoop_destroy(apx_event_loop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
-apx_event_loop_t *apx_eventLoop_new(void);
-void apx_eventLoop_delete(apx_event_loop_t *self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
-//void apx_eventLoop_setEventHandler(apx_event_loop_t *self, apx_event_handler_func_t *eventHandler, void *eventHandlerArg);
+apx_error_t apx_event_loop_create(apx_event_loop_t *self);
+void apx_event_loop_destroy(apx_event_loop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
+apx_event_loop_t *apx_event_loop_new(void);
+void apx_event_loop_delete(apx_event_loop_t *self, void (*destructor)(void*, apx_event_t*), void* destructor_arg);
+//void apx_event_loop_set_event_handler(apx_event_loop_t *self, apx_event_handler_func_t *event_handler, void *event_handler_arg);
 //External events (handler implemented in this class)
-void apx_eventLoop_append(apx_event_loop_t *self, apx_event_t *event);
-void apx_eventLoop_run(apx_event_loop_t *self, apx_event_handler_func_t *eventHandler, void *eventHandlerArg);
-void apx_eventLoop_exit(apx_event_loop_t *self);
-uint16_t apx_eventLoop_numPendingEvents(apx_event_loop_t *self);
+void apx_event_loop_append(apx_event_loop_t *self, apx_event_t *event);
+void apx_event_loop_run(apx_event_loop_t *self, apx_event_handler_func_t *event_handler, void *event_handler_arg);
+void apx_event_loop_exit(apx_event_loop_t *self);
+uint16_t apx_event_loop_num_pending_events(apx_event_loop_t *self);
 #ifdef UNIT_TEST
-void apx_eventLoop_runAll(apx_event_loop_t *self, apx_event_handler_func_t *eventHandler, void *eventHandlerArg);
+void apx_event_loop_run_all(apx_event_loop_t *self, apx_event_handler_func_t *event_handler, void *event_handler_arg);
 #endif
 
 #endif //APX_EVENT_LOOP_H

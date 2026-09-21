@@ -38,13 +38,13 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 /*
-void apx_textLogVTable_init(apx_connection_base_vtable_t *self, void (*destructor)(void *arg))
+void apx_text_log_vtable_init(apx_connection_base_vtable_t *self, void (*destructor)(void *arg))
 {
 
 }
 */
 
-void apx_textLogBase_create(apx_text_log_base_t *self)
+void apx_text_log_base_create(apx_text_log_base_t *self)
 {
    if (self != NULL)
    {
@@ -57,7 +57,7 @@ void apx_textLogBase_create(apx_text_log_base_t *self)
    }
 }
 
-void apx_textLogBase_destroy(apx_text_log_base_t *self)
+void apx_text_log_base_destroy(apx_text_log_base_t *self)
 {
    if (self != NULL)
    {
@@ -70,7 +70,7 @@ void apx_textLogBase_destroy(apx_text_log_base_t *self)
    }
 }
 
-void apx_textLogBase_enableSysLog(apx_text_log_base_t *self, const char *label)
+void apx_text_log_base_enable_sys_log(apx_text_log_base_t *self, const char *label)
 {
    if ( (self != NULL) && (label != NULL))
    {
@@ -82,7 +82,7 @@ void apx_textLogBase_enableSysLog(apx_text_log_base_t *self, const char *label)
    }
 }
 
-void apx_textLogBase_enableStdout(apx_text_log_base_t *self)
+void apx_text_log_base_enable_stdout(apx_text_log_base_t *self)
 {
    if (self != NULL)
    {
@@ -91,7 +91,7 @@ void apx_textLogBase_enableStdout(apx_text_log_base_t *self)
    }
 }
 
-void apx_textLogBase_enableFile(apx_text_log_base_t *self, const char *path)
+void apx_text_log_base_enable_file(apx_text_log_base_t *self, const char *path)
 {
    if (self != NULL)
    {
@@ -104,7 +104,7 @@ void apx_textLogBase_enableFile(apx_text_log_base_t *self, const char *path)
    }
 }
 
-void apx_textLogBase_closeAll(apx_text_log_base_t *self)
+void apx_text_log_base_close_all(apx_text_log_base_t *self)
 {
    if (self != NULL)
    {
@@ -128,7 +128,7 @@ void apx_textLogBase_closeAll(apx_text_log_base_t *self)
    }
 }
 
-void apx_textLogBase_print(apx_text_log_base_t *self, const char *msg)
+void apx_text_log_base_print(apx_text_log_base_t *self, const char *msg)
 {
    if ( (self != NULL) && (msg != NULL))
    {
@@ -141,7 +141,7 @@ void apx_textLogBase_print(apx_text_log_base_t *self, const char *msg)
    }
 }
 
-void apx_textLogBase_printf(apx_text_log_base_t *self, const char *format, ...)
+void apx_text_log_base_printf(apx_text_log_base_t *self, const char *format, ...)
 {
    va_list args;
    va_start (args, format);

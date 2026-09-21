@@ -35,12 +35,12 @@ typedef struct apx_connection_event_spy_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_connectionEventSpy_create(apx_connection_event_spy_t *self);
-void apx_connectionEventSpy_destroy(apx_connection_event_spy_t *self);
-void apx_connectionEventSpy_register(apx_connection_event_spy_t *self, apx_connection_base_t *connection);
+void apx_connection_event_spy_create(apx_connection_event_spy_t *self);
+void apx_connection_event_spy_destroy(apx_connection_event_spy_t *self);
+void apx_connection_event_spy_register(apx_connection_event_spy_t *self, apx_connection_base_t *connection);
 
-void apx_connectionEventSpy_headerAccepted(void *arg, apx_connection_base_t *connection);
-void apx_connectionEventSpy_fileCreate(void *arg, apx_connection_base_t *connection, const apx_file_info_t *fileInfo);
+void apx_connection_event_spy_header_accepted(void *arg, apx_connection_base_t *connection);
+void apx_connection_event_spy_file_create(void *arg, apx_connection_base_t *connection, const apx_file_info_t *file_info);
 
 
 

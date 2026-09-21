@@ -210,12 +210,12 @@ static apx_error_t compile_data_element(apx_compiler_t* self, apx_data_element_t
       apx_error_t retval = APX_NO_ERROR;
       uint8_t limit_check_variant = APX_VM_VARIANT_LIMIT_CHECK_NONE;
       uint8_t data_variant = 0u;
-      uint32_t const array_length = apx_dataElement_get_array_length(data_element);
+      uint32_t const array_length = apx_data_element_get_array_length(data_element);
       bool const is_array = array_length > 0u;
-      bool const is_dynamic_array = apx_dataElement_is_dynamic_array(data_element);
-      bool const has_limits = apx_dataElement_has_limits(data_element);
+      bool const is_dynamic_array = apx_data_element_is_dynamic_array(data_element);
+      bool const has_limits = apx_data_element_has_limits(data_element);
       bool const is_pack_prog = (program_type == APX_PACK_PROGRAM) ? true : false;
-      apx_type_code_t const type_code = apx_dataElement_get_type_code(data_element);
+      apx_type_code_t const type_code = apx_data_element_get_type_code(data_element);
       bool is_signed_type = false;
       bool is_64_bit_type = false;
       bool is_record = false;
@@ -407,7 +407,7 @@ static apx_error_t compile_limit_instruction(apx_compiler_t* self, apx_data_elem
          if (is_signed_type)
          {
             int64_t lower_limit, upper_limit;
-            if (apx_dataElement_get_limits_int64(data_element, &lower_limit, &upper_limit))
+            if (apx_data_element_get_limits_int64(data_element, &lower_limit, &upper_limit))
             {
                retval = compile_limit_values_int64(self, limit_variant, lower_limit, upper_limit);
             }
@@ -419,7 +419,7 @@ static apx_error_t compile_limit_instruction(apx_compiler_t* self, apx_data_elem
          else
          {
             uint64_t lower_limit, upper_limit;
-            if (apx_dataElement_get_limits_uint64(data_element, &lower_limit, &upper_limit))
+            if (apx_data_element_get_limits_uint64(data_element, &lower_limit, &upper_limit))
             {
                retval = compile_limit_values_uint64(self, limit_variant, lower_limit, upper_limit);
             }
@@ -434,7 +434,7 @@ static apx_error_t compile_limit_instruction(apx_compiler_t* self, apx_data_elem
          if (is_signed_type)
          {
             int32_t lower_limit, upper_limit;
-            if (apx_dataElement_get_limits_int32(data_element, &lower_limit, &upper_limit))
+            if (apx_data_element_get_limits_int32(data_element, &lower_limit, &upper_limit))
             {
                retval = compile_limit_values_int32(self, limit_variant, lower_limit, upper_limit);
             }
@@ -446,7 +446,7 @@ static apx_error_t compile_limit_instruction(apx_compiler_t* self, apx_data_elem
          else
          {
             uint32_t lower_limit, upper_limit;
-            if (apx_dataElement_get_limits_uint32(data_element, &lower_limit, &upper_limit))
+            if (apx_data_element_get_limits_uint32(data_element, &lower_limit, &upper_limit))
             {
                retval = compile_limit_values_uint32(self, limit_variant, lower_limit, upper_limit);
             }
@@ -621,8 +621,8 @@ static apx_error_t compile_record_fields(apx_compiler_t* self, apx_data_element_
 {
    assert( (self != NULL) && (data_element != NULL) && (record_size != NULL) );
    int32_t i;
-   int32_t num_children = apx_dataElement_get_num_child_elements(data_element);
-   if (apx_dataElement_get_type_code(data_element) != APX_TYPE_CODE_RECORD)
+   int32_t num_children = apx_data_element_get_num_child_elements(data_element);
+   if (apx_data_element_get_type_code(data_element) != APX_TYPE_CODE_RECORD)
    {
       return APX_ELEMENT_TYPE_ERROR;
    }
@@ -634,7 +634,7 @@ static apx_error_t compile_record_fields(apx_compiler_t* self, apx_data_element_
    for (i = 0u; i < num_children; i++)
    {
       uint32_t child_size = 0u;
-      apx_data_element_t const* child_element = apx_dataElement_get_child_at(data_element, i);
+      apx_data_element_t const* child_element = apx_data_element_get_child_at(data_element, i);
       assert(child_element != NULL);
       result = compile_record_select_instruction(self, child_element, (i==0u) ? true : false);
       if (result != APX_NO_ERROR)
@@ -642,7 +642,7 @@ static apx_error_t compile_record_fields(apx_compiler_t* self, apx_data_element_
          return result;
       }
       apx_data_element_t* derived_element = NULL;
-      result = apx_dataElement_derive_data_element(child_element, &derived_element, NULL);
+      result = apx_data_element_derive_data_element(child_element, &derived_element, NULL);
       if (result != APX_NO_ERROR)
       {
          return result;
@@ -670,7 +670,7 @@ static apx_error_t compile_record_fields(apx_compiler_t* self, apx_data_element_
 static apx_error_t compile_record_select_instruction(apx_compiler_t* self, apx_data_element_t const* data_element, bool const is_first_field)
 {
    assert((self != NULL) && (data_element != NULL));
-   char const* name = apx_dataElement_get_name(data_element);
+   char const* name = apx_data_element_get_name(data_element);
    adt_error_t rc = ADT_NO_ERROR;
    size_t name_size = 0u;
    if (name == NULL )

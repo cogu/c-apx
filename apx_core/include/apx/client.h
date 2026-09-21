@@ -76,11 +76,11 @@ void apx_client_delete(apx_client_t *self);
 void apx_client_vdelete(void *arg);
 
 #ifdef UNIT_TEST
-apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_tag *socketObject);
+apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_tag *socket_object);
 #else
 apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint16_t port);
 # ifndef _WIN32
-apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socketPath);
+apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socket_path);
 # endif
 #endif
 void apx_client_disconnect(apx_client_t *self);
@@ -106,15 +106,15 @@ apx_port_instance_t* apx_client_get_require_port_instance_by_id(apx_client_t *se
 
 /*** Port Data Write API ***/
 apx_error_t apx_client_write_port_data(apx_client_t *self, apx_port_instance_t* port_instance, const dtl_dv_t *value);
-//apx_error_t apx_client_writePortData_u8(apx_client_t *self, void *portHandle, uint8_t value);
-//apx_error_t apx_client_writePortData_u16(apx_client_t *self, void *portHandle, uint16_t value);
-//apx_error_t apx_client_writePortData_u32(apx_client_t *self, void *portHandle, uint32_t value);
+//apx_error_t apx_client_write_port_data_u8(apx_client_t *self, void *portHandle, uint8_t value);
+//apx_error_t apx_client_write_port_data_u16(apx_client_t *self, void *portHandle, uint16_t value);
+//apx_error_t apx_client_write_port_data_u32(apx_client_t *self, void *portHandle, uint32_t value);
 
 /*** Port Data Read API ***/
 apx_error_t apx_client_read_port_data(apx_client_t *self, apx_port_instance_t* port_instance, dtl_dv_t **dv);
-//apx_error_t apx_client_readPortData_u8(apx_client_t *self, void *portHandle, uint8_t *value);
-//apx_error_t apx_client_readPortData_u16(apx_client_t *self, void *portHandle, uint16_t *value);
-//apx_error_t apx_client_readPortData_u32(apx_client_t *self, void *portHandle, uint32_t *value);
+//apx_error_t apx_client_read_port_data_u8(apx_client_t *self, void *portHandle, uint8_t *value);
+//apx_error_t apx_client_read_port_data_u16(apx_client_t *self, void *portHandle, uint16_t *value);
+//apx_error_t apx_client_read_port_data_u32(apx_client_t *self, void *portHandle, uint32_t *value);
 
 #ifdef UNIT_TEST
 void apx_client_run(apx_client_t *self);

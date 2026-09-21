@@ -35,7 +35,7 @@ static apx_error_t decode_record_end(apx_program_decoder_t* self);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_programDecoder_create(apx_program_decoder_t* self)
+void apx_program_decoder_create(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -62,7 +62,7 @@ void apx_programDecoder_create(apx_program_decoder_t* self)
    }
 }
 
-void apx_programDecoder_destroy(apx_program_decoder_t* self)
+void apx_program_decoder_destroy(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -70,7 +70,7 @@ void apx_programDecoder_destroy(apx_program_decoder_t* self)
    }
 }
 
-apx_error_t apx_programDecoder_select_program(apx_program_decoder_t* self, uint8_t const* data, uint32_t size)
+apx_error_t apx_program_decoder_select_program(apx_program_decoder_t* self, uint8_t const* data, uint32_t size)
 {
    if ( (self != NULL) && (data != NULL) )
    {
@@ -98,7 +98,7 @@ apx_error_t apx_programDecoder_select_program(apx_program_decoder_t* self, uint8
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_programDecoder_parse_program_header(apx_program_decoder_t* self, apx_program_header_t* header)
+apx_error_t apx_program_decoder_parse_program_header(apx_program_decoder_t* self, apx_program_header_t* header)
 {
    if ( (self == NULL) || (header == NULL) )
    {
@@ -206,7 +206,7 @@ apx_error_t apx_programDecoder_parse_program_header(apx_program_decoder_t* self,
    return APX_NO_ERROR;
 }
 
-apx_error_t apx_programDecoder_parse_next_operation(apx_program_decoder_t* self, apx_operation_type_t* operation_type)
+apx_error_t apx_program_decoder_parse_next_operation(apx_program_decoder_t* self, apx_operation_type_t* operation_type)
 {
    if ( (self != NULL) && (operation_type != NULL) )
    {
@@ -236,7 +236,7 @@ apx_error_t apx_programDecoder_parse_next_operation(apx_program_decoder_t* self,
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_programDecoder_get_pack_unpack_info(apx_program_decoder_t const* self, apx_pack_unpack_operation_info_t* info)
+void apx_program_decoder_get_pack_unpack_info(apx_program_decoder_t const* self, apx_pack_unpack_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -244,7 +244,7 @@ void apx_programDecoder_get_pack_unpack_info(apx_program_decoder_t const* self, 
    }
 }
 
-void apx_programDecoder_range_check_info_int32(apx_program_decoder_t const* self, apx_range_check_int32_operation_info_t* info)
+void apx_program_decoder_range_check_info_int32(apx_program_decoder_t const* self, apx_range_check_int32_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -252,7 +252,7 @@ void apx_programDecoder_range_check_info_int32(apx_program_decoder_t const* self
    }
 }
 
-void apx_programDecoder_range_check_info_uint32(apx_program_decoder_t const* self, apx_range_check_uint32_operation_info_t* info)
+void apx_program_decoder_range_check_info_uint32(apx_program_decoder_t const* self, apx_range_check_uint32_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -260,7 +260,7 @@ void apx_programDecoder_range_check_info_uint32(apx_program_decoder_t const* sel
    }
 }
 
-void apx_programDecoder_range_check_info_int64(apx_program_decoder_t const* self, apx_range_check_int64_operation_info_t* info)
+void apx_program_decoder_range_check_info_int64(apx_program_decoder_t const* self, apx_range_check_int64_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -268,7 +268,7 @@ void apx_programDecoder_range_check_info_int64(apx_program_decoder_t const* self
    }
 }
 
-void apx_programDecoder_range_check_info_uint64(apx_program_decoder_t const* self, apx_range_check_uint64_operation_info_t* info)
+void apx_program_decoder_range_check_info_uint64(apx_program_decoder_t const* self, apx_range_check_uint64_operation_info_t* info)
 {
    if ( (self != NULL) && (info != NULL) )
    {
@@ -276,7 +276,7 @@ void apx_programDecoder_range_check_info_uint64(apx_program_decoder_t const* sel
    }
 }
 
-char const* apx_programDecoder_get_field_name(apx_program_decoder_t* self)
+char const* apx_program_decoder_get_field_name(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -285,7 +285,7 @@ char const* apx_programDecoder_get_field_name(apx_program_decoder_t* self)
    return NULL;
 }
 
-void apx_programDecoder_save_program_position(apx_program_decoder_t* self)
+void apx_program_decoder_save_program_position(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -296,7 +296,7 @@ void apx_programDecoder_save_program_position(apx_program_decoder_t* self)
    }
 }
 
-void apx_programDecoder_recall_program_position(apx_program_decoder_t* self)
+void apx_program_decoder_recall_program_position(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -307,7 +307,7 @@ void apx_programDecoder_recall_program_position(apx_program_decoder_t* self)
    }
 }
 
-bool apx_programDecoder_has_saved_program_position(apx_program_decoder_t* self)
+bool apx_program_decoder_has_saved_program_position(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -316,7 +316,7 @@ bool apx_programDecoder_has_saved_program_position(apx_program_decoder_t* self)
    return false;
 }
 
-bool apx_programDecoder_is_first_field(apx_program_decoder_t* self)
+bool apx_program_decoder_is_first_field(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {
@@ -325,7 +325,7 @@ bool apx_programDecoder_is_first_field(apx_program_decoder_t* self)
    return false;
 }
 
-bool apx_programDecoder_is_array_limit(apx_program_decoder_t* self)
+bool apx_program_decoder_is_array_limit(apx_program_decoder_t* self)
 {
    if (self != NULL)
    {

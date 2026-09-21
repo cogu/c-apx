@@ -49,7 +49,7 @@ void apx_port_create(apx_port_t* self, apx_port_type_t port_type, const char* na
       self->port_id = APX_INVALID_PORT_ID;
       self->line_number = line_number;
       self->name = (name != NULL) ? STRDUP(name) : 0;
-      apx_dataSignature_create(&self->data_signature);
+      apx_data_signature_create(&self->data_signature);
       self->attributes = NULL;
       self->proper_init_value = NULL;
    }
@@ -59,7 +59,7 @@ void apx_port_destroy(apx_port_t* self)
 {
    if (self != NULL)
    {
-      apx_dataSignature_destroy(&self->data_signature);
+      apx_data_signature_destroy(&self->data_signature);
       if (self->name != NULL)
       {
          free(self->name);
@@ -70,7 +70,7 @@ void apx_port_destroy(apx_port_t* self)
       }
       if (self->attributes != NULL)
       {
-         apx_portAttributes_delete(self->attributes);
+         apx_port_attributes_delete(self->attributes);
       }
    }
 }
@@ -139,7 +139,7 @@ apx_error_t apx_port_init_attributes(apx_port_t* self)
 {
    if ((self != NULL) && (self->attributes == NULL))
    {
-      self->attributes = apx_portAttributes_new();
+      self->attributes = apx_port_attributes_new();
       if (self->attributes == NULL)
       {
          return APX_MEM_ERROR;
@@ -154,12 +154,12 @@ apx_type_attributes_t* apx_port_get_referenced_type_attributes(apx_port_t const*
    {
       apx_data_element_t* data_element = apx_port_get_data_element(self);
       assert(data_element != NULL);
-      apx_type_code_t type_code = apx_dataElement_get_type_code(data_element);
+      apx_type_code_t type_code = apx_data_element_get_type_code(data_element);
       if (type_code == APX_TYPE_CODE_REF_PTR)
       {
-         apx_data_type_t* data_type = apx_dataElement_get_type_ref_ptr(data_element);
+         apx_data_type_t* data_type = apx_data_element_get_type_ref_ptr(data_element);
          assert(data_type != NULL);
-         return apx_dataType_get_attributes(data_type);
+         return apx_data_type_get_attributes(data_type);
       }
    }
    return NULL;
@@ -172,7 +172,7 @@ apx_error_t apx_port_derive_types(apx_port_t* self, adt_ary_t const* type_list, 
    {
       return APX_NULL_PTR_ERROR;
    }
-   return apx_dataElement_derive_types_on_element(data_element, type_list, type_map);
+   return apx_data_element_derive_types_on_element(data_element, type_list, type_map);
 }
 
 apx_error_t apx_port_derive_proper_init_value(apx_port_t* self)
@@ -186,10 +186,10 @@ apx_error_t apx_port_derive_proper_init_value(apx_port_t* self)
    }
    if (self->attributes != NULL)
    {
-      dtl_dv_t* parsed_init_value = apx_portAttributes_get_init_value(self->attributes);
+      dtl_dv_t* parsed_init_value = apx_port_attributes_get_init_value(self->attributes);
       if (parsed_init_value != NULL)
       {
-         result = apx_dataElement_derive_proper_init_value(data_element, parsed_init_value, &derived_init_value);
+         result = apx_data_element_derive_proper_init_value(data_element, parsed_init_value, &derived_init_value);
          if (result != APX_NO_ERROR)
          {
             return result;
@@ -207,7 +207,7 @@ bool apx_port_is_queued(apx_port_t* self)
 {
    if ((self != NULL) && (self->attributes != NULL))
    {
-      return apx_portAttributes_is_queued(self->attributes);
+      return apx_port_attributes_is_queued(self->attributes);
    }
    return false;
 }
@@ -216,7 +216,7 @@ bool apx_port_is_parameter(apx_port_t* self)
 {
    if ((self != NULL) && (self->attributes != NULL))
    {
-      return apx_portAttributes_is_parameter(self->attributes);
+      return apx_port_attributes_is_parameter(self->attributes);
    }
    return false;
 }
@@ -225,7 +225,7 @@ uint32_t apx_port_get_queue_length(apx_port_t* self)
 {
    if ((self != NULL) && (self->attributes != NULL))
    {
-      return apx_portAttributes_get_queue_length(self->attributes);
+      return apx_port_attributes_get_queue_length(self->attributes);
    }
    return 0;
 }
@@ -246,7 +246,7 @@ apx_error_t apx_port_flatten_data_element(apx_port_t* self)
       return result;
    }
 
-   cloned_element = apx_dataElement_clone(data_element);
+   cloned_element = apx_data_element_clone(data_element);
    if (cloned_element == NULL)
    {
       return APX_MEM_ERROR;
@@ -254,22 +254,22 @@ apx_error_t apx_port_flatten_data_element(apx_port_t* self)
 
    if (parent_element != NULL)
    {
-      bool const parent_is_array = apx_dataElement_is_array(parent_element);
-      if (parent_is_array && apx_dataElement_is_array(cloned_element))
+      bool const parent_is_array = apx_data_element_is_array(parent_element);
+      if (parent_is_array && apx_data_element_is_array(cloned_element))
       {
          return APX_PARSE_ERROR; //Illegal in APX to create an array-reference to array-element.
       }
       else if (parent_is_array)
       {
          //Handle array-reference to data element
-         apx_dataElement_set_array_length(cloned_element, apx_dataElement_get_array_length(parent_element));
-         if (apx_dataElement_is_dynamic_array(parent_element))
+         apx_data_element_set_array_length(cloned_element, apx_data_element_get_array_length(parent_element));
+         if (apx_data_element_is_dynamic_array(parent_element))
          {
-            apx_dataElement_set_dynamic_array(cloned_element);
+            apx_data_element_set_dynamic_array(cloned_element);
          }
       }
    }
-   apx_dataSignature_set_effective_element(&self->data_signature, cloned_element);
+   apx_data_signature_set_effective_element(&self->data_signature, cloned_element);
 
    return APX_NO_ERROR;
 }
@@ -321,16 +321,16 @@ static apx_error_t derive_data_element(apx_port_t* self, apx_data_element_t** da
    {
       return APX_NULL_PTR_ERROR;
    }
-   if (apx_dataElement_get_type_code(*data_element) == APX_TYPE_CODE_REF_PTR)
+   if (apx_data_element_get_type_code(*data_element) == APX_TYPE_CODE_REF_PTR)
    {
-      apx_data_type_t* data_type = apx_dataElement_get_type_ref_ptr(*data_element);
+      apx_data_type_t* data_type = apx_data_element_get_type_ref_ptr(*data_element);
       if (parent != NULL)
       {
          *parent = *data_element;
       }
       if (data_type != NULL)
       {
-         retval = apx_dataType_derive_data_element(data_type, data_element, parent);
+         retval = apx_data_type_derive_data_element(data_type, data_element, parent);
          if (*data_element == NULL)
          {
             return APX_NULL_PTR_ERROR;

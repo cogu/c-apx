@@ -29,19 +29,19 @@ apx_error_t apx_program_encode_header(apx_program_t* program, apx_program_type_t
       return APX_INVALID_ARGUMENT_ERROR;
    }
    apx_program_encoder_t encoder;
-   apx_programEncoder_create(&encoder);
-   apx_error_t const result = apx_programEncoder_encode_program_header(&encoder, program_type, element_size, queue_size, is_dynamic);
+   apx_program_encoder_create(&encoder);
+   apx_error_t const result = apx_program_encoder_encode_program_header(&encoder, program_type, element_size, queue_size, is_dynamic);
    if (result == APX_NO_ERROR)
    {
       adt_bytearray_clear(program);
       adt_error_t const rc = adt_bytearray_append(program, adt_bytearray_data(&encoder.header), adt_bytearray_length(&encoder.header));
       if (rc != ADT_NO_ERROR)
       {
-         apx_programEncoder_destroy(&encoder);
+         apx_program_encoder_destroy(&encoder);
          return APX_MEM_ERROR;
       }
    }
-   apx_programEncoder_destroy(&encoder);
+   apx_program_encoder_destroy(&encoder);
    return result;
 }
 
@@ -50,17 +50,17 @@ apx_error_t apx_program_decode_header(uint8_t const* begin, uint8_t const* end, 
    if ((begin != NULL) && (end != NULL) && (next != NULL) && (header != NULL))
    {
       apx_program_decoder_t decoder;
-      apx_programDecoder_create(&decoder);
-      apx_error_t result = apx_programDecoder_select_program(&decoder, begin, (uint32_t)(end - begin));
+      apx_program_decoder_create(&decoder);
+      apx_error_t result = apx_program_decoder_select_program(&decoder, begin, (uint32_t)(end - begin));
       if (result == APX_NO_ERROR)
       {
-         result = apx_programDecoder_parse_program_header(&decoder, header);
+         result = apx_program_decoder_parse_program_header(&decoder, header);
          if (result == APX_NO_ERROR)
          {
             *next = decoder.program_next;
          }
       }
-      apx_programDecoder_destroy(&decoder);
+      apx_program_decoder_destroy(&decoder);
       return result;
    }
    return APX_INVALID_ARGUMENT_ERROR;

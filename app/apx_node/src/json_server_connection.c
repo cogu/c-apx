@@ -29,8 +29,8 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void json_server_connection_disconnected(void *arg, void *socket);
-static msocket_error_t json_server_connection_data(void *arg, void *socket, const uint8_t *dataBuf, const uint32_t dataLen, uint32_t *consumed_bytes, uint32_t *msg_size_hint);
-static void json_server_connection_process_message(json_server_connection_t *self, const uint8_t *pBegin, const uint8_t *pEnd);
+static msocket_error_t json_server_connection_data(void *arg, void *socket, const uint8_t *data_buf, const uint32_t data_len, uint32_t *consumed_bytes, uint32_t *msg_size_hint);
+static void json_server_connection_process_message(json_server_connection_t *self, const uint8_t *p_begin, const uint8_t *p_end);
 static void json_server_connection_process_hash_value(json_server_connection_t *self, dtl_hv_t *hv);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -108,14 +108,14 @@ static void json_server_connection_disconnected(void *arg, void *socket)
    }
 }
 
-static msocket_error_t json_server_connection_data(void *arg, void *socket, const uint8_t *dataBuf, const uint32_t dataLen, uint32_t *consumed_bytes, uint32_t *msg_size_hint)
+static msocket_error_t json_server_connection_data(void *arg, void *socket, const uint8_t *data_buf, const uint32_t data_len, uint32_t *consumed_bytes, uint32_t *msg_size_hint)
 {
    (void) socket;
    json_server_connection_t *self = (json_server_connection_t*) arg;
    if (self != NULL)
    {
       const uint8_t *pResult;
-      const uint8_t *pEnd = dataBuf + dataLen;
+      const uint8_t *p_end = data_buf + data_len;
       assert(consumed_bytes != 0);
       uint32_t msgSize = 0u;
       *consumed_bytes = 0;
@@ -123,19 +123,19 @@ static msocket_error_t json_server_connection_data(void *arg, void *socket, cons
       {
          *msg_size_hint = 0u;
       }
-      pResult = numheader_decode32(dataBuf, pEnd, &msgSize);
-      if ( (pResult > dataBuf)  )
+      pResult = numheader_decode32(data_buf, p_end, &msgSize);
+      if ( (pResult > data_buf)  )
       {
          const uint8_t *pNext = pResult;
-         if (pNext + msgSize <= pEnd)
+         if (pNext + msgSize <= p_end)
          {
             json_server_connection_process_message(self, pNext, pNext+msgSize);
             pNext += msgSize;
-            *consumed_bytes = (uint32_t) (pNext - dataBuf);
+            *consumed_bytes = (uint32_t) (pNext - data_buf);
          }
          else if (msg_size_hint != NULL)
          {
-            *msg_size_hint = (uint32_t) ((pResult - dataBuf) + msgSize);
+            *msg_size_hint = (uint32_t) ((pResult - data_buf) + msgSize);
          }
       }
       return MSOCKET_NO_ERROR;
@@ -143,9 +143,9 @@ static msocket_error_t json_server_connection_data(void *arg, void *socket, cons
    return MSOCKET_INVALID_ARGUMENT_ERROR;
 }
 
-static void json_server_connection_process_message(json_server_connection_t *self, const uint8_t *pBegin, const uint8_t *pEnd)
+static void json_server_connection_process_message(json_server_connection_t *self, const uint8_t *p_begin, const uint8_t *p_end)
 {
-   dtl_dv_t *dv = dtl_json_load_bstr( pBegin, pEnd);
+   dtl_dv_t *dv = dtl_json_load_bstr( p_begin, p_end);
    if (dv != NULL)
    {
       if (dtl_dv_type(dv) == DTL_DV_HASH)
@@ -169,7 +169,7 @@ static void json_server_connection_process_hash_value(json_server_connection_t *
       apx_error_t result;
       if (self->apx_connection != NULL)
       {
-         result = apx_connection_writeProvidePortData(self->apx_connection, key, dv);
+         result = apx_connection_write_provide_port_data(self->apx_connection, key, dv);
       }
       else
       {

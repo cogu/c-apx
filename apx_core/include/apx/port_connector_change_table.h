@@ -31,16 +31,16 @@ typedef struct apx_port_connector_change_table_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_portConnectorChangeTable_create(apx_port_connector_change_table_t *self, apx_size_t num_ports);
-void apx_portConnectorChangeTable_destroy(apx_port_connector_change_table_t *self);
-apx_port_connector_change_table_t *apx_portConnectorChangeTable_new(int32_t num_ports);
-void apx_portConnectorChangeTable_delete(apx_port_connector_change_table_t *self);
+apx_error_t apx_port_connector_change_table_create(apx_port_connector_change_table_t *self, apx_size_t num_ports);
+void apx_port_connector_change_table_destroy(apx_port_connector_change_table_t *self);
+apx_port_connector_change_table_t *apx_port_connector_change_table_new(int32_t num_ports);
+void apx_port_connector_change_table_delete(apx_port_connector_change_table_t *self);
 
-apx_error_t apx_portConnectorChangeTable_connect(apx_port_connector_change_table_t *self, apx_port_instance_t* local_port, apx_port_instance_t* remote_port);
-apx_error_t apx_portConnectorChangeTable_disconnect(apx_port_connector_change_table_t *self, apx_port_instance_t* local_port, apx_port_instance_t* remote_port);
-apx_port_connector_change_entry_t *apx_portConnectorChangeTable_get_entry(apx_port_connector_change_table_t *self, apx_port_id_t port_id);
-apx_port_instance_t*apx_portConnectorChangeTable_get_port(apx_port_connector_change_table_t *self, apx_port_id_t port_id, int32_t index);
-int32_t apx_portConnectorChangeTable_count(apx_port_connector_change_table_t *self, apx_port_id_t port_id);
+apx_error_t apx_port_connector_change_table_connect(apx_port_connector_change_table_t *self, apx_port_instance_t* local_port, apx_port_instance_t* remote_port);
+apx_error_t apx_port_connector_change_table_disconnect(apx_port_connector_change_table_t *self, apx_port_instance_t* local_port, apx_port_instance_t* remote_port);
+apx_port_connector_change_entry_t *apx_port_connector_change_table_get_entry(apx_port_connector_change_table_t *self, apx_port_id_t port_id);
+apx_port_instance_t*apx_port_connector_change_table_get_port(apx_port_connector_change_table_t *self, apx_port_id_t port_id, int32_t index);
+int32_t apx_port_connector_change_table_count(apx_port_connector_change_table_t *self, apx_port_id_t port_id);
 
 
 #endif //APX_PORT_CONNECTION_CHANGE_TABLE_H

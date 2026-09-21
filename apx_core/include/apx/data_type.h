@@ -39,21 +39,21 @@ typedef struct apx_data_type_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-apx_data_type_t* apx_dataType_new(const char *name, int32_t line_number);
-void apx_dataType_delete(apx_data_type_t*self);
-void apx_dataType_vdelete(void *arg);
-apx_error_t apx_dataType_create(apx_data_type_t*self, const char *name, int32_t line_number);
-void apx_dataType_destroy(apx_data_type_t*self);
-apx_data_element_t* apx_dataType_get_data_element(apx_data_type_t* self);
-int32_t apx_dataType_get_line_number(apx_data_type_t*self);
-bool apx_dataType_has_attributes(apx_data_type_t* self);
-apx_error_t apx_dataType_init_attributes(apx_data_type_t* self);
-apx_type_attributes_t* apx_dataType_get_attributes(apx_data_type_t* self);
-const char* apx_dataType_get_name(apx_data_type_t* self);
-void apx_dataType_set_id(apx_data_type_t* self, apx_type_id_t type_id);
-apx_type_id_t apx_dataType_get_id(apx_data_type_t const* self);
-apx_error_t apx_dataType_derive_types_on_element(apx_data_type_t* self, adt_ary_t const* type_list, adt_hash_t const* type_map);
-apx_error_t apx_dataType_derive_data_element(apx_data_type_t* self, struct apx_data_element_tag** data_element, struct apx_data_element_tag** parent);
+apx_data_type_t* apx_data_type_new(const char *name, int32_t line_number);
+void apx_data_type_delete(apx_data_type_t*self);
+void apx_data_type_vdelete(void *arg);
+apx_error_t apx_data_type_create(apx_data_type_t*self, const char *name, int32_t line_number);
+void apx_data_type_destroy(apx_data_type_t*self);
+apx_data_element_t* apx_data_type_get_data_element(apx_data_type_t* self);
+int32_t apx_data_type_get_line_number(apx_data_type_t*self);
+bool apx_data_type_has_attributes(apx_data_type_t* self);
+apx_error_t apx_data_type_init_attributes(apx_data_type_t* self);
+apx_type_attributes_t* apx_data_type_get_attributes(apx_data_type_t* self);
+const char* apx_data_type_get_name(apx_data_type_t* self);
+void apx_data_type_set_id(apx_data_type_t* self, apx_type_id_t type_id);
+apx_type_id_t apx_data_type_get_id(apx_data_type_t const* self);
+apx_error_t apx_data_type_derive_types_on_element(apx_data_type_t* self, adt_ary_t const* type_list, adt_hash_t const* type_map);
+apx_error_t apx_data_type_derive_data_element(apx_data_type_t* self, struct apx_data_element_tag** data_element, struct apx_data_element_tag** parent);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES

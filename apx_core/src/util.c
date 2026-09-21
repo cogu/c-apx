@@ -27,8 +27,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static bool apx_util_verifyIPV4Address(const char *pBegin, const char *pEnd);
-static bool apx_util_verify_name(const char *pBegin, const char *pEnd);
+static bool apx_util_verify_ipv4_address(const char *p_begin, const char *p_end);
+static bool apx_util_verify_name(const char *p_begin, const char *p_end);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -38,18 +38,18 @@ static bool apx_util_verify_name(const char *pBegin, const char *pEnd);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_fprint_hex_bytes(FILE *file, int32_t maxColumns, const uint8_t *dataBuf, apx_size_t dataSize)
+void apx_fprint_hex_bytes(FILE *file, int32_t max_columns, const uint8_t *data_buf, apx_size_t data_size)
 {
-   if ( (file != NULL) && (dataBuf != NULL) && (maxColumns > 0) && (dataSize > 0) )
+   if ( (file != NULL) && (data_buf != NULL) && (max_columns > 0) && (data_size > 0) )
    {
       int32_t column;
       apx_size_t byteCount = 0u;
-      const uint8_t *p = dataBuf;
-      while(byteCount < dataSize)
+      const uint8_t *p = data_buf;
+      while(byteCount < data_size)
       {
-         for (column = 0; column < maxColumns; column++)
+         for (column = 0; column < max_columns; column++)
          {
-            if (byteCount >= dataSize)
+            if (byteCount >= data_size)
             {
                break;
             }
@@ -129,7 +129,7 @@ apx_resource_type_t apx_parse_resource_name(const char *text, adt_str_t **name, 
          }
          if (retval != APX_RESOURCE_TYPE_ERROR)
          {
-            isValid = apx_util_verifyIPV4Address(text, port_begin);
+            isValid = apx_util_verify_ipv4_address(text, port_begin);
             if (isValid)
             {
                parsed_name = adt_str_new_bstr((const uint8_t*) text, (const uint8_t*) port_begin);
@@ -383,16 +383,16 @@ const char *apx_strerror(apx_error_t error_code)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static bool apx_util_verifyIPV4Address(const char *pBegin, const char *pEnd)
+static bool apx_util_verify_ipv4_address(const char *p_begin, const char *p_end)
 {
-   const char *pNext = pBegin;
+   const char *pNext = p_begin;
    int c;
    const int number_base = 10;
    int number_in_group = 0;
    int group_length = 0;
    int group_count = 1u; //verifies that we have exactly 4 groups of numbers separated by '.'
-   assert((pBegin != NULL) && (pEnd != NULL) && (pBegin <= pEnd));
-   for(c = (unsigned char)*pNext; pNext < pEnd; c = (unsigned char)*(++pNext))
+   assert((p_begin != NULL) && (p_end != NULL) && (p_begin <= p_end));
+   for(c = (unsigned char)*pNext; pNext < p_end; c = (unsigned char)*(++pNext))
    {
       if (c == '.')
       {
@@ -434,18 +434,18 @@ static bool apx_util_verifyIPV4Address(const char *pBegin, const char *pEnd)
  * Verifies that given bounded text string contains a name (such as "localhost") or is a computer name (such as DNS name).
  * First character must not be a digit (otherwise it can get confused with an IP number)
  */
-static bool apx_util_verify_name(const char *pBegin, const char *pEnd)
+static bool apx_util_verify_name(const char *p_begin, const char *p_end)
 {
    bool first = true;
-   const char *pNext = pBegin;
+   const char *pNext = p_begin;
    int c;
-   assert((pBegin != NULL) && (pEnd != NULL) && (pBegin <= pEnd));
-   if (pBegin==pEnd)
+   assert((p_begin != NULL) && (p_end != NULL) && (p_begin <= p_end));
+   if (p_begin==p_end)
    {
       //empty string
       return true;
    }
-   for(c = (unsigned char)*pNext; pNext < pEnd; c = (unsigned char)*(++pNext))
+   for(c = (unsigned char)*pNext; pNext < p_end; c = (unsigned char)*(++pNext))
    {
       if (first)
       {

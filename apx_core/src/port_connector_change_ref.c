@@ -33,7 +33,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_portConnectorChangeRef_create(apx_port_connector_change_ref_t *self, apx_node_instance_t * node_instance, apx_port_connector_change_table_t * connector_changes)
+void apx_port_connector_change_ref_create(apx_port_connector_change_ref_t *self, apx_node_instance_t * node_instance, apx_port_connector_change_table_t * connector_changes)
 {
    if (self != NULL)
    {
@@ -43,39 +43,39 @@ void apx_portConnectorChangeRef_create(apx_port_connector_change_ref_t *self, ap
    }
 }
 
-void apx_portConnectorChangeRef_destroy(apx_port_connector_change_ref_t *self)
+void apx_port_connector_change_ref_destroy(apx_port_connector_change_ref_t *self)
 {
    if (self != NULL)
    {
       if ( (!self->is_connector_changes_weak_ref) && (self->connector_changes != NULL) )
       {
-         apx_portConnectorChangeTable_delete(self->connector_changes);
+         apx_port_connector_change_table_delete(self->connector_changes);
       }
    }
 }
 
-apx_port_connector_change_ref_t *apx_portConnectorChangeRef_new(apx_node_instance_t *nodeInstance, apx_port_connector_change_table_t *connector_changes)
+apx_port_connector_change_ref_t *apx_port_connector_change_ref_new(apx_node_instance_t *node_instance, apx_port_connector_change_table_t *connector_changes)
 {
    apx_port_connector_change_ref_t *self = (apx_port_connector_change_ref_t*) malloc(sizeof(apx_port_connector_change_ref_t));
    if (self != NULL)
    {
-      apx_portConnectorChangeRef_create(self, nodeInstance, connector_changes);
+      apx_port_connector_change_ref_create(self, node_instance, connector_changes);
    }
    return self;
 }
 
-void apx_portConnectorChangeRef_delete(apx_port_connector_change_ref_t *self)
+void apx_port_connector_change_ref_delete(apx_port_connector_change_ref_t *self)
 {
    if (self != NULL)
    {
-      apx_portConnectorChangeRef_destroy(self);
+      apx_port_connector_change_ref_destroy(self);
       free(self);
    }
 }
 
-void apx_portConnectorChangeRef_vdelete(void *arg)
+void apx_port_connector_change_ref_vdelete(void *arg)
 {
-   apx_portConnectorChangeRef_delete( (apx_port_connector_change_ref_t*) arg);
+   apx_port_connector_change_ref_delete( (apx_port_connector_change_ref_t*) arg);
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -28,9 +28,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
-static void apx_socketServerExtension_shutdown(void);
-static apx_error_t apx_socketServerExtension_configure(apx_socket_server_t *server, dtl_hv_t *cfg);
+static apx_error_t apx_socket_server_extension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
+static void apx_socket_server_extension_shutdown(void);
+static apx_error_t apx_socket_server_extension_configure(apx_socket_server_t *server, dtl_hv_t *cfg);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -42,18 +42,18 @@ static apx_socket_server_t *m_instance = NULL; //singleton
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_socketServerExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
+apx_error_t apx_socket_server_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   apx_server_extension_handler_t handler = {apx_socketServerExtension_init, apx_socketServerExtension_shutdown};
+   apx_server_extension_handler_t handler = {apx_socket_server_extension_init, apx_socket_server_extension_shutdown};
    return apx_server_add_extension(apx_server, "SOCKET", &handler, config);
 }
 
 #ifdef UNIT_TEST
-void apx_socketServerExtension_accept_testsocket(testsocket_t *sock)
+void apx_socket_server_extension_accept_testsocket(testsocket_t *sock)
 {
    if (m_instance != NULL)
    {
-      apx_socketServer_accept_testsocket(m_instance, sock);
+      apx_socket_server_accept_testsocket(m_instance, sock);
    }
 }
 #endif
@@ -62,11 +62,11 @@ void apx_socketServerExtension_accept_testsocket(testsocket_t *sock)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
+static apx_error_t apx_socket_server_extension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
    if (m_instance == NULL)
    {
-      m_instance = apx_socketServer_new(apx_server);
+      m_instance = apx_socket_server_new(apx_server);
       if (m_instance == NULL)
       {
          return APX_MEM_ERROR;
@@ -75,7 +75,7 @@ static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_ser
       {
          if (dtl_dv_type(config) == DTL_DV_HASH)
          {
-            return apx_socketServerExtension_configure(m_instance, (dtl_hv_t*) config);
+            return apx_socket_server_extension_configure(m_instance, (dtl_hv_t*) config);
          }
          else
          {
@@ -86,17 +86,17 @@ static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_ser
    return APX_NO_ERROR;
 }
 
-static void apx_socketServerExtension_shutdown(void)
+static void apx_socket_server_extension_shutdown(void)
 {
    if (m_instance != NULL)
    {
-      apx_socketServer_stop_all(m_instance);
-      apx_socketServer_delete(m_instance);
+      apx_socket_server_stop_all(m_instance);
+      apx_socket_server_delete(m_instance);
       m_instance = NULL;
    }
 }
 
-static apx_error_t apx_socketServerExtension_configure(apx_socket_server_t *server, dtl_hv_t *cfg)
+static apx_error_t apx_socket_server_extension_configure(apx_socket_server_t *server, dtl_hv_t *cfg)
 {
    dtl_sv_t *sv_tcp_port;
 #ifndef _WIN32
@@ -123,7 +123,7 @@ static apx_error_t apx_socketServerExtension_configure(apx_socket_server_t *serv
          {
             tag = dtl_sv_to_cstr(sv_tcp_tag, &conversion_ok);
          }
-         apx_socketServer_start_tcp_server(m_instance, tcp_port, tag);
+         apx_socket_server_start_tcp_server(m_instance, tcp_port, tag);
       }
    }
 #ifndef _WIN32
@@ -140,7 +140,7 @@ static apx_error_t apx_socketServerExtension_configure(apx_socket_server_t *serv
                 tag = dtl_sv_to_cstr(sv_unix_tag, &conversion_ok);
              }
 #ifndef UNIT_TEST
-             apx_socketServer_start_unix_server(m_instance, unix_file_path, tag);
+             apx_socket_server_start_unix_server(m_instance, unix_file_path, tag);
 #else
              (void)tag;
 #endif

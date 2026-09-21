@@ -38,11 +38,11 @@ static apx_connection_t *m_apx_connection = (apx_connection_t*) NULL;
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t json_server_init(struct apx_connection_tag *apx_connection, uint8_t addressFamily)
+apx_error_t json_server_init(struct apx_connection_tag *apx_connection, uint8_t address_family)
 {
    assert(apx_connection != NULL);
    m_apx_connection = apx_connection;
-   m_server = msocket_server_new(addressFamily, json_server_connection_vdelete);
+   m_server = msocket_server_new(address_family, json_server_connection_vdelete);
    if (m_server != NULL)
    {
       msocket_handler_t handler;

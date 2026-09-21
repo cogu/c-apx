@@ -42,11 +42,11 @@ typedef struct apx_file_manager_reception_result_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_fileManagerReceiver_create(apx_file_manager_receiver_t *self);
-void apx_fileManagerReceiver_destroy(apx_file_manager_receiver_t *self);
-void apx_fileManagerReceiver_reset(apx_file_manager_receiver_t *self);
-apx_error_t apx_fileManagerReceiver_reserve(apx_file_manager_receiver_t *self, apx_size_t size);
-apx_size_t apx_fileManagerReceiver_buffer_size(apx_file_manager_receiver_t const* self);
-apx_error_t apx_fileManagerReceiver_write(apx_file_manager_receiver_t *self, apx_file_manager_reception_result_t *result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
+apx_error_t apx_file_manager_receiver_create(apx_file_manager_receiver_t *self);
+void apx_file_manager_receiver_destroy(apx_file_manager_receiver_t *self);
+void apx_file_manager_receiver_reset(apx_file_manager_receiver_t *self);
+apx_error_t apx_file_manager_receiver_reserve(apx_file_manager_receiver_t *self, apx_size_t size);
+apx_size_t apx_file_manager_receiver_buffer_size(apx_file_manager_receiver_t const* self);
+apx_error_t apx_file_manager_receiver_write(apx_file_manager_receiver_t *self, apx_file_manager_reception_result_t *result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
 
 #endif //APX_FILEMANAGER_RECEIVER_H

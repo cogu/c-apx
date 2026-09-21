@@ -39,16 +39,16 @@ typedef struct apx_observed_connection_tag
 //////////////////////////////////////////////////////////////////////////////
 
 
-void apx_observedConnection_create(apx_observed_connection_t* self, apx_server_connection_t* server_connection);
-void apx_observedConnection_destroy(apx_observed_connection_t* self);
-apx_observed_connection_t* apx_observedConnection_new(apx_server_connection_t* server_connection);
-void apx_observedConnection_delete(apx_observed_connection_t* self);
-void apx_observedConnection_vdelete(void* arg);
+void apx_observed_connection_create(apx_observed_connection_t* self, apx_server_connection_t* server_connection);
+void apx_observed_connection_destroy(apx_observed_connection_t* self);
+apx_observed_connection_t* apx_observed_connection_new(apx_server_connection_t* server_connection);
+void apx_observed_connection_delete(apx_observed_connection_t* self);
+void apx_observed_connection_vdelete(void* arg);
 char const* apx_observed_connection_tag(apx_observed_connection_t* const self);
-apx_connection_id_t apx_observedConnection_connection_id(apx_observed_connection_t* const self);
-apx_connection_type_t apx_observedConnection_get_connection_type(apx_observed_connection_t* const self);
-void apx_observedConnection_set_connection_type(apx_observed_connection_t* self, apx_connection_type_t connection_type);
-apx_connection_state_t apx_observedConnection_get_connection_state(apx_observed_connection_t* const self);
-void apx_observedConnection_set_connection_state(apx_observed_connection_t* self, apx_connection_state_t connection_state);
+apx_connection_id_t apx_observed_connection_connection_id(apx_observed_connection_t* const self);
+apx_connection_type_t apx_observed_connection_get_connection_type(apx_observed_connection_t* const self);
+void apx_observed_connection_set_connection_type(apx_observed_connection_t* self, apx_connection_type_t connection_type);
+apx_connection_state_t apx_observed_connection_get_connection_state(apx_observed_connection_t* const self);
+void apx_observed_connection_set_connection_state(apx_observed_connection_t* self, apx_connection_state_t connection_state);
 
 #endif //APX_OBSERVED_CONNECTION_H

@@ -27,23 +27,23 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static apx_data_element_t* apx_signatureParserState_take_data_element(apx_signature_parser_state_t* self);
-static void apx_signatureParser_reset(apx_signature_parser_t* self);
-static void apx_signatureParser_set_error(apx_signature_parser_t* self, apx_error_t error_code, uint8_t const* error_pos);
-static uint8_t const* apx_signatureParser_parse_data_element(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static uint8_t const* apx_signatureParser_parse_type_reference(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static uint8_t const* apx_signatureParser_parse_limits_i32(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static uint8_t const* apx_signatureParser_parse_limits_u32(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static uint8_t const* apx_signatureParser_parse_limits_i64(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static uint8_t const* apx_signatureParser_parse_limits_u64(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static uint8_t const* apx_signatureParser_parse_array(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static apx_data_element_t* apx_signature_parser_state_take_data_element(apx_signature_parser_state_t* self);
+static void apx_signature_parser_reset(apx_signature_parser_t* self);
+static void apx_signature_parser_set_error(apx_signature_parser_t* self, apx_error_t error_code, uint8_t const* error_pos);
+static uint8_t const* apx_signature_parser_parse_data_element(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static uint8_t const* apx_signature_parser_parse_type_reference(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static uint8_t const* apx_signature_parser_parse_limits_i32(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static uint8_t const* apx_signature_parser_parse_limits_u32(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static uint8_t const* apx_signature_parser_parse_limits_i64(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static uint8_t const* apx_signature_parser_parse_limits_u64(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
+static uint8_t const* apx_signature_parser_parse_array(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end);
 
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_signatureParserState_create(apx_signature_parser_state_t* self, bool is_record)
+void apx_signature_parser_state_create(apx_signature_parser_state_t* self, bool is_record)
 {
    if (self != NULL)
    {
@@ -52,44 +52,44 @@ void apx_signatureParserState_create(apx_signature_parser_state_t* self, bool is
    }
 }
 
-void apx_signatureParserState_destroy(apx_signature_parser_state_t* self)
+void apx_signature_parser_state_destroy(apx_signature_parser_state_t* self)
 {
    if (self != NULL)
    {
       if (self->data_element != NULL)
       {
-         apx_dataElement_delete(self->data_element);
+         apx_data_element_delete(self->data_element);
       }
    }
 }
 
-apx_signature_parser_state_t* apx_signatureParserState_new(bool is_record)
+apx_signature_parser_state_t* apx_signature_parser_state_new(bool is_record)
 {
    apx_signature_parser_state_t* self = (apx_signature_parser_state_t*)malloc(sizeof(apx_signature_parser_state_t));
    if (self != NULL)
    {
-      apx_signatureParserState_create(self, is_record);
+      apx_signature_parser_state_create(self, is_record);
    }
    return self;
 }
 
-void apx_signatureParserState_delete(apx_signature_parser_state_t* self)
+void apx_signature_parser_state_delete(apx_signature_parser_state_t* self)
 {
    if (self != NULL)
    {
-      apx_signatureParserState_destroy(self);
+      apx_signature_parser_state_destroy(self);
       free(self);
    }
 }
 
 
-apx_error_t apx_signatureParser_create(apx_signature_parser_t* self)
+apx_error_t apx_signature_parser_create(apx_signature_parser_t* self)
 {
    if (self != NULL)
    {
       self->error_code = APX_NO_ERROR;
       self->error_pos = NULL;
-      self->state = apx_signatureParserState_new(false);
+      self->state = apx_signature_parser_state_new(false);
       if (self->state == NULL)
       {
          return APX_MEM_ERROR;
@@ -99,30 +99,30 @@ apx_error_t apx_signatureParser_create(apx_signature_parser_t* self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_signatureParser_destroy(apx_signature_parser_t* self)
+void apx_signature_parser_destroy(apx_signature_parser_t* self)
 {
    if (self != NULL)
    {
-      apx_signatureParserState_delete(self->state);
+      apx_signature_parser_state_delete(self->state);
    }
 }
 
-uint8_t const* apx_signatureParser_parse_data_signature(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
+uint8_t const* apx_signature_parser_parse_data_signature(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    if ((self != NULL) && (begin != NULL) && (end != NULL) && (begin <= end))
    {
-      apx_signatureParser_reset(self);
-      self->state = apx_signatureParserState_new(false);
+      apx_signature_parser_reset(self);
+      self->state = apx_signature_parser_state_new(false);
       if (self->state == NULL)
       {
-         apx_signatureParser_set_error(self, APX_MEM_ERROR, begin);
+         apx_signature_parser_set_error(self, APX_MEM_ERROR, begin);
       }
-      return apx_signatureParser_parse_data_element(self, begin, end);
+      return apx_signature_parser_parse_data_element(self, begin, end);
    }
    return NULL;
 }
 
-apx_error_t apx_signatureParser_get_last_error(apx_signature_parser_t* self, uint8_t const** error_pos)
+apx_error_t apx_signature_parser_get_last_error(apx_signature_parser_t* self, uint8_t const** error_pos)
 {
    if (self != NULL)
    {
@@ -135,11 +135,11 @@ apx_error_t apx_signatureParser_get_last_error(apx_signature_parser_t* self, uin
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_data_element_t* apx_signatureParser_take_data_element(apx_signature_parser_t* self)
+apx_data_element_t* apx_signature_parser_take_data_element(apx_signature_parser_t* self)
 {
    if (self != NULL)
    {
-      return apx_signatureParserState_take_data_element(self->state);
+      return apx_signature_parser_state_take_data_element(self->state);
    }
    return NULL;
 }
@@ -147,7 +147,7 @@ apx_data_element_t* apx_signatureParser_take_data_element(apx_signature_parser_t
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static apx_data_element_t* apx_signatureParserState_take_data_element(apx_signature_parser_state_t* self)
+static apx_data_element_t* apx_signature_parser_state_take_data_element(apx_signature_parser_state_t* self)
 {
    if (self != NULL)
    {
@@ -158,22 +158,22 @@ static apx_data_element_t* apx_signatureParserState_take_data_element(apx_signat
    return NULL;
 }
 
-static void apx_signatureParser_reset(apx_signature_parser_t* self)
+static void apx_signature_parser_reset(apx_signature_parser_t* self)
 {
    assert(self != NULL);
    self->error_code = APX_NO_ERROR;
    self->error_pos = NULL;
-   apx_signatureParserState_delete(self->state);
+   apx_signature_parser_state_delete(self->state);
 }
 
-static void apx_signatureParser_set_error(apx_signature_parser_t* self, apx_error_t error_code, uint8_t const* error_pos)
+static void apx_signature_parser_set_error(apx_signature_parser_t* self, apx_error_t error_code, uint8_t const* error_pos)
 {
    assert(self != NULL);
    self->error_code = error_code;
    self->error_pos = error_pos;
 }
 
-static uint8_t const* apx_signatureParser_parse_data_element(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_signature_parser_parse_data_element(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* next = begin;
    uint8_t const* name_begin = NULL;
@@ -192,7 +192,7 @@ static uint8_t const* apx_signatureParser_parse_data_element(apx_signature_parse
       }
       else
       {
-         apx_signatureParser_set_error(self, APX_PARSE_ERROR, next);
+         apx_signature_parser_set_error(self, APX_PARSE_ERROR, next);
          return NULL;
       }
    }
@@ -283,75 +283,75 @@ static uint8_t const* apx_signatureParser_parse_data_element(apx_signature_parse
    {
       if (type_code == APX_TYPE_CODE_NONE)
       {
-         apx_signatureParser_set_error(self, APX_PARSE_ERROR, next);
+         apx_signature_parser_set_error(self, APX_PARSE_ERROR, next);
          return NULL;
       }
       else
       {
-         self->state->data_element = apx_dataElement_new(type_code);
+         self->state->data_element = apx_data_element_new(type_code);
          if (self->state->data_element == NULL)
          {
-            apx_signatureParser_set_error(self, APX_MEM_ERROR, next);
+            apx_signature_parser_set_error(self, APX_MEM_ERROR, next);
             return NULL;
          }
          next++;
          if (name_begin != NULL)
          {
             assert((name_end != NULL) && (name_begin <= name_end));
-            apx_error_t rc = apx_dataElement_set_name_bstr(self->state->data_element, name_begin, name_end);
+            apx_error_t rc = apx_data_element_set_name_bstr(self->state->data_element, name_begin, name_end);
             if (rc != APX_NO_ERROR)
             {
-               apx_signatureParser_set_error(self, rc, next);
+               apx_signature_parser_set_error(self, rc, next);
                return NULL;
             }
          }
       }
       if (type_code == APX_TYPE_CODE_REF_ID)
       {
-         result = apx_signatureParser_parse_type_reference(self, next, end);
+         result = apx_signature_parser_parse_type_reference(self, next, end);
          if (result > next)
          {
             next = result;
          }
          else
          {
-            apx_signatureParser_set_error(self, APX_PARSE_ERROR, next);
+            apx_signature_parser_set_error(self, APX_PARSE_ERROR, next);
             return NULL;
          }
       }
       else if (type_code == APX_TYPE_CODE_RECORD)
       {
          apx_signature_parser_state_t* parent = self->state;
-         self->state = apx_signatureParserState_new(true);
+         self->state = apx_signature_parser_state_new(true);
          while (next < end)
          {
-            result = apx_signatureParser_parse_data_element(self, next, end);
+            result = apx_signature_parser_parse_data_element(self, next, end);
             if (result > next)
             {
                next = result;
                assert(parent->data_element != NULL);
                assert(self->state->data_element != NULL);
-               apx_dataElement_append_child(parent->data_element, self->state->data_element);
+               apx_data_element_append_child(parent->data_element, self->state->data_element);
                self->state->data_element = NULL; //Move ownership to parent
             }
             else
             {
-               apx_signatureParser_set_error(self, APX_PARSE_ERROR, next);
-               apx_signatureParserState_delete(self->state);
+               apx_signature_parser_set_error(self, APX_PARSE_ERROR, next);
+               apx_signature_parser_state_delete(self->state);
                self->state = parent;
                return NULL;
             }
             if (next >= end)
             {
-               apx_signatureParser_set_error(self, APX_PARSE_ERROR, next);
-               apx_signatureParserState_delete(self->state);
+               apx_signature_parser_set_error(self, APX_PARSE_ERROR, next);
+               apx_signature_parser_state_delete(self->state);
                self->state = parent;
                return NULL;
             }
             if (*next == '}')
             {
                next++;
-               apx_signatureParserState_delete(self->state);
+               apx_signature_parser_state_delete(self->state);
                self->state = parent;
                break;
             }
@@ -361,11 +361,11 @@ static uint8_t const* apx_signatureParser_parse_data_element(apx_signature_parse
       {
          if (is_64_bit_type)
          {
-            result = is_signed_type ? apx_signatureParser_parse_limits_i64(self, next, end) : apx_signatureParser_parse_limits_u64(self, next, end);
+            result = is_signed_type ? apx_signature_parser_parse_limits_i64(self, next, end) : apx_signature_parser_parse_limits_u64(self, next, end);
          }
          else
          {
-            result = is_signed_type ? apx_signatureParser_parse_limits_i32(self, next, end) : apx_signatureParser_parse_limits_u32(self, next, end);
+            result = is_signed_type ? apx_signature_parser_parse_limits_i32(self, next, end) : apx_signature_parser_parse_limits_u32(self, next, end);
          }
          if (result > next)
          {
@@ -373,30 +373,30 @@ static uint8_t const* apx_signatureParser_parse_data_element(apx_signature_parse
          }
          else if (result == NULL)
          {
-            apx_signatureParser_set_error(self, APX_PARSE_ERROR, next);
+            apx_signature_parser_set_error(self, APX_PARSE_ERROR, next);
             return NULL;
          }
       }
-      result = apx_signatureParser_parse_array(self, next, end);
+      result = apx_signature_parser_parse_array(self, next, end);
       if (result > next)
       {
          next = result;
       }
       else if (result == NULL)
       {
-         apx_signatureParser_set_error(self, APX_PARSE_ERROR, next);
+         apx_signature_parser_set_error(self, APX_PARSE_ERROR, next);
          return NULL;
       }
    }
    else
    {
-      apx_signatureParser_set_error(self, APX_NOT_IMPLEMENTED_ERROR, next);
+      apx_signature_parser_set_error(self, APX_NOT_IMPLEMENTED_ERROR, next);
       return NULL;
    }
    return next;
 }
 
-static uint8_t const* apx_signatureParser_parse_type_reference(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_signature_parser_parse_type_reference(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    const uint8_t* next = begin;
    if (next < end)
@@ -417,10 +417,10 @@ static uint8_t const* apx_signatureParser_parse_type_reference(apx_signature_par
          uint8_t const* result = bstr_match_pair(next, end, '"', '"', '\\');
          if (result > next)
          {
-            apx_error_t rc = apx_dataElement_set_type_ref_name_bstr(self->state->data_element, next + 1, result);
+            apx_error_t rc = apx_data_element_set_type_ref_name_bstr(self->state->data_element, next + 1, result);
             if (rc != APX_NO_ERROR)
             {
-               apx_signatureParser_set_error(self, rc, next);
+               apx_signature_parser_set_error(self, rc, next);
                return NULL;
             }
             next = result + 1;
@@ -433,10 +433,10 @@ static uint8_t const* apx_signatureParser_parse_type_reference(apx_signature_par
       else
       {
          uint32_t type_id;
-         uint8_t const* result = apx_parserBase_parse_u32(next, end, &type_id);
+         uint8_t const* result = apx_parser_base_parse_u32(next, end, &type_id);
          if (result > next)
          {
-            apx_dataElement_set_type_ref_id(self->state->data_element, type_id);
+            apx_data_element_set_type_ref_id(self->state->data_element, type_id);
             next = result;
          }
          else
@@ -457,7 +457,7 @@ static uint8_t const* apx_signatureParser_parse_type_reference(apx_signature_par
    return next;
 }
 
-static uint8_t const* apx_signatureParser_parse_limits_i32(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_signature_parser_parse_limits_i32(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -473,7 +473,7 @@ static uint8_t const* apx_signatureParser_parse_limits_i32(apx_signature_parser_
          return NULL;
       }
       int32_t lower_limit, upper_limit;
-      result = apx_parserBase_parse_i32(next, end, &lower_limit);
+      result = apx_parser_base_parse_i32(next, end, &lower_limit);
       if (result > next)
       {
          next = result;
@@ -496,7 +496,7 @@ static uint8_t const* apx_signatureParser_parse_limits_i32(apx_signature_parser_
       {
          return NULL;
       }
-      result = apx_parserBase_parse_i32(next, end, &upper_limit);
+      result = apx_parser_base_parse_i32(next, end, &upper_limit);
       if (result > next)
       {
          next = result;
@@ -505,7 +505,7 @@ static uint8_t const* apx_signatureParser_parse_limits_i32(apx_signature_parser_
       {
          return NULL;
       }
-      apx_dataElement_set_limits_int32(self->state->data_element, lower_limit, upper_limit);
+      apx_data_element_set_limits_int32(self->state->data_element, lower_limit, upper_limit);
       next = bstr_lstrip(next, end);
       if (next >= end)
       {
@@ -520,7 +520,7 @@ static uint8_t const* apx_signatureParser_parse_limits_i32(apx_signature_parser_
    return begin;
 }
 
-static uint8_t const* apx_signatureParser_parse_limits_u32(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_signature_parser_parse_limits_u32(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -536,7 +536,7 @@ static uint8_t const* apx_signatureParser_parse_limits_u32(apx_signature_parser_
          return NULL;
       }
       uint32_t lower_limit, upper_limit;
-      result = apx_parserBase_parse_u32(next, end, &lower_limit);
+      result = apx_parser_base_parse_u32(next, end, &lower_limit);
       if (result > next)
       {
          next = result;
@@ -559,7 +559,7 @@ static uint8_t const* apx_signatureParser_parse_limits_u32(apx_signature_parser_
       {
          return NULL;
       }
-      result = apx_parserBase_parse_u32(next, end, &upper_limit);
+      result = apx_parser_base_parse_u32(next, end, &upper_limit);
       if (result > next)
       {
          next = result;
@@ -568,7 +568,7 @@ static uint8_t const* apx_signatureParser_parse_limits_u32(apx_signature_parser_
       {
          return NULL;
       }
-      apx_dataElement_set_limits_uint32(self->state->data_element, lower_limit, upper_limit);
+      apx_data_element_set_limits_uint32(self->state->data_element, lower_limit, upper_limit);
       next = bstr_lstrip(next, end);
       if (next >= end)
       {
@@ -583,7 +583,7 @@ static uint8_t const* apx_signatureParser_parse_limits_u32(apx_signature_parser_
    return begin;
 }
 
-static uint8_t const* apx_signatureParser_parse_limits_i64(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_signature_parser_parse_limits_i64(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -599,7 +599,7 @@ static uint8_t const* apx_signatureParser_parse_limits_i64(apx_signature_parser_
          return NULL;
       }
       int64_t lower_limit, upper_limit;
-      result = apx_parserBase_parse_i64(next, end, &lower_limit);
+      result = apx_parser_base_parse_i64(next, end, &lower_limit);
       if (result > next)
       {
          next = result;
@@ -622,7 +622,7 @@ static uint8_t const* apx_signatureParser_parse_limits_i64(apx_signature_parser_
       {
          return NULL;
       }
-      result = apx_parserBase_parse_i64(next, end, &upper_limit);
+      result = apx_parser_base_parse_i64(next, end, &upper_limit);
       if (result > next)
       {
          next = result;
@@ -631,7 +631,7 @@ static uint8_t const* apx_signatureParser_parse_limits_i64(apx_signature_parser_
       {
          return NULL;
       }
-      apx_dataElement_set_limits_int64(self->state->data_element, lower_limit, upper_limit);
+      apx_data_element_set_limits_int64(self->state->data_element, lower_limit, upper_limit);
       next = bstr_lstrip(next, end);
       if (next >= end)
       {
@@ -646,7 +646,7 @@ static uint8_t const* apx_signatureParser_parse_limits_i64(apx_signature_parser_
    return begin;
 }
 
-static uint8_t const* apx_signatureParser_parse_limits_u64(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_signature_parser_parse_limits_u64(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -662,7 +662,7 @@ static uint8_t const* apx_signatureParser_parse_limits_u64(apx_signature_parser_
          return NULL;
       }
       uint64_t lower_limit, upper_limit;
-      result = apx_parserBase_parse_u64(next, end, &lower_limit);
+      result = apx_parser_base_parse_u64(next, end, &lower_limit);
       if (result > next)
       {
          next = result;
@@ -685,7 +685,7 @@ static uint8_t const* apx_signatureParser_parse_limits_u64(apx_signature_parser_
       {
          return NULL;
       }
-      result = apx_parserBase_parse_u64(next, end, &upper_limit);
+      result = apx_parser_base_parse_u64(next, end, &upper_limit);
       if (result > next)
       {
          next = result;
@@ -694,7 +694,7 @@ static uint8_t const* apx_signatureParser_parse_limits_u64(apx_signature_parser_
       {
          return NULL;
       }
-      apx_dataElement_set_limits_uint64(self->state->data_element, lower_limit, upper_limit);
+      apx_data_element_set_limits_uint64(self->state->data_element, lower_limit, upper_limit);
       next = bstr_lstrip(next, end);
       if (next >= end)
       {
@@ -709,7 +709,7 @@ static uint8_t const* apx_signatureParser_parse_limits_u64(apx_signature_parser_
    return begin;
 }
 
-static uint8_t const* apx_signatureParser_parse_array(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const* apx_signature_parser_parse_array(apx_signature_parser_t* self, uint8_t const* begin, uint8_t const* end)
 {
    uint8_t const* next = begin;
    if (next < end)
@@ -725,11 +725,11 @@ static uint8_t const* apx_signatureParser_parse_array(apx_signature_parser_t* se
          return NULL;
       }
       uint32_t array_len;
-      result = apx_parserBase_parse_u32(next, end, &array_len);
+      result = apx_parser_base_parse_u32(next, end, &array_len);
       if (result > next)
       {
          next = result;
-         apx_dataElement_set_array_length(self->state->data_element, array_len);
+         apx_data_element_set_array_length(self->state->data_element, array_len);
       }
       else
       {
@@ -742,7 +742,7 @@ static uint8_t const* apx_signatureParser_parse_array(apx_signature_parser_t* se
       }
       if (*next == '*')
       {
-         apx_dataElement_set_dynamic_array(self->state->data_element);
+         apx_data_element_set_dynamic_array(self->state->data_element);
          next = bstr_lstrip(next+1, end);
          if (next >= end)
          {

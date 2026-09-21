@@ -63,7 +63,7 @@ apx_error_t apx_vm_create(apx_vm_t *self)
       {
          result = apx_vm_deserializer_create(&self->deserializer);
       }
-      apx_programDecoder_create(&self->decoder);
+      apx_program_decoder_create(&self->decoder);
       memset(&self->program_header, 0, sizeof(self->program_header));
       return result;
    }
@@ -76,7 +76,7 @@ void apx_vm_destroy(apx_vm_t *self)
    {
       apx_vm_serializer_destroy(&self->serializer);
       apx_vm_deserializer_destroy(&self->deserializer);
-      apx_programDecoder_destroy(&self->decoder);
+      apx_program_decoder_destroy(&self->decoder);
    }
 }
 
@@ -116,10 +116,10 @@ apx_error_t apx_vm_select_program(apx_vm_t* self, apx_program_t const* program)
    {
       uint8_t const* program_begin = adt_bytearray_data(program);
       uint32_t const program_size = adt_bytearray_length(program);
-      apx_error_t result = apx_programDecoder_select_program(&self->decoder,program_begin, program_size);
+      apx_error_t result = apx_program_decoder_select_program(&self->decoder,program_begin, program_size);
       if (result == APX_NO_ERROR)
       {
-         result = apx_programDecoder_parse_program_header(&self->decoder, &self->program_header);
+         result = apx_program_decoder_parse_program_header(&self->decoder, &self->program_header);
       }
       return result;
 
@@ -232,7 +232,7 @@ static apx_error_t run_pack_program(apx_vm_t* self)
    apx_operation_type_t operation_type = APX_OPERATION_TYPE_PROGRAM_END;
    do
    {
-      apx_error_t result = apx_programDecoder_parse_next_operation(&self->decoder, &operation_type);
+      apx_error_t result = apx_program_decoder_parse_next_operation(&self->decoder, &operation_type);
       if (result != APX_NO_ERROR)
       {
          return result;
@@ -282,7 +282,7 @@ static apx_error_t run_unpack_program(apx_vm_t* self)
    apx_operation_type_t operation_type = APX_OPERATION_TYPE_PROGRAM_END;
    do
    {
-      apx_error_t result = apx_programDecoder_parse_next_operation(&self->decoder, &operation_type);
+      apx_error_t result = apx_program_decoder_parse_next_operation(&self->decoder, &operation_type);
       if (result != APX_NO_ERROR)
       {
          return result;
@@ -332,7 +332,7 @@ static apx_error_t run_pack_instruction(apx_vm_t* self)
    apx_error_t retval = APX_NOT_IMPLEMENTED_ERROR;
    apx_pack_unpack_operation_info_t operation;
    apx_size_type_t dynamic_size_type = APX_SIZE_TYPE_NONE;
-   apx_programDecoder_get_pack_unpack_info(&self->decoder, &operation);
+   apx_program_decoder_get_pack_unpack_info(&self->decoder, &operation);
    if (operation.is_dynamic_array)
    {
       dynamic_size_type = apx_vm_size_to_size_type(operation.array_length);
@@ -379,7 +379,7 @@ static apx_error_t run_pack_instruction(apx_vm_t* self)
       retval = apx_vm_serializer_pack_record(&self->serializer, operation.array_length, dynamic_size_type);
       if (operation.array_length > 0u)
       {
-         apx_programDecoder_save_program_position(&self->decoder);
+         apx_program_decoder_save_program_position(&self->decoder);
       }
       break;
    }
@@ -391,7 +391,7 @@ static apx_error_t run_unpack_instruction(apx_vm_t* self)
    apx_error_t retval = APX_NOT_IMPLEMENTED_ERROR;
    apx_pack_unpack_operation_info_t operation;
    apx_size_type_t dynamic_size_type = APX_SIZE_TYPE_NONE;
-   apx_programDecoder_get_pack_unpack_info(&self->decoder, &operation);
+   apx_program_decoder_get_pack_unpack_info(&self->decoder, &operation);
    if (operation.is_dynamic_array)
    {
       dynamic_size_type = apx_vm_size_to_size_type(operation.array_length);
@@ -438,7 +438,7 @@ static apx_error_t run_unpack_instruction(apx_vm_t* self)
       retval = apx_vm_deserializer_unpack_record(&self->deserializer, operation.array_length, dynamic_size_type);
       if (operation.array_length > 0u)
       {
-         apx_programDecoder_save_program_position(&self->decoder);
+         apx_program_decoder_save_program_position(&self->decoder);
       }
       break;
    }
@@ -448,63 +448,63 @@ static apx_error_t run_unpack_instruction(apx_vm_t* self)
 static apx_error_t run_range_check_pack_int32(apx_vm_t* self)
 {
    apx_range_check_int32_operation_info_t info = { 0,0 };
-   apx_programDecoder_range_check_info_int32(&self->decoder, &info);
+   apx_program_decoder_range_check_info_int32(&self->decoder, &info);
    return apx_vm_serializer_check_value_range_int32(&self->serializer, info.lower_limit, info.upper_limit);
 }
 
 static apx_error_t run_range_check_pack_uint32(apx_vm_t* self)
 {
    apx_range_check_uint32_operation_info_t info = { 0,0 };
-   apx_programDecoder_range_check_info_uint32(&self->decoder, &info);
+   apx_program_decoder_range_check_info_uint32(&self->decoder, &info);
    return apx_vm_serializer_check_value_range_uint32(&self->serializer, info.lower_limit, info.upper_limit);
 }
 
 static apx_error_t run_range_check_pack_int64(apx_vm_t* self)
 {
    apx_range_check_int64_operation_info_t info = { 0,0 };
-   apx_programDecoder_range_check_info_int64(&self->decoder, &info);
+   apx_program_decoder_range_check_info_int64(&self->decoder, &info);
    return apx_vm_serializer_check_value_range_int64(&self->serializer, info.lower_limit, info.upper_limit);
 }
 
 static apx_error_t run_range_check_pack_uint64(apx_vm_t* self)
 {
    apx_range_check_uint64_operation_info_t info = { 0,0 };
-   apx_programDecoder_range_check_info_uint64(&self->decoder, &info);
+   apx_program_decoder_range_check_info_uint64(&self->decoder, &info);
    return apx_vm_serializer_check_value_range_uint64(&self->serializer, info.lower_limit, info.upper_limit);
 }
 
 static apx_error_t run_range_check_unpack_int32(apx_vm_t* self)
 {
    apx_range_check_int32_operation_info_t info = { 0,0 };
-   apx_programDecoder_range_check_info_int32(&self->decoder, &info);
+   apx_program_decoder_range_check_info_int32(&self->decoder, &info);
    return apx_vm_deserializer_check_value_range_int32(&self->deserializer, info.lower_limit, info.upper_limit);
 }
 
 static apx_error_t run_range_check_unpack_uint32(apx_vm_t* self)
 {
    apx_range_check_uint32_operation_info_t info = { 0,0 };
-   apx_programDecoder_range_check_info_uint32(&self->decoder, &info);
+   apx_program_decoder_range_check_info_uint32(&self->decoder, &info);
    return apx_vm_deserializer_check_value_range_uint32(&self->deserializer, info.lower_limit, info.upper_limit);
 }
 
 static apx_error_t run_range_check_unpack_int64(apx_vm_t* self)
 {
    apx_range_check_int64_operation_info_t info = { 0,0 };
-   apx_programDecoder_range_check_info_int64(&self->decoder, &info);
+   apx_program_decoder_range_check_info_int64(&self->decoder, &info);
    return apx_vm_deserializer_check_value_range_int64(&self->deserializer, info.lower_limit, info.upper_limit);
 }
 
 static apx_error_t run_range_check_unpack_uint64(apx_vm_t* self)
 {
    apx_range_check_uint64_operation_info_t info = { 0,0 };
-   apx_programDecoder_range_check_info_uint64(&self->decoder, &info);
+   apx_program_decoder_range_check_info_uint64(&self->decoder, &info);
    return apx_vm_deserializer_check_value_range_uint64(&self->deserializer, info.lower_limit, info.upper_limit);
 }
 
 static apx_error_t run_pack_record_select(apx_vm_t* self)
 {
-   char const* field_name = apx_programDecoder_get_field_name(&self->decoder);
-   bool const is_first_field = apx_programDecoder_is_first_field(&self->decoder);
+   char const* field_name = apx_program_decoder_get_field_name(&self->decoder);
+   bool const is_first_field = apx_program_decoder_is_first_field(&self->decoder);
    assert(field_name != NULL);
    return apx_vm_serializer_record_select(&self->serializer, field_name, is_first_field);
 }
@@ -516,8 +516,8 @@ static apx_error_t run_pack_record_end(apx_vm_t* self)
 
 static apx_error_t run_unpack_record_select(apx_vm_t* self)
 {
-   char const* field_name = apx_programDecoder_get_field_name(&self->decoder);
-   bool const is_first_field = apx_programDecoder_is_first_field(&self->decoder);
+   char const* field_name = apx_program_decoder_get_field_name(&self->decoder);
+   bool const is_first_field = apx_program_decoder_is_first_field(&self->decoder);
    assert(field_name != NULL);
    return apx_vm_deserializer_record_select(&self->deserializer, field_name, is_first_field);
 }
@@ -545,9 +545,9 @@ static apx_error_t run_array_next(apx_vm_t* self)
    }
    if (!is_last_index)
    {
-      if (apx_programDecoder_has_saved_program_position(&self->decoder))
+      if (apx_program_decoder_has_saved_program_position(&self->decoder))
       {
-         apx_programDecoder_recall_program_position(&self->decoder);
+         apx_program_decoder_recall_program_position(&self->decoder);
       }
       else
       {

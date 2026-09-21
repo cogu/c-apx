@@ -42,22 +42,22 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-rmf_file_info_t* rmf_fileInfo_make_empty(void)
+rmf_file_info_t* rmf_file_info_make_empty(void)
 {
-   return rmf_fileInfo_new(RMF_INVALID_ADDRESS, 0u, NULL, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+   return rmf_file_info_new(RMF_INVALID_ADDRESS, 0u, NULL, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
 }
 
-rmf_file_info_t* rmf_fileInfo_make_fixed(char const* name, uint32_t size, uint32_t address)
+rmf_file_info_t* rmf_file_info_make_fixed(char const* name, uint32_t size, uint32_t address)
 {
-   return rmf_fileInfo_new(address, size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+   return rmf_file_info_new(address, size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
 }
 
-rmf_file_info_t* rmf_fileInfo_make_fixed_with_digest(char const* name, uint32_t size, uint32_t address, rmf_digest_type_t digest_type, uint8_t const* digest_data)
+rmf_file_info_t* rmf_file_info_make_fixed_with_digest(char const* name, uint32_t size, uint32_t address, rmf_digest_type_t digest_type, uint8_t const* digest_data)
 {
-   return rmf_fileInfo_new(address, size, name, RMF_FILE_TYPE_FIXED, digest_type, digest_data);
+   return rmf_file_info_new(address, size, name, RMF_FILE_TYPE_FIXED, digest_type, digest_data);
 }
 
-apx_error_t rmf_fileInfo_create(rmf_file_info_t* self, uint32_t address, uint32_t size, const char* name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t* digest_data)
+apx_error_t rmf_file_info_create(rmf_file_info_t* self, uint32_t address, uint32_t size, const char* name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t* digest_data)
 {
    if (self != NULL)
    {
@@ -75,12 +75,12 @@ apx_error_t rmf_fileInfo_create(rmf_file_info_t* self, uint32_t address, uint32_
             return convert_from_adt_to_apx_error(result);
          }
       }
-      return rmf_fileInfo_set_digest_data(self, digest_type, digest_data);
+      return rmf_file_info_set_digest_data(self, digest_type, digest_data);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t rmf_fileInfo_create_copy(rmf_file_info_t* self, rmf_file_info_t const* other)
+apx_error_t rmf_file_info_create_copy(rmf_file_info_t* self, rmf_file_info_t const* other)
 {
    if (self != NULL)
    {
@@ -95,12 +95,12 @@ apx_error_t rmf_fileInfo_create_copy(rmf_file_info_t* self, rmf_file_info_t cons
       {
          return convert_from_adt_to_apx_error(result);
       }
-      return rmf_fileInfo_set_digest_data(self, other->digest_type, &other->digest_data[0]);
+      return rmf_file_info_set_digest_data(self, other->digest_type, &other->digest_data[0]);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void rmf_fileInfo_destroy(rmf_file_info_t* self)
+void rmf_file_info_destroy(rmf_file_info_t* self)
 {
    if (self != NULL)
    {
@@ -108,12 +108,12 @@ void rmf_fileInfo_destroy(rmf_file_info_t* self)
    }
 }
 
-rmf_file_info_t* rmf_fileInfo_new(uint32_t address, uint32_t size, const char* name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t* digest_data)
+rmf_file_info_t* rmf_file_info_new(uint32_t address, uint32_t size, const char* name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t* digest_data)
 {
    rmf_file_info_t* self = (rmf_file_info_t*)malloc(sizeof(rmf_file_info_t));
    if (self != NULL)
    {
-      apx_error_t rc = rmf_fileInfo_create(self, address, size, name, file_type, digest_type, digest_data);
+      apx_error_t rc = rmf_file_info_create(self, address, size, name, file_type, digest_type, digest_data);
       if (rc != APX_NO_ERROR)
       {
          free(self);
@@ -123,21 +123,21 @@ rmf_file_info_t* rmf_fileInfo_new(uint32_t address, uint32_t size, const char* n
    return self;
 }
 
-void rmf_fileInfo_delete(rmf_file_info_t* self)
+void rmf_file_info_delete(rmf_file_info_t* self)
 {
    if (self != NULL)
    {
-      rmf_fileInfo_destroy(self);
+      rmf_file_info_destroy(self);
       free(self);
    }
 }
 
-void rmf_fileInfo_vdelete(void* arg)
+void rmf_file_info_vdelete(void* arg)
 {
-   rmf_fileInfo_delete((rmf_file_info_t*)arg);
+   rmf_file_info_delete((rmf_file_info_t*)arg);
 }
 
-const char* rmf_fileInfo_name(rmf_file_info_t const* self)
+const char* rmf_file_info_name(rmf_file_info_t const* self)
 {
    if (self != NULL)
    {
@@ -146,7 +146,7 @@ const char* rmf_fileInfo_name(rmf_file_info_t const* self)
    return NULL;
 }
 
-uint32_t rmf_fileInfo_address(rmf_file_info_t const* self)
+uint32_t rmf_file_info_address(rmf_file_info_t const* self)
 {
    if (self != NULL)
    {
@@ -155,7 +155,7 @@ uint32_t rmf_fileInfo_address(rmf_file_info_t const* self)
    return RMF_INVALID_ADDRESS;
 }
 
-uint32_t rmf_fileInfo_size(rmf_file_info_t const* self)
+uint32_t rmf_file_info_size(rmf_file_info_t const* self)
 {
    if (self != NULL)
    {
@@ -164,7 +164,7 @@ uint32_t rmf_fileInfo_size(rmf_file_info_t const* self)
    return 0u;
 }
 
-rmf_file_type_t rmf_fileInfo_rmf_file_type(rmf_file_info_t const* self)
+rmf_file_type_t rmf_file_info_rmf_file_type(rmf_file_info_t const* self)
 {
    if (self != NULL)
    {
@@ -173,7 +173,7 @@ rmf_file_type_t rmf_fileInfo_rmf_file_type(rmf_file_info_t const* self)
    return RMF_FILE_TYPE_FIXED;
 }
 
-rmf_digest_type_t rmf_fileInfo_digest_type(rmf_file_info_t const* self)
+rmf_digest_type_t rmf_file_info_digest_type(rmf_file_info_t const* self)
 {
    if (self != NULL)
    {
@@ -182,7 +182,7 @@ rmf_digest_type_t rmf_fileInfo_digest_type(rmf_file_info_t const* self)
    return RMF_DIGEST_TYPE_NONE;
 }
 
-uint8_t const* rmf_fileInfo_digest_data(rmf_file_info_t const* self)
+uint8_t const* rmf_file_info_digest_data(rmf_file_info_t const* self)
 {
    if (self != NULL)
    {
@@ -191,7 +191,7 @@ uint8_t const* rmf_fileInfo_digest_data(rmf_file_info_t const* self)
    return NULL;
 }
 
-apx_error_t rmf_fileInfo_assign(rmf_file_info_t* self, const rmf_file_info_t* other)
+apx_error_t rmf_file_info_assign(rmf_file_info_t* self, const rmf_file_info_t* other)
 {
    if ((self != NULL) && (other != NULL))
    {
@@ -205,19 +205,19 @@ apx_error_t rmf_fileInfo_assign(rmf_file_info_t* self, const rmf_file_info_t* ot
       {
          return convert_from_adt_to_apx_error(result);
       }
-      return rmf_fileInfo_set_digest_data(self, other->digest_type, &other->digest_data[0]);
+      return rmf_file_info_set_digest_data(self, other->digest_type, &other->digest_data[0]);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-rmf_file_info_t* rmf_fileInfo_clone(const rmf_file_info_t* other)
+rmf_file_info_t* rmf_file_info_clone(const rmf_file_info_t* other)
 {
    if (other != NULL)
    {
       rmf_file_info_t* self = (rmf_file_info_t*)malloc(sizeof(rmf_file_info_t));
       if (self != NULL)
       {
-         apx_error_t rc = rmf_fileInfo_create(self, other->address, other->size, adt_str_cstr((adt_str_t*)&other->name),
+         apx_error_t rc = rmf_file_info_create(self, other->address, other->size, adt_str_cstr((adt_str_t*)&other->name),
             other->rmf_file_type, other->digest_type, other->digest_data);
          if (rc != APX_NO_ERROR)
          {
@@ -230,7 +230,7 @@ rmf_file_info_t* rmf_fileInfo_clone(const rmf_file_info_t* other)
    return NULL;
 }
 
-void rmf_fileInfo_set_address(rmf_file_info_t* self, uint32_t address)
+void rmf_file_info_set_address(rmf_file_info_t* self, uint32_t address)
 {
    if (self != NULL)
    {
@@ -238,7 +238,7 @@ void rmf_fileInfo_set_address(rmf_file_info_t* self, uint32_t address)
    }
 }
 
-bool rmf_fileInfo_is_remote_address(rmf_file_info_t const* self)
+bool rmf_file_info_is_remote_address(rmf_file_info_t const* self)
 {
    if (self != NULL)
    {
@@ -247,7 +247,7 @@ bool rmf_fileInfo_is_remote_address(rmf_file_info_t const* self)
    return false;
 }
 
-bool rmf_fileInfo_name_ends_with(rmf_file_info_t const* self, const char* suffix)
+bool rmf_file_info_name_ends_with(rmf_file_info_t const* self, const char* suffix)
 {
    if ((self != NULL) && (suffix != NULL) && (adt_str_size(&self->name) > 0u))
    {
@@ -258,7 +258,7 @@ bool rmf_fileInfo_name_ends_with(rmf_file_info_t const* self, const char* suffix
    return false;
 }
 
-char* rmf_fileInfo_base_name(rmf_file_info_t const* self)
+char* rmf_file_info_base_name(rmf_file_info_t const* self)
 {
    if ((self != NULL))
    {
@@ -272,7 +272,7 @@ char* rmf_fileInfo_base_name(rmf_file_info_t const* self)
    return NULL;
 }
 
-void rmf_fileInfo_copy_base_name(rmf_file_info_t const* self, char* dest, uint32_t max_dest_len)
+void rmf_file_info_copy_base_name(rmf_file_info_t const* self, char* dest, uint32_t max_dest_len)
 {
    if ((self != NULL) && (max_dest_len > 1))
    {
@@ -295,7 +295,7 @@ void rmf_fileInfo_copy_base_name(rmf_file_info_t const* self, char* dest, uint32
    }
 }
 
-uint32_t rmf_fileInfo_address_without_flags(rmf_file_info_t const* self)
+uint32_t rmf_file_info_address_without_flags(rmf_file_info_t const* self)
 {
    if (self != NULL)
    {
@@ -304,7 +304,7 @@ uint32_t rmf_fileInfo_address_without_flags(rmf_file_info_t const* self)
    return RMF_INVALID_ADDRESS;
 }
 
-bool rmf_fileInfo_address_in_range(rmf_file_info_t const* self, uint32_t address)
+bool rmf_file_info_address_in_range(rmf_file_info_t const* self, uint32_t address)
 {
    if (self != NULL)
    {
@@ -314,7 +314,7 @@ bool rmf_fileInfo_address_in_range(rmf_file_info_t const* self, uint32_t address
    return false;
 }
 
-apx_error_t rmf_fileInfo_set_digest_data(rmf_file_info_t* self, rmf_digest_type_t digest_type, const uint8_t* digest_data)
+apx_error_t rmf_file_info_set_digest_data(rmf_file_info_t* self, rmf_digest_type_t digest_type, const uint8_t* digest_data)
 {
    if (self != NULL)
    {
@@ -341,11 +341,11 @@ apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_fi
 {
    if ((buf != NULL) && (file != NULL))
    {
-      const char* name = rmf_fileInfo_name(file);
+      const char* name = rmf_file_info_name(file);
       apx_size_t const name_size = (apx_size_t)strlen(name);
       apx_size_t const required_size = RMF_FILE_INFO_HEADER_SIZE + name_size + 1u; //Add 1 for null-terminator
       uint8_t* p = buf;
-      uint8_t const* digest_data = rmf_fileInfo_digest_data(file);
+      uint8_t const* digest_data = rmf_file_info_digest_data(file);
       if (required_size > buf_size)
       {
          return 0u;
@@ -355,11 +355,11 @@ apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_fi
          return 0;
       }
       packLE(p, RMF_CMD_PUBLISH_FILE_MSG, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
-      packLE(p, rmf_fileInfo_address_without_flags(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
-      packLE(p, rmf_fileInfo_size(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
-      packLE(p, (uint32_t)rmf_fileInfo_rmf_file_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
-      packLE(p, (uint32_t)rmf_fileInfo_digest_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
-      switch (rmf_fileInfo_digest_type(file))
+      packLE(p, rmf_file_info_address_without_flags(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_file_info_size(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, (uint32_t)rmf_file_info_rmf_file_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      packLE(p, (uint32_t)rmf_file_info_digest_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      switch (rmf_file_info_digest_type(file))
       {
       case RMF_DIGEST_TYPE_NONE:
          memset(p, 0, RMF_SHA256_SIZE);

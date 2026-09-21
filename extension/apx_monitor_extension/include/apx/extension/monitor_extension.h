@@ -27,6 +27,6 @@ struct apx_server_tag;
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_monitorExtension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
+apx_error_t apx_monitor_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
 
 #endif //APX_MONITOR_EXTENSION_H

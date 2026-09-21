@@ -45,23 +45,23 @@ static apx_error_t process_remote_file_published(apx_file_manager_t* self, rmf_f
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_fileManager_create(apx_file_manager_t* self, uint8_t mode, apx_connection_interface_t const* parent_connection, apx_allocator_t* allocator)
+apx_error_t apx_file_manager_create(apx_file_manager_t* self, uint8_t mode, apx_connection_interface_t const* parent_connection, apx_allocator_t* allocator)
 {
    if (self != NULL)
    {
       apx_error_t result;
       self->mode = mode;
-      result = apx_fileManagerReceiver_create(&self->receiver);
+      result = apx_file_manager_receiver_create(&self->receiver);
       if (result == APX_NO_ERROR)
       {
-         result = apx_fileManagerWorker_create(&self->worker, &self->shared, mode);
+         result = apx_file_manager_worker_create(&self->worker, &self->shared, mode);
          if (result == APX_NO_ERROR)
          {
-            apx_fileManagerShared_create(&self->shared, parent_connection, allocator);
+            apx_file_manager_shared_create(&self->shared, parent_connection, allocator);
          }
          else
          {
-            apx_fileManagerReceiver_destroy(&self->receiver);
+            apx_file_manager_receiver_destroy(&self->receiver);
          }
       }
       return result;
@@ -69,25 +69,25 @@ apx_error_t apx_fileManager_create(apx_file_manager_t* self, uint8_t mode, apx_c
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_fileManager_destroy(apx_file_manager_t *self)
+void apx_file_manager_destroy(apx_file_manager_t *self)
 {
    if (self != NULL)
    {
-      apx_fileManagerWorker_destroy(&self->worker);
-      apx_fileManagerReceiver_destroy(&self->receiver);
-      apx_fileManagerShared_destroy(&self->shared);
+      apx_file_manager_worker_destroy(&self->worker);
+      apx_file_manager_receiver_destroy(&self->receiver);
+      apx_file_manager_shared_destroy(&self->shared);
    }
 }
 
-void apx_fileManager_start(apx_file_manager_t *self)
+void apx_file_manager_start(apx_file_manager_t *self)
 {
    if (self != NULL)
    {
-      apx_fileManagerShared_start(&self->shared);
+      apx_file_manager_shared_start(&self->shared);
 #ifndef UNIT_TEST
-      apx_error_t result = apx_fileManagerWorker_start(&self->worker);
+      apx_error_t result = apx_file_manager_worker_start(&self->worker);
 # if (APX_DEBUG_ENABLE)
-      printf("[FILE-MANAGER %d] Worker thread started. Result: %d\n", (int)apx_fileManagerShared_get_connection_id(&self->shared), (int)result);
+      printf("[FILE-MANAGER %d] Worker thread started. Result: %d\n", (int)apx_file_manager_shared_get_connection_id(&self->shared), (int)result);
 # else
       (void)result; //TODO: Check result?
 # endif
@@ -95,23 +95,23 @@ void apx_fileManager_start(apx_file_manager_t *self)
    }
 }
 
-void apx_fileManager_stop(apx_file_manager_t *self)
+void apx_file_manager_stop(apx_file_manager_t *self)
 {
    if (self != NULL)
    {
 #ifndef UNIT_TEST
 # if (APX_DEBUG_ENABLE)
-      printf("[FILE-MANAGER %d] Stopping worker thread\n", (int)apx_fileManagerShared_get_connection_id(&self->shared));
+      printf("[FILE-MANAGER %d] Stopping worker thread\n", (int)apx_file_manager_shared_get_connection_id(&self->shared));
 # endif
-      apx_fileManagerWorker_stop(&self->worker);
+      apx_file_manager_worker_stop(&self->worker);
 # if (APX_DEBUG_ENABLE)
-      printf("[FILE-MANAGER %d] Worker thread stopped\n", (int)apx_fileManagerShared_get_connection_id(&self->shared));
+      printf("[FILE-MANAGER %d] Worker thread stopped\n", (int)apx_file_manager_shared_get_connection_id(&self->shared));
 # endif
 #endif
    }
 }
 
-void apx_fileManager_connected(apx_file_manager_t* self)
+void apx_file_manager_connected(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
@@ -121,34 +121,34 @@ void apx_fileManager_connected(apx_file_manager_t* self)
       }
       else
       {
-         apx_fileManagerShared_connected(&self->shared);
-         rmf_version_id_t const version_id = apx_fileManagerShared_get_remotefile_version_id(&self->shared);
+         apx_file_manager_shared_connected(&self->shared);
+         rmf_version_id_t const version_id = apx_file_manager_shared_get_remotefile_version_id(&self->shared);
          if (version_id == RMF_PROTOCOL_VERSION_ID_1_1)
          {
-            uint32_t connection_id = apx_fileManagerShared_get_connection_id(&self->shared);
-            apx_fileManagerWorker_prepare_header_accepted(&self->worker, connection_id);
+            uint32_t connection_id = apx_file_manager_shared_get_connection_id(&self->shared);
+            apx_file_manager_worker_prepare_header_accepted(&self->worker, connection_id);
          }
          else
          {
-            apx_fileManagerWorker_prepare_acknowledge(&self->worker);
+            apx_file_manager_worker_prepare_acknowledge(&self->worker);
          }
       }
    }
 }
 
-void apx_fileManager_disconnected(apx_file_manager_t* self)
+void apx_file_manager_disconnected(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
-      apx_fileManagerShared_disconnected(&self->shared);
+      apx_file_manager_shared_disconnected(&self->shared);
    }
 }
 
-apx_file_t* apx_fileManager_create_local_file(apx_file_manager_t* self, rmf_file_info_t const* file_info)
+apx_file_t* apx_file_manager_create_local_file(apx_file_manager_t* self, rmf_file_info_t const* file_info)
 {
    if (self != NULL)
    {
-      apx_file_t* file = apx_fileManagerShared_create_local_file(&self->shared, file_info);
+      apx_file_t* file = apx_file_manager_shared_create_local_file(&self->shared, file_info);
       if (file != NULL)
       {
          apx_file_set_file_manager(file, self);
@@ -158,49 +158,49 @@ apx_file_t* apx_fileManager_create_local_file(apx_file_manager_t* self, rmf_file
    return NULL;
 }
 
-apx_error_t apx_fileManager_publish_local_file(apx_file_manager_t* self, rmf_file_info_t const* file_info)
+apx_error_t apx_file_manager_publish_local_file(apx_file_manager_t* self, rmf_file_info_t const* file_info)
 {
    if ((self != NULL) && (file_info != NULL))
    {
       apx_error_t retval = APX_MEM_ERROR;
-      rmf_file_info_t* cloned_info = rmf_fileInfo_clone(file_info);
+      rmf_file_info_t* cloned_info = rmf_file_info_clone(file_info);
       if (cloned_info != NULL)
       {
-         retval = apx_fileManagerWorker_prepare_publish_local_file(&self->worker, cloned_info);
+         retval = apx_file_manager_worker_prepare_publish_local_file(&self->worker, cloned_info);
       }
       return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_file_t* apx_fileManager_find_file_by_address(apx_file_manager_t* self, uint32_t address)
+apx_file_t* apx_file_manager_find_file_by_address(apx_file_manager_t* self, uint32_t address)
 {
    if (self != NULL)
    {
-      return apx_fileManagerShared_find_file_by_address(&self->shared, address);
+      return apx_file_manager_shared_find_file_by_address(&self->shared, address);
    }
    return NULL;
 }
 
-apx_file_t* apx_fileManager_find_local_file_by_name(apx_file_manager_t* self, char const* name)
+apx_file_t* apx_file_manager_find_local_file_by_name(apx_file_manager_t* self, char const* name)
 {
    if (self != NULL)
    {
-      return apx_fileManagerShared_find_local_file_by_name(&self->shared, name);
+      return apx_file_manager_shared_find_local_file_by_name(&self->shared, name);
    }
    return NULL;
 }
 
-apx_file_t* apx_fileManager_find_remote_file_by_name(apx_file_manager_t* self, char const* name)
+apx_file_t* apx_file_manager_find_remote_file_by_name(apx_file_manager_t* self, char const* name)
 {
    if (self != NULL)
    {
-      return apx_fileManagerShared_find_remote_file_by_name(&self->shared, name);
+      return apx_file_manager_shared_find_remote_file_by_name(&self->shared, name);
    }
    return NULL;
 }
 
-apx_error_t apx_fileManager_message_received(apx_file_manager_t* self, uint8_t const* msg_data, apx_size_t msg_len)
+apx_error_t apx_file_manager_message_received(apx_file_manager_t* self, uint8_t const* msg_data, apx_size_t msg_len)
 {
    if ( (self != NULL) && (msg_data != NULL) )
    {
@@ -212,7 +212,7 @@ apx_error_t apx_fileManager_message_received(apx_file_manager_t* self, uint8_t c
          apx_error_t error_code;
          apx_file_manager_reception_result_t result;
          assert(msg_len >= header_size);
-         error_code = apx_fileManagerReceiver_write(&self->receiver, &result, address, msg_data + header_size, msg_len - header_size, more_bit);
+         error_code = apx_file_manager_receiver_write(&self->receiver, &result, address, msg_data + header_size, msg_len - header_size, more_bit);
          if (error_code != APX_NO_ERROR)
          {
             return error_code;
@@ -242,11 +242,11 @@ apx_error_t apx_fileManager_message_received(apx_file_manager_t* self, uint8_t c
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_local_const_data(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
+apx_error_t apx_file_manager_send_local_const_data(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
 {
    if (self != NULL && data != NULL)
    {
-      apx_file_t* file = apx_fileManagerShared_find_file_by_address(&self->shared, address);
+      apx_file_t* file = apx_file_manager_shared_find_file_by_address(&self->shared, address);
       if (file == NULL)
       {
          return APX_FILE_NOT_FOUND_ERROR;
@@ -255,16 +255,16 @@ apx_error_t apx_fileManager_send_local_const_data(apx_file_manager_t* self, uint
       {
          return APX_FILE_NOT_OPEN_ERROR;
       }
-      return apx_fileManagerWorker_prepare_send_local_const_data(&self->worker, address, data, (uint32_t)size);
+      return apx_file_manager_worker_prepare_send_local_const_data(&self->worker, address, data, (uint32_t)size);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_local_data(apx_file_manager_t* self, uint32_t address, uint8_t* data, apx_size_t size)
+apx_error_t apx_file_manager_send_local_data(apx_file_manager_t* self, uint32_t address, uint8_t* data, apx_size_t size)
 {
    if (self != NULL && data != NULL)
    {
-      apx_file_t* file = apx_fileManagerShared_find_file_by_address(&self->shared, address);
+      apx_file_t* file = apx_file_manager_shared_find_file_by_address(&self->shared, address);
       if (file == NULL)
       {
          return APX_FILE_NOT_FOUND_ERROR;
@@ -273,21 +273,21 @@ apx_error_t apx_fileManager_send_local_data(apx_file_manager_t* self, uint32_t a
       {
          return APX_FILE_NOT_OPEN_ERROR;
       }
-      return apx_fileManagerWorker_prepare_send_local_data(&self->worker, address, data, (uint32_t)size);
+      return apx_file_manager_worker_prepare_send_local_data(&self->worker, address, data, (uint32_t)size);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_open_file_request(apx_file_manager_t* self, uint32_t address)
+apx_error_t apx_file_manager_send_open_file_request(apx_file_manager_t* self, uint32_t address)
 {
    if (self != NULL)
    {
-      return apx_fileManagerWorker_prepare_send_open_file_request(&self->worker, address);
+      return apx_file_manager_worker_prepare_send_open_file_request(&self->worker, address);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_error_code(apx_file_manager_t* self, apx_error_t error_code)
+apx_error_t apx_file_manager_send_error_code(apx_file_manager_t* self, apx_error_t error_code)
 {
    if (self != NULL)
    {
@@ -298,31 +298,31 @@ apx_error_t apx_fileManager_send_error_code(apx_file_manager_t* self, apx_error_
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_fileManager_send_connection_create(apx_file_manager_t* self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const* tag)
+apx_error_t apx_file_manager_send_connection_create(apx_file_manager_t* self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const* tag)
 {
    if (self != NULL)
    {
-      return apx_fileManagerWorker_prepare_send_connection_create(&self->worker, connection_id, connection_state, tag);
+      return apx_file_manager_worker_prepare_send_connection_create(&self->worker, connection_id, connection_state, tag);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-uint16_t apx_fileManager_get_num_pending_worker_commands(apx_file_manager_t* self)
+uint16_t apx_file_manager_get_num_pending_worker_commands(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
-      return apx_fileManagerWorker_num_pending_commands(&self->worker);
+      return apx_file_manager_worker_num_pending_commands(&self->worker);
    }
    return 0u;
 }
 
 
 #ifdef UNIT_TEST
-bool apx_fileManager_run(apx_file_manager_t* self)
+bool apx_file_manager_run(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
-      return apx_fileManagerWorker_run(&self->worker);
+      return apx_file_manager_worker_run(&self->worker);
    }
    return false;
 }
@@ -341,14 +341,14 @@ static void publish_local_files(apx_file_manager_t* self)
    int32_t i;
    int32_t num_files;
    adt_ary_create(&local_file_list, NULL);
-   num_files = apx_fileManagerShared_copy_local_file_info(&self->shared, &local_file_list);
+   num_files = apx_file_manager_shared_copy_local_file_info(&self->shared, &local_file_list);
    for (i=0; i < num_files; i++)
    {
       rmf_file_info_t* file_info = (rmf_file_info_t*) adt_ary_value(&local_file_list, i);
       if (file_info != NULL)
       {
          //Worker takes memory ownership of file_info
-         apx_error_t result = apx_fileManagerWorker_prepare_publish_local_file(&self->worker, file_info);
+         apx_error_t result = apx_file_manager_worker_prepare_publish_local_file(&self->worker, file_info);
          if (result != APX_NO_ERROR)
          {
             //TODO: Error handling
@@ -386,7 +386,7 @@ static apx_error_t process_command_message(apx_file_manager_t* self, uint8_t con
    switch (cmd_type)
    {
    case RMF_CMD_PUBLISH_FILE_MSG:
-      file_info = rmf_fileInfo_make_empty();
+      file_info = rmf_file_info_make_empty();
       if (file_info == NULL)
       {
          retval = APX_MEM_ERROR;
@@ -402,7 +402,7 @@ static apx_error_t process_command_message(apx_file_manager_t* self, uint8_t con
          {
             retval = APX_INVALID_MSG_ERROR;
          }
-         rmf_fileInfo_delete(file_info);
+         rmf_file_info_delete(file_info);
       }
       break;
    case RMF_CMD_REVOKE_FILE_MSG:
@@ -437,7 +437,7 @@ static apx_error_t process_command_message(apx_file_manager_t* self, uint8_t con
 
 static apx_error_t process_file_write_message(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size)
 {
-   apx_file_t *file = apx_fileManagerShared_find_file_by_address(&self->shared, address | RMF_HIGH_ADDR_BIT);
+   apx_file_t *file = apx_file_manager_shared_find_file_by_address(&self->shared, address | RMF_HIGH_ADDR_BIT);
    if (file == NULL)
    {
       return APX_INVALID_WRITE_ERROR;
@@ -447,7 +447,7 @@ static apx_error_t process_file_write_message(apx_file_manager_t* self, uint32_t
       //Ignore writes on closed files
       return APX_NO_ERROR;
    }
-   apx_connection_interface_t const* connection = apx_fileManagerShared_connection(&self->shared);
+   apx_connection_interface_t const* connection = apx_file_manager_shared_connection(&self->shared);
    if (connection == NULL)
    {
       return APX_NULL_PTR_ERROR;
@@ -460,7 +460,7 @@ static apx_error_t process_file_write_message(apx_file_manager_t* self, uint32_t
 
 static apx_error_t process_open_file_request(apx_file_manager_t* self, uint32_t start_address)
 {
-   apx_file_t* file = apx_fileManagerShared_find_file_by_address(&self->shared, start_address);
+   apx_file_t* file = apx_file_manager_shared_find_file_by_address(&self->shared, start_address);
    if (file == NULL)
    {
       return APX_FILE_NOT_FOUND_ERROR;
@@ -479,13 +479,13 @@ static apx_error_t process_close_file_request(apx_file_manager_t* self, uint32_t
 
 static apx_error_t process_remote_file_published(apx_file_manager_t* self, rmf_file_info_t const* file_info)
 {
-   apx_file_t* file = apx_fileManagerShared_create_remote_file(&self->shared, file_info);
+   apx_file_t* file = apx_file_manager_shared_create_remote_file(&self->shared, file_info);
    if (file == NULL)
    {
       return APX_FILE_CREATE_ERROR;
    }
    apx_file_set_file_manager(file, self);
-   apx_connection_interface_t const* connection = apx_fileManagerShared_connection(&self->shared);
+   apx_connection_interface_t const* connection = apx_file_manager_shared_connection(&self->shared);
    if (connection == NULL)
    {
       return APX_NULL_PTR_ERROR;

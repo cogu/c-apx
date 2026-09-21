@@ -30,9 +30,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void onClientConnected(void* arg, apx_client_connection_t* client_connection);
-static void onClientDisconnected(void* arg, apx_client_connection_t* client_connection);
-static void onRequirePortWrite(void *arg, apx_port_instance_t *port_instance, uint8_t const* data, apx_size_t size);
+static void on_client_connected(void* arg, apx_client_connection_t* client_connection);
+static void on_client_disconnected(void* arg, apx_client_connection_t* client_connection);
+static void on_require_port_write(void *arg, apx_port_instance_t *port_instance, uint8_t const* data, apx_size_t size);
 static double calculate_average_events_per_second(void);
 
 
@@ -64,9 +64,9 @@ bool application_init(const application_cfg_t *cfg)
    apx_client_event_listener_t handlerTable;
    apx_error_t result;
    memset(&handlerTable, 0, sizeof(handlerTable));
-   handlerTable.connected = onClientConnected;
-   handlerTable.disconnected = onClientDisconnected;
-   handlerTable.require_port_write = onRequirePortWrite;
+   handlerTable.connected = on_client_connected;
+   handlerTable.disconnected = on_client_disconnected;
+   handlerTable.require_port_write = on_require_port_write;
    if (cfg == NULL)
    {
       printf("cfg is NULL, aborting\n");
@@ -95,18 +95,18 @@ bool application_init(const application_cfg_t *cfg)
          return false;
       }
       m_node_instance = apx_client_get_last_attached_node(m_client);
-      if ( (strcmp(apx_nodeInstance_get_name(m_node_instance), "RequestNode")==0) )
+      if ( (strcmp(apx_node_instance_get_name(m_node_instance), "RequestNode")==0) )
       {
          printf("Running in requester mode\n");
          m_is_requester = true;
-         m_rqst_handle = apx_nodeInstance_get_provide_port(m_node_instance, (apx_port_id_t) 0u);
-         m_rsp_handle = apx_nodeInstance_get_require_port(m_node_instance, (apx_port_id_t)0u);
+         m_rqst_handle = apx_node_instance_get_provide_port(m_node_instance, (apx_port_id_t) 0u);
+         m_rsp_handle = apx_node_instance_get_require_port(m_node_instance, (apx_port_id_t)0u);
       }
       else
       {
          printf("Running in responder mode\n");
-         m_rqst_handle = apx_nodeInstance_get_require_port(m_node_instance, (apx_port_id_t)0u);
-         m_rsp_handle = apx_nodeInstance_get_provide_port(m_node_instance, (apx_port_id_t)0u);
+         m_rqst_handle = apx_node_instance_get_require_port(m_node_instance, (apx_port_id_t)0u);
+         m_rsp_handle = apx_node_instance_get_provide_port(m_node_instance, (apx_port_id_t)0u);
       }
       assert(m_rqst_handle != NULL);
       assert(m_rsp_handle != NULL);
@@ -203,7 +203,7 @@ bool application_run(void)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void onClientConnected(void* arg, apx_client_connection_t* client_connection)
+static void on_client_connected(void* arg, apx_client_connection_t* client_connection)
 {
    (void)arg;
    (void)client_connection;
@@ -211,7 +211,7 @@ static void onClientConnected(void* arg, apx_client_connection_t* client_connect
    printf("Connected to server\n");
 }
 
-static void onClientDisconnected(void* arg, apx_client_connection_t* client_connection)
+static void on_client_disconnected(void* arg, apx_client_connection_t* client_connection)
 {
    (void)arg;
    (void)client_connection;
@@ -223,7 +223,7 @@ static void onClientDisconnected(void* arg, apx_client_connection_t* client_conn
 }
 
 
-static void onRequirePortWrite(void* arg, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size)
+static void on_require_port_write(void* arg, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size)
 {
    (void)arg;
    (void)data;

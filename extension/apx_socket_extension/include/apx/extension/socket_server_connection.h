@@ -41,25 +41,25 @@ typedef struct apx_socket_server_connection_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_socketServerConnection_create(apx_socket_server_connection_t *self, SOCKET_TYPE *socketObject);
-void apx_socketServerConnection_destroy(apx_socket_server_connection_t *self);
-void apx_socketServerConnection_vdestroy(void *arg);
-apx_socket_server_connection_t *apx_socketServerConnection_new(SOCKET_TYPE *socketObject);
-void apx_socketServerConnection_delete(apx_socket_server_connection_t *self);
-void apx_socketServerConnection_vdelete(void *arg);
-void apx_socketServerConnection_vstart(void *arg);
-void apx_socketServerConnection_vclose(void *arg);
-void apx_socketServerConnection_set_tag(apx_socket_server_connection_t* self, char const* tag);
+apx_error_t apx_socket_server_connection_create(apx_socket_server_connection_t *self, SOCKET_TYPE *socket_object);
+void apx_socket_server_connection_destroy(apx_socket_server_connection_t *self);
+void apx_socket_server_connection_vdestroy(void *arg);
+apx_socket_server_connection_t *apx_socket_server_connection_new(SOCKET_TYPE *socket_object);
+void apx_socket_server_connection_delete(apx_socket_server_connection_t *self);
+void apx_socket_server_connection_vdelete(void *arg);
+void apx_socket_server_connection_vstart(void *arg);
+void apx_socket_server_connection_vclose(void *arg);
+void apx_socket_server_connection_set_tag(apx_socket_server_connection_t* self, char const* tag);
 
 // ConnectionInterface API
-int32_t apx_socketServerConnection_vtransmit_max_bytes_avaiable(void* arg);
-int32_t apx_socketServerConnection_vtransmit_current_bytes_avaiable(void* arg);
-void apx_socketServerConnection_vtransmit_begin(void* arg);
-void apx_socketServerConnection_vtransmit_end(void* arg);
-apx_error_t apx_socketServerConnection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
-apx_error_t apx_socketServerConnection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
+int32_t apx_socket_server_connection_vtransmit_max_bytes_avaiable(void* arg);
+int32_t apx_socket_server_connection_vtransmit_current_bytes_avaiable(void* arg);
+void apx_socket_server_connection_vtransmit_begin(void* arg);
+void apx_socket_server_connection_vtransmit_end(void* arg);
+apx_error_t apx_socket_server_connection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
+apx_error_t apx_socket_server_connection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
 #ifdef UNIT_TEST
-void apx_socketServerConnection_run(apx_socket_server_connection_t* self);
+void apx_socket_server_connection_run(apx_socket_server_connection_t* self);
 #endif
 
 #undef SOCKET_TYPE

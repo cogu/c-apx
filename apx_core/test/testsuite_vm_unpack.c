@@ -58,7 +58,7 @@ static void test_apx_vm_unpack_record_element_with_range_check(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testSuite_apx_vm_unpack(void)
+CuSuite* testsuite_apx_vm_unpack(void)
 {
    CuSuite* suite = CuSuiteNew();
 

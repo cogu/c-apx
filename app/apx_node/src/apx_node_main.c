@@ -154,12 +154,12 @@ int main(int argc, char **argv)
          if (m_apx_definition_str != NULL)
          {
             printf("Parsing %s (%d bytes)...", adt_str_cstr(&m_definition_file), adt_str_size(m_apx_definition_str));
-            apx_error_t rc = apx_connection_attachNode(m_apx_connection, m_apx_definition_str);
+            apx_error_t rc = apx_connection_attach_node(m_apx_connection, m_apx_definition_str);
             if (rc != APX_NO_ERROR)
             {
                if (rc == APX_PARSE_ERROR)
                {
-                  int32_t errorLine = apx_connection_getLastErrorLine(m_apx_connection);
+                  int32_t errorLine = apx_connection_get_last_error_line(m_apx_connection);
                   printf("Failed\n");
                   fprintf(stderr, "Error: Parse error on line %d\n", (int) errorLine);
                }
@@ -176,13 +176,13 @@ int main(int argc, char **argv)
                apx_size_t num_provide_ports;
                apx_size_t num_require_ports;
                printf("OK\n");
-               node_instance = apx_connection_getLastAttachedNode(m_apx_connection);
+               node_instance = apx_connection_get_last_attached_node(m_apx_connection);
                if (node_instance != NULL)
                {
-                  num_provide_ports = apx_nodeInstance_get_num_provide_ports(node_instance);
-                  num_require_ports = apx_nodeInstance_get_num_require_ports(node_instance);
+                  num_provide_ports = apx_node_instance_get_num_provide_ports(node_instance);
+                  num_require_ports = apx_node_instance_get_num_require_ports(node_instance);
                   printf("\t%s: Provide-Ports: %d, Require-Ports: %d\n",
-                        apx_nodeInstance_get_name(node_instance),
+                        apx_node_instance_get_name(node_instance),
                         (int) num_provide_ports, (int) num_require_ports);
                }
                printf("Connecting to APX server at %s...", adt_str_cstr(m_connect_address));
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 #endif
                   printf("OK\n");
                   if (!m_no_bind)
-                  {                     
+                  {
                      printf("Initializing JSON message server...");
                      rc = init_json_message_server();
                      if (rc == APX_NO_ERROR)
@@ -535,36 +535,36 @@ static apx_error_t connect_to_apx_server(void)
 
 static apx_error_t init_json_message_server(void)
 {
-   uint8_t addressFamily = 255u;
+   uint8_t address_family = 255u;
    const char* bind_address = adt_str_cstr(m_bind_address);
    switch (m_bind_resource_type)
    {
    case APX_RESOURCE_TYPE_IPV4:
-      addressFamily = MSOCKET_ADDR_INET;
+      address_family = MSOCKET_ADDR_INET;
       break;
    case APX_RESOURCE_TYPE_IPV6:
-      addressFamily = MSOCKET_ADDR_INET6;
+      address_family = MSOCKET_ADDR_INET6;
       break;
    case APX_RESOURCE_TYPE_FILE:
 #ifdef _WIN32
       printf("UNIX domain sockets not supported in Windows\n");
       return APX_NOT_IMPLEMENTED_ERROR;
 #else
-      addressFamily = MSOCKET_ADDR_UNIX;
+      address_family = MSOCKET_ADDR_UNIX;
       break;
 #endif
    case APX_RESOURCE_TYPE_NAME:
       if ((strlen(bind_address) == 0) || (strcmp(bind_address, "localhost") == 0))
       {
-         addressFamily = MSOCKET_ADDR_INET;
+         address_family = MSOCKET_ADDR_INET;
       }
       break;
    default:
       break;
    }
-   if (addressFamily != 255u)
+   if (address_family != 255u)
    {
-      return json_server_init(m_apx_connection, addressFamily);
+      return json_server_init(m_apx_connection, address_family);
    }
    return APX_CONNECTION_ERROR;
 }

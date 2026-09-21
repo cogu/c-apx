@@ -69,17 +69,17 @@ typedef struct rbf_data_tag
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t maxPendingMessages);
+apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t max_pending_messages);
 void apx_allocator_destroy(apx_allocator_t *self);
 
 void apx_allocator_start(apx_allocator_t *self);
 void apx_allocator_stop(apx_allocator_t *self);
 uint8_t *apx_allocator_alloc(apx_allocator_t *self, size_t size);
 void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size);
-bool apx_allocator_isRunning(apx_allocator_t *self);
+bool apx_allocator_is_running(apx_allocator_t *self);
 #ifdef UNIT_TEST
-void apx_allocator_processAll(apx_allocator_t *self);
-int32_t apx_allocator_numPendingMessages(apx_allocator_t *self);
+void apx_allocator_process_all(apx_allocator_t *self);
+int32_t apx_allocator_num_pending_messages(apx_allocator_t *self);
 #endif
 
 #endif //APX_ALLOCATOR_H

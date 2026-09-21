@@ -41,52 +41,52 @@ typedef struct apx_server_test_connection_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_serverTestConnection_create(apx_server_test_connection_t *self);
-void apx_serverTestConnection_destroy(apx_server_test_connection_t *self);
-void apx_serverTestConnection_vdestroy(void *arg);
-apx_server_test_connection_t *apx_serverTestConnection_new(void);
-void apx_serverTestConnection_delete(apx_server_test_connection_t *self);
-apx_connection_type_t apx_serverTestConnection_get_connection_type(apx_server_test_connection_t const* self);
-apx_size_t apx_serverTestConnection_get_num_header_size(apx_server_test_connection_t const* self);
-rmf_version_id_t apx_serverTestConnection_get_rmf_proto_id(apx_server_test_connection_t const* self);
+apx_error_t apx_server_test_connection_create(apx_server_test_connection_t *self);
+void apx_server_test_connection_destroy(apx_server_test_connection_t *self);
+void apx_server_test_connection_vdestroy(void *arg);
+apx_server_test_connection_t *apx_server_test_connection_new(void);
+void apx_server_test_connection_delete(apx_server_test_connection_t *self);
+apx_connection_type_t apx_server_test_connection_get_connection_type(apx_server_test_connection_t const* self);
+apx_size_t apx_server_test_connection_get_num_header_size(apx_server_test_connection_t const* self);
+rmf_version_id_t apx_server_test_connection_get_rmf_proto_id(apx_server_test_connection_t const* self);
 
 
 // BaseConnection API
-void apx_serverTestConnection_start(apx_server_test_connection_t* self);
-void apx_serverTestConnection_vstart(void* arg);
-void apx_serverTestConnection_close(apx_server_test_connection_t* self);
-void apx_serverTestConnection_vclose(void* arg);
+void apx_server_test_connection_start(apx_server_test_connection_t* self);
+void apx_server_test_connection_vstart(void* arg);
+void apx_server_test_connection_close(apx_server_test_connection_t* self);
+void apx_server_test_connection_vclose(void* arg);
 
 // ConnectionInterface API
-int32_t apx_serverTestConnection_vtransmit_max_bytes_avaiable(void* arg);
-int32_t apx_serverTestConnection_vtransmit_current_bytes_avaiable(void* arg);
-void apx_serverTestConnection_vtransmit_begin(void* arg);
-void apx_serverTestConnection_vtransmit_end(void* arg);
-apx_error_t apx_serverTestConnection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
-apx_error_t apx_serverTestConnection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
-apx_error_t apx_serverTestConnection_remote_file_published_notification(apx_server_test_connection_t* self, apx_file_t* file);
-apx_error_t apx_serverTestConnection_remote_file_write_notification(apx_server_test_connection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
+int32_t apx_server_test_connection_vtransmit_max_bytes_avaiable(void* arg);
+int32_t apx_server_test_connection_vtransmit_current_bytes_avaiable(void* arg);
+void apx_server_test_connection_vtransmit_begin(void* arg);
+void apx_server_test_connection_vtransmit_end(void* arg);
+apx_error_t apx_server_test_connection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
+apx_error_t apx_server_test_connection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
+apx_error_t apx_server_test_connection_remote_file_published_notification(apx_server_test_connection_t* self, apx_file_t* file);
+apx_error_t apx_server_test_connection_remote_file_write_notification(apx_server_test_connection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
 
 //Log API
-int32_t apx_serverTestConnection_log_length(apx_server_test_connection_t* self);
-adt_bytearray_t* apx_serverTestConnection_get_log_packet(apx_server_test_connection_t* self, int32_t index);
-void apx_serverTestConnection_clear_log(apx_server_test_connection_t* self);
+int32_t apx_server_test_connection_log_length(apx_server_test_connection_t* self);
+adt_bytearray_t* apx_server_test_connection_get_log_packet(apx_server_test_connection_t* self, int32_t index);
+void apx_server_test_connection_clear_log(apx_server_test_connection_t* self);
 
 //Test-case API
-void apx_serverTestConnection_set_tester_protocol_version(apx_server_test_connection_t* self, rmf_version_id_t id);
-void apx_serverTestConnection_set_tester_connection_type(apx_server_test_connection_t* self, apx_connection_type_t connection_type);
-apx_file_manager_t* apx_serverTestConnection_get_file_manager(apx_server_test_connection_t* self);
-apx_node_manager_t* apx_serverTestConnection_get_node_manager(apx_server_test_connection_t* self);
-apx_error_t apx_serverTestConnection_send_greeting_header(apx_server_test_connection_t* self);
-apx_error_t apx_serverTestConnection_send_custom_greeting_header(apx_server_test_connection_t* self, char const* greeting);
-apx_error_t apx_serverTestConnection_request_open_local_file(apx_server_test_connection_t* self, char const* file_name);
-apx_error_t apx_serverTestConnection_publish_remote_file(apx_server_test_connection_t* self, uint32_t address, char const* file_name, apx_size_t file_size);
-apx_error_t apx_serverTestConnection_write_remote_data(apx_server_test_connection_t* self, uint32_t address, uint8_t const* payload_data, apx_size_t payload_size);
-apx_node_instance_t* apx_serverTestConnection_find_node(apx_server_test_connection_t* self, char const* name);
-apx_error_t apx_serverTestConnection_build_node(apx_server_test_connection_t* self, char const* definition_text);
-void apx_serverTestConnection_run(apx_server_test_connection_t* self);
-void apx_serverTestConnection_enable_compatibility_mode(apx_server_test_connection_t* self);
-void apx_serverTestConnection_set_connection_id(apx_server_test_connection_t* self, uint32_t connection_id);
+void apx_server_test_connection_set_tester_protocol_version(apx_server_test_connection_t* self, rmf_version_id_t id);
+void apx_server_test_connection_set_tester_connection_type(apx_server_test_connection_t* self, apx_connection_type_t connection_type);
+apx_file_manager_t* apx_server_test_connection_get_file_manager(apx_server_test_connection_t* self);
+apx_node_manager_t* apx_server_test_connection_get_node_manager(apx_server_test_connection_t* self);
+apx_error_t apx_server_test_connection_send_greeting_header(apx_server_test_connection_t* self);
+apx_error_t apx_server_test_connection_send_custom_greeting_header(apx_server_test_connection_t* self, char const* greeting);
+apx_error_t apx_server_test_connection_request_open_local_file(apx_server_test_connection_t* self, char const* file_name);
+apx_error_t apx_server_test_connection_publish_remote_file(apx_server_test_connection_t* self, uint32_t address, char const* file_name, apx_size_t file_size);
+apx_error_t apx_server_test_connection_write_remote_data(apx_server_test_connection_t* self, uint32_t address, uint8_t const* payload_data, apx_size_t payload_size);
+apx_node_instance_t* apx_server_test_connection_find_node(apx_server_test_connection_t* self, char const* name);
+apx_error_t apx_server_test_connection_build_node(apx_server_test_connection_t* self, char const* definition_text);
+void apx_server_test_connection_run(apx_server_test_connection_t* self);
+void apx_server_test_connection_enable_compatibility_mode(apx_server_test_connection_t* self);
+void apx_server_test_connection_set_connection_id(apx_server_test_connection_t* self, uint32_t connection_id);
 
 
 

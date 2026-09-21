@@ -35,12 +35,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_data_type_t* apx_dataType_new(const char* name, int32_t line_number)
+apx_data_type_t* apx_data_type_new(const char* name, int32_t line_number)
 {
    apx_data_type_t* self = (apx_data_type_t*)malloc(sizeof(apx_data_type_t));
    if (self != NULL)
    {
-      apx_error_t result = apx_dataType_create(self, name, line_number);
+      apx_error_t result = apx_data_type_create(self, name, line_number);
       if (result != APX_NO_ERROR)
       {
          free(self);
@@ -50,20 +50,20 @@ apx_data_type_t* apx_dataType_new(const char* name, int32_t line_number)
    return self;
 }
 
-void apx_dataType_delete(apx_data_type_t* self)
+void apx_data_type_delete(apx_data_type_t* self)
 {
    if(self != NULL){
-      apx_dataType_destroy(self);
+      apx_data_type_destroy(self);
       free(self);
    }
 }
 
-void apx_dataType_vdelete(void* arg)
+void apx_data_type_vdelete(void* arg)
 {
-   apx_dataType_delete((apx_data_type_t*) arg);
+   apx_data_type_delete((apx_data_type_t*) arg);
 }
 
-apx_error_t apx_dataType_create(apx_data_type_t* self, const char* name, int32_t line_number)
+apx_error_t apx_data_type_create(apx_data_type_t* self, const char* name, int32_t line_number)
 {
    if (self != NULL)
    {
@@ -79,14 +79,14 @@ apx_error_t apx_dataType_create(apx_data_type_t* self, const char* name, int32_t
       {
          self->name = 0;
       }
-      apx_dataSignature_create(&self->data_signature);
+      apx_data_signature_create(&self->data_signature);
       self->attributes = NULL;
       self->line_number = line_number;
    }
    return APX_NO_ERROR;
 }
 
-void apx_dataType_destroy(apx_data_type_t* self)
+void apx_data_type_destroy(apx_data_type_t* self)
 {
    if ( self != NULL )
    {
@@ -95,25 +95,25 @@ void apx_dataType_destroy(apx_data_type_t* self)
          free(self->name);
          self->name = NULL;
       }
-      apx_dataSignature_destroy(&self->data_signature);
+      apx_data_signature_destroy(&self->data_signature);
       if (self->attributes != NULL)
       {
-         apx_typeAttributes_delete(self->attributes);
+         apx_type_attributes_delete(self->attributes);
          self->attributes = NULL;
       }
    }
 }
 
-apx_data_element_t* apx_dataType_get_data_element(apx_data_type_t* self)
+apx_data_element_t* apx_data_type_get_data_element(apx_data_type_t* self)
 {
    if (self != NULL)
    {
-      return apx_dataSignature_get_data_element(&self->data_signature);
+      return apx_data_signature_get_data_element(&self->data_signature);
    }
    return NULL;
 }
 
-int32_t apx_dataType_get_line_number(apx_data_type_t* self)
+int32_t apx_data_type_get_line_number(apx_data_type_t* self)
 {
    if (self != NULL)
    {
@@ -122,7 +122,7 @@ int32_t apx_dataType_get_line_number(apx_data_type_t* self)
    return -1;
 }
 
-bool apx_dataType_has_attributes(apx_data_type_t* self)
+bool apx_data_type_has_attributes(apx_data_type_t* self)
 {
    if (self != NULL)
    {
@@ -131,11 +131,11 @@ bool apx_dataType_has_attributes(apx_data_type_t* self)
    return false;
 }
 
-apx_error_t apx_dataType_init_attributes(apx_data_type_t* self)
+apx_error_t apx_data_type_init_attributes(apx_data_type_t* self)
 {
    if ( (self != NULL) && (self->attributes == NULL) )
    {
-      self->attributes = apx_typeAttributes_new();
+      self->attributes = apx_type_attributes_new();
       if (self->attributes == NULL)
       {
          return APX_MEM_ERROR;
@@ -144,7 +144,7 @@ apx_error_t apx_dataType_init_attributes(apx_data_type_t* self)
    return APX_NO_ERROR;
 }
 
-apx_type_attributes_t* apx_dataType_get_attributes(apx_data_type_t* self)
+apx_type_attributes_t* apx_data_type_get_attributes(apx_data_type_t* self)
 {
    if (self != NULL)
    {
@@ -153,7 +153,7 @@ apx_type_attributes_t* apx_dataType_get_attributes(apx_data_type_t* self)
    return NULL;
 }
 
-const char* apx_dataType_get_name(apx_data_type_t* self)
+const char* apx_data_type_get_name(apx_data_type_t* self)
 {
    if (self != NULL)
    {
@@ -162,7 +162,7 @@ const char* apx_dataType_get_name(apx_data_type_t* self)
    return NULL;
 }
 
-void apx_dataType_set_id(apx_data_type_t* self, apx_type_id_t type_id)
+void apx_data_type_set_id(apx_data_type_t* self, apx_type_id_t type_id)
 {
    if (self != NULL)
    {
@@ -170,7 +170,7 @@ void apx_dataType_set_id(apx_data_type_t* self, apx_type_id_t type_id)
    }
 }
 
-apx_type_id_t apx_dataType_get_id(apx_data_type_t const* self)
+apx_type_id_t apx_data_type_get_id(apx_data_type_t const* self)
 {
    if (self != NULL)
    {
@@ -180,36 +180,36 @@ apx_type_id_t apx_dataType_get_id(apx_data_type_t const* self)
 
 }
 
-apx_error_t apx_dataType_derive_types_on_element(apx_data_type_t* self, adt_ary_t const* type_list, adt_hash_t const* type_map)
+apx_error_t apx_data_type_derive_types_on_element(apx_data_type_t* self, adt_ary_t const* type_list, adt_hash_t const* type_map)
 {
    if (self != NULL)
    {
-      apx_data_element_t* data_element = apx_dataSignature_get_data_element(&self->data_signature);
+      apx_data_element_t* data_element = apx_data_signature_get_data_element(&self->data_signature);
       if (data_element == NULL)
       {
          return APX_NULL_PTR_ERROR;
       }
-      return apx_dataElement_derive_types_on_element(data_element, type_list, type_map);
+      return apx_data_element_derive_types_on_element(data_element, type_list, type_map);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_dataType_derive_data_element(apx_data_type_t* self, struct apx_data_element_tag** data_element, struct apx_data_element_tag** parent)
+apx_error_t apx_data_type_derive_data_element(apx_data_type_t* self, struct apx_data_element_tag** data_element, struct apx_data_element_tag** parent)
 {
    if ( (self != NULL) && (data_element != NULL) )
    {
       apx_error_t retval = APX_NO_ERROR;
       uint16_t reference_follow_count = 0u;
       apx_type_code_t type_code;
-      *data_element = apx_dataType_get_data_element(self);
+      *data_element = apx_data_type_get_data_element(self);
 
       do
       {
-         type_code = apx_dataElement_get_type_code(*data_element);
+         type_code = apx_data_element_get_type_code(*data_element);
          assert( (type_code != APX_TYPE_CODE_REF_ID) && (type_code != APX_TYPE_CODE_REF_NAME));
          if (type_code == APX_TYPE_CODE_REF_PTR)
          {
-            apx_data_type_t* data_type = apx_dataElement_get_type_ref_ptr(*data_element);
+            apx_data_type_t* data_type = apx_data_element_get_type_ref_ptr(*data_element);
             if (data_type == NULL)
             {
                retval = APX_NULL_PTR_ERROR;
@@ -220,7 +220,7 @@ apx_error_t apx_dataType_derive_data_element(apx_data_type_t* self, struct apx_d
                {
                   *parent = *data_element;
                }
-               *data_element = apx_dataType_get_data_element(data_type);
+               *data_element = apx_data_type_get_data_element(data_type);
                if (*data_element == NULL)
                {
                   retval = APX_NULL_PTR_ERROR;
