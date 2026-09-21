@@ -81,6 +81,7 @@ static bool m_display_help = false;
 static bool m_display_version = false;
 static adt_str_t *m_config_path = NULL;
 static const char *SW_VERSION_STR = SW_VERSION_LITERAL;
+static int m_ready_fd = -1;
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -94,6 +95,7 @@ int main(int argc, char **argv)
    m_display_help = false;
    m_display_version = false;
    m_config_path = NULL;
+   m_ready_fd = -1;
 
    argparse_result_t parse_result = argparse_exec(argc, (const char**) argv, argparse_cbk);
    if (parse_result != ARGPARSE_SUCCESS)
@@ -168,6 +170,18 @@ int main(int argc, char **argv)
       return 1;
    }
    apx_server_start(&m_server);
+#ifndef _WIN32
+   if (m_ready_fd >= 0)
+   {
+      char ready_byte = '\n';
+      if (write(m_ready_fd, &ready_byte, 1) < 0)
+      {
+         perror("write ready_fd");
+      }
+      close(m_ready_fd);
+      m_ready_fd = -1;
+   }
+#endif
    while(m_runFlag != 0)
    {
       SLEEP(1000); //main thread is sleeping while child threads do all the work
@@ -234,55 +248,70 @@ static void print_version(void)
 
 static void print_usage(const char *name)
 {
-   printf("Usage:\n%s [-h | --help] [--version] <config_file | config_dir>\n", name);
+   printf("Usage:\n%s [-h | --help] [--version] [-r <fd> | --ready-fd <fd>] <config_file | config_dir>\n", name);
 }
 
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value)
 {
-   if (value == NULL)
+   if (short_name != NULL)
    {
-      if (short_name != NULL)
+      if (strcmp(short_name, "h") == 0)
       {
-         if (strcmp(short_name, "h") == 0)
-         {
-            m_display_help = true;
-            return ARGPARSE_SUCCESS;
-         }
-         else
-         {
-            return ARGPARSE_NAME_ERROR;
-         }
+         m_display_help = true;
+         return ARGPARSE_SUCCESS;
       }
-      else if (long_name != NULL)
+      if (strcmp(short_name, "r") == 0)
       {
-         if (strcmp(long_name, "help") == 0)
+         if (value == NULL)
          {
-            m_display_help = true;
-            return ARGPARSE_SUCCESS;
+            return ARGPARSE_NEED_VALUE;
          }
-         else if (strcmp(long_name, "version") == 0)
+         char *endptr = NULL;
+         long fd = strtol(value, &endptr, 10);
+         if (endptr == value || *endptr != '\0' || fd < 0)
          {
-            m_display_version = true;
-            return ARGPARSE_SUCCESS;
+            return ARGPARSE_VALUE_ERROR;
          }
-         else
-         {
-            return ARGPARSE_NAME_ERROR;
-         }
+         m_ready_fd = (int) fd;
+         return ARGPARSE_SUCCESS;
       }
+      return ARGPARSE_NAME_ERROR;
    }
-   else
+   if (long_name != NULL)
    {
-      if (short_name == NULL && long_name == NULL)
+      if (strcmp(long_name, "help") == 0)
       {
-         m_config_path = adt_str_new_cstr(value);
+         m_display_help = true;
+         return ARGPARSE_SUCCESS;
       }
-      else
+      if (strcmp(long_name, "version") == 0)
       {
-         return ARGPARSE_NAME_ERROR;
+         m_display_version = true;
+         return ARGPARSE_SUCCESS;
       }
+      if (strcmp(long_name, "ready-fd") == 0)
+      {
+         if (value == NULL)
+         {
+            return ARGPARSE_NEED_VALUE;
+         }
+         char *endptr = NULL;
+         long fd = strtol(value, &endptr, 10);
+         if (endptr == value || *endptr != '\0' || fd < 0)
+         {
+            return ARGPARSE_VALUE_ERROR;
+         }
+         m_ready_fd = (int) fd;
+         return ARGPARSE_SUCCESS;
+      }
+      return ARGPARSE_NAME_ERROR;
    }
-   return ARGPARSE_SUCCESS;
+   if (value != NULL)
+   {
+      m_config_path = adt_str_new_cstr(value);
+      return ARGPARSE_SUCCESS;
+   }
+   return ARGPARSE_PARSE_ERROR;
 }
 
 
