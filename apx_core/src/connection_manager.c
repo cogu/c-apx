@@ -42,7 +42,7 @@ static void apx_connectionManager_cleanup_task_main(apx_connectionManager_t *sel
 //////////////////////////////////////////////////////////////////////////////
 void apx_connectionManager_create(apx_connectionManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       SPINLOCK_INIT(self->lock);
       adt_list_create(&self->active_connections, apx_connectionBase_vdelete); //the base class has the actual destructor using vtable
@@ -57,7 +57,7 @@ void apx_connectionManager_create(apx_connectionManager_t *self)
 
 void apx_connectionManager_destroy(apx_connectionManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_connectionManager_stop(self);
       adt_list_destroy(&self->active_connections);
@@ -69,7 +69,7 @@ void apx_connectionManager_destroy(apx_connectionManager_t *self)
 
 void apx_connectionManager_start(apx_connectionManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->cleanup_thread_running = true;
       self->cleanup_thread_valid = true;
@@ -83,7 +83,7 @@ void apx_connectionManager_start(apx_connectionManager_t *self)
 
 void apx_connectionManager_stop(apx_connectionManager_t *self)
 {
-   if ( (self != 0) && (self->cleanup_thread_valid == true) )
+   if ( (self != NULL) && (self->cleanup_thread_valid == true) )
    {
 #ifndef _WIN32
    void *result;
@@ -103,7 +103,7 @@ void apx_connectionManager_stop(apx_connectionManager_t *self)
 
 void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConnection_t *connection)
 {
-   if ( (self != 0) && (connection != 0) )
+   if ( (self != NULL) && (connection != NULL) )
    {
       uint32_t connection_id;
       SPINLOCK_ENTER(self->lock);
@@ -120,12 +120,12 @@ void apx_connectionManager_attach(apx_connectionManager_t *self, apx_serverConne
 
 void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConnection_t *connection)
 {
-   if ( (self != 0) && (connection != 0))
+   if ( (self != NULL) && (connection != NULL))
    {
       adt_list_elem_t *iter;
       SPINLOCK_ENTER(self->lock);
       iter = adt_list_find(&self->active_connections, (void*)connection);
-      if (iter != 0)
+      if (iter != NULL)
       {
          adt_list_erase(&self->active_connections, iter);
          adt_list_insert(&self->inactive_connections, connection);
@@ -136,19 +136,19 @@ void apx_connectionManager_detach(apx_connectionManager_t *self, apx_serverConne
 
 apx_serverConnection_t* apx_connectionManager_get_last_connection(apx_connectionManager_t const*self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       if (adt_list_is_empty(&self->active_connections) == false)
       {
          return (apx_serverConnection_t*) adt_list_last(&self->active_connections);
       }
    }
-   return (apx_serverConnection_t*) 0;
+   return NULL;
 }
 
 uint32_t apx_connectionManager_get_num_connections(apx_connectionManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->num_connections;
    }
@@ -161,7 +161,7 @@ uint32_t apx_connectionManager_get_num_connections(apx_connectionManager_t *self
 
 void apx_connectionManager_run(apx_connectionManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       int32_t i;
       for(i=0;i<APX_SERVER_RUN_CYCLES;i++)
@@ -169,7 +169,7 @@ void apx_connectionManager_run(apx_connectionManager_t *self)
          int32_t num_inactive_connections;
          adt_list_elem_t *it = adt_list_iter_first(&self->active_connections);
          //run the event loop of each active connection
-         while(it != 0)
+         while(it != NULL)
          {
             apx_serverConnection_t * server_connection = (apx_serverConnection_t*) it->pItem;
             apx_serverConnection_run(server_connection);
@@ -177,7 +177,7 @@ void apx_connectionManager_run(apx_connectionManager_t *self)
          }
          it = adt_list_iter_first(&self->inactive_connections);
          //run the event loop of each inactive connection
-         while(it != 0)
+         while(it != NULL)
          {
             apx_serverConnection_t * server_connection = (apx_serverConnection_t*) it->pItem;
             apx_serverConnection_run(server_connection);
@@ -227,7 +227,7 @@ static uint32_t apx_connectionManager_generate_connection_id(apx_connectionManag
 THREAD_PROTO(cleanup_task,arg)
 {
    apx_connectionManager_t *self = (apx_connectionManager_t*) arg;
-   if(self != 0)
+   if(self != NULL)
    {
       while(1)
       {

@@ -58,7 +58,7 @@ static void on_file_revoked(apx_serverTextLog_t* self, apx_serverConnection_t* c
 //////////////////////////////////////////////////////////////////////////////
 void apx_serverTextLog_create(apx_serverTextLog_t *self, struct apx_server_tag *server)
 {
-   if ( (self != 0) && (server != 0) )
+   if ( (self != NULL) && (server != 0) )
    {
       apx_textLogBase_create(&self->base);
       self->server = server;
@@ -68,7 +68,7 @@ void apx_serverTextLog_create(apx_serverTextLog_t *self, struct apx_server_tag *
 
 void apx_serverTextLog_destroy(apx_serverTextLog_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_textLogBase_destroy(&self->base);
    }
@@ -77,7 +77,7 @@ void apx_serverTextLog_destroy(apx_serverTextLog_t *self)
 apx_serverTextLog_t *apx_serverTextLog_new(struct apx_server_tag *server)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t*) malloc(sizeof(apx_serverTextLog_t));
-   if(self != 0)
+   if(self != NULL)
    {
       apx_serverTextLog_create(self, server);
    }
@@ -86,7 +86,7 @@ apx_serverTextLog_t *apx_serverTextLog_new(struct apx_server_tag *server)
 
 void apx_serverTextLog_delete(apx_serverTextLog_t *self)
 {
-   if(self != 0)
+   if(self != NULL)
    {
       apx_serverTextLog_destroy(self);
       free(self);
@@ -95,7 +95,7 @@ void apx_serverTextLog_delete(apx_serverTextLog_t *self)
 
 void apx_serverTextLog_enableFile(apx_serverTextLog_t *self, const char *path)
 {
-   if ( (self != 0) && (path != 0) )
+   if ( (self != NULL) && (path != NULL) )
    {
       apx_textLogBase_enableFile(&self->base, path );
    }
@@ -103,7 +103,7 @@ void apx_serverTextLog_enableFile(apx_serverTextLog_t *self, const char *path)
 
 void apx_serverTextLog_enableStdOut(apx_serverTextLog_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_textLogBase_enableStdout(&self->base);
    }
@@ -111,7 +111,7 @@ void apx_serverTextLog_enableStdOut(apx_serverTextLog_t *self)
 
 void apx_serverTextLog_enableSysLog(apx_serverTextLog_t *self, const char *label)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_textLogBase_enableSysLog(&self->base, label);
    }
@@ -119,7 +119,7 @@ void apx_serverTextLog_enableSysLog(apx_serverTextLog_t *self, const char *label
 
 void apx_serverTextLog_closeAll(apx_serverTextLog_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_textLogBase_closeAll(&self->base);
    }
@@ -182,7 +182,7 @@ static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const 
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
    (void)level;
-   if ( (self != 0) && (label != 0) && (msg != 0) )
+   if ( (self != NULL) && (label != NULL) && (msg != NULL) )
    {
       apx_textLogBase_printf(&self->base, "[%s] %s", label, msg);
    }
@@ -192,7 +192,7 @@ static void apx_serverTextLog_onLogEvent(void *arg, apx_logLevel_t level, const 
 static void apx_serverTextLog_on_new_connection(void *arg, apx_serverConnection_t *connection)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (connection != 0) )
+   if ( (self != NULL) && (connection != NULL) )
    {
       apx_textLogBase_printf(&self->base, "[%u] New connection", apx_serverConnection_get_connection_id(connection));
       register_connection_listener(self, connection);
@@ -202,7 +202,7 @@ static void apx_serverTextLog_on_new_connection(void *arg, apx_serverConnection_
 static void apx_serverTextLog_on_connection_closed(void *arg, apx_serverConnection_t *connection)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (connection != 0) )
+   if ( (self != NULL) && (connection != NULL) )
    {
       apx_textLogBase_printf(&self->base, "[%u] Connection closed", apx_serverConnection_get_connection_id(connection));      
    }
@@ -231,7 +231,7 @@ static void on_file_revoked(apx_serverTextLog_t* self, apx_serverConnection_t* c
 static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeInstance_t* node_instance, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (node_instance != 0) && (connectionTable != 0))
+   if ( (self != NULL) && (node_instance != NULL) && (connectionTable != NULL))
    {
       int32_t localPortId;
       apx_node_t *localNode = apx_nodeData_getNode(nodeData);
@@ -241,7 +241,7 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeInstance_
          apx_portRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
-         if (portref != 0)
+         if (portref != NULL)
          {
             int32_t remotePortId;
             apx_port_t *localPort;
@@ -250,7 +250,7 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeInstance_
             remotePortId = apx_portDataRef_getPortId(portref);
             localPort = apx_node_getProvidePort(localNode, localPortId);
             remotePort = apx_node_getRequirePort(remoteNode, remotePortId);
-            if ( (localPort != 0) && (remotePort) )
+            if ( (localPort != NULL) && (remotePort) )
             {
 
                apx_textLogBase_printf(&self->base, "[%d] %s.%s --> %s.%s",
@@ -268,7 +268,7 @@ static void apx_serverTextLog_providePortsConnected(void *arg, apx_nodeInstance_
 static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeInstance_t* node_instance, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (node_instance != 0) && (connectionTable != 0) )
+   if ( (self != NULL) && (node_instance != NULL) && (connectionTable != NULL) )
    {
       int32_t localPortId;
       apx_node_t *localNode = apx_nodeData_getNode(nodeData);
@@ -278,7 +278,7 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeInstan
          apx_portRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
-         if (portref != 0)
+         if (portref != NULL)
          {
             int32_t remotePortId;
             apx_port_t *localPort;
@@ -287,7 +287,7 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeInstan
             remotePortId = apx_portDataRef_getPortId(portref);
             localPort = apx_node_getProvidePort(localNode, localPortId);
             remotePort = apx_node_getRequirePort(remoteNode, remotePortId);
-            if ( (localPort != 0) && (remotePort) )
+            if ( (localPort != NULL) && (remotePort) )
             {
                apx_textLogBase_printf(&self->base, "[%d] %s.%s -!-> %s.%s",
                        apx_connectionBase_getConnectionId(connection),
@@ -304,7 +304,7 @@ static void apx_serverTextLog_providePortsDisconnected(void *arg, apx_nodeInstan
 static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeInstance_t* node_instance, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (node_instance != 0) && (connectionTable != 0))
+   if ( (self != NULL) && (node_instance != NULL) && (connectionTable != NULL))
    {
       int32_t localPortId;
       apx_node_t *localNode = apx_nodeData_getNode(nodeData);
@@ -314,7 +314,7 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeInstance_
          apx_portRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
-         if (portref != 0)
+         if (portref != NULL)
          {
             int32_t remotePortId;
             apx_port_t *localPort;
@@ -323,7 +323,7 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeInstance_
             remotePortId = apx_portDataRef_getPortId(portref);
             localPort = apx_node_getRequirePort(localNode, localPortId);
             remotePort = apx_node_getProvidePort(remoteNode, remotePortId);
-            if ( (localPort != 0) && (remotePort) )
+            if ( (localPort != NULL) && (remotePort) )
             {
 
                apx_textLogBase_printf(&self->base, "[%d] %s.%s <-- %s.%s",
@@ -341,7 +341,7 @@ static void apx_serverTextLog_requirePortsConnected(void *arg, apx_nodeInstance_
 static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeInstance_t* node_instance, apx_portConnectorChangeTable_t *connectionTable)
 {
    apx_serverTextLog_t *self = (apx_serverTextLog_t *) arg;
-   if ( (self != 0) && (node_instance != 0) && (connectionTable != 0) )
+   if ( (self != NULL) && (node_instance != NULL) && (connectionTable != NULL) )
    {
       int32_t localPortId;
       apx_node_t *localNode = apx_nodeData_getNode(nodeData);
@@ -351,7 +351,7 @@ static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeInstan
          apx_portRef_t *portref;
          apx_portConnectionEntry_t *entry = apx_portConnectorChangeTable_getEntry(connectionTable, localPortId);
          portref = apx_portConnectionEntry_get(entry, 0);
-         if (portref != 0)
+         if (portref != NULL)
          {
             int32_t remotePortId;
             apx_port_t *localPort;
@@ -360,7 +360,7 @@ static void apx_serverTextLog_requirePortsDisconnected(void *arg, apx_nodeInstan
             remotePortId = apx_portDataRef_getPortId(portref);
             localPort = apx_node_getRequirePort(localNode, localPortId);
             remotePort = apx_node_getProvidePort(remoteNode, remotePortId);
-            if ( (localPort != 0) && (remotePort) )
+            if ( (localPort != NULL) && (remotePort) )
             {
                apx_textLogBase_printf(&self->base, "[%d] %s.%s -!-> %s.%s",
                        apx_connectionBase_getConnectionId(connection),

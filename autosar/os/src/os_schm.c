@@ -70,7 +70,7 @@ extern os_task_cfg_t g_os_task_cfg[];
 //////////////////////////////////////////////////////////////////////////////
 static priority_queue_t m_pq;
 static bool m_workerThreadValid;
-static os_schm_cfg_t *m_cfg = 0;
+static os_schm_cfg_t *m_cfg = NULL;
 
 THREAD_T m_thread_worker;
 SPINLOCK_T m_spin;
@@ -78,7 +78,7 @@ SPINLOCK_T m_spin;
 DWORD m_threadId;
 #endif
 uint8_t m_running = 0;
-uint32_t (*m_getTimeFn)(void) = 0;
+uint32_t (*m_getTimeFn)(void) = NULL;
 void (*m_eventTriggerHook)(const os_timer_ev_cfg_t *cfg);
 
 
@@ -97,7 +97,7 @@ void os_schm_init(os_schm_cfg_t *cfg)
    priority_queue_create(&m_pq);
    
    m_workerThreadValid = false;
-   if (m_cfg->timerEventHookFunc != 0)
+   if (m_cfg->timerEventHookFunc != NULL)
    {
       m_getTimeFn = m_cfg->timerFunc;
    }
@@ -172,12 +172,12 @@ DYN_STATIC void os_schm_run(void)
          //printf("{%u, %d},\n", currentTimeMs, (int) cfg->eventID);
 
          //call hook if set
-         if (m_eventTriggerHook != 0)
+         if (m_eventTriggerHook != NULL)
          {
             m_eventTriggerHook(cfg);
          }
          //call task handler if task is set
-         if (cfg->task != 0)
+         if (cfg->task != NULL)
          {
             os_task_setEvent(cfg->task, cfg->eventID);
          }

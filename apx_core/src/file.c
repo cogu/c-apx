@@ -70,7 +70,7 @@ apx_error_t apx_file_create(apx_file_t* self, const rmf_fileInfo_t* file_info)
 
 void apx_file_destroy(apx_file_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       rmf_fileInfo_destroy(&self->file_info);      
       MUTEX_DESTROY(self->lock);
@@ -80,13 +80,13 @@ void apx_file_destroy(apx_file_t *self)
 apx_file_t* apx_file_new(const rmf_fileInfo_t* file_info)
 {
    apx_file_t *self = (apx_file_t*) malloc(sizeof(apx_file_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t result = apx_file_create(self, file_info);
       if (result != APX_NO_ERROR)
       {
          free(self);
-         self = (apx_file_t*) 0;
+         self = NULL;
       }
    }
    return self;
@@ -94,7 +94,7 @@ apx_file_t* apx_file_new(const rmf_fileInfo_t* file_info)
 
 void apx_file_delete(apx_file_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_file_destroy(self);
       free(self);
@@ -108,7 +108,7 @@ void apx_file_vdelete(void *arg)
 
 void apx_file_open(apx_file_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_file_lock(self);
       self->is_file_open = true;
@@ -118,7 +118,7 @@ void apx_file_open(apx_file_t *self)
 
 void apx_file_close(apx_file_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_file_lock(self);
       self->is_file_open = false;
@@ -128,10 +128,10 @@ void apx_file_close(apx_file_t *self)
 
 void apx_file_set_notification_handler(apx_file_t* self, const apx_fileNotificationHandler_t* handler)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_file_lock(self);
-      if (handler == 0)
+      if (handler == NULL)
       {
          memset(&self->notification_handler, 0, sizeof(apx_fileNotificationHandler_t));
       }
@@ -145,7 +145,7 @@ void apx_file_set_notification_handler(apx_file_t* self, const apx_fileNotificat
 
 bool apx_file_has_first_write(apx_file_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->has_first_write;
    }
@@ -154,7 +154,7 @@ bool apx_file_has_first_write(apx_file_t* self)
 
 void apx_file_set_first_write(apx_file_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->has_first_write = true;
    }
@@ -163,7 +163,7 @@ void apx_file_set_first_write(apx_file_t* self)
 
 bool apx_file_is_open(apx_file_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       bool retval;
       apx_file_lock(self);
@@ -176,7 +176,7 @@ bool apx_file_is_open(apx_file_t* self)
 
 bool apx_file_is_local(apx_file_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       uint32_t const address = rmf_fileInfo_address(&self->file_info);
       uint32_t const address_without_flags = address & APX_ADDRESS_MASK_INTERNAL;
@@ -187,7 +187,7 @@ bool apx_file_is_local(apx_file_t *self)
 
 bool apx_file_is_remote(apx_file_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       uint32_t const address = rmf_fileInfo_address(&self->file_info);
       uint32_t const address_without_flags = address & APX_ADDRESS_MASK_INTERNAL;
@@ -198,7 +198,7 @@ bool apx_file_is_remote(apx_file_t *self)
 
 bool apx_file_has_valid_address(apx_file_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       uint32_t const address_without_flags = rmf_fileInfo_address_without_flags(&self->file_info);
       return (address_without_flags != RMF_INVALID_ADDRESS);
@@ -208,16 +208,16 @@ bool apx_file_has_valid_address(apx_file_t* self)
 
 struct apx_fileManager_tag* apx_file_get_file_manager(apx_file_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->file_manager;
    }
-   return (apx_fileManager_t*) 0;
+   return NULL;
 }
 
 void apx_file_set_file_manager(apx_file_t* self, struct apx_fileManager_tag* file_manager)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->file_manager = file_manager;
    }
@@ -354,7 +354,7 @@ apx_error_t apx_file_open_notify(apx_file_t* self)
 
 apx_error_t apx_file_write_notify(apx_file_t* self, uint32_t offset, const uint8_t* src, uint32_t len)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_file_lock(self);
       if (!self->has_first_write)
@@ -435,7 +435,7 @@ static void apx_file_calc_file_type(apx_file_t *self)
 
 static void apx_file_lock(apx_file_t *self)
 {
-   if(self != 0)
+   if(self != NULL)
    {
       MUTEX_LOCK(self->lock);
    }
@@ -443,7 +443,7 @@ static void apx_file_lock(apx_file_t *self)
 
 static void apx_file_unlock(apx_file_t *self)
 {
-   if(self != 0)
+   if(self != NULL)
    {
       MUTEX_UNLOCK(self->lock);
    }

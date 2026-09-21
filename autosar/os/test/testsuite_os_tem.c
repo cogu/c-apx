@@ -98,7 +98,7 @@ THREAD_PROTO(Test_Task, arg)
    /* init */
    boolean isRunning = TRUE;
    os_task_t *self = (os_task_t*)arg;
-   if (self == 0)
+   if (self == NULL)
    {
       fprintf(stderr, "Error: Serive_Task called with null argument\n");
    }

@@ -60,7 +60,7 @@ apx_dataElement_t *apx_dataElement_new(apx_typeCode_t type_code)
 
 void apx_dataElement_delete(apx_dataElement_t *self)
 {
-   if(self != 0)
+   if(self != NULL)
    {
       apx_dataElement_destroy(self);
       free(self);
@@ -277,7 +277,7 @@ bool apx_dataElement_has_limits(apx_dataElement_t const* self)
 void apx_dataElement_init_record_type(apx_dataElement_t* self)
 {
    self->type_code=APX_TYPE_CODE_RECORD;
-   if (self->elements != 0)
+   if (self->elements != NULL)
    {
       adt_ary_delete(self->elements);
    }
@@ -287,7 +287,7 @@ void apx_dataElement_init_record_type(apx_dataElement_t* self)
 apx_error_t apx_dataElement_set_array_length(apx_dataElement_t* self, uint32_t array_len)
 {
    apx_error_t retval = APX_NO_ERROR;
-   if (self != 0)
+   if (self != NULL)
    {
       self->array_len = array_len;
    }
@@ -300,7 +300,7 @@ apx_error_t apx_dataElement_set_array_length(apx_dataElement_t* self, uint32_t a
 
 uint32_t apx_dataElement_get_array_length(apx_dataElement_t const* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->array_len;
    }
@@ -309,7 +309,7 @@ uint32_t apx_dataElement_get_array_length(apx_dataElement_t const* self)
 
 bool apx_dataElement_is_array(apx_dataElement_t const* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return (bool) (self->array_len > 0u);
    }
@@ -318,7 +318,7 @@ bool apx_dataElement_is_array(apx_dataElement_t const* self)
 
 void apx_dataElement_set_dynamic_array(apx_dataElement_t* self)
 {   
-   if (self != 0)
+   if (self != NULL)
    {
       self->is_dynamic_array = true;      
    }
@@ -326,7 +326,7 @@ void apx_dataElement_set_dynamic_array(apx_dataElement_t* self)
 
 bool apx_dataElement_is_dynamic_array(apx_dataElement_t const* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->is_dynamic_array;
    }
@@ -336,9 +336,9 @@ bool apx_dataElement_is_dynamic_array(apx_dataElement_t const* self)
 
 void apx_dataElement_set_type_ref_id(apx_dataElement_t* self, apx_typeId_t type_id)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if ( (self->type_code == APX_TYPE_CODE_REF_NAME) && (self->type_ref.name != 0) )
+      if ( (self->type_code == APX_TYPE_CODE_REF_NAME) && (self->type_ref.name != NULL) )
       {
          free(self->type_ref.name);
       }
@@ -352,7 +352,7 @@ void apx_dataElement_set_type_ref_id(apx_dataElement_t* self, apx_typeId_t type_
 
 apx_typeId_t apx_dataElement_get_type_ref_id(apx_dataElement_t const* self)
 {
-   if ( (self != 0) && (self->type_code == APX_TYPE_CODE_REF_ID))
+   if ( (self != NULL) && (self->type_code == APX_TYPE_CODE_REF_ID))
    {
       return self->type_ref.id;
    }
@@ -361,9 +361,9 @@ apx_typeId_t apx_dataElement_get_type_ref_id(apx_dataElement_t const* self)
 
 apx_error_t apx_dataElement_set_type_ref_name_bstr(apx_dataElement_t* self, const uint8_t* begin, const uint8_t* end)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if ( (self->type_code == APX_TYPE_CODE_REF_NAME) && (self->type_ref.name != 0) )
+      if ( (self->type_code == APX_TYPE_CODE_REF_NAME) && (self->type_ref.name != NULL) )
       {
          free(self->type_ref.name);
       }
@@ -385,7 +385,7 @@ apx_error_t apx_dataElement_set_type_ref_name_bstr(apx_dataElement_t* self, cons
 
 const char * apx_dataElement_get_type_ref_name(apx_dataElement_t const* self)
 {
-   if ( (self != 0) && (self->type_code == APX_TYPE_CODE_REF_NAME) )
+   if ( (self != NULL) && (self->type_code == APX_TYPE_CODE_REF_NAME) )
    {
       return self->type_ref.name;
    }
@@ -394,9 +394,9 @@ const char * apx_dataElement_get_type_ref_name(apx_dataElement_t const* self)
 
 void apx_dataElement_set_type_ref_ptr(apx_dataElement_t *self, struct apx_dataType_tag *ptr)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if ( (self->type_code == APX_TYPE_CODE_REF_NAME) && (self->type_ref.name != 0) )
+      if ( (self->type_code == APX_TYPE_CODE_REF_NAME) && (self->type_ref.name != NULL) )
       {
          free(self->type_ref.name);
       }
@@ -410,16 +410,16 @@ void apx_dataElement_set_type_ref_ptr(apx_dataElement_t *self, struct apx_dataTy
 
 apx_dataType_t * apx_dataElement_get_type_ref_ptr(apx_dataElement_t const* self)
 {
-   if ( (self != 0) && (self->type_code == APX_TYPE_CODE_REF_PTR) )
+   if ( (self != NULL) && (self->type_code == APX_TYPE_CODE_REF_PTR) )
    {
       return self->type_ref.ptr;
    }
-   return (apx_dataType_t*) 0;
+   return NULL;
 }
 
 void apx_dataElement_append_child(apx_dataElement_t* self, apx_dataElement_t* child)
 {
-   if( (self != 0) && (child != 0) && (self->type_code == APX_TYPE_CODE_RECORD))
+   if( (self != NULL) && (child != NULL) && (self->type_code == APX_TYPE_CODE_RECORD))
    {
       if (self->elements == NULL)
       {
@@ -431,7 +431,7 @@ void apx_dataElement_append_child(apx_dataElement_t* self, apx_dataElement_t* ch
 
 int32_t apx_dataElement_get_num_child_elements(apx_dataElement_t const* self)
 {
-   if ( (self != 0) && (self->elements != 0) )
+   if ( (self != NULL) && (self->elements != NULL) )
    {
       return adt_ary_length(self->elements);
    }
@@ -440,10 +440,10 @@ int32_t apx_dataElement_get_num_child_elements(apx_dataElement_t const* self)
 
 apx_dataElement_t* apx_dataElement_get_child_at(apx_dataElement_t const* self, int32_t index)
 {
-   if ( (self != 0) && (self->elements != 0) )
+   if ( (self != NULL) && (self->elements != NULL) )
    {
       void **ptr = adt_ary_get(self->elements, index);
-      if (ptr != 0)
+      if (ptr != NULL)
       {
          return (apx_dataElement_t*) *ptr;
       }

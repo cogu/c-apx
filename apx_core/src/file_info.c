@@ -102,7 +102,7 @@ apx_error_t rmf_fileInfo_create_copy(rmf_fileInfo_t* self, rmf_fileInfo_t const*
 
 void rmf_fileInfo_destroy(rmf_fileInfo_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       adt_str_destroy(&self->name);
    }
@@ -111,13 +111,13 @@ void rmf_fileInfo_destroy(rmf_fileInfo_t* self)
 rmf_fileInfo_t* rmf_fileInfo_new(uint32_t address, uint32_t size, const char* name, rmf_fileType_t file_type, rmf_digestType_t digest_type, const uint8_t* digest_data)
 {
    rmf_fileInfo_t* self = (rmf_fileInfo_t*)malloc(sizeof(rmf_fileInfo_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t rc = rmf_fileInfo_create(self, address, size, name, file_type, digest_type, digest_data);
       if (rc != APX_NO_ERROR)
       {
          free(self);
-         self = (rmf_fileInfo_t*)0;
+         self = NULL;
       }
    }
    return self;
@@ -125,7 +125,7 @@ rmf_fileInfo_t* rmf_fileInfo_new(uint32_t address, uint32_t size, const char* na
 
 void rmf_fileInfo_delete(rmf_fileInfo_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       rmf_fileInfo_destroy(self);
       free(self);
@@ -212,22 +212,22 @@ apx_error_t rmf_fileInfo_assign(rmf_fileInfo_t* self, const rmf_fileInfo_t* othe
 
 rmf_fileInfo_t* rmf_fileInfo_clone(const rmf_fileInfo_t* other)
 {
-   if (other != 0)
+   if (other != NULL)
    {
       rmf_fileInfo_t* self = (rmf_fileInfo_t*)malloc(sizeof(rmf_fileInfo_t));
-      if (self != 0)
+      if (self != NULL)
       {
          apx_error_t rc = rmf_fileInfo_create(self, other->address, other->size, adt_str_cstr((adt_str_t*)&other->name),
             other->rmf_file_type, other->digest_type, other->digest_data);
          if (rc != APX_NO_ERROR)
          {
             free(self);
-            self = (rmf_fileInfo_t*)0;
+            self = NULL;
          }
       }
       return self;
    }
-   return (rmf_fileInfo_t*)0;
+   return NULL;
 }
 
 void rmf_fileInfo_set_address(rmf_fileInfo_t* self, uint32_t address)
@@ -240,7 +240,7 @@ void rmf_fileInfo_set_address(rmf_fileInfo_t* self, uint32_t address)
 
 bool rmf_fileInfo_is_remote_address(rmf_fileInfo_t const* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return ((self->address != RMF_INVALID_ADDRESS) && ((self->address & RMF_REMOTE_ADDRESS_BIT) != 0u));
    }
@@ -264,12 +264,12 @@ char* rmf_fileInfo_base_name(rmf_fileInfo_t const* self)
    {
       char const* name = adt_str_cstr((adt_str_t*)&self->name);
       char* dot = strchr(name, '.');
-      if (dot != 0)
+      if (dot != NULL)
       {
          return bstr_make_cstr((const uint8_t*)name, (const uint8_t*)dot);
       }
    }
-   return (char*)0;
+   return NULL;
 }
 
 void rmf_fileInfo_copy_base_name(rmf_fileInfo_t const* self, char* dest, uint32_t max_dest_len)
@@ -278,7 +278,7 @@ void rmf_fileInfo_copy_base_name(rmf_fileInfo_t const* self, char* dest, uint32_
    {
       char const* name = adt_str_cstr((adt_str_t*)&self->name);
       char* dot = strchr(name, '.');
-      if (dot != 0)
+      if (dot != NULL)
       {
          uint32_t len = (uint32_t)(dot - name);
          if (max_dest_len < len)

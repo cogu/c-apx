@@ -59,7 +59,7 @@ void apx_portAttributes_destroy(apx_portAttributes_t *self)
 
 apx_portAttributes_t* apx_portAttributes_new(void)
 {
-   apx_portAttributes_t *self = (apx_portAttributes_t*) 0;
+   apx_portAttributes_t *self = NULL;
    self = (apx_portAttributes_t*) malloc(sizeof(apx_portAttributes_t));
    if (self != NULL)
    {

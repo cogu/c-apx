@@ -51,7 +51,7 @@ apx_error_t apx_socketServerExtension_register(struct apx_server_tag *apx_server
 #ifdef UNIT_TEST
 void apx_socketServerExtension_accept_testsocket(testsocket_t *sock)
 {
-   if (m_instance != 0)
+   if (m_instance != NULL)
    {
       apx_socketServer_accept_testsocket(m_instance, sock);
    }
@@ -64,14 +64,14 @@ void apx_socketServerExtension_accept_testsocket(testsocket_t *sock)
 
 static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-   if (m_instance == 0)
+   if (m_instance == NULL)
    {
       m_instance = apx_socketServer_new(apx_server);
-      if (m_instance == 0)
+      if (m_instance == NULL)
       {
          return APX_MEM_ERROR;
       }
-      if (config != 0)
+      if (config != NULL)
       {
          if (dtl_dv_type(config) == DTL_DV_HASH)
          {
@@ -88,11 +88,11 @@ static apx_error_t apx_socketServerExtension_init(struct apx_server_tag *apx_ser
 
 static void apx_socketServerExtension_shutdown(void)
 {
-   if (m_instance != 0)
+   if (m_instance != NULL)
    {
       apx_socketServer_stop_all(m_instance);
       apx_socketServer_delete(m_instance);
-      m_instance = (apx_socketServer_t*) 0;
+      m_instance = NULL;
    }
 }
 
@@ -113,7 +113,7 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
 #endif
    sv_tcp_tag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "tcp-tag");
    sv_unix_tag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "unix-tag");
-   if (sv_tcp_port != 0)
+   if (sv_tcp_port != NULL)
    {
       uint16_t tcp_port = (uint16_t) dtl_sv_to_u32(sv_tcp_port, &conversion_ok);
       if (conversion_ok && (tcp_port >=TCP_USER_PORT_BEGIN) && (tcp_port <= TCP_USER_PORT_END) )
@@ -127,7 +127,7 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
       }
    }
 #ifndef _WIN32
-   if (sv_unix_file != 0)
+   if (sv_unix_file != NULL)
    {
       const char *unix_file_path = dtl_sv_to_cstr(sv_unix_file, &conversion_ok);
       if (conversion_ok)
@@ -135,7 +135,7 @@ static apx_error_t apx_socketServerExtension_configure(apx_socketServer_t *serve
           if (strlen(unix_file_path) > 0)
           {
              const char *tag = "";
-             if (sv_unix_tag != 0)
+             if (sv_unix_tag != NULL)
              {
                 tag = dtl_sv_to_cstr(sv_unix_tag, &conversion_ok);
              }

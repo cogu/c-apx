@@ -42,7 +42,7 @@ static void json_server_connection_process_hash_value(json_server_connection_t *
 
 void json_server_connection_create(json_server_connection_t *self, msocket_t *msocket, struct apx_connection_tag *apx_connection)
 {
-   if ( (self != 0) && (msocket != 0) && (apx_connection != 0) )
+   if ( (self != NULL) && (msocket != NULL) && (apx_connection != NULL) )
    {
       msocket_handler_t handler;
       self->msocket = msocket;
@@ -56,7 +56,7 @@ void json_server_connection_create(json_server_connection_t *self, msocket_t *ms
 
 void json_server_connection_destroy(json_server_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       msocket_delete(self->msocket);
    }
@@ -65,7 +65,7 @@ void json_server_connection_destroy(json_server_connection_t *self)
 json_server_connection_t *json_server_connection_new(msocket_t *msocket, struct apx_connection_tag *apx_connection)
 {
    json_server_connection_t *self = (json_server_connection_t*) malloc(sizeof(json_server_connection_t));
-   if (self != 0)
+   if (self != NULL)
    {
       json_server_connection_create(self, msocket, apx_connection);
    }
@@ -74,7 +74,7 @@ json_server_connection_t *json_server_connection_new(msocket_t *msocket, struct 
 
 void json_server_connection_delete(json_server_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       json_server_connection_destroy(self);
       free(self);
@@ -88,7 +88,7 @@ void json_server_connection_vdelete(void *arg)
 
 void json_server_connection_start(json_server_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       msocket_start_io(self->msocket);
    }
@@ -102,7 +102,7 @@ static void json_server_connection_disconnected(void *arg, void *socket)
 {
    (void) socket;
    json_server_connection_t *self = (json_server_connection_t*) arg;
-   if (self != 0)
+   if (self != NULL)
    {
       json_server_cleanup_connection(self);
    }
@@ -112,7 +112,7 @@ static msocket_error_t json_server_connection_data(void *arg, void *socket, cons
 {
    (void) socket;
    json_server_connection_t *self = (json_server_connection_t*) arg;
-   if (self != 0)
+   if (self != NULL)
    {
       const uint8_t *pResult;
       const uint8_t *pEnd = dataBuf + dataLen;
@@ -146,7 +146,7 @@ static msocket_error_t json_server_connection_data(void *arg, void *socket, cons
 static void json_server_connection_process_message(json_server_connection_t *self, const uint8_t *pBegin, const uint8_t *pEnd)
 {
    dtl_dv_t *dv = dtl_json_load_bstr( pBegin, pEnd);
-   if (dv != 0)
+   if (dv != NULL)
    {
       if (dtl_dv_type(dv) == DTL_DV_HASH)
       {
@@ -160,14 +160,14 @@ static void json_server_connection_process_hash_value(json_server_connection_t *
 {
    const char *key;
    dtl_dv_t *dv;
-   assert(self != 0);
-   assert(hv != 0);
+   assert(self != NULL);
+   assert(hv != NULL);
    dtl_hv_iter_init(hv);
    dv = dtl_hv_iter_next_cstr(hv, &key);
-   while(dv != 0)
+   while(dv != NULL)
    {
       apx_error_t result;
-      if (self->apx_connection != 0)
+      if (self->apx_connection != NULL)
       {
          result = apx_connection_writeProvidePortData(self->apx_connection, key, dv);
       }

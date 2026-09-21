@@ -87,7 +87,7 @@ void apx_parser_destroy(apx_parser_t*self)
 apx_parser_t* apx_parser_new(apx_istream_t* stream)
 {
    apx_parser_t *self = (apx_parser_t*) malloc(sizeof(apx_parser_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_parser_create(self, stream);
    }
@@ -96,7 +96,7 @@ apx_parser_t* apx_parser_new(apx_istream_t* stream)
 
 void apx_parser_delete(apx_parser_t*self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_parser_destroy(self);
       free(self);

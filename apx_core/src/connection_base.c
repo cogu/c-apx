@@ -135,7 +135,7 @@ void apx_connectionBase_delete(apx_connectionBase_t *self)
 {
    if(self != NULL)
    {
-      if (self->vtable.destructor != 0)
+      if (self->vtable.destructor != NULL)
       {
          self->vtable.destructor((void*) self);
       }

@@ -40,7 +40,7 @@ void mockTransmitter_create(mockTransmitter_t *self)
 
 void mockTransmitter_reset(mockTransmitter_t *self, int32_t newBufLen)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->currentBufLen = newBufLen;
       self->numWrites = 0;
@@ -50,7 +50,7 @@ void mockTransmitter_reset(mockTransmitter_t *self, int32_t newBufLen)
 }
 void mockTransmitter_autoReset(mockTransmitter_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       mockTransmitter_reset(self, self->maxBufLen);
    }
@@ -58,7 +58,7 @@ void mockTransmitter_autoReset(mockTransmitter_t *self)
 
 int32_t mockTransmitter_writeAvail(mockTransmitter_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->currentBufLen - self->writeOffset;
    }
@@ -67,7 +67,7 @@ int32_t mockTransmitter_writeAvail(mockTransmitter_t *self)
 
 int32_t mockTransmitter_readAvail(mockTransmitter_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return (self->writeOffset-self->readOffset);
    }
@@ -76,16 +76,16 @@ int32_t mockTransmitter_readAvail(mockTransmitter_t *self)
 
 uint8_t* mockTransmitter_getData(mockTransmitter_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return &self->dataBuf[self->readOffset];
    }
-   return (uint8_t*) 0;
+   return NULL;
 }
 
 int32_t mockTransmitter_write(mockTransmitter_t *self, const uint8_t *msg, int32_t msgLen)
 {
-   if ( (self != 0) && (msgLen <= HEADERUTIL16_MAX_NUM_LONG) )
+   if ( (self != NULL) && (msgLen <= HEADERUTIL16_MAX_NUM_LONG) )
    {
       int32_t writeAvail = mockTransmitter_writeAvail(self);
       int32_t headerLen = (msgLen <= HEADERUTIL16_MAX_NUM_SHORT)? HEADERUTIL16_SIZE_SHORT : HEADERUTIL16_SIZE_LONG;
@@ -107,7 +107,7 @@ int32_t mockTransmitter_write(mockTransmitter_t *self, const uint8_t *msg, int32
 
 int32_t mockTransmitter_getNumWrites(mockTransmitter_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return self->numWrites;
    }
@@ -116,7 +116,7 @@ int32_t mockTransmitter_getNumWrites(mockTransmitter_t *self)
 
 void mockTransmitter_trimLeft(mockTransmitter_t *self, int32_t dataLen)
 {
-   if ( (self != 0) && ((self->readOffset+dataLen)<=self->writeOffset))
+   if ( (self != NULL) && ((self->readOffset+dataLen)<=self->writeOffset))
    {
       self->readOffset+=dataLen;
       if (self->readOffset >= self->writeOffset)

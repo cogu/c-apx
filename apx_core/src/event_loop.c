@@ -36,7 +36,7 @@ static void apx_eventLoop_processEvent(apx_eventLoop_t *self, apx_event_t *event
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_eventLoop_create(apx_eventLoop_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       adt_buf_err_t result = adt_rbfh_create(&self->pendingEvents, (uint8_t) APX_EVENT_SIZE);
       if (result != BUF_E_OK)
@@ -78,13 +78,13 @@ void apx_eventLoop_destroy(apx_eventLoop_t *self, void (*destructor)(void*, apx_
 apx_eventLoop_t *apx_eventLoop_new(void)
 {
    apx_eventLoop_t *self = (apx_eventLoop_t*) malloc(sizeof(apx_eventLoop_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t errorType = apx_eventLoop_create(self);
       if (errorType != APX_NO_ERROR)
       {
          free(self);
-         self = (apx_eventLoop_t*) 0;
+         self = NULL;
       }
    }
    return self;
@@ -92,7 +92,7 @@ apx_eventLoop_t *apx_eventLoop_new(void)
 
 void apx_eventLoop_delete(apx_eventLoop_t* self, void (*destructor)(void*, apx_event_t*), void* destructor_arg)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_eventLoop_destroy(self, destructor, destructor_arg);
       free(self);
@@ -111,7 +111,7 @@ void apx_eventLoop_append(apx_eventLoop_t *self, apx_event_t *event)
 
 void apx_eventLoop_exit(apx_eventLoop_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       SPINLOCK_ENTER(self->lock);
       self->exitFlag = true;
@@ -154,7 +154,7 @@ void apx_eventLoop_run(apx_eventLoop_t *self, apx_eventHandlerFunc_t *eventHandl
 
 uint16_t apx_eventLoop_numPendingEvents(apx_eventLoop_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return adt_rbfh_length(&self->pendingEvents);
    }

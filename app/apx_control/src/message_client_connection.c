@@ -38,11 +38,11 @@ static void message_client_connection_onDisconnect(void *arg, void *socket);
 //////////////////////////////////////////////////////////////////////////////
 int32_t message_client_connection_create(message_client_connection_t *self, uint8_t addressFamily)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      self->pendingMessage = (adt_bytearray_t*) 0;
+      self->pendingMessage = NULL;
       self->msocket = msocket_new(addressFamily);
-      if (self->msocket == 0)
+      if (self->msocket == NULL)
       {
          return 1;
       }
@@ -61,10 +61,10 @@ int32_t message_client_connection_create(message_client_connection_t *self, uint
 
 void message_client_connection_destroy(message_client_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       msocket_delete(self->msocket);
-      if (self->pendingMessage != 0)
+      if (self->pendingMessage != NULL)
       {
          adt_bytearray_delete(self->pendingMessage);
          SEMAPHORE_DESTROY(self->messageTransmitted);
@@ -75,13 +75,13 @@ void message_client_connection_destroy(message_client_connection_t *self)
 message_client_connection_t *message_client_connection_new(uint8_t addressFamily)
 {
    message_client_connection_t *self = (message_client_connection_t*) malloc(sizeof(message_client_connection_t));
-   if (self != 0)
+   if (self != NULL)
    {
       int32_t result = message_client_connection_create(self, addressFamily);
       if (result != 0)
       {
          free(self);
-         self = (message_client_connection_t*) 0;
+         self = NULL;
       }
    }
    return self;
@@ -89,7 +89,7 @@ message_client_connection_t *message_client_connection_new(uint8_t addressFamily
 
 void message_client_connection_delete(message_client_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       message_client_connection_destroy(self);
       free(self);
@@ -98,20 +98,20 @@ void message_client_connection_delete(message_client_connection_t *self)
 
 adt_error_t message_client_prepare_message(message_client_connection_t *self, adt_str_t *message)
 {
-   if ( (self != 0) && (message != 0) )
+   if ( (self != NULL) && (message != NULL) )
    {
       uint8_t headerData[UINT32_SIZE];
       uint32_t messageSize;
       int32_t headerSize;
       adt_bytearray_t *messageBytes = adt_str_bytearray(message);
-      if (messageBytes == 0)
+      if (messageBytes == NULL)
       {
          return ADT_MEM_ERROR;
       }
-      if (self->pendingMessage == 0)
+      if (self->pendingMessage == NULL)
       {
          self->pendingMessage = adt_bytearray_new();
-         if (self->pendingMessage == 0)
+         if (self->pendingMessage == NULL)
          {
             return ADT_MEM_ERROR;
          }
@@ -120,8 +120,8 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
       {
          adt_bytearray_clear(self->pendingMessage);
       }
-      assert(self->pendingMessage != 0);
-      assert(messageBytes != 0);
+      assert(self->pendingMessage != NULL);
+      assert(messageBytes != NULL);
       messageSize = adt_bytearray_length(messageBytes);
       headerSize = numheader_encode32(&headerData[0], UINT32_SIZE, messageSize);
       if ( (headerSize > 0) && (headerSize <= UINT32_SIZE) )
@@ -146,7 +146,7 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
 
 int32_t message_client_connect_tcp(message_client_connection_t *self, const char *address, uint16_t port)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return (int32_t) msocket_connect(self->msocket, address, port);
    }
@@ -156,7 +156,7 @@ int32_t message_client_connect_tcp(message_client_connection_t *self, const char
 #ifndef _WIN32
 int32_t message_client_connect_unix(message_client_connection_t *self, const char *socketPath)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return (int32_t) msocket_unix_connect(self->msocket, socketPath);
    }
@@ -167,7 +167,7 @@ int32_t message_client_connect_unix(message_client_connection_t *self, const cha
 int32_t message_client_wait_for_message_transmitted(message_client_connection_t *self)
 {
    int32_t retval = 0;
-   if (self != 0)
+   if (self != NULL)
    {
 #ifdef _WIN32
       DWORD result = WaitForSingleObject(self->messageTransmitted, INFINITE);
@@ -198,9 +198,9 @@ static void message_client_connection_onConnect(void *arg, void *socket, const c
    (void)socket;
    (void)port;
    (void)addr;
-   if (self != 0 )
+   if (self != NULL )
    {
-      if (self->pendingMessage != 0)
+      if (self->pendingMessage != NULL)
       {
          const char *data = (const char*) adt_bytearray_data(self->pendingMessage);
          uint32_t size = adt_bytearray_length(self->pendingMessage);

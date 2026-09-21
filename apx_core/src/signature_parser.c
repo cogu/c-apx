@@ -66,7 +66,7 @@ void apx_signatureParserState_destroy(apx_signatureParserState_t* self)
 apx_signatureParserState_t* apx_signatureParserState_new(bool is_record)
 {
    apx_signatureParserState_t* self = (apx_signatureParserState_t*)malloc(sizeof(apx_signatureParserState_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_signatureParserState_create(self, is_record);
    }
@@ -168,7 +168,7 @@ static void apx_signatureParser_reset(apx_signatureParser_t* self)
 
 static void apx_signatureParser_set_error(apx_signatureParser_t* self, apx_error_t error_code, uint8_t const* error_pos)
 {
-   assert(self != 0);
+   assert(self != NULL);
    self->error_code = error_code;
    self->error_pos = error_pos;
 }

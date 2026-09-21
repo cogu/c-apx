@@ -112,7 +112,7 @@ void apx_vm_deserializer_destroy(apx_vm_deserializer_t* self)
    if (self != NULL)
    {
       adt_stack_destroy(&self->stack);
-      if (self->state != 0)
+      if (self->state != NULL)
       {
          state_delete(self->state);
       }
@@ -1089,7 +1089,7 @@ static apx_error_t state_store_scalar_value(apx_vm_readState_t* self, dtl_sv_t *
 {
    apx_error_t retval = APX_NO_ERROR;
    bool ok = false;
-   assert(sv != 0);
+   assert(sv != NULL);
    switch (type_code)
    {
    case APX_TYPE_CODE_UINT8:

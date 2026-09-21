@@ -40,7 +40,7 @@ static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t *self, 
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_connection_create(apx_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_clientEventListener_t listener;
       self->client = apx_client_new();
@@ -63,10 +63,10 @@ apx_error_t apx_connection_create(apx_connection_t *self)
 
 void apx_connection_destroy(apx_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       MUTEX_LOCK(self->mutex);
-      if (self->client != 0)
+      if (self->client != NULL)
       {
          apx_client_delete(self->client);
       }
@@ -79,13 +79,13 @@ void apx_connection_destroy(apx_connection_t *self)
 apx_connection_t *apx_connection_new(void)
 {
    apx_connection_t *self = (apx_connection_t*) malloc(sizeof(apx_connection_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t rc = apx_connection_create(self);
       if (rc != APX_NO_ERROR)
       {
          free(self);
-         self = (apx_connection_t*) 0;
+         self = NULL;
       }
    }
    return self;
@@ -93,7 +93,7 @@ apx_connection_t *apx_connection_new(void)
 
 void apx_connection_delete(apx_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_connection_destroy(self);
       free(self);
@@ -102,7 +102,7 @@ void apx_connection_delete(apx_connection_t *self)
 
 void apx_connection_disconnect(apx_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_client_disconnect(self->client);
    }
@@ -110,14 +110,14 @@ void apx_connection_disconnect(apx_connection_t *self)
 
 apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_definition)
 {
-   if ( (self != 0) && (apx_definition != 0) )
+   if ( (self != NULL) && (apx_definition != NULL) )
    {
       MUTEX_LOCK(self->mutex);
       apx_error_t retval = apx_client_build_node(self->client, adt_str_cstr(apx_definition));
       if (retval == APX_NO_ERROR)
       {
          apx_nodeInstance_t *nodeInstance = apx_client_get_last_attached_node(self->client);
-         if (nodeInstance != 0)
+         if (nodeInstance != NULL)
          {
             retval = apx_connection_prepare_provide_ports(self, nodeInstance);
          }
@@ -134,7 +134,7 @@ apx_error_t apx_connection_attachNode(apx_connection_t *self, adt_str_t *apx_def
 
 int32_t apx_connection_getLastErrorLine(apx_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_client_get_error_line(self->client);
    }
@@ -143,17 +143,17 @@ int32_t apx_connection_getLastErrorLine(apx_connection_t *self)
 
 apx_nodeInstance_t *apx_connection_getLastAttachedNode(apx_connection_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_client_get_last_attached_node(self->client);
    }
-   return (apx_nodeInstance_t*) 0;
+   return NULL;
 }
 
 #ifndef _WIN32
 apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socketPath)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_client_connect_unix(self->client, socketPath);
    }
@@ -163,7 +163,7 @@ apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *sock
 
 apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_client_connect_tcp(self->client, address, port);
    }
@@ -172,12 +172,12 @@ apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *addre
 
 apx_error_t apx_connection_writeProvidePortData(apx_connection_t *self, const char *providePortName, dtl_dv_t *dv_value)
 {
-   if ( (self != 0) && (providePortName != 0) && (dv_value != 0) )
+   if ( (self != NULL) && (providePortName != NULL) && (dv_value != NULL) )
    {
       apx_error_t result;
       MUTEX_LOCK(self->mutex);
       apx_portInstance_t *port_instance = (apx_portInstance_t*) adt_hash_value(&self->provide_port_lookup_table, providePortName);
-      if (port_instance == 0)
+      if (port_instance == NULL)
       {
          MUTEX_UNLOCK(self->mutex);
          return APX_INVALID_NAME_ERROR;
@@ -215,7 +215,7 @@ static void apx_connection_on_require_port_write(void* arg, struct apx_portInsta
    {
       apx_error_t result;
       char const* port_name;
-      dtl_dv_t* dv = 0;
+      dtl_dv_t* dv = NULL;
       MUTEX_LOCK(self->mutex);
       port_name = apx_portInstance_name(port_instance);
       result = apx_client_read_port_data(self->client, port_instance, &dv);
@@ -225,17 +225,17 @@ static void apx_connection_on_require_port_write(void* arg, struct apx_portInsta
          printf("apx_client_read_port_data failed with error code %d\n", (int)result);
          return;
       }
-      if ((dv != 0) && (port_name != 0))
+      if ((dv != NULL) && (port_name != NULL))
       {
          adt_str_t* value = dtl_json_dumps(dv, 0, false);
-         if (value != 0)
+         if (value != NULL)
          {
             printf("\"%s\": %s\n", port_name, adt_str_cstr(value));
             fflush(stdout);
             adt_str_delete(value);
          }
       }
-      if (dv != 0)
+      if (dv != NULL)
       {
          dtl_dec_ref(dv);
       }

@@ -199,7 +199,7 @@ apx_portInstance_t* apx_portSignatureMapEntry_get_preferred_provider(apx_portSig
    {
       return self->preferred_provider;
    }
-   return (apx_portInstance_t*) 0;
+   return NULL;
 }
 
 apx_error_t apx_portSignatureMapEntry_notify_require_ports_about_provide_port_change(apx_portSignatureMapEntry_t* self, apx_portInstance_t* provide_port, apx_portConnectorEvent_t event_type)
@@ -218,16 +218,16 @@ apx_error_t apx_portSignatureMapEntry_notify_require_ports_about_provide_port_ch
          action_func = (event_type == APX_PORT_CONNECTED_EVENT)? apx_portConnectorChangeEntry_add_connection : apx_portConnectorChangeEntry_remove_connection;
 
          provide_port_change_table = apx_nodeInstance_get_provide_port_connector_changes(apx_portInstance_parent(provide_port), true);
-         assert(provide_port_change_table != 0);
+         assert(provide_port_change_table != NULL);
          provide_port_change_entry = apx_portConnectorChangeTable_get_entry(provide_port_change_table, apx_portInstance_port_id(provide_port));
-         assert(provide_port_change_entry != 0);
+         assert(provide_port_change_entry != NULL);
 
          for(iter = adt_list_iter_first(&self->require_ports); iter != NULL; iter = adt_list_iter_next(iter))
          {
             apx_portConnectorChangeTable_t *require_port_change_table;
             apx_portConnectorChangeEntry_t *require_port_change_entry;
             apx_portInstance_t *require_port = (apx_portInstance_t*) iter->pItem;
-            assert(require_port != 0);
+            assert(require_port != NULL);
             assert(apx_portInstance_parent(require_port) != NULL);
             require_port_change_table = apx_nodeInstance_get_require_port_connector_changes(apx_portInstance_parent(require_port), true);
             assert(require_port_change_table != 0);
@@ -277,9 +277,9 @@ apx_error_t apx_portSignatureMapEntry_notify_provide_ports_about_require_port_ch
             assert(provide_port != NULL);
             assert(apx_portInstance_parent(provide_port) != NULL);
             provide_port_change_table = apx_nodeInstance_get_provide_port_connector_changes(apx_portInstance_parent(provide_port), true);
-            assert(provide_port_change_table != 0);
+            assert(provide_port_change_table != NULL);
             provide_port_change_entry = apx_portConnectorChangeTable_get_entry(provide_port_change_table, apx_portInstance_port_id(provide_port));
-            assert(provide_port_change_entry != 0);
+            assert(provide_port_change_entry != NULL);
             retval = action_func(require_port_change_entry, provide_port);
             if (retval == APX_NO_ERROR)
             {

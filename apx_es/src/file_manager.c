@@ -84,7 +84,7 @@ static inline bool apx_es_isPendingMessage(const apx_msg_t* msg);
 apx_error_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messageQueueBuf, uint16_t messageQueueSize, uint8_t *receiveBuf, uint16_t receiveBufLen)
 {
    int8_t retval = APX_INVALID_ARGUMENT_ERROR;
-   if ( (self != 0) && (messageQueueBuf != 0) && (messageQueueSize != 0))
+   if ( (self != NULL) && (messageQueueBuf != 0) && (messageQueueSize != 0))
    {
       rbfs_create(&self->messageQueue, messageQueueBuf, messageQueueSize, (uint8_t) sizeof(apx_msg_t));
       self->receiveBuf = receiveBuf;
@@ -102,7 +102,7 @@ apx_error_t apx_es_fileManager_create(apx_es_fileManager_t *self, uint8_t *messa
 
 void apx_es_fileManager_attachLocalFile(apx_es_fileManager_t *self, apx_file_t *localFile)
 {
-   if ( (self != 0) && (localFile != 0) )
+   if ( (self != NULL) && (localFile != NULL) )
    {
       apx_es_fileMap_autoInsert(&self->localFileMap, localFile);
    }
@@ -110,7 +110,7 @@ void apx_es_fileManager_attachLocalFile(apx_es_fileManager_t *self, apx_file_t *
 
 void apx_es_fileManager_requestRemoteFile(apx_es_fileManager_t *self, apx_file_t *requestedFile)
 {
-   if ( (self != 0) && (requestedFile != 0) )
+   if ( (self != NULL) && (requestedFile != 0) )
    {
       int32_t i;
       if ( self->numRequestedFiles >= APX_ES_FILEMANAGER_MAX_NUM_REQUEST_FILES)
@@ -132,9 +132,9 @@ void apx_es_fileManager_requestRemoteFile(apx_es_fileManager_t *self, apx_file_t
 
 void apx_es_fileManager_setTransmitHandler(apx_es_fileManager_t *self, apx_transmitHandler_t *handler)
 {
-   if (self != 0)
+   if (self != NULL)
    {
-      if (handler == 0)
+      if (handler == NULL)
       {
          memset(&self->transmitHandler, 0, sizeof(apx_transmitHandler_t));
       }
@@ -147,7 +147,7 @@ void apx_es_fileManager_setTransmitHandler(apx_es_fileManager_t *self, apx_trans
 
 void apx_es_fileManager_onConnected(apx_es_fileManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       int32_t i;
       int32_t localFileCount = apx_es_fileMap_length(&self->localFileMap);
@@ -155,7 +155,7 @@ void apx_es_fileManager_onConnected(apx_es_fileManager_t *self)
       for(i=0;i<localFileCount;i++)
       {
          apx_file_t *file = apx_es_fileMap_get(&self->localFileMap,i);
-         if (file != 0)
+         if (file != NULL)
          {
             uint8_t result;
             apx_msg_t msg = {RMF_MSG_FILEINFO,0,0, {0}};
@@ -178,7 +178,7 @@ void apx_es_fileManager_onConnected(apx_es_fileManager_t *self)
 
 void apx_es_fileManager_onDisconnected(apx_es_fileManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       int32_t i;
       int32_t fileCount = apx_es_fileMap_length(&self->remoteFileMap);
@@ -210,7 +210,7 @@ void apx_es_fileManager_onMsgReceived(apx_es_fileManager_t *self, const uint8_t 
 {
    rmf_msg_t msg;
    int32_t result = rmf_unpackMsg(msgBuf, msgLen, &msg);
-   if ( (result > 0) && (self != 0) )
+   if ( (result > 0) && (self != NULL) )
    {
 #if APX_DEBUG_ENABLE
       printf("[APX_ES_FILEMANAGER] address: %08X\n", msg.address);
@@ -252,7 +252,7 @@ void apx_es_fileManager_onMsgReceived(apx_es_fileManager_t *self, const uint8_t 
 int8_t apx_es_fileManager_triggerFileUpdate(apx_es_fileManager_t *self, apx_file_t *file, uint32_t offset, uint32_t length)
 {
    int8_t retval = APX_NO_ERROR;
-   if ( (self != 0) && (file != 0) && (length > 0) )
+   if ( (self != NULL) && (file != NULL) && (length > 0) )
    {
       apx_msg_t msg = {RMF_MSG_WRITE_NOTIFY, 0, 0, {0} }; //{msgType,msgData1,msgData2,msgData3.ptr}
       msg.msgData1 = offset;
@@ -308,7 +308,7 @@ int8_t apx_es_fileManager_triggerFileUpdate(apx_es_fileManager_t *self, apx_file
 int8_t apx_es_fileManager_triggerDirectWrite(apx_es_fileManager_t *self, uint8_t *data, uint32_t address, uint32_t length)
 {
    int8_t retval = APX_NO_ERROR;
-   if ( (self != 0) && (data != 0) && (length > 0) )
+   if ( (self != NULL) && (data != 0) && (length > 0) )
    {
       uint8_t result;
       apx_msg_t msg = {RMF_MSG_DIRECT_WRITE, 0, 0, {0} }; //{msgType,msgData1,msgData2,msgData3.data}
@@ -335,7 +335,7 @@ int8_t apx_es_fileManager_triggerDirectWrite(apx_es_fileManager_t *self, uint8_t
 void apx_es_fileManager_run(apx_es_fileManager_t *self)
 {
    int32_t result;
-   if ( (self == 0) || (!self->isConnected) || (self->transmitHandler.getMsgBuffer == 0) || (self->transmitHandler.sendMsg == 0) )
+   if ( (self == NULL) || (!self->isConnected) || (self->transmitHandler.getMsgBuffer == 0) || (self->transmitHandler.sendMsg == 0) )
    {
       return;
    }
@@ -370,7 +370,7 @@ void apx_es_fileManager_run(apx_es_fileManager_t *self)
 
 bool apx_es_fileManager_hasPendingMsg(apx_es_fileManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_es_isPendingMessage(&self->pendingMsg);
    }
@@ -380,7 +380,7 @@ bool apx_es_fileManager_hasPendingMsg(apx_es_fileManager_t *self)
 apx_error_t apx_es_fileManager_getLastError(apx_es_fileManager_t *self)
 {
    apx_error_t retval;
-   if (self != 0)
+   if (self != NULL)
    {
       retval = self->lastErrorCode;
    }
@@ -403,7 +403,7 @@ static void apx_es_resetConnectionState(apx_es_fileManager_t *self)
    self->queuedWriteNotify.msgType = RMF_CMD_INVALID_MSG;
    self->pendingMsg.msgType = RMF_CMD_INVALID_MSG;
    self->transmitBuf.avail = 0;
-   self->transmitBuf.data = (uint8_t*) 0;
+   self->transmitBuf.data = NULL;
    self->transmitBuf.maxMsgLen = 0;
    self->hasPendingWrite = false;
    self->dropMessage = false;
@@ -415,10 +415,10 @@ static void apx_es_resetConnectionState(apx_es_fileManager_t *self)
 
 static void apx_es_initTransmitBuf(apx_es_fileManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       self->transmitBuf.data = self->transmitHandler.getMsgBuffer(self->transmitHandler.arg, &self->transmitBuf.maxMsgLen, &self->transmitBuf.avail);
-      if (self->transmitBuf.data == (uint8_t*) 0)
+      if (self->transmitBuf.data == NULL)
       {
          self->transmitBuf.avail = 0;
       }
@@ -684,7 +684,7 @@ static int32_t apx_es_fileManager_preparePendingMessage(apx_es_fileManager_t *se
             headerLen = apx_es_calcHeaderLenForAddress(address);
             msgLen = headerLen + dataLen;
 
-            if (dataPtr == (uint8_t*) 0)
+            if (dataPtr == NULL)
             {
                apx_es_fileManager_setError(self, APX_INVALID_ARGUMENT_ERROR);
                msgLen = -1;
@@ -933,7 +933,7 @@ static void apx_es_fileManager_parseCmdMsg(apx_es_fileManager_t *self, const uin
  */
 static void apx_es_fileManager_parseDataMsg(apx_es_fileManager_t *self, uint32_t address, const uint8_t *dataBuf, int32_t dataLen, bool more_bit)
 {
-   if ( (dataBuf != 0) && (dataLen>=0) )
+   if ( (dataBuf != NULL) && (dataLen>=0) )
    {
       uint32_t offset;
       if ( (self->receiveStartAddress == RMF_INVALID_ADDRESS) )
@@ -1023,16 +1023,16 @@ static void apx_es_fileManager_parseDataMsg(apx_es_fileManager_t *self, uint32_t
  */
 DYN_STATIC void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *self, const rmf_fileInfo_t *fileInfo)
 {
-   if (fileInfo != 0)
+   if (fileInfo != NULL)
    {
       int32_t i;
-      apx_file_t *file=0;
+      apx_file_t *file = NULL;
       int32_t removeIndex=-1;
       uint8_t result;
       for(i=0;i<self->numRequestedFiles;i++)
       {
          file = self->requestedFileList[i];
-         if (file != 0)
+         if (file != NULL)
          {
             if (strcmp(file->fileInfo.name, fileInfo->name)==0)
             {
@@ -1060,7 +1060,7 @@ DYN_STATIC void apx_es_fileManager_processRemoteFileInfo(apx_es_fileManager_t *s
          //remove file from requestedFileList
          int8_t rc = apx_es_fileManager_removeRequestedAt(self, removeIndex);
          assert(rc == 0);
-         assert(file != 0);
+         assert(file != NULL);
          //copy fileInfo data into and file->fileInfo
          file->fileInfo.address = fileInfo->address;
          file->fileInfo.fileType = fileInfo->fileType;
@@ -1091,7 +1091,7 @@ static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const
    {
 
       apx_file_t *localFile = apx_es_fileMap_findByAddress(&self->localFileMap, cmdOpenFile->address);
-      if (localFile != 0)
+      if (localFile != NULL)
       {
          uint8_t result;
          apx_msg_t msg = {RMF_MSG_FILE_SEND, 0, 0, {0} };
@@ -1117,7 +1117,7 @@ static void apx_es_fileManager_processOpenFile(apx_es_fileManager_t *self, const
  */
 DYN_STATIC int8_t apx_es_fileManager_removeRequestedAt(apx_es_fileManager_t *self, int32_t removeIndex)
 {
-   if ( (self != 0) && (removeIndex>=0) && (removeIndex < self->numRequestedFiles) )
+   if ( (self != NULL) && (removeIndex>=0) && (removeIndex < self->numRequestedFiles) )
    {
       int32_t i;
       for(i=removeIndex+1; i<self->numRequestedFiles;i++)

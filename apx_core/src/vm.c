@@ -129,7 +129,7 @@ apx_error_t apx_vm_select_program(apx_vm_t* self, apx_program_t const* program)
 
 apx_error_t apx_vm_set_write_buffer(apx_vm_t* self, uint8_t* data, uint32_t size)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_vm_serializer_set_write_buffer(&self->serializer, data, size);
    }
@@ -138,7 +138,7 @@ apx_error_t apx_vm_set_write_buffer(apx_vm_t* self, uint8_t* data, uint32_t size
 
 apx_error_t apx_vm_set_read_buffer(apx_vm_t* self, uint8_t const* data, uint32_t size)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_vm_deserializer_set_read_buffer(&self->deserializer, data, size);
    }
@@ -149,7 +149,7 @@ apx_error_t apx_vm_set_read_buffer(apx_vm_t* self, uint8_t const* data, uint32_t
 
 apx_error_t apx_vm_pack_value(apx_vm_t* self, dtl_dv_t const* dv)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t retval = APX_NO_ERROR;
       if (self->program_header.program_type != APX_PACK_PROGRAM)
@@ -199,7 +199,7 @@ apx_error_t apx_vm_unpack_value(apx_vm_t* self, dtl_dv_t** dv)
 size_t apx_vm_get_bytes_written(apx_vm_t* self)
 {
    size_t retval = 0u;
-   if (self != 0)
+   if (self != NULL)
    {
       retval = apx_vm_serializer_bytes_written(&self->serializer);
    }
@@ -209,7 +209,7 @@ size_t apx_vm_get_bytes_written(apx_vm_t* self)
 size_t apx_vm_get_bytes_read(apx_vm_t* self)
 {
    size_t retval = 0u;
-   if (self != 0)
+   if (self != NULL)
    {
       retval = apx_vm_deserializer_bytes_read(&self->deserializer);
    }

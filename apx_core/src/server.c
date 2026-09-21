@@ -125,7 +125,7 @@ void apx_server_delete(apx_server_t *self)
 void apx_server_start(apx_server_t *self)
 {
 
-   if( self != 0 )
+   if( self != NULL )
    {
       apx_server_init_extensions(self);
 #ifndef UNIT_TEST
@@ -140,7 +140,7 @@ void apx_server_start(apx_server_t *self)
 
 void apx_server_stop(apx_server_t *self)
 {
-   if( self != 0)
+   if( self != NULL)
    {
 
 #ifndef UNIT_TEST
@@ -162,7 +162,7 @@ void* apx_server_register_event_listener(apx_server_t* self, apx_serverEventList
    if ( (self != NULL) && (event_listener != NULL))
    {
       void *handle = (void*) apx_serverEventListener_clone(event_listener);
-      if (handle != 0)
+      if (handle != NULL)
       {
          MUTEX_LOCK(self->event_listener_lock);
          adt_list_insert(&self->server_event_listeners, handle);
@@ -170,12 +170,12 @@ void* apx_server_register_event_listener(apx_server_t* self, apx_serverEventList
       }
       return handle;
    }
-   return (void*) 0;
+   return NULL;
 }
 
 void apx_server_unregister_event_listener(apx_server_t *self, void *handle)
 {
-   if ( (self != NULL) && (handle != 0))
+   if ( (self != NULL) && (handle != NULL))
    {
       bool isFound;
       MUTEX_LOCK(self->event_listener_lock);
@@ -214,10 +214,10 @@ apx_error_t apx_server_detach_connection(apx_server_t* self, apx_serverConnectio
 
 apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_serverExtensionHandler_t* handler, dtl_dv_t* config)
 {
-   if ( (self != NULL) && (handler != 0) )
+   if ( (self != NULL) && (handler != NULL) )
    {
       apx_serverExtension_t *extension = apx_serverExtension_new(name, handler, config);
-      if (extension == 0)
+      if (extension == NULL)
       {
          return APX_MEM_ERROR;
       }
@@ -229,18 +229,18 @@ apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_s
 
 void apx_server_log_write(apx_server_t* self, apx_logLevel_t level, const char* label, const char* msg)
 {
-   if ( (self != NULL) && (level <= APX_MAX_LOG_LEVEL) && (msg != 0) )
+   if ( (self != NULL) && (level <= APX_MAX_LOG_LEVEL) && (msg != NULL) )
    {
       apx_event_t event;
-      char *labelStr = 0;
+      char *labelStr = NULL;
       adt_str_t *msgStr = adt_str_new_cstr(msg);
 
-      if (msgStr == 0)
+      if (msgStr == NULL)
       {
          return;
       }
 
-      if (label != 0)
+      if (label != NULL)
       {
          size_t labelSize = strlen(label);
          if (labelSize > APX_LOG_LABEL_MAX_LEN)
@@ -250,7 +250,7 @@ void apx_server_log_write(apx_server_t* self, apx_logLevel_t level, const char* 
          MUTEX_LOCK(self->event_loop_lock);
          labelStr = soa_alloc(&self->allocator, labelSize+1);
          MUTEX_UNLOCK(self->event_loop_lock);
-         if (labelStr == 0)
+         if (labelStr == NULL)
          {
             adt_str_delete(msgStr);
             return;
@@ -295,7 +295,7 @@ void apx_server_release_global_lock(apx_server_t* self)
 
 apx_error_t apx_server_connect_node_instance_provide_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
 {
-   if ( (self != NULL) && (node_instance != 0) )
+   if ( (self != NULL) && (node_instance != NULL) )
    {
       return apx_portSignatureMap_connect_provide_ports(&self->port_signature_map, node_instance);
    }
@@ -304,7 +304,7 @@ apx_error_t apx_server_connect_node_instance_provide_ports(apx_server_t* self, a
 
 apx_error_t apx_server_connect_node_instance_require_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
 {
-   if ( (self != NULL) && (node_instance != 0) )
+   if ( (self != NULL) && (node_instance != NULL) )
    {
       return apx_portSignatureMap_connect_require_ports(&self->port_signature_map, node_instance);
    }
@@ -313,7 +313,7 @@ apx_error_t apx_server_connect_node_instance_require_ports(apx_server_t* self, a
 
 apx_error_t apx_server_disconnect_node_instance_provide_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
 {
-   if ( (self != NULL) && (node_instance != 0) )
+   if ( (self != NULL) && (node_instance != NULL) )
    {
       return apx_portSignatureMap_disconnect_provide_ports(&self->port_signature_map, node_instance);
    }
@@ -322,7 +322,7 @@ apx_error_t apx_server_disconnect_node_instance_provide_ports(apx_server_t* self
 
 apx_error_t apx_server_disconnect_node_instance_require_ports(apx_server_t* self, apx_nodeInstance_t* node_instance)
 {
-   if ( (self != NULL) && (node_instance != 0) )
+   if ( (self != NULL) && (node_instance != NULL) )
    {
       return apx_portSignatureMap_disconnect_require_ports(&self->port_signature_map, node_instance);
    }
@@ -390,15 +390,15 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
          apx_portConnectorChangeEntry_t *entry;
          entry = apx_portConnectorChangeTable_get_entry(connector_changes, port_id);
          provide_port = apx_nodeInstance_get_provide_port(provide_node_instance, port_id);
-         assert(entry != 0);
-         assert(provide_port != 0);
+         assert(entry != NULL);
+         assert(provide_port != NULL);
          if (entry->count > 0)
          {
             if (entry->count == 1)
             {
                apx_error_t rc;
                apx_portInstance_t *require_port = entry->data.port_instance;
-               assert(require_port != 0);
+               assert(require_port != NULL);
                rc = apx_nodeInstance_handle_provide_port_connected_to_require_port(provide_port, require_port);
                if (rc != APX_NO_ERROR)
                {
@@ -413,7 +413,7 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
                {
                   apx_error_t rc;
                   apx_portInstance_t *require_port = adt_ary_value(entry->data.array, i);
-                  assert(require_port != 0);
+                  assert(require_port != NULL);
                   rc = apx_nodeInstance_handle_provide_port_connected_to_require_port(provide_port, require_port);
                   if (rc != APX_NO_ERROR)
                   {
@@ -460,7 +460,7 @@ adt_ary_t* apx_server_get_modified_node_instance(const apx_server_t* self)
    {
       return (adt_ary_t*) &self->modified_nodes;
    }
-   return (adt_ary_t*) 0;
+   return NULL;
 }
 
 /**
@@ -508,7 +508,7 @@ apx_serverConnection_t* apx_server_get_last_connection(apx_server_t const* self)
    {
       return apx_connectionManager_get_last_connection(&self->connection_manager);
    }
-   return (apx_serverConnection_t*) 0;
+   return NULL;
 }
 
 apx_portSignatureMap_t* apx_server_get_port_signature_map(apx_server_t const* self)
@@ -517,7 +517,7 @@ apx_portSignatureMap_t* apx_server_get_port_signature_map(apx_server_t const* se
    {
       return (apx_portSignatureMap_t*) &self->port_signature_map;
    }
-   return (apx_portSignatureMap_t*) 0;
+   return NULL;
 }
 
 #endif
@@ -624,18 +624,18 @@ static void apx_server_init_extensions(apx_server_t* self)
    if  (self != NULL)
    {
       adt_list_elem_t *iter = adt_list_iter_first(&self->extension_manager);
-      while(iter != 0)
+      while(iter != NULL)
       {
          apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
-         if (extension->handler.init != 0)
+         if (extension->handler.init != NULL)
          {
             extension->handler.init(self, extension->config);
-            if (extension->config != 0)
+            if (extension->config != NULL)
             {
                dtl_dv_dec_ref(extension->config);
-               extension->config = (dtl_dv_t*) 0;
+               extension->config = NULL;
             }
-            if (extension->name != 0)
+            if (extension->name != NULL)
             {
 /*               char msg[MAX_LOG_LEN];
                sprintf(msg, "Started extension %s", extension->name);
@@ -652,10 +652,10 @@ static void apx_server_shutdown_extensions(apx_server_t* self)
    if  (self != NULL)
    {
       adt_list_elem_t *iter = adt_list_iter_first(&self->extension_manager);
-      while(iter != 0)
+      while(iter != NULL)
       {
         apx_serverExtension_t *extension = (apx_serverExtension_t*) iter->pItem;
-        if (extension->handler.shutdown != 0)
+        if (extension->handler.shutdown != NULL)
         {
            extension->handler.shutdown();
         }
@@ -680,7 +680,7 @@ static void apx_server_handle_event(void* arg, apx_event_t* event)
       case APX_EVENT_LOG_WRITE:
          apx_event_unpack_log_write(event, &level, &label, &str);
          msg = adt_str_cstr(str);
-         if (label != 0)
+         if (label != NULL)
          {
             size_t label_size = strlen(label);
             apx_server_trigger_log_write_event(self, level, label, msg);

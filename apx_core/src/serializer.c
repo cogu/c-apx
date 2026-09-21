@@ -157,7 +157,7 @@ void apx_vm_serializer_destroy(apx_vm_serializer_t* self)
    if (self != NULL)
    {
       adt_stack_destroy(&self->stack);
-      if (self->state != 0)
+      if (self->state != NULL)
       {
          apx_vm_writeState_delete(self->state);
       }
@@ -1089,7 +1089,7 @@ static apx_error_t state_read_scalar_value_internal(apx_vm_writeState_t* self, d
 {
    apx_error_t retval = APX_NO_ERROR;
    bool ok = false;
-   assert(sv != 0);
+   assert(sv != NULL);
    switch (type_code)
    {
    case APX_TYPE_CODE_UINT8:

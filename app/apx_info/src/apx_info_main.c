@@ -80,7 +80,7 @@ static bool m_display_help = false;
 static bool m_display_version = false;
 static apx_app_cmd_t m_command = APX_APP_CMD_NONE;
 static uint16_t m_connect_port;
-static adt_str_t* m_connect_address = (adt_str_t*)0;
+static adt_str_t* m_connect_address = NULL;
 static apx_resource_type_t m_connect_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
 
 /*** Other local variables***/
@@ -167,9 +167,9 @@ SHUTDOWN:
 //////////////////////////////////////////////////////////////////////////////
 static argparse_result_t argparse_cbk(const char* short_name, const char* long_name, const char* value)
 {
-   if (value == 0)
+   if (value == NULL)
    {
-      if (short_name != 0)
+      if (short_name != NULL)
       {
          if ((strcmp(short_name, "b") == 0) || (strcmp(short_name, "p") == 0) ||
             (strcmp(short_name, "c") == 0) || (strcmp(short_name, "r") == 0))
@@ -186,7 +186,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
             return ARGPARSE_NAME_ERROR;
          }
       }
-      else if ((long_name != 0))
+      else if ((long_name != NULL))
       {
          if ((strcmp(long_name, "bind") == 0) || (strcmp(long_name, "bind-port") == 0) ||
             (strcmp(long_name, "connect") == 0) || (strcmp(long_name, "connect-port") == 0))
@@ -211,11 +211,11 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
    }
    else
    {
-      if (short_name != 0)
+      if (short_name != NULL)
       {
          if (strcmp(short_name, "c") == 0)
          {
-            if (m_connect_address != 0) adt_str_delete(m_connect_address);
+            if (m_connect_address != NULL) adt_str_delete(m_connect_address);
             m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
             if ((m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
                (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
@@ -224,11 +224,11 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
             }
          }
       }
-      else if (long_name != 0)
+      else if (long_name != NULL)
       {
          if (strcmp(long_name, "connect") == 0)
          {
-            if (m_connect_address != 0) adt_str_delete(m_connect_address);
+            if (m_connect_address != NULL) adt_str_delete(m_connect_address);
             m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
             if ((m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
                (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))

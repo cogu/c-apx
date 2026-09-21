@@ -65,7 +65,7 @@ static apx_error_t parse_protocol_header_line(apx_serverConnection_t* self, uint
 
 apx_error_t apx_serverConnection_create(apx_serverConnection_t* self, apx_connectionBaseVTable_t* base_connection_vtable, apx_connectionInterface_t* connection_interface)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_error_t error_code;
       //init non-overridable virtual functions
@@ -86,7 +86,7 @@ apx_error_t apx_serverConnection_create(apx_serverConnection_t* self, apx_connec
 
 void apx_serverConnection_destroy(apx_serverConnection_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       MUTEX_DESTROY(self->event_listener_lock);
       adt_list_destroy(&self->event_listeners);
@@ -100,7 +100,7 @@ void apx_serverConnection_destroy(apx_serverConnection_t* self)
 
 apx_fileManager_t* apx_serverConnection_get_file_manager(apx_serverConnection_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return apx_connectionBase_get_file_manager(&self->base);
    }
@@ -143,7 +143,7 @@ void* apx_serverConnection_register_event_listener(apx_serverConnection_t* self,
       }
       return handle;
    }
-   return (void*)0;
+   return NULL;
 }
 
 void apx_serverConnection_unregister_event_listener(apx_serverConnection_t* self, void* handle)
@@ -394,10 +394,10 @@ void apx_server_connection_process_protocol_header_accepted_event(apx_serverConn
    adt_ary_create(&callbacks, NULL);
    MUTEX_LOCK(self->event_listener_lock);
    adt_list_elem_t* iter = adt_list_iter_first(&self->event_listeners);
-   while (iter != 0)
+   while (iter != NULL)
    {
       apx_serverConnectionEventListener_t* listener = (apx_serverConnectionEventListener_t*)iter->pItem;
-      if ((listener != 0) && (listener->protocol_header_accepted != 0))
+      if ((listener != NULL) && (listener->protocol_header_accepted != NULL))
       {
          adt_ary_push(&args, (void*)listener->arg);
          adt_ary_push(&callbacks, (void*)listener->protocol_header_accepted);
@@ -427,10 +427,10 @@ void apx_server_connection_process_remote_file_published_event(apx_serverConnect
    adt_ary_create(&callbacks, NULL);
    MUTEX_LOCK(self->event_listener_lock);
    adt_list_elem_t* iter = adt_list_iter_first(&self->event_listeners);
-   while (iter != 0)
+   while (iter != NULL)
    {
       apx_serverConnectionEventListener_t* listener = (apx_serverConnectionEventListener_t*)iter->pItem;
-      if ((listener != 0) && (listener->file_published != 0))
+      if ((listener != NULL) && (listener->file_published != NULL))
       {
          adt_ary_push(&args, (void*)listener->arg);
          adt_ary_push(&callbacks, (void*)listener->file_published);
@@ -463,7 +463,7 @@ apx_connectionState_t apx_serverConnection_get_connection_state(apx_serverConnec
 #ifdef UNIT_TEST
 void apx_serverConnection_run(apx_serverConnection_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       //apx_connectionBase_runAll(&self->base);
       apx_fileManager_run(&self->base.file_manager);
@@ -752,7 +752,7 @@ static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ar
 {
    int32_t i;
    int32_t num_nodes;
-   assert(node_instance_array != 0);
+   assert(node_instance_array != NULL);
    num_nodes = adt_ary_length(node_instance_array);
    for (i = 0; i < num_nodes; i++)
    {
@@ -760,7 +760,7 @@ static void remove_nodes_from_signature_map(apx_serverConnection_t* self, adt_ar
       apx_dataState_t require_port_data_state;
       apx_dataState_t provide_port_data_state;
       apx_nodeInstance_t* node_instance = (apx_nodeInstance_t*)adt_ary_value(node_instance_array, i);
-      assert(node_instance != 0);
+      assert(node_instance != NULL);
       require_port_data_state = apx_nodeInstance_get_require_port_data_state(node_instance);
       provide_port_data_state = apx_nodeInstance_get_provide_port_data_state(node_instance);
       if (require_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
@@ -800,7 +800,7 @@ static apx_error_t gather_provide_port_connector_changes(adt_ary_t* node_instanc
    {
       apx_dataState_t provide_port_data_state;
       apx_nodeInstance_t* node_instance = (apx_nodeInstance_t*)adt_ary_value(node_instance_array, i);
-      assert(node_instance != 0);
+      assert(node_instance != NULL);
       provide_port_data_state = apx_nodeInstance_get_provide_port_data_state(node_instance);
       if (provide_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
       {
@@ -810,7 +810,7 @@ static apx_error_t gather_provide_port_connector_changes(adt_ary_t* node_instanc
             apx_portConnectorChangeRef_t* ref;
             adt_error_t rc;
             ref = apx_portConnectorChangeRef_new(node_instance, connector_changes);
-            if (ref == 0)
+            if (ref == NULL)
             {
                return APX_MEM_ERROR;
             }
@@ -841,7 +841,7 @@ static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instanc
    {
       apx_dataState_t require_port_data_state;
       apx_nodeInstance_t* node_instance = (apx_nodeInstance_t*)adt_ary_value(node_instance_array, i);
-      assert(node_instance != 0);
+      assert(node_instance != NULL);
       require_port_data_state = apx_nodeInstance_get_require_port_data_state(node_instance);
       if (require_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
       {
@@ -851,7 +851,7 @@ static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instanc
             apx_portConnectorChangeRef_t* ref;
             adt_error_t rc;
             ref = apx_portConnectorChangeRef_new(node_instance, connector_changes);
-            if (ref == 0)
+            if (ref == NULL)
             {
                return APX_MEM_ERROR;
             }
@@ -876,7 +876,7 @@ static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_chang
 {
    int32_t numNodes;
    int32_t i;
-   assert(provider_change_array != 0);
+   assert(provider_change_array != NULL);
    numNodes = adt_ary_length(provider_change_array);
    for (i = 0; i < numNodes; i++)
    {
@@ -898,7 +898,7 @@ static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_cha
 {
    int32_t num_nodes;
    int32_t i;
-   assert(requester_change_array != 0);
+   assert(requester_change_array != NULL);
    num_nodes = adt_ary_length(requester_change_array);
    for (i = 0; i < num_nodes; i++)
    {

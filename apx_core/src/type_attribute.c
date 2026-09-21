@@ -45,7 +45,7 @@ void apx_typeAttributes_create(apx_typeAttributes_t* self)
 
 void apx_typeAttributes_destroy(apx_typeAttributes_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       adt_ary_destroy(&self->computations);
    }
@@ -54,7 +54,7 @@ void apx_typeAttributes_destroy(apx_typeAttributes_t* self)
 apx_typeAttributes_t* apx_typeAttributes_new()
 {
    apx_typeAttributes_t *self = (apx_typeAttributes_t*) malloc(sizeof(apx_typeAttributes_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_typeAttributes_create(self);
    }
@@ -63,7 +63,7 @@ apx_typeAttributes_t* apx_typeAttributes_new()
 
 void apx_typeAttributes_delete(apx_typeAttributes_t* self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_typeAttributes_destroy(self);
       free(self);

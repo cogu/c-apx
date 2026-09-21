@@ -62,11 +62,11 @@ static bool m_display_version = false;
 static bool m_is_requester = true;
 static uint16_t m_pos_arg_count = 0u;
 static uint16_t m_connect_port;
-static adt_str_t* m_connect_address = (adt_str_t*)0;
-static adt_str_t* m_message = (adt_str_t*)0;
-static adt_str_t* m_input_file_path = (adt_str_t*)0;
-static adt_str_t* m_name = (adt_str_t*)0;
-static adt_str_t* m_value = (adt_str_t*)0;
+static adt_str_t* m_connect_address = NULL;
+static adt_str_t* m_message = NULL;
+static adt_str_t* m_input_file_path = NULL;
+static adt_str_t* m_name = NULL;
+static adt_str_t* m_value = NULL;
 static apx_resource_type_t m_connect_resource_type = APX_RESOURCE_TYPE_UNKNOWN;
 uint32_t m_timer_init = 0u;
 
@@ -132,9 +132,9 @@ SHUTDOWN:
 
 static argparse_result_t argparse_cbk(const char* short_name, const char* long_name, const char* value)
 {
-   if (value == 0)
+   if (value == NULL)
    {
-      if (short_name != 0)
+      if (short_name != NULL)
       {
          if ((strcmp(short_name, "t") == 0) || (strcmp(short_name, "p") == 0) || (strcmp(short_name, "c") == 0))
          {
@@ -155,7 +155,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
             return ARGPARSE_NAME_ERROR;
          }
       }
-      else if ((long_name != 0))
+      else if ((long_name != NULL))
       {
          if ((strcmp(long_name, "connect") == 0) || (strcmp(long_name, "port") == 0) || (strcmp(long_name, "time") == 0))
          {
@@ -184,7 +184,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
    }
    else
    {
-      if (short_name != 0)
+      if (short_name != NULL)
       {
          char* end = NULL;
          long lval;
@@ -214,7 +214,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
          }
          else if (strcmp(short_name, "c") == 0)
          {
-            if (m_connect_address != 0) adt_str_delete(m_connect_address);
+            if (m_connect_address != NULL) adt_str_delete(m_connect_address);
             m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
             if ((m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
                (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
@@ -227,7 +227,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
             return ARGPARSE_PARSE_ERROR;
          }
       }
-      else if (long_name != 0)
+      else if (long_name != NULL)
       {
          char* end = NULL;
          long lval;
@@ -245,7 +245,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
          }
          else if (strcmp(long_name, "connect") == 0)
          {
-            if (m_connect_address != 0) adt_str_delete(m_connect_address);
+            if (m_connect_address != NULL) adt_str_delete(m_connect_address);
             m_connect_resource_type = apx_parse_resource_name(value, &m_connect_address, &m_connect_port);
             if ((m_connect_resource_type == APX_RESOURCE_TYPE_UNKNOWN) ||
                (m_connect_resource_type == APX_RESOURCE_TYPE_ERROR))
@@ -269,7 +269,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
       else
       {
          adt_str_t* tmp = adt_str_new_cstr(value);
-         if (tmp == 0)
+         if (tmp == NULL)
          {
             return ARGPARSE_MEM_ERROR;
          }

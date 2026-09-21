@@ -39,7 +39,7 @@ apx_error_t apx_portConnectorChangeTable_create(apx_portConnectorChangeTable_t *
       apx_size_t i;
       self->num_ports = num_ports;
       self->entries = (apx_portConnectorChangeEntry_t*) malloc(sizeof(apx_portConnectorChangeEntry_t)*num_ports);
-      if (self->entries == 0)
+      if (self->entries == NULL)
       {
          return APX_MEM_ERROR;
       }
@@ -54,7 +54,7 @@ apx_error_t apx_portConnectorChangeTable_create(apx_portConnectorChangeTable_t *
 
 void apx_portConnectorChangeTable_destroy(apx_portConnectorChangeTable_t *self)
 {
-   if ( (self != NULL) && (self->entries != 0))
+   if ( (self != NULL) && (self->entries != NULL))
    {
       apx_size_t i;
       for (i=0u; i<self->num_ports; i++)
@@ -74,7 +74,7 @@ apx_portConnectorChangeTable_t *apx_portConnectorChangeTable_new(int32_t num_por
       if (errorCode != APX_NO_ERROR)
       {
          free(self);
-         self = 0;
+         self = NULL;
       }
    }
    return self;

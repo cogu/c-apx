@@ -137,7 +137,7 @@ static void test_apx_es_fileManager_create(CuTest* tc)
    CuAssertUIntEquals(tc, RMF_CMD_INVALID_MSG, fileManager.pendingMsg.msgType);
 
    CuAssertUIntEquals(tc, 0, fileManager.transmitBuf.avail);
-   CuAssertPtrEquals(tc, 0, fileManager.transmitBuf.data);
+   CuAssertPtrEquals(tc, NULL, fileManager.transmitBuf.data);
 
    CuAssertUIntEquals(tc, 0, fileManager.numRequestedFiles);
    CuAssertUIntEquals(tc, 0, apx_es_fileMap_length(&fileManager.localFileMap));

@@ -58,7 +58,7 @@ static apx_error_t init_node_instance_from_file_info(apx_nodeManager_t* self, rm
 
 void apx_nodeManager_create(apx_nodeManager_t *self, apx_mode_t mode)
 {
-   if ( (self != 0) && ( (mode == APX_CLIENT_MODE) || (mode == APX_SERVER_MODE) ) )
+   if ( (self != NULL) && ( (mode == APX_CLIENT_MODE) || (mode == APX_SERVER_MODE) ) )
    {
       self->mode = mode;
       self->last_attached = NULL;
@@ -73,7 +73,7 @@ void apx_nodeManager_create(apx_nodeManager_t *self, apx_mode_t mode)
 
 void apx_nodeManager_destroy(apx_nodeManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_parser_destroy(&self->parser);
       apx_istream_destroy(&self->stream);
@@ -86,7 +86,7 @@ void apx_nodeManager_destroy(apx_nodeManager_t *self)
 apx_nodeManager_t *apx_nodeManager_new(apx_mode_t mode)
 {
    apx_nodeManager_t *self = (apx_nodeManager_t*) malloc(sizeof(apx_nodeManager_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_nodeManager_create(self, mode);
    }
@@ -95,7 +95,7 @@ apx_nodeManager_t *apx_nodeManager_new(apx_mode_t mode)
 
 void apx_nodeManager_delete(apx_nodeManager_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_nodeManager_destroy(self);
       free(self);
@@ -282,7 +282,7 @@ void apx_nodeManager_on_require_port_written(apx_nodeManager_t* self, apx_portIn
 
 int32_t apx_nodeManager_values(apx_nodeManager_t* self, adt_ary_t* array)
 {
-   if ((self != 0) && (array != 0))
+   if ((self != NULL) && (array != 0))
    {
       int32_t retval;
       MUTEX_LOCK(self->lock);

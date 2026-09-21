@@ -44,7 +44,7 @@ static void apx_portSignatureMap_delete_entry(apx_portSignatureMap_t *self, cons
 //////////////////////////////////////////////////////////////////////////////
 void apx_portSignatureMap_create(apx_portSignatureMap_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       adt_hash_create(&self->internal_map, apx_portSignatureMapEntry_vdelete);
    }
@@ -57,7 +57,7 @@ void apx_portSignatureMap_destroy(apx_portSignatureMap_t *self)
 
 apx_portSignatureMapEntry_t *apx_portSignatureMap_find(apx_portSignatureMap_t *self, const char *portSignature)
 {
-   if ( (self != 0) && (portSignature != 0) )
+   if ( (self != NULL) && (portSignature != 0) )
    {
       void **ppResult = adt_hash_get(&self->internal_map, portSignature);
       if (ppResult != 0)
@@ -65,12 +65,12 @@ apx_portSignatureMapEntry_t *apx_portSignatureMap_find(apx_portSignatureMap_t *s
          return (apx_portSignatureMapEntry_t*) *ppResult;
       }
    }
-   return (apx_portSignatureMapEntry_t*) 0;
+   return NULL;
 }
 
 int32_t apx_portSignatureMap_length(apx_portSignatureMap_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       return adt_hash_length(&self->internal_map);
    }
@@ -80,7 +80,7 @@ int32_t apx_portSignatureMap_length(apx_portSignatureMap_t *self)
 apx_portSignatureMap_t *apx_portSignatureMap_new(void)
 {
    apx_portSignatureMap_t *self = (apx_portSignatureMap_t*) malloc(sizeof(apx_portSignatureMap_t));
-   if (self != 0)
+   if (self != NULL)
    {
       apx_portSignatureMap_create(self);
    }
@@ -90,7 +90,7 @@ apx_portSignatureMap_t *apx_portSignatureMap_new(void)
 
 void apx_portSignatureMap_delete(apx_portSignatureMap_t *self)
 {
-   if (self != 0)
+   if (self != NULL)
    {
       apx_portSignatureMap_destroy(self);
       free(self);
@@ -190,15 +190,15 @@ static apx_error_t apx_portSignatureMap_insert(apx_portSignatureMap_t* self, con
    assert(strlen(port_signature) > 0);
    assert(port_instance != NULL);
    entry = apx_portSignatureMap_find(self, port_signature);
-   if (entry == 0)
+   if (entry == NULL)
    {
       entry = apx_portSignatureMap_create_new_entry(self, port_signature);
-      if (entry == 0)
+      if (entry == NULL)
       {
          return APX_MEM_ERROR;
       }
    }
-   assert(entry != 0);
+   assert(entry != NULL);
    if (apx_portInstance_port_type(port_instance) == APX_PROVIDE_PORT)
    {
       apx_portSignatureMapEntry_attach_provide_port(entry, port_instance, true);
@@ -215,7 +215,7 @@ static apx_error_t apx_portSignatureMap_insert(apx_portSignatureMap_t* self, con
 static apx_portSignatureMapEntry_t* apx_portSignatureMap_create_new_entry(apx_portSignatureMap_t* self, const char* port_signature)
 {
    apx_portSignatureMapEntry_t *entry = apx_portSignatureMapEntry_new();
-   if (entry != 0)
+   if (entry != NULL)
    {
       adt_hash_set(&self->internal_map, port_signature, entry);
    }
@@ -302,10 +302,10 @@ static apx_error_t apx_portSignatureMap_remove(apx_portSignatureMap_t* self, con
 
 static void apx_portSignatureMap_delete_entry(apx_portSignatureMap_t* self, const char* port_signature)
 {
-   if ( (self != 0) && (port_signature != 0) )
+   if ( (self != NULL) && (port_signature != 0) )
    {
       apx_portSignatureMapEntry_t *entry = (apx_portSignatureMapEntry_t*) adt_hash_remove(&self->internal_map, port_signature);
-      if (entry != 0)
+      if (entry != NULL)
       {
          apx_portSignatureMapEntry_delete(entry);
       }
