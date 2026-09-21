@@ -49,7 +49,6 @@ void apx_server_monitor_create(apx_server_monitor_t* self, struct apx_server_tag
 {
    if (self != NULL)
    {
-      printf("[MONITOR_STATE] Init\n");
       self->server = server;
       adt_list_create(&self->connection_observers, apx_observed_connection_vdelete);
       adt_list_create(&self->monitor_connections, NULL);
@@ -62,7 +61,6 @@ void apx_server_monitor_destroy(apx_server_monitor_t* self)
 {
    if (self != NULL)
    {
-      printf("[MONITOR_STATE] Destroy\n");
       adt_list_destroy(&self->connection_observers);
       adt_list_destroy(&self->monitor_connections);
       MUTEX_DESTROY(self->lock);
@@ -175,10 +173,12 @@ static void on_connection_closed(apx_server_monitor_t* self, apx_server_connecti
       num_monitors = adt_list_length(&self->monitor_connections);
    }
    mutex_unlock(self);
+#if APX_DEBUG_ENABLE
    if (num_monitors >= 0)
    {
       printf("[MONITOR_STATE] Number of monitor connections: %d\n", (int)num_monitors);
    }
+#endif
 }
 
 static void register_connection_listener(apx_server_monitor_t* self, apx_server_connection_t* connection)
