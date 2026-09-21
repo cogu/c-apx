@@ -14,31 +14,43 @@ jobs:
   build:
     name: build (${{ matrix.name }})
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: GCC
+            os: ubuntu-latest
             cc: gcc
             cxx: g++
           - name: Clang
+            os: ubuntu-latest
             cc: clang
             cxx: clang++
-    env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
+          - name: MSVC
+            os: windows-latest
 
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v4
       with:
-        submodules: 'true'
+        submodules: 'recursive'
+
     # Build with CMake
-    - name: configure
+    - name: configure (Linux)
+      if: runner.os != 'Windows'
       run: cmake -S . -B build -DUNIT_TEST=ON
+      env:
+        CC: ${{ matrix.cc }}
+        CXX: ${{ matrix.cxx }}
+
+    - name: configure (Windows)
+      if: runner.os == 'Windows'
+      run: cmake -S . -B build -DUNIT_TEST=ON
+
     - name: build
-      run: cmake --build build --target apx_unit
+      run: cmake --build build --target apx_unit --config Debug
+
     # Run unit test suite
     - name: test
-      run: ctest --test-dir build --output-on-failure
+      run: ctest --test-dir build -C Debug --output-on-failure
