@@ -357,7 +357,7 @@ apx_generate_server_extension_registry("${GENERATED_EXTENSIONS_CFG}")
 if(NOT UNIT_TEST)
     add_subdirectory(app/apx_node)
     add_subdirectory(app/apx_control)
-    #add_subdirectory(app/apx_perf_test)#
+    add_subdirectory(app/apx_perf_test)
 endif()
 if(APX_BUILD_SERVER)
     add_subdirectory(app/apx_server)
