@@ -36,9 +36,7 @@
 #include "server_cfg.h"
 #include "apx/event_listener.h"
 #include "argparse.h"
-#ifdef USE_CONFIGURATION_FILE
-#include "apx_build_cfg.h"
-#endif
+#include "apx_version.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES

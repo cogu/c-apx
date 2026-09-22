@@ -22,7 +22,6 @@ target_include_directories(apx_perf_test PRIVATE
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-target_compile_definitions(apx_perf_test PRIVATE USE_CONFIGURATION_FILE)
 
 install(
   TARGETS apx_perf_test

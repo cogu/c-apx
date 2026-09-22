@@ -62,7 +62,7 @@ else()
 endif()
 message(STATUS "LIBRARY_TYPE=${LIBRARY_TYPE}")
 
-configure_file(cmake/apx_build_cfg.h.in apx_build_cfg.h)
+configure_file(cmake/apx_version.h.in apx_version.h)
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)

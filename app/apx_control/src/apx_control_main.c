@@ -23,9 +23,7 @@
 #include "argparse.h"
 #include "dtl_json.h"
 #include "filestream.h"
-#ifdef USE_CONFIGURATION_FILE
-#include "apx_build_cfg.h"
-#endif
+#include "apx_version.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif

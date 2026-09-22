@@ -25,9 +25,7 @@
 #include "adt_str.h"
 #include "argparse.h"
 #include "apx/util.h"
-#ifdef USE_CONFIGURATION_FILE
-#include "apx_build_cfg.h"
-#endif
+#include "apx_version.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
