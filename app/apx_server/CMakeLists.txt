@@ -22,7 +22,6 @@ target_link_libraries(apx_server PRIVATE
 if (LEAK_CHECK)
     target_compile_definitions(apx_server PRIVATE MEM_LEAK_CHECK)
 endif()
-target_compile_definitions(apx_server PRIVATE USE_CONFIGURATION_FILE)
 target_include_directories(apx_server PRIVATE include ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 install(

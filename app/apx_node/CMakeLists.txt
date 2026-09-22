@@ -25,7 +25,6 @@ target_include_directories(apx_node PRIVATE
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-target_compile_definitions(apx_node PRIVATE USE_CONFIGURATION_FILE)
 if(APX_DEBUG)
     target_compile_definitions(apx_node PUBLIC APX_DEBUG_ENABLE=1)
 endif()
