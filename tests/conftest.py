@@ -10,8 +10,10 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
+from typing import Any
 import pytest
 
 PR_SET_PDEATHSIG = 1
@@ -69,6 +71,10 @@ class ApxServerInstance:
         sock.connect(self.socket_path)
         return sock
 
+    def client_args(self, *extra_args: str) -> list[str]:
+        """Returns standard CLI connect arguments for APX clients: ['-c', socket_path, *extra_args]."""
+        return ["-c", self.socket_path, *extra_args]
+
     def stop(self, timeout: float = 3.0):
         """Gracefully terminate server and verify clean exit."""
         if self.is_running:
@@ -80,35 +86,243 @@ class ApxServerInstance:
                 self.process.wait()
 
 
-@pytest.fixture(scope="session")
-def apx_server_bin() -> str:
-    """Finds the apx_server executable from environment or build directories."""
-    env_bin = os.environ.get("APX_SERVER_BIN")
+class ApxNodeInstance:
+    """Represents a running apx_node instance for testing."""
+
+    def __init__(self, process: subprocess.Popen, definition_file: Path | str, bind_path: str | None = None):
+        self.process = process
+        self.definition_file = Path(definition_file)
+        self.bind_path = bind_path
+        self._output_lines: list[str] = []
+        self._stderr_lines: list[str] = []
+        self._lock = threading.Lock()
+        self._line_event = threading.Event()
+        self._stdout_thread = threading.Thread(target=self._read_stdout, daemon=True)
+        self._stderr_thread = threading.Thread(target=self._read_stderr, daemon=True)
+        self._stdout_thread.start()
+        self._stderr_thread.start()
+
+    def _read_stdout(self):
+        try:
+            if self.process.stdout:
+                for line in iter(self.process.stdout.readline, ''):
+                    if not line:
+                        break
+                    clean_line = line.rstrip('\r\n')
+                    with self._lock:
+                        self._output_lines.append(clean_line)
+                        self._line_event.set()
+        except Exception:
+            pass
+
+    def _read_stderr(self):
+        try:
+            if self.process.stderr:
+                for line in iter(self.process.stderr.readline, ''):
+                    if not line:
+                        break
+                    clean_line = line.rstrip('\r\n')
+                    with self._lock:
+                        self._stderr_lines.append(clean_line)
+        except Exception:
+            pass
+
+    @property
+    def is_running(self) -> bool:
+        return self.process.poll() is None
+
+    @property
+    def lines(self) -> list[str]:
+        with self._lock:
+            return list(self._output_lines)
+
+    @property
+    def stderr_lines(self) -> list[str]:
+        with self._lock:
+            return list(self._stderr_lines)
+
+    @property
+    def output(self) -> str:
+        with self._lock:
+            return "\n".join(self._output_lines)
+
+    @property
+    def stderr(self) -> str:
+        with self._lock:
+            return "\n".join(self._stderr_lines)
+
+    def wait_for_output(self, pattern: str, timeout: float = 3.0) -> bool:
+        """Wait until pattern appears in any output line."""
+        start_time = time.monotonic()
+        while time.monotonic() - start_time < timeout:
+            with self._lock:
+                for line in self._output_lines:
+                    if pattern in line:
+                        return True
+            self._line_event.wait(timeout=0.05)
+            self._line_event.clear()
+        with self._lock:
+            return any(pattern in line for line in self._output_lines)
+
+    def stop(self, timeout: float = 3.0):
+        """Gracefully terminate apx_node process and verify clean exit."""
+        if self.is_running:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+
+
+class ApxControl:
+    """Helper for invoking the apx_control CLI tool."""
+
+    def __init__(self, bin_path: str):
+        self.bin_path = bin_path
+
+    def run(self, *args: str, connect_path: str | None = None, timeout: float = 3.0) -> subprocess.CompletedProcess:
+        cmd = [self.bin_path]
+        if connect_path:
+            cmd.extend(["-c", str(connect_path)])
+        cmd.extend(str(a) for a in args)
+        return subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout,
+            check=True
+        )
+
+    def set_signal(self, name: str, value: Any, *, connect_path: str | None = None, timeout: float = 3.0) -> subprocess.CompletedProcess:
+        """Convenience method to set a signal value: apx_control -c <connect_path> <name> <value>."""
+        return self.run(name, str(value), connect_path=connect_path, timeout=timeout)
+
+
+def _find_binary(env_var: str, app_name: str) -> str:
+    """Finds an executable binary from environment variable, build directories, or PATH."""
+    env_bin = os.environ.get(env_var)
     if env_bin and os.path.isfile(env_bin) and os.access(env_bin, os.X_OK):
         return env_bin
 
     repo_root = Path(__file__).resolve().parent.parent
     candidate_paths = [
-        repo_root / "build" / "clang-debug" / "app" / "apx_server" / "apx_server",
-        repo_root / "build" / "clang-release" / "app" / "apx_server" / "apx_server",
-        repo_root / "build" / "gcc-release" / "app" / "apx_server" / "apx_server",
-        repo_root / "build" / "gcc-debug" / "app" / "apx_server" / "apx_server",
-        repo_root / "build" / "app" / "apx_server" / "apx_server",
-        repo_root / "build" / "clang-test" / "app" / "apx_server" / "apx_server",
+        repo_root / "build" / "clang-debug" / "app" / app_name / app_name,
+        repo_root / "build" / "clang-release" / "app" / app_name / app_name,
+        repo_root / "build" / "gcc-release" / "app" / app_name / app_name,
+        repo_root / "build" / "gcc-debug" / "app" / app_name / app_name,
+        repo_root / "build" / "app" / app_name / app_name,
+        repo_root / "build" / "clang-test" / "app" / app_name / app_name,
     ]
 
     for path in candidate_paths:
         if path.is_file() and os.access(path, os.X_OK):
             return str(path)
 
-    system_bin = shutil.which("apx_server")
+    system_bin = shutil.which(app_name)
     if system_bin:
         return system_bin
 
     raise FileNotFoundError(
-        "Could not find 'apx_server' binary. Please build it first (e.g. cmake --build --preset clang-test --target apx_server) "
-        "or set the APX_SERVER_BIN environment variable."
+        f"Could not find '{app_name}' binary. Please build it first "
+        f"(e.g. cmake --build --preset clang-debug --target {app_name}) "
+        f"or set the {env_var} environment variable."
     )
+
+
+@pytest.fixture(scope="session")
+def apx_server_bin() -> str:
+    """Finds the apx_server executable from environment or build directories."""
+    return _find_binary("APX_SERVER_BIN", "apx_server")
+
+
+@pytest.fixture(scope="session")
+def apx_node_bin() -> str:
+    """Finds the apx_node executable from environment or build directories."""
+    return _find_binary("APX_NODE_BIN", "apx_node")
+
+
+@pytest.fixture(scope="session")
+def apx_control_bin() -> str:
+    """Finds the apx_control executable from environment or build directories."""
+    return _find_binary("APX_CONTROL_BIN", "apx_control")
+
+
+@pytest.fixture
+def apx_control(apx_control_bin: str) -> ApxControl:
+    """Fixture providing an ApxControl helper instance."""
+    return ApxControl(apx_control_bin)
+
+
+@pytest.fixture
+def spawn_apx_node(apx_server: ApxServerInstance, apx_node_bin: str, tmp_path: Path):
+    """
+    Factory fixture to launch apx_node instances connected to apx_server.
+    Handles:
+    - Connecting to apx_server via UNIX domain socket (-c apx_server.socket_path).
+    - Isolated bind sockets (-b <tmp_path/node_N.socket>) or --no-bind.
+    - Deterministic waiting for JSON server listening readiness when bound.
+    - Automatic cleanup (SIGTERM) on test teardown.
+    - Kernel cleanup via PR_SET_PDEATHSIG.
+    """
+    nodes: list[ApxNodeInstance] = []
+    node_counter = 0
+
+    def _spawn(
+        definition_file: str | Path,
+        *,
+        bind: bool | str | Path = False,
+        extra_args: list[str] | None = None
+    ) -> ApxNodeInstance:
+        nonlocal node_counter
+        node_counter += 1
+
+        bind_path = None
+        cmd = [apx_node_bin, *apx_server.client_args()]
+
+        if bind is False:
+            cmd.append("--no-bind")
+        elif bind is True:
+            bind_socket = str(tmp_path / f"node_{node_counter}.socket")
+            cmd.extend(["-b", bind_socket])
+            bind_path = bind_socket
+        elif isinstance(bind, (str, Path)):
+            bind_socket = str(bind)
+            cmd.extend(["-b", bind_socket])
+            bind_path = bind_socket
+
+        if extra_args:
+            cmd.extend(extra_args)
+
+        cmd.append(str(definition_file))
+
+        stdbuf_bin = shutil.which("stdbuf")
+        if stdbuf_bin:
+            cmd = [stdbuf_bin, "-oL", *cmd]
+
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            preexec_fn=_set_pdeathsig
+        )
+
+        node = ApxNodeInstance(proc, definition_file, bind_path=bind_path)
+        nodes.append(node)
+
+        if bind_path:
+            wait_for_unix_socket(bind_path, timeout=3.0)
+
+        return node
+
+    yield _spawn
+
+    for node in nodes:
+        node.stop()
+
 
 
 @pytest.fixture(scope="function")
