@@ -93,30 +93,41 @@ int main(int argc, char **argv)
    argparse_result_t result = argparse_exec(argc, (const char**)argv, argparse_cbk);
    if (result == ARGPARSE_SUCCESS)
    {
-      if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN)
+      if (m_display_version)
       {
-         uint16_t dummy_port;
-         m_connect_resource_type = msocket_parse_endpoint(m_connect_address_default, &m_connect_address, &dummy_port);
-         (void)dummy_port;
-         assert((m_connect_resource_type != MSOCKET_ENDPOINT_UNKNOWN) && (m_connect_resource_type != MSOCKET_ENDPOINT_ERROR));
+         print_version();
       }
-      memset(&cfg, 0, sizeof(cfg));
-      cfg.apx_definition = m_is_requester ? requester_apx_def : responder_apx_def;
-      cfg.resource_type = m_connect_resource_type;
-      cfg.server_address = adt_str_cstr(m_connect_address);
-      cfg.tcp_port = m_connect_port;
-      cfg.timer_init = m_timer_init;
-      if (!application_init(&cfg))
+      else if (m_display_help)
       {
-         retval = -1;
-         goto SHUTDOWN;
+         print_usage(argv[0]);
       }
-      for (;;)
+      else
       {
-         SLEEP(1000);
-         if (!application_run())
+         if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN)
          {
-            break;
+            uint16_t dummy_port;
+            m_connect_resource_type = msocket_parse_endpoint(m_connect_address_default, &m_connect_address, &dummy_port);
+            (void)dummy_port;
+            assert((m_connect_resource_type != MSOCKET_ENDPOINT_UNKNOWN) && (m_connect_resource_type != MSOCKET_ENDPOINT_ERROR));
+         }
+         memset(&cfg, 0, sizeof(cfg));
+         cfg.apx_definition = m_is_requester ? requester_apx_def : responder_apx_def;
+         cfg.resource_type = m_connect_resource_type;
+         cfg.server_address = adt_str_cstr(m_connect_address);
+         cfg.tcp_port = m_connect_port;
+         cfg.timer_init = m_timer_init;
+         if (!application_init(&cfg))
+         {
+            retval = -1;
+            goto SHUTDOWN;
+         }
+         for (;;)
+         {
+            SLEEP(1000);
+            if (!application_run())
+            {
+               break;
+            }
          }
       }
    }
@@ -134,7 +145,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
    {
       if (short_name != NULL)
       {
-         if ((strcmp(short_name, "t") == 0) || (strcmp(short_name, "p") == 0) || (strcmp(short_name, "c") == 0))
+         if ((strcmp(short_name, "t") == 0) || (strcmp(short_name, "c") == 0))
          {
             return ARGPARSE_NEED_VALUE;
          }
@@ -155,7 +166,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
       }
       else if ((long_name != NULL))
       {
-         if ((strcmp(long_name, "connect") == 0) || (strcmp(long_name, "port") == 0) || (strcmp(long_name, "time") == 0))
+         if ((strcmp(long_name, "connect") == 0) || (strcmp(long_name, "time") == 0))
          {
             return ARGPARSE_NEED_VALUE;
          }
@@ -186,19 +197,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
       {
          char* end = NULL;
          long lval;
-         if (strcmp(short_name, "p") == 0)
-         {
-            lval = strtol(value, &end, 0);
-            if ((end > value) && (lval <= UINT16_MAX))
-            {
-               m_connect_port = (uint16_t)lval;
-            }
-            else
-            {
-               return ARGPARSE_VALUE_ERROR;
-            }
-         }
-         else if (strcmp(short_name, "t") == 0)
+         if (strcmp(short_name, "t") == 0)
          {
             lval = strtol(value, &end, 0);
             if ((end > value) && (lval <= UINT16_MAX))
@@ -229,19 +228,7 @@ static argparse_result_t argparse_cbk(const char* short_name, const char* long_n
       {
          char* end = NULL;
          long lval;
-         if (strcmp(long_name, "port") == 0)
-         {
-            lval = strtol(value, &end, 0);
-            if ((end > value) && (lval <= UINT16_MAX))
-            {
-               m_connect_port = (uint16_t)lval;
-            }
-            else
-            {
-               return ARGPARSE_VALUE_ERROR;
-            }
-         }
-         else if (strcmp(long_name, "connect") == 0)
+         if (strcmp(long_name, "connect") == 0)
          {
             if (m_connect_address != NULL) adt_str_delete(m_connect_address);
             m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
@@ -298,7 +285,7 @@ static void print_version(void)
 static void print_usage(const char* arg0)
 {
    printf("%s "
-      "[-c --connect connect_path] [-p --port connect_port] "
+      "[-c --connect connect_path] "
       "[--version] "
       "[-s --slave] "
       "[-t --time seconds]\n"
