@@ -163,14 +163,18 @@ static void on_new_connection(apx_server_monitor_t* self, apx_server_connection_
 
 static void on_connection_closed(apx_server_monitor_t* self, apx_server_connection_t* connection)
 {
+#if APX_DEBUG_ENABLE
    int32_t num_monitors = -1;
+#endif
    apx_connection_type_t connection_type = apx_server_connection_get_connection_type(connection);
    mutex_lock(self);
    delete_observed_connection(self, connection);
    if (connection_type == APX_CONNECTION_TYPE_MONITOR)
    {
       adt_list_remove(&self->monitor_connections, (void*)connection);
+#if APX_DEBUG_ENABLE
       num_monitors = adt_list_length(&self->monitor_connections);
+#endif
    }
    mutex_unlock(self);
 #if APX_DEBUG_ENABLE
