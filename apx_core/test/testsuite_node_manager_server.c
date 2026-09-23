@@ -36,6 +36,7 @@ static void test_port_signature_uint8(CuTest* tc);
 static void test_port_signature_uint8_with_limits(CuTest* tc);
 static void test_port_signature_uint8_array(CuTest* tc);
 static void test_port_signature_dynamic_uint8_array(CuTest* tc);
+static void test_node_instance_port_count_buffers_v12_vs_v13(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -55,6 +56,7 @@ CuSuite* testsuite_apx_node_manager_server_mode(void)
    SUITE_ADD_TEST(suite, test_port_signature_uint8_with_limits);
    SUITE_ADD_TEST(suite, test_port_signature_uint8_array);
    SUITE_ADD_TEST(suite, test_port_signature_dynamic_uint8_array);
+   SUITE_ADD_TEST(suite, test_node_instance_port_count_buffers_v12_vs_v13);
 
    return suite;
 }
@@ -249,5 +251,53 @@ static void test_port_signature_dynamic_uint8_array(CuTest* tc)
    CuAssertPtrNotNull(tc, port);
    bool has_dynamic_data = false;
    CuAssertStrEquals(tc, "\"TestPort\"C[*]", apx_port_instance_get_port_signature(port, &has_dynamic_data));
+   apx_node_manager_delete(manager);
+}
+
+static void test_node_instance_port_count_buffers_v12_vs_v13(CuTest* tc)
+{
+   const char* apx_text_1_2 =
+      "APX/1.2\n"
+      "N\"Node12\"\n"
+      "P\"ProvidePort1\"C:=0\n"
+      "P\"ProvidePort2\"S:=0\n"
+      "R\"RequirePort1\"C:=0\n";
+
+   const char* apx_text_1_3 =
+      "APX/1.3\n"
+      "N\"Node13\"\n"
+      "P\"ProvidePort1\"C:=0\n"
+      "P\"ProvidePort2\"S:=0\n"
+      "R\"RequirePort1\"C:=0\n";
+
+   apx_node_manager_t* manager = apx_node_manager_new(APX_SERVER_MODE);
+   CuAssertPtrNotNull(tc, manager);
+
+   // Test APX/1.2 node
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(manager, apx_text_1_2));
+   apx_node_instance_t* node_instance12 = apx_node_manager_find(manager, "Node12");
+   CuAssertPtrNotNull(tc, node_instance12);
+   CuAssertIntEquals(tc, 1, apx_node_instance_get_major_version(node_instance12));
+   CuAssertIntEquals(tc, 2, apx_node_instance_get_minor_version(node_instance12));
+   CuAssertFalse(tc, apx_node_instance_has_provide_port_count_data(node_instance12));
+   CuAssertFalse(tc, apx_node_instance_has_require_port_count_data(node_instance12));
+   apx_node_data_t* data12 = apx_node_instance_get_node_data(node_instance12);
+   CuAssertPtrNotNull(tc, data12);
+   CuAssertUIntEquals(tc, 0u, apx_node_data_provide_port_connection_count_data_size(data12));
+   CuAssertUIntEquals(tc, 0u, apx_node_data_require_port_connection_count_data_size(data12));
+
+   // Test APX/1.3 node
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(manager, apx_text_1_3));
+   apx_node_instance_t* node_instance13 = apx_node_manager_find(manager, "Node13");
+   CuAssertPtrNotNull(tc, node_instance13);
+   CuAssertIntEquals(tc, 1, apx_node_instance_get_major_version(node_instance13));
+   CuAssertIntEquals(tc, 3, apx_node_instance_get_minor_version(node_instance13));
+   CuAssertTrue(tc, apx_node_instance_has_provide_port_count_data(node_instance13));
+   CuAssertTrue(tc, apx_node_instance_has_require_port_count_data(node_instance13));
+   apx_node_data_t* data13 = apx_node_instance_get_node_data(node_instance13);
+   CuAssertPtrNotNull(tc, data13);
+   CuAssertUIntEquals(tc, 2u * sizeof(uint16_t), apx_node_data_provide_port_connection_count_data_size(data13));
+   CuAssertUIntEquals(tc, 1u * sizeof(uint16_t), apx_node_data_require_port_connection_count_data_size(data13));
+
    apx_node_manager_delete(manager);
 }

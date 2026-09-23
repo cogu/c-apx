@@ -31,6 +31,8 @@ typedef struct apx_node_tag {
    char* name;
    bool is_finalized;
    int32_t last_error_line;
+   int32_t major_version; // APX version of the node (major)
+   int32_t minor_version; // APX version of the node (minor)
 } apx_node_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -57,8 +59,8 @@ apx_port_t* apx_node_get_last_require_port(const apx_node_t* self);
 apx_port_t* apx_node_get_last_provide_port(const apx_node_t* self);
 apx_error_t apx_node_finalize(apx_node_t* self);
 int32_t apx_node_get_last_error_line(const apx_node_t* self);
-
-
-
+void apx_node_set_version(apx_node_t* self, int32_t major_version, int32_t minor_version);
+int32_t apx_node_get_major_version(const apx_node_t* self);
+int32_t apx_node_get_minor_version(const apx_node_t* self);
 
 #endif //APX_NODE_H

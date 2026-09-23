@@ -76,6 +76,10 @@ typedef struct apx_node_instance_tag
    apx_file_t* definition_file; //Weak reference
    apx_file_t* provide_port_data_file; //Weak reference
    apx_file_t* require_port_data_file; //Weak reference
+   apx_file_t* provide_port_count_file; //Weak reference
+   apx_file_t* require_port_count_file; //Weak reference
+   int32_t major_version; // APX version of the associated node (major)
+   int32_t minor_version; // APX version of the associated node (minor)
    MUTEX_T lock;
 } apx_node_instance_t;
 
@@ -112,6 +116,8 @@ apx_error_t apx_node_instance_init_node_data(apx_node_instance_t* self, uint8_t 
 apx_error_t apx_node_instance_finalize_node_data(apx_node_instance_t* self);
 bool apx_node_instance_has_provide_port_data(apx_node_instance_t const* self);
 bool apx_node_instance_has_require_port_data(apx_node_instance_t const* self);
+bool apx_node_instance_has_provide_port_count_data(apx_node_instance_t const* self);
+bool apx_node_instance_has_require_port_count_data(apx_node_instance_t const* self);
 apx_node_data_t const* apx_node_instance_get_const_node_data(apx_node_instance_t const* self);
 apx_node_data_t* apx_node_instance_get_node_data(apx_node_instance_t const* self);
 bool apx_node_instance_has_node_data(apx_node_instance_t const* self);
@@ -163,9 +169,22 @@ apx_error_t apx_node_instance_handle_require_port_disconnected_from_provide_port
 apx_error_t apx_node_instance_build_connector_table(apx_node_instance_t* self);
 void apx_node_instance_lock_port_connector_table(apx_node_instance_t* self);
 void apx_node_instance_unlock_port_connector_table(apx_node_instance_t* self);
-apx_port_connector_list_t* apx_node_instance_get_connectors_on_provide_port(apx_node_instance_t* self, apx_port_id_t port_id);
+apx_port_connector_list_t* apx_node_instance_get_provide_port_connectors(apx_node_instance_t* self, apx_port_id_t port_id);
 //apx_error_t apx_node_instance_insert_provide_port_connector(apx_node_instance_t* self, apx_port_id_t provide_port_id, apx_port_instance_t* require_port);
 //apx_error_t apx_node_instance_remove_provide_port_connector(apx_node_instance_t* self, apx_port_id_t provide_port_id, apx_port_instance_t* require_port);
 void apx_node_instance_clear_connector_table(apx_node_instance_t* self);
+
+// Version API
+void apx_node_instance_set_version(apx_node_instance_t* self, int32_t major_version, int32_t minor_version);
+int32_t apx_node_instance_get_major_version(const apx_node_instance_t* self);
+int32_t apx_node_instance_get_minor_version(const apx_node_instance_t* self);
+
+// Port Count File API
+apx_file_t* apx_node_instance_get_provide_port_count_file(const apx_node_instance_t* self);
+apx_file_t* apx_node_instance_get_require_port_count_file(const apx_node_instance_t* self);
+void apx_node_instance_set_provide_port_count_file(apx_node_instance_t* self, apx_file_t* file);
+void apx_node_instance_set_require_port_count_file(apx_node_instance_t* self, apx_file_t* file);
+apx_error_t apx_node_instance_send_provide_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, uint16_t count);
+apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, uint16_t count);
 
 #endif //APX_NODE_INSTANCE_H

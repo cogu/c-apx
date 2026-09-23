@@ -261,7 +261,7 @@ uint32_t apx_file_get_size(const apx_file_t* self)
 {
    if (self != NULL)
    {
-      rmf_file_info_size(&self->file_info);
+      return rmf_file_info_size(&self->file_info);
    }
    return 0;
 }

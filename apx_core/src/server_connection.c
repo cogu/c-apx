@@ -733,7 +733,23 @@ static apx_error_t detach_all_nodes(apx_server_connection_t* self)
       // We have now gathered all portConnectorTables belonging to this connection and placed them into providerConnectorChangeArray
       // and requesterConnectorChangeArray.
       // All other nodes that happened to be affected by port connector changes now need to have their port connector tables cleared.
-      // TODO: before clearing the tables we should actually update the port count and also send out update port count deltas to clients
+      // Update port counts and trigger sending port count deltas to surviving clients:
+      {
+         int32_t i;
+         int32_t const num_modified = adt_ary_length(&self->parent->modified_nodes);
+         for (i = 0; i < num_modified; i++)
+         {
+            apx_node_instance_t* node_instance = (apx_node_instance_t*)adt_ary_value(&self->parent->modified_nodes, i);
+            if ((node_instance != NULL) && (adt_ary_index_of(&node_instance_array, node_instance) < 0))
+            {
+               apx_port_connector_change_table_t* req_changes = apx_node_instance_get_require_port_connector_changes(node_instance, false);
+               if (req_changes != NULL)
+               {
+                  apx_node_instance_handle_require_ports_disconnected(node_instance, req_changes);
+               }
+            }
+         }
+      }
       apx_server_clear_port_connector_changes(self->parent);
       //All information we need is now located in providerConnectorChangeArray and requesterConnectorChangeArray respectively
       //We can do further processing after releasing global lock

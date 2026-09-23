@@ -238,6 +238,7 @@ static adt_list_elem_t* auto_assign_address(apx_file_map_t* self, apx_file_t* fi
       break;
    case APX_PROVIDE_PORT_DATA_FILE_TYPE:
    case APX_REQUIRE_PORT_DATA_FILE_TYPE:
+      start_address = APX_PORT_DATA_ADDRESS_START;
       alignment = APX_PORT_DATA_ADDRESS_ALIGNMENT;
       break;
    case APX_PROVIDE_PORT_COUNT_FILE_TYPE:
@@ -277,6 +278,28 @@ static adt_list_elem_t* auto_assign_address(apx_file_map_t* self, apx_file_t* fi
    return iterator_left;
 }
 
+static uint32_t get_file_type_start_address(apx_file_type_t file_type)
+{
+   switch (file_type)
+   {
+   case APX_DEFINITION_FILE_TYPE:
+      return APX_DEFINITION_ADDRESS_START;
+   case APX_PROVIDE_PORT_DATA_FILE_TYPE:
+   case APX_REQUIRE_PORT_DATA_FILE_TYPE:
+      return APX_PORT_DATA_ADDRESS_START;
+   case APX_PROVIDE_PORT_COUNT_FILE_TYPE:
+   case APX_REQUIRE_PORT_COUNT_FILE_TYPE:
+      return APX_PORT_COUNT_ADDRESS_START;
+   default:
+      return APX_USER_DEFINED_ADDRESS_START;
+   }
+}
+
+static bool file_types_share_address_group(apx_file_type_t type1, apx_file_type_t type2)
+{
+   return get_file_type_start_address(type1) == get_file_type_start_address(type2);
+}
+
 static adt_list_elem_t* find_last_element_of_type(apx_file_map_t* self, apx_file_type_t file_type)
 {
    assert(self != NULL);
@@ -292,7 +315,7 @@ static adt_list_elem_t* find_last_element_of_type(apx_file_map_t* self, apx_file
    {
       apx_file_t* tmp = (apx_file_t*)next->pItem;
       assert(tmp != NULL);
-      if (apx_file_get_apx_file_type(tmp) == file_type)
+      if (file_types_share_address_group(apx_file_get_apx_file_type(tmp), file_type))
       {
          candidate = next;
          next = adt_list_iter_next(next);
@@ -307,7 +330,7 @@ static adt_list_elem_t* find_last_element_of_type(apx_file_map_t* self, apx_file
       {
          apx_file_t* tmp = (apx_file_t*)next->pItem;
          assert(tmp != NULL);
-         if (apx_file_get_apx_file_type(tmp) == file_type)
+         if (file_types_share_address_group(apx_file_get_apx_file_type(tmp), file_type))
          {
             candidate = next;
             next = adt_list_iter_next(next);

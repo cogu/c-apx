@@ -267,13 +267,20 @@ apx_error_t apx_file_manager_send_local_data(apx_file_manager_t* self, uint32_t 
       apx_file_t* file = apx_file_manager_shared_find_file_by_address(&self->shared, address);
       if (file == NULL)
       {
+         free(data);
          return APX_FILE_NOT_FOUND_ERROR;
       }
       if (!apx_file_is_open(file))
       {
+         free(data);
          return APX_FILE_NOT_OPEN_ERROR;
       }
-      return apx_file_manager_worker_prepare_send_local_data(&self->worker, address, data, (uint32_t)size);
+      apx_error_t retval = apx_file_manager_worker_prepare_send_local_data(&self->worker, address, data, (uint32_t)size);
+      if (retval != APX_NO_ERROR)
+      {
+         free(data);
+      }
+      return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
