@@ -1,0 +1,31 @@
+# Doxyfile for Sphinx + Breathe integration
+PROJECT_NAME           = "c-apx"
+PROJECT_NUMBER         = "0.3.6"
+PROJECT_BRIEF          = "AUTOSAR Port eXchange in C"
+
+# Input configuration
+INPUT                  = ../apx_core/include ../extension/apx_socket_extension/include ../extension/apx_text_log_extension/include ../extension/apx_monitor_extension/include
+FILE_PATTERNS          = *.h
+RECURSIVE              = YES
+OUTPUT_DIRECTORY       = _build/doxygen
+
+# Language & Parsing
+OPTIMIZE_OUTPUT_FOR_C  = YES
+JAVADOC_AUTOBRIEF      = YES
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = NO
+
+# Output formats: Only XML is needed for Breathe
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+
+# Diagnostics
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES

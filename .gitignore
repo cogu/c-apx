@@ -21,3 +21,4 @@ TODO.md
 __pycache__/
 *.py[cod]
 .pytest_cache/
+/docs/_build/
