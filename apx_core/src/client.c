@@ -388,7 +388,7 @@ apx_port_instance_t* apx_client_get_port_instance_by_name(apx_client_t* self, co
 
 apx_port_instance_t* apx_client_get_provide_port_instance_by_id(apx_client_t* self, const char* node_name, apx_port_id_t port_id)
 {
-   if ( (self != NULL) && (port_id >= 0))
+   if ( (self != NULL) && (port_id != APX_INVALID_PORT_ID))
    {
       apx_node_instance_t *node_instance = NULL;
       if (node_name == NULL)
@@ -409,7 +409,7 @@ apx_port_instance_t* apx_client_get_provide_port_instance_by_id(apx_client_t* se
 
 apx_port_instance_t* apx_client_get_require_port_instance_by_id(apx_client_t* self, const char* node_name, apx_port_id_t port_id)
 {
-   if ( (self != NULL) && (port_id >= 0))
+   if ( (self != NULL) && (port_id != APX_INVALID_PORT_ID))
    {
       apx_node_instance_t *node_instance = NULL;
       if (node_name == NULL)

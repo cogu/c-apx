@@ -249,7 +249,7 @@ bool rmf_file_info_is_remote_address(rmf_file_info_t const* self)
 
 bool rmf_file_info_name_ends_with(rmf_file_info_t const* self, const char* suffix)
 {
-   if ((self != NULL) && (suffix != NULL) && (adt_str_size(&self->name) > 0u))
+   if ((self != NULL) && (suffix != NULL) && (adt_str_size(&self->name) > 0))
    {
       size_t str_len = adt_str_length(&self->name);
       size_t suffix_len = strlen(suffix);
