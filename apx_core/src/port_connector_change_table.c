@@ -135,7 +135,7 @@ apx_port_instance_t* apx_port_connector_change_table_get_port(apx_port_connector
 
 int32_t apx_port_connector_change_table_count(apx_port_connector_change_table_t *self, apx_port_id_t port_id)
 {
-   if ( (self != NULL) && (port_id >= 0) && (port_id < self->num_ports) )
+   if ( (self != NULL) && (port_id < self->num_ports) )
    {
       return apx_port_connector_change_entry_count(&self->entries[port_id]);
    }

@@ -603,7 +603,7 @@ static apx_error_t create_data_element_list_on_node_instance(apx_node_instance_t
    }
    if (retval == APX_NO_ERROR)
    {
-      if (adt_ary_length(&data_element_list) > 0u)
+      if (adt_ary_length(&data_element_list) > 0)
       {
          retval = apx_node_instance_create_data_element_list(node_instance, &data_element_list);
       }
@@ -693,7 +693,7 @@ static apx_error_t create_computation_list_on_node_instance(apx_node_instance_t*
    }
    if (retval == APX_NO_ERROR)
    {
-      if (adt_ary_length(&computation_lists) > 0u)
+      if (adt_ary_length(&computation_lists) > 0)
       {
          retval = apx_node_instance_create_computation_lists(node_instance, &computation_lists);
       }
