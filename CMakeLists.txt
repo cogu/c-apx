@@ -13,7 +13,16 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_OPTIMIZE_DEPENDENCIES ON)
 
-set(ADT_RBFH_ENABLE ON CACHE BOOL "This must always be enabled in c-apx" FORCE)
+if(MSVC)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    add_compile_options(/W4)
+    option(ENABLE_MSVC_ANALYZE "Enable MSVC static code analysis (/analyze)" OFF)
+    if(ENABLE_MSVC_ANALYZE)
+        add_compile_options(/analyze)
+    endif()
+else()
+    add_compile_options(-Wall -Wextra -Wno-unused-function)
+endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
@@ -280,7 +289,6 @@ add_library(apx_core ${LIBRARY_TYPE}
             ${MSOCKET_SOURCES}
 )
 
-target_compile_definitions(apx_core PUBLIC ADT_RBFH_ENABLE=1)
 if(DEFINED BYTE_ORDER_VALUE)
     target_compile_definitions(apx_core PRIVATE PLATFORM_BYTE_ORDER=${BYTE_ORDER_VALUE})
 endif()
@@ -290,16 +298,9 @@ endif()
 if (LEAK_CHECK)
     target_compile_definitions(apx_core PUBLIC MEM_LEAK_CHECK)
 endif()
-if(MSVC)
-    target_compile_definitions(apx_core PUBLIC _CRT_SECURE_NO_WARNINGS)
-endif()
 if(APX_DEBUG)
     target_compile_definitions(apx_core PUBLIC APX_DEBUG_ENABLE=1)
 endif()
-target_compile_options(apx_core PRIVATE
-    $<$<C_COMPILER_ID:MSVC>:/W4>
-    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wall>
-)
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${APX_COMMON_HEADERS} ${APX_COMMON_SOURCES})
 
