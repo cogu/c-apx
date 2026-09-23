@@ -36,6 +36,13 @@ Features
 .. toctree::
    :maxdepth: 2
    :hidden:
+   :caption: Architecture & Design
+
+   internal_design
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
    :caption: API Reference
 
    apx_server

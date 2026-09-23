@@ -332,6 +332,7 @@ static apx_error_t create_node_instance(apx_node_manager_t* self, apx_node_t con
 
 static apx_error_t build_node_instance(apx_node_manager_t* self, apx_node_instance_t* node_instance, apx_node_t const* node)
 {
+   apx_node_instance_set_version(node_instance, apx_node_get_major_version(node), apx_node_get_minor_version(node));
    apx_size_t expected_provide_port_data_size = 0u;
    apx_size_t expected_require_port_data_size = 0u;
    apx_error_t result = create_ports_on_node_instance(self, node_instance, node, &expected_provide_port_data_size, &expected_require_port_data_size);

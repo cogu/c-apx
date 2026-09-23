@@ -105,20 +105,29 @@ rmf_digest_type_t apx_node_data_get_checksum_type(apx_node_data_t const* self);
 const uint8_t* apx_node_data_get_checksum_data(apx_node_data_t const* self);
 
 
-/*
 ////////////////// Port Connection Count API //////////////////
 #ifndef APX_EMBEDDED
-apx_error_t apx_node_data_create_require_port_connection_count_buffer(apx_node_data_t* self, apx_size_t numRequirePorts);
-apx_error_t apx_node_data_create_provide_port_connection_count_buffer(apx_node_data_t* self, apx_size_t numProvidePorts);
+apx_error_t apx_node_data_create_require_port_connection_count_buffer(apx_node_data_t* self, apx_size_t num_require_ports);
+apx_error_t apx_node_data_create_provide_port_connection_count_buffer(apx_node_data_t* self, apx_size_t num_provide_ports);
 #endif
-apx_connection_count_t apx_node_data_get_require_port_connection_count(apx_node_data_t* self, apx_port_id_t portId);
-apx_connection_count_t apx_node_data_get_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t portId);
-void apx_node_data_inc_require_port_connection_count(apx_node_data_t* self, apx_port_id_t portId);
-void apx_node_data_inc_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t portId);
-void apx_node_data_dec_require_port_connection_count(apx_node_data_t* self, apx_port_id_t portId);
-void apx_node_data_dec_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t portId);
+apx_size_t apx_node_data_provide_port_connection_count_data_size(apx_node_data_t const* self);
+apx_size_t apx_node_data_require_port_connection_count_data_size(apx_node_data_t const* self);
+apx_port_count_t apx_node_data_get_require_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id);
+apx_port_count_t apx_node_data_get_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id);
+apx_error_t apx_node_data_set_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id, apx_port_count_t count);
+apx_error_t apx_node_data_set_require_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id, apx_port_count_t count);
+void apx_node_data_inc_require_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id);
+void apx_node_data_inc_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id);
+void apx_node_data_dec_require_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id);
+void apx_node_data_dec_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id);
 uint32_t apx_node_data_get_port_connections_total(apx_node_data_t* self);
-*/
+apx_error_t apx_node_data_write_provide_port_count_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size);
+apx_error_t apx_node_data_read_provide_port_count_data(apx_node_data_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size);
+apx_error_t apx_node_data_write_require_port_count_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size);
+apx_error_t apx_node_data_read_require_port_count_data(apx_node_data_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size);
+uint8_t* apx_node_data_take_provide_port_count_data_snapshot(apx_node_data_t* self);
+uint8_t* apx_node_data_take_require_port_count_data_snapshot(apx_node_data_t* self);
+
 /*
 ////////////////// Data Buffer API //////////////////
 #ifndef APX_EMBEDDED

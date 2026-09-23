@@ -35,6 +35,7 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_parse_empty_node(CuTest* tc);
+static void test_parse_node_version(CuTest* tc);
 static void test_parse_uint8_type_declaration(CuTest* tc);
 static void test_parse_uint8_type_declaration_with_attributes(CuTest* tc);
 static void test_parse_record_type_declaration(CuTest* tc);
@@ -78,6 +79,7 @@ CuSuite* testsuite_apx_parser(void)
    CuSuite* suite = CuSuiteNew();
 
    SUITE_ADD_TEST(suite, test_parse_empty_node);
+   SUITE_ADD_TEST(suite, test_parse_node_version);
    SUITE_ADD_TEST(suite, test_parse_uint8_type_declaration);
    SUITE_ADD_TEST(suite, test_parse_uint8_type_declaration_with_attributes);
    SUITE_ADD_TEST(suite, test_parse_record_type_declaration);
@@ -122,6 +124,39 @@ static void test_parse_empty_node(CuTest* tc)
    CuAssertPtrNotNull(tc, node);
    CuAssertStrEquals(tc, "EmptyNode", apx_node_get_name(node));
    apx_node_delete(node);
+   apx_parser_destroy(&parser);
+   apx_istream_destroy(&stream);
+}
+
+static void test_parse_node_version(CuTest* tc)
+{
+   const char* apx_text_1_2 =
+      "APX/1.2\n"
+      "N\"Node12\"\n";
+   const char* apx_text_1_3 =
+      "APX/1.3\n"
+      "N\"Node13\"\n";
+   apx_parser_t parser;
+   apx_istream_t stream;
+   apx_node_t* node;
+
+   apx_istream_create(&stream);
+   apx_parser_create(&parser, &stream);
+
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text_1_2));
+   node = apx_parser_take_last_node(&parser);
+   CuAssertPtrNotNull(tc, node);
+   CuAssertIntEquals(tc, 1, apx_node_get_major_version(node));
+   CuAssertIntEquals(tc, 2, apx_node_get_minor_version(node));
+   apx_node_delete(node);
+
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text_1_3));
+   node = apx_parser_take_last_node(&parser);
+   CuAssertPtrNotNull(tc, node);
+   CuAssertIntEquals(tc, 1, apx_node_get_major_version(node));
+   CuAssertIntEquals(tc, 3, apx_node_get_minor_version(node));
+   apx_node_delete(node);
+
    apx_parser_destroy(&parser);
    apx_istream_destroy(&stream);
 }

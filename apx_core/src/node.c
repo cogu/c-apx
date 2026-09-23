@@ -47,6 +47,8 @@ void apx_node_create(apx_node_t* self, const char* name)
       apx_node_set_name(self, name);
       self->is_finalized = false;
       self->last_error_line = 0;
+      self->major_version = 0;
+      self->minor_version = 0;
    }
 }
 
@@ -301,6 +303,33 @@ int32_t apx_node_get_last_error_line(const apx_node_t* self)
       return self->last_error_line;
    }
    return -1;
+}
+
+void apx_node_set_version(apx_node_t* self, int32_t major_version, int32_t minor_version)
+{
+   if (self != NULL)
+   {
+      self->major_version = major_version;
+      self->minor_version = minor_version;
+   }
+}
+
+int32_t apx_node_get_major_version(const apx_node_t* self)
+{
+   if (self != NULL)
+   {
+      return self->major_version;
+   }
+   return 0;
+}
+
+int32_t apx_node_get_minor_version(const apx_node_t* self)
+{
+   if (self != NULL)
+   {
+      return self->minor_version;
+   }
+   return 0;
 }
 
 dtl_dv_t* apx_port_get_proper_init_value(apx_port_t* self)

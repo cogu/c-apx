@@ -329,6 +329,47 @@ apx_error_t apx_server_disconnect_node_instance_require_ports(apx_server_t* self
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+static uint16_t cap_port_count(int32_t count)
+{
+   if (count <= 0)
+   {
+      return 0u;
+   }
+   if (count > (int32_t)UINT16_MAX)
+   {
+      return UINT16_MAX;
+   }
+   return (uint16_t)count;
+}
+
+static uint16_t calculate_provide_port_count(apx_port_connector_list_t const* connectors)
+{
+   if (connectors != NULL)
+   {
+      return cap_port_count(apx_port_connector_list_length((apx_port_connector_list_t*)connectors));
+   }
+   return 0u;
+}
+
+uint16_t apx_server_calculate_require_port_count(apx_server_t* self, apx_port_instance_t* require_port)
+{
+   if ((self != NULL) && (require_port != NULL))
+   {
+      bool has_dynamic_data = false;
+      const char* port_signature = apx_port_instance_get_port_signature(require_port, &has_dynamic_data);
+      if (port_signature != NULL)
+      {
+         apx_port_signature_map_entry_t* entry = apx_port_signature_map_find(&self->port_signature_map, port_signature);
+         if (entry != NULL)
+         {
+            int32_t num_providers = apx_port_signature_map_entry_get_num_providers(entry);
+            return cap_port_count(num_providers);
+         }
+      }
+   }
+   return 0u;
+}
+
 /**
  * Is is assumed that the server global lock is held by the caller of this function
  */
@@ -358,6 +399,16 @@ apx_error_t apx_server_process_require_port_connector_changes(apx_server_t* self
                if (rc != APX_NO_ERROR)
                {
                   return rc;
+               }
+               uint16_t require_count = apx_server_calculate_require_port_count(self, require_port);
+               apx_node_instance_send_require_port_count_data(require_node_instance, port_id, require_count);
+               apx_node_instance_t* provide_node_instance = apx_port_instance_parent(provide_port);
+               apx_port_id_t provide_port_id = apx_port_instance_port_id(provide_port);
+               apx_port_connector_list_t* connectors = apx_node_instance_get_provide_port_connectors(provide_node_instance, provide_port_id);
+               if (connectors != NULL)
+               {
+                  uint16_t count = calculate_provide_port_count(connectors);
+                  apx_node_instance_send_provide_port_count_data(provide_node_instance, provide_port_id, count);
                }
             }
             else
@@ -405,6 +456,10 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
                   apx_node_instance_unlock_port_connector_table(provide_node_instance);
                   return rc;
                }
+               apx_node_instance_t* require_node_instance = apx_port_instance_parent(require_port);
+               apx_port_id_t require_port_id = apx_port_instance_port_id(require_port);
+               uint16_t require_count = apx_server_calculate_require_port_count(self, require_port);
+               apx_node_instance_send_require_port_count_data(require_node_instance, require_port_id, require_count);
             }
             else
             {
@@ -420,8 +475,15 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
                      apx_node_instance_unlock_port_connector_table(provide_node_instance);
                      return rc;
                   }
+                  apx_node_instance_t* require_node_instance = apx_port_instance_parent(require_port);
+                  apx_port_id_t require_port_id = apx_port_instance_port_id(require_port);
+                  uint16_t require_count = apx_server_calculate_require_port_count(self, require_port);
+                  apx_node_instance_send_require_port_count_data(require_node_instance, require_port_id, require_count);
                }
             }
+            apx_port_connector_list_t* connectors = &provide_node_instance->connector_table[port_id];
+            uint16_t count = calculate_provide_port_count(connectors);
+            apx_node_instance_send_provide_port_count_data(provide_node_instance, port_id, count);
          }
       }
       apx_node_instance_unlock_port_connector_table(provide_node_instance);

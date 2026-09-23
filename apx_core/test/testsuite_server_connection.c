@@ -48,6 +48,7 @@ static void test_monitor_connection_type_is_parsed_from_greeting_header(CuTest* 
 static void test_event_connection_type_is_parsed_from_greeting_header(CuTest* tc);
 static void test_accept_header_is_sent_when_new_greeting_format_is_seen(CuTest* tc);
 static void test_msg_size_hint_returned_for_partial_message(CuTest* tc);
+static void test_port_count_files_published_for_apx13_node(CuTest* tc);
 
 
 
@@ -78,6 +79,7 @@ CuSuite* testsuite_apx_server_connection(void)
    SUITE_ADD_TEST(suite, test_event_connection_type_is_parsed_from_greeting_header);
    SUITE_ADD_TEST(suite, test_accept_header_is_sent_when_new_greeting_format_is_seen);
    SUITE_ADD_TEST(suite, test_msg_size_hint_returned_for_partial_message);
+   SUITE_ADD_TEST(suite, test_port_count_files_published_for_apx13_node);
 
    return suite;
 }
@@ -764,6 +766,78 @@ static void test_msg_size_hint_returned_for_partial_message(CuTest* tc)
    CuAssertIntEquals(tc, 0, result);
    CuAssertUIntEquals(tc, 0u, parse_len);
    CuAssertUIntEquals(tc, total_expected, msg_size_hint);
+
+   apx_server_test_connection_delete(connection);
+}
+
+static void test_port_count_files_published_for_apx13_node(CuTest* tc)
+{
+   apx_server_test_connection_t* connection;
+   apx_node_manager_t* node_manager;
+   int const acknowledge_size = 9;
+   int const open_request_size = 13;
+
+   char const* apx_text =
+      "APX/1.3\n"
+      "N\"TestNode13\"\n"
+      "P\"ProvidePort1\"C:=0\n"
+      "R\"RequirePort1\"C:=0\n";
+
+   apx_size_t definition_size = (apx_size_t)strlen(apx_text);
+   connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(connection));
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(connection));
+   apx_server_test_connection_run(connection);
+   CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(connection));
+   adt_bytearray_t* packet = apx_server_test_connection_get_log_packet(connection, 0);
+   CuAssertPtrNotNull(tc, packet);
+   CuAssertIntEquals(tc, acknowledge_size, adt_bytearray_length(packet));
+   apx_server_test_connection_clear_log(connection);
+
+   // Publish definition file from client
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_publish_remote_file(connection, APX_DEFINITION_ADDRESS_START, "TestNode13.apx", definition_size));
+   apx_server_test_connection_run(connection);
+   CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(connection));
+   packet = apx_server_test_connection_get_log_packet(connection, 0);
+   CuAssertPtrNotNull(tc, packet);
+   CuAssertIntEquals(tc, open_request_size, adt_bytearray_length(packet));
+   apx_server_test_connection_clear_log(connection);
+
+   // Client writes APX/1.3 definition data
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
+   apx_server_test_connection_run(connection);
+
+   node_manager = apx_server_test_connection_get_node_manager(connection);
+   CuAssertPtrNotNull(tc, node_manager);
+   apx_node_instance_t* node_instance = apx_node_manager_find(node_manager, "TestNode13");
+   CuAssertPtrNotNull(tc, node_instance);
+   CuAssertIntEquals(tc, 1, apx_node_instance_get_major_version(node_instance));
+   CuAssertIntEquals(tc, 3, apx_node_instance_get_minor_version(node_instance));
+
+   apx_file_t* cout_file = apx_node_instance_get_provide_port_count_file(node_instance);
+   CuAssertPtrNotNull(tc, cout_file);
+   CuAssertStrEquals(tc, "TestNode13.cout", apx_file_get_name(cout_file));
+   CuAssertUIntEquals(tc, 2u, apx_file_get_size(cout_file));
+
+   apx_file_t* cin_file = apx_node_instance_get_require_port_count_file(node_instance);
+   CuAssertPtrNotNull(tc, cin_file);
+   CuAssertStrEquals(tc, "TestNode13.cin", apx_file_get_name(cin_file));
+   CuAssertUIntEquals(tc, 2u, apx_file_get_size(cin_file));
+
+   // Open .cout and verify server marks file open
+   apx_server_test_connection_clear_log(connection);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(connection, "TestNode13.cout"));
+   apx_server_test_connection_run(connection);
+   CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(connection));
+   CuAssertTrue(tc, apx_file_is_open(cout_file));
+
+   // Open .cin and verify server marks file open
+   apx_server_test_connection_clear_log(connection);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(connection, "TestNode13.cin"));
+   apx_server_test_connection_run(connection);
+   CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(connection));
+   CuAssertTrue(tc, apx_file_is_open(cin_file));
 
    apx_server_test_connection_delete(connection);
 }

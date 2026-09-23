@@ -480,6 +480,352 @@ const uint8_t* apx_node_data_get_checksum_data(apx_node_data_t const* self)
    return NULL;
 }
 
+#ifndef APX_EMBEDDED
+apx_error_t apx_node_data_create_require_port_connection_count_buffer(apx_node_data_t* self, apx_size_t num_require_ports)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if (self->require_port_connection_count != NULL)
+      {
+         free(self->require_port_connection_count);
+      }
+      self->num_require_ports = num_require_ports;
+      if (num_require_ports > 0u)
+      {
+         self->require_port_connection_count = (apx_port_count_t*)calloc(num_require_ports, sizeof(apx_port_count_t));
+         if (self->require_port_connection_count == NULL)
+         {
+            MUTEX_UNLOCK(self->lock);
+            return APX_MEM_ERROR;
+         }
+      }
+      else
+      {
+         self->require_port_connection_count = NULL;
+      }
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_data_create_provide_port_connection_count_buffer(apx_node_data_t* self, apx_size_t num_provide_ports)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if (self->provide_port_connection_count != NULL)
+      {
+         free(self->provide_port_connection_count);
+      }
+      self->num_provide_ports = num_provide_ports;
+      if (num_provide_ports > 0u)
+      {
+         self->provide_port_connection_count = (apx_port_count_t*)calloc(num_provide_ports, sizeof(apx_port_count_t));
+         if (self->provide_port_connection_count == NULL)
+         {
+            MUTEX_UNLOCK(self->lock);
+            return APX_MEM_ERROR;
+         }
+      }
+      else
+      {
+         self->provide_port_connection_count = NULL;
+      }
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+#endif
+
+apx_size_t apx_node_data_provide_port_connection_count_data_size(apx_node_data_t const* self)
+{
+   if ((self != NULL) && (self->provide_port_connection_count != NULL))
+   {
+      return self->num_provide_ports * (apx_size_t)sizeof(apx_port_count_t);
+   }
+   return 0u;
+}
+
+apx_size_t apx_node_data_require_port_connection_count_data_size(apx_node_data_t const* self)
+{
+   if ((self != NULL) && (self->require_port_connection_count != NULL))
+   {
+      return self->num_require_ports * (apx_size_t)sizeof(apx_port_count_t);
+   }
+   return 0u;
+}
+
+apx_port_count_t apx_node_data_get_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id)
+{
+   if (self != NULL)
+   {
+      apx_port_count_t count = 0u;
+      MUTEX_LOCK(self->lock);
+      if ((self->provide_port_connection_count != NULL) && (port_id < self->num_provide_ports))
+      {
+         count = self->provide_port_connection_count[port_id];
+      }
+      MUTEX_UNLOCK(self->lock);
+      return count;
+   }
+   return 0u;
+}
+
+apx_port_count_t apx_node_data_get_require_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id)
+{
+   if (self != NULL)
+   {
+      apx_port_count_t count = 0u;
+      MUTEX_LOCK(self->lock);
+      if ((self->require_port_connection_count != NULL) && (port_id < self->num_require_ports))
+      {
+         count = self->require_port_connection_count[port_id];
+      }
+      MUTEX_UNLOCK(self->lock);
+      return count;
+   }
+   return 0u;
+}
+
+apx_error_t apx_node_data_set_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id, apx_port_count_t count)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if ((self->provide_port_connection_count != NULL) && (port_id < self->num_provide_ports))
+      {
+         self->provide_port_connection_count[port_id] = count;
+         MUTEX_UNLOCK(self->lock);
+         return APX_NO_ERROR;
+      }
+      MUTEX_UNLOCK(self->lock);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_data_set_require_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id, apx_port_count_t count)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if ((self->require_port_connection_count != NULL) && (port_id < self->num_require_ports))
+      {
+         self->require_port_connection_count[port_id] = count;
+         MUTEX_UNLOCK(self->lock);
+         return APX_NO_ERROR;
+      }
+      MUTEX_UNLOCK(self->lock);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+void apx_node_data_inc_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if ((self->provide_port_connection_count != NULL) && (port_id < self->num_provide_ports))
+      {
+         if (self->provide_port_connection_count[port_id] < APX_PORT_COUNT_MAX)
+         {
+            self->provide_port_connection_count[port_id]++;
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+   }
+}
+
+void apx_node_data_dec_provide_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if ((self->provide_port_connection_count != NULL) && (port_id < self->num_provide_ports))
+      {
+         if (self->provide_port_connection_count[port_id] > 0u)
+         {
+            self->provide_port_connection_count[port_id]--;
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+   }
+}
+
+void apx_node_data_inc_require_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if ((self->require_port_connection_count != NULL) && (port_id < self->num_require_ports))
+      {
+         if (self->require_port_connection_count[port_id] < APX_PORT_COUNT_MAX)
+         {
+            self->require_port_connection_count[port_id]++;
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+   }
+}
+
+void apx_node_data_dec_require_port_connection_count(apx_node_data_t* self, apx_port_id_t port_id)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      if ((self->require_port_connection_count != NULL) && (port_id < self->num_require_ports))
+      {
+         if (self->require_port_connection_count[port_id] > 0u)
+         {
+            self->require_port_connection_count[port_id]--;
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+   }
+}
+
+uint32_t apx_node_data_get_port_connections_total(apx_node_data_t* self)
+{
+   if (self != NULL)
+   {
+      uint32_t total = 0u;
+      apx_size_t i;
+      MUTEX_LOCK(self->lock);
+      if (self->provide_port_connection_count != NULL)
+      {
+         for (i = 0u; i < self->num_provide_ports; i++)
+         {
+            total += (uint32_t)self->provide_port_connection_count[i];
+         }
+      }
+      if (self->require_port_connection_count != NULL)
+      {
+         for (i = 0u; i < self->num_require_ports; i++)
+         {
+            total += (uint32_t)self->require_port_connection_count[i];
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+      return total;
+   }
+   return 0u;
+}
+
+apx_error_t apx_node_data_write_provide_port_count_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
+{
+   if (self != NULL)
+   {
+      apx_size_t total_size = self->num_provide_ports * (apx_size_t)sizeof(apx_port_count_t);
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > total_size || (self->provide_port_connection_count == NULL))
+      {
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
+      }
+      memcpy(((uint8_t*)self->provide_port_connection_count) + offset, src, size);
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_data_read_provide_port_count_data(apx_node_data_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size)
+{
+   if (self != NULL)
+   {
+      apx_size_t total_size = self->num_provide_ports * (apx_size_t)sizeof(apx_port_count_t);
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > total_size || (self->provide_port_connection_count == NULL))
+      {
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
+      }
+      memcpy(dest, ((uint8_t*)self->provide_port_connection_count) + offset, size);
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_data_write_require_port_count_data(apx_node_data_t* self, apx_size_t offset, uint8_t const* src, apx_size_t size)
+{
+   if (self != NULL)
+   {
+      apx_size_t total_size = self->num_require_ports * (apx_size_t)sizeof(apx_port_count_t);
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > total_size || (self->require_port_connection_count == NULL))
+      {
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
+      }
+      memcpy(((uint8_t*)self->require_port_connection_count) + offset, src, size);
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_data_read_require_port_count_data(apx_node_data_t* self, apx_size_t offset, uint8_t* dest, apx_size_t size)
+{
+   if (self != NULL)
+   {
+      apx_size_t total_size = self->num_require_ports * (apx_size_t)sizeof(apx_port_count_t);
+      MUTEX_LOCK(self->lock);
+      if (((size_t)offset + size) > total_size || (self->require_port_connection_count == NULL))
+      {
+         MUTEX_UNLOCK(self->lock);
+         return APX_INVALID_ARGUMENT_ERROR;
+      }
+      memcpy(dest, ((uint8_t*)self->require_port_connection_count) + offset, size);
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+uint8_t* apx_node_data_take_provide_port_count_data_snapshot(apx_node_data_t* self)
+{
+   if (self != NULL)
+   {
+      uint8_t* snapshot = NULL;
+      MUTEX_LOCK(self->lock);
+      apx_size_t total_size = self->num_provide_ports * (apx_size_t)sizeof(apx_port_count_t);
+      if (self->provide_port_connection_count != NULL && total_size > 0u)
+      {
+         snapshot = (uint8_t*)malloc(total_size);
+         if (snapshot != NULL)
+         {
+            memcpy(snapshot, self->provide_port_connection_count, total_size);
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+      return snapshot;
+   }
+   return NULL;
+}
+
+uint8_t* apx_node_data_take_require_port_count_data_snapshot(apx_node_data_t* self)
+{
+   if (self != NULL)
+   {
+      uint8_t* snapshot = NULL;
+      MUTEX_LOCK(self->lock);
+      apx_size_t total_size = self->num_require_ports * (apx_size_t)sizeof(apx_port_count_t);
+      if (self->require_port_connection_count != NULL && total_size > 0u)
+      {
+         snapshot = (uint8_t*)malloc(total_size);
+         if (snapshot != NULL)
+         {
+            memcpy(snapshot, self->require_port_connection_count, total_size);
+         }
+      }
+      MUTEX_UNLOCK(self->lock);
+      return snapshot;
+   }
+   return NULL;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

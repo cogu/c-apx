@@ -36,6 +36,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+static void cleanup_cmd_queue(adt_rbfh_t* queue);
 static bool process_single_command(apx_file_manager_worker_t* self, apx_command_t const* cmd);
 static apx_error_t run_send_acknowledge(apx_file_manager_worker_t* self);
 static apx_error_t run_publish_local_file(apx_file_manager_worker_t* self, rmf_file_info_t* file);
@@ -98,6 +99,7 @@ void apx_file_manager_worker_destroy(apx_file_manager_worker_t *self)
       MUTEX_DESTROY(self->mutex);
       SPINLOCK_DESTROY(self->queue_lock);
       SEMAPHORE_DESTROY(self->semaphore);
+      cleanup_cmd_queue(&self->queue);
       adt_rbfh_destroy(&self->queue);
    }
 }
@@ -311,6 +313,24 @@ apx_error_t apx_file_manager_worker_prepare_send_connection_create(apx_file_mana
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+
+static void cleanup_cmd_queue(adt_rbfh_t* queue)
+{
+   assert(queue != NULL);
+   while (adt_rbfh_length(queue) > 0)
+   {
+      apx_command_t cmd;
+      adt_rbfh_remove(queue, (uint8_t*)&cmd);
+      if (cmd.cmd_type == APX_CMD_PUBLISH_LOCAL_FILE)
+      {
+         rmf_file_info_delete((rmf_file_info_t*)cmd.data3.ptr);
+      }
+      else if (cmd.cmd_type == APX_CMD_SEND_LOCAL_DATA || cmd.cmd_type == APX_CMD_CREATE_CONNECTION)
+      {
+         free(cmd.data3.ptr);
+      }
+   }
+}
 
 static bool process_single_command(apx_file_manager_worker_t* self, apx_command_t const* cmd)
 {

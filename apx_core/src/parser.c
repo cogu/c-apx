@@ -205,6 +205,7 @@ static apx_error_t state_make_node(apx_parse_state_t* self, uint8_t const* name_
    {
       return APX_MEM_ERROR;
    }
+   apx_node_set_version(self->node, self->major_version, self->minor_version);
    return APX_NO_ERROR;
 }
 

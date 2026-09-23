@@ -11,6 +11,10 @@ In APX, all signal data and definition information are exposed as virtual memory
 * ``NodeName.apx``: APX text specification describing node types and ports.
 * ``NodeName.out``: Byte buffer containing provide port (output) signal values.
 * ``NodeName.in``: Byte buffer containing require port (input) signal values.
+* ``NodeName.cout``: Byte buffer containing provide port connection counts (APX IDL v1.3+).
+* ``NodeName.cin``: Byte buffer containing require port connection counts (APX IDL v1.3+).
+
+For detailed specifications of file structures and memory layouts, see :doc:`internal_design`.
 
 The file manager tracks file states (open, requested, synced), generates address mappings, and handles low-level write/read messages.
 

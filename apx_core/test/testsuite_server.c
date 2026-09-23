@@ -19,6 +19,8 @@
 #include "CuTest.h"
 #include "apx/server.h"
 #include "apx/server_test_connection.h"
+#include "apx/remotefile.h"
+#include "apx/numheader.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -36,6 +38,7 @@ static void test_connectors_connect_disconnect_node_with_only_require_ports(CuTe
 static void test_connectors_connect_disconnect_node_with_only_provide_ports(CuTest* tc);
 static void test_connectors_node_with_require_port_is_connected_after_node_with_provide_port(CuTest* tc);
 static void test_connectors_node_with_provide_port_is_connected_when_multiple_nodes_with_require_ports_are_waiting(CuTest* tc);
+static void test_connectors_port_count_updates_between_apx13_nodes(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -60,6 +63,16 @@ static const char* m_requester2_definition = "APX/1.2\n"
 "R\"VehicleSpeed\"S:=65535\n"
 "\n";
 
+static const char* m_provider13_definition = "APX/1.3\n"
+"N\"Provider13\"\n"
+"P\"VehicleSpeed\"S:=65535\n"
+"\n";
+
+static const char* m_requester13_definition = "APX/1.3\n"
+"N\"Requester13\"\n"
+"R\"VehicleSpeed\"S:=65535\n"
+"\n";
+
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -74,6 +87,7 @@ CuSuite* testsuite_apx_server(void)
    SUITE_ADD_TEST(suite, test_connectors_connect_disconnect_node_with_only_provide_ports);
    SUITE_ADD_TEST(suite, test_connectors_node_with_require_port_is_connected_after_node_with_provide_port);
    SUITE_ADD_TEST(suite, test_connectors_node_with_provide_port_is_connected_when_multiple_nodes_with_require_ports_are_waiting);
+   SUITE_ADD_TEST(suite, test_connectors_port_count_updates_between_apx13_nodes);
 
    return suite;
 }
@@ -616,5 +630,176 @@ static void test_connectors_node_with_provide_port_is_connected_when_multiple_no
    CuAssertUIntEquals(tc, 0x12, data_message[4]);
    apx_server_test_connection_clear_log(requester2_connection);
 
+   apx_server_delete(server);
+}
+
+static void test_connectors_port_count_updates_between_apx13_nodes(CuTest* tc)
+{
+   apx_server_t* server;
+   apx_server_test_connection_t* provider_connection = NULL;
+   apx_server_test_connection_t* requester_connection = NULL;
+   adt_bytearray_t* packet = NULL;
+   apx_node_manager_t* node_manager;
+   int const provide_port_data_size = UINT16_SIZE;
+   uint8_t provide_port_data[UINT16_SIZE] = { 0x34u, 0x12u };
+   apx_size_t const provider_definition_size = (apx_size_t)strlen(m_provider13_definition);
+   apx_size_t const requester_definition_size = (apx_size_t)strlen(m_requester13_definition);
+
+   server = apx_server_new();
+   CuAssertPtrNotNull(tc, server);
+
+   // 1. Setup Provider13
+   provider_connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, provider_connection);
+   apx_server_accept_connection(server, (apx_server_connection_t*)provider_connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(provider_connection));
+   apx_server_test_connection_run(provider_connection);
+   apx_server_test_connection_clear_log(provider_connection);
+
+   // Provider publishes Provider13.out and Provider13.apx
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_publish_remote_file(provider_connection, APX_PORT_DATA_ADDRESS_START, "Provider13.out", provide_port_data_size));
+   apx_server_test_connection_run(provider_connection);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_publish_remote_file(provider_connection, APX_DEFINITION_ADDRESS_START, "Provider13.apx", provider_definition_size));
+   apx_server_test_connection_run(provider_connection);
+   // Receive open request for Provider13.apx
+   CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(provider_connection));
+   apx_server_test_connection_clear_log(provider_connection);
+
+   // Provider writes definition data
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_write_remote_data(provider_connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)m_provider13_definition, provider_definition_size));
+   apx_server_test_connection_run(provider_connection);
+   // Server publishes Provider13.cout and requests open of Provider13.out (batched into transmit log)
+   CuAssertTrue(tc, apx_server_test_connection_log_length(provider_connection) > 0);
+   apx_server_test_connection_clear_log(provider_connection);
+
+   node_manager = apx_server_test_connection_get_node_manager(provider_connection);
+   CuAssertPtrNotNull(tc, node_manager);
+   apx_node_instance_t* provider_node_instance = apx_node_manager_find(node_manager, "Provider13");
+   CuAssertPtrNotNull(tc, provider_node_instance);
+   apx_node_data_t* provider_node_data = apx_node_instance_get_node_data(provider_node_instance);
+   CuAssertPtrNotNull(tc, provider_node_data);
+
+   // Verify Provider13.cout file exists and is 2 bytes
+   apx_file_t* cout_file = apx_node_instance_get_provide_port_count_file(provider_node_instance);
+   CuAssertPtrNotNull(tc, cout_file);
+   CuAssertUIntEquals(tc, 2u, apx_file_get_size(cout_file));
+
+   // Provider writes port data
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_write_remote_data(provider_connection, APX_PORT_DATA_ADDRESS_START, provide_port_data, provide_port_data_size));
+   // Provider opens Provider13.cout
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(provider_connection, "Provider13.cout"));
+   apx_server_test_connection_run(provider_connection);
+   apx_server_test_connection_clear_log(provider_connection);
+
+   // Initially port count is 0
+   CuAssertUIntEquals(tc, 0, apx_node_data_get_provide_port_connection_count(provider_node_data, 0));
+
+   // 2. Setup Requester13
+   requester_connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, requester_connection);
+   apx_server_accept_connection(server, (apx_server_connection_t*)requester_connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(requester_connection));
+   apx_server_test_connection_run(requester_connection);
+   apx_server_test_connection_clear_log(requester_connection);
+
+   // Requester publishes Requester13.apx
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_publish_remote_file(requester_connection, APX_DEFINITION_ADDRESS_START, "Requester13.apx", requester_definition_size));
+   apx_server_test_connection_run(requester_connection);
+   CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(requester_connection));
+   apx_server_test_connection_clear_log(requester_connection);
+
+   // Requester writes definition data
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_write_remote_data(requester_connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)m_requester13_definition, requester_definition_size));
+   apx_server_test_connection_run(requester_connection);
+
+   node_manager = apx_server_test_connection_get_node_manager(requester_connection);
+   CuAssertPtrNotNull(tc, node_manager);
+   apx_node_instance_t* requester_node_instance = apx_node_manager_find(node_manager, "Requester13");
+   CuAssertPtrNotNull(tc, requester_node_instance);
+   apx_node_data_t* requester_node_data = apx_node_instance_get_node_data(requester_node_instance);
+   CuAssertPtrNotNull(tc, requester_node_data);
+
+   // Verify Requester13.cin file exists and is 2 bytes
+   apx_file_t* cin_file = apx_node_instance_get_require_port_count_file(requester_node_instance);
+   CuAssertPtrNotNull(tc, cin_file);
+   CuAssertUIntEquals(tc, 2u, apx_file_get_size(cin_file));
+
+   // Requester opens Requester13.in and Requester13.cin
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(requester_connection, "Requester13.in"));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(requester_connection, "Requester13.cin"));
+   apx_server_test_connection_run(requester_connection);
+   apx_server_test_connection_run(provider_connection);
+
+   // Connection established:
+   // Provider13 port 0 count should be 1
+   CuAssertUIntEquals(tc, 1, apx_node_data_get_provide_port_connection_count(provider_node_data, 0));
+   // Requester13 port 0 count should be 1
+   CuAssertUIntEquals(tc, 1, apx_node_data_get_require_port_connection_count(requester_node_data, 0));
+
+   // Provider connection should have received write to Provider13.cout with count 1
+   CuAssertTrue(tc, apx_server_test_connection_log_length(provider_connection) > 0);
+   packet = apx_server_test_connection_get_log_packet(provider_connection, apx_server_test_connection_log_length(provider_connection) - 1);
+   CuAssertPtrNotNull(tc, packet);
+   uint32_t decoded_address = 0;
+   bool more_bit = false;
+   uint8_t const* p_data = (uint8_t const*)adt_bytearray_data(packet);
+   int p_len = (int)adt_bytearray_length(packet);
+   CuAssertTrue(tc, p_len >= (int)NUMHEADER32_SHORT_SIZE);
+   p_data += NUMHEADER32_SHORT_SIZE;
+   p_len -= (int)NUMHEADER32_SHORT_SIZE;
+   apx_size_t h_size = rmf_address_decode(p_data, p_data + p_len, &decoded_address, &more_bit);
+   CuAssertUIntEquals(tc, apx_file_get_address_without_flags(cout_file), decoded_address);
+   CuAssertIntEquals(tc, 2, p_len - (int)h_size);
+   uint16_t count_val = (uint16_t)p_data[h_size] | ((uint16_t)p_data[h_size + 1] << 8);
+   CuAssertUIntEquals(tc, 1, count_val);
+
+   // Requester connection should have received write to Requester13.cin with count 1
+   bool found_cin_write = false;
+   for (int32_t i = 0; i < apx_server_test_connection_log_length(requester_connection); ++i)
+   {
+      packet = apx_server_test_connection_get_log_packet(requester_connection, i);
+      p_data = (uint8_t const*)adt_bytearray_data(packet);
+      p_len = (int)adt_bytearray_length(packet);
+      while (p_len > 0)
+      {
+         uint32_t msg_len = 0;
+         uint8_t const* next = numheader_decode32(p_data, p_data + p_len, &msg_len);
+         CuAssertPtrNotNull(tc, next);
+         p_len -= (int)(next - p_data);
+         p_data = next;
+         CuAssertTrue(tc, p_len >= (int)msg_len);
+         h_size = rmf_address_decode(p_data, p_data + msg_len, &decoded_address, &more_bit);
+         if (decoded_address == apx_file_get_address_without_flags(cin_file))
+         {
+            count_val = (uint16_t)p_data[h_size] | ((uint16_t)p_data[h_size + 1] << 8);
+            CuAssertUIntEquals(tc, 1, count_val);
+            found_cin_write = true;
+         }
+         p_data += msg_len;
+         p_len -= (int)msg_len;
+      }
+   }
+   CuAssertTrue(tc, found_cin_write);
+
+   // 3. Disconnect Requester13 connection and verify count drops back to 0 on Provider13
+   apx_server_test_connection_clear_log(provider_connection);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_detach_connection(server, (apx_server_connection_t*)requester_connection));
+   apx_server_test_connection_run(provider_connection);
+
+   CuAssertUIntEquals(tc, 0, apx_node_data_get_provide_port_connection_count(provider_node_data, 0));
+   CuAssertTrue(tc, apx_server_test_connection_log_length(provider_connection) > 0);
+   packet = apx_server_test_connection_get_log_packet(provider_connection, apx_server_test_connection_log_length(provider_connection) - 1);
+   CuAssertPtrNotNull(tc, packet);
+   p_data = (uint8_t const*)adt_bytearray_data(packet);
+   p_len = (int)adt_bytearray_length(packet);
+   CuAssertTrue(tc, p_len >= (int)NUMHEADER32_SHORT_SIZE);
+   p_data += NUMHEADER32_SHORT_SIZE;
+   p_len -= (int)NUMHEADER32_SHORT_SIZE;
+   h_size = rmf_address_decode(p_data, p_data + p_len, &decoded_address, &more_bit);
+   CuAssertUIntEquals(tc, apx_file_get_address_without_flags(cout_file), decoded_address);
+   count_val = (uint16_t)p_data[h_size] | ((uint16_t)p_data[h_size + 1] << 8);
+   CuAssertUIntEquals(tc, 0, count_val);
+
+   apx_server_detach_connection(server, (apx_server_connection_t*)provider_connection);
    apx_server_delete(server);
 }
