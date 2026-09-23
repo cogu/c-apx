@@ -1,6 +1,6 @@
 # Doxyfile for Sphinx + Breathe integration
 PROJECT_NAME           = "c-apx"
-PROJECT_NUMBER         = "0.3.6"
+PROJECT_NUMBER         = "0.3.7"
 PROJECT_BRIEF          = "AUTOSAR Port eXchange in C"
 
 # Input configuration
