@@ -1,6 +1,8 @@
 # APX for C
 
-This is the C implementation of [APX](https://cogu.github.com/apx).
+This is the C implementation of [APX](https://apx.readthedocs.io).
+
+Online documentation and API reference: **[c-apx.readthedocs.io](https://c-apx.readthedocs.io/)**
 
 ## v0.2.x (Stable)
 
