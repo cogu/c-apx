@@ -1777,6 +1777,10 @@ static apx_error_t request_remote_provide_port_data(apx_node_instance_t* self, a
 
 static apx_error_t check_and_request_remote_port_count_file(apx_node_instance_t* self, apx_file_manager_t* file_manager, const char* ext, apx_file_t** target_file_ptr)
 {
+   if (self->mode == APX_SERVER_MODE)
+   {
+      return APX_NO_ERROR;
+   }
    if (*target_file_ptr == NULL)
    {
       adt_str_t* str = adt_str_new_cstr(apx_node_instance_get_name(self));
@@ -2150,4 +2154,35 @@ apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* 
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_port_count_t apx_node_instance_get_provide_port_connection_count(apx_node_instance_t const* self, apx_port_id_t port_id)
+{
+   if ((self != NULL) && (self->node_data != NULL))
+   {
+      return apx_node_data_get_provide_port_connection_count(self->node_data, port_id);
+   }
+   return 0u;
+}
+
+apx_port_count_t apx_node_instance_get_require_port_connection_count(apx_node_instance_t const* self, apx_port_id_t port_id)
+{
+   if ((self != NULL) && (self->node_data != NULL))
+   {
+      return apx_node_data_get_require_port_connection_count(self->node_data, port_id);
+   }
+   return 0u;
+}
+
+apx_port_count_t apx_node_instance_get_port_connection_count(apx_node_instance_t const* self, apx_port_type_t port_type, apx_port_id_t port_id)
+{
+   if (port_type == APX_REQUIRE_PORT)
+   {
+      return apx_node_instance_get_require_port_connection_count(self, port_id);
+   }
+   else if (port_type == APX_PROVIDE_PORT)
+   {
+      return apx_node_instance_get_provide_port_connection_count(self, port_id);
+   }
+   return 0u;
 }

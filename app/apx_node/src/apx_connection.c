@@ -17,6 +17,7 @@
 #include "apx_connection.h"
 #include "apx/event_listener.h"
 #include "apx/client.h"
+#include "apx/port_instance.h"
 #include "dtl_json.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -217,6 +218,12 @@ static void apx_connection_on_require_port_write(void* arg, struct apx_port_inst
       char const* port_name;
       dtl_dv_t* dv = NULL;
       MUTEX_LOCK(self->mutex);
+      apx_port_count_t const port_count = apx_port_instance_connection_count(port_instance);
+      if (port_count == 0u)
+      {
+         MUTEX_UNLOCK(self->mutex);
+         return;
+      }
       port_name = apx_port_instance_name(port_instance);
       result = apx_client_read_port_data(self->client, port_instance, &dv);
       MUTEX_UNLOCK(self->mutex);

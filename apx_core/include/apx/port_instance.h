@@ -14,6 +14,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "apx/types.h"
 #include "apx/program.h"
 #include "apx/computation.h"
 #include "apx/data_element.h"
@@ -77,5 +78,7 @@ int32_t apx_port_instance_get_computation_list_length(apx_port_instance_t* self)
 apx_computation_list_id_t apx_port_instance_get_computation_list_id(apx_port_instance_t* self);
 apx_error_t apx_port_instance_create_port_signature(apx_port_instance_t* self);
 char const* apx_port_instance_get_port_signature(apx_port_instance_t const* self, bool *has_dynamic_data);
+apx_port_count_t apx_port_instance_connection_count(apx_port_instance_t const* self);
+apx_port_count_t apx_port_instance_get_connection_count(apx_port_instance_t const* self);
 
 #endif //APX_GUARD_H

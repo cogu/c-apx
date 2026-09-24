@@ -354,13 +354,13 @@ apx_error_t apx_server_process_require_port_connector_changes(apx_server_t* self
                apx_error_t rc;
                apx_port_instance_t *provide_port = entry->data.port_instance;
                assert(provide_port != NULL);
+               apx_port_count_t require_count = apx_port_connector_change_entry_get_connection_count(entry);
+               apx_node_instance_send_require_port_count_data(require_node_instance, port_id, require_count);
                rc = apx_node_instance_handle_require_port_connected_to_provide_port(require_port, provide_port);
                if (rc != APX_NO_ERROR)
                {
                   return rc;
                }
-               apx_port_count_t require_count = apx_port_connector_change_entry_get_connection_count(entry);
-               apx_node_instance_send_require_port_count_data(require_node_instance, port_id, require_count);
                apx_node_instance_t* provide_node_instance = apx_port_instance_parent(provide_port);
                apx_port_id_t provide_port_id = apx_port_instance_port_id(provide_port);
                apx_port_connector_list_t* connectors = apx_node_instance_get_provide_port_connectors(provide_node_instance, provide_port_id);
@@ -409,15 +409,15 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
                apx_error_t rc;
                apx_port_instance_t *require_port = entry->data.port_instance;
                assert(require_port != NULL);
+               apx_node_instance_t* require_node_instance = apx_port_instance_parent(require_port);
+               apx_port_id_t require_port_id = apx_port_instance_port_id(require_port);
+               apx_node_instance_send_require_port_count_data(require_node_instance, require_port_id, 1u);
                rc = apx_node_instance_handle_provide_port_connected_to_require_port(provide_port, require_port);
                if (rc != APX_NO_ERROR)
                {
                   apx_node_instance_unlock_port_connector_table(provide_node_instance);
                   return rc;
                }
-               apx_node_instance_t* require_node_instance = apx_port_instance_parent(require_port);
-               apx_port_id_t require_port_id = apx_port_instance_port_id(require_port);
-               apx_node_instance_send_require_port_count_data(require_node_instance, require_port_id, 1u);
             }
             else
             {
@@ -427,15 +427,15 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
                   apx_error_t rc;
                   apx_port_instance_t *require_port = adt_ary_value(entry->data.array, i);
                   assert(require_port != NULL);
+                  apx_node_instance_t* require_node_instance = apx_port_instance_parent(require_port);
+                  apx_port_id_t require_port_id = apx_port_instance_port_id(require_port);
+                  apx_node_instance_send_require_port_count_data(require_node_instance, require_port_id, 1u);
                   rc = apx_node_instance_handle_provide_port_connected_to_require_port(provide_port, require_port);
                   if (rc != APX_NO_ERROR)
                   {
                      apx_node_instance_unlock_port_connector_table(provide_node_instance);
                      return rc;
                   }
-                  apx_node_instance_t* require_node_instance = apx_port_instance_parent(require_port);
-                  apx_port_id_t require_port_id = apx_port_instance_port_id(require_port);
-                  apx_node_instance_send_require_port_count_data(require_node_instance, require_port_id, 1u);
                }
             }
             apx_port_count_t count = apx_port_connector_change_entry_get_connection_count(entry);
