@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 
-project(apx_perf_test LANGUAGES C)
+project(apx-perf-test LANGUAGES C)
 
 set (APX_PERF_TEST_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/application.h
@@ -12,19 +12,19 @@ set (APX_PERF_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/application.c
 )
 
-add_executable(apx_perf_test ${APX_PERF_TEST_HEADERS} ${APX_PERF_SOURCES})
-target_link_libraries(apx_perf_test PRIVATE
+add_executable(apx-perf-test ${APX_PERF_TEST_HEADERS} ${APX_PERF_SOURCES})
+target_link_libraries(apx-perf-test PRIVATE
     apx_core
     Threads::Threads
 )
 
-target_include_directories(apx_perf_test PRIVATE
+target_include_directories(apx-perf-test PRIVATE
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 install(
-  TARGETS apx_perf_test
+  TARGETS apx-perf-test
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   COMPONENT App
 )

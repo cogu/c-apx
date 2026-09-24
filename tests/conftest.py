@@ -207,22 +207,37 @@ def _find_binary(env_var: str, app_name: str) -> str:
         return env_bin
 
     repo_root = Path(__file__).resolve().parent.parent
-    candidate_paths = [
-        repo_root / "build" / "clang-debug" / "app" / app_name / app_name,
-        repo_root / "build" / "clang-release" / "app" / app_name / app_name,
-        repo_root / "build" / "gcc-release" / "app" / app_name / app_name,
-        repo_root / "build" / "gcc-debug" / "app" / app_name / app_name,
-        repo_root / "build" / "app" / app_name / app_name,
-        repo_root / "build" / "clang-test" / "app" / app_name / app_name,
+    presets = [
+        "clang-debug",
+        "clang-release",
+        "gcc-release",
+        "gcc-debug",
+        "",
+        "clang-test",
     ]
+
+    names_to_try = [app_name]
+    alt_name = app_name.replace("-", "_") if "-" in app_name else app_name.replace("_", "-")
+    if alt_name not in names_to_try:
+        names_to_try.append(alt_name)
+
+    dir_names = list(dict.fromkeys([app_name.replace("-", "_"), app_name]))
+
+    candidate_paths = []
+    for preset in presets:
+        base = repo_root / "build" / preset / "app" if preset else repo_root / "build" / "app"
+        for d in dir_names:
+            for n in names_to_try:
+                candidate_paths.append(base / d / n)
 
     for path in candidate_paths:
         if path.is_file() and os.access(path, os.X_OK):
             return str(path)
 
-    system_bin = shutil.which(app_name)
-    if system_bin:
-        return system_bin
+    for n in names_to_try:
+        system_bin = shutil.which(n)
+        if system_bin:
+            return system_bin
 
     raise FileNotFoundError(
         f"Could not find '{app_name}' binary. Please build it first "
@@ -233,20 +248,20 @@ def _find_binary(env_var: str, app_name: str) -> str:
 
 @pytest.fixture(scope="session")
 def apx_server_bin() -> str:
-    """Finds the apx_server executable from environment or build directories."""
-    return _find_binary("APX_SERVER_BIN", "apx_server")
+    """Finds the apx-server executable from environment or build directories."""
+    return _find_binary("APX_SERVER_BIN", "apx-server")
 
 
 @pytest.fixture(scope="session")
 def apx_node_bin() -> str:
-    """Finds the apx_node executable from environment or build directories."""
-    return _find_binary("APX_NODE_BIN", "apx_node")
+    """Finds the apx-node executable from environment or build directories."""
+    return _find_binary("APX_NODE_BIN", "apx-node")
 
 
 @pytest.fixture(scope="session")
 def apx_control_bin() -> str:
-    """Finds the apx_control executable from environment or build directories."""
-    return _find_binary("APX_CONTROL_BIN", "apx_control")
+    """Finds the apx-control executable from environment or build directories."""
+    return _find_binary("APX_CONTROL_BIN", "apx-control")
 
 
 @pytest.fixture

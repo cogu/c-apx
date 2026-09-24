@@ -1,6 +1,6 @@
 # Integration and End-to-End Tests
 
-This directory contains Python-based integration and end-to-end tests for `c-apx` using `pytest`. These tests validate multi-process interactions between the compiled binaries (`apx_server`, `apx_node`, and `apx_control`) over UNIX domain sockets and JSON router interfaces.
+This directory contains Python-based integration and end-to-end tests for `c-apx` using `pytest`. These tests validate multi-process interactions between the compiled binaries (`apx-server`, `apx-node`, and `apx-control`) over UNIX domain sockets and JSON router interfaces.
 
 ---
 
@@ -9,7 +9,7 @@ This directory contains Python-based integration and end-to-end tests for `c-apx
 Before running the tests, compile the project binaries and install test dependencies:
 
 ```bash
-# 1. Build the application binaries (apx_server, apx_node, apx_control)
+# 1. Build the application binaries (apx-server, apx-node, apx-control)
 cmake --preset clang-debug
 cmake --build --preset clang-debug
 
@@ -37,9 +37,9 @@ These fixtures locate the compiled executables automatically. They search enviro
 
 | Fixture | Return Type | Environment Override | Description |
 |---|---|---|---|
-| `apx_server_bin` | `str` | `APX_SERVER_BIN` | Absolute path to the `apx_server` executable. |
-| `apx_node_bin` | `str` | `APX_NODE_BIN` | Absolute path to the `apx_node` executable. |
-| `apx_control_bin` | `str` | `APX_CONTROL_BIN` | Absolute path to the `apx_control` executable. |
+| `apx_server_bin` | `str` | `APX_SERVER_BIN` | Absolute path to the `apx-server` executable. |
+| `apx_node_bin` | `str` | `APX_NODE_BIN` | Absolute path to the `apx-node` executable. |
+| `apx_control_bin` | `str` | `APX_CONTROL_BIN` | Absolute path to the `apx-control` executable. |
 
 ---
 
