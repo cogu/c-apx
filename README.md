@@ -44,9 +44,9 @@ Dynamic clients is best used on Windows and Linux systems.
 ### Build Targets and Modes
 
 - **Applications**: Standard builds compile the core library (`apx_core`), enabled extensions, and the executable applications in `app/`:
-  - `apx_server`: The APX server daemon.
-  - `apx_node`: APX node application.
-  - `apx_control`: APX control application.
+  - `apx-server`: The APX server daemon.
+  - `apx-node`: APX node application.
+  - `apx-control`: APX control application.
 
   Applications can be built in either `Debug` or `Release` configuration.
 

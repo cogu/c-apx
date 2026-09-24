@@ -10,7 +10,7 @@ Project context, architectural knowledge, coding conventions, and developer work
 
 * **Target Version**: `v0.3.x` (Master branch / development).
 * **Language Standard**: Strict C99 (`set(CMAKE_C_STANDARD 99)`).
-* **Role in APX Ecosystem**: Reference implementation of APX; implements both client runtimes and the only APX server daemon (`apx_server`). Other implementations (Python, C++) only implement client runtimes.
+* **Role in APX Ecosystem**: Reference implementation of APX; implements both client runtimes and the only APX server daemon (`apx-server`). Other implementations (Python, C++) only implement client runtimes.
 * **Specification Support**: Conforms to APX IDL v1.3 and APX VM v2.1.
 * **Primary Platform**: Linux (POSIX, Clang, Ninja, UNIX domain sockets, TCP/IP).
 
@@ -66,7 +66,7 @@ c-apx/
 
 ### Building Applications (Clang 18 + Ninja)
 ```bash
-# Debug build (apx_server, apx_node, apx_control, apx_info, apx_perf_test)
+# Debug build (apx-server, apx-node, apx-control, apx-info, apx-perf-test)
 cmake --preset clang-debug
 cmake --build --preset clang-debug
 
@@ -160,4 +160,4 @@ sphinx-autobuild docs docs/_build/html
 ## 6. Testing Practices
 
 * **C Unit Tests**: Built with `cutest` (from `cutil`). Test suites live in `apx_core/test/`, `extension/*/test/`, and `app/*/test/`. Registered in `CMakeLists.txt` and built into `apx_unit`.
-* **Integration Tests**: Written in Python using `pytest` under `tests/`. Uses process management fixtures in `tests/conftest.py` to test multi-process communication across `apx_server`, `apx_node`, and `apx_control`.
+* **Integration Tests**: Written in Python using `pytest` under `tests/`. Uses process management fixtures in `tests/conftest.py` to test multi-process communication across `apx-server`, `apx-node`, and `apx-control`.

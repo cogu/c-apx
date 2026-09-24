@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(apx_server LANGUAGES C)
+project(apx-server LANGUAGES C)
 
 # Retrieve list of all registered extension targets to link
 get_property(APX_SERVER_EXT_LIBS GLOBAL PROPERTY APX_SERVER_REGISTERED_TARGETS)
 
-add_executable(apx_server
+add_executable(apx-server
   src/server_main.c
   include/server_cfg.h
   src/server_cfg.c
@@ -13,19 +13,19 @@ add_executable(apx_server
   ${GENERATED_EXTENSIONS_CFG}
 )
 
-target_link_libraries(apx_server PRIVATE
+target_link_libraries(apx-server PRIVATE
   apx_core
   ${APX_SERVER_EXT_LIBS}
   Threads::Threads
 )
 
 if (LEAK_CHECK)
-    target_compile_definitions(apx_server PRIVATE MEM_LEAK_CHECK)
+    target_compile_definitions(apx-server PRIVATE MEM_LEAK_CHECK)
 endif()
-target_include_directories(apx_server PRIVATE include ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(apx-server PRIVATE include ${PROJECT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 install(
-  TARGETS apx_server
+  TARGETS apx-server
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   COMPONENT Server
 )
