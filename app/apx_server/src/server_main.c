@@ -235,6 +235,7 @@ static void signal_handler_setup(void)
    if(signal (SIGTERM, signal_handler) == SIG_IGN) {
       signal (SIGTERM, SIG_IGN);
    }
+   signal(SIGPIPE, SIG_IGN);
 }
 
 void signal_handler(int signum)
