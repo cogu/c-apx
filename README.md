@@ -76,6 +76,14 @@ ctest --preset clang-asan
 # Static Analysis
 cmake --preset clang-tidy
 cmake --build --preset clang-tidy
+
+# Debug build
+cmake --preset clang-debug
+cmake --build --preset clang-debug
+
+# Release build
+cmake --preset clang-release
+cmake --build --preset clang-release
 ```
 
 ### Manual CMake Workflows (Linux and Windows)
