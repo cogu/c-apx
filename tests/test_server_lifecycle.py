@@ -98,3 +98,46 @@ def test_server_socket_config_override(tmp_path, apx_server_bin: str):
     proc.terminate()
     proc.wait(timeout=3.0)
     assert not os.path.exists(override_socket), "Override socket should be cleaned up"
+
+
+def test_server_survives_client_node_disconnect(
+    apx_server: ApxServerInstance,
+    spawn_apx_node,
+):
+    """
+    Verify that when an APX client node disconnects (e.g. via SIGINT / SIGTERM),
+    the server does not terminate (e.g. from unhandled SIGPIPE on socket writes)
+    and continues serving remaining clients.
+    """
+    from pathlib import Path
+    repo_root = Path(__file__).resolve().parent.parent
+    listener_apx = repo_root / "example" / "nodes" / "unsigned_listener.apx"
+    sender_apx = repo_root / "example" / "nodes" / "small_unsigned_sender.apx"
+
+    assert listener_apx.is_file()
+    assert sender_apx.is_file()
+
+    # 1. Connect listener node
+    listener = spawn_apx_node(listener_apx, bind=False)
+    assert listener.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+
+    # 2. Connect sender node
+    sender = spawn_apx_node(sender_apx, bind=False)
+    assert sender.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+
+    # 3. Disconnect sender node via stop() (SIGINT)
+    sender.stop()
+    assert not sender.is_running
+
+    # 4. Verify server is still running healthy
+    assert apx_server.is_running, "Server terminated unexpectedly after client disconnect"
+    assert apx_server.process.poll() is None
+
+    # 5. Connect another client to confirm server still accepts and processes connections
+    sender2 = spawn_apx_node(sender_apx, bind=False)
+    assert sender2.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+    assert apx_server.is_running
+
+    sender2.stop()
+    listener.stop()
+
