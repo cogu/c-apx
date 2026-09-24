@@ -37,6 +37,7 @@ typedef struct apx_port_connector_change_entry_tag
       apx_port_instance_t* port_instance; //Applies when -1 <= count <= 1
       adt_ary_t *array; //Applies when count<-1 or when count > 1
    } data;
+   apx_port_count_t connection_count;
    //All references to apx_port_ref_t are weak references
 } apx_port_connector_change_entry_t;
 
@@ -53,5 +54,8 @@ apx_error_t apx_port_connector_change_entry_add_connection(apx_port_connector_ch
 apx_error_t apx_port_connector_change_entry_remove_connection(apx_port_connector_change_entry_t *self, apx_port_instance_t* port_instance);
 apx_port_instance_t* apx_port_connector_change_entry_get(apx_port_connector_change_entry_t *self, int32_t index);
 int32_t apx_port_connector_change_entry_count(apx_port_connector_change_entry_t *self);
+apx_port_count_t apx_cap_port_count(int32_t count);
+void apx_port_connector_change_entry_set_connection_count(apx_port_connector_change_entry_t *self, int32_t count);
+apx_port_count_t apx_port_connector_change_entry_get_connection_count(const apx_port_connector_change_entry_t *self);
 
 #endif //APX_PORT_CONNECTION_ENTRY_H

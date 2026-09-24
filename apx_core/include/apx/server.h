@@ -95,7 +95,6 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t *self
 apx_error_t apx_server_insert_modified_node_instance(apx_server_t *self, apx_node_instance_t *node_instance);
 adt_ary_t *apx_server_get_modified_node_instance(const apx_server_t *self);
 void apx_server_clear_port_connector_changes(apx_server_t *self);
-uint16_t apx_server_calculate_require_port_count(apx_server_t* self, apx_port_instance_t* require_port);
 void apx_server_vdestroy_event(void *arg, apx_event_t* event);
 
 

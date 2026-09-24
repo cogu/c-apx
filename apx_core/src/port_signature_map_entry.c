@@ -222,6 +222,17 @@ apx_error_t apx_port_signature_map_entry_notify_require_ports_about_provide_port
          provide_port_change_entry = apx_port_connector_change_table_get_entry(provide_port_change_table, apx_port_instance_port_id(provide_port));
          assert(provide_port_change_entry != NULL);
 
+         int32_t const num_requesters = adt_list_length(&self->require_ports);
+         int32_t const num_providers = adt_list_length(&self->provide_ports);
+         if (event_type == APX_PORT_CONNECTED_EVENT)
+         {
+            apx_port_connector_change_entry_set_connection_count(provide_port_change_entry, num_requesters);
+         }
+         else
+         {
+            apx_port_connector_change_entry_set_connection_count(provide_port_change_entry, 0);
+         }
+
          for(iter = adt_list_iter_first(&self->require_ports); iter != NULL; iter = adt_list_iter_next(iter))
          {
             apx_port_connector_change_table_t *require_port_change_table;
@@ -236,6 +247,7 @@ apx_error_t apx_port_signature_map_entry_notify_require_ports_about_provide_port
             retval = action_func(require_port_change_entry, provide_port);
             if (retval == APX_NO_ERROR)
             {
+               apx_port_connector_change_entry_set_connection_count(require_port_change_entry, num_providers);
                retval = action_func(provide_port_change_entry, require_port);
             }
             if (retval != APX_NO_ERROR)
@@ -269,6 +281,17 @@ apx_error_t apx_port_signature_map_entry_notify_provide_ports_about_require_port
          require_port_change_entry = apx_port_connector_change_table_get_entry(require_port_change_table, apx_port_instance_port_id(require_port));
          assert(require_port_change_entry != NULL);
 
+         int32_t const num_requesters = adt_list_length(&self->require_ports);
+         int32_t const num_providers = adt_list_length(&self->provide_ports);
+         if (event_type == APX_PORT_CONNECTED_EVENT)
+         {
+            apx_port_connector_change_entry_set_connection_count(require_port_change_entry, num_providers);
+         }
+         else
+         {
+            apx_port_connector_change_entry_set_connection_count(require_port_change_entry, 0);
+         }
+
          for(iter = adt_list_iter_first(&self->provide_ports); iter != NULL; iter = adt_list_iter_next(iter))
          {
             apx_port_connector_change_table_t *provide_port_change_table;
@@ -283,6 +306,7 @@ apx_error_t apx_port_signature_map_entry_notify_provide_ports_about_require_port
             retval = action_func(require_port_change_entry, provide_port);
             if (retval == APX_NO_ERROR)
             {
+               apx_port_connector_change_entry_set_connection_count(provide_port_change_entry, num_requesters);
                retval = action_func(provide_port_change_entry, require_port);
             }
             if (retval != APX_NO_ERROR)

@@ -563,7 +563,7 @@ static apx_error_t create_new_node_instance(apx_server_connection_t* self, apx_n
          apx_file_manager_t* file_manager = apx_connection_base_get_file_manager(&self->base);
          if (file_manager != NULL)
          {
-            apx_file_open(definition_file); //Should this be moved into file_manager?
+            apx_file_open(definition_file); //TODO: Should this be moved into file_manager?
             apx_node_instance_set_definition_data_state(node_instance, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
             return apx_file_manager_send_open_file_request(file_manager, apx_file_get_address_without_flags(definition_file));
          }

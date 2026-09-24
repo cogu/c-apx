@@ -184,7 +184,7 @@ apx_file_t* apx_node_instance_get_provide_port_count_file(const apx_node_instanc
 apx_file_t* apx_node_instance_get_require_port_count_file(const apx_node_instance_t* self);
 void apx_node_instance_set_provide_port_count_file(apx_node_instance_t* self, apx_file_t* file);
 void apx_node_instance_set_require_port_count_file(apx_node_instance_t* self, apx_file_t* file);
-apx_error_t apx_node_instance_send_provide_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, uint16_t count);
-apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, uint16_t count);
+apx_error_t apx_node_instance_send_provide_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, apx_port_count_t count);
+apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, apx_port_count_t count);
 
 #endif //APX_NODE_INSTANCE_H

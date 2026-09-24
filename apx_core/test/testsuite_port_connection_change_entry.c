@@ -32,6 +32,7 @@ static void test_connect_one(CuTest *tc);
 static void test_connect_three(CuTest *tc);
 static void test_apx_disconnect_one(CuTest *tc);
 static void test_apx_disconnect_three(CuTest *tc);
+static void test_apx_port_connector_change_entry_connection_count(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -63,6 +64,7 @@ CuSuite* testsuite_apx_port_connector_change_entry(void)
    SUITE_ADD_TEST(suite, test_connect_three);
    SUITE_ADD_TEST(suite, test_apx_disconnect_one);
    SUITE_ADD_TEST(suite, test_apx_disconnect_three);
+   SUITE_ADD_TEST(suite, test_apx_port_connector_change_entry_connection_count);
    return suite;
 }
 
@@ -75,6 +77,8 @@ static void test_apx_port_connector_change_entry_create(CuTest *tc)
    apx_port_connector_change_entry_create(&entry);
    CuAssertIntEquals(tc, 0, entry.count);
    CuAssertPtrEquals(tc, NULL, entry.data.port_instance);
+   CuAssertUIntEquals(tc, 0u, entry.connection_count);
+   CuAssertUIntEquals(tc, 0u, apx_port_connector_change_entry_get_connection_count(&entry));
    apx_port_connector_change_entry_destroy(&entry);
 }
 
@@ -205,4 +209,38 @@ static void test_apx_disconnect_three(CuTest *tc)
 
    apx_port_connector_change_entry_destroy(&entry);
    apx_node_manager_delete(node_manager);
+}
+
+static void test_apx_port_connector_change_entry_connection_count(CuTest *tc)
+{
+   apx_port_connector_change_entry_t entry;
+   apx_port_connector_change_entry_create(&entry);
+
+   // Test apx_cap_port_count
+   CuAssertUIntEquals(tc, 0u, apx_cap_port_count(-10));
+   CuAssertUIntEquals(tc, 0u, apx_cap_port_count(0));
+   CuAssertUIntEquals(tc, 1u, apx_cap_port_count(1));
+   CuAssertUIntEquals(tc, 42u, apx_cap_port_count(42));
+   CuAssertUIntEquals(tc, 65535u, apx_cap_port_count(65535));
+   CuAssertUIntEquals(tc, 65535u, apx_cap_port_count(65536));
+   CuAssertUIntEquals(tc, 65535u, apx_cap_port_count(1000000));
+
+   // Test set and get connection_count
+   apx_port_connector_change_entry_set_connection_count(&entry, 15);
+   CuAssertUIntEquals(tc, 15u, apx_port_connector_change_entry_get_connection_count(&entry));
+
+   apx_port_connector_change_entry_set_connection_count(&entry, 0);
+   CuAssertUIntEquals(tc, 0u, apx_port_connector_change_entry_get_connection_count(&entry));
+
+   apx_port_connector_change_entry_set_connection_count(&entry, -5);
+   CuAssertUIntEquals(tc, 0u, apx_port_connector_change_entry_get_connection_count(&entry));
+
+   apx_port_connector_change_entry_set_connection_count(&entry, 70000);
+   CuAssertUIntEquals(tc, 65535u, apx_port_connector_change_entry_get_connection_count(&entry));
+
+   // NULL safety check
+   apx_port_connector_change_entry_set_connection_count(NULL, 10);
+   CuAssertUIntEquals(tc, 0u, apx_port_connector_change_entry_get_connection_count(NULL));
+
+   apx_port_connector_change_entry_destroy(&entry);
 }

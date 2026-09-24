@@ -963,22 +963,18 @@ apx_error_t apx_node_instance_handle_require_ports_disconnected(apx_node_instanc
             provide_port_id = apx_port_instance_port_id(provide_port);
             apx_node_instance_lock_port_connector_table(provide_node_instance);
             result = remove_provide_port_connector(provide_node_instance, provide_port_id, require_port);
-            uint16_t new_provide_count = 0u;
+            apx_port_count_t new_provide_count = 0u;
             if (provide_node_instance->connector_table != NULL)
             {
                int32_t const length = apx_port_connector_list_length(&provide_node_instance->connector_table[provide_port_id]);
-               new_provide_count = (length > (int32_t)UINT16_MAX) ? UINT16_MAX : (uint16_t)(length < 0 ? 0 : length);
+               new_provide_count = apx_cap_port_count(length);
             }
             apx_node_instance_unlock_port_connector_table(provide_node_instance);
             if (result != APX_NO_ERROR)
             {
                return result;
             }
-            uint16_t new_require_count = 0u;
-            if (self->server != NULL)
-            {
-               new_require_count = apx_server_calculate_require_port_count(self->server, require_port);
-            }
+            apx_port_count_t new_require_count = apx_port_connector_change_entry_get_connection_count(entry);
             apx_node_instance_send_require_port_count_data(self, require_port_id, new_require_count);
             apx_node_instance_send_provide_port_count_data(provide_node_instance, provide_port_id, new_provide_count);
          }
@@ -1333,16 +1329,12 @@ static apx_error_t file_open_notify(apx_node_instance_t* self, apx_file_t* file)
             {
                if (self->server != NULL)
                {
-                  apx_server_take_global_lock(self->server);
                   retval = connect_require_ports_to_server(self);
                   if (retval == APX_NO_ERROR)
                   {
                      apx_node_instance_set_require_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
-                     //TODO:Take snapshot first, then release global lock, then transmit snapshot data through file manager.
-                     //This shortens the time the global lock is held.
                      retval = send_require_port_data_to_file_manager(self, file_manager, address);
                   }
-                  apx_server_release_global_lock(self->server);
                }
                else
                {
@@ -1537,25 +1529,26 @@ static apx_error_t process_remote_write_provide_port_data(apx_node_instance_t* s
       {
          if (self->server != NULL)
          {
+            apx_port_connector_change_table_t* provide_port_changes = NULL;
             apx_server_take_global_lock(self->server);
             retval = apx_server_connect_node_instance_provide_ports(self->server, self);
             if (retval == APX_NO_ERROR)
             {
-               apx_port_connector_change_table_t* provide_port_changes;
-               apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
                provide_port_changes = apx_node_instance_get_provide_port_connector_changes(self, false);
                if (provide_port_changes != NULL)
                {
-                  retval = apx_server_process_provide_port_connector_changes(self->server, self, provide_port_changes);
+                  apx_node_instance_clear_provide_port_connector_changes(self, false);
                }
             }
-            if (retval == APX_NO_ERROR)
-            {
-               apx_node_instance_clear_provide_port_connector_changes(self, true); ///TODO: switch this to false once event handlers are working again
-            }
-            //TODO: Update port count in all affected nodes and trigger sending of port count deltas to clients
             apx_server_clear_port_connector_changes(self->server);
             apx_server_release_global_lock(self->server);
+
+            apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
+            if ((retval == APX_NO_ERROR) && (provide_port_changes != NULL))
+            {
+               retval = apx_server_process_provide_port_connector_changes(self->server, self, provide_port_changes);
+               apx_port_connector_change_table_delete(provide_port_changes);
+            }
          }
          else
          {
@@ -1828,7 +1821,7 @@ static apx_error_t request_remote_require_port_data(apx_node_instance_t* self, a
       check_and_request_remote_port_count_file(self, file_manager, APX_REQUIRE_PORT_COUNT_EXT, &self->require_port_count_file);
    }
    apx_node_instance_set_require_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
-   apx_file_open(file); //Should this be moved into file_manager?
+   apx_file_open(file); //TODO: Should this be moved into file_manager?
    return apx_file_manager_send_open_file_request(file_manager, apx_file_get_address_without_flags(file));
 }
 
@@ -1844,19 +1837,27 @@ static apx_error_t request_remote_port_count_data(apx_node_instance_t* self, apx
 static apx_error_t connect_require_ports_to_server(apx_node_instance_t* self)
 {
    apx_error_t retval = APX_NO_ERROR;
+   apx_port_connector_change_table_t* require_port_changes = NULL;
    assert( (self != NULL) && (self->server != NULL));
+
+   apx_server_take_global_lock(self->server);
    retval = apx_server_connect_node_instance_require_ports(self->server, self);
    if (retval == APX_NO_ERROR)
    {
-      apx_port_connector_change_table_t* require_port_changes;
       require_port_changes = apx_node_instance_get_require_port_connector_changes(self, false);
       if (require_port_changes != NULL)
       {
-         retval = apx_server_process_require_port_connector_changes(self->server, self, require_port_changes);
+         apx_node_instance_clear_require_port_connector_changes(self, false);
       }
    }
-   //TODO: update port counts and trigger transmission of port count delta
    apx_server_clear_port_connector_changes(self->server);
+   apx_server_release_global_lock(self->server);
+
+   if ((retval == APX_NO_ERROR) && (require_port_changes != NULL))
+   {
+      retval = apx_server_process_require_port_connector_changes(self->server, self, require_port_changes);
+      apx_port_connector_change_table_delete(require_port_changes);
+   }
    return retval;
 }
 
@@ -2097,7 +2098,7 @@ static apx_error_t trigger_require_port_write_callbacks(apx_node_instance_t* sel
    return retval;
 }
 
-apx_error_t apx_node_instance_send_provide_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, uint16_t count)
+apx_error_t apx_node_instance_send_provide_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, apx_port_count_t count)
 {
    if (self != NULL)
    {
@@ -2110,8 +2111,8 @@ apx_error_t apx_node_instance_send_provide_port_count_data(apx_node_instance_t* 
             apx_file_t* file = self->provide_port_count_file;
             if ((file != NULL) && apx_file_is_open(file))
             {
-               uint8_t count_bytes[sizeof(uint16_t)];
-               uint32_t offset = (uint32_t)port_id * (uint32_t)sizeof(uint16_t);
+               uint8_t count_bytes[sizeof(apx_port_count_t)];
+               uint32_t offset = (uint32_t)port_id * (uint32_t)sizeof(apx_port_count_t);
                count_bytes[0] = (uint8_t)(count & 0xFFu);
                count_bytes[1] = (uint8_t)((count >> 8u) & 0xFFu);
                retval = remote_route_data_to_file(file, offset, count_bytes, sizeof(count_bytes));
@@ -2124,7 +2125,7 @@ apx_error_t apx_node_instance_send_provide_port_count_data(apx_node_instance_t* 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, uint16_t count)
+apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* self, apx_port_id_t port_id, apx_port_count_t count)
 {
    if (self != NULL)
    {
@@ -2137,8 +2138,8 @@ apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* 
             apx_file_t* file = self->require_port_count_file;
             if ((file != NULL) && apx_file_is_open(file))
             {
-               uint8_t count_bytes[sizeof(uint16_t)];
-               uint32_t offset = (uint32_t)port_id * (uint32_t)sizeof(uint16_t);
+               uint8_t count_bytes[sizeof(apx_port_count_t)];
+               uint32_t offset = (uint32_t)port_id * (uint32_t)sizeof(apx_port_count_t);
                count_bytes[0] = (uint8_t)(count & 0xFFu);
                count_bytes[1] = (uint8_t)((count >> 8u) & 0xFFu);
                retval = remote_route_data_to_file(file, offset, count_bytes, sizeof(count_bytes));

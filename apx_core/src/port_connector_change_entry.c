@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "apx/port_connector_change_entry.h"
+#include "apx/cfg.h"
 #include "apx/util.h"
 
 #ifdef MEM_LEAK_CHECK
@@ -45,6 +46,7 @@ void apx_port_connector_change_entry_create(apx_port_connector_change_entry_t *s
    {
       self->count = 0;
       self->data.port_instance = NULL;
+      self->connection_count = 0u;
    }
 }
 
@@ -204,6 +206,36 @@ int32_t apx_port_connector_change_entry_count(apx_port_connector_change_entry_t 
       return self->count;
    }
    return 0;
+}
+
+apx_port_count_t apx_cap_port_count(int32_t count)
+{
+   if (count <= 0)
+   {
+      return 0u;
+   }
+   if (count > (int32_t)APX_PORT_COUNT_MAX)
+   {
+      return (apx_port_count_t)APX_PORT_COUNT_MAX;
+   }
+   return (apx_port_count_t)count;
+}
+
+void apx_port_connector_change_entry_set_connection_count(apx_port_connector_change_entry_t *self, int32_t count)
+{
+   if (self != NULL)
+   {
+      self->connection_count = apx_cap_port_count(count);
+   }
+}
+
+apx_port_count_t apx_port_connector_change_entry_get_connection_count(const apx_port_connector_change_entry_t *self)
+{
+   if (self != NULL)
+   {
+      return self->connection_count;
+   }
+   return 0u;
 }
 
 //////////////////////////////////////////////////////////////////////////////
