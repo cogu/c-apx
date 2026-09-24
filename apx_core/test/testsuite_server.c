@@ -724,9 +724,9 @@ static void test_connectors_port_count_updates_between_apx13_nodes(CuTest* tc)
    CuAssertPtrNotNull(tc, cin_file);
    CuAssertUIntEquals(tc, 2u, apx_file_get_size(cin_file));
 
-   // Requester opens Requester13.in and Requester13.cin
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(requester_connection, "Requester13.in"));
+   // Requester opens Requester13.cin and Requester13.in
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(requester_connection, "Requester13.cin"));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(requester_connection, "Requester13.in"));
    apx_server_test_connection_run(requester_connection);
    apx_server_test_connection_run(provider_connection);
 
@@ -755,6 +755,7 @@ static void test_connectors_port_count_updates_between_apx13_nodes(CuTest* tc)
 
    // Requester connection should have received write to Requester13.cin with count 1
    bool found_cin_write = false;
+   uint16_t last_cin_count = 0;
    for (int32_t i = 0; i < apx_server_test_connection_log_length(requester_connection); ++i)
    {
       packet = apx_server_test_connection_get_log_packet(requester_connection, i);
@@ -771,15 +772,18 @@ static void test_connectors_port_count_updates_between_apx13_nodes(CuTest* tc)
          h_size = rmf_address_decode(p_data, p_data + msg_len, &decoded_address, &more_bit);
          if (decoded_address == apx_file_get_address_without_flags(cin_file))
          {
-            count_val = (uint16_t)p_data[h_size] | ((uint16_t)p_data[h_size + 1] << 8);
-            CuAssertUIntEquals(tc, 1, count_val);
-            found_cin_write = true;
+            last_cin_count = (uint16_t)p_data[h_size] | ((uint16_t)p_data[h_size + 1] << 8);
+            if (last_cin_count == 1)
+            {
+               found_cin_write = true;
+            }
          }
          p_data += msg_len;
          p_len -= (int)msg_len;
       }
    }
    CuAssertTrue(tc, found_cin_write);
+   CuAssertUIntEquals(tc, 1, last_cin_count);
 
    // 3. Disconnect Requester13 connection and verify count drops back to 0 on Provider13
    apx_server_test_connection_clear_log(provider_connection);

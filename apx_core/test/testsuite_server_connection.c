@@ -808,6 +808,52 @@ static void test_port_count_files_published_for_apx13_node(CuTest* tc)
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_server_test_connection_run(connection);
 
+   // Verify server announces both .cout and .cin before .in
+   rmf_file_info_t announced_file_info;
+   rmf_file_info_create(&announced_file_info, 0, 0, NULL, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+   int announce_count = 0;
+   for (int32_t i = 0; i < apx_server_test_connection_log_length(connection); ++i)
+   {
+      adt_bytearray_t* log_packet = apx_server_test_connection_get_log_packet(connection, i);
+      CuAssertPtrNotNull(tc, log_packet);
+      uint8_t const* p_data = adt_bytearray_const_data(log_packet);
+      int p_len = (int)adt_bytearray_length(log_packet);
+      while (p_len > 0)
+      {
+         uint32_t msg_len = 0;
+         uint8_t const* next = numheader_decode32(p_data, p_data + p_len, &msg_len);
+         CuAssertPtrNotNull(tc, next);
+         p_len -= (int)(next - p_data);
+         p_data = next;
+         CuAssertTrue(tc, p_len >= (int)msg_len);
+
+         uint32_t decoded_address = 0;
+         bool more_bit = false;
+         apx_size_t h_size = rmf_address_decode(p_data, p_data + msg_len, &decoded_address, &more_bit);
+         CuAssertTrue(tc, h_size > 0);
+         CuAssertUIntEquals(tc, RMF_CMD_AREA_START_ADDRESS, decoded_address);
+
+         CuAssertTrue(tc, rmf_decode_publish_file_cmd(p_data + h_size, (apx_size_t)(msg_len - h_size), &announced_file_info) > 0);
+         if (announce_count == 0)
+         {
+            CuAssertTrue(tc, rmf_file_info_name_ends_with(&announced_file_info, ".cout"));
+         }
+         else if (announce_count == 1)
+         {
+            CuAssertTrue(tc, rmf_file_info_name_ends_with(&announced_file_info, ".cin"));
+         }
+         else if (announce_count == 2)
+         {
+            CuAssertTrue(tc, rmf_file_info_name_ends_with(&announced_file_info, ".in"));
+         }
+         announce_count++;
+         p_data += msg_len;
+         p_len -= (int)msg_len;
+      }
+   }
+   CuAssertIntEquals(tc, 3, announce_count);
+   rmf_file_info_destroy(&announced_file_info);
+
    node_manager = apx_server_test_connection_get_node_manager(connection);
    CuAssertPtrNotNull(tc, node_manager);
    apx_node_instance_t* node_instance = apx_node_manager_find(node_manager, "TestNode13");

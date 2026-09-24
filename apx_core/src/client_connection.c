@@ -40,7 +40,7 @@ static void send_greeting_header(apx_client_connection_t* self);
 static void send_monitor_greeting_header(apx_client_connection_t* self);
 static void send_default_greeting_header(apx_client_connection_t* self);
 static apx_error_t remote_file_published_notification(apx_client_connection_t* self, apx_file_t* file);
-static apx_error_t process_new_require_port_data_file(apx_client_connection_t* self, apx_file_t* file);
+static apx_error_t process_new_remote_file(apx_client_connection_t* self, apx_file_t* file);
 static apx_error_t remote_file_write_notification(apx_client_connection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
 static uint8_t const* parse_message(apx_client_connection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint);
 static bool parse_greeting(apx_client_connection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
@@ -391,9 +391,12 @@ static apx_error_t remote_file_published_notification(apx_client_connection_t* s
 #if APX_DEBUG_ENABLE
       printf("[CLIENT-CONNECTION] remote_file_published_notification: \"%s\"(%d)\n", apx_file_get_name(file), apx_file_get_apx_file_type(file));
 #endif
-      if (apx_file_get_apx_file_type(file) == APX_REQUIRE_PORT_DATA_FILE_TYPE)
+      apx_file_type_t const file_type = apx_file_get_apx_file_type(file);
+      if ((file_type == APX_REQUIRE_PORT_DATA_FILE_TYPE) ||
+          (file_type == APX_PROVIDE_PORT_COUNT_FILE_TYPE) ||
+          (file_type == APX_REQUIRE_PORT_COUNT_FILE_TYPE))
       {
-         return process_new_require_port_data_file(self, file);
+         return process_new_remote_file(self, file);
       }
       //TODO: Add generic handling of new file types
       return APX_NO_ERROR;
@@ -401,7 +404,7 @@ static apx_error_t remote_file_published_notification(apx_client_connection_t* s
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t process_new_require_port_data_file(apx_client_connection_t* self, apx_file_t* file)
+static apx_error_t process_new_remote_file(apx_client_connection_t* self, apx_file_t* file)
 {
    assert((self != NULL) && (file != NULL));
    char* base_name = rmf_file_info_base_name(apx_file_get_file_info(file));
