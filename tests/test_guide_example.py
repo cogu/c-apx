@@ -35,6 +35,10 @@ def test_getting_started_guide_flow(
     assert listener.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0), (
         f"Listener failed to connect to APX server.\nOutput:\n{listener.output}"
     )
+    # Verify listener stays silent on connect while require-port connection count is 0
+    assert not any('"Vehicle' in line for line in listener.lines), (
+        f"Listener unexpectedly printed port values before sender connected:\n{listener.output}"
+    )
 
     # 2. Start sender node acting as JSON-to-APX router (bind=True auto-allocates an isolated socket)
     sender = spawn_apx_node(sender_apx, bind=True)

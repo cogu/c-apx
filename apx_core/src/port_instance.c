@@ -15,6 +15,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "apx/port_instance.h"
+#include "apx/node_instance.h"
 #include "apx/util.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -412,3 +413,17 @@ static apx_error_t process_info_from_program_header(apx_port_instance_t* self, a
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+apx_port_count_t apx_port_instance_connection_count(apx_port_instance_t const* self)
+{
+   if ((self != NULL) && (self->parent != NULL))
+   {
+      return apx_node_instance_get_port_connection_count(self->parent, self->port_type, self->port_id);
+   }
+   return 0u;
+}
+
+apx_port_count_t apx_port_instance_get_connection_count(apx_port_instance_t const* self)
+{
+   return apx_port_instance_connection_count(self);
+}
