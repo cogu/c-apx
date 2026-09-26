@@ -83,9 +83,12 @@ openssl x509 -req -in client.csr -CA ca_cert.pem -CAkey ca_key.pem -CAcreateseri
 
 rm -f client.csr client_ext.cnf ca_cert.srl
 
+# Export public key for APX file signing verification
+openssl ec -in client_key.pem -pubout -out client_pubkey.pem
+
 # Set permissions: private keys read-only by user, public certs world-readable
 chmod 600 ca_key.pem server_key.pem client_key.pem
-chmod 644 ca_cert.pem server_cert.pem client_cert.pem
+chmod 644 ca_cert.pem server_cert.pem client_cert.pem client_pubkey.pem
 
 # ------------------------------------------------------------------------------
 # STEP 4: Verification Check

@@ -100,6 +100,8 @@ typedef int32_t apx_error_t;
 #define APX_INDEX_ERROR                        76
 #define APX_SEMAPHORE_ERROR                    77
 #define APX_NOT_A_DIRECTORY_ERROR             78
+#define APX_SIGNATURE_MISSING_ERROR           79
+#define APX_SIGNATURE_VERIFICATION_ERROR      80
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES

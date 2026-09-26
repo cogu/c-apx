@@ -89,6 +89,7 @@ set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_compiler_pack.c
     apx_core/test/testsuite_compiler_unpack.c
     apx_core/test/testsuite_computation.c
+    apx_core/test/testsuite_crypto.c
     apx_core/test/testsuite_data_element.c
     apx_core/test/testsuite_file_info.c
     apx_core/test/testsuite_file_manager_receiver.c
@@ -128,6 +129,7 @@ set (APX_COMMON_HEADERS
     apx_core/include/apx/client.h
     apx_core/include/apx/command.h
     apx_core/include/apx/compiler.h
+    apx_core/include/apx/crypto.h
     apx_core/include/apx/computation.h
     apx_core/include/apx/connection_base.h
     apx_core/include/apx/connection_interface.h
@@ -197,6 +199,7 @@ set (APX_COMMON_SOURCES
     apx_core/src/client.c
     apx_core/src/command.c
     apx_core/src/compiler.c
+    apx_core/src/crypto.c
     apx_core/src/computation.c
     apx_core/src/connection_base.c
     apx_core/src/connection_manager.c
@@ -257,6 +260,19 @@ add_subdirectory(dtl_json)
 add_subdirectory(dtl_type)
 add_subdirectory(msocket)
 
+set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "" FORCE)
+set(DISABLE_PACKAGE_CONFIG_AND_INSTALL ON CACHE BOOL "" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
+set(_SAVED_C_CLANG_TIDY "${CMAKE_C_CLANG_TIDY}")
+set(_SAVED_CXX_CLANG_TIDY "${CMAKE_CXX_CLANG_TIDY}")
+set(CMAKE_C_CLANG_TIDY "")
+set(CMAKE_CXX_CLANG_TIDY "")
+add_subdirectory(mbedtls EXCLUDE_FROM_ALL)
+set(CMAKE_C_CLANG_TIDY "${_SAVED_C_CLANG_TIDY}")
+set(CMAKE_CXX_CLANG_TIDY "${_SAVED_CXX_CLANG_TIDY}")
+
 get_directory_property(ADT_HEADER_LIST DIRECTORY adt DEFINITION ADT_HEADER_LIST)
 get_directory_property(ADT_SOURCE_LIST DIRECTORY adt DEFINITION ADT_SOURCE_LIST)
 get_directory_property(BSTR_HEADER_LIST DIRECTORY bstr DEFINITION BSTR_HEADER_LIST)
@@ -308,6 +324,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${APX_COMMON_HEADERS} ${AP
 #target_compile_options(apx_core PRIVATE -fvisibility=hidden)
 
 target_link_libraries(apx_core PRIVATE Threads::Threads)
+target_link_libraries(apx_core PUBLIC mbedcrypto)
 if(WIN32)
     target_link_libraries(apx_core PUBLIC ws2_32)
 endif()

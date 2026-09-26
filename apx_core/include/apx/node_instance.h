@@ -143,6 +143,8 @@ apx_port_instance_t* apx_node_instance_find(apx_node_instance_t const* self, cha
 apx_error_t apx_node_instance_attach_to_file_manager(apx_node_instance_t* self, struct apx_file_manager_tag* file_manager);
 apx_error_t apx_node_instance_remote_file_published_notification(apx_node_instance_t* self, apx_file_t* file);
 void apx_node_instance_set_server(apx_node_instance_t* self, struct apx_server_tag* server);
+struct apx_server_tag* apx_node_instance_get_server(apx_node_instance_t const* self);
+apx_file_t* apx_node_instance_get_definition_file(apx_node_instance_t const* self);
 apx_port_instance_t* apx_node_instance_find_port_by_name(apx_node_instance_t const* self, char const* name);
 apx_error_t apx_node_instance_write_provide_port_data(apx_node_instance_t* self, apx_size_t offset, uint8_t* data, apx_size_t size);
 

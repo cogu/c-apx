@@ -21,6 +21,7 @@
 #include "apx/server_test_connection.h"
 #include "apx/remotefile.h"
 #include "apx/numheader.h"
+#include "apx/crypto.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -39,6 +40,10 @@ static void test_connectors_connect_disconnect_node_with_only_provide_ports(CuTe
 static void test_connectors_node_with_require_port_is_connected_after_node_with_provide_port(CuTest* tc);
 static void test_connectors_node_with_provide_port_is_connected_when_multiple_nodes_with_require_ports_are_waiting(CuTest* tc);
 static void test_connectors_port_count_updates_between_apx13_nodes(CuTest* tc);
+static void test_server_require_signed_nodes_rejects_unsigned_node(CuTest* tc);
+static void test_server_require_signed_nodes_accepts_valid_signed_node(CuTest* tc);
+static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest* tc);
+static void test_server_rejects_signed_file_cmd_under_rmfp_1_0(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -88,6 +93,10 @@ CuSuite* testsuite_apx_server(void)
    SUITE_ADD_TEST(suite, test_connectors_node_with_require_port_is_connected_after_node_with_provide_port);
    SUITE_ADD_TEST(suite, test_connectors_node_with_provide_port_is_connected_when_multiple_nodes_with_require_ports_are_waiting);
    SUITE_ADD_TEST(suite, test_connectors_port_count_updates_between_apx13_nodes);
+   SUITE_ADD_TEST(suite, test_server_require_signed_nodes_rejects_unsigned_node);
+   SUITE_ADD_TEST(suite, test_server_require_signed_nodes_accepts_valid_signed_node);
+   SUITE_ADD_TEST(suite, test_server_require_signed_nodes_rejects_tampered_signature);
+   SUITE_ADD_TEST(suite, test_server_rejects_signed_file_cmd_under_rmfp_1_0);
 
    return suite;
 }
@@ -805,5 +814,196 @@ static void test_connectors_port_count_updates_between_apx13_nodes(CuTest* tc)
    CuAssertUIntEquals(tc, 0, count_val);
 
    apx_server_detach_connection(server, (apx_server_connection_t*)provider_connection);
+   apx_server_delete(server);
+}
+
+static void test_server_require_signed_nodes_rejects_unsigned_node(CuTest* tc)
+{
+   apx_server_t* server;
+   apx_server_test_connection_t* connection;
+   char const* apx_text =
+      "APX/1.2\n"
+      "N\"TestNode1\"\n"
+      "R\"BreakAlertStatus\"C(0,3):=3\n";
+   apx_size_t const definition_size = (apx_size_t)strlen(apx_text);
+
+   server = apx_server_new();
+   CuAssertPtrNotNull(tc, server);
+   apx_server_set_require_signed_nodes(server, true);
+   CuAssertTrue(tc, apx_server_get_require_signed_nodes(server));
+
+   connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   apx_server_test_connection_set_tester_protocol_version(connection, RMF_PROTOCOL_VERSION_ID_1_1);
+   apx_server_accept_connection(server, (apx_server_connection_t*)connection);
+
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(connection));
+   apx_server_test_connection_run(connection);
+
+   // Publish unsigned remote file
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_publish_remote_file(connection, APX_DEFINITION_ADDRESS_START, "TestNode1.apx", definition_size));
+   apx_server_test_connection_run(connection);
+
+   // Write definition data
+   CuAssertIntEquals(tc, APX_SIGNATURE_MISSING_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
+   apx_server_test_connection_run(connection);
+
+   // Because signature is missing and require_signed_nodes is true, node should be rejected
+   apx_node_manager_t* node_manager = apx_server_test_connection_get_node_manager(connection);
+   CuAssertPtrNotNull(tc, node_manager);
+   apx_node_instance_t* node_instance = apx_node_manager_find(node_manager, "TestNode1");
+   CuAssertPtrEquals(tc, NULL, node_instance);
+
+   apx_server_detach_connection(server, (apx_server_connection_t*)connection);
+   apx_server_delete(server);
+}
+
+static void test_server_require_signed_nodes_accepts_valid_signed_node(CuTest* tc)
+{
+   apx_server_t* server;
+   apx_server_test_connection_t* connection;
+   char* priv_pem = NULL;
+   char* pub_pem = NULL;
+   char const* apx_text =
+      "APX/1.2\n"
+      "N\"TestNode1\"\n"
+      "R\"BreakAlertStatus\"C(0,3):=3\n";
+   apx_size_t const definition_size = (apx_size_t)strlen(apx_text);
+   uint8_t signature[RMF_SIGNATURE_SIZE_ECDSA_P256];
+   size_t signature_len = 0;
+
+   apx_error_t rc = apx_crypto_generate_keypair_pem(&priv_pem, &pub_pem);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+
+   rc = apx_crypto_sign_data(RMF_SIGNATURE_TYPE_ECDSA_P256,
+                             (const uint8_t*)priv_pem, strlen(priv_pem) + 1,
+                             (const uint8_t*)apx_text, definition_size,
+                             signature, sizeof(signature), &signature_len);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+   CuAssertUIntEquals(tc, RMF_SIGNATURE_SIZE_ECDSA_P256, (uint32_t)signature_len);
+
+   server = apx_server_new();
+   CuAssertPtrNotNull(tc, server);
+   apx_server_set_require_signed_nodes(server, true);
+   rc = apx_server_add_trusted_public_key(server, (const uint8_t*)pub_pem, strlen(pub_pem) + 1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+   CuAssertIntEquals(tc, 1, apx_server_get_num_trusted_public_keys(server));
+
+   connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   apx_server_test_connection_set_tester_protocol_version(connection, RMF_PROTOCOL_VERSION_ID_1_1);
+   apx_server_accept_connection(server, (apx_server_connection_t*)connection);
+
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(connection));
+   apx_server_test_connection_run(connection);
+
+   // Publish signed remote file
+   rc = apx_server_test_connection_publish_remote_signed_file(connection, APX_DEFINITION_ADDRESS_START, "TestNode1.apx", definition_size, RMF_SIGNATURE_TYPE_ECDSA_P256, signature);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+   apx_server_test_connection_run(connection);
+
+   // Write definition data
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
+   apx_server_test_connection_run(connection);
+
+   // Node should be built and synchronized
+   apx_node_manager_t* node_manager = apx_server_test_connection_get_node_manager(connection);
+   CuAssertPtrNotNull(tc, node_manager);
+   apx_node_instance_t* node_instance = apx_node_manager_find(node_manager, "TestNode1");
+   CuAssertPtrNotNull(tc, node_instance);
+   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_node_instance_get_definition_data_state(node_instance));
+
+   apx_server_detach_connection(server, (apx_server_connection_t*)connection);
+   apx_server_delete(server);
+   free(priv_pem);
+   free(pub_pem);
+}
+
+static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest* tc)
+{
+   apx_server_t* server;
+   apx_server_test_connection_t* connection;
+   char* priv_pem = NULL;
+   char* pub_pem = NULL;
+   char const* apx_text =
+      "APX/1.2\n"
+      "N\"TestNode1\"\n"
+      "R\"BreakAlertStatus\"C(0,3):=3\n";
+   apx_size_t const definition_size = (apx_size_t)strlen(apx_text);
+   uint8_t signature[RMF_SIGNATURE_SIZE_ECDSA_P256];
+   size_t signature_len = 0;
+
+   apx_error_t rc = apx_crypto_generate_keypair_pem(&priv_pem, &pub_pem);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+
+   rc = apx_crypto_sign_data(RMF_SIGNATURE_TYPE_ECDSA_P256,
+                             (const uint8_t*)priv_pem, strlen(priv_pem) + 1,
+                             (const uint8_t*)apx_text, definition_size,
+                             signature, sizeof(signature), &signature_len);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+
+   // Tamper signature
+   signature[0] ^= 0xFF;
+
+   server = apx_server_new();
+   CuAssertPtrNotNull(tc, server);
+   apx_server_set_require_signed_nodes(server, true);
+   rc = apx_server_add_trusted_public_key(server, (const uint8_t*)pub_pem, strlen(pub_pem) + 1);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+
+   connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   apx_server_test_connection_set_tester_protocol_version(connection, RMF_PROTOCOL_VERSION_ID_1_1);
+   apx_server_accept_connection(server, (apx_server_connection_t*)connection);
+
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(connection));
+   apx_server_test_connection_run(connection);
+
+   rc = apx_server_test_connection_publish_remote_signed_file(connection, APX_DEFINITION_ADDRESS_START, "TestNode1.apx", definition_size, RMF_SIGNATURE_TYPE_ECDSA_P256, signature);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+   apx_server_test_connection_run(connection);
+
+   CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
+   apx_server_test_connection_run(connection);
+
+   // Node should not be created
+   apx_node_manager_t* node_manager = apx_server_test_connection_get_node_manager(connection);
+   CuAssertPtrNotNull(tc, node_manager);
+   apx_node_instance_t* node_instance = apx_node_manager_find(node_manager, "TestNode1");
+   CuAssertPtrEquals(tc, NULL, node_instance);
+
+   apx_server_detach_connection(server, (apx_server_connection_t*)connection);
+   apx_server_delete(server);
+   free(priv_pem);
+   free(pub_pem);
+}
+
+static void test_server_rejects_signed_file_cmd_under_rmfp_1_0(CuTest* tc)
+{
+   apx_server_t* server;
+   apx_server_test_connection_t* connection;
+   char const* apx_text =
+      "APX/1.2\n"
+      "N\"TestNode1\"\n"
+      "R\"BreakAlertStatus\"C(0,3):=3\n";
+   apx_size_t const definition_size = (apx_size_t)strlen(apx_text);
+   uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256] = {0};
+
+   server = apx_server_new();
+   CuAssertPtrNotNull(tc, server);
+
+   connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, RMF_PROTOCOL_VERSION_ID_1_0, apx_server_test_connection_get_rmf_proto_id(connection));
+   apx_server_accept_connection(server, (apx_server_connection_t*)connection);
+
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(connection));
+   apx_server_test_connection_run(connection);
+
+   // Attempting to publish signed file under RMFP 1.0 must return APX_UNSUPPORTED_ERROR
+   apx_error_t rc = apx_server_test_connection_publish_remote_signed_file(connection, APX_DEFINITION_ADDRESS_START, "TestNode1.apx", definition_size, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+   CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, rc);
+
+   apx_server_detach_connection(server, (apx_server_connection_t*)connection);
    apx_server_delete(server);
 }

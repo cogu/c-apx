@@ -81,6 +81,7 @@ apx_error_t apx_server_test_connection_send_greeting_header(apx_server_test_conn
 apx_error_t apx_server_test_connection_send_custom_greeting_header(apx_server_test_connection_t* self, char const* greeting);
 apx_error_t apx_server_test_connection_request_open_local_file(apx_server_test_connection_t* self, char const* file_name);
 apx_error_t apx_server_test_connection_publish_remote_file(apx_server_test_connection_t* self, uint32_t address, char const* file_name, apx_size_t file_size);
+apx_error_t apx_server_test_connection_publish_remote_signed_file(apx_server_test_connection_t* self, uint32_t address, char const* file_name, apx_size_t file_size, uint8_t signature_type, uint8_t const* signature_data);
 apx_error_t apx_server_test_connection_write_remote_data(apx_server_test_connection_t* self, uint32_t address, uint8_t const* payload_data, apx_size_t payload_size);
 apx_node_instance_t* apx_server_test_connection_find_node(apx_server_test_connection_t* self, char const* name);
 apx_error_t apx_server_test_connection_build_node(apx_server_test_connection_t* self, char const* definition_text);

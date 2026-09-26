@@ -28,6 +28,7 @@
 #include "server_cfg.h"
 #include "extensions_cfg.h"
 #include "apx/server.h"
+#include "apx/crypto.h"
 #include "dtl_type.h"
 #include "apx/error.h"
 #ifdef MEM_LEAK_CHECK
@@ -51,6 +52,9 @@ static void test_load_config_malformed_json(CuTest *tc);
 static void test_load_config_invalid_root_type(CuTest *tc);
 static void test_load_config_missing_server_key(CuTest *tc);
 static void test_register_extensions_with_single_config(CuTest *tc);
+static void test_configure_server_null_arguments(CuTest *tc);
+static void test_configure_server_security_require_signed_nodes(CuTest *tc);
+static void test_configure_server_security_trusted_keys(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -68,6 +72,9 @@ CuSuite* testsuite_server_cfg(void)
    SUITE_ADD_TEST(suite, test_load_config_invalid_root_type);
    SUITE_ADD_TEST(suite, test_load_config_missing_server_key);
    SUITE_ADD_TEST(suite, test_register_extensions_with_single_config);
+   SUITE_ADD_TEST(suite, test_configure_server_null_arguments);
+   SUITE_ADD_TEST(suite, test_configure_server_security_require_signed_nodes);
+   SUITE_ADD_TEST(suite, test_configure_server_security_trusted_keys);
    return suite;
 }
 
@@ -304,4 +311,89 @@ static void test_register_extensions_with_single_config(CuTest *tc)
    dtl_dec_ref(cfg);
 
    remove(filepath);
+}
+
+static void test_configure_server_null_arguments(CuTest *tc)
+{
+   apx_server_t server;
+   apx_server_create(&server);
+
+   CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_configure(NULL, NULL));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, NULL));
+
+   apx_server_destroy(&server);
+}
+
+static void test_configure_server_security_require_signed_nodes(CuTest *tc)
+{
+   const char *filepath = "test_server_cfg_security.json";
+   const char *content =
+      "{\n"
+      "    \"apx-server\": {\n"
+      "        \"security\": {\n"
+      "            \"require-signed-nodes\": true\n"
+      "        }\n"
+      "    }\n"
+      "}\n";
+   write_test_file(filepath, content);
+
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(filepath, &cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+
+   apx_server_t server;
+   apx_server_create(&server);
+   CuAssertFalse(tc, apx_server_get_require_signed_nodes(&server));
+
+   result = apx_server_configure(&server, cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertTrue(tc, apx_server_get_require_signed_nodes(&server));
+
+   apx_server_destroy(&server);
+   dtl_dec_ref(cfg);
+   remove(filepath);
+}
+
+static void test_configure_server_security_trusted_keys(CuTest *tc)
+{
+   char *priv_pem = NULL;
+   char *pub_pem = NULL;
+   apx_error_t rc = apx_crypto_generate_keypair_pem(&priv_pem, &pub_pem);
+   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+
+   const char *key_file = "test_pubkey.pem";
+   write_test_file(key_file, pub_pem);
+
+   const char *filepath = "test_server_cfg_keys.json";
+   char content[2048];
+   snprintf(content, sizeof(content),
+      "{\n"
+      "    \"apx-server\": {\n"
+      "        \"security\": {\n"
+      "            \"require-signed-nodes\": true,\n"
+      "            \"trusted-keys\": [\"%s\"]\n"
+      "        }\n"
+      "    }\n"
+      "}\n", key_file);
+   write_test_file(filepath, content);
+
+   dtl_hv_t *cfg = NULL;
+   apx_error_t result = apx_server_load_config(filepath, &cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+
+   apx_server_t server;
+   apx_server_create(&server);
+   CuAssertIntEquals(tc, 0, apx_server_get_num_trusted_public_keys(&server));
+
+   result = apx_server_configure(&server, cfg);
+   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+   CuAssertTrue(tc, apx_server_get_require_signed_nodes(&server));
+   CuAssertIntEquals(tc, 1, apx_server_get_num_trusted_public_keys(&server));
+
+   apx_server_destroy(&server);
+   dtl_dec_ref(cfg);
+   remove(filepath);
+   remove(key_file);
+   free(priv_pem);
+   free(pub_pem);
 }

@@ -423,6 +423,36 @@ apx_error_t apx_server_test_connection_publish_remote_file(apx_server_test_conne
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_server_test_connection_publish_remote_signed_file(apx_server_test_connection_t* self, uint32_t address, char const* file_name, apx_size_t file_size, uint8_t signature_type, uint8_t const* signature_data)
+{
+   if (self != NULL && file_name != NULL)
+   {
+      uint8_t buffer[RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + RMF_SIGNED_FILE_INFO_HEADER_SIZE + RMF_FILE_NAME_MAX_SIZE];
+      rmf_file_info_t* file_info;
+      apx_file_manager_t* file_manager = apx_server_connection_get_file_manager(&self->base);
+      assert(file_manager != NULL);
+
+      if (rmf_address_encode(buffer, RMF_HIGH_ADDR_SIZE, RMF_CMD_AREA_START_ADDRESS, false) != RMF_HIGH_ADDR_SIZE)
+      {
+         return APX_INTERNAL_ERROR;
+      }
+      file_info = rmf_file_info_make_fixed_with_signature(file_name, file_size, address, signature_type, signature_data);
+      if (file_info == NULL)
+      {
+         return APX_MEM_ERROR;
+      }
+      apx_size_t const max_cmd_size = sizeof(buffer) - RMF_HIGH_ADDR_SIZE;
+      apx_size_t cmd_size = rmf_encode_publish_signed_file_cmd(buffer + RMF_HIGH_ADDR_SIZE, max_cmd_size, file_info);
+      rmf_file_info_delete(file_info);
+      if (cmd_size == 0)
+      {
+         return APX_INTERNAL_ERROR;
+      }
+      return apx_file_manager_message_received(file_manager, buffer, RMF_HIGH_ADDR_SIZE + cmd_size);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_error_t apx_server_test_connection_write_remote_data(apx_server_test_connection_t* self, uint32_t address, uint8_t const* payload_data, apx_size_t payload_size)
 {
    if ((self != NULL) && (payload_size > 0))

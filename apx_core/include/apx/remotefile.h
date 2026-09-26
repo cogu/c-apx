@@ -34,6 +34,13 @@ typedef uint8_t rmf_digest_type_t;
 #define RMF_DIGEST_TYPE_SHA1   ((rmf_digest_type_t) 1u)
 #define RMF_DIGEST_TYPE_SHA256 ((rmf_digest_type_t) 2u)
 
+typedef uint8_t rmf_signature_type_t;
+#define RMF_SIGNATURE_TYPE_NONE          ((rmf_signature_type_t) 0u)
+#define RMF_SIGNATURE_TYPE_ECDSA_P256    ((rmf_signature_type_t) 1u)
+
+#define RMF_SIGNATURE_SIZE_ECDSA_P256    64u
+#define RMF_MAX_SIGNATURE_SIZE           64u
+
 #define RMF_REMOTE_ADDRESS_BIT    ((uint32_t) 0x80000000) //This is overlayed with RMF_HIGH_ADDR_BIT
 #define RMF_INVALID_ADDRESS       ((uint32_t) 0x7FFFFFFF) //This is outside the valid address region of 30 bits
 #define RMF_ADDRESS_MASK          ((uint32_t) 0x3FFFFFFF) //A true remote address can be at most 30 bits long
@@ -59,9 +66,10 @@ typedef uint8_t rmf_digest_type_t;
 #define RMF_HIGH_ADDR_BIT          ((uint32_t) 0x80000000) //This is overlayed with RMF_REMOTE_ADDRESS_BIT
 #define RMF_U8_MORE_BIT            ((uint8_t)0x40)
 #define RMF_U8_HIGH_ADDR_BIT       ((uint8_t)0x80)
-#define RMF_MAX_FILE_NAME_SIZE     255u
-#define RMF_FILE_INFO_HEADER_SIZE  48u
-#define RMF_FILE_NAME_MAX_SIZE     RMF_MAX_FILE_NAME_SIZE
+#define RMF_MAX_FILE_NAME_SIZE          255u
+#define RMF_FILE_INFO_HEADER_SIZE       48u
+#define RMF_SIGNED_FILE_INFO_HEADER_SIZE 80u
+#define RMF_FILE_NAME_MAX_SIZE          RMF_MAX_FILE_NAME_SIZE
 
 //RMFP 1.0 commands
 #define RMF_CMD_ACK_MSG            ((uint32_t) 0u)
@@ -73,9 +81,10 @@ typedef uint8_t rmf_digest_type_t;
 #define RMF_CMD_CLOSE_FILE_MSG     ((uint32_t) 11u)
 
 //RMFP 1.1 commands
-#define RMF_CMD_ACCEPT_HEADER      ((uint32_t) 20u)
-#define RMF_CMD_CONNECTION_CREATE  ((uint32_t) 21u)
-#define RMF_CMD_CONNECTION_REVOKE  ((uint32_t) 22u)
+#define RMF_CMD_ACCEPT_HEADER           ((uint32_t) 20u)
+#define RMF_CMD_CONNECTION_CREATE       ((uint32_t) 21u)
+#define RMF_CMD_CONNECTION_REVOKE       ((uint32_t) 22u)
+#define RMF_CMD_PUBLISH_SIGNED_FILE_MSG ((uint32_t) 23u)
 
 #define RMF_FILE_OPEN_CMD_SIZE     UINT32_SIZE
 #define RMF_FILE_CLOSE_CMD_SIZE    UINT32_SIZE
@@ -88,9 +97,11 @@ typedef uint8_t rmf_digest_type_t;
 #define RMF_U16_FILE_TYPE_DYNAMIC32 ((uint16_t) 3u)
 #define RMF_U16_FILE_TYPE_DEVICE    ((uint16_t) 4u)
 #define RMF_U16_FILE_TYPE_STREAM    ((uint16_t) 5u)
-#define RMF_U16_DIGEST_TYPE_NONE    ((uint16_t) 0u)
-#define RMF_U16_DIGEST_TYPE_SHA1    ((uint16_t) 1u)
-#define RMF_U16_DIGEST_TYPE_SHA256  ((uint16_t) 2u)
+#define RMF_U16_DIGEST_TYPE_NONE          ((uint16_t) 0u)
+#define RMF_U16_DIGEST_TYPE_SHA1          ((uint16_t) 1u)
+#define RMF_U16_DIGEST_TYPE_SHA256        ((uint16_t) 2u)
+#define RMF_U16_SIGNATURE_TYPE_NONE       ((uint16_t) 0u)
+#define RMF_U16_SIGNATURE_TYPE_ECDSA_P256 ((uint16_t) 1u)
 
 #define RMF_NUMHEADER_SIZE_16  UINT16_SIZE
 #define RMF_NUMHEADER_SIZE_32  UINT32_SIZE
