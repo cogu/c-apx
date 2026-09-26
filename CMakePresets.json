@@ -45,7 +45,7 @@
     {
       "name": "clang-asan",
       "displayName": "Clang 18 Address and Undefined Behavior Sanitizers",
-      "inherits": "clang-test",
+      "inherits": "clang-debug",
       "cacheVariables": {
         "APX_SANITIZERS": "address,undefined"
       }
@@ -53,7 +53,7 @@
     {
       "name": "clang-tsan",
       "displayName": "Clang 18 Thread Sanitizer",
-      "inherits": "clang-test",
+      "inherits": "clang-debug",
       "cacheVariables": {
         "APX_SANITIZERS": "thread"
       }
@@ -124,17 +124,11 @@
     },
     {
       "name": "clang-asan",
-      "configurePreset": "clang-asan",
-      "targets": [
-        "apx_unit"
-      ]
+      "configurePreset": "clang-asan"
     },
     {
       "name": "clang-tsan",
-      "configurePreset": "clang-tsan",
-      "targets": [
-        "apx_unit"
-      ]
+      "configurePreset": "clang-tsan"
     },
     {
       "name": "clang-tidy",
@@ -160,6 +154,13 @@
     }
   ],
   "testPresets": [
+    {
+      "name": "clang-debug",
+      "configurePreset": "clang-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
     {
       "name": "clang-test",
       "configurePreset": "clang-test",

@@ -207,14 +207,6 @@ def _find_binary(env_var: str, app_name: str) -> str:
         return env_bin
 
     repo_root = Path(__file__).resolve().parent.parent
-    presets = [
-        "clang-debug",
-        "clang-release",
-        "gcc-release",
-        "gcc-debug",
-        "",
-        "clang-test",
-    ]
 
     names_to_try = [app_name]
     alt_name = app_name.replace("-", "_") if "-" in app_name else app_name.replace("_", "-")
@@ -224,6 +216,22 @@ def _find_binary(env_var: str, app_name: str) -> str:
     dir_names = list(dict.fromkeys([app_name.replace("-", "_"), app_name]))
 
     candidate_paths = []
+
+    # If APX_BUILD_DIR is set, prioritize searching in that specific build directory
+    build_dir_env = os.environ.get("APX_BUILD_DIR")
+    if build_dir_env:
+        base = Path(build_dir_env) / "app"
+        for d in dir_names:
+            for n in names_to_try:
+                candidate_paths.append(base / d / n)
+
+    presets = [
+        "clang-debug",
+        "clang-release",
+        "gcc-release",
+        "gcc-debug",
+    ]
+
     for preset in presets:
         base = repo_root / "build" / preset / "app" if preset else repo_root / "build" / "app"
         for d in dir_names:
