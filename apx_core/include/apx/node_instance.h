@@ -17,8 +17,8 @@
 #include "adt_ary.h"
 #include "apx/byte_port_map.h"
 #include "apx/types.h"
-#include "apx/types.h"
 #include "apx/port_instance.h"
+#include "apx/remotefile.h"
 #include "apx/error.h"
 #include "apx/program.h"
 #include "apx/node_data.h"
@@ -80,6 +80,8 @@ typedef struct apx_node_instance_tag
    apx_file_t* require_port_count_file; //Weak reference
    int32_t major_version; // APX version of the associated node (major)
    int32_t minor_version; // APX version of the associated node (minor)
+   rmf_signature_type_t signature_type;
+   uint8_t signature_data[RMF_SIGNATURE_SIZE_ECDSA_P256];
    bool is_closing;
    MUTEX_T lock;
 } apx_node_instance_t;
@@ -92,6 +94,7 @@ void apx_node_instance_destroy(apx_node_instance_t *self);
 apx_node_instance_t *apx_node_instance_new(apx_mode_t mode, char const* name);
 void apx_node_instance_delete(apx_node_instance_t *self);
 void apx_node_instance_vdelete(void *arg);
+apx_error_t apx_node_instance_set_signature(apx_node_instance_t* self, rmf_signature_type_t sig_type, uint8_t const* sig_data);
 
 char const* apx_node_instance_get_name(apx_node_instance_t const* self);
 apx_size_t apx_node_instance_get_num_data_elements(apx_node_instance_t const* self);

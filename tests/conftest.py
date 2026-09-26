@@ -291,6 +291,12 @@ def apx_control_bin() -> str:
     return _find_binary("APX_CONTROL_BIN", "apx-control")
 
 
+@pytest.fixture(scope="session")
+def apx_sign_bin() -> str:
+    """Finds the apx-sign executable from environment or build directories."""
+    return _find_binary("APX_SIGN_BIN", "apx-sign")
+
+
 @pytest.fixture
 def apx_control(apx_control_bin: str) -> ApxControl:
     """Fixture providing an ApxControl helper instance."""

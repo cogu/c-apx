@@ -1,82 +1,136 @@
-# apx_node
+# apx-node
 
 ## Synopsis
 
 ```text
-apx_node   [-b --bind bind_path] [-p --bind-port port] [--no-bind]
+apx-node   [-b --bind bind_path] [-p --bind-port port] [--no-bind]
            [-c --connect connect_path] [-r --connect-port connect_port]
+           [--no-signature]
            [--version] [--help]
            file
 ```
 
 ## Description
 
-Starts a console application that takes these initial actions:
+`apx-node` starts a console application that takes the following initial actions:
 
-- Creates dynamic APX client based on definition given by *file* argument.
-- Creates a socket server (UNIX or TCP) based on the *bind* options given. (Defaults are used otherwise.)
-- Connects to an APX server based on the *connect* options given. (Defaults are used otherwise.)
+- Creates a dynamic APX client based on the definition given by the *file* argument (`.apx`).
+- Automatically searches for and loads companion cryptographic signature files (`.apx.sig` or `.sig`).
+- Creates a JSON message router socket server (UNIX domain socket or TCP) based on the *bind* options given, unless `--no-bind` is specified.
+- Connects to an APX server based on the *connect* options given.
 
-Once these preparatory steps have been taken it provides the following functionality.
+Once these preparatory steps have completed, it provides the following runtime functionality:
 
-- It listens for JSON messages on the bound socket.
-- Connected clients can use this to control values
-of provide ports of the node by sending JSON.
-- It also listens for APX messages from the APX server.
-- When any require ports (of the APX node) change value
-the new value is printed to stdout.
+- **JSON Signal Control**: Listens for JSON messages on the bound socket. Connected external clients can use this socket to inspect and set provide-port values of the node.
+- **APX Server Communication**: Exchanging port data over the Remote File Protocol (RMFP) with `apx-server`.
+- **Require-Port Monitoring**: When any require-port of the APX node changes value, the new signal value is formatted as JSON and printed to `stdout`.
 
 ## Mandatory Arguments
 
 ```text
-file     path to an APX definition file (.apx)
+file     Path to an APX definition file (.apx)
 ```
 
 ## Options
 
 ```text
 -b --bind address_or_path
-                Either TCP address or UNIX socket to bind to for receiving
-                provide-port data updates.
+                Either TCP address or UNIX domain socket path to bind for
+                receiving provide-port data updates via JSON.
 
 -p --bind-port port
-                Port number for server socket (not applicable when path is
-                UNIX socket).
+                Port number for JSON message server socket (TCP only; not
+                applicable when using UNIX domain sockets).
+
+--no-bind
+                Do not start the JSON message server. Runs the node purely
+                as an APX client and signal observer.
 
 -c --connect address_or_path
-                Either TCP address or path to UNIX socket to connect to for receiving
-                require-port data updates.
+                Either TCP address/hostname or path to UNIX domain socket to
+                connect to the APX server daemon.
 
 -r --connect-port connect_port
-                Port number for APX client socket (not applicable when path is
-                UNIX socket).
+                Port number for APX server socket (TCP only; not applicable
+                when using UNIX domain sockets).
 
+--no-signature
+                Ignore companion signature file (.sig) even if one exists in the
+                same directory, and force publishing as an unsigned node (RMFP/1.0).
+
+--version
+                Print version information and exit.
+
+-h --help
+                Print help message and exit.
 ```
+
+## Cryptographic Signature Support
+
+`apx-node` supports secure signal publishing through cryptographic authentication (RMFP/1.1):
+
+1. **Automatic Discovery**: When given `file.apx`, `apx-node` automatically checks for a companion signature in the same directory:
+   - `<file.apx>.sig`
+   - `<file>.sig`
+2. **Seamless Elevation**: If a valid 64-byte ECDSA NIST P-256 signature is detected, `apx-node` automatically:
+   - Attaches the signature to the definition file metadata.
+   - Negotiates protocol version `RMFP/1.1` with the server.
+   - Publishes the definition using `RMF_CMD_PUBLISH_SIGNED_FILE_MSG`.
+3. **Server Verification**: An `apx-server` configured with `require-signed-nodes: true` will verify the signature against its trusted public keys before accepting the node.
+4. **Override (`--no-signature`)**: If you need to run the node in legacy unsigned mode (e.g. against an older `apx-server` or during development), specify `--no-signature` to bypass auto-discovery.
+
+Signature files can be generated using the [`apx-sign`](../apx_sign/README.md) CLI utility.
 
 ## Option Default Values
 
 ### Linux Defaults
 
 ```text
---bind-path     /tmp/apx_node.socket
---connect-path  /tmp/apx.socket
+--bind          /tmp/apx_node.socket
 --bind-port     5100
+--connect       /tmp/apx.socket
 --connect-port  5000
 ```
 
 ### Windows Defaults
 
 ```text
---bind-path     127.0.0.1
---connect-path  127.0.0.1
+--bind          127.0.0.1
 --bind-port     5100
+--connect       127.0.0.1
 --connect-port  5000
 ```
 
 ## Example Usage
 
+### Standard Usage
+
+Connect to default local UNIX socket server:
+
 ```bash
-apx_node -b /tmp/vehicle.socket -c /tmp/apx.socket vehicle.apx
-apx_node -b /tmp/vehicle.socket -c 192.168.1.19 vehicle.apx
-apx_node -p 5101 -r 5001 vehicle.apx
+apx-node vehicle.apx
+```
+
+### Connect to Custom APX Server Socket
+
+```bash
+apx-node -c /tmp/my_apx.socket vehicle.apx
+```
+
+### Connect over TCP/IP
+
+```bash
+apx-node -c 192.168.1.19 -r 5000 -p 5101 vehicle.apx
+```
+
+### Run as Observer / Listener (No JSON Router)
+
+```bash
+apx-node --no-bind -c /tmp/apx.socket listener.apx
+```
+
+### Ignore Existing Signature File
+
+```bash
+apx-node --no-signature vehicle.apx
 ```

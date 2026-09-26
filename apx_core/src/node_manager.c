@@ -171,6 +171,10 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t* self, apx_
                                                                       definition_data, definition_size);
          if (verify_result != APX_NO_ERROR)
          {
+            char msg[80];
+            sprintf(msg, "verify_result: %s\n", apx_strerror(verify_result));
+            apx_server_log_write(server, APX_LOG_LEVEL_WARNING, "NODE_MANAGER", msg);
+
             free(definition_data);
             char const* name = apx_node_instance_get_name(node_instance);
             if (name != NULL)

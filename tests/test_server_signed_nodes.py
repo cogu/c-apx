@@ -290,3 +290,147 @@ def test_server_signed_node_full_handshake(tmp_path: Path, apx_server_bin: str):
             f"apx_server exited with unexpected code: {server.process.returncode}\n"
             f"--- Server stderr ---\n{server.stderr}"
         )
+
+
+def test_apx_sign_cli(tmp_path: Path, apx_sign_bin: str):
+    """
+    Test the apx-sign CLI utility:
+    1. Keypair generation (keygen)
+    2. Signing an APX node definition file
+    3. Verifying the signature against the public key
+    4. Detecting tampering
+    """
+    key_prefix = tmp_path / "cli_key"
+    res = subprocess.run([apx_sign_bin, "keygen", str(key_prefix)], capture_output=True, text=True)
+    assert res.returncode == 0, f"keygen failed: {res.stderr}"
+
+    privkey = tmp_path / "cli_key_key.pem"
+    pubkey = tmp_path / "cli_key_pubkey.pem"
+    assert privkey.exists()
+    assert pubkey.exists()
+
+    apx_file = tmp_path / "MyNode.apx"
+    apx_file.write_text('APX/1.2\nN"MyNode"\nR"Speed"S:=0\n', encoding="utf-8")
+
+    # Sign using -k
+    res = subprocess.run([apx_sign_bin, "-k", str(privkey), str(apx_file)], capture_output=True, text=True)
+    assert res.returncode == 0, f"signing failed: {res.stderr}"
+    sig_file = tmp_path / "MyNode.apx.sig"
+    assert sig_file.exists()
+    assert sig_file.stat().st_size == 64
+
+    # Verify using verify subcommand
+    res = subprocess.run([apx_sign_bin, "verify", "-k", str(pubkey), str(apx_file)], capture_output=True, text=True)
+    assert res.returncode == 0, f"verification failed: {res.stderr}"
+    assert "is valid" in res.stdout
+
+    # Tamper with file
+    apx_file.write_text('APX/1.2\nN"MyNode"\nR"Speed"S:=100\n', encoding="utf-8")
+    res = subprocess.run([apx_sign_bin, "verify", "-k", str(pubkey), str(apx_file)], capture_output=True, text=True)
+    assert res.returncode != 0
+    assert "verification failed" in res.stderr.lower()
+
+
+def test_apx_node_auto_signature_and_no_signature_flag(
+    tmp_path: Path, apx_server_bin: str, apx_node_bin: str, apx_sign_bin: str
+):
+    """
+    Test apx-node automatic companion signature loading and --no-signature flag:
+    1. Node with companion .sig connects successfully to a server requiring signed nodes.
+    2. Node with --no-signature is rejected by the server even though .sig exists.
+    """
+    # 1. Generate keypair
+    key_prefix = tmp_path / "node_key"
+    res = subprocess.run([apx_sign_bin, "keygen", str(key_prefix)], capture_output=True, text=True)
+    assert res.returncode == 0
+    privkey = tmp_path / "node_key_key.pem"
+    pubkey = tmp_path / "node_key_pubkey.pem"
+
+    # 2. Create and sign node definition
+    apx_file = tmp_path / "SensorNode.apx"
+    apx_file.write_text('APX/1.2\nN"SensorNode"\nP"VehicleSpeed"S:=0\n', encoding="utf-8")
+    res = subprocess.run([apx_sign_bin, "-k", str(privkey), str(apx_file)], capture_output=True, text=True)
+    assert res.returncode == 0
+    assert (tmp_path / "SensorNode.apx.sig").exists()
+
+    # 3. Start apx-server requiring signed nodes
+    socket_path = str(tmp_path / "apx.socket")
+    config_file = str(tmp_path / "server.json")
+    config = {
+        "apx-server": {
+            "security": {
+                "require-signed-nodes": True,
+                "trusted-keys": [str(pubkey)],
+            }
+        },
+        "socket-server-extension": {
+            "unix-file": socket_path
+        }
+    }
+    with open(config_file, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+
+    r_fd, w_fd = os.pipe()
+    os.set_inheritable(w_fd, True)
+    cmd = [apx_server_bin, "--ready-fd", str(w_fd), config_file]
+    server_proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        pass_fds=(w_fd,),
+        preexec_fn=_set_pdeathsig,
+    )
+    os.close(w_fd)
+
+    rlist, _, _ = select.select([r_fd], [], [], 3.0)
+    assert rlist, "Server failed to signal readiness"
+    os.read(r_fd, 1)
+    os.close(r_fd)
+
+    server = ApxServerInstance(server_proc, socket_path, tmp_path)
+
+    stdbuf_bin = shutil.which("stdbuf")
+
+    try:
+        # TEST 1: Launch apx-node WITHOUT --no-signature (auto-detects .sig)
+        node_cmd = [apx_node_bin, "-c", socket_path, "--no-bind", str(apx_file)]
+        if stdbuf_bin:
+            node_cmd = [stdbuf_bin, "-oL", *node_cmd]
+        node_proc = subprocess.Popen(
+            node_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            preexec_fn=_set_pdeathsig,
+        )
+
+        time.sleep(0.5)
+
+        node_proc.terminate()
+        stdout1, _ = node_proc.communicate(timeout=2.0)
+        assert "Found signature:" in stdout1
+        assert "connected to APX server" in stdout1
+
+        # TEST 2: Launch apx-node WITH --no-signature
+        node_cmd2 = [apx_node_bin, "-c", socket_path, "--no-bind", "--no-signature", str(apx_file)]
+        if stdbuf_bin:
+            node_cmd2 = [stdbuf_bin, "-oL", *node_cmd2]
+        node_proc2 = subprocess.Popen(
+            node_cmd2,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            preexec_fn=_set_pdeathsig,
+        )
+
+        time.sleep(0.5)
+
+        node_proc2.terminate()
+        stdout2, _ = node_proc2.communicate(timeout=2.0)
+        assert "Found signature:" not in stdout2
+
+    finally:
+        server.stop(timeout=2.0)
+        assert server.process.returncode == 0
+
+

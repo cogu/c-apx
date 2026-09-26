@@ -369,7 +369,14 @@ static void send_default_greeting_header(apx_client_connection_t* self)
    int message_format = 32;
    char greeting[RMF_GREETING_MAX_LEN];
    char* p = &greeting[0];
-   strcpy(greeting, RMF_GREETING_1_0_START);
+   if (self->base.rmf_version_id >= RMF_PROTOCOL_VERSION_ID_1_1)
+   {
+      strcpy(greeting, RMF_GREETING_1_1_START);
+   }
+   else
+   {
+      strcpy(greeting, RMF_GREETING_1_0_START);
+   }
    p += strlen(greeting);
    p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_SIZE_HDR, message_format);
    greeting_size = (int32_t)(p - greeting);
