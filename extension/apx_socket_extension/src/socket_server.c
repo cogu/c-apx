@@ -250,6 +250,7 @@ static void apx_socket_server_tcp_accept(void *arg, struct msocket_server_tag *s
 static void apx_socket_server_unix_accept(void *arg, struct msocket_server_tag *srv, void *sock)
 {
    apx_socket_server_t *self = (apx_socket_server_t*) arg;
+   (void)srv;
 #if APX_DEBUG_ENABLE
    printf("[SOCKET-SERVER] New UNIX connection\n");
 #endif

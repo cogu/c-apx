@@ -61,8 +61,6 @@ static bool m_is_requester = true;
 static uint16_t m_pos_arg_count = 0u;
 static uint16_t m_connect_port;
 static adt_str_t* m_connect_address = NULL;
-static adt_str_t* m_message = NULL;
-static adt_str_t* m_input_file_path = NULL;
 static adt_str_t* m_name = NULL;
 static adt_str_t* m_value = NULL;
 static msocket_endpoint_type_t m_connect_resource_type = MSOCKET_ENDPOINT_UNKNOWN;

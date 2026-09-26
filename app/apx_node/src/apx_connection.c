@@ -204,6 +204,7 @@ static void apx_connection_on_connect(void* arg, apx_client_connection_t* client
 static void apx_connection_on_disconnect(void* arg, apx_client_connection_t* client_connection)
 {
    (void)arg;
+   (void)client_connection;
    printf("[APX-CONNECTION] Disconnected from APX server\n");
 }
 
