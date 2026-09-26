@@ -28,6 +28,8 @@ typedef struct rmf_file_info_tag
    rmf_file_type_t rmf_file_type;
    rmf_digest_type_t digest_type;
    uint8_t digest_data[RMF_SHA256_SIZE];
+   rmf_signature_type_t signature_type;
+   uint8_t signature_data[RMF_SIGNATURE_SIZE_ECDSA_P256];
    adt_str_t name;
 } rmf_file_info_t;
 
@@ -39,6 +41,7 @@ typedef struct rmf_file_info_tag
 rmf_file_info_t* rmf_file_info_make_empty(void);
 rmf_file_info_t* rmf_file_info_make_fixed(char const* name, uint32_t size, uint32_t address);
 rmf_file_info_t* rmf_file_info_make_fixed_with_digest(char const* name, uint32_t size, uint32_t address, rmf_digest_type_t digest_type, uint8_t const* digest_data);
+rmf_file_info_t* rmf_file_info_make_fixed_with_signature(char const* name, uint32_t size, uint32_t address, rmf_signature_type_t signature_type, uint8_t const* signature_data);
 
 apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32_t size, const char *name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t *digest_data);
 apx_error_t rmf_file_info_create_copy(rmf_file_info_t* self, rmf_file_info_t const* other);
@@ -54,6 +57,9 @@ uint32_t rmf_file_info_size(rmf_file_info_t const* self);
 rmf_file_type_t rmf_file_info_rmf_file_type(rmf_file_info_t const* self);
 rmf_digest_type_t rmf_file_info_digest_type(rmf_file_info_t const* self);
 uint8_t const* rmf_file_info_digest_data(rmf_file_info_t const* self);
+rmf_signature_type_t rmf_file_info_signature_type(rmf_file_info_t const* self);
+uint8_t const* rmf_file_info_signature_data(rmf_file_info_t const* self);
+bool rmf_file_info_is_signed(rmf_file_info_t const* self);
 apx_error_t rmf_file_info_assign(rmf_file_info_t *self, const rmf_file_info_t *other);
 rmf_file_info_t* rmf_file_info_clone(const rmf_file_info_t *other);
 void rmf_file_info_set_address(rmf_file_info_t *self, uint32_t address);
@@ -64,12 +70,16 @@ void rmf_file_info_copy_base_name(rmf_file_info_t const* self, char *dest, uint3
 
 bool rmf_file_info_address_in_range(rmf_file_info_t const* self, uint32_t address);
 apx_error_t rmf_file_info_set_digest_data(rmf_file_info_t* self, rmf_digest_type_t digest_type, const uint8_t* digest_data);
+apx_error_t rmf_file_info_set_signature(rmf_file_info_t* self, rmf_signature_type_t signature_type, const uint8_t* signature_data);
 
 //stateless functions
 apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_file_info_t const* file);
 apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, rmf_file_info_t* file_info);
+apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_file_info_t const* file);
+apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const* buf, apx_size_t buf_size, rmf_file_info_t* file_info);
 bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t* file_type);
 bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t* digest_type);
+bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t* signature_type);
 
 
 #endif //RMF_FILE_INFO_H

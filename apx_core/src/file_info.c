@@ -57,6 +57,21 @@ rmf_file_info_t* rmf_file_info_make_fixed_with_digest(char const* name, uint32_t
    return rmf_file_info_new(address, size, name, RMF_FILE_TYPE_FIXED, digest_type, digest_data);
 }
 
+rmf_file_info_t* rmf_file_info_make_fixed_with_signature(char const* name, uint32_t size, uint32_t address, rmf_signature_type_t signature_type, uint8_t const* signature_data)
+{
+   rmf_file_info_t* self = rmf_file_info_new(address, size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+   if (self != NULL)
+   {
+      apx_error_t rc = rmf_file_info_set_signature(self, signature_type, signature_data);
+      if (rc != APX_NO_ERROR)
+      {
+         rmf_file_info_delete(self);
+         self = NULL;
+      }
+   }
+   return self;
+}
+
 apx_error_t rmf_file_info_create(rmf_file_info_t* self, uint32_t address, uint32_t size, const char* name, rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t* digest_data)
 {
    if (self != NULL)
@@ -66,6 +81,8 @@ apx_error_t rmf_file_info_create(rmf_file_info_t* self, uint32_t address, uint32
       self->size = size;
       self->rmf_file_type = file_type;
       self->digest_type = digest_type;
+      self->signature_type = RMF_SIGNATURE_TYPE_NONE;
+      memset(&self->signature_data[0], 0, sizeof(self->signature_data));
       adt_str_create(&self->name);
       if (name != NULL)
       {
@@ -89,6 +106,8 @@ apx_error_t rmf_file_info_create_copy(rmf_file_info_t* self, rmf_file_info_t con
       self->size = other->size;
       self->rmf_file_type = other->rmf_file_type;
       self->digest_type = other->digest_type;
+      self->signature_type = other->signature_type;
+      memcpy(&self->signature_data[0], &other->signature_data[0], sizeof(self->signature_data));
       adt_str_create(&self->name);
       result = adt_str_set(&self->name, &other->name);
       if (result != ADT_NO_ERROR)
@@ -191,6 +210,33 @@ uint8_t const* rmf_file_info_digest_data(rmf_file_info_t const* self)
    return NULL;
 }
 
+rmf_signature_type_t rmf_file_info_signature_type(rmf_file_info_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->signature_type;
+   }
+   return RMF_SIGNATURE_TYPE_NONE;
+}
+
+uint8_t const* rmf_file_info_signature_data(rmf_file_info_t const* self)
+{
+   if (self != NULL)
+   {
+      return &self->signature_data[0];
+   }
+   return NULL;
+}
+
+bool rmf_file_info_is_signed(rmf_file_info_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->signature_type != RMF_SIGNATURE_TYPE_NONE;
+   }
+   return false;
+}
+
 apx_error_t rmf_file_info_assign(rmf_file_info_t* self, const rmf_file_info_t* other)
 {
    if ((self != NULL) && (other != NULL))
@@ -200,6 +246,8 @@ apx_error_t rmf_file_info_assign(rmf_file_info_t* self, const rmf_file_info_t* o
       self->size = other->size;
       self->rmf_file_type = other->rmf_file_type;
       self->digest_type = other->digest_type;
+      self->signature_type = other->signature_type;
+      memcpy(&self->signature_data[0], &other->signature_data[0], sizeof(self->signature_data));
       result = adt_str_set(&self->name, &other->name);
       if (result != ADT_NO_ERROR)
       {
@@ -217,8 +265,7 @@ rmf_file_info_t* rmf_file_info_clone(const rmf_file_info_t* other)
       rmf_file_info_t* self = (rmf_file_info_t*)malloc(sizeof(rmf_file_info_t));
       if (self != NULL)
       {
-         apx_error_t rc = rmf_file_info_create(self, other->address, other->size, adt_str_cstr((adt_str_t*)&other->name),
-            other->rmf_file_type, other->digest_type, other->digest_data);
+         apx_error_t rc = rmf_file_info_create_copy(self, other);
          if (rc != APX_NO_ERROR)
          {
             free(self);
@@ -332,6 +379,30 @@ apx_error_t rmf_file_info_set_digest_data(rmf_file_info_t* self, rmf_digest_type
          memset(&self->digest_data[0], 0, sizeof(self->digest_data));
       }
       return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t rmf_file_info_set_signature(rmf_file_info_t* self, rmf_signature_type_t signature_type, const uint8_t* signature_data)
+{
+   if (self != NULL)
+   {
+      if (signature_type == RMF_SIGNATURE_TYPE_NONE)
+      {
+         self->signature_type = RMF_SIGNATURE_TYPE_NONE;
+         memset(&self->signature_data[0], 0, sizeof(self->signature_data));
+         return APX_NO_ERROR;
+      }
+      else if (signature_type == RMF_SIGNATURE_TYPE_ECDSA_P256)
+      {
+         if (signature_data == NULL)
+         {
+            return APX_INVALID_ARGUMENT_ERROR;
+         }
+         self->signature_type = signature_type;
+         memcpy(&self->signature_data[0], signature_data, RMF_SIGNATURE_SIZE_ECDSA_P256);
+         return APX_NO_ERROR;
+      }
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -485,6 +556,116 @@ bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t* digest_type)
    return false;
 }
 
+apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_file_info_t const* file)
+{
+   if ((buf != NULL) && (file != NULL))
+   {
+      const char* name = rmf_file_info_name(file);
+      apx_size_t const name_size = (apx_size_t)strlen(name);
+      apx_size_t const required_size = RMF_SIGNED_FILE_INFO_HEADER_SIZE + name_size + 1u; //Add 1 for null-terminator
+      uint8_t* p = buf;
+      uint8_t const* signature_data = rmf_file_info_signature_data(file);
+      if (required_size > buf_size)
+      {
+         return 0u;
+      }
+      if (signature_data == NULL)
+      {
+         return 0u;
+      }
+      packLE(p, RMF_CMD_PUBLISH_SIGNED_FILE_MSG, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_file_info_address_without_flags(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_file_info_size(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, (uint32_t)rmf_file_info_rmf_file_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      packLE(p, (uint32_t)rmf_file_info_signature_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      switch (rmf_file_info_signature_type(file))
+      {
+      case RMF_SIGNATURE_TYPE_NONE:
+         memset(p, 0, RMF_SIGNATURE_SIZE_ECDSA_P256);
+         break;
+      case RMF_SIGNATURE_TYPE_ECDSA_P256:
+         memcpy(p, signature_data, RMF_SIGNATURE_SIZE_ECDSA_P256);
+         break;
+      default:
+         return 0u;
+      }
+      p += RMF_SIGNATURE_SIZE_ECDSA_P256;
+      assert((p + name_size + 1) == buf + required_size);
+      memcpy(p, name, name_size); p += name_size;
+      *p = 0u;
+      return required_size;
+   }
+   return 0u;
+}
+
+/**
+* Returns number of bytes consumed from buffer
+*/
+apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const* buf, apx_size_t buf_size, rmf_file_info_t* file_info)
+{
+   if ((buf != NULL) && (file_info != NULL))
+   {
+      uint8_t const* next = buf;
+      uint8_t const* end = buf + buf_size;
+      if ((next + RMF_SIGNED_FILE_INFO_HEADER_SIZE) < end)
+      {
+         uint32_t const cmd_type = unpackLE(next, UINT32_SIZE); next += UINT32_SIZE;
+         uint16_t value1;
+         uint16_t value2;
+         if (cmd_type != RMF_CMD_PUBLISH_SIGNED_FILE_MSG)
+         {
+            //Invalid command type
+            return 0u;
+         }
+         file_info->address = unpackLE(next, (uint8_t)UINT32_SIZE); next += UINT32_SIZE;
+         file_info->size = unpackLE(next, (uint8_t)UINT32_SIZE); next += UINT32_SIZE;
+         value1 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE); next += sizeof(uint16_t);
+         value2 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE); next += sizeof(uint16_t);
+         memcpy(&file_info->signature_data[0], next, RMF_SIGNATURE_SIZE_ECDSA_P256); next += RMF_SIGNATURE_SIZE_ECDSA_P256;
+         if (!rmf_value_to_file_type(value1, &file_info->rmf_file_type))
+         {
+            return 0u;
+         }
+         if (!rmf_value_to_signature_type(value2, &file_info->signature_type))
+         {
+            return 0u;
+         }
+         //The file name can either end with an optional null-terminator or the name string continues until end of message.
+         //Both variants are acceptable using the two lines below
+         uint8_t const* result = bstr_find_byte(next, end, 0);
+         if ((result > next) && (result <= end))
+         {
+            adt_str_set_bstr(&file_info->name, next, result);
+         }
+         else
+         {
+            return 0u;
+         }
+         return (apx_size_t)(result - buf);
+      }
+   }
+   return 0u;
+}
+
+bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t* signature_type)
+{
+   if (signature_type != NULL)
+   {
+      switch (value)
+      {
+      case RMF_U16_SIGNATURE_TYPE_NONE:
+         *signature_type = RMF_SIGNATURE_TYPE_NONE;
+         break;
+      case RMF_U16_SIGNATURE_TYPE_ECDSA_P256:
+         *signature_type = RMF_SIGNATURE_TYPE_ECDSA_P256;
+         break;
+      default:
+         return false;
+      }
+      return true;
+   }
+   return false;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

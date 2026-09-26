@@ -22,6 +22,7 @@
 #else
 #include <pthread.h>
 #endif
+#include "apx/remotefile.h"
 #include "apx/port_signature_map.h"
 #include "apx/server_extension.h"
 #include "apx/event_listener.h"
@@ -57,6 +58,8 @@ typedef struct apx_server_tag
                                                //2. Synchronize data routing
                                                //3. Controlling access to the global port_signature_map.
    MUTEX_T event_listener_lock;
+   bool require_signed_nodes;                  //If true, server rejects unsigned APX nodes
+   adt_ary_t trusted_public_keys;              //Array of adt_str_t* (PEM strings or raw public keys)
 #ifdef _WIN32
    unsigned int thread_id;
 #endif
@@ -96,6 +99,17 @@ apx_error_t apx_server_insert_modified_node_instance(apx_server_t *self, apx_nod
 adt_ary_t *apx_server_get_modified_node_instance(const apx_server_t *self);
 void apx_server_clear_port_connector_changes(apx_server_t *self);
 void apx_server_vdestroy_event(void *arg, apx_event_t* event);
+
+// Cryptographic signing & verification
+void apx_server_set_require_signed_nodes(apx_server_t *self, bool require_signed);
+bool apx_server_get_require_signed_nodes(apx_server_t const *self);
+apx_error_t apx_server_add_trusted_public_key(apx_server_t *self, const uint8_t *key_data, size_t key_len);
+apx_error_t apx_server_add_trusted_public_key_file(apx_server_t *self, const char *filepath);
+int32_t apx_server_get_num_trusted_public_keys(apx_server_t const *self);
+apx_error_t apx_server_verify_node_signature(apx_server_t const *self,
+                                             rmf_signature_type_t sig_type,
+                                             const uint8_t *sig_data, size_t sig_len,
+                                             const uint8_t *data, size_t data_len);
 
 
 #ifdef UNIT_TEST

@@ -97,6 +97,9 @@ rmf_file_info_t const* apx_file_get_file_info(const apx_file_t* self);
 rmf_file_info_t* apx_file_clone_file_info(const apx_file_t* self);
 rmf_digest_type_t apx_file_get_digest_type(apx_file_t const* self);
 uint8_t const* apx_file_get_digest_data(const apx_file_t* self);
+rmf_signature_type_t apx_file_get_signature_type(apx_file_t const* self);
+uint8_t const* apx_file_get_signature_data(const apx_file_t* self);
+bool apx_file_is_signed(const apx_file_t* self);
 apx_error_t apx_file_open_notify(apx_file_t* self);
 apx_error_t apx_file_write_notify(apx_file_t* self, uint32_t offset, const uint8_t* src, uint32_t len);
 

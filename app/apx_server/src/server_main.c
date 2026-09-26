@@ -174,6 +174,17 @@ int main(int argc, char **argv)
    signal_handler_setup();
 #endif
    apx_server_create(&m_server);
+   result = apx_server_configure(&m_server, config);
+   if (result != APX_NO_ERROR)
+   {
+      fprintf(stderr, "Failed to configure server: %s (error %d)\n", apx_strerror(result), (int) result);
+      apx_server_destroy(&m_server);
+      if (config != NULL)
+      {
+         dtl_dec_ref(config);
+      }
+      return 1;
+   }
    result = register_apx_server_extensions(&m_server, config);
    if (result != APX_NO_ERROR)
    {

@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "apx/node_manager.h"
+#include "apx/server.h"
 #include "apx/vm.h"
 #include "apx/connection_base.h"
 #ifdef MEM_LEAK_CHECK
@@ -156,6 +157,29 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t* self, apx_
       if (definition_data == NULL)
       {
          return APX_MEM_ERROR;
+      }
+      apx_server_t* server = apx_node_instance_get_server(node_instance);
+      if (server != NULL)
+      {
+         apx_file_t* def_file = apx_node_instance_get_definition_file(node_instance);
+         rmf_signature_type_t sig_type = (def_file != NULL) ? apx_file_get_signature_type(def_file) : RMF_SIGNATURE_TYPE_NONE;
+         uint8_t const* sig_data = (def_file != NULL) ? apx_file_get_signature_data(def_file) : NULL;
+         size_t sig_len = (sig_type == RMF_SIGNATURE_TYPE_ECDSA_P256) ? RMF_SIGNATURE_SIZE_ECDSA_P256 : 0;
+
+         apx_error_t verify_result = apx_server_verify_node_signature(server,
+                                                                      sig_type, sig_data, sig_len,
+                                                                      definition_data, definition_size);
+         if (verify_result != APX_NO_ERROR)
+         {
+            free(definition_data);
+            char const* name = apx_node_instance_get_name(node_instance);
+            if (name != NULL)
+            {
+               adt_hash_remove(&self->instance_map, name);
+               apx_node_instance_delete(node_instance);
+            }
+            return verify_result;
+         }
       }
       apx_error_t result = apx_parser_parse_bstr(&self->parser, definition_data, definition_data + definition_size);
       apx_node_t* node = NULL;

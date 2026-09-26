@@ -248,6 +248,10 @@ const char *apx_strerror(apx_error_t error_code)
       return "Semaphore error";
    case APX_NOT_A_DIRECTORY_ERROR:
       return "Not a directory";
+   case APX_SIGNATURE_MISSING_ERROR:
+      return "Signature missing";
+   case APX_SIGNATURE_VERIFICATION_ERROR:
+      return "Signature verification failed";
    default:
       return "Unknown error";
    }

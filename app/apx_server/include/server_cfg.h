@@ -39,4 +39,17 @@
  */
 apx_error_t apx_server_load_config(const char *path, dtl_hv_t **config);
 
+struct apx_server_tag;
+
+/**
+ * Configures an APX server instance from a loaded configuration hash.
+ *
+ * Supported settings in "apx-server" or "security":
+ *   - "require-signed-nodes" (bool): Require all client nodes to be signed.
+ *   - "trusted-keys" (string or array of strings): Public keys (PEM string or file path).
+ *
+ * Returns APX_NO_ERROR on success, or an error code on failure.
+ */
+apx_error_t apx_server_configure(struct apx_server_tag *server, dtl_hv_t const *config);
+
 #endif //APX_SERVER_CFG_H

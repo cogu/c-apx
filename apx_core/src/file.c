@@ -329,6 +329,33 @@ uint8_t const* apx_file_get_digest_data(const apx_file_t* self)
    return NULL;
 }
 
+rmf_signature_type_t apx_file_get_signature_type(apx_file_t const* self)
+{
+   if (self != NULL)
+   {
+      return rmf_file_info_signature_type(&self->file_info);
+   }
+   return RMF_SIGNATURE_TYPE_NONE;
+}
+
+uint8_t const* apx_file_get_signature_data(const apx_file_t* self)
+{
+   if (self != NULL)
+   {
+      return rmf_file_info_signature_data(&self->file_info);
+   }
+   return NULL;
+}
+
+bool apx_file_is_signed(const apx_file_t* self)
+{
+   if (self != NULL)
+   {
+      return rmf_file_info_is_signed(&self->file_info);
+   }
+   return false;
+}
+
 rmf_file_info_t* apx_file_clone_file_info(const apx_file_t* self)
 {
    if (self != NULL)

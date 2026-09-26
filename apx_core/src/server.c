@@ -12,6 +12,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/server.h"
+#include "apx/crypto.h"
 //#include "apx/logging.h"
 #include "apx/file_manager.h"
 #include "apx/event_listener.h"
@@ -75,6 +76,8 @@ void apx_server_create(apx_server_t *self)
       MUTEX_INIT(self->event_loop_lock);
       MUTEX_INIT(self->global_lock);
       MUTEX_INIT(self->event_listener_lock);
+      self->require_signed_nodes = false;
+      adt_ary_create(&self->trusted_public_keys, adt_str_vdelete);
 #ifdef _WIN32
       self->thread_id = 0u;
 #endif
@@ -89,6 +92,7 @@ void apx_server_destroy(apx_server_t *self)
       MUTEX_LOCK(self->global_lock);
       adt_list_destroy(&self->extension_manager);
       adt_ary_destroy(&self->modified_nodes);
+      adt_ary_destroy(&self->trusted_public_keys);
       MUTEX_LOCK(self->event_listener_lock);
       adt_list_destroy(&self->server_event_listeners);
       MUTEX_UNLOCK(self->event_listener_lock);
@@ -853,3 +857,135 @@ static THREAD_PROTO(thread_task, arg)
    THREAD_RETURN(0);
 }
 #endif
+
+void apx_server_set_require_signed_nodes(apx_server_t *self, bool require_signed)
+{
+   if (self != NULL)
+   {
+      self->require_signed_nodes = require_signed;
+   }
+}
+
+bool apx_server_get_require_signed_nodes(apx_server_t const *self)
+{
+   if (self != NULL)
+   {
+      return self->require_signed_nodes;
+   }
+   return false;
+}
+
+apx_error_t apx_server_add_trusted_public_key(apx_server_t *self, const uint8_t *key_data, size_t key_len)
+{
+   if (self != NULL && key_data != NULL && key_len > 0)
+   {
+      adt_str_t* str = adt_str_new_bstr(key_data, key_data + key_len);
+      if (str == NULL)
+      {
+         return APX_MEM_ERROR;
+      }
+      MUTEX_LOCK(self->global_lock);
+      adt_ary_push(&self->trusted_public_keys, (void*)str);
+      MUTEX_UNLOCK(self->global_lock);
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_server_add_trusted_public_key_file(apx_server_t *self, const char *filepath)
+{
+   if (self != NULL && filepath != NULL)
+   {
+      FILE* fh = fopen(filepath, "rb");
+      if (fh == NULL)
+      {
+         return APX_FILE_NOT_FOUND_ERROR;
+      }
+      fseek(fh, 0, SEEK_END);
+      long sz = ftell(fh);
+      fseek(fh, 0, SEEK_SET);
+      if (sz <= 0 || sz > 65536)
+      {
+         fclose(fh);
+         return APX_FILE_TOO_LARGE_ERROR;
+      }
+      uint8_t* buf = (uint8_t*)malloc((size_t)sz);
+      if (buf == NULL)
+      {
+         fclose(fh);
+         return APX_MEM_ERROR;
+      }
+      size_t read_bytes = fread(buf, 1, (size_t)sz, fh);
+      fclose(fh);
+      apx_error_t rc = apx_server_add_trusted_public_key(self, buf, read_bytes);
+      free(buf);
+      return rc;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+int32_t apx_server_get_num_trusted_public_keys(apx_server_t const *self)
+{
+   if (self != NULL)
+   {
+      return adt_ary_length(&self->trusted_public_keys);
+   }
+   return -1;
+}
+
+apx_error_t apx_server_verify_node_signature(apx_server_t const *self,
+                                             rmf_signature_type_t sig_type,
+                                             const uint8_t *sig_data, size_t sig_len,
+                                             const uint8_t *data, size_t data_len)
+{
+   if (self == NULL)
+   {
+      return APX_INVALID_ARGUMENT_ERROR;
+   }
+
+   int32_t num_keys = adt_ary_length(&self->trusted_public_keys);
+
+   if (sig_type == RMF_SIGNATURE_TYPE_NONE)
+   {
+      if (self->require_signed_nodes)
+      {
+         return APX_SIGNATURE_MISSING_ERROR;
+      }
+      return APX_NO_ERROR;
+   }
+
+   if (sig_type == RMF_SIGNATURE_TYPE_ECDSA_P256)
+   {
+      if (sig_data == NULL || sig_len != RMF_SIGNATURE_SIZE_ECDSA_P256)
+      {
+         return APX_INVALID_ARGUMENT_ERROR;
+      }
+      if (num_keys == 0)
+      {
+         if (self->require_signed_nodes)
+         {
+            return APX_SIGNATURE_VERIFICATION_ERROR;
+         }
+         return APX_NO_ERROR;
+      }
+
+      for (int32_t i = 0; i < num_keys; i++)
+      {
+         adt_str_t* key_str = (adt_str_t*)adt_ary_value(&self->trusted_public_keys, i);
+         if (key_str != NULL)
+         {
+            const char* key_cstr = adt_str_cstr(key_str);
+            size_t key_len = (size_t)adt_str_size(key_str);
+            apx_error_t rc = apx_crypto_verify_signature(sig_type, (const uint8_t*)key_cstr, key_len,
+                                                         data, data_len, sig_data, sig_len);
+            if (rc == APX_NO_ERROR)
+            {
+               return APX_NO_ERROR;
+            }
+         }
+      }
+      return APX_SIGNATURE_VERIFICATION_ERROR;
+   }
+
+   return APX_UNSUPPORTED_ERROR;
+}

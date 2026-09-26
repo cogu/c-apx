@@ -412,6 +412,31 @@ static apx_error_t process_command_message(apx_file_manager_t* self, uint8_t con
          rmf_file_info_delete(file_info);
       }
       break;
+   case RMF_CMD_PUBLISH_SIGNED_FILE_MSG:
+      if (apx_file_manager_shared_get_remotefile_version_id(&self->shared) < RMF_PROTOCOL_VERSION_ID_1_1)
+      {
+         retval = APX_UNSUPPORTED_ERROR;
+         break;
+      }
+      file_info = rmf_file_info_make_empty();
+      if (file_info == NULL)
+      {
+         retval = APX_MEM_ERROR;
+      }
+      else
+      {
+         decoded_size = rmf_decode_publish_signed_file_cmd(data, size, file_info);
+         if (decoded_size > 0u)
+         {
+            retval = process_remote_file_published(self, file_info);
+         }
+         else
+         {
+            retval = APX_INVALID_MSG_ERROR;
+         }
+         rmf_file_info_delete(file_info);
+      }
+      break;
    case RMF_CMD_REVOKE_FILE_MSG:
       break;
    case RMF_CMD_OPEN_FILE_MSG:

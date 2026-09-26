@@ -414,8 +414,16 @@ static apx_error_t run_send_acknowledge(apx_file_manager_worker_t* self)
 
 static apx_error_t run_publish_local_file(apx_file_manager_worker_t* self, rmf_file_info_t* file_info)
 {
-   uint8_t buffer[RMF_FILE_INFO_HEADER_SIZE + RMF_FILE_NAME_MAX_SIZE + 1] ; //add 1 byte for null-terminator
-   apx_size_t const encoded_size = rmf_encode_publish_file_cmd(buffer, (apx_size_t)sizeof(buffer), file_info);
+   uint8_t buffer[RMF_SIGNED_FILE_INFO_HEADER_SIZE + RMF_FILE_NAME_MAX_SIZE + 1]; //add 1 byte for null-terminator
+   apx_size_t encoded_size;
+   if (rmf_file_info_is_signed(file_info))
+   {
+      encoded_size = rmf_encode_publish_signed_file_cmd(buffer, (apx_size_t)sizeof(buffer), file_info);
+   }
+   else
+   {
+      encoded_size = rmf_encode_publish_file_cmd(buffer, (apx_size_t)sizeof(buffer), file_info);
+   }
    apx_error_t retval = APX_NO_ERROR;
    if (encoded_size == 0u)
    {
