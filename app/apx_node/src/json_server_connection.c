@@ -19,6 +19,7 @@
 #include "json_server.h"
 #include "apx_connection.h"
 #include "apx/numheader.h"
+#include "apx/error.h"
 #include "dtl_json.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -177,7 +178,7 @@ static void json_server_connection_process_hash_value(json_server_connection_t *
       }
       if (result != APX_NO_ERROR)
       {
-         printf("%s: Write failed for signal with error code %d\n", key, (int) result);
+         printf("Write failed on port '%s': %s\n", key, apx_strerror(result));
       }
       dv = dtl_hv_iter_next_cstr(hv, &key);
    }
