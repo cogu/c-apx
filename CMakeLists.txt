@@ -364,8 +364,25 @@ if(APX_BUILD_SERVER)
     add_subdirectory(app/apx_server)
 endif()
 
-### Executable apx_unit
+### Testing
+find_program(PYTEST_EXECUTABLE
+    NAMES pytest pytest.exe
+    HINTS
+        "${CMAKE_CURRENT_SOURCE_DIR}/.venv/bin"
+        "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Scripts"
+        "$ENV{VIRTUAL_ENV}/bin"
+        "$ENV{VIRTUAL_ENV}/Scripts"
+)
+
+if(PYTEST_EXECUTABLE)
+    message(STATUS "Found pytest: ${PYTEST_EXECUTABLE}")
+endif()
+
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    if(UNIT_TEST OR PYTEST_EXECUTABLE)
+        enable_testing()
+    endif()
+
     if (UNIT_TEST)
         add_executable(apx_unit
             apx_core/test/test_main.c
@@ -402,11 +419,21 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             target_link_libraries(apx_unit PRIVATE cutil)
         endif()
 
-        enable_testing()
         add_test(NAME apx_unit_test COMMAND apx_unit)
         set_tests_properties(apx_unit_test PROPERTIES
             PASS_REGULAR_EXPRESSION "OK \\([0-9]+ tests\\)"
             LABELS "unit"
+        )
+    endif()
+
+    if(NOT UNIT_TEST AND PYTEST_EXECUTABLE)
+        add_test(NAME apx_integration_test
+            COMMAND "${PYTEST_EXECUTABLE}"
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        )
+        set_tests_properties(apx_integration_test PROPERTIES
+            ENVIRONMENT "APX_BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+            LABELS "integration"
         )
     endif()
 endif()
