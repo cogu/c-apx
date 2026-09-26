@@ -36,7 +36,10 @@ def test_server_graceful_shutdown_and_socket_cleanup(apx_server: ApxServerInstan
     apx_server.stop()
 
     assert not apx_server.is_running, "Server should have stopped"
-    assert apx_server.process.returncode == 0, f"Server exited with unexpected code: {apx_server.process.returncode}"
+    assert apx_server.process.returncode == 0, (
+        f"Server exited with unexpected code: {apx_server.process.returncode}\n"
+        f"--- Server stderr ---\n{apx_server.stderr}"
+    )
     assert not os.path.exists(socket_file), "Socket file should be unlinked/removed after server shutdown"
 
 
@@ -96,7 +99,11 @@ def test_server_socket_config_override(tmp_path, apx_server_bin: str):
     s.close()
 
     proc.terminate()
-    proc.wait(timeout=3.0)
+    out, err = proc.communicate(timeout=3.0)
+    assert proc.returncode == 0, (
+        f"Server exited with unexpected code: {proc.returncode}\n"
+        f"--- Server stderr ---\n{err.decode('utf-8', errors='replace')}"
+    )
     assert not os.path.exists(override_socket), "Override socket should be cleaned up"
 
 

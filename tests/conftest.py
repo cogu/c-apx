@@ -60,10 +60,20 @@ class ApxServerInstance:
         self.socket_path = socket_path
         self.config_path = config_path
         self.tmp_dir = tmp_dir
+        self._stdout = ""
+        self._stderr = ""
 
     @property
     def is_running(self) -> bool:
         return self.process.poll() is None
+
+    @property
+    def stdout(self) -> str:
+        return self._stdout
+
+    @property
+    def stderr(self) -> str:
+        return self._stderr
 
     def connect(self) -> socket.socket:
         """Create a client socket connected to this APX server."""
@@ -80,10 +90,19 @@ class ApxServerInstance:
         if self.is_running:
             self.process.terminate()
             try:
-                self.process.wait(timeout=timeout)
+                out, err = self.process.communicate(timeout=timeout)
             except subprocess.TimeoutExpired:
                 self.process.kill()
-                self.process.wait()
+                out, err = self.process.communicate()
+            self._stdout = out.decode("utf-8", errors="replace") if isinstance(out, bytes) else (out or "")
+            self._stderr = err.decode("utf-8", errors="replace") if isinstance(err, bytes) else (err or "")
+        elif not self._stdout and not self._stderr:
+            try:
+                out, err = self.process.communicate(timeout=0.1)
+                self._stdout = out.decode("utf-8", errors="replace") if isinstance(out, bytes) else (out or "")
+                self._stderr = err.decode("utf-8", errors="replace") if isinstance(err, bytes) else (err or "")
+            except Exception:
+                pass
 
 
 class ApxNodeInstance:
@@ -401,3 +420,8 @@ def apx_server(tmp_path: Path, apx_server_bin: str):
 
     # 4. Graceful Teardown
     server.stop(timeout=3.0)
+    assert server.process.returncode == 0, (
+        f"apx_server exited with unexpected code: {server.process.returncode}\n"
+        f"--- Server stderr ---\n{server.stderr}\n"
+        f"--- Server stdout ---\n{server.stdout}"
+    )

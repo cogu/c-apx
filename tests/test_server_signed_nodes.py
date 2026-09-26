@@ -145,6 +145,10 @@ def test_server_rejects_unsigned_node_when_signed_required(tmp_path: Path, apx_s
         node_proc.wait(timeout=2.0)
     finally:
         server.stop(timeout=2.0)
+        assert server.process.returncode == 0, (
+            f"apx_server exited with unexpected code: {server.process.returncode}\n"
+            f"--- Server stderr ---\n{server.stderr}"
+        )
 
 
 def test_server_signed_node_full_handshake(tmp_path: Path, apx_server_bin: str):
@@ -282,3 +286,7 @@ def test_server_signed_node_full_handshake(tmp_path: Path, apx_server_bin: str):
 
     finally:
         server.stop(timeout=2.0)
+        assert server.process.returncode == 0, (
+            f"apx_server exited with unexpected code: {server.process.returncode}\n"
+            f"--- Server stderr ---\n{server.stderr}"
+        )

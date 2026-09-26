@@ -445,7 +445,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
     if(NOT UNIT_TEST AND PYTEST_EXECUTABLE)
         add_test(NAME apx_integration_test
-            COMMAND "${PYTEST_EXECUTABLE}"
+            COMMAND "${PYTEST_EXECUTABLE}" "-v"
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         )
         set_tests_properties(apx_integration_test PROPERTIES
