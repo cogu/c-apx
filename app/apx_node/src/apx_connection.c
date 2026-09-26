@@ -111,6 +111,11 @@ void apx_connection_disconnect(apx_connection_t *self)
 
 apx_error_t apx_connection_attach_node(apx_connection_t *self, adt_str_t *apx_definition)
 {
+   return apx_connection_attach_node_signed(self, apx_definition, RMF_SIGNATURE_TYPE_NONE, NULL);
+}
+
+apx_error_t apx_connection_attach_node_signed(apx_connection_t *self, adt_str_t *apx_definition, rmf_signature_type_t sig_type, uint8_t const* sig_data)
+{
    if ( (self != NULL) && (apx_definition != NULL) )
    {
       MUTEX_LOCK(self->mutex);
@@ -120,6 +125,11 @@ apx_error_t apx_connection_attach_node(apx_connection_t *self, adt_str_t *apx_de
          apx_node_instance_t *node_instance = apx_client_get_last_attached_node(self->client);
          if (node_instance != NULL)
          {
+            if (sig_type != RMF_SIGNATURE_TYPE_NONE && sig_data != NULL)
+            {
+               apx_node_instance_set_signature(node_instance, sig_type, sig_data);
+               apx_client_set_rmf_proto_id(self->client, RMF_PROTOCOL_VERSION_ID_1_1);
+            }
             retval = apx_connection_prepare_provide_ports(self, node_instance);
          }
          else

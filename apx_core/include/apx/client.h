@@ -59,6 +59,7 @@ typedef struct apx_client_tag
    MUTEX_T lock;
    MUTEX_T event_listener_lock;
    bool is_connected;
+   rmf_version_id_t rmf_version_id;
 } apx_client_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -74,6 +75,8 @@ void apx_client_destroy(apx_client_t *self);
 apx_client_t *apx_client_new(void);
 void apx_client_delete(apx_client_t *self);
 void apx_client_vdelete(void *arg);
+void apx_client_set_rmf_proto_id(apx_client_t *self, rmf_version_id_t version_id);
+rmf_version_id_t apx_client_get_rmf_proto_id(apx_client_t const* self);
 
 #ifdef UNIT_TEST
 apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_tag *socket_object);

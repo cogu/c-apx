@@ -28,6 +28,7 @@
 #include "msocket.h"
 #include "json_server.h"
 #include "filestream.h"
+#include "fileutil.h"
 #include "apx_version.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -76,6 +77,7 @@ static const char *m_bind_address_default = "/tmp/apx_node.socket";
 static const char *m_connect_address_default = "/tmp/apx.socket";
 #endif
 static bool m_no_bind = false;
+static bool m_no_signature = false;
 static bool m_display_help = false;
 static bool m_display_version = false;
 static uint16_t m_bind_port;
@@ -151,8 +153,55 @@ int main(int argc, char **argv)
          m_apx_definition_str = read_definition_file(&m_definition_file);
          if (m_apx_definition_str != NULL)
          {
+            uint8_t signature_data[RMF_SIGNATURE_SIZE_ECDSA_P256];
+            bool has_signature = false;
+            if (!m_no_signature)
+            {
+               adt_str_t *sig_path = cutil_path_append_extension(adt_str_cstr(&m_definition_file), ".sig");
+               if (sig_path != NULL)
+               {
+                  if (cutil_file_exists(adt_str_cstr(sig_path)))
+                  {
+                     size_t bytes_read = 0;
+                     if (cutil_read_binary_file(adt_str_cstr(sig_path), signature_data, sizeof(signature_data), &bytes_read) == 0 &&
+                         bytes_read == sizeof(signature_data))
+                     {
+                        has_signature = true;
+                        printf("Found signature: %s\n", adt_str_cstr(sig_path));
+                     }
+                  }
+                  adt_str_delete(sig_path);
+               }
+               if (!has_signature)
+               {
+                  sig_path = cutil_path_replace_extension(adt_str_cstr(&m_definition_file), ".sig");
+                  if (sig_path != NULL)
+                  {
+                     if (cutil_file_exists(adt_str_cstr(sig_path)))
+                     {
+                        size_t bytes_read = 0;
+                        if (cutil_read_binary_file(adt_str_cstr(sig_path), signature_data, sizeof(signature_data), &bytes_read) == 0 &&
+                            bytes_read == sizeof(signature_data))
+                        {
+                           has_signature = true;
+                           printf("Found signature: %s\n", adt_str_cstr(sig_path));
+                        }
+                     }
+                     adt_str_delete(sig_path);
+                  }
+               }
+            }
+
             printf("Parsing %s (%d bytes)...", adt_str_cstr(&m_definition_file), adt_str_size(m_apx_definition_str));
-            apx_error_t rc = apx_connection_attach_node(m_apx_connection, m_apx_definition_str);
+            apx_error_t rc;
+            if (has_signature)
+            {
+               rc = apx_connection_attach_node_signed(m_apx_connection, m_apx_definition_str, RMF_SIGNATURE_TYPE_ECDSA_P256, signature_data);
+            }
+            else
+            {
+               rc = apx_connection_attach_node(m_apx_connection, m_apx_definition_str);
+            }
             if (rc != APX_NO_ERROR)
             {
                if (rc == APX_PARSE_ERROR)
@@ -311,6 +360,10 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          {
             m_no_bind = true;
          }
+         else if ( (strcmp(long_name,"no-signature")==0) )
+         {
+            m_no_signature = true;
+         }
          else
          {
             return ARGPARSE_NAME_ERROR;
@@ -457,6 +510,7 @@ static void print_usage(const char *arg0)
 {
    printf("%s [-b --bind bind_path] [-p --bind-port port] [--no-bind] "
               "[-c --connect connect_path] [-r --connect-port connect_port] "
+              "[--no-signature] "
               "[--version] "
               "definition_file\n", arg0);
 }

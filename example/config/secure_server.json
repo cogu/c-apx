@@ -1,0 +1,29 @@
+{
+    "apx-server": {
+        "apx-cache-enabled": false,
+        "apx-cache-path": "",
+        "max-num-events": 200,
+        "security": {
+            "require-signed-nodes": true,
+            "trusted-keys": [
+                "nodes/certs/client_pubkey.pem"
+            ]
+        }
+    },
+    "socket-server-extension": {
+        "enabled": true,
+        "tcp-port": 5000,
+        "tcp-tag": "tcp",
+        "unix-file": "/tmp/apx.socket",
+        "unix-tag": "local"
+    },
+    "textlog-extension": {
+        "enabled": true,
+        "file-enabled": true,
+        "file-path": "",
+        "syslog-enabled": false
+    },
+    "monitor-extension": {
+        "enabled": true
+    }
+}

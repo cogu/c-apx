@@ -212,6 +212,27 @@ void apx_node_instance_vdelete(void *arg)
    apx_node_instance_delete((apx_node_instance_t*) arg);
 }
 
+apx_error_t apx_node_instance_set_signature(apx_node_instance_t* self, rmf_signature_type_t sig_type, uint8_t const* sig_data)
+{
+   if (self != NULL)
+   {
+      if (sig_type == RMF_SIGNATURE_TYPE_NONE)
+      {
+         self->signature_type = RMF_SIGNATURE_TYPE_NONE;
+         memset(self->signature_data, 0, sizeof(self->signature_data));
+         return APX_NO_ERROR;
+      }
+      if (sig_data != NULL && sig_type == RMF_SIGNATURE_TYPE_ECDSA_P256)
+      {
+         self->signature_type = sig_type;
+         memcpy(self->signature_data, sig_data, RMF_SIGNATURE_SIZE_ECDSA_P256);
+         return APX_NO_ERROR;
+      }
+      return APX_INVALID_ARGUMENT_ERROR;
+   }
+   return APX_NULL_PTR_ERROR;
+}
+
 char const* apx_node_instance_get_name(apx_node_instance_t const* self)
 {
    if (self != NULL)
@@ -1278,8 +1299,13 @@ static apx_error_t create_definition_file_info(apx_node_instance_t* self, rmf_fi
    strcat(file_name, ".apx");
 
    sha256_calc(&digest_data[0], apx_node_instance_get_definition_data(self), (size_t)apx_node_instance_get_definition_size(self));
-   return rmf_file_info_create(file_info, RMF_INVALID_ADDRESS, file_size, file_name,
+   apx_error_t result = rmf_file_info_create(file_info, RMF_INVALID_ADDRESS, file_size, file_name,
       RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_SHA256, &digest_data[0]);
+   if (result == APX_NO_ERROR && self->signature_type != RMF_SIGNATURE_TYPE_NONE)
+   {
+      result = rmf_file_info_set_signature(file_info, self->signature_type, self->signature_data);
+   }
+   return result;
 }
 
 static apx_error_t create_provide_port_data_file_info(apx_node_instance_t* self, rmf_file_info_t* file_info)

@@ -77,6 +77,7 @@ apx_error_t apx_client_create(apx_client_t *self)
       self->vm = (apx_vm_t*) NULL;
       self->node_manager = apx_node_manager_new(APX_CLIENT_MODE);
       self->is_connected = false;
+      self->rmf_version_id = RMF_PROTOCOL_VERSION_ID_1_0;
       MUTEX_INIT(self->lock);
       MUTEX_INIT(self->event_listener_lock);
       return APX_NO_ERROR;
@@ -303,11 +304,38 @@ void apx_client_attach_connection(apx_client_t *self, apx_client_connection_t *c
    if ( (self != NULL) && (connection != NULL) )
    {
       self->connection = connection;
+      if (self->rmf_version_id != 0)
+      {
+         apx_client_connection_set_rmf_proto_id(connection, self->rmf_version_id);
+      }
       apx_client_connection_set_client(connection, self);
       apx_client_connection_attach_node_manager(connection, self->node_manager);
       apx_client_attach_local_nodes_to_connection(self); //TODO: This should not be necessary as an explicit step.
                                                          // Merge functionality with call to to apx_client_connection_attach_node_manager
    }
+}
+
+void apx_client_set_rmf_proto_id(apx_client_t *self, rmf_version_id_t version_id)
+{
+   if (self != NULL)
+   {
+      MUTEX_LOCK(self->lock);
+      self->rmf_version_id = version_id;
+      if (self->connection != NULL)
+      {
+         apx_client_connection_set_rmf_proto_id(self->connection, version_id);
+      }
+      MUTEX_UNLOCK(self->lock);
+   }
+}
+
+rmf_version_id_t apx_client_get_rmf_proto_id(apx_client_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->rmf_version_id;
+   }
+   return RMF_PROTOCOL_VERSION_ID_1_0;
 }
 
 apx_client_connection_t *apx_client_get_connection(apx_client_t *self)
