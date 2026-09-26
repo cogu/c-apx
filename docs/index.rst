@@ -11,7 +11,7 @@ Overview
 * **Reference Implementation**: Implements the normative APX specifications,
   defining how APX nodes, files, and signal routing behave.
 * **Server Implementation**: It is currently the only APX implementation that
-  implements the APX server (``apx_server``), matching provide and require
+  implements the APX server (``apx-server``), matching provide and require
   ports and routing signal updates across connected nodes. Other language
   implementations (such as Python and C++) only implement the client-side
   of APX.
@@ -21,9 +21,9 @@ Overview
 Features
 --------
 
-* **Complete APX Stack**: Implements both the client runtime (``apx_client``)
-  and server daemon (``apx_server``), alongside interactive CLI tools
-  (``apx_control``, ``apx_node``).
+* **Complete APX Stack**: Implements both the client runtime (``apx-client``)
+  and server daemon (``apx-server``), alongside interactive CLI tools
+  (``apx-control``, ``apx-node``).
 * **Standards Conformance**: Full compliance with APX IDL v1.3 and
   APX VM v2.1 execution models.
 * **Server Routing & Extensibility**: Dynamic port matching and signal
