@@ -46,11 +46,14 @@ static uint8_t const* parse_message(apx_server_connection_t* self, uint8_t const
 static bool process_greeting_message(apx_server_connection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
 static void apx_server_connection_node_created_notification(apx_server_connection_t* self, apx_node_instance_t* node_instance);
 static apx_error_t detach_all_nodes(apx_server_connection_t* self);
+static bool is_node_in_other_connection(apx_node_instance_t* node_instance, adt_ary_t* current_connection_nodes);
 static void remove_nodes_from_signature_map(apx_server_connection_t* self, adt_ary_t* node_instance_array);
 static apx_error_t gather_provide_port_connector_changes(adt_ary_t* node_instance_array, adt_ary_t* provider_change_array);
 static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instance_array, adt_ary_t* requester_change_array);
+static apx_error_t gather_surviving_requester_changes(adt_ary_t* modified_nodes, adt_ary_t* current_connection_nodes, adt_ary_t* surviving_requester_change_array);
 static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_change_array);
 static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_change_array);
+static apx_error_t process_surviving_requester_nodes(adt_ary_t* surviving_requester_change_array);
 static void emit_remote_file_published_event(apx_server_connection_t* self, apx_file_t* file);
 static void emit_protocol_header_accepted(apx_server_connection_t* self);
 static apx_error_t parse_protocol_header_line(apx_server_connection_t* self, uint8_t const* begin, uint8_t const* end);
@@ -708,18 +711,27 @@ static apx_error_t detach_all_nodes(apx_server_connection_t* self)
    if (self->parent != NULL)
    {
       apx_error_t result = APX_NO_ERROR;
-      int32_t num_nodes;
       adt_ary_t node_instance_array;
       adt_ary_t provide_connector_change_array;
       adt_ary_t require_connector_change_array;
+      adt_ary_t surviving_requester_change_array;
       adt_ary_create(&node_instance_array, NULL);
       adt_ary_create(&provide_connector_change_array, apx_port_connector_change_ref_vdelete);
       adt_ary_create(&require_connector_change_array, apx_port_connector_change_ref_vdelete);
+      adt_ary_create(&surviving_requester_change_array, apx_port_connector_change_ref_vdelete);
       //Take global lock server while calculating which nodes will be affected by disconnect event
       apx_server_take_global_lock(self->parent);
-      num_nodes = apx_node_manager_values(apx_connection_base_get_node_manager(&self->base), &node_instance_array);
+      int32_t const num_nodes = apx_node_manager_values(apx_connection_base_get_node_manager(&self->base), &node_instance_array);
       if (num_nodes > 0)
       {
+         for (int32_t i = 0; i < num_nodes; i++)
+         {
+            apx_node_instance_t* node_instance = (apx_node_instance_t*)adt_ary_value(&node_instance_array, i);
+            if (node_instance != NULL)
+            {
+               apx_node_instance_set_closing(node_instance, true);
+            }
+         }
          remove_nodes_from_signature_map(self, &node_instance_array);
          if (result == APX_NO_ERROR)
          {
@@ -729,39 +741,35 @@ static apx_error_t detach_all_nodes(apx_server_connection_t* self)
          {
             result = gather_require_port_connector_changes(&node_instance_array, &require_connector_change_array);
          }
-      }
-      // We have now gathered all portConnectorTables belonging to this connection and placed them into providerConnectorChangeArray
-      // and requesterConnectorChangeArray.
-      // All other nodes that happened to be affected by port connector changes now need to have their port connector tables cleared.
-      // Update port counts and trigger sending port count deltas to surviving clients:
-      {
-         int32_t i;
-         int32_t const num_modified = adt_ary_length(&self->parent->modified_nodes);
-         for (i = 0; i < num_modified; i++)
+         if (result == APX_NO_ERROR)
          {
-            apx_node_instance_t* node_instance = (apx_node_instance_t*)adt_ary_value(&self->parent->modified_nodes, i);
-            if ((node_instance != NULL) && (adt_ary_index_of(&node_instance_array, node_instance) < 0))
-            {
-               apx_port_connector_change_table_t* req_changes = apx_node_instance_get_require_port_connector_changes(node_instance, false);
-               if (req_changes != NULL)
-               {
-                  apx_node_instance_handle_require_ports_disconnected(node_instance, req_changes);
-               }
-            }
+            result = gather_surviving_requester_changes(&self->parent->modified_nodes, &node_instance_array, &surviving_requester_change_array);
          }
       }
       apx_server_clear_port_connector_changes(self->parent);
-      //All information we need is now located in providerConnectorChangeArray and requesterConnectorChangeArray respectively
+      //All information we need is now located in provide_connector_change_array, require_connector_change_array,
+      //and surviving_requester_change_array respectively.
       //We can do further processing after releasing global lock
       apx_server_release_global_lock(self->parent);
       adt_ary_destroy(&node_instance_array);
       process_disconnected_provider_nodes(&provide_connector_change_array);
       process_disconnected_requester_nodes(&require_connector_change_array);
+      process_surviving_requester_nodes(&surviving_requester_change_array);
       adt_ary_destroy(&provide_connector_change_array);
       adt_ary_destroy(&require_connector_change_array);
+      adt_ary_destroy(&surviving_requester_change_array);
       return result;
    }
    return APX_NULL_PTR_ERROR;
+}
+
+static bool is_node_in_other_connection(apx_node_instance_t* node_instance, adt_ary_t* current_connection_nodes)
+{
+   if ((node_instance != NULL) && (current_connection_nodes != NULL))
+   {
+      return adt_ary_index_of(current_connection_nodes, node_instance) < 0;
+   }
+   return false;
 }
 
 static void remove_nodes_from_signature_map(apx_server_connection_t* self, adt_ary_t* node_instance_array)
@@ -888,6 +896,38 @@ static apx_error_t gather_require_port_connector_changes(adt_ary_t* node_instanc
    return APX_NO_ERROR;
 }
 
+static apx_error_t gather_surviving_requester_changes(adt_ary_t* modified_nodes, adt_ary_t* current_connection_nodes, adt_ary_t* surviving_requester_change_array)
+{
+   int32_t i;
+   int32_t num_modified;
+   assert((modified_nodes != NULL) && (current_connection_nodes != NULL) && (surviving_requester_change_array != NULL));
+   num_modified = adt_ary_length(modified_nodes);
+   for (i = 0; i < num_modified; i++)
+   {
+      apx_node_instance_t* modified_node = (apx_node_instance_t*)adt_ary_value(modified_nodes, i);
+      if (is_node_in_other_connection(modified_node, current_connection_nodes))
+      {
+         apx_port_connector_change_table_t* req_changes = apx_node_instance_get_require_port_connector_changes(modified_node, false);
+         if (req_changes != NULL)
+         {
+            apx_port_connector_change_ref_t* ref = apx_port_connector_change_ref_new(modified_node, req_changes);
+            if (ref == NULL)
+            {
+               return APX_MEM_ERROR;
+            }
+            adt_error_t rc = adt_ary_push(surviving_requester_change_array, (void*)ref);
+            if (rc != ADT_NO_ERROR)
+            {
+               apx_port_connector_change_ref_delete(ref);
+               return convert_from_adt_to_apx_error(rc);
+            }
+            apx_node_instance_clear_require_port_connector_changes(modified_node, false); //This moves ownership of the memory to the ref variable.
+         }
+      }
+   }
+   return APX_NO_ERROR;
+}
+
 static apx_error_t process_disconnected_provider_nodes(adt_ary_t* provider_change_array)
 {
    int32_t numNodes;
@@ -927,6 +967,26 @@ static apx_error_t process_disconnected_requester_nodes(adt_ary_t* requester_cha
       assert(connector_changes->num_ports == apx_node_instance_get_num_require_ports(require_node_instance));
       apx_node_instance_handle_require_ports_disconnected(require_node_instance, connector_changes);
       apx_node_instance_set_require_port_data_state(require_node_instance, APX_DATA_STATE_DISCONNECTED);
+   }
+   return APX_NO_ERROR;
+}
+
+static apx_error_t process_surviving_requester_nodes(adt_ary_t* surviving_requester_change_array)
+{
+   int32_t num_nodes;
+   int32_t i;
+   assert(surviving_requester_change_array != NULL);
+   num_nodes = adt_ary_length(surviving_requester_change_array);
+   for (i = 0; i < num_nodes; i++)
+   {
+      apx_node_instance_t* require_node_instance;
+      apx_port_connector_change_table_t* connector_changes;
+      apx_port_connector_change_ref_t* ref = (apx_port_connector_change_ref_t*)adt_ary_value(surviving_requester_change_array, i);
+      require_node_instance = ref->node_instance;
+      connector_changes = ref->connector_changes;
+      assert(require_node_instance != NULL);
+      assert(connector_changes != NULL);
+      apx_node_instance_handle_require_ports_disconnected(require_node_instance, connector_changes);
    }
    return APX_NO_ERROR;
 }

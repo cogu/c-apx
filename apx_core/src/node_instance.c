@@ -111,6 +111,7 @@ void apx_node_instance_create(apx_node_instance_t* self, apx_mode_t mode, char c
       self->definition_file = NULL;
       self->provide_port_data_file = NULL;
       self->require_port_data_file = NULL;
+      self->is_closing = false;
       MUTEX_INIT(self->lock);
    }
 }
@@ -2106,6 +2107,10 @@ apx_error_t apx_node_instance_send_provide_port_count_data(apx_node_instance_t* 
 {
    if (self != NULL)
    {
+      if (self->is_closing)
+      {
+         return APX_NO_ERROR;
+      }
       if (apx_node_instance_has_provide_port_count_data(self))
       {
          assert(self->node_data != NULL);
@@ -2133,6 +2138,10 @@ apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* 
 {
    if (self != NULL)
    {
+      if (self->is_closing)
+      {
+         return APX_NO_ERROR;
+      }
       if (apx_node_instance_has_require_port_count_data(self))
       {
          assert(self->node_data != NULL);
@@ -2185,4 +2194,21 @@ apx_port_count_t apx_node_instance_get_port_connection_count(apx_node_instance_t
       return apx_node_instance_get_provide_port_connection_count(self, port_id);
    }
    return 0u;
+}
+
+void apx_node_instance_set_closing(apx_node_instance_t* self, bool is_closing)
+{
+   if (self != NULL)
+   {
+      self->is_closing = is_closing;
+   }
+}
+
+bool apx_node_instance_is_closing(const apx_node_instance_t* self)
+{
+   if (self != NULL)
+   {
+      return self->is_closing;
+   }
+   return false;
 }
