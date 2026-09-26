@@ -80,6 +80,7 @@ typedef struct apx_node_instance_tag
    apx_file_t* require_port_count_file; //Weak reference
    int32_t major_version; // APX version of the associated node (major)
    int32_t minor_version; // APX version of the associated node (minor)
+   bool is_closing;
    MUTEX_T lock;
 } apx_node_instance_t;
 
@@ -189,5 +190,7 @@ apx_error_t apx_node_instance_send_require_port_count_data(apx_node_instance_t* 
 apx_port_count_t apx_node_instance_get_provide_port_connection_count(apx_node_instance_t const* self, apx_port_id_t port_id);
 apx_port_count_t apx_node_instance_get_require_port_connection_count(apx_node_instance_t const* self, apx_port_id_t port_id);
 apx_port_count_t apx_node_instance_get_port_connection_count(apx_node_instance_t const* self, apx_port_type_t port_type, apx_port_id_t port_id);
+void apx_node_instance_set_closing(apx_node_instance_t* self, bool is_closing);
+bool apx_node_instance_is_closing(const apx_node_instance_t* self);
 
 #endif //APX_NODE_INSTANCE_H
