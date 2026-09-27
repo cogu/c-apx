@@ -317,6 +317,10 @@ apx_error_t apx_node_manager_on_definition_data_written(apx_node_manager_t* self
                }
             }
          }
+         else if (self->mode == APX_SERVER_MODE)
+         {
+            retval = APX_NO_ERROR;
+         }
       }
       return retval;
    }
