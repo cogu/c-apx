@@ -59,7 +59,7 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t* self, uint8_t 
 apx_error_t apx_file_manager_send_local_const_data(apx_file_manager_t* self, uint32_t address, uint8_t const* data, apx_size_t size);
 apx_error_t apx_file_manager_send_local_data(apx_file_manager_t* self, uint32_t address, uint8_t* data, apx_size_t size); //file_manager takes ownership of data when called
 apx_error_t apx_file_manager_send_open_file_request(apx_file_manager_t* self, uint32_t address);
-apx_error_t apx_file_manager_send_error_code(apx_file_manager_t* self, apx_error_t error_code);
+apx_error_t apx_file_manager_send_error_code(apx_file_manager_t* self, apx_error_t error_code, char const* name);
 uint16_t apx_file_manager_get_num_pending_worker_commands(apx_file_manager_t* self);
 apx_error_t apx_file_manager_send_connection_create(apx_file_manager_t* self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const* tag);
 #ifdef UNIT_TEST

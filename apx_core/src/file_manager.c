@@ -36,7 +36,7 @@ static apx_error_t process_file_write_message(apx_file_manager_t* self, uint32_t
 static apx_error_t process_open_file_request(apx_file_manager_t* self, uint32_t start_address);
 static apx_error_t process_close_file_request(apx_file_manager_t* self, uint32_t start_address);
 static apx_error_t process_remote_file_published(apx_file_manager_t* self, rmf_file_info_t const* file_info);
-static apx_error_t process_nack_message(apx_file_manager_t* self, apx_error_t error_code);
+static apx_error_t process_nack_message(apx_file_manager_t* self, apx_error_t error_code, char const* name);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -295,11 +295,11 @@ apx_error_t apx_file_manager_send_open_file_request(apx_file_manager_t* self, ui
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_file_manager_send_error_code(apx_file_manager_t* self, apx_error_t error_code)
+apx_error_t apx_file_manager_send_error_code(apx_file_manager_t* self, apx_error_t error_code, char const* name)
 {
    if (self != NULL)
    {
-      return apx_file_manager_worker_prepare_error_code(&self->worker, error_code);
+      return apx_file_manager_worker_prepare_error_code(&self->worker, error_code, name);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -439,13 +439,14 @@ static apx_error_t process_command_message(apx_file_manager_t* self, uint8_t con
    case RMF_CMD_REVOKE_FILE_MSG:
       break;
    case RMF_CMD_NACK_MSG:
-      if (cmd_size == RMF_CMD_NACK_DATA_SIZE)
+      if (cmd_size >= RMF_CMD_NACK_DATA_SIZE)
       {
          uint32_t nack_error_code = 0;
-         decoded_size = rmf_decode_nack_cmd(data, data + size, &nack_error_code);
+         char const* nack_name = NULL;
+         decoded_size = rmf_decode_nack_cmd(data, data + size, &nack_error_code, &nack_name);
          if (decoded_size > 0u)
          {
-            retval = process_nack_message(self, (apx_error_t)nack_error_code);
+            retval = process_nack_message(self, (apx_error_t)nack_error_code, nack_name);
          }
          else
          {
@@ -544,12 +545,12 @@ static apx_error_t process_remote_file_published(apx_file_manager_t* self, rmf_f
    return connection->remote_file_published_notification(connection->arg, file);
 }
 
-static apx_error_t process_nack_message(apx_file_manager_t* self, apx_error_t error_code)
+static apx_error_t process_nack_message(apx_file_manager_t* self, apx_error_t error_code, char const* name)
 {
    apx_connection_interface_t const* connection = apx_file_manager_shared_connection(&self->shared);
    if (connection != NULL && connection->nack_notification != NULL)
    {
-      return connection->nack_notification(connection->arg, error_code);
+      return connection->nack_notification(connection->arg, error_code, name);
    }
    return APX_NO_ERROR;
 }

@@ -177,18 +177,18 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t* self, apx_
                (name != NULL) ? name : "<unknown>", apx_strerror(verify_result));
 
             free(definition_data);
-            if (name != NULL)
-            {
-               adt_hash_remove(&self->instance_map, name);
-               apx_node_instance_delete(node_instance);
-            }
             if (self->parent_connection != NULL)
             {
                apx_file_manager_t* file_manager = apx_connection_base_get_file_manager(self->parent_connection);
                if (file_manager != NULL)
                {
-                  apx_file_manager_send_error_code(file_manager, verify_result);
+                  apx_file_manager_send_error_code(file_manager, verify_result, name);
                }
+            }
+            if (name != NULL)
+            {
+               adt_hash_remove(&self->instance_map, name);
+               apx_node_instance_delete(node_instance);
             }
             return verify_result;
          }
@@ -213,18 +213,18 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t* self, apx_
                "Node '%s' rejected: parse failed (%s)",
                (name != NULL) ? name : "<unknown>", apx_strerror(result));
          }
-         if (name != NULL)
-         {
-            adt_hash_remove(&self->instance_map, name);
-            apx_node_instance_delete(node_instance);
-         }
          if (self->parent_connection != NULL)
          {
             apx_file_manager_t* file_manager = apx_connection_base_get_file_manager(self->parent_connection);
             if (file_manager != NULL)
             {
-               apx_file_manager_send_error_code(file_manager, result);
+               apx_file_manager_send_error_code(file_manager, result, name);
             }
+         }
+         if (name != NULL)
+         {
+            adt_hash_remove(&self->instance_map, name);
+            apx_node_instance_delete(node_instance);
          }
       }
       return result;

@@ -68,6 +68,7 @@ apx_error_t apx_client_connection_create(apx_client_connection_t* self, apx_conn
       self->is_greeting_accepted = false;
       self->client = NULL;
       self->last_error = APX_NO_ERROR;
+      adt_str_create(&self->last_error_node);
       //apx_connection_base_set_event_handler(&self->base, apx_client_connection_default_event_handler, (void*) self);
       return error_code;
    }
@@ -79,6 +80,7 @@ void apx_client_connection_destroy(apx_client_connection_t *self)
    if (self != NULL)
    {
       apx_connection_base_destroy(&self->base);
+      adt_str_destroy(&self->last_error_node);
    }
 }
 
@@ -300,6 +302,15 @@ apx_error_t apx_client_connection_get_last_error(apx_client_connection_t const* 
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+const char* apx_client_connection_get_last_error_node(apx_client_connection_t const* self)
+{
+   if (self != NULL && !adt_str_is_empty(&self->last_error_node))
+   {
+      return adt_str_cstr((adt_str_t*)&self->last_error_node);
+   }
+   return NULL;
+}
+
 void apx_client_connection_vrequire_port_write_notification(void* arg, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size)
 {
    apx_client_connection_t* self = (apx_client_connection_t*)arg;
@@ -320,15 +331,23 @@ apx_error_t apx_client_connection_vremote_file_write_notification(void* arg, apx
    return remote_file_write_notification((apx_client_connection_t*)arg, file, offset, data, size);
 }
 
-apx_error_t apx_client_connection_vnack_notification(void* arg, apx_error_t error_code)
+apx_error_t apx_client_connection_vnack_notification(void* arg, apx_error_t error_code, char const* name)
 {
    apx_client_connection_t* self = (apx_client_connection_t*)arg;
    if (self != NULL)
    {
       self->last_error = error_code;
+      if (name != NULL)
+      {
+         adt_str_set_cstr(&self->last_error_node, name);
+      }
+      else
+      {
+         adt_str_clear(&self->last_error_node);
+      }
       if (self->client != NULL)
       {
-         apx_client_internal_error_notification(self->client, self, error_code);
+         apx_client_internal_error_notification(self->client, self, error_code, name);
       }
       return APX_NO_ERROR;
    }
@@ -565,16 +584,25 @@ static bool parse_greeting(apx_client_connection_t* self, uint8_t const* msg_dat
             apx_connection_base_set_connection_id(&self->base, connection_id);
             return true;
          }
-         else if ((cmd_type == RMF_CMD_NACK_MSG) && (data_size == RMF_CMD_NACK_DATA_SIZE))
+         else if ((cmd_type == RMF_CMD_NACK_MSG) && (data_size >= RMF_CMD_NACK_DATA_SIZE))
          {
             uint32_t nack_code = 0;
-            if (rmf_decode_nack_cmd(msg_data + header_size, msg_end, &nack_code) > 0)
+            char const* nack_name = NULL;
+            if (rmf_decode_nack_cmd(msg_data + header_size, msg_end, &nack_code, &nack_name) > 0)
             {
                *error_code = (apx_error_t) nack_code;
                self->last_error = (apx_error_t) nack_code;
+               if (nack_name != NULL)
+               {
+                  adt_str_set_cstr(&self->last_error_node, nack_name);
+               }
+               else
+               {
+                  adt_str_clear(&self->last_error_node);
+               }
                if (self->client != NULL)
                {
-                  apx_client_internal_error_notification(self->client, self, (apx_error_t)nack_code);
+                  apx_client_internal_error_notification(self->client, self, (apx_error_t)nack_code, nack_name);
                }
                return false;
             }

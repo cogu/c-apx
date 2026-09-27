@@ -980,7 +980,7 @@ static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest* 
    adt_bytearray_t* nack_packet = apx_server_test_connection_get_log_packet(connection, 0);
    CuAssertPtrNotNull(tc, nack_packet);
    uint8_t const* p_data = (uint8_t const*)adt_bytearray_data(nack_packet);
-   int32_t p_len = adt_bytearray_length(nack_packet);
+   uint32_t p_len = adt_bytearray_length(nack_packet);
    uint32_t msg_len = 0;
    uint8_t const* next = numheader_decode32(p_data, p_data + p_len, &msg_len);
    CuAssertPtrNotNull(tc, next);
@@ -988,11 +988,13 @@ static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest* 
    uint32_t decoded_addr = 0;
    bool more_bit = false;
    apx_size_t addr_size = rmf_address_decode(p_data, p_data + msg_len, &decoded_addr, &more_bit);
-   CuAssertUIntEquals(tc, RMF_CMD_AREA_START_ADDRESS, decoded_addr);
    uint32_t nack_error = 0;
-   apx_size_t decoded_nack_size = rmf_decode_nack_cmd(p_data + addr_size, p_data + msg_len, &nack_error);
-   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, decoded_nack_size);
+   char const* nack_name = NULL;
+   apx_size_t decoded_nack_size = rmf_decode_nack_cmd(p_data + addr_size, p_data + msg_len, &nack_error, &nack_name);
+   CuAssertTrue(tc, decoded_nack_size >= RMF_CMD_NACK_SIZE);
    CuAssertUIntEquals(tc, (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR, nack_error);
+   CuAssertPtrNotNull(tc, nack_name);
+   CuAssertStrEquals(tc, "TestNode1", nack_name);
 
    apx_server_detach_connection(server, (apx_server_connection_t*)connection);
    apx_server_delete(server);

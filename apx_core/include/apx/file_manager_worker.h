@@ -68,7 +68,7 @@ void apx_file_manager_worker_stop(apx_file_manager_worker_t* self);
 
 //Command API
 apx_error_t apx_file_manager_worker_prepare_acknowledge(apx_file_manager_worker_t* self);
-apx_error_t apx_file_manager_worker_prepare_error_code(apx_file_manager_worker_t* self, apx_error_t error_code);
+apx_error_t apx_file_manager_worker_prepare_error_code(apx_file_manager_worker_t* self, apx_error_t error_code, char const* name);
 apx_error_t apx_file_manager_worker_prepare_header_accepted(apx_file_manager_worker_t* self, uint32_t connection_id);
 apx_error_t apx_file_manager_worker_prepare_publish_local_file(apx_file_manager_worker_t* self, rmf_file_info_t* file_info); //ownership is taken of the file_info object
 apx_error_t apx_file_manager_worker_prepare_send_local_const_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
