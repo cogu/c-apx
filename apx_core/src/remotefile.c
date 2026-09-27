@@ -14,6 +14,8 @@
 #include <assert.h>
 #include <string.h>
 #include "apx/remotefile.h"
+#include "apx/file_info.h"
+#include "bstr.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -240,6 +242,265 @@ apx_size_t rmf_decode_connection_create(uint8_t const* begin, uint8_t const* end
    (void)connection_state;
    (void)tag;
    return 0;
+}
+
+apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_file_info_t const* file)
+{
+   if ((buf != NULL) && (file != NULL))
+   {
+      const char* name = rmf_file_info_name(file);
+      apx_size_t const name_size = (apx_size_t)strlen(name);
+      apx_size_t const required_size = RMF_FILE_INFO_HEADER_SIZE + name_size + 1u; //Add 1 for null-terminator
+      uint8_t* p = buf;
+      uint8_t const* digest_data = rmf_file_info_digest_data(file);
+      if (required_size > buf_size)
+      {
+         return 0u;
+      }
+      if (digest_data == NULL)
+      {
+         return 0;
+      }
+      packLE(p, RMF_CMD_PUBLISH_FILE_MSG, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_file_info_address_without_flags(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_file_info_size(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, (uint32_t)rmf_file_info_rmf_file_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      packLE(p, (uint32_t)rmf_file_info_digest_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      switch (rmf_file_info_digest_type(file))
+      {
+      case RMF_DIGEST_TYPE_NONE:
+         memset(p, 0, RMF_SHA256_SIZE);
+         break;
+      case RMF_DIGEST_TYPE_SHA1:
+         memcpy(p, digest_data, RMF_SHA1_SIZE);
+         memset(p + RMF_SHA1_SIZE, 0, RMF_SHA256_SIZE - RMF_SHA1_SIZE);
+         break;
+      case RMF_DIGEST_TYPE_SHA256:
+         memcpy(p, digest_data, RMF_SHA256_SIZE);
+         break;
+      }
+      p += RMF_SHA256_SIZE;
+      assert((p + name_size + 1) == buf + required_size);
+      memcpy(p, name, name_size); p += name_size;
+      *p = 0u;
+      return required_size;
+   }
+   return 0u;
+}
+
+/**
+* Returns number of bytes consumed from buffer
+*/
+apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, rmf_file_info_t* file_info)
+{
+   if ((buf != NULL) && (file_info != NULL))
+   {
+      uint8_t const* next = buf;
+      uint8_t const* end = buf + buf_size;
+      if ((next + RMF_FILE_INFO_HEADER_SIZE) < end)
+      {
+         uint32_t const cmd_type = unpackLE(next, UINT32_SIZE); next += UINT32_SIZE;
+         uint16_t value1;
+         uint16_t value2;
+         if (cmd_type != RMF_CMD_PUBLISH_FILE_MSG)
+         {
+            //Invalid command type
+            return 0u;
+         }
+         file_info->address = unpackLE(next, (uint8_t)UINT32_SIZE); next += UINT32_SIZE;
+         file_info->size = unpackLE(next, (uint8_t)UINT32_SIZE); next += UINT32_SIZE;
+         value1 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE); next += sizeof(uint16_t);
+         value2 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE); next += sizeof(uint16_t);
+         memcpy(&file_info->digest_data[0], next, RMF_SHA256_SIZE); next += RMF_SHA256_SIZE;
+         if (!rmf_value_to_file_type(value1, &file_info->rmf_file_type))
+         {
+            return 0u;
+         }
+         if (!rmf_value_to_digest_type(value2, &file_info->digest_type))
+         {
+            return 0u;
+         }
+         //The file name can either end with an optional null-terminator or the name string continues until end of message.
+         //Both variants are acceptable using the two lines below
+         uint8_t const* result = bstr_find_byte(next, end, 0);
+         if ((result > next) && (result <= end))
+         {
+            adt_str_set_bstr(&file_info->name, next, result);
+         }
+         else
+         {
+            return 0u;
+         }
+         return (apx_size_t)(result - buf);
+      }
+   }
+   return 0u;
+}
+
+bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t* file_type)
+{
+   if (file_type != NULL)
+   {
+      switch (value)
+      {
+      case RMF_U16_FILE_TYPE_FIXED:
+         *file_type = RMF_FILE_TYPE_FIXED;
+         break;
+      case RMF_U16_FILE_TYPE_DYNAMIC8:
+         *file_type = RMF_FILE_TYPE_DYNAMIC8;
+         break;
+      case RMF_U16_FILE_TYPE_DYNAMIC16:
+         *file_type = RMF_FILE_TYPE_DYNAMIC16;
+         break;
+      case RMF_U16_FILE_TYPE_DYNAMIC32:
+         *file_type = RMF_FILE_TYPE_DYNAMIC32;
+         break;
+      case RMF_U16_FILE_TYPE_DEVICE:
+         *file_type = RMF_FILE_TYPE_DEVICE;
+         break;
+      case RMF_U16_FILE_TYPE_STREAM:
+         *file_type = RMF_FILE_TYPE_STREAM;
+         break;
+      default:
+         return false;
+      }
+      return true;
+   }
+   return false;
+}
+
+bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t* digest_type)
+{
+   if (digest_type != NULL)
+   {
+      switch (value)
+      {
+      case RMF_U16_DIGEST_TYPE_NONE:
+         *digest_type = RMF_DIGEST_TYPE_NONE;
+         break;
+      case RMF_U16_DIGEST_TYPE_SHA1:
+         *digest_type = RMF_DIGEST_TYPE_SHA1;
+         break;
+      case RMF_U16_DIGEST_TYPE_SHA256:
+         *digest_type = RMF_DIGEST_TYPE_SHA256;
+         break;
+      default:
+         return false;
+      }
+      return true;
+   }
+   return false;
+}
+
+apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t* buf, apx_size_t buf_size, rmf_file_info_t const* file)
+{
+   if ((buf != NULL) && (file != NULL))
+   {
+      const char* name = rmf_file_info_name(file);
+      apx_size_t const name_size = (apx_size_t)strlen(name);
+      apx_size_t const required_size = RMF_SIGNED_FILE_INFO_HEADER_SIZE + name_size + 1u; //Add 1 for null-terminator
+      uint8_t* p = buf;
+      uint8_t const* signature_data = rmf_file_info_signature_data(file);
+      if (required_size > buf_size)
+      {
+         return 0u;
+      }
+      if (signature_data == NULL)
+      {
+         return 0u;
+      }
+      packLE(p, RMF_CMD_PUBLISH_SIGNED_FILE_MSG, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_file_info_address_without_flags(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, rmf_file_info_size(file), (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+      packLE(p, (uint32_t)rmf_file_info_rmf_file_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      packLE(p, (uint32_t)rmf_file_info_signature_type(file), (uint8_t)UINT16_SIZE); p += UINT16_SIZE;
+      switch (rmf_file_info_signature_type(file))
+      {
+      case RMF_SIGNATURE_TYPE_NONE:
+         memset(p, 0, RMF_SIGNATURE_SIZE_ECDSA_P256);
+         break;
+      case RMF_SIGNATURE_TYPE_ECDSA_P256:
+         memcpy(p, signature_data, RMF_SIGNATURE_SIZE_ECDSA_P256);
+         break;
+      default:
+         return 0u;
+      }
+      p += RMF_SIGNATURE_SIZE_ECDSA_P256;
+      assert((p + name_size + 1) == buf + required_size);
+      memcpy(p, name, name_size); p += name_size;
+      *p = 0u;
+      return required_size;
+   }
+   return 0u;
+}
+
+/**
+* Returns number of bytes consumed from buffer
+*/
+apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const* buf, apx_size_t buf_size, rmf_file_info_t* file_info)
+{
+   if ((buf != NULL) && (file_info != NULL))
+   {
+      uint8_t const* next = buf;
+      uint8_t const* end = buf + buf_size;
+      if ((next + RMF_SIGNED_FILE_INFO_HEADER_SIZE) < end)
+      {
+         uint32_t const cmd_type = unpackLE(next, UINT32_SIZE); next += UINT32_SIZE;
+         uint16_t value1;
+         uint16_t value2;
+         if (cmd_type != RMF_CMD_PUBLISH_SIGNED_FILE_MSG)
+         {
+            //Invalid command type
+            return 0u;
+         }
+         file_info->address = unpackLE(next, (uint8_t)UINT32_SIZE); next += UINT32_SIZE;
+         file_info->size = unpackLE(next, (uint8_t)UINT32_SIZE); next += UINT32_SIZE;
+         value1 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE); next += sizeof(uint16_t);
+         value2 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE); next += sizeof(uint16_t);
+         memcpy(&file_info->signature_data[0], next, RMF_SIGNATURE_SIZE_ECDSA_P256); next += RMF_SIGNATURE_SIZE_ECDSA_P256;
+         if (!rmf_value_to_file_type(value1, &file_info->rmf_file_type))
+         {
+            return 0u;
+         }
+         if (!rmf_value_to_signature_type(value2, &file_info->signature_type))
+         {
+            return 0u;
+         }
+         //The file name can either end with an optional null-terminator or the name string continues until end of message.
+         //Both variants are acceptable using the two lines below
+         uint8_t const* result = bstr_find_byte(next, end, 0);
+         if ((result > next) && (result <= end))
+         {
+            adt_str_set_bstr(&file_info->name, next, result);
+         }
+         else
+         {
+            return 0u;
+         }
+         return (apx_size_t)(result - buf);
+      }
+   }
+   return 0u;
+}
+
+bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t* signature_type)
+{
+   if (signature_type != NULL)
+   {
+      switch (value)
+      {
+      case RMF_U16_SIGNATURE_TYPE_NONE:
+         *signature_type = RMF_SIGNATURE_TYPE_NONE;
+         break;
+      case RMF_U16_SIGNATURE_TYPE_ECDSA_P256:
+         *signature_type = RMF_SIGNATURE_TYPE_ECDSA_P256;
+         break;
+      default:
+         return false;
+      }
+      return true;
+   }
+   return false;
 }
 
 

@@ -20,6 +20,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+//forward declarations
+struct rmf_file_info_tag;
 
 typedef uint8_t rmf_file_type_t;
 #define RMF_FILE_TYPE_FIXED     ((rmf_file_type_t) 0u)
@@ -135,6 +137,13 @@ apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_
 apx_size_t rmf_decode_header_accepted(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id);
 apx_size_t rmf_encode_connection_create(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id, uint8_t connection_state, char const* tag);
 apx_size_t rmf_decode_connection_create(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id, uint8_t* connection_state, char** tag);
+apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, struct rmf_file_info_tag const* file);
+apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, struct rmf_file_info_tag* file_info);
+apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t* buf, apx_size_t buf_size, struct rmf_file_info_tag const* file);
+apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const* buf, apx_size_t buf_size, struct rmf_file_info_tag* file_info);
+bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t* file_type);
+bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t* digest_type);
+bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t* signature_type);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
