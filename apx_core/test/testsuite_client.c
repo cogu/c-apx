@@ -13,6 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include "apx/client.h"
+#include "apx/client_internal.h"
 #include "client_event_listener_spy.h"
 #include "CuTest.h"
 #include "pack.h"
@@ -123,6 +124,7 @@ static void test_apx_client_write_port_dtl_u32(CuTest* tc);
 static void test_apx_client_read_port_dtl_u32(CuTest* tc);
 static void test_apx_client_read_struct_with_array(CuTest* tc);
 static void test_apx_client_read_array_of_structs(CuTest* tc);
+static void test_apx_client_error_event_listener(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -149,7 +151,7 @@ CuSuite* testsuite_apx_client(void)
    SUITE_ADD_TEST(suite, test_apx_client_read_port_dtl_u32);
    SUITE_ADD_TEST(suite, test_apx_client_read_struct_with_array);
    SUITE_ADD_TEST(suite, test_apx_client_read_array_of_structs);
-
+   SUITE_ADD_TEST(suite, test_apx_client_error_event_listener);
 
    return suite;
 }
@@ -614,5 +616,40 @@ static void test_apx_client_read_array_of_structs(CuTest* tc)
    CuAssertTrue(tc, ok);
 
    dtl_dv_dec_ref((dtl_dv_t*)av);
+   apx_client_delete(client);
+}
+
+typedef struct client_error_test_spy_tag
+{
+   int call_count;
+   apx_error_t last_error;
+} client_error_test_spy_t;
+
+static void on_test_client_error(void* arg, struct apx_client_connection_tag* connection, apx_error_t error_code)
+{
+   client_error_test_spy_t* spy = (client_error_test_spy_t*)arg;
+   (void)connection;
+   spy->call_count++;
+   spy->last_error = error_code;
+}
+
+static void test_apx_client_error_event_listener(CuTest* tc)
+{
+   apx_client_t* client = apx_client_new();
+   CuAssertPtrNotNull(tc, client);
+
+   client_error_test_spy_t spy = {0, APX_NO_ERROR};
+   apx_client_event_listener_t listener;
+   memset(&listener, 0, sizeof(listener));
+   listener.arg = &spy;
+   listener.error_notify = on_test_client_error;
+   void* handle = apx_client_register_event_listener(client, &listener);
+   CuAssertPtrNotNull(tc, handle);
+
+   apx_client_internal_error_notification(client, NULL, APX_SIGNATURE_VERIFICATION_ERROR);
+   CuAssertIntEquals(tc, 1, spy.call_count);
+   CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, spy.last_error);
+
+   apx_client_unregister_event_listener(client, handle);
    apx_client_delete(client);
 }

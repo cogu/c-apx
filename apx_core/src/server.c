@@ -231,13 +231,15 @@ apx_error_t apx_server_add_extension(apx_server_t* self, const char* name, apx_s
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_server_log_write(apx_server_t* self, apx_log_level_t level, const char* label, const char* msg)
+void apx_server_log_vwrite(apx_server_t* self, apx_log_level_t level, const char* label, const char* format, va_list ap)
 {
-   if ( (self != NULL) && (level <= APX_MAX_LOG_LEVEL) && (msg != NULL) )
+   if ( (self != NULL) && (level <= APX_MAX_LOG_LEVEL) && (format != NULL) )
    {
+      char msg_buf[MAX_LOG_LEN];
+      vsnprintf(msg_buf, sizeof(msg_buf), format, ap);
       apx_event_t event;
       char *labelStr = NULL;
-      adt_str_t *msgStr = adt_str_new_cstr(msg);
+      adt_str_t *msgStr = adt_str_new_cstr(msg_buf);
 
       if (msgStr == NULL)
       {
@@ -266,6 +268,14 @@ void apx_server_log_write(apx_server_t* self, apx_log_level_t level, const char*
       apx_event_pack_log_write(&event, level, labelStr, msgStr);
       apx_event_loop_append(&self->event_loop, &event);
    }
+}
+
+void apx_server_log_write(apx_server_t* self, apx_log_level_t level, const char* label, const char* format, ...)
+{
+   va_list args;
+   va_start(args, format);
+   apx_server_log_vwrite(self, level, label, format, args);
+   va_end(args);
 }
 
 

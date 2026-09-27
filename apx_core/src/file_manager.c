@@ -36,6 +36,7 @@ static apx_error_t process_file_write_message(apx_file_manager_t* self, uint32_t
 static apx_error_t process_open_file_request(apx_file_manager_t* self, uint32_t start_address);
 static apx_error_t process_close_file_request(apx_file_manager_t* self, uint32_t start_address);
 static apx_error_t process_remote_file_published(apx_file_manager_t* self, rmf_file_info_t const* file_info);
+static apx_error_t process_nack_message(apx_file_manager_t* self, apx_error_t error_code);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -298,9 +299,7 @@ apx_error_t apx_file_manager_send_error_code(apx_file_manager_t* self, apx_error
 {
    if (self != NULL)
    {
-      (void)error_code;
-      //TODO: Implement later
-      return APX_NO_ERROR;
+      return apx_file_manager_worker_prepare_error_code(&self->worker, error_code);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -439,6 +438,25 @@ static apx_error_t process_command_message(apx_file_manager_t* self, uint8_t con
       break;
    case RMF_CMD_REVOKE_FILE_MSG:
       break;
+   case RMF_CMD_NACK_MSG:
+      if (cmd_size == RMF_CMD_NACK_DATA_SIZE)
+      {
+         uint32_t nack_error_code = 0;
+         decoded_size = rmf_decode_nack_cmd(data, data + size, &nack_error_code);
+         if (decoded_size > 0u)
+         {
+            retval = process_nack_message(self, (apx_error_t)nack_error_code);
+         }
+         else
+         {
+            retval = APX_INVALID_MSG_ERROR;
+         }
+      }
+      else
+      {
+         retval = APX_INVALID_MSG_ERROR;
+      }
+      break;
    case RMF_CMD_OPEN_FILE_MSG:
       if (cmd_size == RMF_FILE_OPEN_CMD_SIZE)
       {
@@ -524,4 +542,14 @@ static apx_error_t process_remote_file_published(apx_file_manager_t* self, rmf_f
    }
    assert(connection->remote_file_published_notification != NULL);
    return connection->remote_file_published_notification(connection->arg, file);
+}
+
+static apx_error_t process_nack_message(apx_file_manager_t* self, apx_error_t error_code)
+{
+   apx_connection_interface_t const* connection = apx_file_manager_shared_connection(&self->shared);
+   if (connection != NULL && connection->nack_notification != NULL)
+   {
+      return connection->nack_notification(connection->arg, error_code);
+   }
+   return APX_NO_ERROR;
 }

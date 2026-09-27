@@ -171,16 +171,24 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t* self, apx_
                                                                       definition_data, definition_size);
          if (verify_result != APX_NO_ERROR)
          {
-            char msg[80];
-            sprintf(msg, "verify_result: %s\n", apx_strerror(verify_result));
-            apx_server_log_write(server, APX_LOG_LEVEL_WARNING, "NODE_MANAGER", msg);
+            char const* name = apx_node_instance_get_name(node_instance);
+            apx_server_log_write(server, APX_LOG_LEVEL_WARNING, "NODE_MGR",
+               "Node '%s' rejected: signature verification failed (%s)",
+               (name != NULL) ? name : "<unknown>", apx_strerror(verify_result));
 
             free(definition_data);
-            char const* name = apx_node_instance_get_name(node_instance);
             if (name != NULL)
             {
                adt_hash_remove(&self->instance_map, name);
                apx_node_instance_delete(node_instance);
+            }
+            if (self->parent_connection != NULL)
+            {
+               apx_file_manager_t* file_manager = apx_connection_base_get_file_manager(self->parent_connection);
+               if (file_manager != NULL)
+               {
+                  apx_file_manager_send_error_code(file_manager, verify_result);
+               }
             }
             return verify_result;
          }
@@ -198,10 +206,25 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t* self, apx_
       if (result != APX_NO_ERROR)
       {
          char const* name = apx_node_instance_get_name(node_instance);
+         apx_server_t* srv = apx_node_instance_get_server(node_instance);
+         if (srv != NULL)
+         {
+            apx_server_log_write(srv, APX_LOG_LEVEL_WARNING, "NODE_MGR",
+               "Node '%s' rejected: parse failed (%s)",
+               (name != NULL) ? name : "<unknown>", apx_strerror(result));
+         }
          if (name != NULL)
          {
             adt_hash_remove(&self->instance_map, name);
             apx_node_instance_delete(node_instance);
+         }
+         if (self->parent_connection != NULL)
+         {
+            apx_file_manager_t* file_manager = apx_connection_base_get_file_manager(self->parent_connection);
+            if (file_manager != NULL)
+            {
+               apx_file_manager_send_error_code(file_manager, result);
+            }
          }
       }
       return result;

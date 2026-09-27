@@ -63,6 +63,7 @@ apx_error_t apx_client_connection_create(apx_client_connection_t* self, apx_conn
       base_connection_vtable->require_port_write_notification = apx_client_connection_vrequire_port_write_notification;
       connection_interface->remote_file_published_notification = apx_client_connection_vremote_file_published_notification;
       connection_interface->remote_file_write_notification = apx_client_connection_vremote_file_write_notification;
+      connection_interface->nack_notification = apx_client_connection_vnack_notification;
       error_code = apx_connection_base_create(&self->base, APX_CLIENT_MODE, base_connection_vtable, connection_interface);
       self->is_greeting_accepted = false;
       self->client = NULL;
@@ -290,6 +291,15 @@ uint32_t apx_client_connection_get_total_bytes_sent(apx_client_connection_t* sel
    return 0u;
 }
 
+apx_error_t apx_client_connection_get_last_error(apx_client_connection_t const* self)
+{
+   if (self != NULL)
+   {
+      return self->last_error;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 void apx_client_connection_vrequire_port_write_notification(void* arg, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size)
 {
    apx_client_connection_t* self = (apx_client_connection_t*)arg;
@@ -308,6 +318,21 @@ apx_error_t apx_client_connection_vremote_file_published_notification(void* arg,
 apx_error_t apx_client_connection_vremote_file_write_notification(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
 {
    return remote_file_write_notification((apx_client_connection_t*)arg, file, offset, data, size);
+}
+
+apx_error_t apx_client_connection_vnack_notification(void* arg, apx_error_t error_code)
+{
+   apx_client_connection_t* self = (apx_client_connection_t*)arg;
+   if (self != NULL)
+   {
+      self->last_error = error_code;
+      if (self->client != NULL)
+      {
+         apx_client_internal_error_notification(self->client, self, error_code);
+      }
+      return APX_NO_ERROR;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 #ifdef UNIT_TEST
@@ -489,7 +514,11 @@ static uint8_t const* parse_message(apx_client_connection_t* self, uint8_t const
                }
                else
                {
-                  *error_code = APX_INVALID_MSG_ERROR;
+                  if (*error_code == APX_NO_ERROR)
+                  {
+                     *error_code = APX_INVALID_MSG_ERROR;
+                  }
+                  self->last_error = *error_code;
                   return NULL;
                }
             }
@@ -535,6 +564,20 @@ static bool parse_greeting(apx_client_connection_t* self, uint8_t const* msg_dat
             uint32_t connection_id = unpackLE(msg_data + header_size + RMF_CMD_TYPE_SIZE, UINT32_SIZE);
             apx_connection_base_set_connection_id(&self->base, connection_id);
             return true;
+         }
+         else if ((cmd_type == RMF_CMD_NACK_MSG) && (data_size == RMF_CMD_NACK_DATA_SIZE))
+         {
+            uint32_t nack_code = 0;
+            if (rmf_decode_nack_cmd(msg_data + header_size, msg_end, &nack_code) > 0)
+            {
+               *error_code = (apx_error_t) nack_code;
+               self->last_error = (apx_error_t) nack_code;
+               if (self->client != NULL)
+               {
+                  apx_client_internal_error_notification(self->client, self, (apx_error_t)nack_code);
+               }
+               return false;
+            }
          }
       }
    }

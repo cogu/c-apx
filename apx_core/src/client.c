@@ -49,6 +49,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_client_trigger_connected_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection);
 static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection);
+static void apx_client_trigger_error_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection, apx_error_t error_code);
 static void apx_client_trigger_port_write_event_on_listeners(apx_client_t* self, apx_client_connection_t* connection, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size);
 static void apx_client_attach_local_nodes_to_connection(apx_client_t *self);
 
@@ -392,6 +393,15 @@ struct apx_node_manager_tag *apx_client_get_node_manager(apx_client_t *self)
    return NULL;
 }
 
+apx_error_t apx_client_get_last_error(apx_client_t const* self)
+{
+   if (self != NULL && self->connection != NULL)
+   {
+      return apx_client_connection_get_last_error(self->connection);
+   }
+   return APX_NO_ERROR;
+}
+
 /*** Port Handle API ***/
 apx_port_instance_t* apx_client_get_port_instance_by_name(apx_client_t* self, const char* node_name, const char* port_name)
 {
@@ -623,6 +633,14 @@ void apx_client_internal_require_port_write_notification(apx_client_t* self, apx
    }
 }
 
+void apx_client_internal_error_notification(apx_client_t* self, apx_client_connection_t* connection, apx_error_t error_code)
+{
+   if (self != NULL)
+   {
+      apx_client_trigger_error_event_on_listeners(self, connection, error_code);
+   }
+}
+
 /////////////////////// END CLIENT INTERNAL API /////////////////////
 
 /////////////////////// BEGIN UNIT TEST API /////////////////////
@@ -723,6 +741,44 @@ static void apx_client_trigger_disconnected_event_on_listeners(apx_client_t *sel
       apx_client_connection_event_func_t *callback = (apx_client_connection_event_func_t*) adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, connection);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
+}
+
+static void apx_client_trigger_error_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection, apx_error_t error_code)
+{
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
+   assert(self != NULL);
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t *iter = adt_list_iter_first(self->event_listeners);
+   while (iter != NULL)
+   {
+      apx_client_event_listener_t *listener = (apx_client_event_listener_t*) iter->pItem;
+      if ( (listener != NULL) && (listener->error_notify != NULL) )
+      {
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->error_notify);
+         length++;
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->event_listener_lock);
+
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_client_error_event_func_t *callback = (apx_client_error_event_func_t*) adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, connection, error_code);
    }
    adt_ary_destroy(&args);
    adt_ary_destroy(&callbacks);

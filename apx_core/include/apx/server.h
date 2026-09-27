@@ -22,6 +22,7 @@
 #else
 #include <pthread.h>
 #endif
+#include <stdarg.h>
 #include "apx/remotefile.h"
 #include "apx/port_signature_map.h"
 #include "apx/server_extension.h"
@@ -85,7 +86,12 @@ void apx_server_unregister_event_listener(apx_server_t *self, void *handle);
 void apx_server_accept_connection(apx_server_t *self, apx_server_connection_t *server_connection);
 apx_error_t apx_server_detach_connection(apx_server_t *self, apx_server_connection_t *server_connection);
 apx_error_t apx_server_add_extension(apx_server_t *self, const char *name, apx_server_extension_handler_t *handler, dtl_dv_t *config);
-void apx_server_log_write(apx_server_t *self, apx_log_level_t level, const char *label, const char *msg);
+#if defined(__GNUC__) || defined(__clang__)
+void apx_server_log_write(apx_server_t *self, apx_log_level_t level, const char *label, const char *format, ...) __attribute__((format(printf, 4, 5)));
+#else
+void apx_server_log_write(apx_server_t *self, apx_log_level_t level, const char *label, const char *format, ...);
+#endif
+void apx_server_log_vwrite(apx_server_t *self, apx_log_level_t level, const char *label, const char *format, va_list ap);
 apx_error_t apx_server_append_event(apx_server_t* self, apx_event_t* event);
 void apx_server_take_global_lock(apx_server_t *self);
 void apx_server_release_global_lock(apx_server_t *self);

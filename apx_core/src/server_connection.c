@@ -75,6 +75,7 @@ apx_error_t apx_server_connection_create(apx_server_connection_t* self, apx_conn
       base_connection_vtable->node_created_notification = apx_server_connection_vnode_created_notification;
       connection_interface->remote_file_published_notification = apx_server_connection_vremote_file_published_notification;
       connection_interface->remote_file_write_notification = apx_server_connection_vremote_file_write_notification;
+      connection_interface->nack_notification = NULL;
       adt_list_create(&self->event_listeners, apx_connection_event_listener_vdelete);
       error_code = apx_connection_base_create(&self->base, APX_SERVER_MODE, base_connection_vtable, connection_interface);
       MUTEX_INIT(self->event_listener_lock);

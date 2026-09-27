@@ -18,6 +18,7 @@
 #include <string.h>
 #include "CuTest.h"
 #include "apx/remotefile.h"
+#include "apx/error.h"
 #include "pack.h"
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -49,6 +50,8 @@ static void test_encode_remote_file_state(CuTest* tc);
 static void test_decode_remote_file_state(CuTest* tc);
 static void test_encode_remote_file_request(CuTest* tc);
 static void test_decode_remote_file_request(CuTest* tc);
+static void test_encode_nack_cmd(CuTest* tc);
+static void test_decode_nack_cmd(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -85,6 +88,8 @@ CuSuite* testsuite_remotefile(void)
    SUITE_ADD_TEST(suite, test_decode_remote_file_state);
    SUITE_ADD_TEST(suite, test_encode_remote_file_request);
    SUITE_ADD_TEST(suite, test_decode_remote_file_request);
+   SUITE_ADD_TEST(suite, test_encode_nack_cmd);
+   SUITE_ADD_TEST(suite, test_decode_nack_cmd);
 
    return suite;
 }
@@ -299,5 +304,66 @@ static void test_encode_remote_file_request(CuTest* tc)
 static void test_decode_remote_file_request(CuTest* tc)
 {
    (void)tc;
+}
+
+static void test_encode_nack_cmd(CuTest* tc)
+{
+   uint8_t buffer[RMF_CMD_NACK_SIZE];
+   uint8_t small_buf[RMF_CMD_NACK_SIZE - 1];
+
+   // Too small buffer returns 0
+   CuAssertUIntEquals(tc, 0u, rmf_encode_nack_cmd(small_buf, sizeof(small_buf), 0u));
+   CuAssertUIntEquals(tc, 0u, rmf_encode_nack_cmd(NULL, sizeof(buffer), 0u));
+
+   // Encode APX_NO_ERROR (0)
+   memset(buffer, 0xFF, sizeof(buffer));
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, rmf_encode_nack_cmd(buffer, sizeof(buffer), 0u));
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_MSG, unpackLE(buffer, UINT32_SIZE));
+   CuAssertUIntEquals(tc, 0u, unpackLE(buffer + RMF_CMD_TYPE_SIZE, UINT32_SIZE));
+
+   // Encode APX_SIGNATURE_VERIFICATION_ERROR
+   memset(buffer, 0, sizeof(buffer));
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, rmf_encode_nack_cmd(buffer, sizeof(buffer), (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR));
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_MSG, unpackLE(buffer, UINT32_SIZE));
+   CuAssertUIntEquals(tc, (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR, unpackLE(buffer + RMF_CMD_TYPE_SIZE, UINT32_SIZE));
+
+   // Encode custom value with LE check
+   memset(buffer, 0, sizeof(buffer));
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, rmf_encode_nack_cmd(buffer, sizeof(buffer), 0x12345678));
+   CuAssertUIntEquals(tc, (uint8_t)RMF_CMD_NACK_MSG, buffer[0]);
+   CuAssertUIntEquals(tc, 0x00, buffer[1]);
+   CuAssertUIntEquals(tc, 0x00, buffer[2]);
+   CuAssertUIntEquals(tc, 0x00, buffer[3]);
+   CuAssertUIntEquals(tc, 0x78, buffer[4]);
+   CuAssertUIntEquals(tc, 0x56, buffer[5]);
+   CuAssertUIntEquals(tc, 0x34, buffer[6]);
+   CuAssertUIntEquals(tc, 0x12, buffer[7]);
+}
+
+static void test_decode_nack_cmd(CuTest* tc)
+{
+   uint8_t full_cmd[RMF_CMD_NACK_SIZE];
+   uint32_t error_code = 0xFFFFFFFF;
+
+   // NULL / invalid arguments
+   CuAssertUIntEquals(tc, 0u, rmf_decode_nack_cmd(NULL, full_cmd + sizeof(full_cmd), &error_code));
+   CuAssertUIntEquals(tc, 0u, rmf_decode_nack_cmd(full_cmd, NULL, &error_code));
+   CuAssertUIntEquals(tc, 0u, rmf_decode_nack_cmd(full_cmd, full_cmd, &error_code));
+   CuAssertUIntEquals(tc, 0u, rmf_decode_nack_cmd(full_cmd, full_cmd + sizeof(full_cmd), NULL));
+
+   // Decode full 8-byte command (cmd_type + error_code)
+   packLE(full_cmd, RMF_CMD_NACK_MSG, UINT32_SIZE);
+   packLE(full_cmd + RMF_CMD_TYPE_SIZE, (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR, UINT32_SIZE);
+
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, rmf_decode_nack_cmd(full_cmd, full_cmd + sizeof(full_cmd), &error_code));
+   CuAssertUIntEquals(tc, (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR, error_code);
+
+   // Decode payload only (4-byte error_code)
+   error_code = 0;
+   CuAssertUIntEquals(tc, UINT32_SIZE, rmf_decode_nack_cmd(full_cmd + RMF_CMD_TYPE_SIZE, full_cmd + sizeof(full_cmd), &error_code));
+   CuAssertUIntEquals(tc, (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR, error_code);
+
+   // Too short buffer (< 4 bytes)
+   CuAssertUIntEquals(tc, 0u, rmf_decode_nack_cmd(full_cmd, full_cmd + 3, &error_code));
 }
 
