@@ -130,6 +130,19 @@ apx_size_t rmf_encode_acknowledge_cmd(uint8_t* buf, apx_size_t buf_size)
    return required_size;
 }
 
+apx_size_t rmf_encode_nack_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t error_code)
+{
+   apx_size_t const required_size = RMF_CMD_NACK_SIZE;
+   if ((buf == NULL) || (required_size > buf_size))
+   {
+      return 0u;
+   }
+   uint8_t* p = buf;
+   packLE(p, RMF_CMD_NACK_MSG, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+   packLE(p, error_code, (uint8_t)UINT32_SIZE);
+   return required_size;
+}
+
 apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id)
 {
    apx_size_t const required_size = RMF_CMD_TYPE_SIZE + UINT32_SIZE;
@@ -153,6 +166,29 @@ apx_size_t rmf_decode_cmd_type(uint8_t const* begin, uint8_t const* end, uint32_
    {
       *cmd_type = unpackLE(begin, UINT32_SIZE);
       return RMF_CMD_TYPE_SIZE;
+   }
+   return 0u;
+}
+
+apx_size_t rmf_decode_nack_cmd(uint8_t const* begin, uint8_t const* end, uint32_t* error_code)
+{
+   if ((begin == NULL) || (end == NULL) || (begin >= end) || (error_code == NULL))
+   {
+      return 0u;
+   }
+   if (begin + RMF_CMD_NACK_SIZE <= end)
+   {
+      uint32_t const cmd_type = unpackLE(begin, UINT32_SIZE);
+      if (cmd_type == RMF_CMD_NACK_MSG)
+      {
+         *error_code = unpackLE(begin + RMF_CMD_TYPE_SIZE, UINT32_SIZE);
+         return RMF_CMD_NACK_SIZE;
+      }
+   }
+   if (begin + UINT32_SIZE <= end)
+   {
+      *error_code = unpackLE(begin, UINT32_SIZE);
+      return UINT32_SIZE;
    }
    return 0u;
 }

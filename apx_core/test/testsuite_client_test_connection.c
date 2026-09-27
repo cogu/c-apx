@@ -16,6 +16,7 @@
 #include "pack.h"
 #include "apx/numheader.h"
 #include "apx/client_test_connection.h"
+#include "apx/remotefile.h"
 #include "sha256.h"
 //#include "client_event_listener_spy.h"
 #include "CuTest.h"
@@ -40,6 +41,8 @@ static void test_require_port_file_is_requested_when_published_by_server(CuTest*
 static void test_node_data_is_updated_when_require_port_is_written(CuTest* tc);
 static void test_client_requests_open_cout_cin_before_in_file(CuTest* tc);
 static void test_client_requests_open_cout_cin_before_in_file_when_in_published_first(CuTest* tc);
+static void test_client_receives_nack_error_message(CuTest* tc);
+static void test_client_greeting_rejected_by_nack(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -64,6 +67,8 @@ CuSuite* testsuite_apx_client_test_connection(void)
    SUITE_ADD_TEST(suite, test_node_data_is_updated_when_require_port_is_written);
    SUITE_ADD_TEST(suite, test_client_requests_open_cout_cin_before_in_file);
    SUITE_ADD_TEST(suite, test_client_requests_open_cout_cin_before_in_file_when_in_published_first);
+   SUITE_ADD_TEST(suite, test_client_receives_nack_error_message);
+   SUITE_ADD_TEST(suite, test_client_greeting_rejected_by_nack);
 
    return suite;
 }
@@ -468,6 +473,62 @@ static void test_client_requests_open_cout_cin_before_in_file_when_in_published_
    CuAssertUIntEquals(tc, APX_PORT_COUNT_ADDRESS_START, opened_addresses[0]);
    CuAssertUIntEquals(tc, APX_PORT_COUNT_ADDRESS_START + 0x400u, opened_addresses[1]);
    CuAssertUIntEquals(tc, APX_PORT_DATA_ADDRESS_START, opened_addresses[2]);
+
+   apx_client_test_connection_delete(connection);
+}
+
+static void test_client_receives_nack_error_message(CuTest* tc)
+{
+   apx_client_test_connection_t* connection;
+   uint8_t nack_payload[RMF_CMD_NACK_SIZE];
+   apx_size_t encoded_size;
+
+   connection = apx_client_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_connection_get_last_error(&connection->base));
+
+   encoded_size = rmf_encode_nack_cmd(nack_payload, sizeof(nack_payload), (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR);
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, encoded_size);
+
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_test_connection_write_remote_data(connection, RMF_CMD_AREA_START_ADDRESS, nack_payload, sizeof(nack_payload)));
+   CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, apx_client_connection_get_last_error(&connection->base));
+
+   apx_client_test_connection_delete(connection);
+}
+
+static void test_client_greeting_rejected_by_nack(CuTest* tc)
+{
+   apx_client_test_connection_t* connection;
+   uint8_t packet[32];
+   uint8_t nack_cmd[RMF_CMD_NACK_SIZE];
+   apx_size_t nack_size;
+   apx_size_t addr_header_size;
+   apx_size_t num_header_size;
+   apx_size_t parse_len = 0;
+   apx_size_t msg_size_hint = 0;
+   int result;
+
+   connection = apx_client_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_connection_get_last_error(&connection->base));
+
+   nack_size = rmf_encode_nack_cmd(nack_cmd, sizeof(nack_cmd), (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR);
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, nack_size);
+
+   uint8_t addr_buf[RMF_HIGH_ADDR_SIZE];
+   addr_header_size = (apx_size_t) rmf_address_encode(addr_buf, sizeof(addr_buf), RMF_CMD_AREA_START_ADDRESS, false);
+
+   apx_size_t total_msg_size = addr_header_size + nack_size;
+   num_header_size = (apx_size_t) numheader_encode32(packet, sizeof(packet), (uint32_t)total_msg_size);
+
+   memcpy(packet + num_header_size, addr_buf, addr_header_size);
+   memcpy(packet + num_header_size + addr_header_size, nack_cmd, nack_size);
+
+   apx_size_t total_packet_size = num_header_size + total_msg_size;
+   result = apx_client_connection_on_data_received(&connection->base, packet, total_packet_size, &parse_len, &msg_size_hint);
+
+   CuAssertIntEquals(tc, -1, result);
+   CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, apx_client_connection_get_last_error(&connection->base));
 
    apx_client_test_connection_delete(connection);
 }

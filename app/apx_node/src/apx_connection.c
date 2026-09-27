@@ -18,6 +18,7 @@
 #include "apx/event_listener.h"
 #include "apx/client.h"
 #include "apx/port_instance.h"
+#include "apx/util.h"
 #include "dtl_json.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -25,6 +26,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_connection_on_connect(void *arg, apx_client_connection_t *client_connection);
 static void apx_connection_on_disconnect(void *arg, apx_client_connection_t *client_connection);
+static void apx_connection_on_error(void *arg, apx_client_connection_t *client_connection, apx_error_t error_code);
 static void apx_connection_on_require_port_write(void* arg, struct apx_port_instance_tag* port_instance, uint8_t const* data, apx_size_t size);
 static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t *self, apx_node_instance_t *node_instance);
 
@@ -53,6 +55,7 @@ apx_error_t apx_connection_create(apx_connection_t *self)
       listener.arg = (void*) self;
       listener.connected = apx_connection_on_connect;
       listener.disconnected = apx_connection_on_disconnect;
+      listener.error_notify = apx_connection_on_error;
       listener.require_port_write = apx_connection_on_require_port_write;
       apx_client_register_event_listener(self->client, &listener);
       adt_hash_create(&self->provide_port_lookup_table, NULL);
@@ -152,6 +155,15 @@ int32_t apx_connection_get_last_error_line(apx_connection_t *self)
    return -1;
 }
 
+apx_error_t apx_connection_get_last_error(apx_connection_t *self)
+{
+   if (self != NULL)
+   {
+      return apx_client_get_last_error(self->client);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_node_instance_t *apx_connection_get_last_attached_node(apx_connection_t *self)
 {
    if (self != NULL)
@@ -216,6 +228,13 @@ static void apx_connection_on_disconnect(void* arg, apx_client_connection_t* cli
    (void)arg;
    (void)client_connection;
    printf("[APX-CONNECTION] Disconnected from APX server\n");
+}
+
+static void apx_connection_on_error(void* arg, apx_client_connection_t* client_connection, apx_error_t error_code)
+{
+   (void)arg;
+   (void)client_connection;
+   printf("[APX-CONNECTION] Server error: %s (%d)\n", apx_strerror(error_code), (int)error_code);
 }
 
 static void apx_connection_on_require_port_write(void* arg, struct apx_port_instance_tag* port_instance, uint8_t const* data, apx_size_t size)

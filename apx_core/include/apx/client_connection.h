@@ -56,11 +56,13 @@ void apx_client_connection_start(apx_client_connection_t *self);
 void apx_client_connection_close(apx_client_connection_t *self);
 uint32_t apx_client_connection_get_total_bytes_received(apx_client_connection_t *self);
 uint32_t apx_client_connection_get_total_bytes_sent(apx_client_connection_t *self);
+apx_error_t apx_client_connection_get_last_error(apx_client_connection_t const* self);
 void apx_client_connection_vrequire_port_write_notification(void* arg, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size);
 
 //ConnectionInterface API
 apx_error_t apx_client_connection_vremote_file_published_notification(void* arg, apx_file_t* file);
 apx_error_t apx_client_connection_vremote_file_write_notification(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
+apx_error_t apx_client_connection_vnack_notification(void* arg, apx_error_t error_code);
 
 
 // Unit Test API

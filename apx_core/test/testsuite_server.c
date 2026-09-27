@@ -44,6 +44,7 @@ static void test_server_require_signed_nodes_rejects_unsigned_node(CuTest* tc);
 static void test_server_require_signed_nodes_accepts_valid_signed_node(CuTest* tc);
 static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest* tc);
 static void test_server_rejects_signed_file_cmd_under_rmfp_1_0(CuTest* tc);
+static void test_server_log_write_varargs(CuTest* tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -97,6 +98,7 @@ CuSuite* testsuite_apx_server(void)
    SUITE_ADD_TEST(suite, test_server_require_signed_nodes_accepts_valid_signed_node);
    SUITE_ADD_TEST(suite, test_server_require_signed_nodes_rejects_tampered_signature);
    SUITE_ADD_TEST(suite, test_server_rejects_signed_file_cmd_under_rmfp_1_0);
+   SUITE_ADD_TEST(suite, test_server_log_write_varargs);
 
    return suite;
 }
@@ -962,6 +964,7 @@ static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest* 
    rc = apx_server_test_connection_publish_remote_signed_file(connection, APX_DEFINITION_ADDRESS_START, "TestNode1.apx", definition_size, RMF_SIGNATURE_TYPE_ECDSA_P256, signature);
    CuAssertIntEquals(tc, APX_NO_ERROR, rc);
    apx_server_test_connection_run(connection);
+   apx_server_test_connection_clear_log(connection);
 
    CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_server_test_connection_run(connection);
@@ -971,6 +974,25 @@ static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest* 
    CuAssertPtrNotNull(tc, node_manager);
    apx_node_instance_t* node_instance = apx_node_manager_find(node_manager, "TestNode1");
    CuAssertPtrEquals(tc, NULL, node_instance);
+
+   // Verify NACK packet was transmitted to client
+   CuAssertIntEquals(tc, 1, apx_server_test_connection_log_length(connection));
+   adt_bytearray_t* nack_packet = apx_server_test_connection_get_log_packet(connection, 0);
+   CuAssertPtrNotNull(tc, nack_packet);
+   uint8_t const* p_data = (uint8_t const*)adt_bytearray_data(nack_packet);
+   int32_t p_len = adt_bytearray_length(nack_packet);
+   uint32_t msg_len = 0;
+   uint8_t const* next = numheader_decode32(p_data, p_data + p_len, &msg_len);
+   CuAssertPtrNotNull(tc, next);
+   p_data = next;
+   uint32_t decoded_addr = 0;
+   bool more_bit = false;
+   apx_size_t addr_size = rmf_address_decode(p_data, p_data + msg_len, &decoded_addr, &more_bit);
+   CuAssertUIntEquals(tc, RMF_CMD_AREA_START_ADDRESS, decoded_addr);
+   uint32_t nack_error = 0;
+   apx_size_t decoded_nack_size = rmf_decode_nack_cmd(p_data + addr_size, p_data + msg_len, &nack_error);
+   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, decoded_nack_size);
+   CuAssertUIntEquals(tc, (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR, nack_error);
 
    apx_server_detach_connection(server, (apx_server_connection_t*)connection);
    apx_server_delete(server);
@@ -1005,5 +1027,62 @@ static void test_server_rejects_signed_file_cmd_under_rmfp_1_0(CuTest* tc)
    CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, rc);
 
    apx_server_detach_connection(server, (apx_server_connection_t*)connection);
+   apx_server_delete(server);
+}
+
+typedef struct server_log_spy_tag
+{
+   apx_log_level_t level;
+   char label[64];
+   char msg[256];
+   int call_count;
+} server_log_spy_t;
+
+static void spy_on_log_write(void* arg, apx_log_level_t level, const char* label, const char* msg)
+{
+   server_log_spy_t* spy = (server_log_spy_t*)arg;
+   if (spy != NULL)
+   {
+      spy->level = level;
+      if (label != NULL)
+      {
+         strncpy(spy->label, label, sizeof(spy->label) - 1);
+         spy->label[sizeof(spy->label) - 1] = '\0';
+      }
+      if (msg != NULL)
+      {
+         strncpy(spy->msg, msg, sizeof(spy->msg) - 1);
+         spy->msg[sizeof(spy->msg) - 1] = '\0';
+      }
+      spy->call_count++;
+   }
+}
+
+static void test_server_log_write_varargs(CuTest* tc)
+{
+   apx_server_t* server = apx_server_new();
+   CuAssertPtrNotNull(tc, server);
+
+   server_log_spy_t spy;
+   memset(&spy, 0, sizeof(spy));
+
+   apx_server_event_listener_t listener;
+   memset(&listener, 0, sizeof(listener));
+   listener.arg = &spy;
+   listener.server_write_log = spy_on_log_write;
+
+   void* handle = apx_server_register_event_listener(server, &listener);
+   CuAssertPtrNotNull(tc, handle);
+
+   apx_server_log_write(server, APX_LOG_LEVEL_WARNING, "NODE_MGR", "Node '%s' rejected: error code %d", "TestNode", 42);
+   CuAssertIntEquals(tc, 0, spy.call_count);
+
+   apx_server_run(server);
+   CuAssertIntEquals(tc, 1, spy.call_count);
+   CuAssertIntEquals(tc, (int)APX_LOG_LEVEL_WARNING, (int)spy.level);
+   CuAssertStrEquals(tc, "NODE_MGR", spy.label);
+   CuAssertStrEquals(tc, "Node 'TestNode' rejected: error code 42", spy.msg);
+
+   apx_server_unregister_event_listener(server, handle);
    apx_server_delete(server);
 }

@@ -39,6 +39,7 @@
 static void cleanup_cmd_queue(adt_rbfh_t* queue);
 static bool process_single_command(apx_file_manager_worker_t* self, apx_command_t const* cmd);
 static apx_error_t run_send_acknowledge(apx_file_manager_worker_t* self);
+static apx_error_t run_send_error_code(apx_file_manager_worker_t* self, uint32_t error_code);
 static apx_error_t run_publish_local_file(apx_file_manager_worker_t* self, rmf_file_info_t* file);
 static apx_error_t run_send_local_const_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
 static apx_error_t run_send_local_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t* data, uint32_t size);
@@ -181,6 +182,24 @@ apx_error_t apx_file_manager_worker_prepare_acknowledge(apx_file_manager_worker_
    {
       adt_buf_err_t rc;
       apx_command_t cmd = { APX_CMD_SEND_ACKNOWLEDGE, 0, 0, {0}, 0 };
+      SPINLOCK_ENTER(self->queue_lock);
+      rc = adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
+      SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+      SEMAPHORE_POST(self->semaphore);
+#endif
+      return apx_file_manager_worker_process_ringbuffer_error(rc);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_worker_prepare_error_code(apx_file_manager_worker_t* self, apx_error_t error_code)
+{
+   if (self != NULL)
+   {
+      adt_buf_err_t rc;
+      apx_command_t cmd = { APX_CMD_SEND_ERROR_CODE, 0, 0, {0}, 0 };
+      cmd.data1 = (uint32_t)error_code;
       SPINLOCK_ENTER(self->queue_lock);
       rc = adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
       SPINLOCK_LEAVE(self->queue_lock);
@@ -347,7 +366,7 @@ static bool process_single_command(apx_file_manager_worker_t* self, apx_command_
       result = run_send_acknowledge(self);
       break;
    case APX_CMD_SEND_ERROR_CODE:
-      //TODO: Implement
+      result = run_send_error_code(self, cmd->data1);
       break;
    case APX_CMD_PUBLISH_LOCAL_FILE:
       result = run_publish_local_file(self, (rmf_file_info_t*)cmd->data3.ptr);
@@ -391,6 +410,31 @@ static apx_error_t run_send_acknowledge(apx_file_manager_worker_t* self)
 {
    uint8_t buffer[RMF_CMD_TYPE_SIZE];
    apx_size_t const encoded_size = rmf_encode_acknowledge_cmd(buffer, (apx_size_t)sizeof(buffer));
+   apx_error_t retval = APX_NO_ERROR;
+   if (encoded_size == 0u)
+   {
+      retval = APX_BUFFER_BOUNDARY_ERROR;
+   }
+   else
+   {
+      apx_connection_interface_t const* connection = apx_file_manager_shared_connection(self->shared);
+      if (connection != NULL)
+      {
+         int32_t bytes_available = 0;
+         retval = connection->transmit_data_message(connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+      }
+      else
+      {
+         retval = APX_NOT_CONNECTED_ERROR;
+      }
+   }
+   return retval;
+}
+
+static apx_error_t run_send_error_code(apx_file_manager_worker_t* self, uint32_t error_code)
+{
+   uint8_t buffer[RMF_CMD_NACK_SIZE];
+   apx_size_t const encoded_size = rmf_encode_nack_cmd(buffer, (apx_size_t)sizeof(buffer), error_code);
    apx_error_t retval = APX_NO_ERROR;
    if (encoded_size == 0u)
    {

@@ -98,6 +98,7 @@ apx_client_connection_t *apx_client_get_connection(apx_client_t *self);
 
 apx_error_t apx_client_build_node(apx_client_t *self, const char *definition_text);
 int32_t apx_client_get_error_line(apx_client_t *self);
+apx_error_t apx_client_get_last_error(apx_client_t const* self);
 apx_node_instance_t *apx_client_get_last_attached_node(apx_client_t *self);
 struct apx_file_manager_tag *apx_client_get_file_manager(apx_client_t *self);
 struct apx_node_manager_tag *apx_client_get_node_manager(apx_client_t *self);
