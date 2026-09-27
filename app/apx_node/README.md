@@ -6,6 +6,7 @@
 apx-node   [-b --bind bind_path] [-p --bind-port port] [--no-bind]
            [-c --connect connect_path] [-r --connect-port connect_port]
            [--no-signature]
+           [--tls] [--ca-cert ca_path] [--client-cert cert_path] [--client-key key_path]
            [--version] [--help]
            file
 ```
@@ -17,7 +18,7 @@ apx-node   [-b --bind bind_path] [-p --bind-port port] [--no-bind]
 - Creates a dynamic APX client based on the definition given by the *file* argument (`.apx`).
 - Automatically searches for and loads companion cryptographic signature files (`.apx.sig` or `.sig`).
 - Creates a JSON message router socket server (UNIX domain socket or TCP) based on the *bind* options given, unless `--no-bind` is specified.
-- Connects to an APX server based on the *connect* options given.
+- Connects to an APX server based on the *connect* options given (over UNIX socket, plain TCP, or encrypted TLS).
 
 Once these preparatory steps have completed, it provides the following runtime functionality:
 
@@ -51,8 +52,25 @@ file     Path to an APX definition file (.apx)
                 connect to the APX server daemon.
 
 -r --connect-port connect_port
-                Port number for APX server socket (TCP only; not applicable
-                when using UNIX domain sockets).
+                Port number for APX server socket (defaults to 5000 for TCP,
+                or 5020 when --tls is specified).
+
+--tls
+                Connect to the APX server using encrypted TLS stream transport.
+                Defaults to 127.0.0.1:5020 unless -c or -r is overridden.
+
+--ca-cert path
+                Path to trusted Root CA certificate PEM file to verify server
+                authenticity. Automatically discovers nodes/certs/ca_cert.pem or
+                tests/certs/ca_cert.pem if omitted.
+
+--client-cert path
+                Path to client certificate PEM file for Mutual TLS (mTLS)
+                authentication with the APX server.
+
+--client-key path
+                Path to client private key PEM file for Mutual TLS (mTLS)
+                authentication with the APX server.
 
 --no-signature
                 Ignore companion signature file (.sig) even if one exists in the
@@ -133,4 +151,26 @@ apx-node --no-bind -c /tmp/apx.socket listener.apx
 
 ```bash
 apx-node --no-signature vehicle.apx
+```
+
+### Connect over TLS
+
+Connect to APX server using TLS (auto-discovers CA certificate and defaults to port 5020):
+
+```bash
+apx-node --tls vehicle.apx
+```
+
+Explicit server endpoint and CA certificate:
+
+```bash
+apx-node --tls --ca-cert nodes/certs/ca_cert.pem -c 127.0.0.1 -r 5020 vehicle.apx
+```
+
+### Connect over Mutual TLS (mTLS)
+
+Authenticate client node identity using client certificate and key:
+
+```bash
+apx-node --tls --ca-cert ca_cert.pem --client-cert client_cert.pem --client-key client_key.pem vehicle.apx
 ```

@@ -58,10 +58,13 @@ int32_t apx_connection_get_last_error_line(apx_connection_t *self);
 apx_error_t apx_connection_get_last_error(apx_connection_t *self);
 char const *apx_connection_get_last_error_node(apx_connection_t *self);
 apx_node_instance_t *apx_connection_get_last_attached_node(apx_connection_t *self);
+struct msocket_tls_config_tag;
+
 #ifndef _WIN32
 apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socket_path);
 #endif
 apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port);
+apx_error_t apx_connection_connect_tls(apx_connection_t *self, const char *address, uint16_t port, const struct msocket_tls_config_tag *tls_config);
 apx_error_t apx_connection_write_provide_port_data(apx_connection_t *self, const char *provide_port_name, dtl_dv_t *dv_value);
 
 #endif //APX_CONNECTION_H

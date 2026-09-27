@@ -203,3 +203,103 @@ def test_tls_server_rmfp_greeting_exchange(tmp_path: Path, apx_server_bin: str):
     finally:
         proc.terminate()
         proc.wait(timeout=3.0)
+
+
+def test_apx_node_connect_tls_server(tmp_path: Path, apx_server_bin: str, apx_node_bin: str):
+    """Test apx-node connecting to APX server using --tls and --ca-cert."""
+    repo_root = Path(__file__).resolve().parent.parent
+    certs_dir = repo_root / "tests" / "certs"
+    ca_cert = str(certs_dir / "ca_cert.pem")
+    server_cert = str(certs_dir / "server_cert.pem")
+    server_key = str(certs_dir / "server_key.pem")
+    node_file = repo_root / "example" / "nodes" / "small_unsigned_sender.apx"
+
+    port = find_free_port()
+    config = {
+        "tls-server-extension": {
+            "tcp-port": port,
+            "server-cert": server_cert,
+            "server-key": server_key,
+            "ca-cert": ca_cert,
+            "require-client-cert": False,
+            "tag": "TLS"
+        }
+    }
+
+    server_proc = run_tls_server(tmp_path, apx_server_bin, config)
+    try:
+        cmd = [
+            apx_node_bin,
+            "--tls",
+            "--ca-cert", ca_cert,
+            "-c", "127.0.0.1",
+            "-r", str(port),
+            "--no-bind",
+            str(node_file)
+        ]
+        node_proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            preexec_fn=_set_pdeathsig
+        )
+        time.sleep(0.8)
+        node_proc.terminate()
+        stdout, stderr = node_proc.communicate(timeout=2.0)
+        assert "connected to APX server" in stdout, f"Node output: {stdout}, stderr: {stderr}"
+    finally:
+        server_proc.terminate()
+        server_proc.wait(timeout=3.0)
+
+
+def test_apx_node_connect_mtls_server(tmp_path: Path, apx_server_bin: str, apx_node_bin: str):
+    """Test apx-node connecting to APX server with Mutual TLS (mTLS) client certificate."""
+    repo_root = Path(__file__).resolve().parent.parent
+    certs_dir = repo_root / "tests" / "certs"
+    ca_cert = str(certs_dir / "ca_cert.pem")
+    server_cert = str(certs_dir / "server_cert.pem")
+    server_key = str(certs_dir / "server_key.pem")
+    client_cert = str(certs_dir / "client_cert.pem")
+    client_key = str(certs_dir / "client_key.pem")
+    node_file = repo_root / "example" / "nodes" / "small_unsigned_sender.apx"
+
+    port = find_free_port()
+    config = {
+        "tls-server-extension": {
+            "tcp-port": port,
+            "server-cert": server_cert,
+            "server-key": server_key,
+            "ca-cert": ca_cert,
+            "require-client-cert": True,
+            "tag": "TLS"
+        }
+    }
+
+    server_proc = run_tls_server(tmp_path, apx_server_bin, config)
+    try:
+        cmd = [
+            apx_node_bin,
+            "--tls",
+            "--ca-cert", ca_cert,
+            "--client-cert", client_cert,
+            "--client-key", client_key,
+            "-c", "127.0.0.1",
+            "-r", str(port),
+            "--no-bind",
+            str(node_file)
+        ]
+        node_proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            preexec_fn=_set_pdeathsig
+        )
+        time.sleep(0.8)
+        node_proc.terminate()
+        stdout, stderr = node_proc.communicate(timeout=2.0)
+        assert "connected to APX server" in stdout, f"Node output: {stdout}, stderr: {stderr}"
+    finally:
+        server_proc.terminate()
+        server_proc.wait(timeout=3.0)

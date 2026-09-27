@@ -24,6 +24,9 @@
 #include "testsocket.h"
 #else
 #include "msocket.h"
+#if defined(MSOCKET_ENABLE_TLS)
+#include "msocket_tls.h"
+#endif
 #endif
 #include "apx/socket_client_connection.h"
 //#include "apx/logging.h"
@@ -189,6 +192,40 @@ apx_error_t apx_client_socket_connection_connect_tcp(apx_client_socket_connectio
       return retval;
    }
    return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_client_socket_connection_connect_tls(apx_client_socket_connection_t *self, const char *address, uint16_t port, const msocket_tls_config_t *tls_config)
+{
+#if defined(MSOCKET_ENABLE_TLS)
+   if (self != NULL && address != NULL && tls_config != NULL)
+   {
+      apx_error_t retval = APX_NO_ERROR;
+      msocket_t *socketObject = msocket_new(MSOCKET_ADDR_INET);
+      if (socketObject != NULL)
+      {
+         register_msocket_handler(self, socketObject);
+         msocket_error_t result = msocket_connect_tls(socketObject, address, port, tls_config);
+         if (result != MSOCKET_NO_ERROR)
+         {
+            msocket_delete(socketObject);
+            self->socket_object = NULL;
+            retval = APX_CONNECTION_ERROR;
+         }
+      }
+      else
+      {
+         retval = APX_MEM_ERROR;
+      }
+      return retval;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+#else
+   (void)self;
+   (void)address;
+   (void)port;
+   (void)tls_config;
+   return APX_NOT_IMPLEMENTED_ERROR;
+#endif
 }
 # ifndef _WIN32
 apx_error_t apx_client_socket_connection_connect_unix(apx_client_socket_connection_t *self, const char *socket_path)

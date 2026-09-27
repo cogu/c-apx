@@ -20,6 +20,9 @@
 #include "apx/port_instance.h"
 #include "apx/util.h"
 #include "dtl_json.h"
+#if defined(MSOCKET_ENABLE_TLS)
+#include "msocket_tls.h"
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -198,6 +201,15 @@ apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *addre
    if (self != NULL)
    {
       return apx_client_connect_tcp(self->client, address, port);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_connection_connect_tls(apx_connection_t *self, const char *address, uint16_t port, const msocket_tls_config_t *tls_config)
+{
+   if (self != NULL)
+   {
+      return apx_client_connect_tls(self->client, address, port, tls_config);
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }

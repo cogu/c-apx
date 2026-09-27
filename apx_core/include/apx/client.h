@@ -33,6 +33,7 @@ struct adt_hash_tag;
 struct apx_file_manager_tag;
 struct apx_node_manager_tag;
 struct apx_vm_tag;
+struct msocket_tls_config_tag;
 
 #ifndef APX_EMBEDDED
 # ifdef _WIN32
@@ -82,6 +83,7 @@ rmf_version_id_t apx_client_get_rmf_proto_id(apx_client_t const* self);
 apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_tag *socket_object);
 #else
 apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint16_t port);
+apx_error_t apx_client_connect_tls(apx_client_t *self, const char *address, uint16_t port, const struct msocket_tls_config_tag *tls_config);
 # ifndef _WIN32
 apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socket_path);
 # endif

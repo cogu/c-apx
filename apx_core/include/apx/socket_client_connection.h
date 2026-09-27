@@ -47,8 +47,11 @@ void apx_client_socket_connection_vdestroy(void *arg);
 apx_client_socket_connection_t *apx_client_socket_connection_new(SOCKET_TYPE * socket_object, apx_connection_type_t connection_type);
 apx_connection_type_t apx_client_socket_connection_get_connection_type(apx_client_socket_connection_t const* self);
 
+struct msocket_tls_config_tag;
+
 #ifndef UNIT_TEST
 apx_error_t apx_client_socket_connection_connect_tcp(apx_client_socket_connection_t *self, const char *address, uint16_t port);
+apx_error_t apx_client_socket_connection_connect_tls(apx_client_socket_connection_t *self, const char *address, uint16_t port, const struct msocket_tls_config_tag *tls_config);
 # ifndef _WIN32
 apx_error_t apx_client_socket_connection_connect_unix(apx_client_socket_connection_t *self, const char *socket_path);
 # endif

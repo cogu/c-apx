@@ -26,6 +26,9 @@
 #include "apx/util.h"
 #include "argparse.h"
 #include "msocket.h"
+#if defined(MSOCKET_ENABLE_TLS)
+#include "msocket_tls.h"
+#endif
 #include "json_server.h"
 #include "filestream.h"
 #include "fileutil.h"
@@ -69,6 +72,7 @@ static apx_error_t start_json_message_server(void);
 /*** Argument variables ***/
 static const uint16_t bind_port_default = 5100;
 static const uint16_t connect_port_default = 5000;
+static const uint16_t connect_port_tls_default = 5020;
 #ifdef _WIN32
 static const char *m_bind_address_default = "127.0.0.1";
 static const char *m_connect_address_default = "127.0.0.1";
@@ -80,10 +84,15 @@ static bool m_no_bind = false;
 static bool m_no_signature = false;
 static bool m_display_help = false;
 static bool m_display_version = false;
+static bool m_use_tls = false;
+static bool m_connect_port_set = false;
 static uint16_t m_bind_port;
 static uint16_t m_connect_port;
 static adt_str_t *m_bind_address = NULL;
 static adt_str_t *m_connect_address = NULL;
+static adt_str_t *m_ca_cert = NULL;
+static adt_str_t *m_client_cert = NULL;
+static adt_str_t *m_client_key = NULL;
 static adt_str_t m_definition_file;
 static msocket_endpoint_type_t m_bind_resource_type = MSOCKET_ENDPOINT_UNKNOWN;
 static msocket_endpoint_type_t m_connect_resource_type = MSOCKET_ENDPOINT_UNKNOWN;
@@ -116,9 +125,14 @@ int main(int argc, char **argv)
       if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN)
       {
          uint16_t dummy_port;
-         m_connect_resource_type = msocket_parse_endpoint(m_connect_address_default, &m_connect_address, &dummy_port);
+         const char *default_connect_addr = (m_use_tls) ? "127.0.0.1" : m_connect_address_default;
+         m_connect_resource_type = msocket_parse_endpoint(default_connect_addr, &m_connect_address, &dummy_port);
          (void) dummy_port;
          assert( (m_connect_resource_type != MSOCKET_ENDPOINT_UNKNOWN) && (m_connect_resource_type != MSOCKET_ENDPOINT_ERROR) );
+      }
+      if (m_use_tls && !m_connect_port_set)
+      {
+         m_connect_port = connect_port_tls_default;
       }
       if (m_display_version)
       {
@@ -342,7 +356,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
       else if ( (long_name != NULL) )
       {
          if ( (strcmp(long_name,"bind")==0) || (strcmp(long_name,"bind-port")==0) ||
-              (strcmp(long_name,"connect")==0) || (strcmp(long_name,"connect-port")==0) )
+              (strcmp(long_name,"connect")==0) || (strcmp(long_name,"connect-port")==0) ||
+              (strcmp(long_name,"ca-cert")==0) || (strcmp(long_name,"client-cert")==0) ||
+              (strcmp(long_name,"client-key")==0) )
          {
             return ARGPARSE_NEED_VALUE;
          }
@@ -363,6 +379,10 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          else if ( (strcmp(long_name,"no-signature")==0) )
          {
             m_no_signature = true;
+         }
+         else if ( (strcmp(long_name,"tls")==0) )
+         {
+            m_use_tls = true;
          }
          else
          {
@@ -394,6 +414,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
             if ( (end > value) && (lval <= UINT16_MAX))
             {
                m_connect_port = (uint16_t) lval;
+               m_connect_port_set = true;
             }
             else
             {
@@ -443,11 +464,27 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
             if ( (end > value) && (lval <= UINT16_MAX))
             {
                m_connect_port = (uint16_t) lval;
+               m_connect_port_set = true;
             }
             else
             {
                return ARGPARSE_VALUE_ERROR;
             }
+         }
+         else if (strcmp(long_name,"ca-cert")==0)
+         {
+            if (m_ca_cert != NULL) adt_str_delete(m_ca_cert);
+            m_ca_cert = adt_str_new_cstr(value);
+         }
+         else if (strcmp(long_name,"client-cert")==0)
+         {
+            if (m_client_cert != NULL) adt_str_delete(m_client_cert);
+            m_client_cert = adt_str_new_cstr(value);
+         }
+         else if (strcmp(long_name,"client-key")==0)
+         {
+            if (m_client_key != NULL) adt_str_delete(m_client_key);
+            m_client_key = adt_str_new_cstr(value);
          }
          else if (strcmp(long_name,"bind")==0)
          {
@@ -511,6 +548,7 @@ static void print_usage(const char *arg0)
    printf("%s [-b --bind bind_path] [-p --bind-port port] [--no-bind] "
               "[-c --connect connect_path] [-r --connect-port connect_port] "
               "[--no-signature] "
+              "[--tls] [--ca-cert ca_path] [--client-cert cert_path] [--client-key key_path] "
               "[--version] "
               "definition_file\n", arg0);
 }
@@ -538,6 +576,9 @@ static void application_cleanup(void)
    if (m_bind_address) adt_str_delete(m_bind_address);
    if (m_connect_address) adt_str_delete(m_connect_address);
    if (m_apx_definition_str != NULL) adt_str_delete(m_apx_definition_str);
+   if (m_ca_cert) adt_str_delete(m_ca_cert);
+   if (m_client_cert) adt_str_delete(m_client_cert);
+   if (m_client_key) adt_str_delete(m_client_key);
 }
 
 #ifndef _WIN32
@@ -562,6 +603,73 @@ static void signal_handler(int signum)
 static apx_error_t connect_to_apx_server(void)
 {
    const char *connect_address = adt_str_cstr(m_connect_address);
+#if defined(MSOCKET_ENABLE_TLS)
+   if (m_use_tls)
+   {
+      const char *ip_addr = connect_address;
+      if (m_connect_resource_type == MSOCKET_ENDPOINT_NAME)
+      {
+         if ((strlen(connect_address) == 0) || (strcmp(connect_address, "localhost") == 0))
+         {
+            ip_addr = "127.0.0.1";
+         }
+         else
+         {
+            return APX_INVALID_ARGUMENT_ERROR;
+         }
+      }
+      else if (m_connect_resource_type != MSOCKET_ENDPOINT_IPV4)
+      {
+         printf("Error: TLS connection requires IPv4 address or localhost\n");
+         return APX_INVALID_ARGUMENT_ERROR;
+      }
+
+      msocket_tls_config_t tls_config;
+      msocket_tls_config_create(&tls_config);
+      if (m_ca_cert != NULL)
+      {
+         msocket_tls_config_set_ca_cert(&tls_config, adt_str_cstr(m_ca_cert));
+      }
+      else
+      {
+         if (cutil_file_exists("nodes/certs/ca_cert.pem"))
+         {
+            msocket_tls_config_set_ca_cert(&tls_config, "nodes/certs/ca_cert.pem");
+         }
+         else if (cutil_file_exists("tests/certs/ca_cert.pem"))
+         {
+            msocket_tls_config_set_ca_cert(&tls_config, "tests/certs/ca_cert.pem");
+         }
+      }
+
+      if (m_client_cert != NULL && m_client_key != NULL)
+      {
+         msocket_tls_config_set_client_cert(&tls_config, adt_str_cstr(m_client_cert), adt_str_cstr(m_client_key));
+      }
+      else if (m_client_cert == NULL && m_client_key == NULL)
+      {
+         if (cutil_file_exists("nodes/certs/client_cert.pem") && cutil_file_exists("nodes/certs/client_key.pem"))
+         {
+            msocket_tls_config_set_client_cert(&tls_config, "nodes/certs/client_cert.pem", "nodes/certs/client_key.pem");
+         }
+         else if (cutil_file_exists("tests/certs/client_cert.pem") && cutil_file_exists("tests/certs/client_key.pem"))
+         {
+            msocket_tls_config_set_client_cert(&tls_config, "tests/certs/client_cert.pem", "tests/certs/client_key.pem");
+         }
+      }
+
+      apx_error_t rc = apx_connection_connect_tls(m_apx_connection, ip_addr, m_connect_port, &tls_config);
+      msocket_tls_config_destroy(&tls_config);
+      return rc;
+   }
+#else
+   if (m_use_tls)
+   {
+      printf("Error: TLS support is not enabled in this build\n");
+      return APX_NOT_IMPLEMENTED_ERROR;
+   }
+#endif
+
    switch(m_connect_resource_type)
    {
    case MSOCKET_ENDPOINT_UNKNOWN:
