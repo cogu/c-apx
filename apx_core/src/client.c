@@ -25,6 +25,9 @@
 #include "apx/node_instance.h"
 #include "apx/vm.h"
 #include "msocket.h"
+#if defined(MSOCKET_ENABLE_TLS)
+#include "msocket_tls.h"
+#endif
 #include "adt_ary.h"
 #include "adt_list.h"
 #include "adt_hash.h"
@@ -183,6 +186,32 @@ apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint
          apx_error_t result;
          apx_client_attach_connection(self, (apx_client_connection_t*) socketConnection);
          result = apx_client_socket_connection_connect_tcp(socketConnection, address, port);
+         if (result == APX_NO_ERROR)
+         {
+            MUTEX_LOCK(self->lock);
+            self->is_connected = true;
+            MUTEX_UNLOCK(self->lock);
+         }
+         return result;
+      }
+      else
+      {
+         return APX_MEM_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_client_connect_tls(apx_client_t *self, const char *address, uint16_t port, const msocket_tls_config_t *tls_config)
+{
+   if (self != NULL)
+   {
+      apx_client_socket_connection_t *socketConnection = apx_client_socket_connection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
+      if (socketConnection != NULL)
+      {
+         apx_error_t result;
+         apx_client_attach_connection(self, (apx_client_connection_t*) socketConnection);
+         result = apx_client_socket_connection_connect_tls(socketConnection, address, port, tls_config);
          if (result == APX_NO_ERROR)
          {
             MUTEX_LOCK(self->lock);
