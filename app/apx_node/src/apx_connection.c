@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void apx_connection_on_connect(void *arg, apx_client_connection_t *client_connection);
 static void apx_connection_on_disconnect(void *arg, apx_client_connection_t *client_connection);
-static void apx_connection_on_error(void *arg, apx_client_connection_t *client_connection, apx_error_t error_code);
+static void apx_connection_on_error(void *arg, apx_client_connection_t *client_connection, apx_error_t error_code, char const* name);
 static void apx_connection_on_require_port_write(void* arg, struct apx_port_instance_tag* port_instance, uint8_t const* data, apx_size_t size);
 static apx_error_t apx_connection_prepare_provide_ports(apx_connection_t *self, apx_node_instance_t *node_instance);
 
@@ -230,11 +230,18 @@ static void apx_connection_on_disconnect(void* arg, apx_client_connection_t* cli
    printf("[APX-CONNECTION] Disconnected from APX server\n");
 }
 
-static void apx_connection_on_error(void* arg, apx_client_connection_t* client_connection, apx_error_t error_code)
+static void apx_connection_on_error(void* arg, apx_client_connection_t* client_connection, apx_error_t error_code, char const* name)
 {
    (void)arg;
    (void)client_connection;
-   printf("[APX-CONNECTION] Server error: %s (%d)\n", apx_strerror(error_code), (int)error_code);
+   if (name != NULL && strlen(name) > 0)
+   {
+      printf("[APX-CONNECTION] Server error for node '%s': %s (%d)\n", name, apx_strerror(error_code), (int)error_code);
+   }
+   else
+   {
+      printf("[APX-CONNECTION] Server error: %s (%d)\n", apx_strerror(error_code), (int)error_code);
+   }
 }
 
 static void apx_connection_on_require_port_write(void* arg, struct apx_port_instance_tag* port_instance, uint8_t const* data, apx_size_t size)

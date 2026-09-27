@@ -623,14 +623,24 @@ typedef struct client_error_test_spy_tag
 {
    int call_count;
    apx_error_t last_error;
+   char last_error_node[64];
 } client_error_test_spy_t;
 
-static void on_test_client_error(void* arg, struct apx_client_connection_tag* connection, apx_error_t error_code)
+static void on_test_client_error(void* arg, struct apx_client_connection_tag* connection, apx_error_t error_code, char const* name)
 {
    client_error_test_spy_t* spy = (client_error_test_spy_t*)arg;
    (void)connection;
    spy->call_count++;
    spy->last_error = error_code;
+   if (name != NULL)
+   {
+      strncpy(spy->last_error_node, name, sizeof(spy->last_error_node) - 1);
+      spy->last_error_node[sizeof(spy->last_error_node) - 1] = '\0';
+   }
+   else
+   {
+      spy->last_error_node[0] = '\0';
+   }
 }
 
 static void test_apx_client_error_event_listener(CuTest* tc)
@@ -638,7 +648,7 @@ static void test_apx_client_error_event_listener(CuTest* tc)
    apx_client_t* client = apx_client_new();
    CuAssertPtrNotNull(tc, client);
 
-   client_error_test_spy_t spy = {0, APX_NO_ERROR};
+   client_error_test_spy_t spy = {0, APX_NO_ERROR, {0}};
    apx_client_event_listener_t listener;
    memset(&listener, 0, sizeof(listener));
    listener.arg = &spy;
@@ -646,9 +656,10 @@ static void test_apx_client_error_event_listener(CuTest* tc)
    void* handle = apx_client_register_event_listener(client, &listener);
    CuAssertPtrNotNull(tc, handle);
 
-   apx_client_internal_error_notification(client, NULL, APX_SIGNATURE_VERIFICATION_ERROR);
+   apx_client_internal_error_notification(client, NULL, APX_SIGNATURE_VERIFICATION_ERROR, "TestNode");
    CuAssertIntEquals(tc, 1, spy.call_count);
    CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, spy.last_error);
+   CuAssertStrEquals(tc, "TestNode", spy.last_error_node);
 
    apx_client_unregister_event_listener(client, handle);
    apx_client_delete(client);

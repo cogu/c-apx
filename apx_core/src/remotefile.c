@@ -132,16 +132,22 @@ apx_size_t rmf_encode_acknowledge_cmd(uint8_t* buf, apx_size_t buf_size)
    return required_size;
 }
 
-apx_size_t rmf_encode_nack_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t error_code)
+apx_size_t rmf_encode_nack_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t error_code, char const* name)
 {
-   apx_size_t const required_size = RMF_CMD_NACK_SIZE;
+   apx_size_t const name_size = (name != NULL) ? (apx_size_t)strlen(name) : 0u;
+   apx_size_t const required_size = RMF_CMD_NACK_SIZE + name_size + 1u;
    if ((buf == NULL) || (required_size > buf_size))
    {
       return 0u;
    }
    uint8_t* p = buf;
    packLE(p, RMF_CMD_NACK_MSG, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
-   packLE(p, error_code, (uint8_t)UINT32_SIZE);
+   packLE(p, error_code, (uint8_t)UINT32_SIZE); p += UINT32_SIZE;
+   if (name_size > 0u)
+   {
+      memcpy(p, name, name_size); p += name_size;
+   }
+   *p = 0u;
    return required_size;
 }
 
@@ -172,7 +178,7 @@ apx_size_t rmf_decode_cmd_type(uint8_t const* begin, uint8_t const* end, uint32_
    return 0u;
 }
 
-apx_size_t rmf_decode_nack_cmd(uint8_t const* begin, uint8_t const* end, uint32_t* error_code)
+apx_size_t rmf_decode_nack_cmd(uint8_t const* begin, uint8_t const* end, uint32_t* error_code, char const** name)
 {
    if ((begin == NULL) || (end == NULL) || (begin >= end) || (error_code == NULL))
    {
@@ -184,12 +190,33 @@ apx_size_t rmf_decode_nack_cmd(uint8_t const* begin, uint8_t const* end, uint32_
       if (cmd_type == RMF_CMD_NACK_MSG)
       {
          *error_code = unpackLE(begin + RMF_CMD_TYPE_SIZE, UINT32_SIZE);
+         uint8_t const* next = begin + RMF_CMD_NACK_SIZE;
+         if (next < end)
+         {
+            uint8_t const* result = bstr_find_byte(next, end, 0);
+            if ((result >= next) && (result < end))
+            {
+               if (name != NULL)
+               {
+                  *name = (result > next) ? (char const*)next : NULL;
+               }
+               return (apx_size_t)((result + 1u) - begin);
+            }
+         }
+         if (name != NULL)
+         {
+            *name = NULL;
+         }
          return RMF_CMD_NACK_SIZE;
       }
    }
    if (begin + UINT32_SIZE <= end)
    {
       *error_code = unpackLE(begin, UINT32_SIZE);
+      if (name != NULL)
+      {
+         *name = NULL;
+      }
       return UINT32_SIZE;
    }
    return 0u;

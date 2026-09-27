@@ -36,7 +36,7 @@ struct apx_port_instance_tag;
 
 //Client/Server typedefs
 typedef void (apx_client_connection_event_func_t)(void* arg, struct apx_client_connection_tag* connection);
-typedef void (apx_client_error_event_func_t)(void* arg, struct apx_client_connection_tag* connection, apx_error_t error_code);
+typedef void (apx_client_error_event_func_t)(void* arg, struct apx_client_connection_tag* connection, apx_error_t error_code, char const* name);
 typedef void (apx_server_connection_event_func_t)(void* arg, struct apx_server_connection_tag* connection);
 typedef void (apx_server_log_write_event_func_t)(void* arg, apx_log_level_t level, const char* label, const char* msg);
 

@@ -130,9 +130,9 @@ apx_size_t rmf_address_encode(uint8_t* buf, apx_size_t buf_size, uint32_t addres
 apx_size_t rmf_address_decode(uint8_t const* begin, uint8_t const* end, uint32_t* address, bool* more_bit);
 apx_size_t rmf_encode_open_file_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t address);
 apx_size_t rmf_encode_acknowledge_cmd(uint8_t* buf, apx_size_t buf_size);
-apx_size_t rmf_encode_nack_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t error_code);
+apx_size_t rmf_encode_nack_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t error_code, char const* name);
 apx_size_t rmf_decode_cmd_type(uint8_t const* begin, uint8_t const* end, uint32_t* cmd_type);
-apx_size_t rmf_decode_nack_cmd(uint8_t const* begin, uint8_t const* end, uint32_t* error_code);
+apx_size_t rmf_decode_nack_cmd(uint8_t const* begin, uint8_t const* end, uint32_t* error_code, char const** name);
 apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id);
 apx_size_t rmf_decode_header_accepted(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id);
 apx_size_t rmf_encode_connection_create(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id, uint8_t connection_state, char const* tag);

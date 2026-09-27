@@ -1799,7 +1799,7 @@ static apx_error_t search_for_remote_provide_port_data_file(apx_node_instance_t*
    }
    if (retval != APX_NO_ERROR)
    {
-      apx_file_manager_send_error_code(file_manager, retval);
+      apx_file_manager_send_error_code(file_manager, retval, apx_node_instance_get_name(self));
    }
    return retval;
 }

@@ -480,18 +480,21 @@ static void test_client_requests_open_cout_cin_before_in_file_when_in_published_
 static void test_client_receives_nack_error_message(CuTest* tc)
 {
    apx_client_test_connection_t* connection;
-   uint8_t nack_payload[RMF_CMD_NACK_SIZE];
+   uint8_t nack_payload[64];
    apx_size_t encoded_size;
 
    connection = apx_client_test_connection_new();
    CuAssertPtrNotNull(tc, connection);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_connection_get_last_error(&connection->base));
+   CuAssertPtrEquals(tc, NULL, (void*)apx_client_connection_get_last_error_node(&connection->base));
 
-   encoded_size = rmf_encode_nack_cmd(nack_payload, sizeof(nack_payload), (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR);
-   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, encoded_size);
+   encoded_size = rmf_encode_nack_cmd(nack_payload, sizeof(nack_payload), (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR, "TestNode1");
+   CuAssertTrue(tc, encoded_size > RMF_CMD_NACK_SIZE);
 
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_test_connection_write_remote_data(connection, RMF_CMD_AREA_START_ADDRESS, nack_payload, sizeof(nack_payload)));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_test_connection_write_remote_data(connection, RMF_CMD_AREA_START_ADDRESS, nack_payload, encoded_size));
    CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, apx_client_connection_get_last_error(&connection->base));
+   CuAssertPtrNotNull(tc, apx_client_connection_get_last_error_node(&connection->base));
+   CuAssertStrEquals(tc, "TestNode1", apx_client_connection_get_last_error_node(&connection->base));
 
    apx_client_test_connection_delete(connection);
 }
@@ -499,8 +502,8 @@ static void test_client_receives_nack_error_message(CuTest* tc)
 static void test_client_greeting_rejected_by_nack(CuTest* tc)
 {
    apx_client_test_connection_t* connection;
-   uint8_t packet[32];
-   uint8_t nack_cmd[RMF_CMD_NACK_SIZE];
+   uint8_t packet[64];
+   uint8_t nack_cmd[64];
    apx_size_t nack_size;
    apx_size_t addr_header_size;
    apx_size_t num_header_size;
@@ -512,8 +515,8 @@ static void test_client_greeting_rejected_by_nack(CuTest* tc)
    CuAssertPtrNotNull(tc, connection);
    CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_connection_get_last_error(&connection->base));
 
-   nack_size = rmf_encode_nack_cmd(nack_cmd, sizeof(nack_cmd), (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR);
-   CuAssertUIntEquals(tc, RMF_CMD_NACK_SIZE, nack_size);
+   nack_size = rmf_encode_nack_cmd(nack_cmd, sizeof(nack_cmd), (uint32_t)APX_SIGNATURE_VERIFICATION_ERROR, "BadNode");
+   CuAssertTrue(tc, nack_size > RMF_CMD_NACK_SIZE);
 
    uint8_t addr_buf[RMF_HIGH_ADDR_SIZE];
    addr_header_size = (apx_size_t) rmf_address_encode(addr_buf, sizeof(addr_buf), RMF_CMD_AREA_START_ADDRESS, false);
@@ -529,6 +532,8 @@ static void test_client_greeting_rejected_by_nack(CuTest* tc)
 
    CuAssertIntEquals(tc, -1, result);
    CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, apx_client_connection_get_last_error(&connection->base));
+   CuAssertPtrNotNull(tc, apx_client_connection_get_last_error_node(&connection->base));
+   CuAssertStrEquals(tc, "BadNode", apx_client_connection_get_last_error_node(&connection->base));
 
    apx_client_test_connection_delete(connection);
 }
