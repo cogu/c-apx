@@ -110,6 +110,10 @@ static apx_error_t apx_tls_server_extension_configure(apx_tls_server_t *server, 
    dtl_sv_t *sv_ca_cert = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "ca-cert");
    dtl_sv_t *sv_require_client_cert = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "require-client-cert");
    dtl_sv_t *sv_tcp_tag = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "tag");
+   if (sv_tcp_tag == NULL)
+   {
+      sv_tcp_tag = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "tcp-tag");
+   }
 
    bool conversion_ok = false;
    if (sv_tcp_port != NULL && sv_server_cert != NULL && sv_server_key != NULL)
