@@ -164,6 +164,15 @@ apx_error_t apx_connection_get_last_error(apx_connection_t *self)
    return APX_INVALID_ARGUMENT_ERROR;
 }
 
+char const *apx_connection_get_last_error_node(apx_connection_t *self)
+{
+   if (self != NULL)
+   {
+      return apx_client_get_last_error_node(self->client);
+   }
+   return NULL;
+}
+
 apx_node_instance_t *apx_connection_get_last_attached_node(apx_connection_t *self)
 {
    if (self != NULL)

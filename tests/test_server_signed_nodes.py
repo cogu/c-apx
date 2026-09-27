@@ -428,6 +428,7 @@ def test_apx_node_auto_signature_and_no_signature_flag(
         node_proc2.terminate()
         stdout2, _ = node_proc2.communicate(timeout=2.0)
         assert "Found signature:" not in stdout2
+        assert "Server error for node 'SensorNode': Signature missing" in stdout2
 
     finally:
         server.stop(timeout=2.0)
