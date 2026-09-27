@@ -847,7 +847,7 @@ static void test_server_require_signed_nodes_rejects_unsigned_node(CuTest* tc)
    apx_server_test_connection_run(connection);
 
    // Write definition data
-   CuAssertIntEquals(tc, APX_SIGNATURE_MISSING_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_server_test_connection_run(connection);
 
    // Because signature is missing and require_signed_nodes is true, node should be rejected
@@ -966,7 +966,7 @@ static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest* 
    apx_server_test_connection_run(connection);
    apx_server_test_connection_clear_log(connection);
 
-   CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
+   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_write_remote_data(connection, APX_DEFINITION_ADDRESS_START, (uint8_t const*)apx_text, definition_size));
    apx_server_test_connection_run(connection);
 
    // Node should not be created

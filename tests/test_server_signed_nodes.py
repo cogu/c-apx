@@ -365,6 +365,10 @@ def test_apx_node_auto_signature_and_no_signature_flag(
         },
         "socket-server-extension": {
             "unix-file": socket_path
+        },
+        "textlog-extension": {
+            "file-enabled": True,
+            "file-path": ""
         }
     }
     with open(config_file, "w", encoding="utf-8") as f:
@@ -433,5 +437,6 @@ def test_apx_node_auto_signature_and_no_signature_flag(
     finally:
         server.stop(timeout=2.0)
         assert server.process.returncode == 0
+        assert "Connection closed" in server.stdout
 
 
