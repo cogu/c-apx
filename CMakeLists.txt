@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 
 project(apx_core LANGUAGES C VERSION 0.3.8)
-set(APX_VERSION_SUFFIX "a3")
+set(APX_VERSION_SUFFIX "a4")
 set(APX_VERSION_FULL "${PROJECT_VERSION}${APX_VERSION_SUFFIX}")
 
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
@@ -38,6 +38,7 @@ option(APX_BUILD_SERVER "Build the APX server executable" ON)
 option(APX_SERVER_ENABLE_SOCKET_EXTENSION "Enable Socket Server Extension" ON)
 option(APX_SERVER_ENABLE_TEXT_LOG_EXTENSION "Enable Server Text Log Extension" ON)
 option(APX_SERVER_ENABLE_MONITOR_EXTENSION "Enable Server Monitor Extension" ON)
+option(APX_SERVER_ENABLE_TLS_EXTENSION "Enable Server TLS Extension" ON)
 set(APX_SERVER_EXTENSION_DIRS "" CACHE STRING "Semicolon-separated list of out-of-tree APX server extension directories")
 set(APX_SANITIZERS "" CACHE STRING "Comma-separated sanitizers to enable (for example: address,undefined or thread)")
 set_property(CACHE APX_SANITIZERS PROPERTY STRINGS "" "address" "address,undefined" "thread")
@@ -258,8 +259,6 @@ add_subdirectory(bstr)
 add_subdirectory(cutil)
 add_subdirectory(dtl_json)
 add_subdirectory(dtl_type)
-add_subdirectory(msocket)
-
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
 set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "" FORCE)
@@ -282,6 +281,8 @@ if(MSVC)
 endif()
 set(CMAKE_C_CLANG_TIDY "${_SAVED_C_CLANG_TIDY}")
 set(CMAKE_CXX_CLANG_TIDY "${_SAVED_CXX_CLANG_TIDY}")
+
+add_subdirectory(msocket)
 
 get_directory_property(ADT_HEADER_LIST DIRECTORY adt DEFINITION ADT_HEADER_LIST)
 get_directory_property(ADT_SOURCE_LIST DIRECTORY adt DEFINITION ADT_SOURCE_LIST)
@@ -334,7 +335,12 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${APX_COMMON_HEADERS} ${AP
 #target_compile_options(apx_core PRIVATE -fvisibility=hidden)
 
 target_link_libraries(apx_core PRIVATE Threads::Threads)
-target_link_libraries(apx_core PUBLIC mbedcrypto)
+if(TARGET mbedtls)
+    target_compile_definitions(apx_core PUBLIC MSOCKET_ENABLE_TLS)
+    target_link_libraries(apx_core PUBLIC mbedtls mbedx509 mbedcrypto)
+else()
+    target_link_libraries(apx_core PUBLIC mbedcrypto)
+endif()
 if(WIN32)
     target_link_libraries(apx_core PUBLIC ws2_32)
 endif()
@@ -348,6 +354,9 @@ target_include_directories(apx_core PUBLIC
 "${CMAKE_CURRENT_SOURCE_DIR}/dtl_type/include"
 "${CMAKE_CURRENT_SOURCE_DIR}/dtl_json/include"
 "${CMAKE_CURRENT_SOURCE_DIR}/msocket/include"
+)
+target_include_directories(apx_core PRIVATE
+"${CMAKE_CURRENT_SOURCE_DIR}/msocket/source"
 )
 
 set_target_properties(apx_core PROPERTIES VERSION ${apx_core_VERSION} SOVERSION ${apx_core_VERSION_MAJOR})
@@ -424,11 +433,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             ${GENERATED_EXTENSIONS_CFG}
             app/apx_server/test/testsuite_server_cfg.c
         )
+        get_property(APX_SERVER_EXT_LIBS GLOBAL PROPERTY APX_SERVER_REGISTERED_TARGETS)
         target_link_libraries(apx_unit PRIVATE
             apx_core
-            apx_socket_extension
-            apx_text_log_extension
-            apx_monitor_extension
+            ${APX_SERVER_EXT_LIBS}
             cutest
             Threads::Threads
         )
@@ -436,9 +444,6 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             "${PROJECT_BINARY_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/apx_core/test"
             "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_server/include"
-            "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_socket_extension/include"
-            "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_text_log_extension/include"
-            "${CMAKE_CURRENT_SOURCE_DIR}/extension/apx_monitor_extension/include"
         )
         target_compile_definitions(apx_unit PRIVATE UNIT_TEST)
 
