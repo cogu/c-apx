@@ -52,6 +52,7 @@ struct msocket_server_tag;
 static void apx_socket_server_tcp_accept(void *arg, struct msocket_server_tag *srv, void *sock);
 #if !defined(UNIT_TEST) && !defined(_WIN32)
 static void apx_socket_server_unix_accept(void *arg, struct msocket_server_tag *srv, void *sock);
+static void apx_socket_server_vsock_accept(void *arg, struct msocket_server_tag *srv, void *sock);
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -68,10 +69,14 @@ void apx_socket_server_create(apx_socket_server_t *self, struct apx_server_tag *
       self->parent = apx_server;
       self->tcp_port = 0u;
       self->unix_server_file = NULL;
+      self->vsock_port = 0u;
+      self->vsock_cid = 0u;
       self->is_tcp_server_started = false;
       self->is_unix_server_started = false;
+      self->is_vsock_server_started = false;
       self->tcp_connection_tag = NULL;
       self->unix_connection_tag = NULL;
+      self->vsock_connection_tag = NULL;
    }
 }
 
@@ -90,6 +95,10 @@ void apx_socket_server_destroy(apx_socket_server_t *self)
       if (self->unix_connection_tag != NULL)
       {
          free(self->unix_connection_tag);
+      }
+      if (self->vsock_connection_tag != NULL)
+      {
+         free(self->vsock_connection_tag);
       }
    }
 }
@@ -174,6 +183,40 @@ void apx_socket_server_start_unix_server(apx_socket_server_t *self, const char *
 //      apx_server_log_event(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
    }
 }
+void apx_socket_server_start_vsock_server(apx_socket_server_t *self, uint32_t cid, uint32_t port, const char *tag)
+{
+   if ( (self != NULL) && (port != 0u) )
+   {
+      msocket_handler_t server_handler;
+      self->vsock_cid = cid;
+      self->vsock_port = port;
+      if (tag != NULL)
+      {
+         size_t length = strlen(tag);
+         if (length > 0u)
+         {
+            self->vsock_connection_tag = STRDUP(tag);
+         }
+      }
+      memset(&server_handler, 0, sizeof(server_handler));
+      server_handler.tcp_accept = apx_socket_server_vsock_accept;
+      msocket_server_create(&self->vsock_server, MSOCKET_ADDR_VSOCK, NULL);
+      msocket_server_disable_cleanup(&self->vsock_server);
+      msocket_server_sethandler(&self->vsock_server, &server_handler, self);
+      msocket_server_vsock_start(&self->vsock_server, self->vsock_cid, self->vsock_port);
+      self->is_vsock_server_started = true;
+      printf("Listening on VSOCK port %u (CID %u)\n", self->vsock_port, self->vsock_cid);
+   }
+}
+
+void apx_socket_server_stop_vsock_server(apx_socket_server_t *self)
+{
+   if ( (self != NULL) && (self->is_vsock_server_started) )
+   {
+      msocket_server_destroy(&self->vsock_server);
+      self->is_vsock_server_started = false;
+   }
+}
 #endif
 
 void apx_socket_server_stop_all(apx_socket_server_t *self)
@@ -183,6 +226,7 @@ void apx_socket_server_stop_all(apx_socket_server_t *self)
       apx_socket_server_stop_tcp_server(self);
 #if !defined(UNIT_TEST) && !defined(_WIN32)
       apx_socket_server_stop_unix_server(self);
+      apx_socket_server_stop_vsock_server(self);
 #endif
    }
 }
@@ -268,6 +312,31 @@ static void apx_socket_server_unix_accept(void *arg, struct msocket_server_tag *
       else
       {
          ///TODO: cleanup socket object
+         assert(0);
+      }
+   }
+}
+
+static void apx_socket_server_vsock_accept(void *arg, struct msocket_server_tag *srv, void *sock)
+{
+   apx_socket_server_t *self = (apx_socket_server_t*) arg;
+   (void)srv;
+#if APX_DEBUG_ENABLE
+   printf("[SOCKET-SERVER] New VSOCK connection\n");
+#endif
+   if (self != NULL)
+   {
+      apx_socket_server_connection_t *new_connection = apx_socket_server_connection_new(sock);
+      if (new_connection != NULL)
+      {
+         if (self->vsock_connection_tag != NULL)
+         {
+            apx_socket_server_connection_set_tag(new_connection, self->vsock_connection_tag);
+         }
+         apx_server_accept_connection(self->parent, (apx_server_connection_t*)new_connection);
+      }
+      else
+      {
          assert(0);
       }
    }

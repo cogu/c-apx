@@ -86,6 +86,7 @@ apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint
 apx_error_t apx_client_connect_tls(apx_client_t *self, const char *address, uint16_t port, const struct msocket_tls_config_tag *tls_config);
 # ifndef _WIN32
 apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socket_path);
+apx_error_t apx_client_connect_vsock(apx_client_t *self, uint32_t cid, uint32_t port);
 # endif
 #endif
 void apx_client_disconnect(apx_client_t *self);

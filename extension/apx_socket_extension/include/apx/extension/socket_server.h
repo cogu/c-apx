@@ -32,13 +32,18 @@ typedef struct apx_socket_server_tag
 {
    uint16_t tcp_port; //TCP port for tcpServer
    char *unix_server_file; //path to socket file for unix domain sockets (used for localServer)
+   uint32_t vsock_port;
+   uint32_t vsock_cid;
    msocket_server_t tcp_server; //tcp server
    msocket_server_t unix_server; //unix domain socket server
+   msocket_server_t vsock_server; //vsock server
    struct apx_server_tag *parent; //parent server
    char *tcp_connection_tag; //Optional tag to set on new TCP connections
    char *unix_connection_tag; //Optional tag to set on new Unix socket connections
+   char *vsock_connection_tag; //Optional tag to set on new VSOCK connections
    bool is_tcp_server_started;
    bool is_unix_server_started;
+   bool is_vsock_server_started;
 } apx_socket_server_t;
 
 #define APX_SOCKET_SERVER_LABEL "SOCKET"
@@ -55,6 +60,8 @@ void apx_socket_server_start_tcp_server(apx_socket_server_t *self, uint16_t tcp_
 #if !defined(UNIT_TEST) && !defined(_WIN32)
 void apx_socket_server_start_unix_server(apx_socket_server_t *self, const char *file_path, const char *tag);
 void apx_socket_server_stop_unix_server(apx_socket_server_t *self);
+void apx_socket_server_start_vsock_server(apx_socket_server_t *self, uint32_t cid, uint32_t port, const char *tag);
+void apx_socket_server_stop_vsock_server(apx_socket_server_t *self);
 #endif
 void apx_socket_server_stop_all(apx_socket_server_t *self);
 void apx_socket_server_stop_tcp_server(apx_socket_server_t *self);

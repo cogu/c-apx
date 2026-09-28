@@ -258,6 +258,33 @@ apx_error_t apx_client_socket_connection_connect_unix(apx_client_socket_connecti
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+apx_error_t apx_client_socket_connection_connect_vsock(apx_client_socket_connection_t *self, uint32_t cid, uint32_t port)
+{
+   if (self != NULL && port != 0u)
+   {
+      apx_error_t retval = APX_NO_ERROR;
+      msocket_t *socket_object = msocket_new(MSOCKET_ADDR_VSOCK);
+      if (socket_object != NULL)
+      {
+         int8_t result = 0;
+         register_msocket_handler(self, socket_object);
+         result = msocket_vsock_connect(socket_object, cid, port);
+         if (result != 0)
+         {
+            msocket_delete(socket_object);
+            self->socket_object = NULL;
+            retval = APX_CONNECTION_ERROR;
+         }
+      }
+      else
+      {
+         retval = APX_MEM_ERROR;
+      }
+      return retval;
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 # endif // _WIN32
 #endif // UNIT_TEST
 

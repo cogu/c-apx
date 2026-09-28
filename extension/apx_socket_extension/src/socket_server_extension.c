@@ -147,6 +147,38 @@ static apx_error_t apx_socket_server_extension_configure(apx_socket_server_t *se
           }
       }
    }
+   {
+      dtl_sv_t *sv_vsock_port = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "vsock-port");
+      dtl_sv_t *sv_vsock_cid = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "vsock-cid");
+      dtl_sv_t *sv_vsock_tag = (dtl_sv_t*) dtl_hv_get_cstr(cfg, "vsock-tag");
+      if (sv_vsock_port != NULL)
+      {
+         uint32_t vsock_port = dtl_sv_to_u32(sv_vsock_port, &conversion_ok);
+         if (conversion_ok && (vsock_port > 0))
+         {
+            uint32_t vsock_cid = MSOCKET_VMADDR_CID_ANY;
+            if (sv_vsock_cid != NULL)
+            {
+               uint32_t parsed_cid = dtl_sv_to_u32(sv_vsock_cid, &conversion_ok);
+               if (conversion_ok)
+               {
+                  vsock_cid = parsed_cid;
+               }
+            }
+            const char *tag = "";
+            if (sv_vsock_tag != NULL)
+            {
+               tag = dtl_sv_to_cstr(sv_vsock_tag, &conversion_ok);
+            }
+#ifndef UNIT_TEST
+            apx_socket_server_start_vsock_server(m_instance, vsock_cid, vsock_port, tag);
+#else
+            (void)tag;
+            (void)vsock_cid;
+#endif
+         }
+      }
+   }
 #endif
    return APX_NO_ERROR;
 }
