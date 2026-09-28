@@ -254,6 +254,32 @@ apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socket_path)
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+apx_error_t apx_client_connect_vsock(apx_client_t *self, uint32_t cid, uint32_t port)
+{
+   if (self != NULL && port != 0u)
+   {
+      apx_client_socket_connection_t *socketConnection = apx_client_socket_connection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
+      if (socketConnection != NULL)
+      {
+         apx_error_t result;
+         apx_client_attach_connection(self, (apx_client_connection_t*) socketConnection);
+         result = apx_client_socket_connection_connect_vsock(socketConnection, cid, port);
+         if (result == APX_NO_ERROR)
+         {
+            MUTEX_LOCK(self->lock);
+            self->is_connected = true;
+            MUTEX_UNLOCK(self->lock);
+         }
+         return result;
+      }
+      else
+      {
+         return APX_MEM_ERROR;
+      }
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 # endif
 
 #endif
