@@ -23,7 +23,6 @@
 #include <assert.h>
 #include "adt_str.h"
 #include "apx_connection.h"
-#include "apx/util.h"
 #include "argparse.h"
 #include "msocket.h"
 #if defined(MSOCKET_ENABLE_TLS)
@@ -41,6 +40,12 @@
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 #define APP_NAME "apx-node"
+#define EXAMPLE_CA_CERT_PATH     "example/secure/config/certs/ca_cert.pem"
+#define EXAMPLE_CLIENT_CERT_PATH "example/secure/config/certs/client_cert.pem"
+#define EXAMPLE_CLIENT_KEY_PATH  "example/secure/config/certs/client_key.pem"
+#define PYTEST_CA_CERT_PATH      "tests/certs/ca_cert.pem"
+#define PYTEST_CLIENT_CERT_PATH  "tests/certs/client_cert.pem"
+#define PYTEST_CLIENT_KEY_PATH   "tests/certs/client_key.pem"
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -632,13 +637,17 @@ static apx_error_t connect_to_apx_server(void)
       }
       else
       {
-         if (cutil_file_exists("nodes/certs/ca_cert.pem"))
+         if (cutil_file_exists(EXAMPLE_CA_CERT_PATH))
          {
-            msocket_tls_config_set_ca_cert(&tls_config, "nodes/certs/ca_cert.pem");
+            msocket_tls_config_set_ca_cert(&tls_config, EXAMPLE_CA_CERT_PATH);
          }
-         else if (cutil_file_exists("tests/certs/ca_cert.pem"))
+         else if (cutil_file_exists(PYTEST_CA_CERT_PATH))
          {
-            msocket_tls_config_set_ca_cert(&tls_config, "tests/certs/ca_cert.pem");
+            msocket_tls_config_set_ca_cert(&tls_config, PYTEST_CA_CERT_PATH);
+         }
+         else
+         {
+            fprintf(stderr, "Error: No CA certificate found\n");
          }
       }
 
@@ -648,16 +657,19 @@ static apx_error_t connect_to_apx_server(void)
       }
       else if (m_client_cert == NULL && m_client_key == NULL)
       {
-         if (cutil_file_exists("nodes/certs/client_cert.pem") && cutil_file_exists("nodes/certs/client_key.pem"))
+         if (cutil_file_exists(EXAMPLE_CLIENT_CERT_PATH) && cutil_file_exists(EXAMPLE_CLIENT_KEY_PATH))
          {
-            msocket_tls_config_set_client_cert(&tls_config, "nodes/certs/client_cert.pem", "nodes/certs/client_key.pem");
+            msocket_tls_config_set_client_cert(&tls_config, EXAMPLE_CLIENT_CERT_PATH, EXAMPLE_CLIENT_KEY_PATH);
          }
-         else if (cutil_file_exists("tests/certs/client_cert.pem") && cutil_file_exists("tests/certs/client_key.pem"))
+         else if (cutil_file_exists(PYTEST_CLIENT_CERT_PATH) && cutil_file_exists(PYTEST_CLIENT_KEY_PATH))
          {
-            msocket_tls_config_set_client_cert(&tls_config, "tests/certs/client_cert.pem", "tests/certs/client_key.pem");
+            msocket_tls_config_set_client_cert(&tls_config, PYTEST_CLIENT_CERT_PATH, PYTEST_CLIENT_KEY_PATH);
+         }
+         else
+         {
+            fprintf(stderr, "Error: No client certificate found\n");
          }
       }
-
       apx_error_t rc = apx_connection_connect_tls(m_apx_connection, ip_addr, m_connect_port, &tls_config);
       msocket_tls_config_destroy(&tls_config);
       return rc;

@@ -1,18 +1,8 @@
-#build files
-**/Debug/
-**/Release
-**/UnitTest
-**/VisualStudio
 build/
 build*/
 build_*
-**.vs/
-*.VC.db
-*.VC.opendb
 CMemLeak.txt
-**/language.settings.xml
 massif.out.*
-**/*.vcxproj.user
 .vscode/
 Testing/
 TODO.md
@@ -22,4 +12,3 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 /docs/_build/
-nodes/

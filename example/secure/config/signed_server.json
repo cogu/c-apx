@@ -6,7 +6,7 @@
         "security": {
             "require-signed-nodes": true,
             "trusted-keys": [
-                "nodes/certs/client_pubkey.pem"
+                "example/secure/nodes/keys/node_pubkey.pem"
             ]
         }
     },

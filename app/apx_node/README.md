@@ -61,8 +61,8 @@ file     Path to an APX definition file (.apx)
 
 --ca-cert path
                 Path to trusted Root CA certificate PEM file to verify server
-                authenticity. Automatically discovers nodes/certs/ca_cert.pem or
-                tests/certs/ca_cert.pem if omitted.
+                authenticity. Automatically discovers example/secure/config/certs/ca_cert.pem
+                or tests/certs/ca_cert.pem if omitted.
 
 --client-cert path
                 Path to client certificate PEM file for Mutual TLS (mTLS)
@@ -164,7 +164,7 @@ apx-node --tls vehicle.apx
 Explicit server endpoint and CA certificate:
 
 ```bash
-apx-node --tls --ca-cert nodes/certs/ca_cert.pem -c 127.0.0.1 -r 5020 vehicle.apx
+apx-node --tls --ca-cert example/secure/config/certs/ca_cert.pem -c 127.0.0.1:5020 vehicle.apx
 ```
 
 ### Connect over Mutual TLS (mTLS)

@@ -6,24 +6,20 @@
         "security": {
             "require-signed-nodes": true,
             "trusted-keys": [
-                "nodes/certs/client_pubkey.pem"
+                "example/secure/nodes/keys/node_pubkey.pem"
             ]
         }
     },
     "socket-server-extension": {
-        "enabled": true,
-        "tcp-port": 5000,
-        "tcp-tag": "tcp",
-        "unix-file": "/tmp/apx.socket",
-        "unix-tag": "local"
+        "enabled": false
     },
     "tls-server-extension": {
         "enabled": true,
         "tcp-port": 5020,
         "tag": "tls",
-        "server-cert": "tests/certs/server_cert.pem",
-        "server-key": "tests/certs/server_key.pem",
-        "ca-cert": "tests/certs/ca_cert.pem",
+        "server-cert": "example/secure/config/certs/server_cert.pem",
+        "server-key": "example/secure/config/certs/server_key.pem",
+        "ca-cert": "example/secure/config/certs/ca_cert.pem",
         "require-client-cert": false
     },
     "textlog-extension": {
