@@ -90,6 +90,9 @@ static bool m_no_signature = false;
 static bool m_display_help = false;
 static bool m_display_version = false;
 static bool m_use_tls = false;
+static bool m_use_vsock = false;
+static uint32_t m_vsock_cid = MSOCKET_VMADDR_CID_ANY;
+static uint32_t m_vsock_port = 0u;
 static bool m_connect_port_set = false;
 static uint16_t m_bind_port;
 static uint16_t m_connect_port;
@@ -139,6 +142,12 @@ int main(int argc, char **argv)
       {
          m_connect_port = connect_port_tls_default;
       }
+      if (m_use_vsock && m_use_tls)
+      {
+         fprintf(stderr, "Error: TLS over VSOCK is not supported\n");
+         retval = 1;
+         goto SHUTDOWN;
+      }
       if (m_display_version)
       {
          print_version();
@@ -153,6 +162,7 @@ int main(int argc, char **argv)
          {
             printf("Error: No definition file given\n");
             print_usage(argv[0]);
+            retval = 1;
          }
       }
       else
@@ -251,7 +261,14 @@ int main(int argc, char **argv)
                         apx_node_instance_get_name(node_instance),
                         (int) num_provide_ports, (int) num_require_ports);
                }
-               printf("Connecting to APX server at %s...", adt_str_cstr(m_connect_address));
+               if (m_use_vsock)
+               {
+                  printf("Connecting to APX server at vsock://%u:%u...", (unsigned int) m_vsock_cid, (unsigned int) m_vsock_port);
+               }
+               else
+               {
+                  printf("Connecting to APX server at %s...", adt_str_cstr(m_connect_address));
+               }
                rc = connect_to_apx_server();
                if (rc == APX_NO_ERROR)
                {
@@ -306,6 +323,7 @@ int main(int argc, char **argv)
                else
                {
                   printf("Failed (%d)\n", (int) rc);
+                  retval = 1;
                }
             }
          }
@@ -321,6 +339,7 @@ int main(int argc, char **argv)
    {
       printf("Error parsing argument (%d)\n", (int) result);
       print_usage(argv[0]);
+      retval = 1;
    }
 SHUTDOWN:
    application_shutdown();
@@ -363,7 +382,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
          if ( (strcmp(long_name,"bind")==0) || (strcmp(long_name,"bind-port")==0) ||
               (strcmp(long_name,"connect")==0) || (strcmp(long_name,"connect-port")==0) ||
               (strcmp(long_name,"ca-cert")==0) || (strcmp(long_name,"client-cert")==0) ||
-              (strcmp(long_name,"client-key")==0) )
+              (strcmp(long_name,"client-key")==0) || (strcmp(long_name,"vsock")==0) )
          {
             return ARGPARSE_NEED_VALUE;
          }
@@ -511,6 +530,61 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
                return ARGPARSE_VALUE_ERROR;
             }
          }
+         else if (strcmp(long_name,"vsock")==0)
+         {
+            char const *colon = strchr(value, ':');
+            if (colon == NULL)
+            {
+               return ARGPARSE_VALUE_ERROR;
+            }
+            char *end = NULL;
+            unsigned long port_val = strtoul(colon + 1, &end, 0);
+            if ((end == colon + 1) || (*end != '\0') || (port_val == 0) || (port_val > UINT32_MAX))
+            {
+               return ARGPARSE_VALUE_ERROR;
+            }
+            m_vsock_port = (uint32_t) port_val;
+
+            size_t cid_len = (size_t) (colon - value);
+            if (cid_len == 0)
+            {
+               return ARGPARSE_VALUE_ERROR;
+            }
+            char cid_str[32];
+            if (cid_len >= sizeof(cid_str))
+            {
+               return ARGPARSE_VALUE_ERROR;
+            }
+            memcpy(cid_str, value, cid_len);
+            cid_str[cid_len] = '\0';
+
+            if (strcmp(cid_str, "any") == 0)
+            {
+               m_vsock_cid = MSOCKET_VMADDR_CID_ANY;
+            }
+            else if (strcmp(cid_str, "host") == 0)
+            {
+               m_vsock_cid = MSOCKET_VMADDR_CID_HOST;
+            }
+            else if (strcmp(cid_str, "local") == 0)
+            {
+               m_vsock_cid = MSOCKET_VMADDR_CID_LOCAL;
+            }
+            else if (strcmp(cid_str, "hypervisor") == 0)
+            {
+               m_vsock_cid = MSOCKET_VMADDR_CID_HYPERVISOR;
+            }
+            else
+            {
+               unsigned long cid_val = strtoul(cid_str, &end, 0);
+               if ((end == cid_str) || (*end != '\0') || (cid_val > UINT32_MAX))
+               {
+                  return ARGPARSE_VALUE_ERROR;
+               }
+               m_vsock_cid = (uint32_t) cid_val;
+            }
+            m_use_vsock = true;
+         }
       }
       else
       {
@@ -554,6 +628,7 @@ static void print_usage(const char *arg0)
               "[-c --connect connect_path] [-r --connect-port connect_port] "
               "[--no-signature] "
               "[--tls] [--ca-cert ca_path] [--client-cert cert_path] [--client-key key_path] "
+              "[--vsock <cid>:<port>] "
               "[--version] "
               "definition_file\n", arg0);
 }
@@ -607,6 +682,20 @@ static void signal_handler(int signum)
 
 static apx_error_t connect_to_apx_server(void)
 {
+   if (m_use_vsock)
+   {
+      if (m_use_tls)
+      {
+         printf("Error: TLS over VSOCK is not supported\n");
+         return APX_INVALID_ARGUMENT_ERROR;
+      }
+#ifdef _WIN32
+      printf("Error: VSOCK not supported on Windows\n");
+      return APX_NOT_IMPLEMENTED_ERROR;
+#else
+      return apx_connection_connect_vsock(m_apx_connection, m_vsock_cid, m_vsock_port);
+#endif
+   }
    const char *connect_address = adt_str_cstr(m_connect_address);
 #if defined(MSOCKET_ENABLE_TLS)
    if (m_use_tls)
