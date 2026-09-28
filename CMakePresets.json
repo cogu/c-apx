@@ -2,8 +2,8 @@
   "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 20,
-    "patch": 1
+    "minor": 28,
+    "patch": 3
   },
   "configurePresets": [
     {
@@ -12,14 +12,14 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-18",
-        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_C_COMPILER": "clang-21",
+        "CMAKE_CXX_COMPILER": "clang++-21",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true
       }
     },
     {
       "name": "clang-debug",
-      "displayName": "Clang 18 Debug (Apps)",
+      "displayName": "Clang 21 Debug (Apps)",
       "inherits": "clang-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -27,7 +27,7 @@
     },
     {
       "name": "clang-release",
-      "displayName": "Clang 18 Release (Apps)",
+      "displayName": "Clang 21 Release (Apps)",
       "inherits": "clang-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -35,7 +35,7 @@
     },
     {
       "name": "clang-test",
-      "displayName": "Clang 18 Unit Tests",
+      "displayName": "Clang 21 Unit Tests",
       "inherits": "clang-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -44,7 +44,7 @@
     },
     {
       "name": "clang-asan",
-      "displayName": "Clang 18 Address and Undefined Behavior Sanitizers",
+      "displayName": "Clang 21 Address and Undefined Behavior Sanitizers",
       "inherits": "clang-debug",
       "cacheVariables": {
         "APX_SANITIZERS": "address,undefined"
@@ -52,7 +52,7 @@
     },
     {
       "name": "clang-tsan",
-      "displayName": "Clang 18 Thread Sanitizer",
+      "displayName": "Clang 21 Thread Sanitizer",
       "inherits": "clang-debug",
       "cacheVariables": {
         "APX_SANITIZERS": "thread"
@@ -60,11 +60,11 @@
     },
     {
       "name": "clang-tidy",
-      "displayName": "Clang 18 Static Analysis",
+      "displayName": "Clang 21 Static Analysis",
       "inherits": "clang-test",
       "cacheVariables": {
-        "CMAKE_C_CLANG_TIDY": "clang-tidy-18",
-        "CMAKE_CXX_CLANG_TIDY": "clang-tidy-18"
+        "CMAKE_C_CLANG_TIDY": "clang-tidy-21",
+        "CMAKE_CXX_CLANG_TIDY": "clang-tidy-21"
       }
     },
     {
