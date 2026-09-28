@@ -62,6 +62,7 @@ struct msocket_tls_config_tag;
 
 #ifndef _WIN32
 apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *socket_path);
+apx_error_t apx_connection_connect_vsock(apx_connection_t *self, uint32_t cid, uint32_t port);
 #endif
 apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port);
 apx_error_t apx_connection_connect_tls(apx_connection_t *self, const char *address, uint16_t port, const struct msocket_tls_config_tag *tls_config);

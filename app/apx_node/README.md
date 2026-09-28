@@ -7,6 +7,7 @@ apx-node   [-b --bind bind_path] [-p --bind-port port] [--no-bind]
            [-c --connect connect_path] [-r --connect-port connect_port]
            [--no-signature]
            [--tls] [--ca-cert ca_path] [--client-cert cert_path] [--client-key key_path]
+           [--vsock <cid>:<port>]
            [--version] [--help]
            file
 ```
@@ -18,7 +19,7 @@ apx-node   [-b --bind bind_path] [-p --bind-port port] [--no-bind]
 - Creates a dynamic APX client based on the definition given by the *file* argument (`.apx`).
 - Automatically searches for and loads companion cryptographic signature files (`.apx.sig` or `.sig`).
 - Creates a JSON message router socket server (UNIX domain socket or TCP) based on the *bind* options given, unless `--no-bind` is specified.
-- Connects to an APX server based on the *connect* options given (over UNIX socket, plain TCP, or encrypted TLS).
+- Connects to an APX server based on the *connect* options given (over UNIX socket, plain TCP, encrypted TLS, or Linux VSOCK).
 
 Once these preparatory steps have completed, it provides the following runtime functionality:
 
@@ -75,6 +76,12 @@ file     Path to an APX definition file (.apx)
 --no-signature
                 Ignore companion signature file (.sig) even if one exists in the
                 same directory, and force publishing as an unsigned node (RMFP/1.0).
+
+--vsock <cid>:<port>
+                Connect to the APX server using Linux VSOCK (AF_VSOCK) transport.
+                The cid can be specified as a numeric Context ID (e.g. 2 for host,
+                3 for guest) or using symbolic aliases: host, local, hypervisor, or any.
+                (Linux only; not supported on Windows).
 
 --version
                 Print version information and exit.
@@ -173,4 +180,24 @@ Authenticate client node identity using client certificate and key:
 
 ```bash
 apx-node --tls --ca-cert ca_cert.pem --client-cert client_cert.pem --client-key client_key.pem vehicle.apx
+```
+
+### Connect over VSOCK
+
+Connect to an APX server on the hypervisor/host (CID 2, port 5000):
+
+```bash
+apx-node --vsock 2:5000 vehicle.apx
+```
+
+Or using the symbolic alias `host`:
+
+```bash
+apx-node --vsock host:5000 vehicle.apx
+```
+
+Connect to an APX server running locally in loopback (requires `vsock_loopback` driver):
+
+```bash
+apx-node --vsock local:5000 vehicle.apx
 ```

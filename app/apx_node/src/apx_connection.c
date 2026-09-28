@@ -194,6 +194,15 @@ apx_error_t apx_connection_connect_unix(apx_connection_t *self, const char *sock
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
+
+apx_error_t apx_connection_connect_vsock(apx_connection_t *self, uint32_t cid, uint32_t port)
+{
+   if (self != NULL)
+   {
+      return apx_client_connect_vsock(self->client, cid, port);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
+}
 #endif
 
 apx_error_t apx_connection_connect_tcp(apx_connection_t *self, const char *address, uint16_t port)
