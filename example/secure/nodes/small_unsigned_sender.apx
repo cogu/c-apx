@@ -1,0 +1,5 @@
+APX/1.3
+N"small_apx_sender"
+P"VehicleMode"C(0,15):=15
+P"VehicleSpeed"S:=65535
+
