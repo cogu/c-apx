@@ -39,6 +39,7 @@ struct apx_server_tag;
 typedef struct apx_server_monitor_tag
 {
    struct apx_server_tag* server;
+   void* server_listener_handle;
    adt_list_t connection_observers; //strong references to apx_observed_connection_t
    adt_list_t monitor_connections; //weak references to apx_server_connection_t
    MUTEX_T lock;

@@ -52,6 +52,8 @@ Default settings:
 - Listening port: `5000`
 - Listening file path: `/tmp/apx.socket`
 
+Extension Type: `Source`
+
 ##### TLS Extension
 
 `New:` TLS socket server.
@@ -59,6 +61,8 @@ Default settings:
 Default settings:
 
 - Listening port: `5020`
+
+Extension Type: `Source`
 
 ##### TextLog Extension
 
@@ -68,11 +72,14 @@ Default settings:
 
 - Logs to stdout.
 
+Extension Type: `Sink`
 
 ##### Monitor Extension
 
 An unfinished extension that has the ambition of streaming real-time APX event data to remote loggers.
 It currently does nothing.
+
+Extension Type: `Sink`
 
 #### Features not yet started
 

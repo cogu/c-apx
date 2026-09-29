@@ -12,6 +12,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
+#include "adt_ary.h"
 #include "apx/connection_manager.h"
 #ifdef _WIN32
 #include <process.h>
@@ -82,21 +83,54 @@ void apx_connection_manager_start(apx_connection_manager_t *self)
 
 void apx_connection_manager_stop(apx_connection_manager_t *self)
 {
-   if ( (self != NULL) && (self->cleanup_thread_valid == true) )
+   if (self != NULL)
    {
+      if (self->cleanup_thread_valid == true)
+      {
 #ifndef _WIN32
-   void *result;
+         void *result;
 #endif
-      SPINLOCK_ENTER(self->lock);
-      self->cleanup_thread_running = false;
-      SPINLOCK_LEAVE(self->lock);
+         SPINLOCK_ENTER(self->lock);
+         self->cleanup_thread_running = false;
+         SPINLOCK_LEAVE(self->lock);
 #ifdef _WIN32
-      WaitForSingleObject( self->cleanup_thread, INFINITE );
-      CloseHandle( self->cleanup_thread );
+         WaitForSingleObject(self->cleanup_thread, INFINITE);
+         CloseHandle(self->cleanup_thread);
 #else
-      pthread_join(self->cleanup_thread, &result);
+         pthread_join(self->cleanup_thread, &result);
 #endif
-      self->cleanup_thread_valid = false;
+         self->cleanup_thread_valid = false;
+      }
+
+      adt_ary_t connections;
+      adt_ary_create(&connections, NULL);
+      SPINLOCK_ENTER(self->lock);
+      adt_list_elem_t *iter = adt_list_iter_first(&self->active_connections);
+      while (iter != NULL)
+      {
+         adt_ary_push(&connections, iter->pItem);
+         iter = adt_list_iter_next(iter);
+      }
+      iter = adt_list_iter_first(&self->inactive_connections);
+      while (iter != NULL)
+      {
+         adt_ary_push(&connections, iter->pItem);
+         iter = adt_list_iter_next(iter);
+      }
+      SPINLOCK_LEAVE(self->lock);
+
+      int32_t i;
+      int32_t num_connections = adt_ary_length(&connections);
+      for (i = 0; i < num_connections; i++)
+      {
+         apx_server_connection_t *conn = (apx_server_connection_t*) adt_ary_value(&connections, i);
+         if (conn != NULL)
+         {
+            apx_connection_base_close(&conn->base);
+            apx_connection_base_stop(&conn->base);
+         }
+      }
+      adt_ary_destroy(&connections);
    }
 }
 

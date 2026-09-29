@@ -50,10 +50,11 @@ void apx_server_monitor_create(apx_server_monitor_t* self, struct apx_server_tag
    if (self != NULL)
    {
       self->server = server;
+      self->server_listener_handle = NULL;
       adt_list_create(&self->connection_observers, apx_observed_connection_vdelete);
       adt_list_create(&self->monitor_connections, NULL);
-      register_server_listener(self);
       MUTEX_INIT(self->lock);
+      register_server_listener(self);
    }
 }
 
@@ -61,6 +62,11 @@ void apx_server_monitor_destroy(apx_server_monitor_t* self)
 {
    if (self != NULL)
    {
+      if ((self->server != NULL) && (self->server_listener_handle != NULL))
+      {
+         apx_server_unregister_event_listener(self->server, self->server_listener_handle);
+         self->server_listener_handle = NULL;
+      }
       adt_list_destroy(&self->connection_observers);
       adt_list_destroy(&self->monitor_connections);
       MUTEX_DESTROY(self->lock);
@@ -144,7 +150,7 @@ static void register_server_listener(apx_server_monitor_t* self)
       eventListener.arg = (void*)self;
       eventListener.new_connection = apx_server_monitor_virtual_on_new_connection;
       eventListener.connection_closed = apx_server_monitor_virtual_on_connection_closed;
-      apx_server_register_event_listener(self->server, &eventListener);
+      self->server_listener_handle = apx_server_register_event_listener(self->server, &eventListener);
    }
 }
 

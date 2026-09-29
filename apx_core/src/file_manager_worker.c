@@ -741,11 +741,6 @@ static THREAD_PROTO(worker_main, arg)
                   rc = process_single_command(self, &cmd);
                   if (!rc)
                   {
-                     if (connection != NULL)
-                     {
-                        assert(connection->transmit_end != NULL);
-                        connection->transmit_end(connection->arg);
-                     }
                      is_running = false;
                      break;
                   }

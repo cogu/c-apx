@@ -128,17 +128,16 @@ void apx_server_delete(apx_server_t *self)
 
 void apx_server_start(apx_server_t *self)
 {
-
    if( self != NULL )
    {
-      apx_server_init_extensions(self);
 #ifndef UNIT_TEST
-      apx_connection_manager_start(&self->connection_manager);
       if (self->is_event_thread_valid == false)
       {
          apx_server_start_thread(self);
       }
+      apx_connection_manager_start(&self->connection_manager);
 #endif
+      apx_server_init_extensions(self);
    }
 }
 
@@ -146,18 +145,15 @@ void apx_server_stop(apx_server_t *self)
 {
    if( self != NULL)
    {
-
 #ifndef UNIT_TEST
       apx_connection_manager_stop(&self->connection_manager);
-#endif
-      apx_server_shutdown_extensions(self);
-#ifndef UNIT_TEST
       apx_event_loop_exit(&self->event_loop);
       if (self->is_event_thread_valid)
       {
          apx_server_stop_thread(self);
       }
 #endif
+      apx_server_shutdown_extensions(self);
    }
 }
 
@@ -683,7 +679,7 @@ static void apx_server_shutdown_extensions(apx_server_t* self)
 {
    if  (self != NULL)
    {
-      adt_list_elem_t *iter = adt_list_iter_first(&self->extension_manager);
+      adt_list_elem_t *iter = adt_list_iter_last(&self->extension_manager);
       while(iter != NULL)
       {
         apx_server_extension_t *extension = (apx_server_extension_t*) iter->pItem;
@@ -691,7 +687,7 @@ static void apx_server_shutdown_extensions(apx_server_t* self)
         {
            extension->handler.shutdown();
         }
-        iter = adt_list_iter_next(iter);
+        iter = adt_list_iter_prev(iter);
       }
    }
 }
