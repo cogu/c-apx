@@ -11,31 +11,87 @@ Latest release is [v0.2.8](https://github.com/cogu/c-apx/releases/tag/v0.2.8).
 
 ## v0.3.x (Development)
 
-A brand new implementation is being developed on master branch. Its current state is in pre-alpha stage.
+A brand new implementation is being developed on branch `master`. It will remain in alpha stage until release v0.4.0.
 
 ### Current implementation status
 
-- New APX server and client with support for APX IDL v1.3.
-  - Native support for TCP/IP and UNIX sockets.
-  - Possible to extend the server with custom extensions to allow new connection types.
-- Dynamic clients are fully supported.
-- APX-ES clients not yet supported (needs rewrite from v0.2).
-- Static clients not yet supported (needs rewrite from v0.2).
-- CMake build support for Linux and Windows.
+#### APX Core Features
+
+- Reference implementation of APX IDL v1.3 and APX VM v2.1.
+  - Parser
+  - Compiler
+  - Virtual Machine
+- `New:` Port connection count support (server and client).
+- Dynamic client support
+  - Use `apx-node` together with `apx-control` to dynamically create APX nodes.
+
+#### APX Server Base Features
+
+Reference implementation of the APX server. It is highly configurable using a single JSON file.
+
+**Security features (optional):**
+
+- `New:` Cryptographically signed APX node verification (NIST P-256 with SHA-256)
+  - Use the tool `apx-sign` to create keys and sign your APX nodes.
+
+#### APX Server Extensions
+
+Socket support, logging, and more are enabled in the APX server by adding compile-time extensions.
+Each extension can be individually configured using JSON (including enable/disable options).
+
+##### Socket Extension
+
+Basic socket server support.
+
+- TCP sockets.
+- UNIX Domain sockets.
+
+Default settings:
+
+- Listening port: `5000`
+- Listening file path: `/tmp/apx.socket`
+
+##### TLS Extension
+
+`New:` TLS socket server.
+
+Default settings:
+
+- Listening port: `5020`
+
+##### TextLog Extension
+
+Demonstrates the built-in event listener mechanism in `apx_core` and logs server events to stdout or a log file.
+
+Default settings:
+
+- Logs to stdout.
+
+
+##### Monitor Extension
+
+An unfinished extension that has the ambition of streaming real-time APX event data to remote loggers.
+It currently does nothing.
+
+#### Features not yet started
+
+- APX-ES clients not yet supported (needs a rewrite from v0.2).
+- Static clients not yet supported (needs a rewrite from v0.2).
+
 
 ## Dynamic vs. Static Clients
 
 ### Static Clients (not yet supported)
 
-Static clients uses a code generator (see [Python APX](https://github.com/cogu/py-apx)) to generate C code from APX definitions files.
+Static clients use a code generator (see [Python APX](https://github.com/cogu/py-apx)) to generate C code from APX definition files.
 The generated code is fast and integrates well with type definitions shared with an AUTOSAR RTE generator.
 Statically generated clients are supposed to be used together with APX-ES in order to run on small devices that run an RTOS.
 
 ### Dynamic Clients (supported)
 
-Dynamic clients parses an APX definition file in runtime and builds small byte code programs (in-memory) which then executes through a virtual machine (VM). This method has more flexibility since it doesn't require C code to be generated or compiled as an intermediate step.
-Caching mechanisms are currently being developed for C and C++ (More information later).
-Dynamic clients is best used on Windows and Linux systems.
+Dynamic clients parse an APX definition file at runtime and build small bytecode programs (in-memory) which then execute through a virtual machine (VM). This method has more flexibility since it doesn't require C code to be generated or compiled as an intermediate step.
+Caching mechanisms are currently being developed for C and C++ (more information later).
+Dynamic clients are best used on Windows and Linux systems.
 
 ## Building with CMake
 
@@ -47,6 +103,8 @@ Dynamic clients is best used on Windows and Linux systems.
   - `apx-server`: The APX server daemon.
   - `apx-node`: APX node application.
   - `apx-control`: APX control application.
+  - `apx-perf-test`: Dedicated APX performance test.
+  - `apx-sign`: Utility for signing APX nodes using ECDSA.
 
   Applications can be built in either `Debug` or `Release` configuration.
 
@@ -54,13 +112,9 @@ Dynamic clients is best used on Windows and Linux systems.
   - Enabled by setting `-DUNIT_TEST=ON` at CMake configure time.
   - Built specifically via `--target apx_unit` and executed with `ctest`.
 
----
-
-## Building with CMake
-
 For Windows, use a "Native tools command prompt" from your Visual Studio installation.
 
-### Using CMake Presets (Clang 18 + Ninja)
+### Linux CMake Presets (Clang 21 + Ninja)
 
 ```bash
 # Run unit tests
@@ -69,9 +123,16 @@ cmake --build --preset clang-test
 ctest --preset clang-test
 
 # Address and Undefined Behavior Sanitizers (ASan + UBSan)
+# Note: This preset requires a preconfigured pytest virtual environment
 cmake --preset clang-asan
 cmake --build --preset clang-asan
-ctest --preset clang-asan
+ctest -V --preset clang-asan
+
+# Thread Sanitizers (TSan)
+# Note: This preset requires a preconfigured pytest virtual environment
+cmake --preset clang-tsan
+cmake --build --preset clang-tsan
+ctest -V --preset clang-tsan
 
 # Static Analysis
 cmake --preset clang-tidy
@@ -86,50 +147,37 @@ cmake --preset clang-release
 cmake --build --preset clang-release
 ```
 
-### Manual CMake Workflows (Linux and Windows)
+### Windows CMake Presets (Visual Studio 2026)
 
-For Windows, use a "Native tools command prompt" from your Visual Studio installation. It comes with a cmake binary that
-by default chooses the appropriate compiler version.
+```bash
+# Unit test build
+cmake --preset msvc-test
+cmake --build --preset msvc-test
+ctest --preset msvc-test
 
-#### Running unit tests
+# Debug build
+cmake --preset msvc-debug
+cmake --build --preset msvc-debug
 
-Configure:
+# Release build
+cmake --preset msvc-release
+cmake --build --preset msvc-release
+```
+
+### Manual CMake Workflow with Linux and GCC
 
 ```sh
 cmake -S . -B build-test -GNinja -DUNIT_TEST=ON
-```
-
-Build:
-
-```sh
 cmake --build build-test
-```
-
-Run test cases:
-
-```sh
 ctest --test-dir build-test --output-on-failure
 ```
 
-##### Release Build
+#### Running pytests (Linux Only)
 
-**Configure:**
+See [tests/README.md](tests/README.md) for virtual environment setup.
 
-```bash
-cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release
-```
-
-**Build:**
+Requires either `clang-debug` or `clang-release` presets to have been prebuilt.
 
 ```bash
-cmake --build build
-```
-
-#### Release build with install
-
-If you plan to run the install target and want binaries installed to `/usr/bin` instead of `/usr/local/bin`:
-
-```bash
-cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr
-sudo cmake --build build --target install
+pytest -v -n auto
 ```
