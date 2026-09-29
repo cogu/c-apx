@@ -45,6 +45,7 @@ Basic socket server support.
 
 - TCP sockets.
 - UNIX Domain sockets.
+- `New:` Virtual Machine Sockets (VSOCK).
 
 Default settings:
 
