@@ -62,6 +62,7 @@ void apx_server_text_log_create(apx_server_text_log_t *self, struct apx_server_t
    {
       apx_text_log_base_create(&self->base);
       self->server = server;
+      self->server_listener_handle = NULL;
       register_server_listener(self);
    }
 }
@@ -70,6 +71,11 @@ void apx_server_text_log_destroy(apx_server_text_log_t *self)
 {
    if (self != NULL)
    {
+      if ((self->server != NULL) && (self->server_listener_handle != NULL))
+      {
+         apx_server_unregister_event_listener(self->server, self->server_listener_handle);
+         self->server_listener_handle = NULL;
+      }
       apx_text_log_base_destroy(&self->base);
    }
 }
@@ -164,7 +170,7 @@ static void register_server_listener(apx_server_text_log_t *self)
    eventListener.new_connection = apx_server_text_log_on_new_connection;
    eventListener.connection_closed = apx_server_text_log_on_connection_closed;
    eventListener.server_write_log = apx_server_text_log_on_log_event;
-   apx_server_register_event_listener(self->server, &eventListener);
+   self->server_listener_handle = apx_server_register_event_listener(self->server, &eventListener);
 }
 
 static void register_connection_listener(apx_server_text_log_t *self, apx_server_connection_t *connection)

@@ -32,6 +32,7 @@ typedef struct apx_server_text_log_tag
 {
    apx_text_log_base_t base;
    struct apx_server_tag *server;
+   void *server_listener_handle;
 } apx_server_text_log_t;
 
 //////////////////////////////////////////////////////////////////////////////

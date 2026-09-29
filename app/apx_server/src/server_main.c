@@ -51,7 +51,7 @@ static void print_version(void);
 static void print_usage(const char *name);
 #ifndef _WIN32
 static void signal_handler_setup(void);
-void signal_handler(int signum);
+static void signal_handler(int signum);
 #endif
 #ifdef _WIN32
 static int init_wsa(void);
@@ -61,7 +61,33 @@ static int init_wsa(void);
 // GLOBAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 //int8_t g_debug; // Global so apx_logging can use it from everywhere
-int m_runFlag = 1;
+
+//////////////////////////////////////////////////////////////////////////////
+// LOCAL VARIABLES
+//////////////////////////////////////////////////////////////////////////////
+#ifndef _WIN32
+static volatile sig_atomic_t m_runFlag = 1;
+#else
+static volatile int m_runFlag = 1;
+#endif
+
+static inline int get_run_flag(void)
+{
+#if defined(__GNUC__) || defined(__clang__)
+   return __atomic_load_n(&m_runFlag, __ATOMIC_RELAXED);
+#else
+   return m_runFlag;
+#endif
+}
+
+static inline void set_run_flag(int val)
+{
+#if defined(__GNUC__) || defined(__clang__)
+   __atomic_store_n(&m_runFlag, val, __ATOMIC_RELAXED);
+#else
+   m_runFlag = val;
+#endif
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -81,7 +107,7 @@ int main(int argc, char **argv)
    apx_error_t result;
    dtl_hv_t *config = NULL;
 
-   m_runFlag = 1;
+   set_run_flag(1);
    m_display_help = false;
    m_display_version = false;
    m_config_path = NULL;
@@ -209,7 +235,7 @@ int main(int argc, char **argv)
       m_ready_fd = -1;
    }
 #endif
-   while(m_runFlag != 0)
+   while(get_run_flag() != 0)
    {
       SLEEP(1000); //main thread is sleeping while child threads do all the work
    }
@@ -249,10 +275,10 @@ static void signal_handler_setup(void)
    signal(SIGPIPE, SIG_IGN);
 }
 
-void signal_handler(int signum)
+static void signal_handler(int signum)
 {
    (void)signum;
-   m_runFlag = false;
+   set_run_flag(0);
 }
 #endif
 
