@@ -222,7 +222,17 @@ int main(int argc, char **argv)
       }
       return 1;
    }
-   apx_server_start(&m_server);
+   result = apx_server_start(&m_server);
+   if (result != APX_NO_ERROR)
+   {
+      fprintf(stderr, "Failed to start server: %s (error %d)\n", apx_strerror(result), (int) result);
+      apx_server_destroy(&m_server);
+      if (config != NULL)
+      {
+         dtl_dec_ref(config);
+      }
+      return 1;
+   }
 #ifndef _WIN32
    if (m_ready_fd >= 0)
    {

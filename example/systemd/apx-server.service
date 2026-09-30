@@ -1,0 +1,21 @@
+[Unit]
+Description=APX Server Daemon
+Documentation=https://github.com/cogu/c-apx
+Requires=apx-server.socket
+After=network.target apx-server.socket
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/apx-server /etc/apx/server.json
+Restart=on-failure
+User=apx
+Group=apx-users
+
+# Security sandboxing
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

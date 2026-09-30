@@ -59,6 +59,7 @@ void apx_socket_server_delete(apx_socket_server_t *self);
 void apx_socket_server_start_tcp_server(apx_socket_server_t *self, uint16_t tcp_port, const char *tag);
 #if !defined(UNIT_TEST) && !defined(_WIN32)
 void apx_socket_server_start_unix_server(apx_socket_server_t *self, const char *file_path, const char *tag);
+void apx_socket_server_start_unix_server_fd(apx_socket_server_t *self, int fd, const char *tag);
 void apx_socket_server_stop_unix_server(apx_socket_server_t *self);
 void apx_socket_server_start_vsock_server(apx_socket_server_t *self, uint32_t cid, uint32_t port, const char *tag);
 void apx_socket_server_stop_vsock_server(apx_socket_server_t *self);

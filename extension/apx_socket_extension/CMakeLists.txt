@@ -4,12 +4,14 @@ set (APX_SOCKET_EXTENSION_HEADERS
     include/apx/extension/socket_server_connection.h
     include/apx/extension/socket_server_extension.h
     include/apx/extension/socket_server.h
+    include/apx/extension/systemd_util.h
 )
 
 set (APX_SOCKET_EXTENSION_SOURCES
     src/socket_server_connection.c
     src/socket_server_extension.c
     src/socket_server.c
+    src/systemd_util.c
 )
 
 add_library(apx_socket_extension ${LIBRARY_TYPE} ${APX_SOCKET_EXTENSION_HEADERS} ${APX_SOCKET_EXTENSION_SOURCES})

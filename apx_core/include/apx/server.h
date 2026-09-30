@@ -78,7 +78,7 @@ void apx_server_create(apx_server_t *self);
 void apx_server_destroy(apx_server_t *self);
 apx_server_t *apx_server_new(void);
 void apx_server_delete(apx_server_t *self);
-void apx_server_start(apx_server_t *self);
+apx_error_t apx_server_start(apx_server_t *self);
 void apx_server_stop(apx_server_t *self);
 void* apx_server_register_event_listener(apx_server_t *self, apx_server_event_listener_t *event_listener);
 void apx_server_unregister_event_listener(apx_server_t *self, void *handle);

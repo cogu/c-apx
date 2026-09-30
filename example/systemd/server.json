@@ -1,0 +1,17 @@
+{
+    "apx-server": {
+        "apx-cache-enabled": false,
+        "max-num-events": 200
+    },
+    "socket-server-extension": {
+        "enabled": true,
+        "unix-systemd": true,
+        "unix-tag": "local"
+    },
+    "textlog-extension": {
+        "enabled": true,
+        "file-enabled": true,
+        "file-path": "",
+        "syslog-enabled": true
+    }
+}
