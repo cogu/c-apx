@@ -19,6 +19,9 @@
 #endif
 #include <string.h>
 #include <stdio.h>
+#ifndef _WIN32
+#include <grp.h>
+#endif
 #include "apx/extension/socket_server_extension.h"
 #include "apx/extension/socket_server.h"
 #include "apx/extension/systemd_util.h"
@@ -206,6 +209,51 @@ static apx_error_t configure_unix(apx_socket_server_t *server, dtl_hv_t *cfg)
    if (sv_unix_tag != NULL)
    {
       unix_tag = dtl_sv_to_cstr(sv_unix_tag, &conversion_ok);
+   }
+
+   /* Allowed groups whitelist */
+   dtl_dv_t *dv_allowed_groups = dtl_hv_get_cstr(cfg, "allowed-groups");
+   if (dv_allowed_groups != NULL)
+   {
+      if (dtl_dv_type(dv_allowed_groups) == DTL_DV_ARRAY)
+      {
+         dtl_av_t *av = (dtl_av_t*) dv_allowed_groups;
+         int32_t len = dtl_av_length(av);
+         for (int32_t i = 0; i < len; ++i)
+         {
+            dtl_dv_t *elem = dtl_av_value(av, i);
+            if (elem != NULL && dtl_dv_type(elem) == DTL_DV_SCALAR)
+            {
+               const char *group_name = dtl_sv_to_cstr((dtl_sv_t*) elem, &conversion_ok);
+               if (conversion_ok && (group_name != NULL) && (strlen(group_name) > 0))
+               {
+                  apx_socket_server_add_allowed_group(server, group_name);
+#ifndef UNIT_TEST
+                  struct group *grp = getgrnam(group_name);
+                  if (grp == NULL)
+                  {
+                     fprintf(stderr, "[SOCKET-SERVER] Warning: configured group '%s' not found on system\n", group_name);
+                  }
+#endif
+               }
+            }
+         }
+      }
+      else if (dtl_dv_type(dv_allowed_groups) == DTL_DV_SCALAR)
+      {
+         const char *group_name = dtl_sv_to_cstr((dtl_sv_t*) dv_allowed_groups, &conversion_ok);
+         if (conversion_ok && (group_name != NULL) && (strlen(group_name) > 0))
+         {
+            apx_socket_server_add_allowed_group(server, group_name);
+#ifndef UNIT_TEST
+            struct group *grp = getgrnam(group_name);
+            if (grp == NULL)
+            {
+               fprintf(stderr, "[SOCKET-SERVER] Warning: configured group '%s' not found on system\n", group_name);
+            }
+#endif
+         }
+      }
    }
 
    if (systemd_mode == SYSTEMD_MODE_ON)
