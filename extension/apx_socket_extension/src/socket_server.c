@@ -19,6 +19,12 @@
 #include "apx/extension/socket_server.h"
 #include "apx/server.h"
 #include "apx/extension/socket_server_connection.h"
+#ifndef _WIN32
+#include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
+#include <unistd.h>
+#endif
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
 #endif
@@ -53,6 +59,8 @@ static void apx_socket_server_tcp_accept(void *arg, struct msocket_server_tag *s
 #if !defined(UNIT_TEST) && !defined(_WIN32)
 static void apx_socket_server_unix_accept(void *arg, struct msocket_server_tag *srv, void *sock);
 static void apx_socket_server_vsock_accept(void *arg, struct msocket_server_tag *srv, void *sock);
+static bool verify_peer_credentials(const apx_socket_server_t *self, msocket_t *sock);
+static bool is_peer_in_allowed_groups(const apx_socket_server_t *self, const msocket_credentials_t *creds);
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -77,6 +85,7 @@ void apx_socket_server_create(apx_socket_server_t *self, struct apx_server_tag *
       self->tcp_connection_tag = NULL;
       self->unix_connection_tag = NULL;
       self->vsock_connection_tag = NULL;
+      adt_ary_create(&self->allowed_groups, free);
    }
 }
 
@@ -100,6 +109,7 @@ void apx_socket_server_destroy(apx_socket_server_t *self)
       {
          free(self->vsock_connection_tag);
       }
+      adt_ary_destroy(&self->allowed_groups);
    }
 }
 
@@ -119,6 +129,14 @@ void apx_socket_server_delete(apx_socket_server_t *self)
    {
       apx_socket_server_destroy(self);
       free(self);
+   }
+}
+
+void apx_socket_server_add_allowed_group(apx_socket_server_t *self, const char *group_name)
+{
+   if ((self != NULL) && (group_name != NULL))
+   {
+      adt_ary_push(&self->allowed_groups, STRDUP(group_name));
    }
 }
 
@@ -317,16 +335,127 @@ static void apx_socket_server_tcp_accept(void *arg, struct msocket_server_tag *s
 }
 
 #if !defined(UNIT_TEST) && !defined(_WIN32)
+static bool is_peer_in_allowed_groups(const apx_socket_server_t *self, const msocket_credentials_t *creds)
+{
+   int32_t num_groups;
+   if (self == NULL || creds == NULL)
+   {
+      return false;
+   }
+   num_groups = adt_ary_length(&self->allowed_groups);
+   if (num_groups == 0)
+   {
+      return true;
+   }
+
+   struct passwd *pw = getpwuid((uid_t)creds->uid);
+
+   for (int32_t i = 0; i < num_groups; ++i)
+   {
+      const char *allowed_group_name = (const char*) adt_ary_value(&self->allowed_groups, i);
+      if (allowed_group_name == NULL)
+      {
+         continue;
+      }
+      struct group *grp = getgrnam(allowed_group_name);
+      if (grp == NULL)
+      {
+         continue;
+      }
+
+      /* 1. Direct GID match: peer effective GID matches allowed group GID */
+      if ((gid_t)creds->gid == grp->gr_gid)
+      {
+         return true;
+      }
+
+      /* 2. User primary GID match */
+      if (pw != NULL && pw->pw_gid == grp->gr_gid)
+      {
+         return true;
+      }
+
+      /* 3. Group membership check via gr_mem */
+      if (pw != NULL && grp->gr_mem != NULL)
+      {
+         for (char **mem = grp->gr_mem; *mem != NULL; ++mem)
+         {
+            if (strcmp(*mem, pw->pw_name) == 0)
+            {
+               return true;
+            }
+         }
+      }
+
+      /* 4. Supplementary group membership via getgrouplist */
+      if (pw != NULL)
+      {
+         int ngroups = 64;
+         gid_t groups[64];
+         if (getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups) >= 0)
+         {
+            for (int j = 0; j < ngroups; ++j)
+            {
+               if (groups[j] == grp->gr_gid)
+               {
+                  return true;
+               }
+            }
+         }
+      }
+   }
+
+   return false;
+}
+
+static bool verify_peer_credentials(const apx_socket_server_t *self, msocket_t *sock)
+{
+   msocket_credentials_t creds;
+   msocket_error_t cred_rc = msocket_get_peer_credentials(sock, &creds);
+   if (cred_rc == MSOCKET_NO_ERROR)
+   {
+      printf("[SOCKET-SERVER] UNIX connection from pid=%d, uid=%d, gid=%d\n",
+             creds.pid, creds.uid, creds.gid);
+   }
+   else
+   {
+      printf("[SOCKET-SERVER] New UNIX connection (credentials unavailable)\n");
+   }
+
+   if (adt_ary_length(&self->allowed_groups) > 0)
+   {
+      if ((cred_rc != MSOCKET_NO_ERROR) || !is_peer_in_allowed_groups(self, &creds))
+      {
+         if (cred_rc == MSOCKET_NO_ERROR)
+         {
+            fprintf(stderr, "[SOCKET-SERVER] Access denied: client (pid=%d, uid=%d, gid=%d) is not in allowed groups\n",
+                    creds.pid, creds.uid, creds.gid);
+         }
+         else
+         {
+            fprintf(stderr, "[SOCKET-SERVER] Access denied: unable to verify peer credentials\n");
+         }
+         return false;
+      }
+   }
+
+   return true;
+}
+
 static void apx_socket_server_unix_accept(void *arg, struct msocket_server_tag *srv, void *sock)
 {
    apx_socket_server_t *self = (apx_socket_server_t*) arg;
    (void)srv;
-#if APX_DEBUG_ENABLE
-   printf("[SOCKET-SERVER] New UNIX connection\n");
-#endif
    if (self != NULL)
    {
-      apx_socket_server_connection_t * new_connection = apx_socket_server_connection_new(sock);
+      if (!verify_peer_credentials(self, (msocket_t*)sock))
+      {
+         msocket_close((msocket_t*)sock);
+         msocket_delete((msocket_t*)sock);
+         return;
+      }
+
+      apx_socket_server_connection_t *new_connection = apx_socket_server_connection_new(sock);
       if (new_connection != NULL)
       {
          if (self->unix_connection_tag != NULL)

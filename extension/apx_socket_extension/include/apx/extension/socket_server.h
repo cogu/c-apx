@@ -21,6 +21,7 @@
 #include "msocket_server.h"
 #include "testsocket.h"
 #include "dtl_type.h"
+#include "adt_ary.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -41,6 +42,7 @@ typedef struct apx_socket_server_tag
    char *tcp_connection_tag; //Optional tag to set on new TCP connections
    char *unix_connection_tag; //Optional tag to set on new Unix socket connections
    char *vsock_connection_tag; //Optional tag to set on new VSOCK connections
+   adt_ary_t allowed_groups; //List of allowed group names (char*) for UNIX socket connections
    bool is_tcp_server_started;
    bool is_unix_server_started;
    bool is_vsock_server_started;
@@ -56,6 +58,7 @@ void apx_socket_server_destroy(apx_socket_server_t *self);
 apx_socket_server_t* apx_socket_server_new(struct apx_server_tag *apx_server);
 void apx_socket_server_delete(apx_socket_server_t *self);
 
+void apx_socket_server_add_allowed_group(apx_socket_server_t *self, const char *group_name);
 void apx_socket_server_start_tcp_server(apx_socket_server_t *self, uint16_t tcp_port, const char *tag);
 #if !defined(UNIT_TEST) && !defined(_WIN32)
 void apx_socket_server_start_unix_server(apx_socket_server_t *self, const char *file_path, const char *tag);
