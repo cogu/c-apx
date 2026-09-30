@@ -39,7 +39,7 @@ static void apx_server_attach_and_start_connection(apx_server_t *self, apx_serve
 static void apx_server_trigger_connected_event(apx_server_t *self, apx_server_connection_t * server_connection);
 static void apx_server_trigger_disconnected_event(apx_server_t *self, apx_server_connection_t *server_connection);
 static void apx_server_trigger_log_write_event(apx_server_t *self, apx_log_level_t level, const char *label, const char *msg);
-static void apx_server_init_extensions(apx_server_t *self);
+static apx_error_t apx_server_init_extensions(apx_server_t *self);
 static void apx_server_shutdown_extensions(apx_server_t *self);
 static void apx_server_handle_event(void *arg, apx_event_t *event);
 static void apx_server_destroy_event(apx_server_t* self, apx_event_t* event);
@@ -126,7 +126,7 @@ void apx_server_delete(apx_server_t *self)
    }
 }
 
-void apx_server_start(apx_server_t *self)
+apx_error_t apx_server_start(apx_server_t *self)
 {
    if( self != NULL )
    {
@@ -137,8 +137,9 @@ void apx_server_start(apx_server_t *self)
       }
       apx_connection_manager_start(&self->connection_manager);
 #endif
-      apx_server_init_extensions(self);
+      return apx_server_init_extensions(self);
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_server_stop(apx_server_t *self)
@@ -647,7 +648,7 @@ static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server
    adt_ary_destroy(&callbacks);
 }
 
-static void apx_server_init_extensions(apx_server_t* self)
+static apx_error_t apx_server_init_extensions(apx_server_t* self)
 {
    if  (self != NULL)
    {
@@ -657,11 +658,15 @@ static void apx_server_init_extensions(apx_server_t* self)
          apx_server_extension_t *extension = (apx_server_extension_t*) iter->pItem;
          if (extension->handler.init != NULL)
          {
-            extension->handler.init(self, extension->config);
+            apx_error_t rc = extension->handler.init(self, extension->config);
             if (extension->config != NULL)
             {
                dtl_dv_dec_ref(extension->config);
                extension->config = NULL;
+            }
+            if (rc != APX_NO_ERROR)
+            {
+               return rc;
             }
             if (extension->name != NULL)
             {
@@ -673,6 +678,7 @@ static void apx_server_init_extensions(apx_server_t* self)
          iter = adt_list_iter_next(iter);
       }
    }
+   return APX_NO_ERROR;
 }
 
 static void apx_server_shutdown_extensions(apx_server_t* self)

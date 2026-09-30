@@ -183,6 +183,32 @@ void apx_socket_server_start_unix_server(apx_socket_server_t *self, const char *
 //      apx_server_log_event(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
    }
 }
+
+void apx_socket_server_start_unix_server_fd(apx_socket_server_t *self, int fd, const char *tag)
+{
+   if ( (self != NULL) && (fd >= 0) )
+   {
+      msocket_handler_t server_handler;
+      if (tag != NULL)
+      {
+         size_t length = strlen(tag);
+         if (length > 0u)
+         {
+            self->unix_connection_tag = STRDUP(tag);
+         }
+      }
+      memset(&server_handler, 0, sizeof(server_handler));
+#ifndef UNIT_TEST
+      server_handler.tcp_accept = apx_socket_server_unix_accept;
+#endif
+      msocket_server_create(&self->unix_server, MSOCKET_ADDR_UNIX, NULL);
+      msocket_server_disable_cleanup(&self->unix_server); //we will use our own garbage collector
+      msocket_server_sethandler(&self->unix_server, &server_handler, self);
+      msocket_server_unix_start_fd(&self->unix_server, fd);
+      self->is_unix_server_started = true;
+      printf("Listening on pre-bound UNIX socket (fd %d)\n", fd);
+   }
+}
 void apx_socket_server_start_vsock_server(apx_socket_server_t *self, uint32_t cid, uint32_t port, const char *tag)
 {
    if ( (self != NULL) && (port != 0u) )
