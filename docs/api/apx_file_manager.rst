@@ -14,7 +14,7 @@ In APX, all signal data and definition information are exposed as virtual memory
 * ``NodeName.cout``: Byte buffer containing provide port connection counts (APX IDL v1.3+).
 * ``NodeName.cin``: Byte buffer containing require port connection counts (APX IDL v1.3+).
 
-For detailed specifications of file structures and memory layouts, see :doc:`internal_design`.
+For detailed specifications of APX virtual file structures and memory layouts, refer to the `APX Protocol and Design Specifications <https://apx.readthedocs.io>`_.
 
 The file manager tracks file states (open, requested, synced), generates address mappings, and handles low-level write/read messages.
 

@@ -4,7 +4,7 @@ PROJECT_NUMBER         = "0.3.8"
 PROJECT_BRIEF          = "AUTOSAR Port eXchange in C"
 
 # Input configuration
-INPUT                  = ../apx_core/include ../extension/apx_socket_extension/include ../extension/apx_text_log_extension/include ../extension/apx_monitor_extension/include
+INPUT                  = ../apx_core/include ../extension/apx_socket_extension/include ../extension/apx_tls_extension/include ../extension/apx_text_log_extension/include ../extension/apx_monitor_extension/include
 FILE_PATTERNS          = *.h
 RECURSIVE              = YES
 OUTPUT_DIRECTORY       = _build/doxygen
