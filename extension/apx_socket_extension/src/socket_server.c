@@ -412,16 +412,6 @@ static bool verify_peer_credentials(const apx_socket_server_t *self, msocket_t *
 {
    msocket_credentials_t creds;
    msocket_error_t cred_rc = msocket_get_peer_credentials(sock, &creds);
-   if (cred_rc == MSOCKET_NO_ERROR)
-   {
-      printf("[SOCKET-SERVER] UNIX connection from pid=%d, uid=%d, gid=%d\n",
-             creds.pid, creds.uid, creds.gid);
-   }
-   else
-   {
-      printf("[SOCKET-SERVER] New UNIX connection (credentials unavailable)\n");
-   }
-
    if (adt_ary_length(&self->allowed_groups) > 0)
    {
       if ((cred_rc != MSOCKET_NO_ERROR) || !is_peer_in_allowed_groups(self, &creds))
@@ -438,7 +428,6 @@ static bool verify_peer_credentials(const apx_socket_server_t *self, msocket_t *
          return false;
       }
    }
-
    return true;
 }
 
