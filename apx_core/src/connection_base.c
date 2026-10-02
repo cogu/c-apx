@@ -103,7 +103,7 @@ apx_error_t apx_connection_base_create(apx_connection_base_t *self, apx_mode_t m
       self->num_header_size = UINT32_SIZE;
       self->mode = mode;
       self->connection_type = APX_CONNECTION_TYPE_DEFAULT;
-      self->rmf_version_id = RMF_PROTOCOL_VERSION_ID_1_0;
+      self->rmf_version_id = RMF_PROTOCOL_VERSION_ID_1_1;
       rc = apx_allocator_create(&self->allocator, APX_MAX_NUM_MESSAGES);
       if (rc != APX_NO_ERROR)
       {

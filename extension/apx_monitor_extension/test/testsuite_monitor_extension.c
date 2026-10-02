@@ -106,7 +106,7 @@ static void test_monitor_connection_transmits_existing_connection_info_on_connec
    apx_server_test_connection_t* default_connection = NULL;
    apx_server_test_connection_t* monitor_connection = NULL;
    adt_bytearray_t* packet;
-   int32_t const default_greeting_accepted_size = 9;
+   int32_t const default_greeting_accepted_size = 13;
    int32_t const new_greeting_accepted_size = 13;
    uint8_t actual[15];
    uint8_t expected[15] = {

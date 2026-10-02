@@ -43,6 +43,9 @@ static void test_require_port_data_is_published_after_definition_has_been_parsed
 static void test_require_port_data_is_sent_after_file_open_request_received(CuTest* tc);
 static void test_remotefile_protocol_version_is_parsed_from_greeting_header(CuTest* tc);
 static void test_message_format_is_parsed_from_greeting_header(CuTest* tc);
+static void test_legacy_greeting_without_headers_is_accepted(CuTest* tc);
+static void test_legacy_num_header_format_is_parsed_from_greeting_header(CuTest* tc);
+static void test_size_header_must_match_protocol_version(CuTest* tc);
 static void test_default_connection_type_is_parsed_from_greeting_header(CuTest* tc);
 static void test_monitor_connection_type_is_parsed_from_greeting_header(CuTest* tc);
 static void test_event_connection_type_is_parsed_from_greeting_header(CuTest* tc);
@@ -74,6 +77,9 @@ CuSuite* testsuite_apx_server_connection(void)
    SUITE_ADD_TEST(suite, test_require_port_data_is_sent_after_file_open_request_received);
    SUITE_ADD_TEST(suite, test_remotefile_protocol_version_is_parsed_from_greeting_header);
    SUITE_ADD_TEST(suite, test_message_format_is_parsed_from_greeting_header);
+   SUITE_ADD_TEST(suite, test_legacy_greeting_without_headers_is_accepted);
+   SUITE_ADD_TEST(suite, test_legacy_num_header_format_is_parsed_from_greeting_header);
+   SUITE_ADD_TEST(suite, test_size_header_must_match_protocol_version);
    SUITE_ADD_TEST(suite, test_default_connection_type_is_parsed_from_greeting_header);
    SUITE_ADD_TEST(suite, test_monitor_connection_type_is_parsed_from_greeting_header);
    SUITE_ADD_TEST(suite, test_event_connection_type_is_parsed_from_greeting_header);
@@ -91,20 +97,24 @@ static void test_acknowledge_is_sent_when_greeting_is_seen(CuTest* tc)
 {
    apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
-   uint8_t actual[9];
-   uint8_t expected[9] = {
+   uint8_t actual[13];
+   uint8_t expected[13] = {
       //message size
-      8,
+      12,
       //write address
       0xBFu,
       0xFFu,
       0xFCu,
       0x00u,
       //command type
-      (uint8_t)RMF_CMD_ACK_MSG,
+      (uint8_t)RMF_CMD_ACCEPT_HEADER,
       0u,
       0u,
       0u,
+      0xFFu,
+      0xFFu,
+      0xFFu,
+      0xFFu,
    };
    memset(actual, 0, sizeof(actual));
    connection = apx_server_test_connection_new();
@@ -127,7 +137,7 @@ static void test_node_instance_is_created_when_definition_file_is_seen(CuTest* t
    apx_server_test_connection_t* connection;
    apx_node_manager_t* node_manager;
    adt_bytearray_t* packet;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    char const* apx_text =
       "APX/1.2\n"
       "N\"TestNode1\"\n"
@@ -164,7 +174,7 @@ static void test_file_open_request_is_sent_after_definition_file_is_seen(CuTest*
 {
    apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    uint8_t actual[13];
    uint8_t expected[13] = {
@@ -251,6 +261,7 @@ static void test_file_open_request_is_sent_after_definition_file_is_seen_in_comp
    connection = apx_server_test_connection_new();
    CuAssertPtrNotNull(tc, connection);
    apx_server_test_connection_enable_compatibility_mode(connection);
+   apx_server_test_connection_set_tester_protocol_version(connection, RMF_PROTOCOL_VERSION_ID_1_0);
    CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(connection));
    CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(connection));
    apx_server_test_connection_run(connection);
@@ -276,7 +287,7 @@ static void test_definition_is_parsed_after_file_has_been_sent(CuTest* tc)
    apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    apx_node_manager_t* node_manager;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
 
    char const* apx_text =
@@ -322,7 +333,7 @@ static void test_provide_port_data_is_requested_after_definition_file_has_been_p
    apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    apx_node_manager_t* node_manager;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    int const provide_port_data_size = 2u;
    uint8_t actual[13];
@@ -400,7 +411,7 @@ static void test_provide_port_data_is_received_after_request(CuTest* tc)
    apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    apx_node_manager_t* node_manager;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    int const provide_port_data_size = 2u;
    uint8_t provide_port_data[2] = { 1u, 2u };
@@ -460,7 +471,7 @@ static void test_require_port_data_is_published_after_definition_has_been_parsed
    apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    apx_node_manager_t* node_manager;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    int const require_port_data_size = 2u;
    int const file_info_publish_size = 66;
@@ -552,7 +563,7 @@ static void test_require_port_data_is_sent_after_file_open_request_received(CuTe
    apx_server_test_connection_t* connection;
    adt_bytearray_t* packet;
    apx_node_manager_t* node_manager;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    int const file_info_publish_size = 66;
    int const data_write_size = 5;
@@ -651,6 +662,53 @@ static void test_message_format_is_parsed_from_greeting_header(CuTest* tc)
    apx_server_test_connection_run(connection);
    CuAssertUIntEquals(tc, UINT16_SIZE, apx_server_test_connection_get_num_header_size(connection));
 
+   apx_server_test_connection_delete(connection);
+}
+
+static void test_legacy_greeting_without_headers_is_accepted(CuTest* tc)
+{
+   apx_server_test_connection_t* connection = apx_server_test_connection_new();
+   adt_bytearray_t* packet;
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_custom_greeting_header(connection, "RMFP/1.0\n\n"));
+   CuAssertUIntEquals(tc, RMF_PROTOCOL_VERSION_ID_1_0, apx_server_test_connection_get_rmf_proto_id(connection));
+   CuAssertUIntEquals(tc, UINT32_SIZE, apx_server_test_connection_get_num_header_size(connection));
+   apx_server_test_connection_run(connection);
+   CuAssertIntEquals(tc, 1, apx_server_test_connection_log_length(connection));
+   packet = apx_server_test_connection_get_log_packet(connection, 0);
+   CuAssertPtrNotNull(tc, packet);
+   CuAssertIntEquals(tc, 9, adt_bytearray_length(packet));
+   apx_server_test_connection_delete(connection);
+}
+
+static void test_legacy_num_header_format_is_parsed_from_greeting_header(CuTest* tc)
+{
+   apx_server_test_connection_t* connection;
+   char const* greeting = "RMFP/1.0\n"
+      "NumHeader-Format:32\n"
+      "\n";
+   connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_custom_greeting_header(connection, greeting));
+   apx_server_test_connection_run(connection);
+   CuAssertUIntEquals(tc, RMF_PROTOCOL_VERSION_ID_1_0, apx_server_test_connection_get_rmf_proto_id(connection));
+   CuAssertUIntEquals(tc, UINT32_SIZE, apx_server_test_connection_get_num_header_size(connection));
+
+   apx_server_test_connection_delete(connection);
+}
+
+static void test_size_header_must_match_protocol_version(CuTest* tc)
+{
+   apx_server_test_connection_t* connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_PARSE_ERROR, apx_server_test_connection_send_custom_greeting_header(connection,
+      "RMFP/1.0\nMessage-Size: 32\n\n"));
+   apx_server_test_connection_delete(connection);
+
+   connection = apx_server_test_connection_new();
+   CuAssertPtrNotNull(tc, connection);
+   CuAssertUIntEquals(tc, APX_PARSE_ERROR, apx_server_test_connection_send_custom_greeting_header(connection,
+      "RMFP/1.1\nNumHeader-Format: 32\n\n"));
    apx_server_test_connection_delete(connection);
 }
 
@@ -774,7 +832,7 @@ static void test_port_count_files_published_for_apx13_node(CuTest* tc)
 {
    apx_server_test_connection_t* connection;
    apx_node_manager_t* node_manager;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
 
    char const* apx_text =

@@ -1034,7 +1034,14 @@ static apx_error_t parse_protocol_header_line(apx_server_connection_t* self, uin
       }
       else
       {
-         result = bstr_match_cstr(begin, end, "Message-Size:");
+         if (apx_server_connection_get_rmf_proto_id(self) == RMF_PROTOCOL_VERSION_ID_1_0)
+         {
+            result = bstr_match_cstr(begin, end, "NumHeader-Format:");
+         }
+         else
+         {
+            result = bstr_match_cstr(begin, end, "Message-Size:");
+         }
          if (result > begin)
          {
             unsigned long size = 0u;

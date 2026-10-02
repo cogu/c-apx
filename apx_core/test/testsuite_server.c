@@ -121,7 +121,7 @@ static void test_connectors_connect_disconnect_node_with_only_require_ports(CuTe
    adt_bytearray_t* packet = NULL;
    apx_node_manager_t* node_manager;
    apx_port_signature_map_t *port_signature_map = NULL;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    int const file_info_publish_size = 66;
    int const data_write_size = 4;
@@ -195,7 +195,7 @@ static void test_connectors_connect_disconnect_node_with_only_provide_ports(CuTe
    apx_node_manager_t* node_manager;
    apx_port_signature_map_t* port_signature_map = NULL;
    int const provide_port_data_size = 1;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    uint8_t provide_port_data[1] = { 0u };
    char const* apx_text =
@@ -269,7 +269,7 @@ static void test_connectors_node_with_require_port_is_connected_after_node_with_
    apx_node_manager_t* node_manager;
    apx_port_signature_map_t* port_signature_map = NULL;
    int const provide_port_data_size = UINT16_SIZE;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    int const file_info_publish_size = 67;
    int const requester1_data_size = 5;
@@ -409,7 +409,7 @@ static void test_connectors_node_with_provide_port_is_connected_when_multiple_no
    apx_port_signature_map_t* port_signature_map = NULL;
    apx_port_signature_map_entry_t* map_entry = NULL;
    int const provide_port_data_size = UINT16_SIZE;
-   int const acknowledge_size = 9;
+   int const acknowledge_size = 13;
    int const open_request_size = 13;
    int const file_info_publish_size = 67;
    int const requester1_data_size = 5;
@@ -1018,7 +1018,7 @@ static void test_server_rejects_signed_file_cmd_under_rmfp_1_0(CuTest* tc)
 
    connection = apx_server_test_connection_new();
    CuAssertPtrNotNull(tc, connection);
-   CuAssertUIntEquals(tc, RMF_PROTOCOL_VERSION_ID_1_0, apx_server_test_connection_get_rmf_proto_id(connection));
+   apx_server_test_connection_set_tester_protocol_version(connection, RMF_PROTOCOL_VERSION_ID_1_0);
    apx_server_accept_connection(server, (apx_server_connection_t*)connection);
 
    CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(connection));

@@ -211,7 +211,7 @@ static void test_server_parses_definition_data_after_transmission(CuTest *tc)
 
 static void send_header(testsocket_t *sock)
 {
-   const char *greeting = "RMFP/1.0\nMessage-Size:32\n\n";
+   const char *greeting = "RMFP/1.1\nMessage-Size:32\n\n";
    int32_t msgLen;
    uint8_t msg[RMF_GREETING_MAX_LEN];
    msgLen = (int32_t) strlen(greeting);
@@ -240,11 +240,11 @@ static void verify_acknowledge(CuTest* tc, testsocket_t *sock)
 {
    uint32_t len;
    int32_t i;
-   const uint8_t expected[9] = {8, 0xBF, 0xFF, 0xFC, 0x00, 0, 0, 0, 0};
+   const uint8_t expected[13] = {12, 0xBF, 0xFF, 0xFC, 0x00, RMF_CMD_ACCEPT_HEADER, 0, 0, 0, 0, 0, 0, 0};
    const uint8_t *data;
    (void)sock;
    data = testsocket_spy_get_received_data(&len);
-   CuAssertUIntEquals(tc, RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + 1, len);
+   CuAssertUIntEquals(tc, sizeof(expected), len);
    for(i=0;i<(int32_t) sizeof(expected);i++)
    {
       char msg[14];

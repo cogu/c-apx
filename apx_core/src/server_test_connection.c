@@ -54,7 +54,7 @@ apx_error_t apx_server_test_connection_create(apx_server_test_connection_t *self
       self->default_buffer_size = 1024u;
       self->pending_bytes = 0u;
       self->compatibility_mode = false;
-      self->protocol_version_id = RMF_PROTOCOL_VERSION_ID_1_0;
+      self->protocol_version_id = RMF_PROTOCOL_VERSION_ID_1_1;
       self->connection_type = APX_CONNECTION_TYPE_DEFAULT;
       apx_connection_base_vtable_create(&base_connection_vtable,
          apx_server_test_connection_vdestroy,
@@ -303,13 +303,14 @@ apx_error_t apx_server_test_connection_send_greeting_header(apx_server_test_conn
       {
          strcpy(p, RMF_GREETING_1_1_START);
          p += strlen(RMF_GREETING_1_1_START);
+         p += sprintf(p, "%s: %d\n", RMF_MESSAGE_SIZE_HDR, message_format);
       }
       else
       {
          strcpy(p, RMF_GREETING_1_0_START);
          p += strlen(RMF_GREETING_1_0_START);
+         p += sprintf(p, "NumHeader-Format: %d\n", message_format);
       }
-      p += sprintf(p, "%s: %d\n", RMF_MESSAGE_SIZE_HDR, message_format);
       if (self->connection_type != APX_CONNECTION_TYPE_DEFAULT)
       {
          switch(self->connection_type)

@@ -416,13 +416,15 @@ static void send_default_greeting_header(apx_client_connection_t* self)
    if (self->base.rmf_version_id >= RMF_PROTOCOL_VERSION_ID_1_1)
    {
       strcpy(greeting, RMF_GREETING_1_1_START);
+      p += strlen(greeting);
+      p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_SIZE_HDR, message_format);
    }
    else
    {
       strcpy(greeting, RMF_GREETING_1_0_START);
+      p += strlen(greeting);
+      p += sprintf(p, "NumHeader-Format: %d\n\n", message_format);
    }
-   p += strlen(greeting);
-   p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_SIZE_HDR, message_format);
    greeting_size = (int32_t)(p - greeting);
    connection = apx_connection_base_get_connection(&self->base);
    if (connection != NULL)

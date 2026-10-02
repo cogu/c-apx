@@ -90,7 +90,7 @@ static void test_send_greeting_on_connect(CuTest* tc)
    testsocket_t *sock;
    uint32_t len;
    adt_str_t *str;
-   const char *expected_greeting = "RMFP/1.0\nMessage-Size: 32\n\n";
+   const char *expected_greeting = "RMFP/1.1\nMessage-Size: 32\n\n";
    const char *data;
    apx_client_socket_connection_t conn;
 

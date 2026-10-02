@@ -81,7 +81,7 @@ apx_error_t apx_client_create(apx_client_t *self)
       self->vm = (apx_vm_t*) NULL;
       self->node_manager = apx_node_manager_new(APX_CLIENT_MODE);
       self->is_connected = false;
-      self->rmf_version_id = RMF_PROTOCOL_VERSION_ID_1_0;
+      self->rmf_version_id = RMF_PROTOCOL_VERSION_ID_1_1;
       MUTEX_INIT(self->lock);
       MUTEX_INIT(self->event_listener_lock);
       return APX_NO_ERROR;
