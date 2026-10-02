@@ -101,6 +101,10 @@ apx_error_t apx_server_disconnect_node_instance_provide_ports(apx_server_t *self
 apx_error_t apx_server_disconnect_node_instance_require_ports(apx_server_t *self, apx_node_instance_t *node_instance);
 apx_error_t apx_server_process_require_port_connector_changes(apx_server_t *self, apx_node_instance_t *require_node_instance, apx_port_connector_change_table_t *connector_changes);
 apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t *self, apx_node_instance_t *provide_node_instance, apx_port_connector_change_table_t *connector_changes);
+void apx_server_trigger_require_ports_connected_event(apx_server_t *self, apx_node_instance_t *node_instance, apx_port_connector_change_table_t const *connector_changes);
+void apx_server_trigger_provide_ports_connected_event(apx_server_t *self, apx_node_instance_t *node_instance, apx_port_connector_change_table_t const *connector_changes);
+void apx_server_trigger_require_ports_disconnected_event(apx_server_t *self, apx_node_instance_t *node_instance, apx_port_connector_change_table_t const *connector_changes);
+void apx_server_trigger_provide_ports_disconnected_event(apx_server_t *self, apx_node_instance_t *node_instance, apx_port_connector_change_table_t const *connector_changes);
 apx_error_t apx_server_insert_modified_node_instance(apx_server_t *self, apx_node_instance_t *node_instance);
 adt_ary_t *apx_server_get_modified_node_instance(const apx_server_t *self);
 void apx_server_clear_port_connector_changes(apx_server_t *self);

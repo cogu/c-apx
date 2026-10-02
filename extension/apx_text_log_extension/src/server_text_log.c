@@ -22,6 +22,8 @@
 #include "apx/server_connection.h"
 #include "apx/port_connector_change_table.h"
 #include "apx/server.h"
+#include "apx/node_instance.h"
+#include "apx/port_instance.h"
 
 #ifdef MEM_LEAK_CHECK
 #include "CMemLeak.h"
@@ -47,6 +49,10 @@ static void apx_server_text_log_on_connection_closed(void *arg, apx_server_conne
 static void on_protocol_header_accepted(apx_server_text_log_t* self, apx_server_connection_t* connection);
 static void on_file_published(apx_server_text_log_t* self, apx_server_connection_t* connection, const struct rmf_file_info_tag* file_info);
 static void on_file_revoked(apx_server_text_log_t* self, apx_server_connection_t* connection, const struct rmf_file_info_tag* file_info);
+static void apx_server_text_log_provide_ports_connected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const *connector_changes);
+static void apx_server_text_log_provide_ports_disconnected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const *connector_changes);
+static void apx_server_text_log_require_ports_connected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const *connector_changes);
+static void apx_server_text_log_require_ports_disconnected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const *connector_changes);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -170,6 +176,10 @@ static void register_server_listener(apx_server_text_log_t *self)
    eventListener.new_connection = apx_server_text_log_on_new_connection;
    eventListener.connection_closed = apx_server_text_log_on_connection_closed;
    eventListener.server_write_log = apx_server_text_log_on_log_event;
+   eventListener.require_ports_connected = apx_server_text_log_require_ports_connected;
+   eventListener.provide_ports_connected = apx_server_text_log_provide_ports_connected;
+   eventListener.require_ports_disconnected = apx_server_text_log_require_ports_disconnected;
+   eventListener.provide_ports_disconnected = apx_server_text_log_provide_ports_disconnected;
    self->server_listener_handle = apx_server_register_event_listener(self->server, &eventListener);
 }
 
@@ -233,150 +243,152 @@ static void on_file_revoked(apx_server_text_log_t* self, apx_server_connection_t
 }
 
 
-#if 0
-static void apx_server_text_log_provide_ports_connected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t *connectionTable)
+static void apx_server_text_log_provide_ports_connected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const *connector_changes)
 {
    apx_server_text_log_t *self = (apx_server_text_log_t *) arg;
-   if ( (self != NULL) && (node_instance != NULL) && (connectionTable != NULL))
+   if ( (self != NULL) && (node_instance != NULL) && (connector_changes != NULL) )
    {
-      int32_t localPortId;
-      apx_node_t *localNode = apx_node_data_get_node(nodeData);
-      for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
+      apx_port_id_t local_port_id;
+      uint32_t conn_id = apx_node_instance_get_connection_id(node_instance);
+      char const *local_node_name = apx_node_instance_get_name(node_instance);
+      for (local_port_id = 0; local_port_id < connector_changes->num_ports; local_port_id++)
       {
-         apx_connection_base_t* connection = apx_node_data_get_connection(nodeData);
-         apx_port_ref_t *portref;
-         apx_port_connection_entry_t *entry = apx_port_connector_change_table_get_entry(connectionTable, localPortId);
-         portref = apx_port_connection_entry_get(entry, 0);
-         if (portref != NULL)
+         int32_t count = apx_port_connector_change_table_count((apx_port_connector_change_table_t*)connector_changes, local_port_id);
+         if (count > 0)
          {
-            int32_t remotePortId;
-            apx_port_t *localPort;
-            apx_port_t *remotePort;
-            apx_node_t *remoteNode = apx_node_data_get_node(portref->nodeData);
-            remotePortId = apx_port_data_ref_get_port_id(portref);
-            localPort = apx_node_get_provide_port(localNode, localPortId);
-            remotePort = apx_node_get_require_port(remoteNode, remotePortId);
-            if ( (localPort != NULL) && (remotePort) )
+            apx_port_instance_t *local_port = apx_node_instance_get_provide_port(node_instance, local_port_id);
+            char const *local_port_name = (local_port != NULL) ? apx_port_instance_name(local_port) : "<unknown>";
+            int32_t i;
+            for (i = 0; i < count; i++)
             {
-
-               apx_text_log_base_printf(&self->base, "[%d] %s.%s --> %s.%s",
-                       apx_connection_base_get_connection_id(connection),
-                       localNode->name,
-                       localPort->name,
-                       remoteNode->name,
-                       remotePort->name);
+               apx_port_instance_t *remote_port = apx_port_connector_change_table_get_port((apx_port_connector_change_table_t*)connector_changes, local_port_id, i);
+               if (remote_port != NULL)
+               {
+                  apx_node_instance_t *remote_node = apx_port_instance_parent(remote_port);
+                  char const *remote_node_name = (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
+                  char const *remote_port_name = apx_port_instance_name(remote_port);
+                  apx_text_log_base_printf(&self->base, "[%u] %s.%s --> %s.%s",
+                          conn_id,
+                          local_node_name,
+                          local_port_name,
+                          remote_node_name,
+                          remote_port_name);
+               }
             }
          }
       }
    }
 }
 
-static void apx_server_text_log_provide_ports_disconnected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t *connectionTable)
+static void apx_server_text_log_provide_ports_disconnected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const *connector_changes)
 {
    apx_server_text_log_t *self = (apx_server_text_log_t *) arg;
-   if ( (self != NULL) && (node_instance != NULL) && (connectionTable != NULL) )
+   if ( (self != NULL) && (node_instance != NULL) && (connector_changes != NULL) )
    {
-      int32_t localPortId;
-      apx_node_t *localNode = apx_node_data_get_node(nodeData);
-      for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
+      apx_port_id_t local_port_id;
+      uint32_t conn_id = apx_node_instance_get_connection_id(node_instance);
+      char const *local_node_name = apx_node_instance_get_name(node_instance);
+      for (local_port_id = 0; local_port_id < connector_changes->num_ports; local_port_id++)
       {
-         apx_connection_base_t* connection = apx_node_data_get_connection(nodeData);
-         apx_port_ref_t *portref;
-         apx_port_connection_entry_t *entry = apx_port_connector_change_table_get_entry(connectionTable, localPortId);
-         portref = apx_port_connection_entry_get(entry, 0);
-         if (portref != NULL)
+         int32_t count = apx_port_connector_change_table_count((apx_port_connector_change_table_t*)connector_changes, local_port_id);
+         if (count < 0)
          {
-            int32_t remotePortId;
-            apx_port_t *localPort;
-            apx_port_t *remotePort;
-            apx_node_t *remoteNode = apx_node_data_get_node(portref->nodeData);
-            remotePortId = apx_port_data_ref_get_port_id(portref);
-            localPort = apx_node_get_provide_port(localNode, localPortId);
-            remotePort = apx_node_get_require_port(remoteNode, remotePortId);
-            if ( (localPort != NULL) && (remotePort) )
+            apx_port_instance_t *local_port = apx_node_instance_get_provide_port(node_instance, local_port_id);
+            char const *local_port_name = (local_port != NULL) ? apx_port_instance_name(local_port) : "<unknown>";
+            int32_t num_changes = -count;
+            int32_t i;
+            for (i = 0; i < num_changes; i++)
             {
-               apx_text_log_base_printf(&self->base, "[%d] %s.%s -!-> %s.%s",
-                       apx_connection_base_get_connection_id(connection),
-                       localNode->name,
-                       localPort->name,
-                       remoteNode->name,
-                       remotePort->name);
+               apx_port_instance_t *remote_port = apx_port_connector_change_table_get_port((apx_port_connector_change_table_t*)connector_changes, local_port_id, i);
+               if (remote_port != NULL)
+               {
+                  apx_node_instance_t *remote_node = apx_port_instance_parent(remote_port);
+                  char const *remote_node_name = (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
+                  char const *remote_port_name = apx_port_instance_name(remote_port);
+                  apx_text_log_base_printf(&self->base, "[%u] %s.%s -!-> %s.%s",
+                          conn_id,
+                          local_node_name,
+                          local_port_name,
+                          remote_node_name,
+                          remote_port_name);
+               }
             }
          }
       }
    }
 }
 
-static void apx_server_text_log_require_ports_connected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t *connectionTable)
+static void apx_server_text_log_require_ports_connected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const *connector_changes)
 {
    apx_server_text_log_t *self = (apx_server_text_log_t *) arg;
-   if ( (self != NULL) && (node_instance != NULL) && (connectionTable != NULL))
+   if ( (self != NULL) && (node_instance != NULL) && (connector_changes != NULL) )
    {
-      int32_t localPortId;
-      apx_node_t *localNode = apx_node_data_get_node(nodeData);
-      for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
+      apx_port_id_t local_port_id;
+      uint32_t conn_id = apx_node_instance_get_connection_id(node_instance);
+      char const *local_node_name = apx_node_instance_get_name(node_instance);
+      for (local_port_id = 0; local_port_id < connector_changes->num_ports; local_port_id++)
       {
-         apx_connection_base_t* connection = apx_node_data_get_connection(nodeData);
-         apx_port_ref_t *portref;
-         apx_port_connection_entry_t *entry = apx_port_connector_change_table_get_entry(connectionTable, localPortId);
-         portref = apx_port_connection_entry_get(entry, 0);
-         if (portref != NULL)
+         int32_t count = apx_port_connector_change_table_count((apx_port_connector_change_table_t*)connector_changes, local_port_id);
+         if (count > 0)
          {
-            int32_t remotePortId;
-            apx_port_t *localPort;
-            apx_port_t *remotePort;
-            apx_node_t *remoteNode = apx_node_data_get_node(portref->nodeData);
-            remotePortId = apx_port_data_ref_get_port_id(portref);
-            localPort = apx_node_get_require_port(localNode, localPortId);
-            remotePort = apx_node_get_provide_port(remoteNode, remotePortId);
-            if ( (localPort != NULL) && (remotePort) )
+            apx_port_instance_t *local_port = apx_node_instance_get_require_port(node_instance, local_port_id);
+            char const *local_port_name = (local_port != NULL) ? apx_port_instance_name(local_port) : "<unknown>";
+            int32_t i;
+            for (i = 0; i < count; i++)
             {
-
-               apx_text_log_base_printf(&self->base, "[%d] %s.%s <-- %s.%s",
-                       apx_connection_base_get_connection_id(connection),
-                       localNode->name,
-                       localPort->name,
-                       remoteNode->name,
-                       remotePort->name);
+               apx_port_instance_t *remote_port = apx_port_connector_change_table_get_port((apx_port_connector_change_table_t*)connector_changes, local_port_id, i);
+               if (remote_port != NULL)
+               {
+                  apx_node_instance_t *remote_node = apx_port_instance_parent(remote_port);
+                  char const *remote_node_name = (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
+                  char const *remote_port_name = apx_port_instance_name(remote_port);
+                  apx_text_log_base_printf(&self->base, "[%u] %s.%s <-- %s.%s",
+                          conn_id,
+                          local_node_name,
+                          local_port_name,
+                          remote_node_name,
+                          remote_port_name);
+               }
             }
          }
       }
    }
 }
 
-static void apx_server_text_log_require_ports_disconnected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t *connectionTable)
+static void apx_server_text_log_require_ports_disconnected(void *arg, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const *connector_changes)
 {
    apx_server_text_log_t *self = (apx_server_text_log_t *) arg;
-   if ( (self != NULL) && (node_instance != NULL) && (connectionTable != NULL) )
+   if ( (self != NULL) && (node_instance != NULL) && (connector_changes != NULL) )
    {
-      int32_t localPortId;
-      apx_node_t *localNode = apx_node_data_get_node(nodeData);
-      for (localPortId=0; localPortId<connectionTable->numPorts; localPortId++)
+      apx_port_id_t local_port_id;
+      uint32_t conn_id = apx_node_instance_get_connection_id(node_instance);
+      char const *local_node_name = apx_node_instance_get_name(node_instance);
+      for (local_port_id = 0; local_port_id < connector_changes->num_ports; local_port_id++)
       {
-         apx_connection_base_t* connection = apx_node_data_get_connection(nodeData);
-         apx_port_ref_t *portref;
-         apx_port_connection_entry_t *entry = apx_port_connector_change_table_get_entry(connectionTable, localPortId);
-         portref = apx_port_connection_entry_get(entry, 0);
-         if (portref != NULL)
+         int32_t count = apx_port_connector_change_table_count((apx_port_connector_change_table_t*)connector_changes, local_port_id);
+         if (count < 0)
          {
-            int32_t remotePortId;
-            apx_port_t *localPort;
-            apx_port_t *remotePort;
-            apx_node_t *remoteNode = apx_node_data_get_node(portref->nodeData);
-            remotePortId = apx_port_data_ref_get_port_id(portref);
-            localPort = apx_node_get_require_port(localNode, localPortId);
-            remotePort = apx_node_get_provide_port(remoteNode, remotePortId);
-            if ( (localPort != NULL) && (remotePort) )
+            apx_port_instance_t *local_port = apx_node_instance_get_require_port(node_instance, local_port_id);
+            char const *local_port_name = (local_port != NULL) ? apx_port_instance_name(local_port) : "<unknown>";
+            int32_t num_changes = -count;
+            int32_t i;
+            for (i = 0; i < num_changes; i++)
             {
-               apx_text_log_base_printf(&self->base, "[%d] %s.%s -!-> %s.%s",
-                       apx_connection_base_get_connection_id(connection),
-                       localNode->name,
-                       localPort->name,
-                       remoteNode->name,
-                       remotePort->name);
+               apx_port_instance_t *remote_port = apx_port_connector_change_table_get_port((apx_port_connector_change_table_t*)connector_changes, local_port_id, i);
+               if (remote_port != NULL)
+               {
+                  apx_node_instance_t *remote_node = apx_port_instance_parent(remote_port);
+                  char const *remote_node_name = (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
+                  char const *remote_port_name = apx_port_instance_name(remote_port);
+                  apx_text_log_base_printf(&self->base, "[%u] %s.%s -!-> %s.%s",
+                          conn_id,
+                          local_node_name,
+                          local_port_name,
+                          remote_node_name,
+                          remote_port_name);
+               }
             }
          }
       }
    }
 }
-#endif

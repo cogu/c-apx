@@ -21,6 +21,7 @@
 struct apx_server_connection_tag;
 struct apx_client_connection_tag;
 struct apx_port_connection_table_tag;
+struct apx_port_connector_change_table_tag;
 struct rmf_file_info_tag;
 struct apx_file_info_tag;
 struct apx_file_tag;
@@ -39,6 +40,8 @@ typedef void (apx_client_connection_event_func_t)(void* arg, struct apx_client_c
 typedef void (apx_client_error_event_func_t)(void* arg, struct apx_client_connection_tag* connection, apx_error_t error_code, char const* name);
 typedef void (apx_server_connection_event_func_t)(void* arg, struct apx_server_connection_tag* connection);
 typedef void (apx_server_log_write_event_func_t)(void* arg, apx_log_level_t level, const char* label, const char* msg);
+typedef void (apx_ports_connected_event_func_t)(void* arg, struct apx_node_instance_tag* node_instance, struct apx_port_connector_change_table_tag const* connector_changes);
+typedef void (apx_ports_disconnected_event_func_t)(void* arg, struct apx_node_instance_tag* node_instance, struct apx_port_connector_change_table_tag const* connector_changes);
 
 //Connection typedefs
 typedef void (apx_protocol_header_accepted_func_t)(void* arg, struct apx_connection_base_tag* connection);
@@ -60,6 +63,10 @@ typedef struct apx_server_event_listener_tag
    apx_server_connection_event_func_t* new_connection;
    apx_server_connection_event_func_t* connection_closed;
    apx_server_log_write_event_func_t* server_write_log;
+   apx_ports_connected_event_func_t* require_ports_connected;
+   apx_ports_connected_event_func_t* provide_ports_connected;
+   apx_ports_disconnected_event_func_t* require_ports_disconnected;
+   apx_ports_disconnected_event_func_t* provide_ports_disconnected;
 } apx_server_event_listener_t;
 
 typedef struct apx_server_connection_event_listener_tag

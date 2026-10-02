@@ -388,6 +388,7 @@ apx_error_t apx_server_process_require_port_connector_changes(apx_server_t* self
             }
          }
       }
+      apx_server_trigger_require_ports_connected_event(self, require_node_instance, connector_changes);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -454,6 +455,7 @@ apx_error_t apx_server_process_provide_port_connector_changes(apx_server_t* self
          }
       }
       apx_node_instance_unlock_port_connector_table(provide_node_instance);
+      apx_server_trigger_provide_ports_connected_event(self, provide_node_instance, connector_changes);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;
@@ -643,6 +645,166 @@ static void apx_server_trigger_disconnected_event(apx_server_t* self, apx_server
       apx_server_connection_event_func_t *callback = (apx_server_connection_event_func_t*) adt_ary_value(&callbacks, i);
       assert(callback != NULL);
       callback(arg, server_connection);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
+}
+
+void apx_server_trigger_require_ports_connected_event(apx_server_t* self, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const* connector_changes)
+{
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
+   assert(self != NULL);
+   assert(node_instance != NULL);
+   assert(connector_changes != NULL);
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
+   while(iter != NULL)
+   {
+      apx_server_event_listener_t *listener = (apx_server_event_listener_t*) iter->pItem;
+      if ( (listener != NULL) && (listener->require_ports_connected != NULL) )
+      {
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->require_ports_connected);
+         length++;
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->event_listener_lock);
+
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_ports_connected_event_func_t *callback = (apx_ports_connected_event_func_t*) adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, node_instance, connector_changes);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
+}
+
+void apx_server_trigger_provide_ports_connected_event(apx_server_t* self, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const* connector_changes)
+{
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
+   assert(self != NULL);
+   assert(node_instance != NULL);
+   assert(connector_changes != NULL);
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
+   while(iter != NULL)
+   {
+      apx_server_event_listener_t *listener = (apx_server_event_listener_t*) iter->pItem;
+      if ( (listener != NULL) && (listener->provide_ports_connected != NULL) )
+      {
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->provide_ports_connected);
+         length++;
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->event_listener_lock);
+
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_ports_connected_event_func_t *callback = (apx_ports_connected_event_func_t*) adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, node_instance, connector_changes);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
+}
+
+void apx_server_trigger_require_ports_disconnected_event(apx_server_t* self, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const* connector_changes)
+{
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
+   assert(self != NULL);
+   assert(node_instance != NULL);
+   assert(connector_changes != NULL);
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
+   while(iter != NULL)
+   {
+      apx_server_event_listener_t *listener = (apx_server_event_listener_t*) iter->pItem;
+      if ( (listener != NULL) && (listener->require_ports_disconnected != NULL) )
+      {
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->require_ports_disconnected);
+         length++;
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->event_listener_lock);
+
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_ports_disconnected_event_func_t *callback = (apx_ports_disconnected_event_func_t*) adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, node_instance, connector_changes);
+   }
+   adt_ary_destroy(&args);
+   adt_ary_destroy(&callbacks);
+}
+
+void apx_server_trigger_provide_ports_disconnected_event(apx_server_t* self, apx_node_instance_t* node_instance, apx_port_connector_change_table_t const* connector_changes)
+{
+   adt_ary_t args;
+   adt_ary_t callbacks;
+   int32_t length = 0;
+   int32_t i = 0;
+
+   assert(self != NULL);
+   assert(node_instance != NULL);
+   assert(connector_changes != NULL);
+
+   adt_ary_create(&args, NULL);
+   adt_ary_create(&callbacks, NULL);
+
+   MUTEX_LOCK(self->event_listener_lock);
+   adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
+   while(iter != NULL)
+   {
+      apx_server_event_listener_t *listener = (apx_server_event_listener_t*) iter->pItem;
+      if ( (listener != NULL) && (listener->provide_ports_disconnected != NULL) )
+      {
+         adt_ary_push(&args, (void*)listener->arg);
+         adt_ary_push(&callbacks, (void*)listener->provide_ports_disconnected);
+         length++;
+      }
+      iter = adt_list_iter_next(iter);
+   }
+   MUTEX_UNLOCK(self->event_listener_lock);
+
+   for (i = 0; i < length; i++)
+   {
+      void *arg = adt_ary_value(&args, i);
+      apx_ports_disconnected_event_func_t *callback = (apx_ports_disconnected_event_func_t*) adt_ary_value(&callbacks, i);
+      assert(callback != NULL);
+      callback(arg, node_instance, connector_changes);
    }
    adt_ary_destroy(&args);
    adt_ary_destroy(&callbacks);

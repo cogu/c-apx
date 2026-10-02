@@ -19,6 +19,7 @@
 #include "apx/file_manager.h"
 #include "apx/node_manager.h"
 #include "apx/server.h"
+#include "apx/connection_base.h"
 #include "apx/util.h"
 #include "sha256.h"
 
@@ -2256,4 +2257,23 @@ bool apx_node_instance_is_closing(const apx_node_instance_t* self)
       return self->is_closing;
    }
    return false;
+}
+
+apx_connection_base_t* apx_node_instance_get_connection(apx_node_instance_t const* self)
+{
+   if (self != NULL && self->parent != NULL)
+   {
+      return (apx_connection_base_t*) apx_node_manager_get_connection(self->parent);
+   }
+   return NULL;
+}
+
+uint32_t apx_node_instance_get_connection_id(apx_node_instance_t const* self)
+{
+   apx_connection_base_t const* connection = apx_node_instance_get_connection(self);
+   if (connection != NULL)
+   {
+      return apx_connection_base_get_connection_id(connection);
+   }
+   return APX_INVALID_CONNECTION_ID;
 }

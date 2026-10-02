@@ -45,6 +45,7 @@
 struct apx_node_manager_tag;
 struct apx_file_manager_tag;
 struct apx_server_tag;
+struct apx_connection_base_tag;
 
 typedef struct apx_node_instance_tag
 {
@@ -197,5 +198,7 @@ apx_port_count_t apx_node_instance_get_require_port_connection_count(apx_node_in
 apx_port_count_t apx_node_instance_get_port_connection_count(apx_node_instance_t const* self, apx_port_type_t port_type, apx_port_id_t port_id);
 void apx_node_instance_set_closing(apx_node_instance_t* self, bool is_closing);
 bool apx_node_instance_is_closing(const apx_node_instance_t* self);
+struct apx_connection_base_tag* apx_node_instance_get_connection(apx_node_instance_t const* self);
+uint32_t apx_node_instance_get_connection_id(apx_node_instance_t const* self);
 
 #endif //APX_NODE_INSTANCE_H
