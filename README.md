@@ -126,38 +126,29 @@ For Windows, use a "Native tools command prompt" from your Visual Studio install
 
 ```bash
 # Run unit tests
-cmake --preset clang-test
-cmake --build --preset clang-test
-ctest --preset clang-test
+cmake --preset clang-test && cmake --build --preset clang-test && ctest --preset clang-test
 
 # Address and Undefined Behavior Sanitizers (ASan + UBSan)
 # Note: This preset requires a preconfigured pytest virtual environment
-cmake --preset clang-asan
-cmake --build --preset clang-asan
-ctest -V --preset clang-asan
+cmake --preset clang-asan && cmake --build --preset clang-asan && ctest -V --preset clang-asan
 
 # Thread Sanitizers (TSan)
 # Note: This preset requires a preconfigured pytest virtual environment
-cmake --preset clang-tsan
-cmake --build --preset clang-tsan
-ctest -V --preset clang-tsan
+cmake --preset clang-tsan && cmake --build --preset clang-tsan && ctest -V --preset clang-tsan
 
 # Static Analysis
-cmake --preset clang-tidy
-cmake --build --preset clang-tidy
+cmake --preset clang-tidy && cmake --build --preset clang-tidy
 
 # Debug build
-cmake --preset clang-debug
-cmake --build --preset clang-debug
+cmake --preset clang-debug && cmake --build --preset clang-debug
 
 # Release build
-cmake --preset clang-release
-cmake --build --preset clang-release
+cmake --preset clang-release && cmake --build --preset clang-release
 ```
 
 ### Windows CMake Presets (Visual Studio 2026)
 
-```bash
+```powershell
 # Unit test build
 cmake --preset msvc-test
 cmake --build --preset msvc-test
