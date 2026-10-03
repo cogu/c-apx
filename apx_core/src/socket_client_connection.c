@@ -48,16 +48,18 @@
 
 #ifdef UNIT_TEST
 #define SOCKET_TYPE testsocket_t
-#define SOCKET_DELETE testsocket_delete
+#define SOCKET_OBJECT_DELETE testsocket_delete
 #define SOCKET_START_IO(x)
 #define SOCKET_SET_HANDLER testsocket_set_client_handler
 #define SOCKET_SEND testsocket_client_send
+#define SOCKET_OBJECT_CLOSE(x)
 #else
-#define SOCKET_DELETE msocket_delete
+#define SOCKET_OBJECT_DELETE msocket_delete
 #define SOCKET_TYPE msocket_t
 #define SOCKET_START_IO(x) msocket_start_io(x)
 #define SOCKET_SET_HANDLER msocket_sethandler
 #define SOCKET_SEND msocket_send
+#define SOCKET_OBJECT_CLOSE(x) msocket_close(x)
 #endif
 
 
@@ -126,9 +128,14 @@ void apx_client_socket_connection_destroy(apx_client_socket_connection_t *self)
 {
    if (self != NULL)
    {
+      if (self->socket_object != NULL)
+      {
+         SOCKET_OBJECT_CLOSE(self->socket_object);
+         SOCKET_OBJECT_DELETE(self->socket_object);
+         self->socket_object = NULL;
+      }
       apx_client_connection_destroy(&self->base);
       adt_bytearray_destroy(&self->send_buffer);
-      SOCKET_DELETE(self->socket_object);
       MUTEX_DESTROY(self->lock);
    }
 }
@@ -428,7 +435,10 @@ static void on_socket_disconnected(void* arg, void* socket)
 
 static void apx_client_socket_connection_close(apx_client_socket_connection_t *self)
 {
-   (void)self;
+   if (self != NULL && self->socket_object != NULL)
+   {
+      SOCKET_OBJECT_CLOSE(self->socket_object);
+   }
 }
 
 static void apx_client_socket_connection_vclose(void *arg)

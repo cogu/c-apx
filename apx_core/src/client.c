@@ -93,26 +93,25 @@ void apx_client_destroy(apx_client_t *self)
 {
    if (self != NULL)
    {
-      bool isConnected;
-      MUTEX_LOCK(self->lock);
-      isConnected = self->is_connected;
-      MUTEX_UNLOCK(self->lock);
-      if (isConnected)
-      {
-         apx_client_disconnect(self);
-      }
-      adt_list_delete(self->event_listeners);
+      apx_client_disconnect(self);
       if (self->connection != NULL)
       {
          apx_connection_base_delete(&self->connection->base);
+         self->connection = NULL;
       }
+      MUTEX_LOCK(self->event_listener_lock);
+      adt_list_delete(self->event_listeners);
+      self->event_listeners = NULL;
+      MUTEX_UNLOCK(self->event_listener_lock);
       if (self->node_manager != NULL)
       {
          apx_node_manager_delete(self->node_manager);
+         self->node_manager = NULL;
       }
       if (self->vm != NULL)
       {
          apx_vm_delete(self->vm);
+         self->vm = NULL;
       }
       MUTEX_DESTROY(self->lock);
       MUTEX_DESTROY(self->event_listener_lock);

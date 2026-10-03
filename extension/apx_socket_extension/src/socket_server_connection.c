@@ -46,13 +46,13 @@
 
 #ifdef UNIT_TEST
 #define SOCKET_TYPE testsocket_t
-#define SOCKET_DELETE testsocket_delete
+#define SOCKET_OBJECT_DELETE testsocket_delete
 #define SOCKET_START_IO(x)
 #define SOCKET_SET_HANDLER testsocket_set_server_handler
 #define SOCKET_SEND testsocket_server_send
 #define SOCKET_OBJECT_CLOSE(x)
 #else
-#define SOCKET_DELETE msocket_delete
+#define SOCKET_OBJECT_DELETE msocket_delete
 #define SOCKET_TYPE msocket_t
 #define SOCKET_START_IO(x) msocket_start_io(x)
 #define SOCKET_SET_HANDLER msocket_sethandler
@@ -129,7 +129,7 @@ void apx_socket_server_connection_destroy(apx_socket_server_connection_t *self)
       apx_server_connection_destroy(&self->base);
       adt_bytearray_destroy(&self->send_buffer);
       apx_node_manager_destroy(&self->node_manager);
-      SOCKET_DELETE(self->socket_object);
+      SOCKET_OBJECT_DELETE(self->socket_object);
       MUTEX_DESTROY(self->lock);
    }
 }
