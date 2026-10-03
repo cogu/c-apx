@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 
-project(apx_core LANGUAGES C VERSION 0.3.8)
+project(apx_core LANGUAGES C VERSION 0.3.9)
 set(APX_VERSION_SUFFIX "")
 set(APX_VERSION_FULL "${PROJECT_VERSION}${APX_VERSION_SUFFIX}")
 
