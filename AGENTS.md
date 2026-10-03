@@ -62,57 +62,36 @@ c-apx/
 
 ---
 
-## 4. Build & Test Workflows
+## 4. Mandatory Verification & Release Checks
 
-### Building Applications (Clang 18 + Ninja)
+> [!IMPORTANT]
+> **ThreadSanitizer (TSan) is Mandatory**: `c-apx` is inherently multi-threaded (`msocket` background workers, mutexes, event loops). Never consider any code change complete or ready for merge without verifying both AddressSanitizer (`clang-asan`) **and** ThreadSanitizer (`clang-tsan`).
+
+For general build instructions and platform presets, see [`README.md`](README.md).
+
+### Release Checks (Quality Gate)
+
+Before declaring any feature, bugfix, or refactoring complete (or preparing to merge to `master`), run the full verification matrix in order:
+
 ```bash
-# Debug build (apx-server, apx-node, apx-control, apx-info, apx-perf-test)
-cmake --preset clang-debug
-cmake --build --preset clang-debug
+# 1. C Unit Tests (CuTest / apx_unit)
+cmake --preset clang-test && cmake --build --preset clang-test && ctest --preset clang-test
 
-# Release build
-cmake --preset clang-release
-cmake --build --preset clang-release
+# 2. Address & Undefined Behavior Sanitizers (ASan + UBSan)
+cmake --preset clang-asan && cmake --build --preset clang-asan && ctest --preset clang-asan
+
+# 3. Thread Sanitizer (TSan) — MANDATORY (verifies zero data races & clean worker thread shutdown)
+cmake --preset clang-tsan && cmake --build --preset clang-tsan && ctest --preset clang-tsan
+
+# 4. Static Analysis (Clang-Tidy)
+cmake --preset clang-tidy && cmake --build --preset clang-tidy
+
+# 5. Integration & Multi-Process Tests (pytest)
+cmake --preset clang-debug && cmake --build --preset clang-debug
+pytest -v -n auto
 ```
 
-### Running C Unit Tests (CuTest)
-```bash
-# Build and run C unit tests (Target: apx_unit)
-cmake --preset clang-test
-cmake --build --preset clang-test
-ctest --preset clang-test
-
-# Address & Undefined Behavior Sanitizers (ASan + UBSan)
-cmake --preset clang-asan
-cmake --build --preset clang-asan
-ctest --preset clang-asan
-
-# Thread Sanitizer (TSan)
-cmake --preset clang-tsan
-cmake --build --preset clang-tsan
-ctest --preset clang-tsan
-
-# Static Analysis (Clang-Tidy)
-cmake --preset clang-tidy
-cmake --build --preset clang-tidy
-```
-
-### Running Integration & End-to-End Tests (pytest)
-```bash
-pip install -r tests/requirements.txt
-pytest
-# Or in parallel:
-pytest -n auto
-```
-
-### Building Documentation (Sphinx + Furo + Doxygen)
-```bash
-pip install -r docs/requirements-dev.txt
-python3 -m sphinx -b html docs docs/_build/html
-
-# Live preview server (Sphinx Autobuild):
-sphinx-autobuild docs docs/_build/html
-```
+All 5 steps must pass with zero errors, zero sanitizer warnings, zero leaks, and zero data races.
 
 ---
 

@@ -83,6 +83,7 @@ find_package(Threads REQUIRED)
 set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_allocator.c
     apx_core/test/testsuite_attribute_parser.c
+    apx_core/test/testsuite_byte_port_map.c
     apx_core/test/testsuite_client_socket_connection.c
     apx_core/test/testsuite_client_socket_monitor_connection.c
     apx_core/test/testsuite_client_test_connection.c

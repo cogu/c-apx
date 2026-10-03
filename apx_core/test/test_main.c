@@ -51,6 +51,7 @@ CuSuite* testsuite_apx_util(void);
 CuSuite* testsuite_apx_port_connector_change_entry(void);
 CuSuite* testsuite_apx_port_connector_change_table(void);
 CuSuite* testsuite_apx_port_signature_map(void);
+CuSuite* testsuite_byte_port_map(void);
 
 //Client
 CuSuite* testsuite_apx_client_test_connection(void);
@@ -111,6 +112,7 @@ void RunAllTests(void)
    CuSuiteAddSuite(suite, testsuite_apx_port_connector_change_entry());
    CuSuiteAddSuite(suite, testsuite_apx_port_connector_change_table());
    CuSuiteAddSuite(suite, testsuite_apx_port_signature_map());
+   CuSuiteAddSuite(suite, testsuite_byte_port_map());
 
    //Client
    CuSuiteAddSuite(suite, testsuite_apx_client_test_connection());
