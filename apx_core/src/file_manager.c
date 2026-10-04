@@ -80,35 +80,21 @@ void apx_file_manager_destroy(apx_file_manager_t *self)
    }
 }
 
-void apx_file_manager_start(apx_file_manager_t *self)
+apx_error_t apx_file_manager_start(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
       apx_file_manager_shared_start(&self->shared);
-#ifndef UNIT_TEST
-      apx_error_t result = apx_file_manager_worker_start(&self->worker);
-# if (APX_DEBUG_ENABLE)
-      printf("[FILE-MANAGER %d] Worker thread started. Result: %d\n", (int)apx_file_manager_shared_get_connection_id(&self->shared), (int)result);
-# else
-      (void)result; //TODO: Check result?
-# endif
-#endif
+      return apx_file_manager_worker_start(&self->worker);
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_file_manager_stop(apx_file_manager_t *self)
+void apx_file_manager_stop(apx_file_manager_t* self)
 {
    if (self != NULL)
    {
-#ifndef UNIT_TEST
-# if (APX_DEBUG_ENABLE)
-      printf("[FILE-MANAGER %d] Stopping worker thread\n", (int)apx_file_manager_shared_get_connection_id(&self->shared));
-# endif
       apx_file_manager_worker_stop(&self->worker);
-# if (APX_DEBUG_ENABLE)
-      printf("[FILE-MANAGER %d] Worker thread stopped\n", (int)apx_file_manager_shared_get_connection_id(&self->shared));
-# endif
-#endif
    }
 }
 
@@ -168,6 +154,10 @@ apx_error_t apx_file_manager_publish_local_file(apx_file_manager_t* self, rmf_fi
       if (cloned_info != NULL)
       {
          retval = apx_file_manager_worker_prepare_publish_local_file(&self->worker, cloned_info);
+         if (retval != APX_NO_ERROR)
+         {
+            rmf_file_info_delete(cloned_info);
+         }
       }
       return retval;
    }
@@ -348,16 +338,27 @@ static void publish_local_files(apx_file_manager_t* self)
    int32_t num_files;
    adt_ary_create(&local_file_list, NULL);
    num_files = apx_file_manager_shared_copy_local_file_info(&self->shared, &local_file_list);
-   for (i=0; i < num_files; i++)
+   if (num_files < 0)
    {
-      rmf_file_info_t* file_info = (rmf_file_info_t*) adt_ary_value(&local_file_list, i);
-      if (file_info != NULL)
+      int32_t len = adt_ary_length(&local_file_list);
+      for (i = 0; i < len; i++)
       {
-         //Worker takes memory ownership of file_info
-         apx_error_t result = apx_file_manager_worker_prepare_publish_local_file(&self->worker, file_info);
-         if (result != APX_NO_ERROR)
+         rmf_file_info_delete((rmf_file_info_t*)adt_ary_value(&local_file_list, i));
+      }
+   }
+   else
+   {
+      for (i = 0; i < num_files; i++)
+      {
+         rmf_file_info_t* file_info = (rmf_file_info_t*)adt_ary_value(&local_file_list, i);
+         if (file_info != NULL)
          {
-            //TODO: Error handling
+            // Worker takes memory ownership of file_info on success
+            apx_error_t result = apx_file_manager_worker_prepare_publish_local_file(&self->worker, file_info);
+            if (result != APX_NO_ERROR)
+            {
+               rmf_file_info_delete(file_info);
+            }
          }
       }
    }

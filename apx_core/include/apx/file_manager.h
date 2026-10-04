@@ -46,7 +46,7 @@ typedef struct apx_file_manager_tag
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_file_manager_create(apx_file_manager_t* self, uint8_t mode, apx_connection_interface_t const* parent_connection, apx_allocator_t* allocator);
 void apx_file_manager_destroy(apx_file_manager_t* self);
-void apx_file_manager_start(apx_file_manager_t* self);
+apx_error_t apx_file_manager_start(apx_file_manager_t* self);
 void apx_file_manager_stop(apx_file_manager_t* self);
 void apx_file_manager_connected(apx_file_manager_t* self);
 void apx_file_manager_disconnected(apx_file_manager_t* self);

@@ -154,13 +154,17 @@ bool apx_file_manager_worker_run(apx_file_manager_worker_t* self)
    }
    return false;
 }
+#endif
 
-#else
 apx_error_t apx_file_manager_worker_start(apx_file_manager_worker_t* self)
 {
    if (self != NULL)
    {
+#ifdef UNIT_TEST
+      return APX_NO_ERROR;
+#else
       return start_worker_thread(self);
+#endif
    }
    return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -169,10 +173,11 @@ void apx_file_manager_worker_stop(apx_file_manager_worker_t* self)
 {
    if (self != NULL)
    {
+#ifndef UNIT_TEST
       stop_worker_thread(self);
+#endif
    }
 }
-#endif
 
 //Command API
 

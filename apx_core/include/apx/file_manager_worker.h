@@ -61,10 +61,9 @@ void apx_file_manager_worker_destroy(apx_file_manager_worker_t *self);
 uint16_t apx_file_manager_worker_num_pending_commands(apx_file_manager_worker_t* self);
 #ifdef UNIT_TEST
 bool apx_file_manager_worker_run(apx_file_manager_worker_t* self);
-#else
+#endif
 apx_error_t apx_file_manager_worker_start(apx_file_manager_worker_t* self);
 void apx_file_manager_worker_stop(apx_file_manager_worker_t* self);
-#endif
 
 //Command API
 apx_error_t apx_file_manager_worker_prepare_acknowledge(apx_file_manager_worker_t* self);
