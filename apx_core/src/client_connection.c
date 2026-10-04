@@ -451,7 +451,6 @@ static apx_error_t remote_file_published_notification(apx_client_connection_t* s
       {
          return process_new_remote_file(self, file);
       }
-      //TODO: Add generic handling of new file types
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;

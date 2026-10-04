@@ -365,8 +365,7 @@ void apx_client_attach_connection(apx_client_t *self, apx_client_connection_t *c
       }
       apx_client_connection_set_client(connection, self);
       apx_client_connection_attach_node_manager(connection, self->node_manager);
-      apx_client_attach_local_nodes_to_connection(self); //TODO: This should not be necessary as an explicit step.
-                                                         // Merge functionality with call to to apx_client_connection_attach_node_manager
+      apx_client_attach_local_nodes_to_connection(self);
    }
 }
 
@@ -890,7 +889,7 @@ static void apx_client_attach_local_nodes_to_connection(apx_client_t *self)
 {
    if (self->connection != NULL)
    {
-      adt_ary_t *nodeList = adt_ary_new( (void(*)(void*)) 0);
+      adt_ary_t* nodeList = adt_ary_new(NULL);
       if (nodeList != NULL)
       {
          int32_t i;

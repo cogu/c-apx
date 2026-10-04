@@ -48,7 +48,7 @@ typedef struct apx_server_tag
    apx_port_signature_map_t port_signature_map;  //This is the global map that is used to build all port connectors.
                                                //Any access to this structure must be protected by acquiring the globalLock.
    apx_connection_manager_t connection_manager; //server connections
-   adt_list_t extension_manager;               //TODO: replace with extensionManager class
+   adt_list_t extension_manager;                //List of registered server extensions (apx_server_extension_t)
    adt_ary_t modified_nodes;                   //Weak references to apx_node_instance_t. Used to keep track of which nodes have modified port connectors.
    THREAD_T event_thread;                      //Local worker thread (for playing server-global events such as log events)
    bool is_event_thread_valid;                 //True if event_thread is a valid variable

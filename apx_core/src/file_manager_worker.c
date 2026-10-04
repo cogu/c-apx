@@ -389,13 +389,13 @@ static bool process_single_command(apx_file_manager_worker_t* self, apx_command_
       result = run_publish_local_file(self, (rmf_file_info_t*)cmd->data3.ptr);
       break;
    case APX_CMD_REVOKE_LOCAL_FILE:
-      // Deferred to TODO.md Item 7
+      // Deferred to roadmap Item 7
       break;
    case APX_CMD_OPEN_REMOTE_FILE:
       result = run_open_remote_file(self, cmd->data1);
       break;
    case APX_CMD_CLOSE_REMOTE_FILE:
-      // Deferred to TODO.md Item 7
+      // Deferred to roadmap Item 7
       break;
    case APX_CMD_SEND_LOCAL_CONST_DATA:
       result = run_send_local_const_data(self, cmd->data1, (uint8_t const*)cmd->data3.ptr, cmd->data2);
