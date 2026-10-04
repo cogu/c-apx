@@ -24,7 +24,6 @@ typedef struct apx_data_signature_tag
 {
    apx_data_element_t *data_element; //strong reference
    apx_data_element_t *effective_data_element; //strong reference
-   //TODO: Add support for client-server interfaces
 } apx_data_signature_t;
 
 
