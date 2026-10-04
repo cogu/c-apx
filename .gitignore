@@ -5,7 +5,6 @@ CMemLeak.txt
 massif.out.*
 .vscode/
 Testing/
-ROADMAP.md
 /CMakeUserPresets.json
 .venv/
 __pycache__/
