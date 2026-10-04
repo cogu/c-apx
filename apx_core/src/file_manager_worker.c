@@ -284,7 +284,7 @@ apx_error_t apx_file_manager_worker_prepare_send_local_data(apx_file_manager_wor
    {
       adt_buf_err_t rc;
       apx_command_t cmd;
-      apx_build_command_with_ptr(&cmd, APX_CMD_SEND_LOCAL_DATA, address, size, data, NULL); //TODO: Implement small data support
+      apx_build_command_with_ptr(&cmd, APX_CMD_SEND_LOCAL_DATA, address, size, data, NULL);
       SPINLOCK_ENTER(self->queue_lock);
       rc = adt_rbfh_insert(&self->queue, (const uint8_t*)&cmd);
       SPINLOCK_LEAVE(self->queue_lock);
@@ -389,13 +389,13 @@ static bool process_single_command(apx_file_manager_worker_t* self, apx_command_
       result = run_publish_local_file(self, (rmf_file_info_t*)cmd->data3.ptr);
       break;
    case APX_CMD_REVOKE_LOCAL_FILE:
-      //TODO: Implement
+      // Deferred to TODO.md Item 7
       break;
    case APX_CMD_OPEN_REMOTE_FILE:
       result = run_open_remote_file(self, cmd->data1);
       break;
    case APX_CMD_CLOSE_REMOTE_FILE:
-      //TODO: Implement
+      // Deferred to TODO.md Item 7
       break;
    case APX_CMD_SEND_LOCAL_CONST_DATA:
       result = run_send_local_const_data(self, cmd->data1, (uint8_t const*)cmd->data3.ptr, cmd->data2);
@@ -416,10 +416,15 @@ static bool process_single_command(apx_file_manager_worker_t* self, apx_command_
    default:
       return false;
    }
+#if APX_DEBUG_ENABLE
    if (result != APX_NO_ERROR)
    {
-      //TODO: error handling
+      printf("[FILE-MANAGER-WORKER %d] Command %d failed with error: %d\n",
+         (int)apx_file_manager_shared_get_connection_id(self->shared), (int)cmd->cmd_type, (int)result);
    }
+#else
+   (void)result;
+#endif
    return true;
 }
 
