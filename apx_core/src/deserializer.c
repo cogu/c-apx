@@ -341,7 +341,17 @@ apx_error_t apx_vm_deserializer_unpack_char(apx_vm_deserializer_t* self, uint32_
 
 apx_error_t apx_vm_deserializer_unpack_char8(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
 {
-   return apx_vm_deserializer_unpack_char(self, array_length, dynamic_size_type); //TODO: Implement correct version later
+   if (self != NULL)
+   {
+      assert(self->state != NULL);
+      apx_error_t result = deserializer_prepare_for_buffer_read(self, APX_TYPE_CODE_CHAR8, CHAR8_SIZE);
+      if (result != APX_NO_ERROR)
+      {
+         return result;
+      }
+      return deserializer_unpack_value(self, array_length, dynamic_size_type);
+   }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 apx_error_t apx_vm_deserializer_unpack_bool(apx_vm_deserializer_t* self, uint32_t array_length, apx_size_type_t dynamic_size_type)
@@ -871,8 +881,7 @@ static bool state_is_num_or_bool_type(apx_vm_read_state_t* self)
 {
    assert(self != NULL);
    return ((self->type_code >= APX_TYPE_CODE_UINT8) && (self->type_code <= APX_TYPE_CODE_INT64)) ||
-      (self->type_code == APX_TYPE_CODE_BOOL) ||
-      ((self->type_code == APX_TYPE_CODE_CHAR) && (self->array_len == 0u));
+      (self->type_code == APX_TYPE_CODE_BOOL) || (state_is_char_type(self) && (self->array_len == 0u));
 }
 
 static bool state_is_record_type(apx_vm_read_state_t* self)
