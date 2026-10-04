@@ -153,16 +153,20 @@ void apx_attribute_parser_value_table_state_destroy(apx_attribute_parser_value_t
    }
 }
 
-void apx_attribute_parser_value_table_state_append(apx_attribute_parser_value_table_state_t* self, adt_str_t* str)
+apx_error_t apx_attribute_parser_value_table_state_append(
+   apx_attribute_parser_value_table_state_t* self, adt_str_t* str)
 {
    if ((self != NULL) && (str != NULL))
    {
       adt_error_t result = adt_ary_push(&self->values, (void*)str);
       if (result != ADT_NO_ERROR)
       {
-         //TODO: error handling
+         adt_str_delete(str);
+         return APX_MEM_ERROR;
       }
+      return APX_NO_ERROR;
    }
+   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 int32_t apx_attribute_parser_value_table_state_length(apx_attribute_parser_value_table_state_t* self)
@@ -872,13 +876,21 @@ static uint8_t const* apx_attribute_parser_parse_value_table(apx_attribute_parse
          {
             //that was the last argument
             *vt = apx_attribute_parser_create_value_table_from_state(self, &state);
+            apx_attribute_parser_value_table_state_destroy(&state);
             if (*vt == NULL)
             {
                self->error_next = next;
+               return NULL;
             }
             return next + 1;
          }
       }
+      //This is the error path, we should not normally end up here.
+      if (self->error_next == NULL)
+      {
+         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+      }
+      apx_attribute_parser_value_table_state_destroy(&state);
    }
    return begin; //not enough characters in stream
 }
@@ -1007,9 +1019,14 @@ static uint8_t const* apx_attribute_parser_parse_value_table_arg(apx_attribute_p
             if (str == NULL)
             {
                apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
-               return NULL; //TODO: clean memory
+               return NULL;
             }
-            apx_attribute_parser_value_table_state_append(vts, str);
+            apx_error_t rc = apx_attribute_parser_value_table_state_append(vts, str);
+            if (rc != APX_NO_ERROR)
+            {
+               apx_attribute_parser_set_error(self, rc, next);
+               return NULL;
+            }
             next = result + 1; //skip past ending '"' character
          }
          break;

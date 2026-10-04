@@ -98,7 +98,8 @@ void apx_range_create(apx_range_t* self);
 //apx_attribute_parser_value_table_state_t API
 void apx_attribute_parser_value_table_state_create(apx_attribute_parser_value_table_state_t* self);
 void apx_attribute_parser_value_table_state_destroy(apx_attribute_parser_value_table_state_t* self);
-void apx_attribute_parser_value_table_state_append(apx_attribute_parser_value_table_state_t* self, adt_str_t* str);
+apx_error_t apx_attribute_parser_value_table_state_append(
+   apx_attribute_parser_value_table_state_t* self, adt_str_t* str);
 int32_t apx_attribute_parser_value_table_state_length(apx_attribute_parser_value_table_state_t* self);
 
 //apx_attribute_parser_rational_scaling_state_t API
