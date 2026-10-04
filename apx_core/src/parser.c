@@ -46,6 +46,7 @@ static void parser_reset(apx_parser_t* self);
 static apx_error_t parser_on_open(void* arg);
 static apx_error_t parser_on_close(void* arg);
 static apx_error_t parser_on_new_line(void* arg, const char* line_begin, const char* line_end);
+static const char* parser_find_comment_start(const char* begin, const char* end);
 static apx_error_t parser_accept_version_line(apx_parser_t* self, uint8_t const* begin, uint8_t const* end);
 static apx_error_t parser_accept_node_declaration(apx_parser_t* self, uint8_t const* begin, uint8_t const* end);
 static apx_error_t parser_accept_type_or_port_declaration(apx_parser_t* self, uint8_t const* begin, uint8_t const* end);
@@ -371,10 +372,15 @@ static apx_error_t parser_on_new_line(void* arg, const char* line_begin, const c
    apx_parser_t* self = (apx_parser_t*)arg;
    if (self != NULL)
    {
-      size_t line_length = line_end - line_begin;
       self->state.lineno++;
+      const char* comment_start = parser_find_comment_start(line_begin, line_end);
+      const uint8_t* stripped_begin = NULL;
+      const uint8_t* stripped_end = NULL;
+      bstr_strip((const uint8_t*)line_begin, (const uint8_t*)comment_start, &stripped_begin, &stripped_end);
+      line_begin = (const char*)stripped_begin;
+      line_end = (const char*)stripped_end;
+      size_t line_length = (size_t)(line_end - line_begin);
       apx_error_t retval = APX_NO_ERROR;
-      //TODO: Add support for line comments starting with the # character
       if (line_length > 0u)
       {
          switch (self->state.accept_next)
@@ -402,11 +408,40 @@ static apx_error_t parser_on_new_line(void* arg, const char* line_begin, const c
       }
       else
       {
-         //Skip empty lines
+         //Skip empty or comment lines
       }
       return retval;
    }
    return APX_NULL_PTR_ERROR;
+}
+
+static const char* parser_find_comment_start(const char* begin, const char* end)
+{
+   const char* p = begin;
+   while (p < end)
+   {
+      if (*p == '"')
+      {
+         // Safeguard: skip string literals so '#' inside quotes is not treated as a comment delimiter
+         const uint8_t* quote_end = bstr_match_pair((const uint8_t*)p, (const uint8_t*)end, '"', '"', '\\');
+         if ((quote_end != NULL) && (quote_end > (const uint8_t*)p) && (quote_end < (const uint8_t*)end) &&
+            (*quote_end == '"'))
+         {
+            p = (const char*)quote_end + 1;
+            continue;
+         }
+         else
+         {
+            break;
+         }
+      }
+      else if (*p == '#')
+      {
+         return p;
+      }
+      p++;
+   }
+   return end;
 }
 
 static apx_error_t parser_accept_version_line(apx_parser_t* self, uint8_t const* begin, uint8_t const* end)

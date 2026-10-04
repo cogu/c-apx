@@ -59,6 +59,10 @@ static void test_parse_array_of_records(CuTest* tc);
 static void test_parse_array_of_records_type_reference_require_port(CuTest* tc);
 static void test_apx_parser_provide_port_with_invalid_attribute_string(CuTest* tc);
 static void test_apx_parser_provide_port_with_invalid_data_signature(CuTest* tc);
+static void test_parse_with_trailing_empty_lines(CuTest* tc);
+static void test_parse_with_blank_lines_and_comments(CuTest* tc);
+static void test_parse_error_line_number_with_blank_lines(CuTest* tc);
+static void test_parse_comment_with_hash_in_quotes(CuTest* tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -102,6 +106,10 @@ CuSuite* testsuite_apx_parser(void)
    SUITE_ADD_TEST(suite, test_parse_array_of_records_type_reference_require_port);
    SUITE_ADD_TEST(suite, test_apx_parser_provide_port_with_invalid_attribute_string);
    SUITE_ADD_TEST(suite, test_apx_parser_provide_port_with_invalid_data_signature);
+   SUITE_ADD_TEST(suite, test_parse_with_trailing_empty_lines);
+   SUITE_ADD_TEST(suite, test_parse_with_blank_lines_and_comments);
+   SUITE_ADD_TEST(suite, test_parse_error_line_number_with_blank_lines);
+   SUITE_ADD_TEST(suite, test_parse_comment_with_hash_in_quotes);
 
    return suite;
 }
@@ -1040,6 +1048,125 @@ static void test_apx_parser_provide_port_with_invalid_data_signature(CuTest* tc)
    apx_parser_create(&parser, &stream);
    CuAssertUIntEquals(tc, APX_PARSE_ERROR, apx_parser_parse_cstr(&parser, apx_text));
    CuAssertIntEquals(tc, 3, apx_parser_get_error_line(&parser));
+   apx_parser_destroy(&parser);
+   apx_istream_destroy(&stream);
+}
+
+static void test_parse_with_trailing_empty_lines(CuTest* tc)
+{
+   const char* apx_text = "APX/1.3\nN\"TestNode\"\nR\"Port\"C\n\n\n";
+   apx_parser_t parser;
+   apx_istream_t stream;
+   apx_node_t* node;
+
+   apx_istream_create(&stream);
+   apx_parser_create(&parser, &stream);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+   node = apx_parser_take_last_node(&parser);
+   CuAssertPtrNotNull(tc, node);
+   CuAssertStrEquals(tc, "TestNode", apx_node_get_name(node));
+   CuAssertIntEquals(tc, 1, apx_node_num_require_ports(node));
+   apx_node_delete(node);
+   apx_parser_destroy(&parser);
+   apx_istream_destroy(&stream);
+}
+
+static void test_parse_with_blank_lines_and_comments(CuTest* tc)
+{
+   const char* apx_text = "\n"
+                          "# License header\n"
+                          "# Author: Test\n"
+                          "\n"
+                          "APX/1.3\n"
+                          "\n"
+                          "N\"TestNode\"\n"
+                          "\n"
+                          "# Type definition section\n"
+                          "T\"VehicleSpeed_T\"S\n"
+                          "\n"
+                          "# Port definition section\n"
+                          "R\"VehicleSpeed\"T[\"VehicleSpeed_T\"]:=0\n"
+                          "P\"EngineSpeed\"S:=0 # Trailing comment on port\n"
+                          "   \n";
+   apx_parser_t parser;
+   apx_istream_t stream;
+   apx_node_t* node;
+   apx_data_type_t* data_type;
+   apx_port_t* require_port;
+   apx_port_t* provide_port;
+
+   apx_istream_create(&stream);
+   apx_parser_create(&parser, &stream);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+   node = apx_parser_take_last_node(&parser);
+   CuAssertPtrNotNull(tc, node);
+   CuAssertStrEquals(tc, "TestNode", apx_node_get_name(node));
+   CuAssertIntEquals(tc, 1, apx_node_num_data_types(node));
+   CuAssertIntEquals(tc, 1, apx_node_num_require_ports(node));
+   CuAssertIntEquals(tc, 1, apx_node_num_provide_ports(node));
+
+   data_type = apx_node_get_last_data_type(node);
+   CuAssertPtrNotNull(tc, data_type);
+   CuAssertIntEquals(tc, 10, apx_data_type_get_line_number(data_type));
+
+   require_port = apx_node_get_last_require_port(node);
+   CuAssertPtrNotNull(tc, require_port);
+   CuAssertIntEquals(tc, 13, require_port->line_number);
+
+   provide_port = apx_node_get_last_provide_port(node);
+   CuAssertPtrNotNull(tc, provide_port);
+   CuAssertIntEquals(tc, 14, provide_port->line_number);
+
+   apx_node_delete(node);
+   apx_parser_destroy(&parser);
+   apx_istream_destroy(&stream);
+}
+
+static void test_parse_error_line_number_with_blank_lines(CuTest* tc)
+{
+   const char* apx_text = "APX/1.3\n"
+                          "\n"
+                          "# comment\n"
+                          "\n"
+                          "N\"TestNode\"\n"
+                          "\n"
+                          "INVALID_SYNTAX\n";
+   apx_parser_t parser;
+   apx_istream_t stream;
+
+   apx_istream_create(&stream);
+   apx_parser_create(&parser, &stream);
+   CuAssertUIntEquals(tc, APX_PARSE_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+   CuAssertIntEquals(tc, 7, apx_parser_get_error_line(&parser));
+
+   apx_parser_destroy(&parser);
+   apx_istream_destroy(&stream);
+}
+
+static void test_parse_comment_with_hash_in_quotes(CuTest* tc)
+{
+   const char* apx_text = "APX/1.3\n"
+                          "N\"NodeWith#Hash\"\n"
+                          "P\"Port#1\"S:=0 # Trailing comment after hash in name\n";
+   apx_parser_t parser;
+   apx_istream_t stream;
+   apx_node_t* node;
+   apx_port_t* port;
+
+   apx_istream_create(&stream);
+   apx_parser_create(&parser, &stream);
+   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+   node = apx_parser_take_last_node(&parser);
+   CuAssertPtrNotNull(tc, node);
+   CuAssertStrEquals(tc, "NodeWith#Hash", apx_node_get_name(node));
+   CuAssertIntEquals(tc, 1, apx_node_num_provide_ports(node));
+
+   port = apx_node_get_last_provide_port(node);
+   CuAssertPtrNotNull(tc, port);
+   CuAssertStrEquals(tc, "Port#1", apx_port_get_name(port));
+   CuAssertIntEquals(tc, 3, port->line_number);
+
+   apx_node_delete(node);
    apx_parser_destroy(&parser);
    apx_istream_destroy(&stream);
 }
