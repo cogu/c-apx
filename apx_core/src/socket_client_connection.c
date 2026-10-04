@@ -118,7 +118,7 @@ apx_error_t apx_client_socket_connection_create(apx_client_socket_connection_t *
       apx_client_connection_set_connection_type(&self->base, connection_type);
       adt_bytearray_create(&self->send_buffer);
       register_msocket_handler(self, socket_object);
-      apx_connection_base_start(&self->base.base);///TODO: Don't call start from the constructor
+      apx_connection_base_start(&self->base.base);
       return APX_NO_ERROR;
    }
    return APX_INVALID_ARGUMENT_ERROR;

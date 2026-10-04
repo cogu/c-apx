@@ -1,6 +1,6 @@
 # Test TLS Certificates for APX
 
-These certificates are used for testing APX TLS socket transport and mutual TLS (mTLS) client verification (conforming to Item 6 in `TODO.md`).
+These certificates are used for testing APX TLS socket transport and mutual TLS (mTLS) client verification (conforming to Item 6 in `ROADMAP.md`).
 
 ## Certificate Hierarchy & Dependencies
 

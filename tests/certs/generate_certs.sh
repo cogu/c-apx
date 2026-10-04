@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script to generate self-signed ECDSA certificates for APX TLS and mTLS testing.
-# Conforms to Item 6 in TODO.md (NIST P-256 / prime256v1 curve).
+# Conforms to Item 6 in ROADMAP.md (NIST P-256 / prime256v1 curve).
 # ==============================================================================
 set -euo pipefail
 

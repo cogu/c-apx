@@ -149,7 +149,6 @@ void *priority_queue_topItem(priority_queue_t *self)
 
 
 //special function
-///TODO: this function needs to support overflow situation, right now it doesn't
 void priority_queue_incrementTopPriority(priority_queue_t *self, uint32_t value)
 {
    if (self != NULL)

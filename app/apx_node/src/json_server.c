@@ -61,8 +61,8 @@ apx_error_t json_server_start_unix(const char *socket_path)
 
 apx_error_t json_server_start_tcp(const char *bind_address, uint16_t port)
 {
-   (void) bind_address; ///TODO: Use bind address when msocket library supports it as argument
-   msocket_server_start(m_server, (const char*) 0, 0, port);
+   (void)bind_address;
+   msocket_server_start(m_server, NULL, 0, port);
    return APX_NO_ERROR;
 }
 

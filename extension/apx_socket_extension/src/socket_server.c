@@ -328,8 +328,7 @@ static void apx_socket_server_tcp_accept(void *arg, struct msocket_server_tag *s
       }
       else
       {
-         ///TODO: cleanup socket object
-         assert(0);
+         msocket_delete((msocket_t*)sock);
       }
    }
 }
@@ -455,8 +454,7 @@ static void apx_socket_server_unix_accept(void *arg, struct msocket_server_tag *
       }
       else
       {
-         ///TODO: cleanup socket object
-         assert(0);
+         msocket_delete((msocket_t*)sock);
       }
    }
 }
@@ -481,7 +479,7 @@ static void apx_socket_server_vsock_accept(void *arg, struct msocket_server_tag 
       }
       else
       {
-         assert(0);
+         msocket_delete((msocket_t*)sock);
       }
    }
 }

@@ -886,7 +886,7 @@ static apx_error_t init_node_instance_from_file_info(apx_node_manager_t* self, r
       }
       if (result == APX_NO_ERROR)
       {
-         //TODO: Check node cache if we have a cached version of the node (level1 or level2 cache)
+         // Planned: node cache lookup (see roadmap Item 13)
          *file_open_request = true;
       }
       if (result == APX_NO_ERROR)

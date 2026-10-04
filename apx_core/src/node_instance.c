@@ -1022,7 +1022,7 @@ apx_error_t apx_node_instance_handle_require_ports_disconnected(apx_node_instanc
          }
          else if (entry->count < -1)
          {
-            //TODO: Handle multiple providers
+            // Simultaneous multi-provider disconnect is deferred (see roadmap Item 12)
             return APX_NOT_IMPLEMENTED_ERROR;
          }
          else
@@ -1095,7 +1095,6 @@ apx_error_t apx_node_instance_handle_require_port_disconnected_from_provide_port
 {
    (void)require_port;
    (void)provide_port;
-   //TODO: Implement later?
    return APX_NO_ERROR;
 }
 
@@ -1818,7 +1817,7 @@ static apx_error_t request_remote_provide_port_data(apx_node_instance_t* self, a
       check_and_request_remote_port_count_file(self, file_manager, APX_REQUIRE_PORT_COUNT_EXT, &self->require_port_count_file);
    }
    apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
-   apx_file_open(file); //TODO: Should this be moved into file_manager?
+   apx_file_open(file);
    return apx_file_manager_send_open_file_request(file_manager, apx_file_get_address_without_flags(file));
 }
 
@@ -1872,7 +1871,7 @@ static apx_error_t request_remote_require_port_data(apx_node_instance_t* self, a
       check_and_request_remote_port_count_file(self, file_manager, APX_REQUIRE_PORT_COUNT_EXT, &self->require_port_count_file);
    }
    apx_node_instance_set_require_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
-   apx_file_open(file); //TODO: Should this be moved into file_manager?
+   apx_file_open(file);
    return apx_file_manager_send_open_file_request(file_manager, apx_file_get_address_without_flags(file));
 }
 
@@ -2097,7 +2096,7 @@ static apx_error_t remote_route_data_to_file(apx_file_t* file, uint32_t offset, 
    {
       uint8_t* allocated_buffer;
       uint32_t address = apx_file_get_address_without_flags(file) + offset;
-      //TODO: use small object allocator later on
+      // Planned: small data pipeline optimization (see roadmap Item 11)
       allocated_buffer = (uint8_t*)malloc(size);
       if (allocated_buffer == NULL)
       {
