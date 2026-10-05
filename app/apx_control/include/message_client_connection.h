@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      message_client_connection.h
-* \author    Conny Gustafsson
-* \date      2020-03-08
-* \brief     msocket connection that sends JSON data to to apx_sernder application
-*
-* Copyright (c) 2020-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      message_client_connection.h
+ * \author    Conny Gustafsson
+ * \date      2020-03-08
+ * \brief     msocket connection that sends JSON data to to apx_sernder application
+ *
+ * Copyright (c) 2020-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef MESSAGE_CLIENT_CONNECTION_H
 #define MESSAGE_CLIENT_CONNECTION_H
 
@@ -16,16 +16,16 @@
 //////////////////////////////////////////////////////////////////////////////
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
-# define WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
 # endif
-#include <Windows.h>
+# include <Windows.h>
 #else
-#include <pthread.h>
-#include <semaphore.h>
+# include <pthread.h>
+# include <semaphore.h>
 #endif
-#include "msocket.h"
-#include "adt_str.h"
 #include "adt_bytearray.h"
+#include "adt_str.h"
+#include "msocket.h"
 #include "osmacro.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -33,9 +33,9 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct message_client_connection_tag
 {
-   msocket_t *msocket;
-   adt_bytearray_t *pendingMessage;
-   SEMAPHORE_T messageTransmitted;
+  msocket_t *msocket;
+  adt_bytearray_t *pendingMessage;
+  SEMAPHORE_T messageTransmitted;
 } message_client_connection_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -53,4 +53,4 @@ int32_t message_client_connect_unix(message_client_connection_t *self, const cha
 #endif
 int32_t message_client_wait_for_message_transmitted(message_client_connection_t *self);
 
-#endif //MESSAGE_CLIENT_CONNECTION_H
+#endif // MESSAGE_CLIENT_CONNECTION_H

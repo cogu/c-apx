@@ -1,29 +1,28 @@
 /*****************************************************************************
-* \file      attribute_parser.c
-* \author    Conny Gustafsson
-* \date      2017-07-30
-* \brief     Port attribute parser
-*
-* Copyright (c) 2017-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      attribute_parser.c
+ * \author    Conny Gustafsson
+ * \date      2017-07-30
+ * \brief     Port attribute parser
+ *
+ * Copyright (c) 2017-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <assert.h>
-#include <malloc.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
 #include "apx/attribute_parser.h"
-#include "apx/parser_base.h"
 #include "apx/computation.h"
+#include "apx/parser_base.h"
 #include "bstr.h"
+#include <assert.h>
+#include <ctype.h>
+#include <malloc.h>
+#include <stdlib.h>
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -33,25 +32,39 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void apx_attribute_parser_set_error(apx_attribute_parser_t* self, apx_error_t error, uint8_t const* error_next);
-static void apx_attribute_parser_reset(apx_attribute_parser_t* self);
-apx_value_table_t* apx_attribute_parser_create_value_table_from_state(apx_attribute_parser_t* self, apx_attribute_parser_value_table_state_t* vts);
-apx_rational_scaling_t* apx_attribute_parser_create_rational_scaling_from_state(apx_attribute_parser_rational_scaling_state_t* vts);
-static uint8_t const* apx_attribute_parser_parse_single_port_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr);
-static uint8_t const* apx_attribute_parser_parse_single_type_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr);
-static uint8_t const* apx_attribute_parser_parse_initializer_list(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static bool apx_attribute_parser_push_value_to_parent(apx_attribute_parser_t* self);
-static uint8_t const* apx_attribute_parser_parse_scalar(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end);
-static uint8_t const* apx_attribute_parser_parse_integer_literal(uint8_t const* next, uint8_t const* end, bool unary_minus, dtl_sv_t* sv);
-static uint8_t const* apx_attribute_parser_parse_string_literal(uint8_t const* begin, uint8_t const* end, dtl_sv_t* sv);
-static uint8_t const* apx_attribute_parser_parse_array_length(uint8_t const* begin, uint8_t const* end, uint32_t* length);
-static uint8_t const* apx_attribute_parser_parse_value_table(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_value_table_t** vt);
-static uint8_t const* apx_attribute_parser_parse_rational_scaling(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_rational_scaling_t** rs);
-static uint8_t const* apx_attribute_parser_parse_value_table_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_value_table_state_t* vts);
-static uint8_t const* apx_attribute_parser_parse_rational_scaling_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_rational_scaling_state_t* rss);
-static uint8_t const* apx_attribute_parser_parse_lower_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range);
-static uint8_t const* apx_attribute_parser_parse_upper_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range);
-static bool apx_attribute_parser_is_initializer_list(apx_attribute_parser_t* self);
+static void apx_attribute_parser_set_error(apx_attribute_parser_t *self, apx_error_t error, uint8_t const *error_next);
+static void apx_attribute_parser_reset(apx_attribute_parser_t *self);
+apx_value_table_t *apx_attribute_parser_create_value_table_from_state(
+  apx_attribute_parser_t *self, apx_attribute_parser_value_table_state_t *vts);
+apx_rational_scaling_t *apx_attribute_parser_create_rational_scaling_from_state(
+  apx_attribute_parser_rational_scaling_state_t *vts);
+static uint8_t const *apx_attribute_parser_parse_single_port_attribute(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_port_attributes_t *attr);
+static uint8_t const *apx_attribute_parser_parse_single_type_attribute(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_type_attributes_t *attr);
+static uint8_t const *apx_attribute_parser_parse_initializer_list(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end);
+static bool apx_attribute_parser_push_value_to_parent(apx_attribute_parser_t *self);
+static uint8_t const *apx_attribute_parser_parse_scalar(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end);
+static uint8_t const *apx_attribute_parser_parse_integer_literal(
+  uint8_t const *next, uint8_t const *end, bool unary_minus, dtl_sv_t *sv);
+static uint8_t const *apx_attribute_parser_parse_string_literal(uint8_t const *begin, uint8_t const *end, dtl_sv_t *sv);
+static uint8_t const *apx_attribute_parser_parse_array_length(
+  uint8_t const *begin, uint8_t const *end, uint32_t *length);
+static uint8_t const *apx_attribute_parser_parse_value_table(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_value_table_t **vt);
+static uint8_t const *apx_attribute_parser_parse_rational_scaling(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_rational_scaling_t **rs);
+static uint8_t const *apx_attribute_parser_parse_value_table_arg(apx_attribute_parser_t *self, uint8_t const *begin,
+  uint8_t const *end, apx_attribute_parser_value_table_state_t *vts);
+static uint8_t const *apx_attribute_parser_parse_rational_scaling_arg(apx_attribute_parser_t *self,
+  uint8_t const *begin, uint8_t const *end, apx_attribute_parser_rational_scaling_state_t *rss);
+static uint8_t const *apx_attribute_parser_parse_lower_limit(
+  uint8_t const *begin, uint8_t const *end, bool unary_minus, apx_range_t *range);
+static uint8_t const *apx_attribute_parser_parse_upper_limit(
+  uint8_t const *begin, uint8_t const *end, bool unary_minus, apx_range_t *range);
+static bool apx_attribute_parser_is_initializer_list(apx_attribute_parser_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -62,1133 +75,1149 @@ static bool apx_attribute_parser_is_initializer_list(apx_attribute_parser_t* sel
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-//apx_attribute_parse_state_t API
-void apx_attribute_parse_state_create(apx_attribute_parse_state_t* self)
+// apx_attribute_parse_state_t API
+void apx_attribute_parse_state_create(apx_attribute_parse_state_t *self)
 {
-   if (self != NULL)
-   {
-      self->parent = NULL;
-      self->initializer_list = NULL;
-      self->sv = NULL;
-   }
+  if (self != NULL)
+  {
+    self->parent = NULL;
+    self->initializer_list = NULL;
+    self->sv = NULL;
+  }
 }
 
-void apx_attribute_parse_state_destroy(apx_attribute_parse_state_t* self)
+void apx_attribute_parse_state_destroy(apx_attribute_parse_state_t *self)
 {
-   if (self != NULL)
-   {
-      if (self->sv != NULL)
-      {
-         dtl_dec_ref(self->sv);
-      }
-      if (self->initializer_list != NULL)
-      {
-         dtl_dec_ref(self->initializer_list);
-      }
-   }
+  if (self != NULL)
+  {
+    if (self->sv != NULL)
+    {
+      dtl_dec_ref(self->sv);
+    }
+    if (self->initializer_list != NULL)
+    {
+      dtl_dec_ref(self->initializer_list);
+    }
+  }
 }
 
-apx_attribute_parse_state_t* apx_attribute_parse_state_new(void)
+apx_attribute_parse_state_t *apx_attribute_parse_state_new(void)
 {
-   apx_attribute_parse_state_t* self = (apx_attribute_parse_state_t*)malloc(sizeof(apx_attribute_parse_state_t));
-   if (self != NULL)
-   {
-      apx_attribute_parse_state_create(self);
-   }
-   return self;
+  apx_attribute_parse_state_t *self = (apx_attribute_parse_state_t *)malloc(sizeof(apx_attribute_parse_state_t));
+  if (self != NULL)
+  {
+    apx_attribute_parse_state_create(self);
+  }
+  return self;
 }
 
-void apx_attribute_parse_state_delete(apx_attribute_parse_state_t* self)
+void apx_attribute_parse_state_delete(apx_attribute_parse_state_t *self)
 {
-   if (self != NULL)
-   {
-      apx_attribute_parse_state_destroy(self);
-      free(self);
-   }
+  if (self != NULL)
+  {
+    apx_attribute_parse_state_destroy(self);
+    free(self);
+  }
 }
 
-void apx_attribute_parse_state_vdelete(void* arg)
+void apx_attribute_parse_state_vdelete(void *arg)
 {
-   apx_attribute_parse_state_delete((apx_attribute_parse_state_t*)arg);
+  apx_attribute_parse_state_delete((apx_attribute_parse_state_t *)arg);
 }
 
 
-bool apx_attribute_parse_state_has_value(apx_attribute_parse_state_t* self)
+bool apx_attribute_parse_state_has_value(apx_attribute_parse_state_t *self)
 {
-   if (self != NULL)
-   {
-      return ((self->sv != NULL) || (self->initializer_list != NULL)) ? true : false;
-   }
-   return false;
+  if (self != NULL)
+  {
+    return ((self->sv != NULL) || (self->initializer_list != NULL)) ? true : false;
+  }
+  return false;
 }
 
-//apx_range_t API
-void apx_range_create(apx_range_t* self)
+// apx_range_t API
+void apx_range_create(apx_range_t *self)
 {
-   if (self != NULL)
-   {
-      self->is_signed_range = false;
-      self->lower.i32 = 0u;
-      self->upper.i32 = 0u;
-   }
+  if (self != NULL)
+  {
+    self->is_signed_range = false;
+    self->lower.i32 = 0u;
+    self->upper.i32 = 0u;
+  }
 }
 
-//apx_attribute_parser_value_table_state_t API
-void apx_attribute_parser_value_table_state_create(apx_attribute_parser_value_table_state_t* self)
+// apx_attribute_parser_value_table_state_t API
+void apx_attribute_parser_value_table_state_create(apx_attribute_parser_value_table_state_t *self)
 {
-   if (self != NULL)
-   {
-      apx_range_create(&self->range);
-      self->num_count = 0u;
-      self->last_was_string = false;
-      adt_ary_create(&self->values, adt_str_vdelete);
-   }
+  if (self != NULL)
+  {
+    apx_range_create(&self->range);
+    self->num_count = 0u;
+    self->last_was_string = false;
+    adt_ary_create(&self->values, adt_str_vdelete);
+  }
 }
 
-void apx_attribute_parser_value_table_state_destroy(apx_attribute_parser_value_table_state_t* self)
+void apx_attribute_parser_value_table_state_destroy(apx_attribute_parser_value_table_state_t *self)
 {
-   if (self != NULL)
-   {
-      adt_ary_destroy(&self->values);
-   }
+  if (self != NULL)
+  {
+    adt_ary_destroy(&self->values);
+  }
 }
 
 apx_error_t apx_attribute_parser_value_table_state_append(
-   apx_attribute_parser_value_table_state_t* self, adt_str_t* str)
+  apx_attribute_parser_value_table_state_t *self, adt_str_t *str)
 {
-   if ((self != NULL) && (str != NULL))
-   {
-      adt_error_t result = adt_ary_push(&self->values, (void*)str);
-      if (result != ADT_NO_ERROR)
-      {
-         adt_str_delete(str);
-         return APX_MEM_ERROR;
-      }
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if ((self != NULL) && (str != NULL))
+  {
+    adt_error_t result = adt_ary_push(&self->values, (void *)str);
+    if (result != ADT_NO_ERROR)
+    {
+      adt_str_delete(str);
+      return APX_MEM_ERROR;
+    }
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-int32_t apx_attribute_parser_value_table_state_length(apx_attribute_parser_value_table_state_t* self)
+int32_t apx_attribute_parser_value_table_state_length(apx_attribute_parser_value_table_state_t *self)
 {
-   if (self != NULL)
-   {
-      return adt_ary_length(&self->values);
-   }
-   return -1;
+  if (self != NULL)
+  {
+    return adt_ary_length(&self->values);
+  }
+  return -1;
 }
 
-//apx_attribute_parser_rational_scaling_state_t API
-void apx_attribute_parser_rational_scaling_state_create(apx_attribute_parser_rational_scaling_state_t* self)
+// apx_attribute_parser_rational_scaling_state_t API
+void apx_attribute_parser_rational_scaling_state_create(apx_attribute_parser_rational_scaling_state_t *self)
 {
-   if (self != NULL)
-   {
-      apx_range_create(&self->range);
-      self->offset = 0.0;
-      self->numerator = 0;
-      self->denominator = 0;
-      self->arg_index = 0u;
-      self->unit = NULL;
-   }
+  if (self != NULL)
+  {
+    apx_range_create(&self->range);
+    self->offset = 0.0;
+    self->numerator = 0;
+    self->denominator = 0;
+    self->arg_index = 0u;
+    self->unit = NULL;
+  }
 }
 
-void apx_attribute_parser_rational_scaling_state_destroy(apx_attribute_parser_rational_scaling_state_t* self)
+void apx_attribute_parser_rational_scaling_state_destroy(apx_attribute_parser_rational_scaling_state_t *self)
 {
-   if (self != NULL)
-   {
-      if (self->unit != NULL)
-      {
-         free(self->unit);
-      }
-   }
+  if (self != NULL)
+  {
+    if (self->unit != NULL)
+    {
+      free(self->unit);
+    }
+  }
 }
 
-//apx_attribute_parser_t API
-void apx_attribute_parser_create(apx_attribute_parser_t* self)
+// apx_attribute_parser_t API
+void apx_attribute_parser_create(apx_attribute_parser_t *self)
 {
-   if (self != NULL)
-   {
-      adt_stack_create(&self->stack, apx_attribute_parse_state_vdelete);
-      self->state = NULL;
-      self->last_error = APX_NO_ERROR;
-      self->error_next = NULL;
-   }
+  if (self != NULL)
+  {
+    adt_stack_create(&self->stack, apx_attribute_parse_state_vdelete);
+    self->state = NULL;
+    self->last_error = APX_NO_ERROR;
+    self->error_next = NULL;
+  }
 }
 
-void apx_attribute_parser_destroy(apx_attribute_parser_t* self)
+void apx_attribute_parser_destroy(apx_attribute_parser_t *self)
 {
-   if (self != NULL)
-   {
-      apx_attribute_parser_reset(self);
-   }
+  if (self != NULL)
+  {
+    apx_attribute_parser_reset(self);
+  }
 }
 
-uint8_t const* apx_attribute_parser_parse_port_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr)
+uint8_t const *apx_attribute_parser_parse_port_attributes(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_port_attributes_t *attr)
 {
-   uint8_t const* next = begin;
-   if ((end < begin) || (begin == NULL) || (end == NULL))
-   {
-      apx_attribute_parser_set_error(self, APX_INVALID_ARGUMENT_ERROR, NULL);
-      return NULL;
-   }
-   while (next < end)
-   {
-      next = bstr_lstrip(next, end);
+  uint8_t const *next = begin;
+  if ((end < begin) || (begin == NULL) || (end == NULL))
+  {
+    apx_attribute_parser_set_error(self, APX_INVALID_ARGUMENT_ERROR, NULL);
+    return NULL;
+  }
+  while (next < end)
+  {
+    next = bstr_lstrip(next, end);
+    if (next == end)
+    {
+      break;
+    }
+    uint8_t const *result = apx_attribute_parser_parse_single_port_attribute(self, next, end, attr);
+    if (result > next)
+    {
+      next = bstr_lstrip(result, end);
       if (next == end)
       {
-         break;
+        break;
       }
-      uint8_t const* result = apx_attribute_parser_parse_single_port_attribute(self, next, end, attr);
-      if (result > next)
+      if (*next == ',')
       {
-         next = bstr_lstrip(result, end);
-         if (next == end)
-         {
-            break;
-         }
-         if (*next == ',')
-         {
-            next++;
-         }
-         else
-         {
-            apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
-            next = NULL;
-            break;
-         }
+        next++;
       }
       else
       {
-         break;
+        apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+        next = NULL;
+        break;
       }
-   }
-   return next;
-
+    }
+    else
+    {
+      break;
+    }
+  }
+  return next;
 }
 
-uint8_t const* apx_attribute_parser_parse_type_attributes(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr)
+uint8_t const *apx_attribute_parser_parse_type_attributes(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_type_attributes_t *attr)
 {
-   uint8_t const* next = begin;
-   if ((end < begin) || (begin == NULL) || (end == NULL))
-   {
-      apx_attribute_parser_set_error(self, APX_INVALID_ARGUMENT_ERROR, begin);
-      return NULL;
-   }
-   while (next < end)
-   {
-      next = bstr_lstrip(next, end);
+  uint8_t const *next = begin;
+  if ((end < begin) || (begin == NULL) || (end == NULL))
+  {
+    apx_attribute_parser_set_error(self, APX_INVALID_ARGUMENT_ERROR, begin);
+    return NULL;
+  }
+  while (next < end)
+  {
+    next = bstr_lstrip(next, end);
+    if (next == end)
+    {
+      break;
+    }
+    uint8_t const *result = apx_attribute_parser_parse_single_type_attribute(self, next, end, attr);
+    if (result > next)
+    {
+      next = bstr_lstrip(result, end);
       if (next == end)
       {
-         break;
+        break;
       }
-      uint8_t const* result = apx_attribute_parser_parse_single_type_attribute(self, next, end, attr);
-      if (result > next)
+      if (*next == ',')
       {
-         next = bstr_lstrip(result, end);
-         if (next == end)
-         {
-            break;
-         }
-         if (*next == ',')
-         {
-            next++;
-         }
-         else
-         {
-            apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
-            next = NULL;
-            break;
-         }
+        next++;
       }
       else
       {
-         break;
+        apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+        next = NULL;
+        break;
       }
-   }
-   return next;
+    }
+    else
+    {
+      break;
+    }
+  }
+  return next;
 }
 
-uint8_t const* apx_attribute_parser_parse_initializer(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, dtl_dv_t** dv)
+uint8_t const *apx_attribute_parser_parse_initializer(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, dtl_dv_t **dv)
 {
-   if ((self != NULL) && (begin != NULL) && (end != NULL) && (begin <= end) && (dv != NULL))
-   {
-      uint8_t const* next;
-      apx_attribute_parser_reset(self);
-      self->state = apx_attribute_parse_state_new();
-      if (self->state == NULL)
+  if ((self != NULL) && (begin != NULL) && (end != NULL) && (begin <= end) && (dv != NULL))
+  {
+    uint8_t const *next;
+    apx_attribute_parser_reset(self);
+    self->state = apx_attribute_parse_state_new();
+    if (self->state == NULL)
+    {
+      apx_attribute_parser_set_error(self, APX_MEM_ERROR, begin);
+    }
+    next = apx_attribute_parser_parse_initializer_list(self, begin, end);
+    if (next > begin)
+    {
+      assert(next <= end);
+      if (self->state->initializer_list != NULL)
       {
-         apx_attribute_parser_set_error(self, APX_MEM_ERROR, begin);
+        *dv = (dtl_dv_t *)self->state->initializer_list;
+        self->state->initializer_list = NULL;
       }
-      next = apx_attribute_parser_parse_initializer_list(self, begin, end);
-      if (next > begin)
+      else if (self->state->sv != NULL)
       {
-         assert(next <= end);
-         if (self->state->initializer_list != NULL)
-         {
-            *dv = (dtl_dv_t*)self->state->initializer_list;
-            self->state->initializer_list = NULL;
-         }
-         else if (self->state->sv != NULL)
-         {
-            *dv = (dtl_dv_t*)self->state->sv;
-            self->state->sv = NULL;
-         }
+        *dv = (dtl_dv_t *)self->state->sv;
+        self->state->sv = NULL;
       }
-      if (next == NULL)
-      {
-         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, begin);
-      }
-      apx_attribute_parse_state_delete(self->state);
-      self->state = NULL;
-      return next;
-   }
-   return NULL;
+    }
+    if (next == NULL)
+    {
+      apx_attribute_parser_set_error(self, APX_PARSE_ERROR, begin);
+    }
+    apx_attribute_parse_state_delete(self->state);
+    self->state = NULL;
+    return next;
+  }
+  return NULL;
 }
 
-apx_error_t apx_attribute_parser_get_last_error(apx_attribute_parser_t* self, uint8_t const** error_next)
+apx_error_t apx_attribute_parser_get_last_error(apx_attribute_parser_t *self, uint8_t const **error_next)
 {
-   if (self != NULL)
-   {
-      if (error_next != NULL)
-      {
-         *error_next = self->error_next;
-      }
-      return self->last_error;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if (self != NULL)
+  {
+    if (error_next != NULL)
+    {
+      *error_next = self->error_next;
+    }
+    return self->last_error;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void apx_attribute_parser_set_error(apx_attribute_parser_t* self, apx_error_t error, uint8_t const* error_next)
+static void apx_attribute_parser_set_error(apx_attribute_parser_t *self, apx_error_t error, uint8_t const *error_next)
 {
-   assert(self != NULL);
-   self->last_error = error;
-   self->error_next = error_next;
+  assert(self != NULL);
+  self->last_error = error;
+  self->error_next = error_next;
 }
 
-static void apx_attribute_parser_reset(apx_attribute_parser_t* self)
+static void apx_attribute_parser_reset(apx_attribute_parser_t *self)
 {
-   assert(self != NULL);
-   self->last_error = APX_NO_ERROR;
-   self->error_next = NULL;
-   adt_stack_clear(&self->stack);
-   if (self->state != NULL)
-   {
-      apx_attribute_parse_state_delete(self->state);
-      self->state = NULL;
-   }
+  assert(self != NULL);
+  self->last_error = APX_NO_ERROR;
+  self->error_next = NULL;
+  adt_stack_clear(&self->stack);
+  if (self->state != NULL)
+  {
+    apx_attribute_parse_state_delete(self->state);
+    self->state = NULL;
+  }
 }
 
 
-apx_value_table_t* apx_attribute_parser_create_value_table_from_state(apx_attribute_parser_t* self, apx_attribute_parser_value_table_state_t* vts)
+apx_value_table_t *apx_attribute_parser_create_value_table_from_state(
+  apx_attribute_parser_t *self, apx_attribute_parser_value_table_state_t *vts)
 {
-   bool auto_upper_limit = false;
-   apx_value_table_t* vt = apx_value_table_new();
-   int32_t num_values = apx_attribute_parser_value_table_state_length(vts);
-   apx_error_t result;
-   if (vt == NULL)
-   {
-      return NULL;
-   }
-   if (vts->num_count > 0)
-   {
-      if (vts->num_count == 1)
-      {
-         auto_upper_limit = true;
-      }
-      if (vts->range.is_signed_range)
-      {
-         apx_value_table_set_range_signed(vt, vts->range.lower.i32, auto_upper_limit ? vts->range.lower.i32 : vts->range.upper.i32);
-      }
-      else
-      {
-         apx_value_table_set_range_unsigned(vt, vts->range.lower.u32, auto_upper_limit ? vts->range.lower.u32 : vts->range.upper.u32);
-      }
-   }
-   else
-   {
+  bool auto_upper_limit = false;
+  apx_value_table_t *vt = apx_value_table_new();
+  int32_t num_values = apx_attribute_parser_value_table_state_length(vts);
+  apx_error_t result;
+  if (vt == NULL)
+  {
+    return NULL;
+  }
+  if (vts->num_count > 0)
+  {
+    if (vts->num_count == 1)
+    {
       auto_upper_limit = true;
-   }
-   if (auto_upper_limit)
-   {
-      int32_t i32_index = vt->base.lower_limit.i32;
-      uint32_t u32_index = vt->base.lower_limit.u32;
-      int32_t i;
-      for (i = 0; i < num_values; i++)
-      {
-         if (vts->range.is_signed_range)
-         {
-            if (vt->base.upper_limit.i32 < i32_index)
-            {
-               vt->base.upper_limit.i32 = i32_index;
-            }
-         }
-         else
-         {
-            if (vt->base.upper_limit.u32 < u32_index)
-            {
-               vt->base.upper_limit.u32 = u32_index;
-            }
-         }
-         i32_index++;
-         u32_index++;
-      }
-   }
-   result = apx_value_table_move_values(vt, &vts->values);
-   if (result != APX_NO_ERROR)
-   {
-      apx_attribute_parser_set_error(self, result, NULL);
-      apx_value_table_delete(vt);
-      vt = NULL;
-   }
-   return vt;
-}
-
-apx_rational_scaling_t* apx_attribute_parser_create_rational_scaling_from_state(apx_attribute_parser_rational_scaling_state_t* vts)
-{
-   apx_rational_scaling_t* rs = apx_rational_scaling_new(vts->offset, vts->numerator, vts->denominator, vts->unit);
-   if (rs != NULL)
-   {
+    }
+    if (vts->range.is_signed_range)
+    {
+      apx_value_table_set_range_signed(
+        vt, vts->range.lower.i32, auto_upper_limit ? vts->range.lower.i32 : vts->range.upper.i32);
+    }
+    else
+    {
+      apx_value_table_set_range_unsigned(
+        vt, vts->range.lower.u32, auto_upper_limit ? vts->range.lower.u32 : vts->range.upper.u32);
+    }
+  }
+  else
+  {
+    auto_upper_limit = true;
+  }
+  if (auto_upper_limit)
+  {
+    int32_t i32_index = vt->base.lower_limit.i32;
+    uint32_t u32_index = vt->base.lower_limit.u32;
+    int32_t i;
+    for (i = 0; i < num_values; i++)
+    {
       if (vts->range.is_signed_range)
       {
-         apx_rational_scaling_set_range_signed(rs, vts->range.lower.i32, vts->range.upper.i32);
+        if (vt->base.upper_limit.i32 < i32_index)
+        {
+          vt->base.upper_limit.i32 = i32_index;
+        }
       }
       else
       {
-         apx_rational_scaling_set_range_unsigned(rs, vts->range.lower.u32, vts->range.upper.u32);
+        if (vt->base.upper_limit.u32 < u32_index)
+        {
+          vt->base.upper_limit.u32 = u32_index;
+        }
       }
-   }
-   return rs;
+      i32_index++;
+      u32_index++;
+    }
+  }
+  result = apx_value_table_move_values(vt, &vts->values);
+  if (result != APX_NO_ERROR)
+  {
+    apx_attribute_parser_set_error(self, result, NULL);
+    apx_value_table_delete(vt);
+    vt = NULL;
+  }
+  return vt;
 }
 
-static uint8_t const* apx_attribute_parser_parse_single_port_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_port_attributes_t* attr)
+apx_rational_scaling_t *apx_attribute_parser_create_rational_scaling_from_state(
+  apx_attribute_parser_rational_scaling_state_t *vts)
 {
-   uint8_t const* next = begin;
-   char c = (char)*next;
-   apx_attribute_parse_type_t attribute_type = APX_ATTRIBUTE_PARSE_TYPE_NONE;
-   switch (c)
-   {
-   case '=':
-      attribute_type = APX_ATTRIBUTE_PARSE_TYPE_INIT_VALUE;
+  apx_rational_scaling_t *rs = apx_rational_scaling_new(vts->offset, vts->numerator, vts->denominator, vts->unit);
+  if (rs != NULL)
+  {
+    if (vts->range.is_signed_range)
+    {
+      apx_rational_scaling_set_range_signed(rs, vts->range.lower.i32, vts->range.upper.i32);
+    }
+    else
+    {
+      apx_rational_scaling_set_range_unsigned(rs, vts->range.lower.u32, vts->range.upper.u32);
+    }
+  }
+  return rs;
+}
+
+static uint8_t const *apx_attribute_parser_parse_single_port_attribute(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_port_attributes_t *attr)
+{
+  uint8_t const *next = begin;
+  char c = (char)*next;
+  apx_attribute_parse_type_t attribute_type = APX_ATTRIBUTE_PARSE_TYPE_NONE;
+  switch (c)
+  {
+  case '=':
+    attribute_type = APX_ATTRIBUTE_PARSE_TYPE_INIT_VALUE;
+    break;
+  case 'P':
+    attribute_type = APX_ATTRIBUTE_PARSE_TYPE_PARAMETER;
+    break;
+  case 'Q':
+    attribute_type = APX_ATTRIBUTE_PARSE_TYPE_QUEUE_LENGTH;
+    break;
+  default:
+    attribute_type = APX_ATTRIBUTE_PARSE_TYPE_NONE;
+  }
+  if (attribute_type != APX_ATTRIBUTE_PARSE_TYPE_NONE)
+  {
+    uint8_t const *result = NULL;
+    switch (attribute_type)
+    {
+    case APX_ATTRIBUTE_PARSE_TYPE_INIT_VALUE:
+      result = apx_attribute_parser_parse_initializer(self, next + 1, end, &attr->init_value);
       break;
-   case 'P':
-      attribute_type = APX_ATTRIBUTE_PARSE_TYPE_PARAMETER;
+    case APX_ATTRIBUTE_PARSE_TYPE_PARAMETER:
+      result = next + 1;
+      attr->is_parameter = true;
       break;
-   case 'Q':
-      attribute_type = APX_ATTRIBUTE_PARSE_TYPE_QUEUE_LENGTH;
+    case APX_ATTRIBUTE_PARSE_TYPE_QUEUE_LENGTH:
+      result = apx_attribute_parser_parse_array_length(next + 1, end, &attr->queue_length);
       break;
-   default:
-      attribute_type = APX_ATTRIBUTE_PARSE_TYPE_NONE;
-   }
-   if (attribute_type != APX_ATTRIBUTE_PARSE_TYPE_NONE)
-   {
-      uint8_t const* result = NULL;
-      switch (attribute_type)
-      {
-      case APX_ATTRIBUTE_PARSE_TYPE_INIT_VALUE:
-         result = apx_attribute_parser_parse_initializer(self, next + 1, end, &attr->init_value);
-         break;
-      case APX_ATTRIBUTE_PARSE_TYPE_PARAMETER:
-         result = next + 1;
-         attr->is_parameter = true;
-         break;
-      case APX_ATTRIBUTE_PARSE_TYPE_QUEUE_LENGTH:
-         result = apx_attribute_parser_parse_array_length(next + 1, end, &attr->queue_length);
-         break;
-      default:
-         apx_attribute_parser_set_error(self, APX_INTERNAL_ERROR, NULL);
-         return NULL;
-      }
-      if (result > next)
-      {
-         next = result;
-      }
-      else
-      {
-         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
-         next = NULL;
-      }
-   }
-   else
-   {
+    default:
+      apx_attribute_parser_set_error(self, APX_INTERNAL_ERROR, NULL);
+      return NULL;
+    }
+    if (result > next)
+    {
+      next = result;
+    }
+    else
+    {
       apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
       next = NULL;
-   }
-   return next;
-
+    }
+  }
+  else
+  {
+    apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+    next = NULL;
+  }
+  return next;
 }
 
-static uint8_t const* apx_attribute_parser_parse_single_type_attribute(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_type_attributes_t* attr)
+static uint8_t const *apx_attribute_parser_parse_single_type_attribute(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_type_attributes_t *attr)
 {
-   {
-      uint8_t const* next = begin;
-      uint8_t const* result;
-      apx_value_table_t* vt = NULL;
-      apx_rational_scaling_t* rs = NULL;
-      apx_computation_t* computation = NULL;
-      apx_attribute_parse_type_t attr_type = APX_ATTRIBUTE_PARSE_TYPE_NONE;
-      result = bstr_match_cstr(next, end, "VT");
+  {
+    uint8_t const *next = begin;
+    uint8_t const *result;
+    apx_value_table_t *vt = NULL;
+    apx_rational_scaling_t *rs = NULL;
+    apx_computation_t *computation = NULL;
+    apx_attribute_parse_type_t attr_type = APX_ATTRIBUTE_PARSE_TYPE_NONE;
+    result = bstr_match_cstr(next, end, "VT");
+    if (result > begin)
+    {
+      attr_type = APX_ATTRIBUTE_PARSE_TYPE_VALUE_TABLE;
+      next += 2;
+    }
+    else
+    {
+      result = bstr_match_cstr(next, end, "RS");
       if (result > begin)
       {
-         attr_type = APX_ATTRIBUTE_PARSE_TYPE_VALUE_TABLE;
-         next += 2;
+        attr_type = APX_ATTRIBUTE_PARSE_TYPE_RATIONAL_SCALING;
+        next += 2;
       }
-      else
-      {
-         result = bstr_match_cstr(next, end, "RS");
-         if (result > begin)
-         {
-            attr_type = APX_ATTRIBUTE_PARSE_TYPE_RATIONAL_SCALING;
-            next += 2;
-         }
-      }
-      switch (attr_type)
-      {
-      case APX_ATTRIBUTE_PARSE_TYPE_NONE:
-         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
-         result = NULL;
-         break;
-      case APX_ATTRIBUTE_PARSE_TYPE_VALUE_TABLE:
-         result = apx_attribute_parser_parse_value_table(self, next, end, &vt);
-         if (result > next)
-         {
-            computation = (apx_computation_t*)vt;
-         }
-         break;
-      case APX_ATTRIBUTE_PARSE_TYPE_RATIONAL_SCALING:
-         result = apx_attribute_parser_parse_rational_scaling(self, next, end, &rs);
-         if (result > next)
-         {
-            computation = (apx_computation_t*)rs;
-         }
-         break;
-      }
+    }
+    switch (attr_type)
+    {
+    case APX_ATTRIBUTE_PARSE_TYPE_NONE:
+      apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+      result = NULL;
+      break;
+    case APX_ATTRIBUTE_PARSE_TYPE_VALUE_TABLE:
+      result = apx_attribute_parser_parse_value_table(self, next, end, &vt);
       if (result > next)
       {
-         assert(result <= end);
-         next = result;
-         if (computation != NULL)
-         {
-            apx_type_attributes_append_computation(attr, computation);
-         }
+        computation = (apx_computation_t *)vt;
       }
-      else
+      break;
+    case APX_ATTRIBUTE_PARSE_TYPE_RATIONAL_SCALING:
+      result = apx_attribute_parser_parse_rational_scaling(self, next, end, &rs);
+      if (result > next)
       {
-         if (computation != NULL)
-         {
-            apx_computation_vdelete((void*)computation);
-         }
-         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
-         next = NULL;
+        computation = (apx_computation_t *)rs;
       }
-      return next;
-   }
+      break;
+    }
+    if (result > next)
+    {
+      assert(result <= end);
+      next = result;
+      if (computation != NULL)
+      {
+        apx_type_attributes_append_computation(attr, computation);
+      }
+    }
+    else
+    {
+      if (computation != NULL)
+      {
+        apx_computation_vdelete((void *)computation);
+      }
+      apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+      next = NULL;
+    }
+    return next;
+  }
 }
 
-static uint8_t const* apx_attribute_parser_parse_initializer_list(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const *apx_attribute_parser_parse_initializer_list(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end)
 {
-   uint8_t const* next = begin;
-   while (next < end)
-   {
-      uint8_t c;
-      next = bstr_lstrip(next, end);
-      c = *next;
+  uint8_t const *next = begin;
+  while (next < end)
+  {
+    uint8_t c;
+    next = bstr_lstrip(next, end);
+    c = *next;
 
-      if (c == '{')
+    if (c == '{')
+    {
+      apx_attribute_parse_state_t *child_state;
+      next++;
+      self->state->initializer_list = dtl_av_new();
+      adt_stack_push(&self->stack, self->state);
+      child_state = apx_attribute_parse_state_new();
+      if (child_state == NULL)
       {
-         apx_attribute_parse_state_t* child_state;
-         next++;
-         self->state->initializer_list = dtl_av_new();
-         adt_stack_push(&self->stack, self->state);
-         child_state = apx_attribute_parse_state_new();
-         if (child_state == NULL)
-         {
-            apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
-            return NULL;
-         }
-         else
-         {
-            child_state->parent = self->state;
-            self->state = child_state;
-            continue;
-         }
+        apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
+        return NULL;
       }
       else
       {
-         uint8_t const* result = apx_attribute_parser_parse_scalar(self, next, end);
-         if (result > next)
-         {
-            next = result;
-         }
-         else if (result == NULL)
-         {
-            return result;
-         }
+        child_state->parent = self->state;
+        self->state = child_state;
+        continue;
       }
-   POST_VALUE_HANDLER:
-      if (apx_attribute_parser_is_initializer_list(self))
+    }
+    else
+    {
+      uint8_t const *result = apx_attribute_parser_parse_scalar(self, next, end);
+      if (result > next)
       {
-         next = bstr_lstrip(next, end);
-         c = *next;
-         if (apx_attribute_parse_state_has_value(self->state))
-         {
-            if (!apx_attribute_parser_push_value_to_parent(self))
+        next = result;
+      }
+      else if (result == NULL)
+      {
+        return result;
+      }
+    }
+POST_VALUE_HANDLER:
+    if (apx_attribute_parser_is_initializer_list(self))
+    {
+      next = bstr_lstrip(next, end);
+      c = *next;
+      if (apx_attribute_parse_state_has_value(self->state))
+      {
+        if (!apx_attribute_parser_push_value_to_parent(self))
+        {
+          return NULL;
+        }
+      }
+      if (!dtl_av_is_empty(self->state->parent->initializer_list) && (c == ','))
+      {
+        next++;
+      }
+      else if (c == '}')
+      {
+        next++;
+        if (adt_stack_size(&self->stack) > 0)
+        {
+          apx_attribute_parse_state_delete(self->state);
+          self->state = adt_stack_top(&self->stack);
+          adt_stack_pop(&self->stack);
+          if (adt_stack_size(&self->stack) == 0u)
+          {
+            break; // Reached top of stack
+          }
+          else
+          {
+            goto POST_VALUE_HANDLER;
+          }
+        }
+        else
+        {
+          return NULL;
+        }
+      }
+      else
+      {
+            // unexpected character
+        return NULL;
+      }
+    }
+    else
+    {
+      break;
+    }
+  }
+  next = bstr_lstrip(next, end);
+  return next;
+}
+
+static bool apx_attribute_parser_push_value_to_parent(apx_attribute_parser_t *self)
+{
+  assert(self != NULL);
+  if (self->state->parent != NULL)
+  {
+    assert(self->state->parent->initializer_list != NULL);
+    if (self->state->sv != NULL)
+    {
+      dtl_av_push(self->state->parent->initializer_list, (dtl_dv_t *)self->state->sv, false);
+      self->state->sv = NULL;
+    }
+    else if (self->state->initializer_list != NULL)
+    {
+      dtl_av_push(self->state->parent->initializer_list, (dtl_dv_t *)self->state->initializer_list, false);
+      self->state->initializer_list = NULL;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+static uint8_t const *apx_attribute_parser_parse_scalar(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end)
+{
+  uint8_t const *next = begin;
+  uint8_t c = *next;
+  assert(self != NULL);
+  if (c > 0)
+  {
+    if (isdigit(c))
+    {
+      uint8_t const *result;
+      self->state->sv = dtl_sv_new();
+      result = apx_attribute_parser_parse_integer_literal(next, end, false, self->state->sv);
+      if (result > next)
+      {
+        assert(result <= end);
+        next = result;
+      }
+    }
+    else if (c == '-')
+    {
+      next++;
+      if (next < end)
+      {
+        uint8_t const *result;
+        self->state->sv = dtl_sv_new();
+        result = apx_attribute_parser_parse_integer_literal(next, end, true, self->state->sv);
+        if (result > next)
+        {
+          assert(result <= end);
+          next = result;
+        }
+      }
+      else
+      {
+        return NULL; // Nothing after the minus sign?
+      }
+    }
+    else if (c == '"')
+    {
+      uint8_t const *result;
+      self->state->sv = dtl_sv_new();
+      result = apx_attribute_parser_parse_string_literal(next, end, self->state->sv);
+      if (result > next)
+      {
+        assert(result <= end);
+        next = result;
+      }
+    }
+  }
+  return next;
+}
+
+static uint8_t const *apx_attribute_parser_parse_integer_literal(
+  uint8_t const *next, uint8_t const *end, bool unary_minus, dtl_sv_t *sv)
+{
+  uint8_t *end_ptr = NULL;
+  unsigned long value;
+  value = strtoul((const char *)next, (char **)&end_ptr, 0);
+  if ((end_ptr > next) && (end_ptr <= end))
+  {
+    next = end_ptr;
+    if (unary_minus && (value == 0x80000000UL))
+    {
+      dtl_sv_set_i32(sv, INT32_MIN);
+    }
+    else if (value > INT32_MAX)
+    {
+      dtl_sv_set_u32(sv, (uint32_t)value);
+    }
+    else
+    {
+      int32_t tmp = (int32_t)value;
+      dtl_sv_set_i32(sv, unary_minus ? -tmp : tmp);
+    }
+  }
+  else
+  {
+    return NULL;
+  }
+  return next;
+}
+
+static uint8_t const *apx_attribute_parser_parse_string_literal(uint8_t const *begin, uint8_t const *end, dtl_sv_t *sv)
+{
+  assert(begin < end);
+  uint8_t const *next = bstr_match_pair(begin, end, '"', '"', '\\');
+  if (next > begin)
+  {
+    assert(next < end);
+    dtl_sv_set_bstr(sv, begin + 1, next);
+    next++; // skip past ending '"' character
+  }
+  return next;
+}
+
+static uint8_t const *apx_attribute_parser_parse_array_length(
+  uint8_t const *begin, uint8_t const *end, uint32_t *length)
+{
+  uint8_t const *next = begin;
+  if (next < end)
+  {
+    if (*next++ == '[')
+    {
+      next = bstr_lstrip(next, end);
+      if (next < end)
+      {
+        uint8_t const *result = apx_parser_base_parse_u32(next, end, length);
+        if (result > next)
+        {
+          next = bstr_lstrip(result, end);
+          if (next < end)
+          {
+            if (*next++ == ']')
             {
-               return NULL;
-            }
-         }
-         if (!dtl_av_is_empty(self->state->parent->initializer_list) && (c == ','))
-         {
-            next++;
-         }
-         else if (c == '}')
-         {
-            next++;
-            if (adt_stack_size(&self->stack) > 0)
-            {
-               apx_attribute_parse_state_delete(self->state);
-               self->state = adt_stack_top(&self->stack);
-               adt_stack_pop(&self->stack);
-               if (adt_stack_size(&self->stack) == 0u )
-               {
-                  break; //Reached top of stack
-               }
-               else
-               {
-                  goto POST_VALUE_HANDLER;
-               }
+              return next;
             }
             else
             {
-               return NULL;
+              return NULL;
             }
-         }
-         else
-         {
-            //unexpected character
-            return NULL;
-         }
+          }
+        }
+        else
+        {
+          return NULL;
+        }
+      }
+    }
+    else
+    {
+      return NULL;
+    }
+  }
+  return begin;
+}
+
+static uint8_t const *apx_attribute_parser_parse_value_table(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_value_table_t **vt)
+{
+  uint8_t const *next = begin;
+  if (next < end)
+  {
+    apx_attribute_parser_value_table_state_t state;
+    if (*next++ != '(')
+    {
+      return NULL;
+    }
+    apx_attribute_parser_value_table_state_create(&state);
+
+    while (next < end)
+    {
+      next = bstr_lstrip(next, end);
+      uint8_t const *result = apx_attribute_parser_parse_value_table_arg(self, next, end, &state);
+      if (result > next)
+      {
+        assert(result <= end);
+        next = result;
       }
       else
       {
-         break;
+        next = NULL;
+        break;
       }
-   }
-   next = bstr_lstrip(next, end);
-   return next;
+      next = bstr_lstrip(next, end);
+      const char c = (char)*next;
+      if (c == ',')
+      {
+            // prepare for parsing next argument
+        next++;
+      }
+      else if (c == ')')
+      {
+            // that was the last argument
+        *vt = apx_attribute_parser_create_value_table_from_state(self, &state);
+        apx_attribute_parser_value_table_state_destroy(&state);
+        if (*vt == NULL)
+        {
+          self->error_next = next;
+          return NULL;
+        }
+        return next + 1;
+      }
+    }
+      // This is the error path, we should not normally end up here.
+    if (self->error_next == NULL)
+    {
+      apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+    }
+    apx_attribute_parser_value_table_state_destroy(&state);
+  }
+  return begin; // not enough characters in stream
 }
 
-static bool apx_attribute_parser_push_value_to_parent(apx_attribute_parser_t* self)
+static uint8_t const *apx_attribute_parser_parse_rational_scaling(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_rational_scaling_t **rs)
 {
-   assert(self != NULL);
-   if (self->state->parent != NULL)
-   {
-      assert(self->state->parent->initializer_list != NULL);
-      if (self->state->sv != NULL)
+  uint8_t const *next = begin;
+  if (next < end)
+  {
+    apx_attribute_parser_rational_scaling_state_t state;
+    if (*next++ != '(')
+    {
+      return NULL;
+    }
+    apx_attribute_parser_rational_scaling_state_create(&state);
+    while (next < end)
+    {
+      uint8_t const *result;
+      next = bstr_lstrip(next, end);
+      result = apx_attribute_parser_parse_rational_scaling_arg(self, next, end, &state);
+      if (result > next)
       {
-         dtl_av_push(self->state->parent->initializer_list, (dtl_dv_t*) self->state->sv, false);
-         self->state->sv = NULL;
-      }
-      else if (self->state->initializer_list != NULL)
-      {
-         dtl_av_push(self->state->parent->initializer_list, (dtl_dv_t*)self->state->initializer_list, false);
-         self->state->initializer_list = NULL;
+        assert(result <= end);
+        next = result;
       }
       else
       {
-         return false;
+        next = NULL;
+        break;
       }
-   }
-   return true;
+      next = bstr_lstrip(next, end);
+      const char c = (char)*next;
+      if (c == ',')
+      {
+            // prepare for parsing next argument
+        next++;
+      }
+      else if (c == ')')
+      {
+            // that was the last argument
+        *rs = apx_attribute_parser_create_rational_scaling_from_state(&state);
+        apx_attribute_parser_rational_scaling_state_destroy(&state);
+        if (*rs == NULL)
+        {
+          apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
+          return NULL;
+        }
+        return next + 1;
+      }
+    }
+      // This is the error path, we should not normally end up here.
+    if (self->error_next == APX_NO_ERROR)
+    {
+      apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+    }
+    apx_attribute_parser_rational_scaling_state_destroy(&state);
+  }
+  return begin; // not enough characters in stream
 }
 
-static uint8_t const* apx_attribute_parser_parse_scalar(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end)
+static uint8_t const *apx_attribute_parser_parse_value_table_arg(
+  apx_attribute_parser_t *self, uint8_t const *begin, uint8_t const *end, apx_attribute_parser_value_table_state_t *vts)
 {
-   uint8_t const* next = begin;
-   uint8_t c = *next;
-   assert(self != NULL);
-   if (c > 0)
-   {
-      if (isdigit(c))
+  uint8_t const *next = begin;
+  if (next < end)
+  {
+    apx_argument_type_t arg_type = APX_ARGUMENT_TYPE_INVALID;
+    uint8_t const *result = NULL;
+    bool unary_minus = false;
+
+    if (!vts->last_was_string)
+    {
+         // Determing if next character is a string or integer literal
+      uint8_t c = *next;
+      if (c == '"')
       {
-         uint8_t const* result;
-         self->state->sv = dtl_sv_new();
-         result = apx_attribute_parser_parse_integer_literal(next, end, false, self->state->sv);
-         if (result > next)
-         {
-            assert(result <= end);
-            next = result;
-         }
+        arg_type = APX_ARGUMENT_TYPE_STRING_LITERAL;
       }
       else if (c == '-')
       {
-         next++;
-         if (next < end)
-         {
-            uint8_t const* result;
-            self->state->sv = dtl_sv_new();
-            result = apx_attribute_parser_parse_integer_literal(next, end, true, self->state->sv);
-            if (result > next)
-            {
-               assert(result <= end);
-               next = result;
-            }
-         }
-         else
-         {
-            return NULL; //Nothing after the minus sign?
-         }
+        unary_minus = true;
+        next++;
+        arg_type = APX_ARGUMENT_TYPE_INTEGER_LITERAL;
       }
-      else if (c == '"')
+      else if (isdigit((int)c))
       {
-         uint8_t const* result;
-         self->state->sv = dtl_sv_new();
-         result = apx_attribute_parser_parse_string_literal(next, end, self->state->sv);
-         if (result > next)
-         {
-            assert(result <= end);
-            next = result;
-         }
+        arg_type = APX_ARGUMENT_TYPE_INTEGER_LITERAL;
       }
-   }
-   return next;
-}
-
-static uint8_t const* apx_attribute_parser_parse_integer_literal(uint8_t const* next, uint8_t const* end, bool unary_minus, dtl_sv_t* sv)
-{
-   uint8_t* end_ptr = NULL;
-   unsigned long value;
-   value = strtoul((const char*) next,(char**) &end_ptr, 0);
-   if ((end_ptr > next) && (end_ptr <= end))
-   {
-      next = end_ptr;
-      if (unary_minus && (value == 0x80000000UL))
+    }
+    else
+    {
+      if (*next == '"')
       {
-         dtl_sv_set_i32(sv, INT32_MIN);
+        arg_type = APX_ARGUMENT_TYPE_STRING_LITERAL;
       }
-      else if (value > INT32_MAX)
-      {
-         dtl_sv_set_u32(sv, (uint32_t)value);
-      }
-      else
-      {
-         int32_t tmp = (int32_t) value;
-         dtl_sv_set_i32(sv, unary_minus ? -tmp : tmp);
-      }
-   }
-   else
-   {
-      return NULL;
-   }
-   return next;
-}
-
-static uint8_t const* apx_attribute_parser_parse_string_literal(uint8_t const* begin, uint8_t const* end, dtl_sv_t* sv)
-{
-   assert(begin < end);
-   uint8_t const* next = bstr_match_pair(begin, end, '"', '"', '\\');
-   if (next > begin)
-   {
-      assert(next < end);
-      dtl_sv_set_bstr(sv, begin + 1, next);
-      next++; //skip past ending '"' character
-   }
-   return next;
-}
-
-static uint8_t const* apx_attribute_parser_parse_array_length(uint8_t const* begin, uint8_t const* end, uint32_t* length)
-{
-   uint8_t const* next = begin;
-   if (next < end)
-   {
-      if (*next++ == '[')
-      {
-         next = bstr_lstrip(next, end);
-         if (next < end)
-         {
-            uint8_t const* result = apx_parser_base_parse_u32(next, end, length);
-            if (result > next)
-            {
-               next = bstr_lstrip(result, end);
-               if (next < end)
-               {
-                  if (*next++ == ']')
-                  {
-                     return next;
-                  }
-                  else
-                  {
-                     return NULL;
-                  }
-               }
-            }
-            else
-            {
-               return NULL;
-            }
-         }
-      }
-      else
-      {
-         return NULL;
-      }
-   }
-   return begin;
-}
-
-static uint8_t const* apx_attribute_parser_parse_value_table(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_value_table_t** vt)
-{
-   uint8_t const* next = begin;
-   if (next < end)
-   {
-      apx_attribute_parser_value_table_state_t state;
-      if (*next++ != '(')
-      {
-         return NULL;
-      }
-      apx_attribute_parser_value_table_state_create(&state);
-
-      while (next < end)
-      {
-         next = bstr_lstrip(next, end);
-         uint8_t const* result = apx_attribute_parser_parse_value_table_arg(self, next, end, &state);
-         if (result > next)
-         {
-            assert(result <= end);
-            next = result;
-         }
-         else
-         {
-            next = NULL;
-            break;
-         }
-         next = bstr_lstrip(next, end);
-         const char c = (char)*next;
-         if (c == ',')
-         {
-            //prepare for parsing next argument
-            next++;
-         }
-         else if (c == ')')
-         {
-            //that was the last argument
-            *vt = apx_attribute_parser_create_value_table_from_state(self, &state);
-            apx_attribute_parser_value_table_state_destroy(&state);
-            if (*vt == NULL)
-            {
-               self->error_next = next;
-               return NULL;
-            }
-            return next + 1;
-         }
-      }
-      //This is the error path, we should not normally end up here.
-      if (self->error_next == NULL)
-      {
-         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
-      }
-      apx_attribute_parser_value_table_state_destroy(&state);
-   }
-   return begin; //not enough characters in stream
-}
-
-static uint8_t const* apx_attribute_parser_parse_rational_scaling(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_rational_scaling_t** rs)
-{
-   uint8_t const* next = begin;
-   if (next < end)
-   {
-      apx_attribute_parser_rational_scaling_state_t state;
-      if (*next++ != '(')
-      {
-         return NULL;
-      }
-      apx_attribute_parser_rational_scaling_state_create(&state);
-      while (next < end)
-      {
-         uint8_t const* result;
-         next = bstr_lstrip(next, end);
-         result = apx_attribute_parser_parse_rational_scaling_arg(self, next, end, &state);
-         if (result > next)
-         {
-            assert(result <= end);
-            next = result;
-         }
-         else
-         {
-            next = NULL;
-            break;
-         }
-         next = bstr_lstrip(next, end);
-         const char c = (char)*next;
-         if (c == ',')
-         {
-            //prepare for parsing next argument
-            next++;
-         }
-         else if (c == ')')
-         {
-            //that was the last argument
-            *rs = apx_attribute_parser_create_rational_scaling_from_state(&state);
-            apx_attribute_parser_rational_scaling_state_destroy(&state);
-            if (*rs == NULL)
-            {
-               apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
-               return NULL;
-            }
-            return next + 1;
-         }
-      }
-      //This is the error path, we should not normally end up here.
-      if (self->error_next == APX_NO_ERROR)
-      {
-         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
-      }
-      apx_attribute_parser_rational_scaling_state_destroy(&state);
-   }
-   return begin; //not enough characters in stream
-}
-
-static uint8_t const* apx_attribute_parser_parse_value_table_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_value_table_state_t* vts)
-{
-   uint8_t const* next = begin;
-   if (next < end)
-   {
-      apx_argument_type_t arg_type = APX_ARGUMENT_TYPE_INVALID;
-      uint8_t const* result = NULL;
-      bool unary_minus = false;
-
-      if (!vts->last_was_string)
-      {
-         //Determing if next character is a string or integer literal
-         uint8_t c = *next;
-         if (c == '"')
-         {
-            arg_type = APX_ARGUMENT_TYPE_STRING_LITERAL;
-         }
-         else if (c == '-')
-         {
-            unary_minus = true;
-            next++;
-            arg_type = APX_ARGUMENT_TYPE_INTEGER_LITERAL;
-         }
-         else if (isdigit((int)c))
-         {
-            arg_type = APX_ARGUMENT_TYPE_INTEGER_LITERAL;
-         }
-      }
-      else
-      {
-         if (*next == '"')
-         {
-            arg_type = APX_ARGUMENT_TYPE_STRING_LITERAL;
-         }
-      }
-      switch (arg_type)
-      {
-      case APX_ARGUMENT_TYPE_INVALID:
-         next = NULL;
-         break;
-      case APX_ARGUMENT_TYPE_INTEGER_LITERAL:
-         if (vts->num_count == 0)
-         {
-            result = apx_attribute_parser_parse_lower_limit(next, end, unary_minus, &vts->range);
-         }
-         else if (vts->num_count == 1)
-         {
-            result = apx_attribute_parser_parse_upper_limit(next, end, unary_minus, &vts->range);
-         }
-         else
-         {
-            result = NULL; //Three consecutive numbers not allowed
-         }
-         if (result > next)
-         {
-            next = result;
-         }
-         vts->num_count++;
-         break;
-      case APX_ARGUMENT_TYPE_STRING_LITERAL:
-         vts->last_was_string = true;
-         result = bstr_match_pair(next, end, '"', '"', '\\');
-         if (result > next)
-         {
-            adt_str_t* str = adt_str_new_bstr(next + 1, result);
-            if (str == NULL)
-            {
-               apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
-               return NULL;
-            }
-            apx_error_t rc = apx_attribute_parser_value_table_state_append(vts, str);
-            if (rc != APX_NO_ERROR)
-            {
-               apx_attribute_parser_set_error(self, rc, next);
-               return NULL;
-            }
-            next = result + 1; //skip past ending '"' character
-         }
-         break;
-      }
-      if (result == NULL)
-      {
-         apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
-         return result;
-      }
-   }
-   return next;
-
-}
-
-static uint8_t const* apx_attribute_parser_parse_rational_scaling_arg(apx_attribute_parser_t* self, uint8_t const* begin, uint8_t const* end, apx_attribute_parser_rational_scaling_state_t* rss)
-{
-   uint8_t const* next = begin;
-   if (next < end)
-   {
-      uint8_t const* result = NULL;
-      bool unary_minus = false;
-      double d = 0.0;
-      int32_t i32 = 0;
-
-      switch (rss->arg_index)
-      {
-      case APX_RATIONAL_ARG_INDEX_0: //LOWER RANGE LIMIT (integer)
-         if (*next == '-')
-         {
-            unary_minus = true;
-            next++;
-         }
-         result = apx_attribute_parser_parse_lower_limit(next, end, unary_minus, &rss->range);
-         break;
-      case APX_RATIONAL_ARG_INDEX_1: //UPPER RANGE LIMIT (integer)
-         if (*next == '-')
-         {
-            unary_minus = true;
-            next++;
-         }
-         result = apx_attribute_parser_parse_upper_limit(next, end, unary_minus, &rss->range);
-         break;
-      case APX_RATIONAL_ARG_INDEX_2: //OFFSET (double)
-         result = apx_parser_base_parse_double(next, end, &d);
-         if (result > next)
-         {
-            rss->offset = d;
-         }
-         break;
-      case APX_RATIONAL_ARG_INDEX_3: //NUMERATOR (integer)
-         result = apx_parser_base_parse_i32(next, end, &i32);
-         if (result > next)
-         {
-            rss->numerator = i32;
-         }
-         break;
-      case APX_RATIONAL_ARG_INDEX_4: //DENOMINATOR (integer)
-         result = apx_parser_base_parse_i32(next, end, &i32);
-         if (result > next)
-         {
-            rss->denominator = i32;
-         }
-         break;
-      case APX_RATIONAL_ARG_INDEX_5: //Unit (string literal)
-         result = bstr_match_pair(next, end, '"', '"', '\\');
-         if (result > next)
-         {
-            rss->unit = bstr_make_cstr(next + 1, result);
-            if (rss->unit == NULL)
-            {
-               apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
-               return NULL;
-            }
-            result++;
-         }
-         break;
-      default:
-         result = NULL;
-      }
-      next = result;
-      rss->arg_index++;
-   }
-   return next;
-}
-
-static uint8_t const* apx_attribute_parser_parse_lower_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range)
-{
-   const char* next = (const char*) begin;
-   char* end_ptr;
-   uint32_t tmp = (uint32_t) strtoul(next, &end_ptr, 0);
-   if ((end_ptr > next) && (end_ptr <= (const char*)end))
-   {
-      next = end_ptr;
-      if (unary_minus)
-      {
-         if (tmp > 0x80000000UL)
-         {
-            return NULL; //value out of range
-         }
-         range->lower.i32 = -((int32_t)tmp);
-         range->is_signed_range = true;
-      }
-      else
-      {
-         range->lower.u32 = tmp;
-      }
-   }
-   else
-   {
+    }
+    switch (arg_type)
+    {
+    case APX_ARGUMENT_TYPE_INVALID:
       next = NULL;
-   }
-   return (uint8_t const*) next;
-}
-
-static uint8_t const* apx_attribute_parser_parse_upper_limit(uint8_t const* begin, uint8_t const* end, bool unary_minus, apx_range_t* range)
-{
-   const char* next = (const char*)begin;
-   char* end_ptr;
-   uint32_t tmp = (uint32_t)strtoul(next, &end_ptr, 0);
-   if ((end_ptr > next) && (end_ptr <= (const char*)end))
-   {
-      next = end_ptr;
-      if (unary_minus)
+      break;
+    case APX_ARGUMENT_TYPE_INTEGER_LITERAL:
+      if (vts->num_count == 0)
       {
-         if (!range->is_signed_range)
-         {
-            next = NULL; //lower range is positive while upper range is negative?
-         }
-         else
-         {
-            if (tmp > 0x80000000UL)
-            {
-               return NULL; //value out of range
-            }
-            range->upper.i32 = -((int32_t)tmp);
-         }
+        result = apx_attribute_parser_parse_lower_limit(next, end, unary_minus, &vts->range);
+      }
+      else if (vts->num_count == 1)
+      {
+        result = apx_attribute_parser_parse_upper_limit(next, end, unary_minus, &vts->range);
       }
       else
       {
-         if (range->is_signed_range)
-         {
-            if (tmp >= 0x80000000UL)
-            {
-               return NULL; //value out of range
-            }
-            range->upper.i32 = (int32_t)tmp;
-         }
-         else
-         {
-            range->upper.u32 = tmp;
-         }
+        result = NULL; // Three consecutive numbers not allowed
       }
-   }
-   else
-   {
-      next = NULL;
-   }
-   return (uint8_t const*)next;
+      if (result > next)
+      {
+        next = result;
+      }
+      vts->num_count++;
+      break;
+    case APX_ARGUMENT_TYPE_STRING_LITERAL:
+      vts->last_was_string = true;
+      result = bstr_match_pair(next, end, '"', '"', '\\');
+      if (result > next)
+      {
+        adt_str_t *str = adt_str_new_bstr(next + 1, result);
+        if (str == NULL)
+        {
+          apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
+          return NULL;
+        }
+        apx_error_t rc = apx_attribute_parser_value_table_state_append(vts, str);
+        if (rc != APX_NO_ERROR)
+        {
+          apx_attribute_parser_set_error(self, rc, next);
+          return NULL;
+        }
+        next = result + 1; // skip past ending '"' character
+      }
+      break;
+    }
+    if (result == NULL)
+    {
+      apx_attribute_parser_set_error(self, APX_PARSE_ERROR, next);
+      return result;
+    }
+  }
+  return next;
 }
 
-static bool apx_attribute_parser_is_initializer_list(apx_attribute_parser_t* self)
+static uint8_t const *apx_attribute_parser_parse_rational_scaling_arg(apx_attribute_parser_t *self,
+  uint8_t const *begin, uint8_t const *end, apx_attribute_parser_rational_scaling_state_t *rss)
 {
-   assert(self != NULL);
-   return self->state->parent != NULL? true : false;
+  uint8_t const *next = begin;
+  if (next < end)
+  {
+    uint8_t const *result = NULL;
+    bool unary_minus = false;
+    double d = 0.0;
+    int32_t i32 = 0;
+
+    switch (rss->arg_index)
+    {
+    case APX_RATIONAL_ARG_INDEX_0: // LOWER RANGE LIMIT (integer)
+      if (*next == '-')
+      {
+        unary_minus = true;
+        next++;
+      }
+      result = apx_attribute_parser_parse_lower_limit(next, end, unary_minus, &rss->range);
+      break;
+    case APX_RATIONAL_ARG_INDEX_1: // UPPER RANGE LIMIT (integer)
+      if (*next == '-')
+      {
+        unary_minus = true;
+        next++;
+      }
+      result = apx_attribute_parser_parse_upper_limit(next, end, unary_minus, &rss->range);
+      break;
+    case APX_RATIONAL_ARG_INDEX_2: // OFFSET (double)
+      result = apx_parser_base_parse_double(next, end, &d);
+      if (result > next)
+      {
+        rss->offset = d;
+      }
+      break;
+    case APX_RATIONAL_ARG_INDEX_3: // NUMERATOR (integer)
+      result = apx_parser_base_parse_i32(next, end, &i32);
+      if (result > next)
+      {
+        rss->numerator = i32;
+      }
+      break;
+    case APX_RATIONAL_ARG_INDEX_4: // DENOMINATOR (integer)
+      result = apx_parser_base_parse_i32(next, end, &i32);
+      if (result > next)
+      {
+        rss->denominator = i32;
+      }
+      break;
+    case APX_RATIONAL_ARG_INDEX_5: // Unit (string literal)
+      result = bstr_match_pair(next, end, '"', '"', '\\');
+      if (result > next)
+      {
+        rss->unit = bstr_make_cstr(next + 1, result);
+        if (rss->unit == NULL)
+        {
+          apx_attribute_parser_set_error(self, APX_MEM_ERROR, next);
+          return NULL;
+        }
+        result++;
+      }
+      break;
+    default:
+      result = NULL;
+    }
+    next = result;
+    rss->arg_index++;
+  }
+  return next;
+}
+
+static uint8_t const *apx_attribute_parser_parse_lower_limit(
+  uint8_t const *begin, uint8_t const *end, bool unary_minus, apx_range_t *range)
+{
+  const char *next = (const char *)begin;
+  char *end_ptr;
+  uint32_t tmp = (uint32_t)strtoul(next, &end_ptr, 0);
+  if ((end_ptr > next) && (end_ptr <= (const char *)end))
+  {
+    next = end_ptr;
+    if (unary_minus)
+    {
+      if (tmp > 0x80000000UL)
+      {
+        return NULL; // value out of range
+      }
+      range->lower.i32 = -((int32_t)tmp);
+      range->is_signed_range = true;
+    }
+    else
+    {
+      range->lower.u32 = tmp;
+    }
+  }
+  else
+  {
+    next = NULL;
+  }
+  return (uint8_t const *)next;
+}
+
+static uint8_t const *apx_attribute_parser_parse_upper_limit(
+  uint8_t const *begin, uint8_t const *end, bool unary_minus, apx_range_t *range)
+{
+  const char *next = (const char *)begin;
+  char *end_ptr;
+  uint32_t tmp = (uint32_t)strtoul(next, &end_ptr, 0);
+  if ((end_ptr > next) && (end_ptr <= (const char *)end))
+  {
+    next = end_ptr;
+    if (unary_minus)
+    {
+      if (!range->is_signed_range)
+      {
+        next = NULL; // lower range is positive while upper range is negative?
+      }
+      else
+      {
+        if (tmp > 0x80000000UL)
+        {
+          return NULL; // value out of range
+        }
+        range->upper.i32 = -((int32_t)tmp);
+      }
+    }
+    else
+    {
+      if (range->is_signed_range)
+      {
+        if (tmp >= 0x80000000UL)
+        {
+          return NULL; // value out of range
+        }
+        range->upper.i32 = (int32_t)tmp;
+      }
+      else
+      {
+        range->upper.u32 = tmp;
+      }
+    }
+  }
+  else
+  {
+    next = NULL;
+  }
+  return (uint8_t const *)next;
+}
+
+static bool apx_attribute_parser_is_initializer_list(apx_attribute_parser_t *self)
+{
+  assert(self != NULL);
+  return self->state->parent != NULL ? true : false;
 }

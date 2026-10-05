@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      client_monitor_connection.h
-* \author    Conny Gustafsson
-* \date      2021-03-30
-* \brief     Client-side monitor connection
-*
-* Copyright (c) 2021-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      client_monitor_connection.h
+ * \author    Conny Gustafsson
+ * \date      2021-03-30
+ * \brief     Client-side monitor connection
+ *
+ * Copyright (c) 2021-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_CLIENT_MONITOR_CONNECTION_H
 #define APX_CLIENT_MONITOR_CONNECTION_H
 
@@ -23,4 +23,4 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-#endif //APX_SERVER_MONITOR_CONNECTION_H
+#endif // APX_SERVER_MONITOR_CONNECTION_H

@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      remotefile_cfg.h
-* \author    Conny Gustafsson
-* \date      2017-02-20
-* \brief     Remote file configuration definitions
-*
-* Copyright (c) 2017-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      remotefile_cfg.h
+ * \author    Conny Gustafsson
+ * \date      2017-02-20
+ * \brief     Remote file configuration definitions
+ *
+ * Copyright (c) 2017-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef RMF_CFG_H
 #define RMF_CFG_H
 
@@ -20,9 +20,8 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-#define RMF_MAX_FILE_NAME   255u
-#define RMF_MAX_NUM_FILES   64u
-
+#define RMF_MAX_FILE_NAME 255u
+#define RMF_MAX_NUM_FILES 64u
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -34,4 +33,4 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-#endif //RMF_CFG_H
+#endif // RMF_CFG_H

@@ -1,114 +1,114 @@
 /*****************************************************************************
-* \file      remotefile.h
-* \author    Conny Gustafsson
-* \date      2021-01-20
-* \brief     Remotefile layer
-*
-* Copyright (c) 2021-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      remotefile.h
+ * \author    Conny Gustafsson
+ * \date      2021-01-20
+ * \brief     Remotefile layer
+ *
+ * Copyright (c) 2021-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef REMOTEFILE_H
 #define REMOTEFILE_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/types.h"
 #include "apx/remotefile_cfg.h"
+#include "apx/types.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-//forward declarations
+// forward declarations
 struct rmf_file_info_tag;
 
 typedef uint8_t rmf_file_type_t;
-#define RMF_FILE_TYPE_FIXED     ((rmf_file_type_t) 0u)
-#define RMF_FILE_TYPE_DYNAMIC8  ((rmf_file_type_t) 1u)
-#define RMF_FILE_TYPE_DYNAMIC16 ((rmf_file_type_t) 2u)
-#define RMF_FILE_TYPE_DYNAMIC32 ((rmf_file_type_t) 3u)
-#define RMF_FILE_TYPE_DEVICE    ((rmf_file_type_t) 4u)
-#define RMF_FILE_TYPE_STREAM    ((rmf_file_type_t) 5u)
+#define RMF_FILE_TYPE_FIXED ((rmf_file_type_t)0u)
+#define RMF_FILE_TYPE_DYNAMIC8 ((rmf_file_type_t)1u)
+#define RMF_FILE_TYPE_DYNAMIC16 ((rmf_file_type_t)2u)
+#define RMF_FILE_TYPE_DYNAMIC32 ((rmf_file_type_t)3u)
+#define RMF_FILE_TYPE_DEVICE ((rmf_file_type_t)4u)
+#define RMF_FILE_TYPE_STREAM ((rmf_file_type_t)5u)
 
 typedef uint8_t rmf_digest_type_t;
-#define RMF_DIGEST_TYPE_NONE   ((rmf_digest_type_t) 0u)
-#define RMF_DIGEST_TYPE_SHA1   ((rmf_digest_type_t) 1u)
-#define RMF_DIGEST_TYPE_SHA256 ((rmf_digest_type_t) 2u)
+#define RMF_DIGEST_TYPE_NONE ((rmf_digest_type_t)0u)
+#define RMF_DIGEST_TYPE_SHA1 ((rmf_digest_type_t)1u)
+#define RMF_DIGEST_TYPE_SHA256 ((rmf_digest_type_t)2u)
 
 typedef uint8_t rmf_signature_type_t;
-#define RMF_SIGNATURE_TYPE_NONE          ((rmf_signature_type_t) 0u)
-#define RMF_SIGNATURE_TYPE_ECDSA_P256    ((rmf_signature_type_t) 1u)
+#define RMF_SIGNATURE_TYPE_NONE ((rmf_signature_type_t)0u)
+#define RMF_SIGNATURE_TYPE_ECDSA_P256 ((rmf_signature_type_t)1u)
 
-#define RMF_SIGNATURE_SIZE_ECDSA_P256    64u
-#define RMF_MAX_SIGNATURE_SIZE           64u
+#define RMF_SIGNATURE_SIZE_ECDSA_P256 64u
+#define RMF_MAX_SIGNATURE_SIZE 64u
 
-#define RMF_REMOTE_ADDRESS_BIT    ((uint32_t) 0x80000000) //This is overlayed with RMF_HIGH_ADDR_BIT
-#define RMF_INVALID_ADDRESS       ((uint32_t) 0x7FFFFFFF) //This is outside the valid address region of 30 bits
-#define RMF_ADDRESS_MASK          ((uint32_t) 0x3FFFFFFF) //A true remote address can be at most 30 bits long
-#define RMF_ADDRESS_MASK_INTERNAL ((uint32_t) 0x7FFFFFFF) //This is the address without the remote address bit
-#define RMF_SHA1_SIZE             20u
-#define RMF_SHA256_SIZE           32u
+#define RMF_REMOTE_ADDRESS_BIT ((uint32_t)0x80000000) // This is overlayed with RMF_HIGH_ADDR_BIT
+#define RMF_INVALID_ADDRESS ((uint32_t)0x7FFFFFFF) // This is outside the valid address region of 30 bits
+#define RMF_ADDRESS_MASK ((uint32_t)0x3FFFFFFF) // A true remote address can be at most 30 bits long
+#define RMF_ADDRESS_MASK_INTERNAL ((uint32_t)0x7FFFFFFF) // This is the address without the remote address bit
+#define RMF_SHA1_SIZE 20u
+#define RMF_SHA256_SIZE 32u
 
-#define RMF_LOW_ADDR_MAX  ((uint32_t)0x3FFF)
+#define RMF_LOW_ADDR_MAX ((uint32_t)0x3FFF)
 #define RMF_LOW_ADDR_MASK RMF_LOW_ADDR_MAX
 #define RMF_LOW_ADDR_SIZE UINT16_SIZE
-#define RMF_HIGH_ADDR_MIN ((uint32_t)0x4000)            //16KB
-#define RMF_HIGH_ADDR_MAX ((uint32_t)0x3FFFFFFFu)       //1GB
+#define RMF_HIGH_ADDR_MIN ((uint32_t)0x4000)            // 16KB
+#define RMF_HIGH_ADDR_MAX ((uint32_t)0x3FFFFFFFu)       // 1GB
 #define RMF_HIGH_ADDR_MASK RMF_HIGH_ADDR_MAX
 #define RMF_HIGH_ADDR_SIZE UINT32_SIZE
 
-#define RMF_CMD_AREA_START_ADDRESS ((uint32_t) 0x3FFFFC00)
-#define RMF_CMD_AREA_END_ADDRESS   ((uint32_t) 0x3FFFFFFF)
-#define RMF_CMD_AREA_SIZE          1024u
-#define RMF_CMD_HIGH_BIT           ((uint32_t) 0x80000000)
+#define RMF_CMD_AREA_START_ADDRESS ((uint32_t)0x3FFFFC00)
+#define RMF_CMD_AREA_END_ADDRESS ((uint32_t)0x3FFFFFFF)
+#define RMF_CMD_AREA_SIZE 1024u
+#define RMF_CMD_HIGH_BIT ((uint32_t)0x80000000)
 
-#define RMF_MORE_BIT_LOW_ADDR      ((uint32_t) 0x4000u)
-#define RMF_MORE_BIT_HIGH_ADDR     ((uint32_t) 0x40000000u)
-#define RMF_HIGH_ADDR_BIT          ((uint32_t) 0x80000000) //This is overlayed with RMF_REMOTE_ADDRESS_BIT
-#define RMF_U8_MORE_BIT            ((uint8_t)0x40)
-#define RMF_U8_HIGH_ADDR_BIT       ((uint8_t)0x80)
-#define RMF_MAX_FILE_NAME_SIZE          255u
-#define RMF_FILE_INFO_HEADER_SIZE       48u
+#define RMF_MORE_BIT_LOW_ADDR ((uint32_t)0x4000u)
+#define RMF_MORE_BIT_HIGH_ADDR ((uint32_t)0x40000000u)
+#define RMF_HIGH_ADDR_BIT ((uint32_t)0x80000000) // This is overlayed with RMF_REMOTE_ADDRESS_BIT
+#define RMF_U8_MORE_BIT ((uint8_t)0x40)
+#define RMF_U8_HIGH_ADDR_BIT ((uint8_t)0x80)
+#define RMF_MAX_FILE_NAME_SIZE 255u
+#define RMF_FILE_INFO_HEADER_SIZE 48u
 #define RMF_SIGNED_FILE_INFO_HEADER_SIZE 80u
-#define RMF_FILE_NAME_MAX_SIZE          RMF_MAX_FILE_NAME_SIZE
+#define RMF_FILE_NAME_MAX_SIZE RMF_MAX_FILE_NAME_SIZE
 
-//RMFP 1.0 commands
-#define RMF_CMD_ACK_MSG            ((uint32_t) 0u)
-#define RMF_CMD_PUBLISH_FILE_MSG   ((uint32_t) 3u)
-#define RMF_CMD_FILE_INFO_MSG      RMF_CMD_PUBLISH_FILE_MSG
-#define RMF_CMD_REVOKE_FILE_MSG    ((uint32_t) 4u)
-#define RMF_CMD_OPEN_FILE_MSG      ((uint32_t) 10u)
-#define RMF_CMD_CLOSE_FILE_MSG     ((uint32_t) 11u)
+// RMFP 1.0 commands
+#define RMF_CMD_ACK_MSG ((uint32_t)0u)
+#define RMF_CMD_PUBLISH_FILE_MSG ((uint32_t)3u)
+#define RMF_CMD_FILE_INFO_MSG RMF_CMD_PUBLISH_FILE_MSG
+#define RMF_CMD_REVOKE_FILE_MSG ((uint32_t)4u)
+#define RMF_CMD_OPEN_FILE_MSG ((uint32_t)10u)
+#define RMF_CMD_CLOSE_FILE_MSG ((uint32_t)11u)
 
-//RMFP 1.1 commands
-#define RMF_CMD_NACK_MSG                ((uint32_t) 1u)
-#define RMF_CMD_ACCEPT_HEADER           ((uint32_t) 20u)
-#define RMF_CMD_CONNECTION_CREATE       ((uint32_t) 21u)
-#define RMF_CMD_CONNECTION_REVOKE       ((uint32_t) 22u)
-#define RMF_CMD_PUBLISH_SIGNED_FILE_MSG ((uint32_t) 23u)
+// RMFP 1.1 commands
+#define RMF_CMD_NACK_MSG ((uint32_t)1u)
+#define RMF_CMD_ACCEPT_HEADER ((uint32_t)20u)
+#define RMF_CMD_CONNECTION_CREATE ((uint32_t)21u)
+#define RMF_CMD_CONNECTION_REVOKE ((uint32_t)22u)
+#define RMF_CMD_PUBLISH_SIGNED_FILE_MSG ((uint32_t)23u)
 
-#define RMF_FILE_OPEN_CMD_SIZE     UINT32_SIZE
-#define RMF_FILE_CLOSE_CMD_SIZE    UINT32_SIZE
-#define RMF_CMD_TYPE_SIZE          UINT32_SIZE
-#define RMF_CMD_NACK_SIZE          (RMF_CMD_TYPE_SIZE + UINT32_SIZE)
-#define RMF_CMD_NACK_DATA_SIZE     UINT32_SIZE
+#define RMF_FILE_OPEN_CMD_SIZE UINT32_SIZE
+#define RMF_FILE_CLOSE_CMD_SIZE UINT32_SIZE
+#define RMF_CMD_TYPE_SIZE UINT32_SIZE
+#define RMF_CMD_NACK_SIZE (RMF_CMD_TYPE_SIZE + UINT32_SIZE)
+#define RMF_CMD_NACK_DATA_SIZE UINT32_SIZE
 
 
-#define RMF_U16_FILE_TYPE_FIXED     ((uint16_t) 0u)
-#define RMF_U16_FILE_TYPE_DYNAMIC8  ((uint16_t) 1u)
-#define RMF_U16_FILE_TYPE_DYNAMIC16 ((uint16_t) 2u)
-#define RMF_U16_FILE_TYPE_DYNAMIC32 ((uint16_t) 3u)
-#define RMF_U16_FILE_TYPE_DEVICE    ((uint16_t) 4u)
-#define RMF_U16_FILE_TYPE_STREAM    ((uint16_t) 5u)
-#define RMF_U16_DIGEST_TYPE_NONE          ((uint16_t) 0u)
-#define RMF_U16_DIGEST_TYPE_SHA1          ((uint16_t) 1u)
-#define RMF_U16_DIGEST_TYPE_SHA256        ((uint16_t) 2u)
-#define RMF_U16_SIGNATURE_TYPE_NONE       ((uint16_t) 0u)
-#define RMF_U16_SIGNATURE_TYPE_ECDSA_P256 ((uint16_t) 1u)
+#define RMF_U16_FILE_TYPE_FIXED ((uint16_t)0u)
+#define RMF_U16_FILE_TYPE_DYNAMIC8 ((uint16_t)1u)
+#define RMF_U16_FILE_TYPE_DYNAMIC16 ((uint16_t)2u)
+#define RMF_U16_FILE_TYPE_DYNAMIC32 ((uint16_t)3u)
+#define RMF_U16_FILE_TYPE_DEVICE ((uint16_t)4u)
+#define RMF_U16_FILE_TYPE_STREAM ((uint16_t)5u)
+#define RMF_U16_DIGEST_TYPE_NONE ((uint16_t)0u)
+#define RMF_U16_DIGEST_TYPE_SHA1 ((uint16_t)1u)
+#define RMF_U16_DIGEST_TYPE_SHA256 ((uint16_t)2u)
+#define RMF_U16_SIGNATURE_TYPE_NONE ((uint16_t)0u)
+#define RMF_U16_SIGNATURE_TYPE_ECDSA_P256 ((uint16_t)1u)
 
-#define RMF_NUMHEADER_SIZE_16  UINT16_SIZE
-#define RMF_NUMHEADER_SIZE_32  UINT32_SIZE
+#define RMF_NUMHEADER_SIZE_16 UINT16_SIZE
+#define RMF_NUMHEADER_SIZE_32 UINT32_SIZE
 #define RMF_NUMHEADER_SIZE_DEFAULT RMF_NUMHEADER_SIZE_32
 
 #define RMF_GREETING_MAX_LEN 127
@@ -118,32 +118,35 @@ typedef uint8_t rmf_signature_type_t;
 #define RMF_CONNECTION_TYPE_MONITOR_HDR "Connection-Type"
 
 typedef uint8_t rmf_version_id_t;
-//RMF protocol version id to version numbers
-// VERSION ID 1: RMFP/1.0
-// VERSION_ID 2: RMFP/1.1
+// RMF protocol version id to version numbers
+//  VERSION ID 1: RMFP/1.0
+//  VERSION_ID 2: RMFP/1.1
 #define RMF_PROTOCOL_VERSION_ID_NONE ((rmf_version_id_t)0u)
 #define RMF_PROTOCOL_VERSION_ID_1_0 ((rmf_version_id_t)1u)
 #define RMF_PROTOCOL_VERSION_ID_1_1 ((rmf_version_id_t)2u)
 
 apx_size_t rmf_needed_encoding_size(uint32_t address);
-apx_size_t rmf_address_encode(uint8_t* buf, apx_size_t buf_size, uint32_t address, bool more_bit);
-apx_size_t rmf_address_decode(uint8_t const* begin, uint8_t const* end, uint32_t* address, bool* more_bit);
-apx_size_t rmf_encode_open_file_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t address);
-apx_size_t rmf_encode_acknowledge_cmd(uint8_t* buf, apx_size_t buf_size);
-apx_size_t rmf_encode_nack_cmd(uint8_t* buf, apx_size_t buf_size, uint32_t error_code, char const* name);
-apx_size_t rmf_decode_cmd_type(uint8_t const* begin, uint8_t const* end, uint32_t* cmd_type);
-apx_size_t rmf_decode_nack_cmd(uint8_t const* begin, uint8_t const* end, uint32_t* error_code, char const** name);
-apx_size_t rmf_encode_header_accepted(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id);
-apx_size_t rmf_decode_header_accepted(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id);
-apx_size_t rmf_encode_connection_create(uint8_t* buf, apx_size_t buf_size, uint32_t connection_id, uint8_t connection_state, char const* tag);
-apx_size_t rmf_decode_connection_create(uint8_t const* begin, uint8_t const* end, uint32_t* connection_id, uint8_t* connection_state, char** tag);
-apx_size_t rmf_encode_publish_file_cmd(uint8_t* buf, apx_size_t buf_size, struct rmf_file_info_tag const* file);
-apx_size_t rmf_decode_publish_file_cmd(uint8_t const* buf, apx_size_t buf_size, struct rmf_file_info_tag* file_info);
-apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t* buf, apx_size_t buf_size, struct rmf_file_info_tag const* file);
-apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const* buf, apx_size_t buf_size, struct rmf_file_info_tag* file_info);
-bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t* file_type);
-bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t* digest_type);
-bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t* signature_type);
+apx_size_t rmf_address_encode(uint8_t *buf, apx_size_t buf_size, uint32_t address, bool more_bit);
+apx_size_t rmf_address_decode(uint8_t const *begin, uint8_t const *end, uint32_t *address, bool *more_bit);
+apx_size_t rmf_encode_open_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address);
+apx_size_t rmf_encode_acknowledge_cmd(uint8_t *buf, apx_size_t buf_size);
+apx_size_t rmf_encode_nack_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t error_code, char const *name);
+apx_size_t rmf_decode_cmd_type(uint8_t const *begin, uint8_t const *end, uint32_t *cmd_type);
+apx_size_t rmf_decode_nack_cmd(uint8_t const *begin, uint8_t const *end, uint32_t *error_code, char const **name);
+apx_size_t rmf_encode_header_accepted(uint8_t *buf, apx_size_t buf_size, uint32_t connection_id);
+apx_size_t rmf_decode_header_accepted(uint8_t const *begin, uint8_t const *end, uint32_t *connection_id);
+apx_size_t rmf_encode_connection_create(
+  uint8_t *buf, apx_size_t buf_size, uint32_t connection_id, uint8_t connection_state, char const *tag);
+apx_size_t rmf_decode_connection_create(
+  uint8_t const *begin, uint8_t const *end, uint32_t *connection_id, uint8_t *connection_state, char **tag);
+apx_size_t rmf_encode_publish_file_cmd(uint8_t *buf, apx_size_t buf_size, struct rmf_file_info_tag const *file);
+apx_size_t rmf_decode_publish_file_cmd(uint8_t const *buf, apx_size_t buf_size, struct rmf_file_info_tag *file_info);
+apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t *buf, apx_size_t buf_size, struct rmf_file_info_tag const *file);
+apx_size_t rmf_decode_publish_signed_file_cmd(
+  uint8_t const *buf, apx_size_t buf_size, struct rmf_file_info_tag *file_info);
+bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t *file_type);
+bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t *digest_type);
+bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t *signature_type);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -154,4 +157,4 @@ bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t* signature
 // GLOBAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-#endif //REMOTEFILE_H
+#endif // REMOTEFILE_H

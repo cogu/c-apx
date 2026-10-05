@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      node_cache.h
-* \author    Conny Gustafsson
-* \date      2021-01-20
-* \brief     Handles locally cached nodes
-*
-* Copyright (c) 2018-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      node_cache.h
+ * \author    Conny Gustafsson
+ * \date      2021-01-20
+ * \brief     Handles locally cached nodes
+ *
+ * Copyright (c) 2018-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_FILE_CACHE_H
 #define APX_FILE_CACHE_H
 
@@ -21,15 +21,15 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_node_cache_tag
 {
-   apx_mode_t mode;
+  apx_mode_t mode;
 } apx_node_cache_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_node_cache_create(apx_node_cache_t* self, apx_mode_t mode);
-void apx_node_cache_destroy(apx_node_cache_t* self);
-apx_node_cache_t* apx_node_cache_new(apx_mode_t mode);
-void apx_node_cache_delete(apx_node_cache_t* self);
+void apx_node_cache_create(apx_node_cache_t *self, apx_mode_t mode);
+void apx_node_cache_destroy(apx_node_cache_t *self);
+apx_node_cache_t *apx_node_cache_new(apx_mode_t mode);
+void apx_node_cache_delete(apx_node_cache_t *self);
 
-#endif //APX_FILE_CACHE_H
+#endif // APX_FILE_CACHE_H

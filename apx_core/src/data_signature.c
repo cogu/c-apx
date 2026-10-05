@@ -1,22 +1,22 @@
 /*****************************************************************************
-* \file      data_signature.c
-* \author    Conny Gustafsson
-* \date      2017-02-20
-* \brief     APX parse tree: data signature
-*
-* Copyright (c) 2017-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      data_signature.c
+ * \author    Conny Gustafsson
+ * \date      2017-02-20
+ * \brief     APX parse tree: data signature
+ *
+ * Copyright (c) 2017-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <malloc.h>
-#include <assert.h>
-#include <string.h>
 #include "apx/data_signature.h"
+#include <assert.h>
+#include <malloc.h>
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -34,63 +34,63 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_data_signature_create(apx_data_signature_t* self)
+void apx_data_signature_create(apx_data_signature_t *self)
 {
-   if (self != NULL)
-   {
-      self->data_element = NULL;
-      self->effective_data_element = NULL;
-   }
+  if (self != NULL)
+  {
+    self->data_element = NULL;
+    self->effective_data_element = NULL;
+  }
 }
 
-void apx_data_signature_destroy(apx_data_signature_t* self)
+void apx_data_signature_destroy(apx_data_signature_t *self)
 {
-   if (self != NULL)
-   {
-      if (self->data_element != NULL)
-      {
-         apx_data_element_delete(self->data_element);
-      }
-      if (self->effective_data_element != NULL)
-      {
-         apx_data_element_delete(self->effective_data_element);
-      }
-   }
+  if (self != NULL)
+  {
+    if (self->data_element != NULL)
+    {
+      apx_data_element_delete(self->data_element);
+    }
+    if (self->effective_data_element != NULL)
+    {
+      apx_data_element_delete(self->effective_data_element);
+    }
+  }
 }
 
-apx_data_element_t* apx_data_signature_get_data_element(apx_data_signature_t* self)
+apx_data_element_t *apx_data_signature_get_data_element(apx_data_signature_t *self)
 {
-   if (self != NULL)
-   {
-      return self->data_element;
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return self->data_element;
+  }
+  return NULL;
 }
 
-void apx_data_signature_set_element(apx_data_signature_t* self, apx_data_element_t* data_element)
+void apx_data_signature_set_element(apx_data_signature_t *self, apx_data_element_t *data_element)
 {
-   if (self != NULL)
-   {
-      self->data_element = data_element;
-   }
+  if (self != NULL)
+  {
+    self->data_element = data_element;
+  }
 }
 
-apx_data_element_t* apx_data_signature_get_effective_data_element(apx_data_signature_t* self)
+apx_data_element_t *apx_data_signature_get_effective_data_element(apx_data_signature_t *self)
 {
-   if (self != NULL)
-   {
-      return self->effective_data_element;
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return self->effective_data_element;
+  }
+  return NULL;
 }
 
-void apx_data_signature_set_effective_element(apx_data_signature_t* self, apx_data_element_t* data_element)
+void apx_data_signature_set_effective_element(apx_data_signature_t *self, apx_data_element_t *data_element)
 {
-   if (self != NULL)
-   {
-      assert(self->effective_data_element == NULL);
-      self->effective_data_element = data_element;
-   }
+  if (self != NULL)
+  {
+    assert(self->effective_data_element == NULL);
+    self->effective_data_element = data_element;
+  }
 }
 
 

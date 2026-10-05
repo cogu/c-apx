@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      connection_info.c
-* \author    Conny Gustafsson
-* \date      2021-04-05
-* \brief     Connection info used by monitor connections
-*
-* Copyright (c) 2021-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      connection_info.c
+ * \author    Conny Gustafsson
+ * \date      2021-04-05
+ * \brief     Connection info used by monitor connections
+ *
+ * Copyright (c) 2021-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
@@ -26,43 +26,43 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_connection_info_create(apx_connection_info_t* self, apx_connection_id_t connection_id, adt_str_t* tag)
+void apx_connection_info_create(apx_connection_info_t *self, apx_connection_id_t connection_id, adt_str_t *tag)
 {
-   if (self != NULL)
-   {
-      self->connection_id = connection_id;
-      if (tag != NULL)
-      {
-         self->tag = adt_str_clone(tag);
-      }
-   }
+  if (self != NULL)
+  {
+    self->connection_id = connection_id;
+    if (tag != NULL)
+    {
+      self->tag = adt_str_clone(tag);
+    }
+  }
 }
 
-void apx_connection_info_destroy(apx_connection_info_t* self)
+void apx_connection_info_destroy(apx_connection_info_t *self)
 {
-   if (self != NULL)
-   {
-      adt_str_delete(self->tag); //delete function already has built-in null check
-   }
+  if (self != NULL)
+  {
+    adt_str_delete(self->tag); // delete function already has built-in null check
+  }
 }
 
-apx_connection_info_t* apx_connection_info_new(apx_connection_id_t connection_id, adt_str_t* tag)
+apx_connection_info_t *apx_connection_info_new(apx_connection_id_t connection_id, adt_str_t *tag)
 {
-   apx_connection_info_t* self = (apx_connection_info_t*)malloc(sizeof(apx_connection_info_t));
-   if (self != NULL)
-   {
-      apx_connection_info_create(self, connection_id, tag);
-   }
-   return self;
+  apx_connection_info_t *self = (apx_connection_info_t *)malloc(sizeof(apx_connection_info_t));
+  if (self != NULL)
+  {
+    apx_connection_info_create(self, connection_id, tag);
+  }
+  return self;
 }
 
-void apx_connection_info_delete(apx_connection_info_t* self)
+void apx_connection_info_delete(apx_connection_info_t *self)
 {
-   if (self != NULL)
-   {
-      apx_connection_info_destroy(self);
-      free(self);
-   }
+  if (self != NULL)
+  {
+    apx_connection_info_destroy(self);
+    free(self);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      socket_server_connection.h
-* \author    Conny Gustafsson
-* \date      2018-09-26
-* \brief     socket server connection class
-*
-* Copyright (c) 2018-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      socket_server_connection.h
+ * \author    Conny Gustafsson
+ * \date      2018-09-26
+ * \brief     socket server connection class
+ *
+ * Copyright (c) 2018-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_SOCKET_SERVER_CONNECTION_H
 #define APX_SOCKET_SERVER_CONNECTION_H
 
@@ -21,22 +21,22 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 #ifdef UNIT_TEST
-#define SOCKET_TYPE struct testsocket_tag
+# define SOCKET_TYPE struct testsocket_tag
 #else
-#define SOCKET_TYPE struct msocket_tag
+# define SOCKET_TYPE struct msocket_tag
 #endif
-SOCKET_TYPE; //this is a forward declaration of the declared type just above
+SOCKET_TYPE; // this is a forward declaration of the declared type just above
 
 typedef struct apx_socket_server_connection_tag
 {
-   apx_server_connection_t base;
-   apx_node_manager_t node_manager;
-   adt_bytearray_t send_buffer;
-   apx_size_t default_buffer_size;
-   apx_size_t pending_bytes;
-   SOCKET_TYPE *socket_object;
-   MUTEX_T lock;
-}apx_socket_server_connection_t;
+  apx_server_connection_t base;
+  apx_node_manager_t node_manager;
+  adt_bytearray_t send_buffer;
+  apx_size_t default_buffer_size;
+  apx_size_t pending_bytes;
+  SOCKET_TYPE *socket_object;
+  MUTEX_T lock;
+} apx_socket_server_connection_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
@@ -49,18 +49,20 @@ void apx_socket_server_connection_delete(apx_socket_server_connection_t *self);
 void apx_socket_server_connection_vdelete(void *arg);
 void apx_socket_server_connection_vstart(void *arg);
 void apx_socket_server_connection_vclose(void *arg);
-void apx_socket_server_connection_set_tag(apx_socket_server_connection_t* self, char const* tag);
+void apx_socket_server_connection_set_tag(apx_socket_server_connection_t *self, char const *tag);
 
 // ConnectionInterface API
-int32_t apx_socket_server_connection_vtransmit_max_bytes_avaiable(void* arg);
-int32_t apx_socket_server_connection_vtransmit_current_bytes_avaiable(void* arg);
-void apx_socket_server_connection_vtransmit_begin(void* arg);
-void apx_socket_server_connection_vtransmit_end(void* arg);
-apx_error_t apx_socket_server_connection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
-apx_error_t apx_socket_server_connection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
+int32_t apx_socket_server_connection_vtransmit_max_bytes_avaiable(void *arg);
+int32_t apx_socket_server_connection_vtransmit_current_bytes_avaiable(void *arg);
+void apx_socket_server_connection_vtransmit_begin(void *arg);
+void apx_socket_server_connection_vtransmit_end(void *arg);
+apx_error_t apx_socket_server_connection_vtransmit_data_message(void *arg, uint32_t write_address, bool more_bit,
+  uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available);
+apx_error_t apx_socket_server_connection_vtransmit_direct_message(
+  void *arg, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available);
 #ifdef UNIT_TEST
-void apx_socket_server_connection_run(apx_socket_server_connection_t* self);
+void apx_socket_server_connection_run(apx_socket_server_connection_t *self);
 #endif
 
 #undef SOCKET_TYPE
-#endif //APX_SOCKET_SERVER_CONNECTION_H
+#endif // APX_SOCKET_SERVER_CONNECTION_H

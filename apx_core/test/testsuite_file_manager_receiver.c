@@ -1,25 +1,25 @@
 /*****************************************************************************
-* \file      testsuite_file_manager_receiver.c
-* \author    Conny Gustafsson
-* \date      2020-02-12
-* \brief     Unit tests for file manager receiver
-*
-* Copyright (c) 2020-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      testsuite_file_manager_receiver.c
+ * \author    Conny Gustafsson
+ * \date      2020-02-12
+ * \brief     Unit tests for file manager receiver
+ *
+ * Copyright (c) 2020-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <string.h>
 #include "CuTest.h"
 #include "apx/file_manager_receiver.h"
+#include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 
@@ -30,32 +30,32 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_receiver_reset(CuTest* tc);
-static void test_small_size_write(CuTest* tc);
-static void test_medium_size_write(CuTest* tc);
-static void test_one_byte_fragmented_write(CuTest* tc);
-static void test_three_piece_message_followed_by_two_piece_message(CuTest* tc);
-static void test_fragmented_write_at_wrong_address(CuTest* tc);
-static void test_large_single_write(CuTest* tc);
-static void test_large_fragmented_write(CuTest* tc);
+static void test_receiver_reset(CuTest *tc);
+static void test_small_size_write(CuTest *tc);
+static void test_medium_size_write(CuTest *tc);
+static void test_one_byte_fragmented_write(CuTest *tc);
+static void test_three_piece_message_followed_by_two_piece_message(CuTest *tc);
+static void test_fragmented_write_at_wrong_address(CuTest *tc);
+static void test_large_single_write(CuTest *tc);
+static void test_large_fragmented_write(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testsuite_apx_file_manager_receiver(void)
+CuSuite *testsuite_apx_file_manager_receiver(void)
 {
-   CuSuite* suite = CuSuiteNew();
+  CuSuite *suite = CuSuiteNew();
 
-   SUITE_ADD_TEST(suite, test_receiver_reset);
-   SUITE_ADD_TEST(suite, test_small_size_write);
-   SUITE_ADD_TEST(suite, test_medium_size_write);
-   SUITE_ADD_TEST(suite, test_one_byte_fragmented_write);
-   SUITE_ADD_TEST(suite, test_three_piece_message_followed_by_two_piece_message);
-   SUITE_ADD_TEST(suite, test_fragmented_write_at_wrong_address);
-   SUITE_ADD_TEST(suite, test_large_single_write);
-   SUITE_ADD_TEST(suite, test_large_fragmented_write);
+  SUITE_ADD_TEST(suite, test_receiver_reset);
+  SUITE_ADD_TEST(suite, test_small_size_write);
+  SUITE_ADD_TEST(suite, test_medium_size_write);
+  SUITE_ADD_TEST(suite, test_one_byte_fragmented_write);
+  SUITE_ADD_TEST(suite, test_three_piece_message_followed_by_two_piece_message);
+  SUITE_ADD_TEST(suite, test_fragmented_write_at_wrong_address);
+  SUITE_ADD_TEST(suite, test_large_single_write);
+  SUITE_ADD_TEST(suite, test_large_fragmented_write);
 
-   return suite;
+  return suite;
 }
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -69,222 +69,241 @@ CuSuite* testsuite_apx_file_manager_receiver(void)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void test_receiver_reset(CuTest* tc)
+static void test_receiver_reset(CuTest *tc)
 {
-   apx_file_manager_receiver_t recvr;
-   apx_file_manager_reception_result_t result;
-   uint8_t const msg[4] = { 1, 2, 3, 4 };
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0x1000u, msg, 2, true));
-   CuAssertFalse(tc, result.is_complete);
-   apx_file_manager_receiver_reset(&recvr);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0x2000u, msg, 4, false));
-   CuAssertTrue(tc, result.is_complete);
-   CuAssertUIntEquals(tc, 0x2000u, result.address);
-   CuAssertUIntEquals(tc, 4u, result.size);
-   CuAssertIntEquals(tc, 0, memcmp(msg, result.data, 4));
-   apx_file_manager_receiver_destroy(&recvr);
+  apx_file_manager_receiver_t recvr;
+  apx_file_manager_reception_result_t result;
+  uint8_t const msg[4] = {1, 2, 3, 4};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0x1000u, msg, 2, true));
+  CuAssertFalse(tc, result.is_complete);
+  apx_file_manager_receiver_reset(&recvr);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0x2000u, msg, 4, false));
+  CuAssertTrue(tc, result.is_complete);
+  CuAssertUIntEquals(tc, 0x2000u, result.address);
+  CuAssertUIntEquals(tc, 4u, result.size);
+  CuAssertIntEquals(tc, 0, memcmp(msg, result.data, 4));
+  apx_file_manager_receiver_destroy(&recvr);
 }
 
-static void test_small_size_write(CuTest* tc)
+static void test_small_size_write(CuTest *tc)
 {
-   uint8_t msg[4] = { 0x12, 0x034, 0x56, 0x78 };
-   apx_file_manager_receiver_t recvr;
-   apx_file_manager_reception_result_t result;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0u, msg, (apx_size_t)sizeof(msg), false));
-   CuAssertTrue(tc, result.is_complete);
-   CuAssertUIntEquals(tc, 0u, result.address);
-   CuAssertPtrNotNull(tc, result.data);
-   CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg), result.size);
-   CuAssertIntEquals(tc, 0, memcmp(msg, result.data, result.size));
-   apx_file_manager_receiver_destroy(&recvr);
+  uint8_t msg[4] = {0x12, 0x034, 0x56, 0x78};
+  apx_file_manager_receiver_t recvr;
+  apx_file_manager_reception_result_t result;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0u, msg, (apx_size_t)sizeof(msg), false));
+  CuAssertTrue(tc, result.is_complete);
+  CuAssertUIntEquals(tc, 0u, result.address);
+  CuAssertPtrNotNull(tc, result.data);
+  CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg), result.size);
+  CuAssertIntEquals(tc, 0, memcmp(msg, result.data, result.size));
+  apx_file_manager_receiver_destroy(&recvr);
 }
 
-static void test_medium_size_write(CuTest* tc)
+static void test_medium_size_write(CuTest *tc)
 {
-   uint8_t msg[64];
-   size_t i;
-   apx_file_manager_receiver_t recvr;
-   apx_file_manager_reception_result_t result;
-   for (i = 0; i < sizeof(msg); i++)
-   {
-      msg[i] = (uint8_t)i;
-   }
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0u, msg, (apx_size_t)sizeof(msg), false));
-   CuAssertTrue(tc, result.is_complete);
-   CuAssertUIntEquals(tc, 0u, result.address);
-   CuAssertPtrNotNull(tc, result.data);
-   CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg), result.size);
-   CuAssertIntEquals(tc, 0, memcmp(msg, result.data, result.size));
-   apx_file_manager_receiver_destroy(&recvr);
+  uint8_t msg[64];
+  size_t i;
+  apx_file_manager_receiver_t recvr;
+  apx_file_manager_reception_result_t result;
+  for (i = 0; i < sizeof(msg); i++)
+  {
+    msg[i] = (uint8_t)i;
+  }
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0u, msg, (apx_size_t)sizeof(msg), false));
+  CuAssertTrue(tc, result.is_complete);
+  CuAssertUIntEquals(tc, 0u, result.address);
+  CuAssertPtrNotNull(tc, result.data);
+  CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg), result.size);
+  CuAssertIntEquals(tc, 0, memcmp(msg, result.data, result.size));
+  apx_file_manager_receiver_destroy(&recvr);
 }
 
-static void test_one_byte_fragmented_write(CuTest* tc)
+static void test_one_byte_fragmented_write(CuTest *tc)
 {
-   uint8_t msg[128];
-   uint32_t i;
-   uint32_t const write_address = 0x10000;
-   uint32_t write_offset = 0u;
-   apx_file_manager_receiver_t recvr;
-   apx_file_manager_reception_result_t result;
-   for (i = 0; i < sizeof(msg); i++)
-   {
-      msg[i] = (uint8_t)i;
-   }
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
-   for (i = 0; i < 127; i++)
-   {
-      CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, 1, true));
+  uint8_t msg[128];
+  uint32_t i;
+  uint32_t const write_address = 0x10000;
+  uint32_t write_offset = 0u;
+  apx_file_manager_receiver_t recvr;
+  apx_file_manager_reception_result_t result;
+  for (i = 0; i < sizeof(msg); i++)
+  {
+    msg[i] = (uint8_t)i;
+  }
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
+  for (i = 0; i < 127; i++)
+  {
+    CuAssertIntEquals(tc, APX_NO_ERROR,
+      apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, 1, true));
+    CuAssertFalse(tc, result.is_complete);
+    write_offset++;
+  }
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, 1, false));
+  CuAssertTrue(tc, result.is_complete);
+  CuAssertUIntEquals(tc, write_address, result.address);
+  CuAssertPtrNotNull(tc, result.data);
+  CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg), result.size);
+  CuAssertIntEquals(tc, 0, memcmp(msg, result.data, result.size));
+  apx_file_manager_receiver_destroy(&recvr);
+}
+
+static void test_three_piece_message_followed_by_two_piece_message(CuTest *tc)
+{
+  uint32_t i;
+  uint32_t write_address = 0x10000;
+  uint32_t write_offset = 0u;
+  apx_size_t const write_size1 = 17;
+  apx_size_t const write_size2 = 33;
+  apx_size_t const write_size3 = 14;
+  apx_file_manager_receiver_t recvr;
+  apx_file_manager_reception_result_t result;
+  uint8_t msg[17 + 33 + 14];
+
+  for (i = 0; i < sizeof(msg); i++)
+  {
+    msg[i] = (uint8_t)i;
+  }
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_receiver_write(
+      &recvr, &result, write_address + write_offset, msg + write_offset, write_size1, true));
+  CuAssertFalse(tc, result.is_complete);
+  write_offset += write_size1;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_receiver_write(
+      &recvr, &result, write_address + write_offset, msg + write_offset, write_size2, true));
+  CuAssertFalse(tc, result.is_complete);
+  write_offset += write_size2;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_receiver_write(
+      &recvr, &result, write_address + write_offset, msg + write_offset, write_size3, false));
+  CuAssertTrue(tc, result.is_complete);
+  CuAssertUIntEquals(tc, write_address, result.address);
+  CuAssertPtrNotNull(tc, result.data);
+  CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg), result.size);
+  CuAssertIntEquals(tc, 0, memcmp(msg, result.data, result.size));
+
+  apx_size_t const write_size4 = 17;
+  apx_size_t const write_size5 = 33;
+  uint8_t msg2[17 + 33];
+  for (i = 0; i < sizeof(msg2); i++)
+  {
+    msg2[i] = (uint8_t)i;
+  }
+  write_address = 0x20000;
+  write_offset = 0u;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_receiver_write(
+      &recvr, &result, write_address + write_offset, msg + write_offset, write_size4, true));
+  CuAssertFalse(tc, result.is_complete);
+  write_offset += write_size4;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_receiver_write(
+      &recvr, &result, write_address + write_offset, msg + write_offset, write_size5, false));
+  CuAssertTrue(tc, result.is_complete);
+  CuAssertUIntEquals(tc, write_address, result.address);
+  CuAssertPtrNotNull(tc, result.data);
+  CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg2), result.size);
+  CuAssertIntEquals(tc, 0, memcmp(msg2, result.data, result.size));
+
+  apx_file_manager_receiver_destroy(&recvr);
+}
+
+static void test_fragmented_write_at_wrong_address(CuTest *tc)
+{
+  uint32_t i;
+  uint32_t write_address = 0x10000;
+  uint32_t write_offset = 0u;
+  apx_size_t const write_size1 = 15;
+  apx_size_t const write_size2 = 15;
+  apx_file_manager_receiver_t recvr;
+  apx_file_manager_reception_result_t result;
+  uint8_t msg[15 + 15];
+
+  for (i = 0; i < sizeof(msg); i++)
+  {
+    msg[i] = (uint8_t)i;
+  }
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_receiver_write(
+      &recvr, &result, write_address + write_offset, msg + write_offset, write_size1, true));
+  CuAssertFalse(tc, result.is_complete);
+  write_offset += write_size1;
+
+   // Write to same address again
+  CuAssertIntEquals(tc, APX_INVALID_ADDRESS_ERROR,
+    apx_file_manager_receiver_write(&recvr, &result, write_address, msg + write_offset, write_size2, false));
+  CuAssertFalse(tc, result.is_complete);
+
+  apx_file_manager_receiver_destroy(&recvr);
+}
+
+static void test_large_single_write(CuTest *tc)
+{
+  uint32_t const write_size = 8192u;
+  uint8_t *msg = (uint8_t *)malloc(write_size);
+  CuAssertPtrNotNull(tc, msg);
+  for (uint32_t i = 0; i < write_size; i++)
+  {
+    msg[i] = (uint8_t)(i & 0xFF);
+  }
+  apx_file_manager_receiver_t recvr;
+  apx_file_manager_reception_result_t result;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0x1000u, msg, write_size, false));
+  CuAssertTrue(tc, result.is_complete);
+  CuAssertUIntEquals(tc, 0x1000u, result.address);
+  CuAssertPtrNotNull(tc, result.data);
+  CuAssertUIntEquals(tc, write_size, result.size);
+  CuAssertIntEquals(tc, 0, memcmp(msg, result.data, write_size));
+  apx_file_manager_receiver_destroy(&recvr);
+  free(msg);
+}
+
+static void test_large_fragmented_write(CuTest *tc)
+{
+  uint32_t const total_size = 8192u;
+  uint32_t const chunk_size = 1024u;
+  uint8_t *msg = (uint8_t *)malloc(total_size);
+  CuAssertPtrNotNull(tc, msg);
+  for (uint32_t i = 0; i < total_size; i++)
+  {
+    msg[i] = (uint8_t)((i * 3) & 0xFF);
+  }
+  apx_file_manager_receiver_t recvr;
+  apx_file_manager_reception_result_t result;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
+  uint32_t const write_address = 0x20000u;
+  uint32_t offset = 0u;
+  while (offset < total_size)
+  {
+    bool const more_bit = (offset + chunk_size < total_size);
+    CuAssertIntEquals(tc, APX_NO_ERROR,
+      apx_file_manager_receiver_write(&recvr, &result, write_address + offset, msg + offset, chunk_size, more_bit));
+    if (more_bit)
+    {
       CuAssertFalse(tc, result.is_complete);
-      write_offset++;
-   }
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, 1, false));
-   CuAssertTrue(tc, result.is_complete);
-   CuAssertUIntEquals(tc, write_address, result.address);
-   CuAssertPtrNotNull(tc, result.data);
-   CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg), result.size);
-   CuAssertIntEquals(tc, 0, memcmp(msg, result.data, result.size));
-   apx_file_manager_receiver_destroy(&recvr);
-}
-
-static void test_three_piece_message_followed_by_two_piece_message(CuTest* tc)
-{
-   uint32_t i;
-   uint32_t write_address = 0x10000;
-   uint32_t write_offset = 0u;
-   apx_size_t const write_size1 = 17;
-   apx_size_t const write_size2 = 33;
-   apx_size_t const write_size3 = 14;
-   apx_file_manager_receiver_t recvr;
-   apx_file_manager_reception_result_t result;
-   uint8_t msg[17+33+14];
-
-   for (i = 0; i < sizeof(msg); i++)
-   {
-      msg[i] = (uint8_t)i;
-   }
-
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, write_size1, true));
-   CuAssertFalse(tc, result.is_complete);
-   write_offset += write_size1;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, write_size2, true));
-   CuAssertFalse(tc, result.is_complete);
-   write_offset += write_size2;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, write_size3, false));
-   CuAssertTrue(tc, result.is_complete);
-   CuAssertUIntEquals(tc, write_address, result.address);
-   CuAssertPtrNotNull(tc, result.data);
-   CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg), result.size);
-   CuAssertIntEquals(tc, 0, memcmp(msg, result.data, result.size));
-
-   apx_size_t const write_size4 = 17;
-   apx_size_t const write_size5 = 33;
-   uint8_t msg2[17 + 33];
-   for (i = 0; i < sizeof(msg2); i++)
-   {
-      msg2[i] = (uint8_t)i;
-   }
-   write_address = 0x20000;
-   write_offset = 0u;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, write_size4, true));
-   CuAssertFalse(tc, result.is_complete);
-   write_offset += write_size4;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, write_size5, false));
-   CuAssertTrue(tc, result.is_complete);
-   CuAssertUIntEquals(tc, write_address, result.address);
-   CuAssertPtrNotNull(tc, result.data);
-   CuAssertUIntEquals(tc, (apx_size_t)sizeof(msg2), result.size);
-   CuAssertIntEquals(tc, 0, memcmp(msg2, result.data, result.size));
-
-   apx_file_manager_receiver_destroy(&recvr);
-}
-
-static void test_fragmented_write_at_wrong_address(CuTest* tc)
-{
-   uint32_t i;
-   uint32_t write_address = 0x10000;
-   uint32_t write_offset = 0u;
-   apx_size_t const write_size1 = 15;
-   apx_size_t const write_size2 = 15;
-   apx_file_manager_receiver_t recvr;
-   apx_file_manager_reception_result_t result;
-   uint8_t msg[15 + 15];
-
-   for (i = 0; i < sizeof(msg); i++)
-   {
-      msg[i] = (uint8_t)i;
-   }
-
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + write_offset, msg + write_offset, write_size1, true));
-   CuAssertFalse(tc, result.is_complete);
-   write_offset += write_size1;
-
-   //Write to same address again
-   CuAssertIntEquals(tc, APX_INVALID_ADDRESS_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address, msg + write_offset, write_size2, false));
-   CuAssertFalse(tc, result.is_complete);
-
-   apx_file_manager_receiver_destroy(&recvr);
-}
-
-static void test_large_single_write(CuTest* tc)
-{
-   uint32_t const write_size = 8192u;
-   uint8_t* msg = (uint8_t*)malloc(write_size);
-   CuAssertPtrNotNull(tc, msg);
-   for (uint32_t i = 0; i < write_size; i++)
-   {
-      msg[i] = (uint8_t)(i & 0xFF);
-   }
-   apx_file_manager_receiver_t recvr;
-   apx_file_manager_reception_result_t result;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, 0x1000u, msg, write_size, false));
-   CuAssertTrue(tc, result.is_complete);
-   CuAssertUIntEquals(tc, 0x1000u, result.address);
-   CuAssertPtrNotNull(tc, result.data);
-   CuAssertUIntEquals(tc, write_size, result.size);
-   CuAssertIntEquals(tc, 0, memcmp(msg, result.data, write_size));
-   apx_file_manager_receiver_destroy(&recvr);
-   free(msg);
-}
-
-static void test_large_fragmented_write(CuTest* tc)
-{
-   uint32_t const total_size = 8192u;
-   uint32_t const chunk_size = 1024u;
-   uint8_t* msg = (uint8_t*)malloc(total_size);
-   CuAssertPtrNotNull(tc, msg);
-   for (uint32_t i = 0; i < total_size; i++)
-   {
-      msg[i] = (uint8_t)((i * 3) & 0xFF);
-   }
-   apx_file_manager_receiver_t recvr;
-   apx_file_manager_reception_result_t result;
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_create(&recvr));
-   uint32_t const write_address = 0x20000u;
-   uint32_t offset = 0u;
-   while (offset < total_size)
-   {
-      bool const more_bit = (offset + chunk_size < total_size);
-      CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_receiver_write(&recvr, &result, write_address + offset, msg + offset, chunk_size, more_bit));
-      if (more_bit)
-      {
-         CuAssertFalse(tc, result.is_complete);
-      }
-      else
-      {
-         CuAssertTrue(tc, result.is_complete);
-      }
-      offset += chunk_size;
-   }
-   CuAssertUIntEquals(tc, write_address, result.address);
-   CuAssertPtrNotNull(tc, result.data);
-   CuAssertUIntEquals(tc, total_size, result.size);
-   CuAssertIntEquals(tc, 0, memcmp(msg, result.data, total_size));
-   apx_file_manager_receiver_destroy(&recvr);
-   free(msg);
+    }
+    else
+    {
+      CuAssertTrue(tc, result.is_complete);
+    }
+    offset += chunk_size;
+  }
+  CuAssertUIntEquals(tc, write_address, result.address);
+  CuAssertPtrNotNull(tc, result.data);
+  CuAssertUIntEquals(tc, total_size, result.size);
+  CuAssertIntEquals(tc, 0, memcmp(msg, result.data, total_size));
+  apx_file_manager_receiver_destroy(&recvr);
+  free(msg);
 }

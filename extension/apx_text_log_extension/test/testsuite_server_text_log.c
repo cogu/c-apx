@@ -1,21 +1,21 @@
 /*****************************************************************************
-* \file      testsuite_server_text_log.c
-* \author    Conny Gustafsson
-* \date      2019-05-27
-* \brief     Unit tests for server text log
-*
-* Copyright (c) 2019-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      testsuite_server_text_log.c
+ * \author    Conny Gustafsson
+ * \date      2019-05-27
+ * \brief     Unit tests for server text log
+ *
+ * Copyright (c) 2019-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "CuTest.h"
-#include "apx/server.h"
 #include "apx/extension/server_text_log_extension.h"
+#include "apx/server.h"
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -25,7 +25,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_extension_init_shutdown(CuTest* tc);
+static void test_extension_init_shutdown(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -34,23 +34,22 @@ static void test_extension_init_shutdown(CuTest* tc);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testsuite_apx_server_text_log_extension(void)
+CuSuite *testsuite_apx_server_text_log_extension(void)
 {
-   CuSuite* suite = CuSuiteNew();
-   SUITE_ADD_TEST(suite, test_extension_init_shutdown);
-   return suite;
+  CuSuite *suite = CuSuiteNew();
+  SUITE_ADD_TEST(suite, test_extension_init_shutdown);
+  return suite;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void test_extension_init_shutdown(CuTest* tc)
+static void test_extension_init_shutdown(CuTest *tc)
 {
-   apx_server_t apx_server;
-   dtl_hv_t *extension_cfg = NULL;
-   apx_server_create(&apx_server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_text_log_extension_register(&apx_server, (dtl_dv_t*) extension_cfg));
-   apx_server_start(&apx_server);
-   apx_server_destroy(&apx_server);
+  apx_server_t apx_server;
+  dtl_hv_t *extension_cfg = NULL;
+  apx_server_create(&apx_server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_text_log_extension_register(&apx_server, (dtl_dv_t *)extension_cfg));
+  apx_server_start(&apx_server);
+  apx_server_destroy(&apx_server);
 }
-

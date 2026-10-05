@@ -1,27 +1,27 @@
 /*****************************************************************************
-* \file      server_monitor.h
-* \author    Conny Gustafsson
-* \date      2021-02-28
-* \brief     Part of monitor extension
-*
-* Copyright (c) 2021-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      server_monitor.h
+ * \author    Conny Gustafsson
+ * \date      2021-02-28
+ * \brief     Part of monitor extension
+ *
+ * Copyright (c) 2021-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_SERVER_MONITOR_H
 #define APX_SERVER_MONITOR_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/server_extension.h"
-#include "apx/server_connection.h"
+#include "adt_list.h"
 #include "apx/extension/observed_connection.h"
 #include "apx/file_info.h"
-#include "adt_list.h"
+#include "apx/server_connection.h"
+#include "apx/server_extension.h"
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
-# define WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
 # endif
 # include <Windows.h>
 #else
@@ -38,26 +38,26 @@ struct apx_server_tag;
 
 typedef struct apx_server_monitor_tag
 {
-   struct apx_server_tag* server;
-   void* server_listener_handle;
-   adt_list_t connection_observers; //strong references to apx_observed_connection_t
-   adt_list_t monitor_connections; //weak references to apx_server_connection_t
-   MUTEX_T lock;
+  struct apx_server_tag *server;
+  void *server_listener_handle;
+  adt_list_t connection_observers; // strong references to apx_observed_connection_t
+  adt_list_t monitor_connections; // weak references to apx_server_connection_t
+  MUTEX_T lock;
 } apx_server_monitor_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-void apx_server_monitor_create(apx_server_monitor_t* self, struct apx_server_tag* server);
-void apx_server_monitor_destroy(apx_server_monitor_t* self);
-apx_server_monitor_t* apx_server_monitor_new(struct apx_server_tag* server);
-void apx_server_monitor_delete(apx_server_monitor_t* self);
-int32_t apx_server_monitor_num_connections(apx_server_monitor_t* self);
-apx_observed_connection_t* apx_server_monitor_get_last_observed_connection(apx_server_monitor_t* self);
+void apx_server_monitor_create(apx_server_monitor_t *self, struct apx_server_tag *server);
+void apx_server_monitor_destroy(apx_server_monitor_t *self);
+apx_server_monitor_t *apx_server_monitor_new(struct apx_server_tag *server);
+void apx_server_monitor_delete(apx_server_monitor_t *self);
+int32_t apx_server_monitor_num_connections(apx_server_monitor_t *self);
+apx_observed_connection_t *apx_server_monitor_get_last_observed_connection(apx_server_monitor_t *self);
 
-//Virtual call points
-void apx_server_monitor_virtual_on_new_connection(void* arg, apx_server_connection_t* connection);
-void apx_server_monitor_virtual_on_connection_closed(void* arg, apx_server_connection_t* connection);
-void apx_server_monitor_virtual_on_protocol_header_accepted(void* arg, apx_connection_base_t* connection);
+// Virtual call points
+void apx_server_monitor_virtual_on_new_connection(void *arg, apx_server_connection_t *connection);
+void apx_server_monitor_virtual_on_connection_closed(void *arg, apx_server_connection_t *connection);
+void apx_server_monitor_virtual_on_protocol_header_accepted(void *arg, apx_connection_base_t *connection);
 
-#endif //APX_SERVER_MONITOR_H
+#endif // APX_SERVER_MONITOR_H

@@ -1,39 +1,39 @@
 /*****************************************************************************
-* \file      testsuite_server_socket_connection.c
-* \author    Conny Gustafsson
-* \date      2019-08-04
-* \brief     Unit tests for server socket connection
-*
-* Copyright (c) 2019-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      testsuite_server_socket_connection.c
+ * \author    Conny Gustafsson
+ * \date      2019-08-04
+ * \brief     Unit tests for server socket connection
+ *
+ * Copyright (c) 2019-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
-# define WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
 # endif
-#include <Windows.h>
+# include <Windows.h>
 #else
-#include <unistd.h>
+# include <unistd.h>
 #endif
-#include <stddef.h>
-#include <stdio.h>
-#include <assert.h>
 #include "CuTest.h"
-#include "pack.h"
 #include "apx/extension/socket_server_connection.h"
-#include "apx/server.h"
 #include "apx/extension/socket_server_extension.h"
-#include "apx/server_connection.h"
-#include "testsocket_spy.h"
 #include "apx/file_manager.h"
 #include "apx/numheader.h"
+#include "apx/server.h"
+#include "apx/server_connection.h"
 #include "osmacro.h"
+#include "pack.h"
+#include "testsocket_spy.h"
+#include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 
@@ -43,22 +43,28 @@
 #define DEFAULT_CONNECTION_ID 0
 #define ERROR_MSG_SIZE 150
 
-#define SERVER_RUN(srv, sock) testsocket_run(sock); apx_server_run(srv); SLEEP(50); testsocket_run(sock); apx_server_run(srv)
+#define SERVER_RUN(srv, sock)                                                                                          \
+  testsocket_run(sock);                                                                                                \
+  apx_server_run(srv);                                                                                                 \
+  SLEEP(50);                                                                                                           \
+  testsocket_run(sock);                                                                                                \
+  apx_server_run(srv)
 
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_connection_create(CuTest* tc);
-static void test_each_connection_get_unique_id(CuTest* tc);
-static void test_server_sends_acknowledge_after_accepting_header(CuTest* tc);
+static void test_connection_create(CuTest *tc);
+static void test_each_connection_get_unique_id(CuTest *tc);
+static void test_server_sends_acknowledge_after_accepting_header(CuTest *tc);
 static void test_server_opens_definition_file_after_publication(CuTest *tc);
 static void test_server_parses_definition_data_after_transmission(CuTest *tc);
 static void send_header(testsocket_t *sock);
-static void send_file_info_no_checksum(CuTest* tc, testsocket_t *sock, const char *name, uint32_t startAddress, uint32_t length);
-static void verify_acknowledge(CuTest* tc, testsocket_t *sock);
-static void verify_file_open_request(CuTest* tc, testsocket_t *sock, uint32_t address);
-static void send_file_content(CuTest* tc, testsocket_t *sock, uint32_t address);
+static void send_file_info_no_checksum(
+  CuTest *tc, testsocket_t *sock, const char *name, uint32_t startAddress, uint32_t length);
+static void verify_acknowledge(CuTest *tc, testsocket_t *sock);
+static void verify_file_open_request(CuTest *tc, testsocket_t *sock, uint32_t address);
+static void send_file_content(CuTest *tc, testsocket_t *sock, uint32_t address);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -68,9 +74,9 @@ static void send_file_content(CuTest* tc, testsocket_t *sock, uint32_t address);
 // LOCAL VARIABLES
 //////////////////////////////////////////////////////////////////////////////
 static const char *m_TestNodeDefinition = "APX/1.2\n"
-      "N\"TestNode\"\n"
-      "T\"VehicleSpeed_T\"S\n"
-      "R\"VehicleSpeed\"T[0]:=65535\n";
+                                          "N\"TestNode\"\n"
+                                          "T\"VehicleSpeed_T\"S\n"
+                                          "R\"VehicleSpeed\"T[0]:=65535\n";
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -78,213 +84,216 @@ static const char *m_TestNodeDefinition = "APX/1.2\n"
 //////////////////////////////////////////////////////////////////////////////
 
 
-CuSuite* testsuite_apx_socket_server_connection(void)
+CuSuite *testsuite_apx_socket_server_connection(void)
 {
-   CuSuite* suite = CuSuiteNew();
-   SUITE_ADD_TEST(suite, test_connection_create);
-   SUITE_ADD_TEST(suite, test_each_connection_get_unique_id);
-   SUITE_ADD_TEST(suite, test_server_sends_acknowledge_after_accepting_header);
-   SUITE_ADD_TEST(suite, test_server_opens_definition_file_after_publication);
-   SUITE_ADD_TEST(suite, test_server_parses_definition_data_after_transmission);
-   return suite;
+  CuSuite *suite = CuSuiteNew();
+  SUITE_ADD_TEST(suite, test_connection_create);
+  SUITE_ADD_TEST(suite, test_each_connection_get_unique_id);
+  SUITE_ADD_TEST(suite, test_server_sends_acknowledge_after_accepting_header);
+  SUITE_ADD_TEST(suite, test_server_opens_definition_file_after_publication);
+  SUITE_ADD_TEST(suite, test_server_parses_definition_data_after_transmission);
+  return suite;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void test_connection_create(CuTest* tc)
+static void test_connection_create(CuTest *tc)
 {
-   apx_socket_server_connection_t conn;
-   testsocket_t *sock1;
-   sock1 = testsocket_new(); //apx_socket_server_connection_t takes ownership of this object. No need to manually delete it
-   CuAssertIntEquals(tc, 0, apx_socket_server_connection_create(&conn, sock1));
-   CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
-   CuAssertPtrEquals(tc, sock1, conn.socket_object);
-   apx_socket_server_connection_destroy(&conn);
+  apx_socket_server_connection_t conn;
+  testsocket_t *sock1;
+  sock1 =
+    testsocket_new(); // apx_socket_server_connection_t takes ownership of this object. No need to manually delete it
+  CuAssertIntEquals(tc, 0, apx_socket_server_connection_create(&conn, sock1));
+  CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
+  CuAssertPtrEquals(tc, sock1, conn.socket_object);
+  apx_socket_server_connection_destroy(&conn);
 }
 
-static void test_each_connection_get_unique_id(CuTest* tc)
+static void test_each_connection_get_unique_id(CuTest *tc)
 {
-   apx_server_t server;
-   testsocket_t *sockets[11];
-   apx_server_connection_t *lastConnection;
-   uint32_t connectionIdExpected = 0;
-   int i;
-   apx_server_create(&server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
-   apx_server_start(&server);
+  apx_server_t server;
+  testsocket_t *sockets[11];
+  apx_server_connection_t *lastConnection;
+  uint32_t connectionIdExpected = 0;
+  int i;
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
+  apx_server_start(&server);
 
-   for (i=0;i<10;i++)
-   {
-      char msg[15];
-      sockets[i] = testsocket_new();
-      apx_socket_server_extension_accept_testsocket(sockets[i]);
-      lastConnection = apx_server_get_last_connection(&server);
-      CuAssertPtrNotNull(tc, lastConnection);
-      sprintf(msg, "i=%d",i);
-      CuAssertUIntEquals_Msg(tc, &msg[0], connectionIdExpected++, apx_server_connection_get_connection_id(lastConnection));
-   }
-   //resetting internal variable nextConnectionId to 0 shall still yield next generated ID to be unique
-   server.connection_manager.next_connection_id = 0;
-   sockets[10] = testsocket_new();
-   apx_socket_server_extension_accept_testsocket(sockets[10]);
-   lastConnection = apx_server_get_last_connection(&server);
-   CuAssertPtrNotNull(tc, lastConnection);
-   CuAssertUIntEquals(tc, 10, apx_server_connection_get_connection_id(lastConnection));
-   apx_server_destroy(&server);
+  for (i = 0; i < 10; i++)
+  {
+    char msg[15];
+    sockets[i] = testsocket_new();
+    apx_socket_server_extension_accept_testsocket(sockets[i]);
+    lastConnection = apx_server_get_last_connection(&server);
+    CuAssertPtrNotNull(tc, lastConnection);
+    sprintf(msg, "i=%d", i);
+    CuAssertUIntEquals_Msg(
+      tc, &msg[0], connectionIdExpected++, apx_server_connection_get_connection_id(lastConnection));
+  }
+   // resetting internal variable nextConnectionId to 0 shall still yield next generated ID to be unique
+  server.connection_manager.next_connection_id = 0;
+  sockets[10] = testsocket_new();
+  apx_socket_server_extension_accept_testsocket(sockets[10]);
+  lastConnection = apx_server_get_last_connection(&server);
+  CuAssertPtrNotNull(tc, lastConnection);
+  CuAssertUIntEquals(tc, 10, apx_server_connection_get_connection_id(lastConnection));
+  apx_server_destroy(&server);
 }
 
-static void test_server_sends_acknowledge_after_accepting_header(CuTest* tc)
+static void test_server_sends_acknowledge_after_accepting_header(CuTest *tc)
 {
-   apx_server_t server;
-   testsocket_t *sock;
-   testsocket_spy_create();
-   sock = testsocket_spy_client();
-   apx_server_create(&server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
-   apx_server_start(&server);
-   apx_socket_server_extension_accept_testsocket(sock);
-   testsocket_on_connect(sock);
-   send_header(sock);
-   SERVER_RUN(&server, sock);
-   verify_acknowledge(tc, sock);
-   apx_server_destroy(&server);
-   testsocket_spy_destroy();
+  apx_server_t server;
+  testsocket_t *sock;
+  testsocket_spy_create();
+  sock = testsocket_spy_client();
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
+  apx_server_start(&server);
+  apx_socket_server_extension_accept_testsocket(sock);
+  testsocket_on_connect(sock);
+  send_header(sock);
+  SERVER_RUN(&server, sock);
+  verify_acknowledge(tc, sock);
+  apx_server_destroy(&server);
+  testsocket_spy_destroy();
 }
 
 static void test_server_opens_definition_file_after_publication(CuTest *tc)
 {
-   apx_server_t server;
-   testsocket_t *sock;
-   testsocket_spy_create();
-   sock = testsocket_spy_client();
-   apx_server_create(&server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
-   apx_server_start(&server);
-   apx_socket_server_extension_accept_testsocket(sock);
-   testsocket_on_connect(sock);
-   send_header(sock);
-   SERVER_RUN(&server, sock);
-   verify_acknowledge(tc, sock);
-   send_file_info_no_checksum(tc, sock, "TestNode.apx", APX_DEFINITION_ADDRESS_START, (uint32_t) strlen(m_TestNodeDefinition));
-   SERVER_RUN(&server, sock);
-   verify_file_open_request(tc, sock, APX_DEFINITION_ADDRESS_START);
-   apx_server_destroy(&server);
-   testsocket_spy_destroy();
+  apx_server_t server;
+  testsocket_t *sock;
+  testsocket_spy_create();
+  sock = testsocket_spy_client();
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
+  apx_server_start(&server);
+  apx_socket_server_extension_accept_testsocket(sock);
+  testsocket_on_connect(sock);
+  send_header(sock);
+  SERVER_RUN(&server, sock);
+  verify_acknowledge(tc, sock);
+  send_file_info_no_checksum(
+    tc, sock, "TestNode.apx", APX_DEFINITION_ADDRESS_START, (uint32_t)strlen(m_TestNodeDefinition));
+  SERVER_RUN(&server, sock);
+  verify_file_open_request(tc, sock, APX_DEFINITION_ADDRESS_START);
+  apx_server_destroy(&server);
+  testsocket_spy_destroy();
 }
 
 static void test_server_parses_definition_data_after_transmission(CuTest *tc)
 {
-   apx_server_t server;
-   testsocket_t *sock;
-   unsigned int const definition_size = (unsigned int) strlen(m_TestNodeDefinition);
-   uint32_t definitionAddress = APX_DEFINITION_ADDRESS_START;
-   uint32_t dummy;
-   testsocket_spy_create();
-   sock = testsocket_spy_client();
-   apx_server_create(&server);
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
-   apx_server_start(&server);
-   apx_socket_server_extension_accept_testsocket(sock);
-   testsocket_on_connect(sock);
-   send_header(sock);
-   SERVER_RUN(&server, sock);
-   testsocket_spy_clear_received_data();
-   send_file_info_no_checksum(tc, sock, "TestNode.apx", definitionAddress, (uint32_t)definition_size);
-   SERVER_RUN(&server, sock);
-   verify_file_open_request(tc, sock, definitionAddress);
-   CuAssertPtrEquals(tc, NULL, (void*) testsocket_spy_get_received_data(&dummy));
-   apx_server_connection_t *connection = apx_server_get_last_connection(&server);
-   CuAssertPtrNotNull(tc, connection);
-   apx_node_instance_t *node_instance = apx_node_manager_find(connection->base.node_manager, "TestNode");
-   CuAssertPtrNotNull(tc, node_instance);
-   send_file_content(tc, sock, definitionAddress);
-   SERVER_RUN(&server, sock);
-   apx_node_data_t const* node_data = apx_node_instance_get_const_node_data(node_instance);
-   CuAssertPtrNotNull(tc, node_data);
-   CuAssertUIntEquals(tc, definition_size, apx_node_data_definition_data_size(node_data));
-   CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_node_instance_get_definition_data_state(node_instance));
+  apx_server_t server;
+  testsocket_t *sock;
+  unsigned int const definition_size = (unsigned int)strlen(m_TestNodeDefinition);
+  uint32_t definitionAddress = APX_DEFINITION_ADDRESS_START;
+  uint32_t dummy;
+  testsocket_spy_create();
+  sock = testsocket_spy_client();
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_extension_register(&server, NULL));
+  apx_server_start(&server);
+  apx_socket_server_extension_accept_testsocket(sock);
+  testsocket_on_connect(sock);
+  send_header(sock);
+  SERVER_RUN(&server, sock);
+  testsocket_spy_clear_received_data();
+  send_file_info_no_checksum(tc, sock, "TestNode.apx", definitionAddress, (uint32_t)definition_size);
+  SERVER_RUN(&server, sock);
+  verify_file_open_request(tc, sock, definitionAddress);
+  CuAssertPtrEquals(tc, NULL, (void *)testsocket_spy_get_received_data(&dummy));
+  apx_server_connection_t *connection = apx_server_get_last_connection(&server);
+  CuAssertPtrNotNull(tc, connection);
+  apx_node_instance_t *node_instance = apx_node_manager_find(connection->base.node_manager, "TestNode");
+  CuAssertPtrNotNull(tc, node_instance);
+  send_file_content(tc, sock, definitionAddress);
+  SERVER_RUN(&server, sock);
+  apx_node_data_t const *node_data = apx_node_instance_get_const_node_data(node_instance);
+  CuAssertPtrNotNull(tc, node_data);
+  CuAssertUIntEquals(tc, definition_size, apx_node_data_definition_data_size(node_data));
+  CuAssertIntEquals(tc, APX_DATA_STATE_SYNCHRONIZED, apx_node_instance_get_definition_data_state(node_instance));
 
-   apx_server_destroy(&server);
-   testsocket_spy_destroy();
+  apx_server_destroy(&server);
+  testsocket_spy_destroy();
 }
 
 static void send_header(testsocket_t *sock)
 {
-   const char *greeting = "RMFP/1.1\nMessage-Size:32\n\n";
-   int32_t msgLen;
-   uint8_t msg[RMF_GREETING_MAX_LEN];
-   msgLen = (int32_t) strlen(greeting);
-   msg[0] = (uint8_t) msgLen;
-   memcpy(&msg[1], greeting, msgLen);
-   testsocket_client_send(sock, &msg[0], 1+msgLen);
+  const char *greeting = "RMFP/1.1\nMessage-Size:32\n\n";
+  int32_t msgLen;
+  uint8_t msg[RMF_GREETING_MAX_LEN];
+  msgLen = (int32_t)strlen(greeting);
+  msg[0] = (uint8_t)msgLen;
+  memcpy(&msg[1], greeting, msgLen);
+  testsocket_client_send(sock, &msg[0], 1 + msgLen);
 }
 
-static void send_file_info_no_checksum(CuTest* tc, testsocket_t *sock, const char *name, uint32_t startAddress, uint32_t length)
+static void send_file_info_no_checksum(
+  CuTest *tc, testsocket_t *sock, const char *name, uint32_t startAddress, uint32_t length)
 {
-   apx_size_t msgLen = 0;
-   uint8_t buf[RMF_CMD_AREA_SIZE];
-   rmf_file_info_t* file_info = rmf_file_info_make_fixed(name, length, startAddress);
-   CuAssertPtrNotNull(tc, file_info);
+  apx_size_t msgLen = 0;
+  uint8_t buf[RMF_CMD_AREA_SIZE];
+  rmf_file_info_t *file_info = rmf_file_info_make_fixed(name, length, startAddress);
+  CuAssertPtrNotNull(tc, file_info);
 
-   msgLen += rmf_address_encode(&buf[1+msgLen], (apx_size_t)(sizeof(buf)-msgLen), RMF_CMD_AREA_START_ADDRESS, false);
-   msgLen += rmf_encode_publish_file_cmd(&buf[1+msgLen], (apx_size_t)(sizeof(buf)-msgLen), file_info);
-   rmf_file_info_delete(file_info);
-   CuAssertUIntEquals(tc, 65, msgLen);
-   buf[0]=(uint8_t) msgLen;
-   testsocket_client_send(sock, &buf[0], (uint32_t)(1+msgLen));
-
+  msgLen += rmf_address_encode(&buf[1 + msgLen], (apx_size_t)(sizeof(buf) - msgLen), RMF_CMD_AREA_START_ADDRESS, false);
+  msgLen += rmf_encode_publish_file_cmd(&buf[1 + msgLen], (apx_size_t)(sizeof(buf) - msgLen), file_info);
+  rmf_file_info_delete(file_info);
+  CuAssertUIntEquals(tc, 65, msgLen);
+  buf[0] = (uint8_t)msgLen;
+  testsocket_client_send(sock, &buf[0], (uint32_t)(1 + msgLen));
 }
 
-static void verify_acknowledge(CuTest* tc, testsocket_t *sock)
+static void verify_acknowledge(CuTest *tc, testsocket_t *sock)
 {
-   uint32_t len;
-   int32_t i;
-   const uint8_t expected[13] = {12, 0xBF, 0xFF, 0xFC, 0x00, RMF_CMD_ACCEPT_HEADER, 0, 0, 0, 0, 0, 0, 0};
-   const uint8_t *data;
-   (void)sock;
-   data = testsocket_spy_get_received_data(&len);
-   CuAssertUIntEquals(tc, sizeof(expected), len);
-   for(i=0;i<(int32_t) sizeof(expected);i++)
-   {
-      char msg[14];
-      sprintf(msg, "i=%d",i);
-      CuAssertIntEquals_Msg(tc, msg, expected[i], data[i]);
-   }
-   testsocket_spy_clear_received_data();
+  uint32_t len;
+  int32_t i;
+  const uint8_t expected[13] = {12, 0xBF, 0xFF, 0xFC, 0x00, RMF_CMD_ACCEPT_HEADER, 0, 0, 0, 0, 0, 0, 0};
+  const uint8_t *data;
+  (void)sock;
+  data = testsocket_spy_get_received_data(&len);
+  CuAssertUIntEquals(tc, sizeof(expected), len);
+  for (i = 0; i < (int32_t)sizeof(expected); i++)
+  {
+    char msg[14];
+    sprintf(msg, "i=%d", i);
+    CuAssertIntEquals_Msg(tc, msg, expected[i], data[i]);
+  }
+  testsocket_spy_clear_received_data();
 }
 
-static void verify_file_open_request(CuTest* tc, testsocket_t *sock, uint32_t address)
+static void verify_file_open_request(CuTest *tc, testsocket_t *sock, uint32_t address)
 {
-   uint32_t len;
-   int32_t i;
-   uint8_t expected[12+1] = {12, 0xBF, 0xFF, 0xFC, 0x00, RMF_CMD_OPEN_FILE_MSG, 0, 0, 0, 0, 0, 0, 0};
-   const uint8_t *data;
-   (void)sock;
-   packLE(&expected[9], address, 4);
-   data = testsocket_spy_get_received_data(&len);
-   CuAssertUIntEquals(tc, RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + UINT32_SIZE+ 1, len);
-   for(i=0;i<(int32_t) sizeof(expected);i++)
-   {
-      char msg[ERROR_MSG_SIZE];
-      sprintf(msg, "i=%d",i);
-      CuAssertIntEquals_Msg(tc, msg, expected[i], data[i]);
-   }
-   testsocket_spy_clear_received_data();
+  uint32_t len;
+  int32_t i;
+  uint8_t expected[12 + 1] = {12, 0xBF, 0xFF, 0xFC, 0x00, RMF_CMD_OPEN_FILE_MSG, 0, 0, 0, 0, 0, 0, 0};
+  const uint8_t *data;
+  (void)sock;
+  packLE(&expected[9], address, 4);
+  data = testsocket_spy_get_received_data(&len);
+  CuAssertUIntEquals(tc, RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + UINT32_SIZE + 1, len);
+  for (i = 0; i < (int32_t)sizeof(expected); i++)
+  {
+    char msg[ERROR_MSG_SIZE];
+    sprintf(msg, "i=%d", i);
+    CuAssertIntEquals_Msg(tc, msg, expected[i], data[i]);
+  }
+  testsocket_spy_clear_received_data();
 }
 
-static void send_file_content(CuTest* tc, testsocket_t *sock, uint32_t address)
+static void send_file_content(CuTest *tc, testsocket_t *sock, uint32_t address)
 {
-   uint8_t bufData[200];
-   apx_size_t msgLen = 0;
-   uint32_t dataLen = (uint32_t) strlen(m_TestNodeDefinition);
-   uint32_t bufLen=(uint32_t) sizeof(bufData);
-   (void)tc;
-   msgLen += rmf_address_encode(&bufData[1+msgLen], bufLen, address, false);
-   memcpy(&bufData[1+msgLen], &m_TestNodeDefinition[0], dataLen);
-   msgLen += dataLen;
-   bufData[1+msgLen] = '\0';
-   assert((uint32_t) msgLen <= NUMHEADER32_MAX_NUM_SHORT);
-   bufData[0]=(uint8_t) msgLen;
-   testsocket_client_send(sock, &bufData[0], (uint32_t)(1+msgLen));
+  uint8_t bufData[200];
+  apx_size_t msgLen = 0;
+  uint32_t dataLen = (uint32_t)strlen(m_TestNodeDefinition);
+  uint32_t bufLen = (uint32_t)sizeof(bufData);
+  (void)tc;
+  msgLen += rmf_address_encode(&bufData[1 + msgLen], bufLen, address, false);
+  memcpy(&bufData[1 + msgLen], &m_TestNodeDefinition[0], dataLen);
+  msgLen += dataLen;
+  bufData[1 + msgLen] = '\0';
+  assert((uint32_t)msgLen <= NUMHEADER32_MAX_NUM_SHORT);
+  bufData[0] = (uint8_t)msgLen;
+  testsocket_client_send(sock, &bufData[0], (uint32_t)(1 + msgLen));
 }

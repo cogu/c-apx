@@ -1,22 +1,22 @@
 /*****************************************************************************
-* \file      file_manager_shared.c
-* \author    Conny Gustafsson
-* \date      2020-01-23
-* \brief     APX Filemanager shared data
-*
-* Copyright (c) 2020-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      file_manager_shared.c
+ * \author    Conny Gustafsson
+ * \date      2020-01-23
+ * \brief     APX Filemanager shared data
+ *
+ * Copyright (c) 2020-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <string.h>
-#include <assert.h>
-#include "adt_list.h"
 #include "apx/file_manager_shared.h"
+#include "adt_list.h"
+#include <assert.h>
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 
@@ -27,7 +27,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void set_connection(apx_file_manager_shared_t* self, apx_connection_interface_t const* connection);
+static void set_connection(apx_file_manager_shared_t *self, apx_connection_interface_t const *connection);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -37,270 +37,272 @@ static void set_connection(apx_file_manager_shared_t* self, apx_connection_inter
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_file_manager_shared_create(apx_file_manager_shared_t* self, apx_connection_interface_t const* parent_connection, apx_allocator_t* allocator)
+void apx_file_manager_shared_create(
+  apx_file_manager_shared_t *self, apx_connection_interface_t const *parent_connection, apx_allocator_t *allocator)
 {
-   if (self != NULL)
-   {
-      set_connection(self, parent_connection);
-      self->connection_id = APX_INVALID_CONNECTION_ID;
-      self->is_connected = false;
-      self->allocator = allocator;
-      apx_file_map_create(&self->local_file_map, false);
-      apx_file_map_create(&self->remote_file_map, true);
-      MUTEX_INIT(self->lock);
-   }
+  if (self != NULL)
+  {
+    set_connection(self, parent_connection);
+    self->connection_id = APX_INVALID_CONNECTION_ID;
+    self->is_connected = false;
+    self->allocator = allocator;
+    apx_file_map_create(&self->local_file_map, false);
+    apx_file_map_create(&self->remote_file_map, true);
+    MUTEX_INIT(self->lock);
+  }
 }
 
 void apx_file_manager_shared_destroy(apx_file_manager_shared_t *self)
 {
-   if (self != NULL)
-   {
-      apx_file_map_destroy(&self->local_file_map);
-      apx_file_map_destroy(&self->remote_file_map);
-      MUTEX_DESTROY(self->lock);
-   }
+  if (self != NULL)
+  {
+    apx_file_map_destroy(&self->local_file_map);
+    apx_file_map_destroy(&self->remote_file_map);
+    MUTEX_DESTROY(self->lock);
+  }
 }
 
-void apx_file_manager_shared_start(apx_file_manager_shared_t* self)
+void apx_file_manager_shared_start(apx_file_manager_shared_t *self)
 {
-   if (self != NULL)
-   {
-      assert(self->parent_connection.get_connection_id != NULL);
-      self->connection_id = self->parent_connection.get_connection_id(self->parent_connection.arg);
-   }
+  if (self != NULL)
+  {
+    assert(self->parent_connection.get_connection_id != NULL);
+    self->connection_id = self->parent_connection.get_connection_id(self->parent_connection.arg);
+  }
 }
 
-apx_file_t* apx_file_manager_shared_create_local_file(apx_file_manager_shared_t* self, const rmf_file_info_t* file_info)
+apx_file_t *apx_file_manager_shared_create_local_file(apx_file_manager_shared_t *self, const rmf_file_info_t *file_info)
 {
-   if ( (self != NULL) && (file_info != NULL) )
-   {
-      apx_file_t* file = NULL;
-      MUTEX_LOCK(self->lock);
-      file = apx_file_map_create_file(&self->local_file_map, file_info);
-      MUTEX_UNLOCK(self->lock);
-      return file;
-   }
-   return NULL;
+  if ((self != NULL) && (file_info != NULL))
+  {
+    apx_file_t *file = NULL;
+    MUTEX_LOCK(self->lock);
+    file = apx_file_map_create_file(&self->local_file_map, file_info);
+    MUTEX_UNLOCK(self->lock);
+    return file;
+  }
+  return NULL;
 }
 
-apx_file_t* apx_file_manager_shared_create_remote_file(apx_file_manager_shared_t* self, const rmf_file_info_t* file_info)
+apx_file_t *apx_file_manager_shared_create_remote_file(
+  apx_file_manager_shared_t *self, const rmf_file_info_t *file_info)
 {
-   if ((self != NULL) && (file_info != NULL))
-   {
-      apx_file_t* file = NULL;
-      MUTEX_LOCK(self->lock);
-      file = apx_file_map_create_file(&self->remote_file_map, file_info);
-      MUTEX_UNLOCK(self->lock);
-      return file;
-   }
-   return NULL;
+  if ((self != NULL) && (file_info != NULL))
+  {
+    apx_file_t *file = NULL;
+    MUTEX_LOCK(self->lock);
+    file = apx_file_map_create_file(&self->remote_file_map, file_info);
+    MUTEX_UNLOCK(self->lock);
+    return file;
+  }
+  return NULL;
 }
 
-int32_t apx_file_manager_shared_get_num_local_files(apx_file_manager_shared_t* self)
+int32_t apx_file_manager_shared_get_num_local_files(apx_file_manager_shared_t *self)
 {
-   if (self != NULL)
-   {
-      int32_t retval;
-      MUTEX_LOCK(self->lock);
-      retval = apx_file_map_length(&self->local_file_map);
-      MUTEX_UNLOCK(self->lock);
-      return retval;
-   }
-   return -1;
+  if (self != NULL)
+  {
+    int32_t retval;
+    MUTEX_LOCK(self->lock);
+    retval = apx_file_map_length(&self->local_file_map);
+    MUTEX_UNLOCK(self->lock);
+    return retval;
+  }
+  return -1;
 }
 
-int32_t apx_file_manager_shared_get_num_remote_files(apx_file_manager_shared_t* self)
+int32_t apx_file_manager_shared_get_num_remote_files(apx_file_manager_shared_t *self)
 {
-   if (self != NULL)
-   {
-      int32_t retval;
-      MUTEX_LOCK(self->lock);
-      retval = apx_file_map_length(&self->remote_file_map);
-      MUTEX_UNLOCK(self->lock);
-      return retval;
-   }
-   return -1;
+  if (self != NULL)
+  {
+    int32_t retval;
+    MUTEX_LOCK(self->lock);
+    retval = apx_file_map_length(&self->remote_file_map);
+    MUTEX_UNLOCK(self->lock);
+    return retval;
+  }
+  return -1;
 }
 
-apx_file_t* apx_file_manager_shared_find_local_file_by_name(apx_file_manager_shared_t* self, const char* name)
+apx_file_t *apx_file_manager_shared_find_local_file_by_name(apx_file_manager_shared_t *self, const char *name)
 {
-   if ( (self != NULL) && (name != NULL) )
-   {
-      apx_file_t *file;
-      MUTEX_LOCK(self->lock);
-      file = apx_file_map_find_by_name(&self->local_file_map, name);
-      MUTEX_UNLOCK(self->lock);
-      return file;
-   }
-   return NULL;
+  if ((self != NULL) && (name != NULL))
+  {
+    apx_file_t *file;
+    MUTEX_LOCK(self->lock);
+    file = apx_file_map_find_by_name(&self->local_file_map, name);
+    MUTEX_UNLOCK(self->lock);
+    return file;
+  }
+  return NULL;
 }
 
-apx_file_t* apx_file_manager_shared_find_remote_file_by_name(apx_file_manager_shared_t* self, const char* name)
+apx_file_t *apx_file_manager_shared_find_remote_file_by_name(apx_file_manager_shared_t *self, const char *name)
 {
-   if ( (self != NULL) && (name != NULL) )
-   {
-      apx_file_t *localFile;
-      MUTEX_LOCK(self->lock);
-      localFile = apx_file_map_find_by_name(&self->remote_file_map, name);
-      MUTEX_UNLOCK(self->lock);
-      return localFile;
-   }
-   return NULL;
+  if ((self != NULL) && (name != NULL))
+  {
+    apx_file_t *localFile;
+    MUTEX_LOCK(self->lock);
+    localFile = apx_file_map_find_by_name(&self->remote_file_map, name);
+    MUTEX_UNLOCK(self->lock);
+    return localFile;
+  }
+  return NULL;
 }
 
-apx_file_t* apx_file_manager_shared_find_file_by_address(apx_file_manager_shared_t* self, uint32_t address)
+apx_file_t *apx_file_manager_shared_find_file_by_address(apx_file_manager_shared_t *self, uint32_t address)
 {
-   if ( (self != NULL) && (address != RMF_INVALID_ADDRESS))
-   {
-      apx_file_t *file;
-      uint32_t address_without_flags = address & RMF_ADDRESS_MASK_INTERNAL;
-      MUTEX_LOCK(self->lock);
-      if ( (address & RMF_REMOTE_ADDRESS_BIT) != 0u)
+  if ((self != NULL) && (address != RMF_INVALID_ADDRESS))
+  {
+    apx_file_t *file;
+    uint32_t address_without_flags = address & RMF_ADDRESS_MASK_INTERNAL;
+    MUTEX_LOCK(self->lock);
+    if ((address & RMF_REMOTE_ADDRESS_BIT) != 0u)
+    {
+      file = apx_file_map_find_by_address(&self->remote_file_map, address_without_flags);
+    }
+    else
+    {
+      file = apx_file_map_find_by_address(&self->local_file_map, address_without_flags);
+    }
+    MUTEX_UNLOCK(self->lock);
+    return file;
+  }
+  return (apx_file_t *)NULL;
+}
+
+uint32_t apx_file_manager_shared_get_connection_id(apx_file_manager_shared_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->connection_id;
+  }
+  return APX_INVALID_CONNECTION_ID;
+}
+
+apx_connection_type_t apx_file_manager_shared_get_connection_type(apx_file_manager_shared_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->connection_type;
+  }
+  return APX_CONNECTION_TYPE_DEFAULT;
+}
+
+
+rmf_version_id_t apx_file_manager_shared_get_remotefile_version_id(apx_file_manager_shared_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->remote_file_version_id;
+  }
+  return RMF_PROTOCOL_VERSION_ID_NONE;
+}
+
+int32_t apx_file_manager_shared_copy_local_file_info(apx_file_manager_shared_t *self, adt_ary_t *array)
+{
+  if ((self != NULL) && (array != NULL))
+  {
+    int32_t num_items = 0;
+    adt_list_t const *list;
+    adt_list_elem_t *iter;
+    MUTEX_LOCK(self->lock);
+    list = apx_file_map_get_list(&self->local_file_map);
+    assert(list != NULL);
+    iter = adt_list_iter_first(list);
+    while (iter != NULL)
+    {
+      apx_file_t *file = (apx_file_t *)iter->pItem;
+      assert(file != NULL);
+      rmf_file_info_t *file_info = rmf_file_info_clone(apx_file_get_file_info(file));
+      if (file_info == NULL)
       {
-         file = apx_file_map_find_by_address(&self->remote_file_map, address_without_flags);
+            // out of memory error occured
+        MUTEX_UNLOCK(self->lock);
+        return -1;
       }
-      else
-      {
-         file = apx_file_map_find_by_address(&self->local_file_map, address_without_flags);
-      }
-      MUTEX_UNLOCK(self->lock);
-      return file;
-   }
-   return (apx_file_t*) NULL;
+      adt_ary_push(array, file_info);
+      num_items++;
+      iter = adt_list_iter_next(iter);
+    }
+    MUTEX_UNLOCK(self->lock);
+    return num_items;
+  }
+  return -1;
 }
 
-uint32_t apx_file_manager_shared_get_connection_id(apx_file_manager_shared_t const* self)
+void apx_file_manager_shared_connected(apx_file_manager_shared_t *self)
 {
-   if (self != NULL)
-   {
-      return self->connection_id;
-   }
-   return APX_INVALID_CONNECTION_ID;
+  if (self != NULL)
+  {
+    assert(self->parent_connection.get_remotefile_protocol_version_id != NULL);
+    assert(self->parent_connection.get_connection_type != NULL);
+    self->remote_file_version_id =
+      self->parent_connection.get_remotefile_protocol_version_id(self->parent_connection.arg);
+    self->connection_type = self->parent_connection.get_connection_type(self->parent_connection.arg);
+    MUTEX_LOCK(self->lock);
+    self->is_connected = true;
+    MUTEX_UNLOCK(self->lock);
+  }
 }
 
-apx_connection_type_t apx_file_manager_shared_get_connection_type(apx_file_manager_shared_t const* self)
+void apx_file_manager_shared_disconnected(apx_file_manager_shared_t *self)
 {
-   if (self != NULL)
-   {
-      return self->connection_type;
-   }
-   return APX_CONNECTION_TYPE_DEFAULT;
-}
-
-
-rmf_version_id_t apx_file_manager_shared_get_remotefile_version_id(apx_file_manager_shared_t const* self)
-{
-   if (self != NULL)
-   {
-      return self->remote_file_version_id;
-   }
-   return RMF_PROTOCOL_VERSION_ID_NONE;
-}
-
-int32_t apx_file_manager_shared_copy_local_file_info(apx_file_manager_shared_t* self, adt_ary_t* array)
-{
-   if ( (self != NULL) && (array != NULL) )
-   {
-      int32_t num_items = 0;
-      adt_list_t const* list;
-      adt_list_elem_t* iter;
-      MUTEX_LOCK(self->lock);
-      list = apx_file_map_get_list(&self->local_file_map);
-      assert(list != NULL);
-      iter = adt_list_iter_first(list);
-      while (iter != NULL)
-      {
-         apx_file_t* file = (apx_file_t*)iter->pItem;
-         assert(file != NULL);
-         rmf_file_info_t* file_info = rmf_file_info_clone(apx_file_get_file_info(file));
-         if (file_info == NULL)
-         {
-            //out of memory error occured
-            MUTEX_UNLOCK(self->lock);
-            return -1;
-         }
-         adt_ary_push(array, file_info);
-         num_items++;
-         iter = adt_list_iter_next(iter);
-      }
-      MUTEX_UNLOCK(self->lock);
-      return num_items;
-   }
-   return -1;
-}
-
-void apx_file_manager_shared_connected(apx_file_manager_shared_t* self)
-{
-   if (self != NULL)
-   {
-      assert(self->parent_connection.get_remotefile_protocol_version_id != NULL);
-      assert(self->parent_connection.get_connection_type != NULL);
-      self->remote_file_version_id = self->parent_connection.get_remotefile_protocol_version_id(self->parent_connection.arg);
-      self->connection_type = self->parent_connection.get_connection_type(self->parent_connection.arg);
-      MUTEX_LOCK(self->lock);
-      self->is_connected = true;
-      MUTEX_UNLOCK(self->lock);
-   }
-}
-
-void apx_file_manager_shared_disconnected(apx_file_manager_shared_t* self)
-{
-   if (self != NULL)
-   {
-      MUTEX_LOCK(self->lock);
-      self->is_connected = false;
-      MUTEX_UNLOCK(self->lock);
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->lock);
+    self->is_connected = false;
+    MUTEX_UNLOCK(self->lock);
 #if APX_DEBUG_ENABLE
-      printf("[FILE-MANAGER %u] Disabled transmit handler\n", (unsigned int) self->connection_id);
+    printf("[FILE-MANAGER %u] Disabled transmit handler\n", (unsigned int)self->connection_id);
 #endif
-   }
+  }
 }
 
-bool apx_file_manager_shared_is_connected(apx_file_manager_shared_t* self)
+bool apx_file_manager_shared_is_connected(apx_file_manager_shared_t *self)
 {
-   if (self != NULL)
-   {
-      bool retval;
-      MUTEX_LOCK(self->lock);
-      retval = self->is_connected;
-      MUTEX_UNLOCK(self->lock);
-      return retval;
-   }
-   return false;
+  if (self != NULL)
+  {
+    bool retval;
+    MUTEX_LOCK(self->lock);
+    retval = self->is_connected;
+    MUTEX_UNLOCK(self->lock);
+    return retval;
+  }
+  return false;
 }
 
-apx_connection_interface_t const* apx_file_manager_shared_connection(apx_file_manager_shared_t const* self)
+apx_connection_interface_t const *apx_file_manager_shared_connection(apx_file_manager_shared_t const *self)
 {
-   if (self != NULL)
-   {
-      return &self->parent_connection;
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return &self->parent_connection;
+  }
+  return NULL;
 }
 
-apx_allocator_t* apx_file_manager_shared_allocator(apx_file_manager_shared_t const* self)
+apx_allocator_t *apx_file_manager_shared_allocator(apx_file_manager_shared_t const *self)
 {
-   if (self != NULL)
-   {
-      return self->allocator;
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return self->allocator;
+  }
+  return NULL;
 }
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static void set_connection(apx_file_manager_shared_t* self, apx_connection_interface_t const* connection)
+static void set_connection(apx_file_manager_shared_t *self, apx_connection_interface_t const *connection)
 {
-   assert(self != NULL);
-   if (connection != NULL)
-   {
-      memcpy(&self->parent_connection, connection, sizeof(apx_connection_interface_t));
-   }
-   else
-   {
-      memset(&self->parent_connection, 0, sizeof(apx_connection_interface_t));
-   }
+  assert(self != NULL);
+  if (connection != NULL)
+  {
+    memcpy(&self->parent_connection, connection, sizeof(apx_connection_interface_t));
+  }
+  else
+  {
+    memset(&self->parent_connection, 0, sizeof(apx_connection_interface_t));
+  }
 }
-

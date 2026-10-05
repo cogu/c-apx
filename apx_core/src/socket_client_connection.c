@@ -1,65 +1,65 @@
 /*****************************************************************************
-* \file      socket_client_connection.c
-* \author    Conny Gustafsson
-* \date      2018-12-31
-* \brief     Client socket connection class
-*
-* Copyright (c) 2018-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      socket_client_connection.c
+ * \author    Conny Gustafsson
+ * \date      2018-12-31
+ * \brief     Client socket connection class
+ *
+ * Copyright (c) 2018-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include <assert.h>
 #include <malloc.h>
 #include <string.h>
-#include <assert.h>
 #ifdef _MSC_VER
 # ifndef WIN32_LEAN_AND_MEAN
-# define WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
 # endif
-#include <Windows.h>
+# include <Windows.h>
 #endif
 #ifdef UNIT_TEST
-#include "testsocket.h"
+# include "testsocket.h"
 #else
-#include "msocket.h"
-#if defined(MSOCKET_ENABLE_TLS)
-#include "msocket_tls.h"
-#endif
+# include "msocket.h"
+# if defined(MSOCKET_ENABLE_TLS)
+#  include "msocket_tls.h"
+# endif
 #endif
 #include "apx/socket_client_connection.h"
-//#include "apx/logging.h"
+// #include "apx/logging.h"
 #include "apx/file_manager.h"
 #include "apx/numheader.h"
 #include "bstr.h"
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define SEND_BUFFER_GROW_SIZE 4096 //4KB
-//#define MAX_DEBUG_BYTES 100
-//#define MAX_DEBUG_MSG_SIZE 400
-//#define HEX_DATA_LEN 3u
+#define SEND_BUFFER_GROW_SIZE 4096 // 4KB
+// #define MAX_DEBUG_BYTES 100
+// #define MAX_DEBUG_MSG_SIZE 400
+// #define HEX_DATA_LEN 3u
 
 #ifdef UNIT_TEST
-#define SOCKET_TYPE testsocket_t
-#define SOCKET_OBJECT_DELETE testsocket_delete
-#define SOCKET_START_IO(x)
-#define SOCKET_SET_HANDLER testsocket_set_client_handler
-#define SOCKET_SEND testsocket_client_send
-#define SOCKET_OBJECT_CLOSE(x)
+# define SOCKET_TYPE testsocket_t
+# define SOCKET_OBJECT_DELETE testsocket_delete
+# define SOCKET_START_IO(x)
+# define SOCKET_SET_HANDLER testsocket_set_client_handler
+# define SOCKET_SEND testsocket_client_send
+# define SOCKET_OBJECT_CLOSE(x)
 #else
-#define SOCKET_OBJECT_DELETE msocket_delete
-#define SOCKET_TYPE msocket_t
-#define SOCKET_START_IO(x) msocket_start_io(x)
-#define SOCKET_SET_HANDLER msocket_sethandler
-#define SOCKET_SEND msocket_send
-#define SOCKET_OBJECT_CLOSE(x) msocket_close(x)
+# define SOCKET_OBJECT_DELETE msocket_delete
+# define SOCKET_TYPE msocket_t
+# define SOCKET_START_IO(x) msocket_start_io(x)
+# define SOCKET_SET_HANDLER msocket_sethandler
+# define SOCKET_SEND msocket_send
+# define SOCKET_OBJECT_CLOSE(x) msocket_close(x)
 #endif
 
 
@@ -67,27 +67,31 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void register_msocket_handler(apx_client_socket_connection_t *self, SOCKET_TYPE *socketObject);
-static void create_connection_interface_vtable(apx_client_socket_connection_t* self, apx_connection_interface_t* interface);
+static void create_connection_interface_vtable(
+  apx_client_socket_connection_t *self, apx_connection_interface_t *interface);
 
-//msocket API
+// msocket API
 static void on_socket_connected(void *arg, void *socket, const char *addr, uint16_t port);
-static void on_socket_disconnected(void* arg, void *socket);
-static msocket_error_t on_socket_data(void* arg, void *socket, const uint8_t* data, const uint32_t num_bytes, uint32_t* consumed_bytes, uint32_t* msg_size_hint);
+static void on_socket_disconnected(void *arg, void *socket);
+static msocket_error_t on_socket_data(void *arg, void *socket, const uint8_t *data, const uint32_t num_bytes,
+  uint32_t *consumed_bytes, uint32_t *msg_size_hint);
 
-//APX BaseConnection API
+// APX BaseConnection API
 static void apx_client_socket_connection_close(apx_client_socket_connection_t *self);
 static void apx_client_socket_connection_vclose(void *arg);
 static void apx_client_socket_connection_start(apx_client_socket_connection_t *self);
 static void apx_client_socket_connection_vstart(void *arg);
 
 // ConnectionInterface API
-static int32_t apx_client_socket_connection_transmit_max_bytes_avaiable(apx_client_socket_connection_t* self);
-static int32_t apx_client_socket_connection_transmit_current_bytes_avaiable(apx_client_socket_connection_t* self);
-static void apx_client_socket_connection_transmit_begin(apx_client_socket_connection_t* self);
-static void apx_client_socket_connection_transmit_end(apx_client_socket_connection_t* self);
-static apx_error_t apx_client_socket_connection_transmit_data_message(apx_client_socket_connection_t* self, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
-static apx_error_t apx_client_socket_connection_transmit_direct_message(apx_client_socket_connection_t* self, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
-static void send_packet(apx_client_socket_connection_t* self);
+static int32_t apx_client_socket_connection_transmit_max_bytes_avaiable(apx_client_socket_connection_t *self);
+static int32_t apx_client_socket_connection_transmit_current_bytes_avaiable(apx_client_socket_connection_t *self);
+static void apx_client_socket_connection_transmit_begin(apx_client_socket_connection_t *self);
+static void apx_client_socket_connection_transmit_end(apx_client_socket_connection_t *self);
+static apx_error_t apx_client_socket_connection_transmit_data_message(apx_client_socket_connection_t *self,
+  uint32_t write_address, bool more_bit, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available);
+static apx_error_t apx_client_socket_connection_transmit_direct_message(
+  apx_client_socket_connection_t *self, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available);
+static void send_packet(apx_client_socket_connection_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -96,274 +100,281 @@ static void send_packet(apx_client_socket_connection_t* self);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_client_socket_connection_create(apx_client_socket_connection_t *self, SOCKET_TYPE * socket_object, apx_connection_type_t connection_type)
+apx_error_t apx_client_socket_connection_create(
+  apx_client_socket_connection_t *self, SOCKET_TYPE *socket_object, apx_connection_type_t connection_type)
 {
-   if (self != NULL)
-   {
-      apx_connection_base_vtable_t base_connection_vtable;
-      apx_connection_interface_t connection_interface;
-      MUTEX_INIT(self->lock);
-      self->default_buffer_size = SEND_BUFFER_GROW_SIZE;
-      self->pending_bytes = 0u;
-      apx_connection_base_vtable_create(&base_connection_vtable,
-            apx_client_socket_connection_vdestroy,
-            apx_client_socket_connection_vstart,
-            apx_client_socket_connection_vclose);
-      create_connection_interface_vtable(self, &connection_interface);
-      apx_error_t result = apx_client_connection_create(&self->base, &base_connection_vtable, &connection_interface);
-      if (result != APX_NO_ERROR)
-      {
-         return result;
-      }
-      apx_client_connection_set_connection_type(&self->base, connection_type);
-      adt_bytearray_create(&self->send_buffer);
-      register_msocket_handler(self, socket_object);
-      apx_connection_base_start(&self->base.base);
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if (self != NULL)
+  {
+    apx_connection_base_vtable_t base_connection_vtable;
+    apx_connection_interface_t connection_interface;
+    MUTEX_INIT(self->lock);
+    self->default_buffer_size = SEND_BUFFER_GROW_SIZE;
+    self->pending_bytes = 0u;
+    apx_connection_base_vtable_create(&base_connection_vtable, apx_client_socket_connection_vdestroy,
+      apx_client_socket_connection_vstart, apx_client_socket_connection_vclose);
+    create_connection_interface_vtable(self, &connection_interface);
+    apx_error_t result = apx_client_connection_create(&self->base, &base_connection_vtable, &connection_interface);
+    if (result != APX_NO_ERROR)
+    {
+      return result;
+    }
+    apx_client_connection_set_connection_type(&self->base, connection_type);
+    adt_bytearray_create(&self->send_buffer);
+    register_msocket_handler(self, socket_object);
+    apx_connection_base_start(&self->base.base);
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_client_socket_connection_destroy(apx_client_socket_connection_t *self)
 {
-   if (self != NULL)
-   {
-      if (self->socket_object != NULL)
-      {
-         SOCKET_OBJECT_CLOSE(self->socket_object);
-         SOCKET_OBJECT_DELETE(self->socket_object);
-         self->socket_object = NULL;
-      }
-      apx_client_connection_destroy(&self->base);
-      adt_bytearray_destroy(&self->send_buffer);
-      MUTEX_DESTROY(self->lock);
-   }
+  if (self != NULL)
+  {
+    if (self->socket_object != NULL)
+    {
+      SOCKET_OBJECT_CLOSE(self->socket_object);
+      SOCKET_OBJECT_DELETE(self->socket_object);
+      self->socket_object = NULL;
+    }
+    apx_client_connection_destroy(&self->base);
+    adt_bytearray_destroy(&self->send_buffer);
+    MUTEX_DESTROY(self->lock);
+  }
 }
 
 void apx_client_socket_connection_vdestroy(void *arg)
 {
-   apx_client_socket_connection_destroy((apx_client_socket_connection_t*) arg);
+  apx_client_socket_connection_destroy((apx_client_socket_connection_t *)arg);
 }
 
-apx_client_socket_connection_t *apx_client_socket_connection_new(SOCKET_TYPE *socket_object, apx_connection_type_t connection_type)
+apx_client_socket_connection_t *apx_client_socket_connection_new(
+  SOCKET_TYPE *socket_object, apx_connection_type_t connection_type)
 {
-   apx_client_socket_connection_t *self = (apx_client_socket_connection_t*) malloc(sizeof(apx_client_socket_connection_t));
-   if (self != NULL)
-   {
-      apx_error_t errorCode = apx_client_socket_connection_create(self, socket_object, connection_type);
-      if (errorCode != APX_NO_ERROR)
-      {
-         free(self);
-         self = NULL;
-      }
-   }
-   return self;
+  apx_client_socket_connection_t *self =
+    (apx_client_socket_connection_t *)malloc(sizeof(apx_client_socket_connection_t));
+  if (self != NULL)
+  {
+    apx_error_t errorCode = apx_client_socket_connection_create(self, socket_object, connection_type);
+    if (errorCode != APX_NO_ERROR)
+    {
+      free(self);
+      self = NULL;
+    }
+  }
+  return self;
 }
 
-apx_connection_type_t apx_client_socket_connection_get_connection_type(apx_client_socket_connection_t const* self)
+apx_connection_type_t apx_client_socket_connection_get_connection_type(apx_client_socket_connection_t const *self)
 {
-   if (self != NULL)
-   {
-      return apx_client_connection_get_connection_type(&self->base);
-   }
-   return APX_CONNECTION_TYPE_DEFAULT;
+  if (self != NULL)
+  {
+    return apx_client_connection_get_connection_type(&self->base);
+  }
+  return APX_CONNECTION_TYPE_DEFAULT;
 }
 
 #ifndef UNIT_TEST
-apx_error_t apx_client_socket_connection_connect_tcp(apx_client_socket_connection_t *self, const char *address, uint16_t port)
+apx_error_t apx_client_socket_connection_connect_tcp(
+  apx_client_socket_connection_t *self, const char *address, uint16_t port)
 {
-   if (self != NULL)
-   {
-      apx_error_t retval = APX_NO_ERROR;
-      msocket_t *socketObject = msocket_new(MSOCKET_ADDR_INET);
-      if (socketObject != NULL)
+  if (self != NULL)
+  {
+    apx_error_t retval = APX_NO_ERROR;
+    msocket_t *socketObject = msocket_new(MSOCKET_ADDR_INET);
+    if (socketObject != NULL)
+    {
+      int8_t result = 0;
+      register_msocket_handler(self, socketObject);
+      result = msocket_connect(socketObject, address, port);
+      if (result != 0)
       {
-         int8_t result = 0;
-         register_msocket_handler(self, socketObject);
-         result = msocket_connect(socketObject, address, port);
-         if (result != 0)
-         {
-            msocket_delete(socketObject);
-            self->socket_object = NULL;
-            retval = APX_CONNECTION_ERROR;
-         }
-         else
-         {
-
-         }
+        msocket_delete(socketObject);
+        self->socket_object = NULL;
+        retval = APX_CONNECTION_ERROR;
       }
       else
       {
-         retval = APX_MEM_ERROR;
       }
-      return retval;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+    }
+    else
+    {
+      retval = APX_MEM_ERROR;
+    }
+    return retval;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_client_socket_connection_connect_tls(apx_client_socket_connection_t *self, const char *address, uint16_t port, const msocket_tls_config_t *tls_config)
+apx_error_t apx_client_socket_connection_connect_tls(
+  apx_client_socket_connection_t *self, const char *address, uint16_t port, const msocket_tls_config_t *tls_config)
 {
-#if defined(MSOCKET_ENABLE_TLS)
-   if (self != NULL && address != NULL && tls_config != NULL)
-   {
-      apx_error_t retval = APX_NO_ERROR;
-      msocket_t *socketObject = msocket_new(MSOCKET_ADDR_INET);
-      if (socketObject != NULL)
+# if defined(MSOCKET_ENABLE_TLS)
+  if (self != NULL && address != NULL && tls_config != NULL)
+  {
+    apx_error_t retval = APX_NO_ERROR;
+    msocket_t *socketObject = msocket_new(MSOCKET_ADDR_INET);
+    if (socketObject != NULL)
+    {
+      register_msocket_handler(self, socketObject);
+      msocket_error_t result = msocket_connect_tls(socketObject, address, port, tls_config);
+      if (result != MSOCKET_NO_ERROR)
       {
-         register_msocket_handler(self, socketObject);
-         msocket_error_t result = msocket_connect_tls(socketObject, address, port, tls_config);
-         if (result != MSOCKET_NO_ERROR)
-         {
-            msocket_delete(socketObject);
-            self->socket_object = NULL;
-            retval = APX_CONNECTION_ERROR;
-         }
+        msocket_delete(socketObject);
+        self->socket_object = NULL;
+        retval = APX_CONNECTION_ERROR;
       }
-      else
-      {
-         retval = APX_MEM_ERROR;
-      }
-      return retval;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
-#else
-   (void)self;
-   (void)address;
-   (void)port;
-   (void)tls_config;
-   return APX_NOT_IMPLEMENTED_ERROR;
-#endif
+    }
+    else
+    {
+      retval = APX_MEM_ERROR;
+    }
+    return retval;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+# else
+  (void)self;
+  (void)address;
+  (void)port;
+  (void)tls_config;
+  return APX_NOT_IMPLEMENTED_ERROR;
+# endif
 }
 # ifndef _WIN32
 apx_error_t apx_client_socket_connection_connect_unix(apx_client_socket_connection_t *self, const char *socket_path)
 {
-   if (self != NULL)
-   {
-      apx_error_t retval = APX_NO_ERROR;
-      msocket_t *socket_object = msocket_new(MSOCKET_ADDR_UNIX);
-      if (socket_object != NULL)
+  if (self != NULL)
+  {
+    apx_error_t retval = APX_NO_ERROR;
+    msocket_t *socket_object = msocket_new(MSOCKET_ADDR_UNIX);
+    if (socket_object != NULL)
+    {
+      int8_t result = 0;
+      register_msocket_handler(self, socket_object);
+      result = msocket_unix_connect(socket_object, socket_path);
+      if (result != 0)
       {
-         int8_t result = 0;
-         register_msocket_handler(self, socket_object);
-         result = msocket_unix_connect(socket_object, socket_path);
-         if (result != 0)
-         {
-            msocket_delete(socket_object);
-            self->socket_object = NULL;
-            retval = APX_CONNECTION_ERROR;
-         }
-         else
-         {
-
-         }
+        msocket_delete(socket_object);
+        self->socket_object = NULL;
+        retval = APX_CONNECTION_ERROR;
       }
       else
       {
-         retval = APX_MEM_ERROR;
       }
-      return retval;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+    }
+    else
+    {
+      retval = APX_MEM_ERROR;
+    }
+    return retval;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_client_socket_connection_connect_vsock(apx_client_socket_connection_t *self, uint32_t cid, uint32_t port)
+apx_error_t apx_client_socket_connection_connect_vsock(
+  apx_client_socket_connection_t *self, uint32_t cid, uint32_t port)
 {
-   if (self != NULL && port != 0u)
-   {
-      apx_error_t retval = APX_NO_ERROR;
-      msocket_t *socket_object = msocket_new(MSOCKET_ADDR_VSOCK);
-      if (socket_object != NULL)
+  if (self != NULL && port != 0u)
+  {
+    apx_error_t retval = APX_NO_ERROR;
+    msocket_t *socket_object = msocket_new(MSOCKET_ADDR_VSOCK);
+    if (socket_object != NULL)
+    {
+      int8_t result = 0;
+      register_msocket_handler(self, socket_object);
+      result = msocket_vsock_connect(socket_object, cid, port);
+      if (result != 0)
       {
-         int8_t result = 0;
-         register_msocket_handler(self, socket_object);
-         result = msocket_vsock_connect(socket_object, cid, port);
-         if (result != 0)
-         {
-            msocket_delete(socket_object);
-            self->socket_object = NULL;
-            retval = APX_CONNECTION_ERROR;
-         }
+        msocket_delete(socket_object);
+        self->socket_object = NULL;
+        retval = APX_CONNECTION_ERROR;
       }
-      else
-      {
-         retval = APX_MEM_ERROR;
-      }
-      return retval;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+    }
+    else
+    {
+      retval = APX_MEM_ERROR;
+    }
+    return retval;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 # endif // _WIN32
 #endif // UNIT_TEST
 
 // ConnectionInterface API
-int32_t apx_client_socket_connection_vtransmit_max_bytes_avaiable(void* arg)
+int32_t apx_client_socket_connection_vtransmit_max_bytes_avaiable(void *arg)
 {
-   return apx_client_socket_connection_transmit_max_bytes_avaiable((apx_client_socket_connection_t*)arg);
+  return apx_client_socket_connection_transmit_max_bytes_avaiable((apx_client_socket_connection_t *)arg);
 }
 
-int32_t apx_client_socket_connection_vtransmit_current_bytes_avaiable(void* arg)
+int32_t apx_client_socket_connection_vtransmit_current_bytes_avaiable(void *arg)
 {
-   return apx_client_socket_connection_transmit_current_bytes_avaiable((apx_client_socket_connection_t*)arg);
+  return apx_client_socket_connection_transmit_current_bytes_avaiable((apx_client_socket_connection_t *)arg);
 }
 
-void apx_client_socket_connection_vtransmit_begin(void* arg)
+void apx_client_socket_connection_vtransmit_begin(void *arg)
 {
-   apx_client_socket_connection_transmit_begin((apx_client_socket_connection_t*)arg);
+  apx_client_socket_connection_transmit_begin((apx_client_socket_connection_t *)arg);
 }
 
-void apx_client_socket_connection_vtransmit_end(void* arg)
+void apx_client_socket_connection_vtransmit_end(void *arg)
 {
-   apx_client_socket_connection_transmit_end((apx_client_socket_connection_t*)arg);
+  apx_client_socket_connection_transmit_end((apx_client_socket_connection_t *)arg);
 }
 
-apx_error_t apx_client_socket_connection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+apx_error_t apx_client_socket_connection_vtransmit_data_message(
+  void *arg, uint32_t write_address, bool more_bit, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
-   return apx_client_socket_connection_transmit_data_message((apx_client_socket_connection_t*)arg, write_address, more_bit, msg_data, msg_size, bytes_available);
+  return apx_client_socket_connection_transmit_data_message(
+    (apx_client_socket_connection_t *)arg, write_address, more_bit, msg_data, msg_size, bytes_available);
 }
 
-apx_error_t apx_client_socket_connection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+apx_error_t apx_client_socket_connection_vtransmit_direct_message(
+  void *arg, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
-   return apx_client_socket_connection_transmit_direct_message((apx_client_socket_connection_t*)arg, msg_data, msg_size, bytes_available);
+  return apx_client_socket_connection_transmit_direct_message(
+    (apx_client_socket_connection_t *)arg, msg_data, msg_size, bytes_available);
 }
 
 
 #ifdef UNIT_TEST
 
-void apx_client_socket_connection_attach_node_manager(apx_client_socket_connection_t* self, apx_node_manager_t* node_manager)
+void apx_client_socket_connection_attach_node_manager(
+  apx_client_socket_connection_t *self, apx_node_manager_t *node_manager)
 {
-   if ((self != NULL) && (node_manager != NULL))
-   {
-      apx_client_connection_attach_node_manager(&self->base, node_manager);
-   }
+  if ((self != NULL) && (node_manager != NULL))
+  {
+    apx_client_connection_attach_node_manager(&self->base, node_manager);
+  }
 }
 
-apx_error_t apx_client_socket_connection_build_node(apx_client_socket_connection_t* self, char const* definition_text)
+apx_error_t apx_client_socket_connection_build_node(apx_client_socket_connection_t *self, char const *definition_text)
 {
-   if (self != NULL)
-   {
-      apx_node_manager_t* node_manager = apx_client_connection_get_node_manager(&self->base);
-      if (node_manager == NULL)
-      {
-         return APX_NULL_PTR_ERROR;
-      }
-      apx_error_t retval = apx_node_manager_build_node(node_manager, definition_text);
-      if (retval == APX_NO_ERROR)
-      {
-         apx_node_instance_t* node_instance = apx_node_manager_get_last_attached(node_manager);
-         assert(node_instance != NULL);
-         apx_client_connection_attach_node_instance(&self->base, node_instance);
-      }
-      return retval;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if (self != NULL)
+  {
+    apx_node_manager_t *node_manager = apx_client_connection_get_node_manager(&self->base);
+    if (node_manager == NULL)
+    {
+      return APX_NULL_PTR_ERROR;
+    }
+    apx_error_t retval = apx_node_manager_build_node(node_manager, definition_text);
+    if (retval == APX_NO_ERROR)
+    {
+      apx_node_instance_t *node_instance = apx_node_manager_get_last_attached(node_manager);
+      assert(node_instance != NULL);
+      apx_client_connection_attach_node_instance(&self->base, node_instance);
+    }
+    return retval;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_client_socket_connection_run(apx_client_socket_connection_t* self)
+void apx_client_socket_connection_run(apx_client_socket_connection_t *self)
 {
-   if (self != NULL)
-   {
-      apx_client_connection_run(&self->base);
-   }
+  if (self != NULL)
+  {
+    apx_client_connection_run(&self->base);
+  }
 }
 #endif
 
@@ -372,203 +383,207 @@ void apx_client_socket_connection_run(apx_client_socket_connection_t* self)
 //////////////////////////////////////////////////////////////////////////////
 
 
-
-static void register_msocket_handler(apx_client_socket_connection_t* self, SOCKET_TYPE* socket_object)
+static void register_msocket_handler(apx_client_socket_connection_t *self, SOCKET_TYPE *socket_object)
 {
-   if (socket_object != NULL)
-   {
-      msocket_handler_t handler_table;
-      memset(&handler_table,0,sizeof(handler_table));
-      handler_table.tcp_connected = on_socket_connected;
-      handler_table.tcp_data = on_socket_data;
-      handler_table.tcp_disconnected = on_socket_disconnected;
-      SOCKET_SET_HANDLER(socket_object, &handler_table, self);
-      self->socket_object = socket_object;
-   }
+  if (socket_object != NULL)
+  {
+    msocket_handler_t handler_table;
+    memset(&handler_table, 0, sizeof(handler_table));
+    handler_table.tcp_connected = on_socket_connected;
+    handler_table.tcp_data = on_socket_data;
+    handler_table.tcp_disconnected = on_socket_disconnected;
+    SOCKET_SET_HANDLER(socket_object, &handler_table, self);
+    self->socket_object = socket_object;
+  }
 }
 
 
-static void create_connection_interface_vtable(apx_client_socket_connection_t* self, apx_connection_interface_t* interface)
+static void create_connection_interface_vtable(
+  apx_client_socket_connection_t *self, apx_connection_interface_t *interface)
 {
-   memset(interface, 0, sizeof(apx_connection_interface_t));
-   interface->arg = (void*)self;
-   interface->transmit_max_buffer_size = apx_client_socket_connection_vtransmit_max_bytes_avaiable;
-   interface->transmit_current_bytes_avaiable = apx_client_socket_connection_vtransmit_current_bytes_avaiable;
-   interface->transmit_begin = apx_client_socket_connection_vtransmit_begin;
-   interface->transmit_end = apx_client_socket_connection_vtransmit_end;
-   interface->transmit_data_message = apx_client_socket_connection_vtransmit_data_message;
-   interface->transmit_direct_message = apx_client_socket_connection_vtransmit_direct_message;
+  memset(interface, 0, sizeof(apx_connection_interface_t));
+  interface->arg = (void *)self;
+  interface->transmit_max_buffer_size = apx_client_socket_connection_vtransmit_max_bytes_avaiable;
+  interface->transmit_current_bytes_avaiable = apx_client_socket_connection_vtransmit_current_bytes_avaiable;
+  interface->transmit_begin = apx_client_socket_connection_vtransmit_begin;
+  interface->transmit_end = apx_client_socket_connection_vtransmit_end;
+  interface->transmit_data_message = apx_client_socket_connection_vtransmit_data_message;
+  interface->transmit_direct_message = apx_client_socket_connection_vtransmit_direct_message;
 }
 
-//msocket API
+// msocket API
 
-static void on_socket_connected(void* arg, void* socket, const char* addr, uint16_t port)
+static void on_socket_connected(void *arg, void *socket, const char *addr, uint16_t port)
 {
-   apx_client_socket_connection_t *self;
-   (void) socket;
-   (void) addr;
-   (void) port;
+  apx_client_socket_connection_t *self;
+  (void)socket;
+  (void)addr;
+  (void)port;
 #if APX_DEBUG_ENABLE
-   printf("[CLIENT-SOCKET] Connected\n");
+  printf("[CLIENT-SOCKET] Connected\n");
 #endif
-   self = (apx_client_socket_connection_t*) arg;
-   apx_client_connection_connected_notification(&self->base);
+  self = (apx_client_socket_connection_t *)arg;
+  apx_client_connection_connected_notification(&self->base);
 }
 
-static msocket_error_t on_socket_data(void* arg, void* socket, const uint8_t* data, const uint32_t num_bytes, uint32_t* consumed_bytes, uint32_t* msg_size_hint)
+static msocket_error_t on_socket_data(void *arg, void *socket, const uint8_t *data, const uint32_t num_bytes,
+  uint32_t *consumed_bytes, uint32_t *msg_size_hint)
 {
-   (void) socket;
-   apx_client_socket_connection_t *self = (apx_client_socket_connection_t*) arg;
-   int retval = apx_client_connection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
-   return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
+  (void)socket;
+  apx_client_socket_connection_t *self = (apx_client_socket_connection_t *)arg;
+  int retval = apx_client_connection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
+  return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
-static void on_socket_disconnected(void* arg, void* socket)
+static void on_socket_disconnected(void *arg, void *socket)
 {
-   (void) socket;
-   apx_client_socket_connection_t *self = (apx_client_socket_connection_t*) arg;
+  (void)socket;
+  apx_client_socket_connection_t *self = (apx_client_socket_connection_t *)arg;
 #if APX_DEBUG_ENABLE
-   printf("[CLIENT-SOCKET] Disconnected\n");
+  printf("[CLIENT-SOCKET] Disconnected\n");
 #endif
-   apx_client_connection_disconnected_notification(&self->base);
+  apx_client_connection_disconnected_notification(&self->base);
 }
 
 static void apx_client_socket_connection_close(apx_client_socket_connection_t *self)
 {
-   if (self != NULL && self->socket_object != NULL)
-   {
-      SOCKET_OBJECT_CLOSE(self->socket_object);
-   }
+  if (self != NULL && self->socket_object != NULL)
+  {
+    SOCKET_OBJECT_CLOSE(self->socket_object);
+  }
 }
 
 static void apx_client_socket_connection_vclose(void *arg)
 {
-   apx_client_socket_connection_close((apx_client_socket_connection_t*) arg);
+  apx_client_socket_connection_close((apx_client_socket_connection_t *)arg);
 }
 
 static void apx_client_socket_connection_start(apx_client_socket_connection_t *self)
 {
-   apx_client_connection_start(&self->base);
+  apx_client_connection_start(&self->base);
 }
 
 static void apx_client_socket_connection_vstart(void *arg)
 {
-   apx_client_socket_connection_start((apx_client_socket_connection_t*) arg);
+  apx_client_socket_connection_start((apx_client_socket_connection_t *)arg);
 }
 
-static int32_t apx_client_socket_connection_transmit_max_bytes_avaiable(apx_client_socket_connection_t* self)
+static int32_t apx_client_socket_connection_transmit_max_bytes_avaiable(apx_client_socket_connection_t *self)
 {
-   if (self != NULL)
-   {
-      return (int32_t)self->default_buffer_size;
-   }
-   return -1;
+  if (self != NULL)
+  {
+    return (int32_t)self->default_buffer_size;
+  }
+  return -1;
 }
 
-static int32_t apx_client_socket_connection_transmit_current_bytes_avaiable(apx_client_socket_connection_t* self)
+static int32_t apx_client_socket_connection_transmit_current_bytes_avaiable(apx_client_socket_connection_t *self)
 {
-   if (self != NULL)
-   {
-      return (int32_t)(adt_bytearray_length(&self->send_buffer) - self->pending_bytes);
-   }
-   return -1;
+  if (self != NULL)
+  {
+    return (int32_t)(adt_bytearray_length(&self->send_buffer) - self->pending_bytes);
+  }
+  return -1;
 }
 
-static void apx_client_socket_connection_transmit_begin(apx_client_socket_connection_t* self)
+static void apx_client_socket_connection_transmit_begin(apx_client_socket_connection_t *self)
 {
-   if (self != NULL)
-   {
-      MUTEX_LOCK(self->lock);
-      if (adt_bytearray_length(&self->send_buffer) < self->default_buffer_size)
-      {
-         adt_bytearray_resize(&self->send_buffer, self->default_buffer_size);
-      }
-      self->pending_bytes = 0u;
-      assert((adt_bytearray_length(&self->send_buffer) >= self->default_buffer_size));
-   }
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->lock);
+    if (adt_bytearray_length(&self->send_buffer) < self->default_buffer_size)
+    {
+      adt_bytearray_resize(&self->send_buffer, self->default_buffer_size);
+    }
+    self->pending_bytes = 0u;
+    assert((adt_bytearray_length(&self->send_buffer) >= self->default_buffer_size));
+  }
 }
 
-static void apx_client_socket_connection_transmit_end(apx_client_socket_connection_t* self)
+static void apx_client_socket_connection_transmit_end(apx_client_socket_connection_t *self)
 {
-   if (self != NULL)
-   {
-      if (self->pending_bytes > 0u)
-      {
-         send_packet(self);
-      }
-      MUTEX_UNLOCK(self->lock);
-   }
+  if (self != NULL)
+  {
+    if (self->pending_bytes > 0u)
+    {
+      send_packet(self);
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
 }
 
-static apx_error_t apx_client_socket_connection_transmit_data_message(apx_client_socket_connection_t* self, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+static apx_error_t apx_client_socket_connection_transmit_data_message(apx_client_socket_connection_t *self,
+  uint32_t write_address, bool more_bit, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
-   if (self != NULL)
-   {
-      uint8_t header[NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE];
-      apx_size_t const address_size = rmf_needed_encoding_size(write_address);
-      apx_size_t const payload_size = address_size + msg_size;
-      if (payload_size > self->default_buffer_size)
-      {
-         return APX_MSG_TOO_LARGE_ERROR;
-      }
-      apx_size_t const header1_size = numheader_encode32(header, sizeof(header), payload_size);
-      assert(header1_size > 0);
-      apx_size_t const header2_size = rmf_address_encode(header + header1_size, sizeof(header) - header1_size, write_address, more_bit);
-      assert(header2_size == address_size);
-      apx_size_t const bytes_to_send = header1_size + header2_size + payload_size;
-      apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes;
-      if (bytes_to_send > buffer_available)
-      {
-         send_packet(self);
-         assert(self->pending_bytes == 0u);
-      }
-      memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, header, header1_size + header2_size);
-      self->pending_bytes += (header1_size + header2_size);
-      memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, msg_data, msg_size);
-      self->pending_bytes += msg_size;
-      *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes);
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if (self != NULL)
+  {
+    uint8_t header[NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE];
+    apx_size_t const address_size = rmf_needed_encoding_size(write_address);
+    apx_size_t const payload_size = address_size + msg_size;
+    if (payload_size > self->default_buffer_size)
+    {
+      return APX_MSG_TOO_LARGE_ERROR;
+    }
+    apx_size_t const header1_size = numheader_encode32(header, sizeof(header), payload_size);
+    assert(header1_size > 0);
+    apx_size_t const header2_size =
+      rmf_address_encode(header + header1_size, sizeof(header) - header1_size, write_address, more_bit);
+    assert(header2_size == address_size);
+    apx_size_t const bytes_to_send = header1_size + header2_size + payload_size;
+    apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes;
+    if (bytes_to_send > buffer_available)
+    {
+      send_packet(self);
+      assert(self->pending_bytes == 0u);
+    }
+    memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, header, header1_size + header2_size);
+    self->pending_bytes += (header1_size + header2_size);
+    memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, msg_data, msg_size);
+    self->pending_bytes += msg_size;
+    *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes);
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t apx_client_socket_connection_transmit_direct_message(apx_client_socket_connection_t* self, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+static apx_error_t apx_client_socket_connection_transmit_direct_message(
+  apx_client_socket_connection_t *self, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
-   if (self != NULL)
-   {
-      uint8_t  header[NUMHEADER32_LONG_SIZE];
-      if (msg_size > ((int32_t)self->default_buffer_size))
-      {
-         return APX_MSG_TOO_LARGE_ERROR;
-      }
-      apx_size_t const header_size = numheader_encode32(header, sizeof(header), msg_size);
-      apx_size_t const bytes_to_send = header_size + msg_size;
-      apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes;
-      if (bytes_to_send > buffer_available)
-      {
-         send_packet(self);
-         assert(self->pending_bytes == 0u);
-      }
-      memcpy(adt_bytearray_data(&self->send_buffer), header, header_size);
-      self->pending_bytes += header_size;
-      memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, msg_data, msg_size);
-      self->pending_bytes += msg_size;
-      *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes);
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if (self != NULL)
+  {
+    uint8_t header[NUMHEADER32_LONG_SIZE];
+    if (msg_size > ((int32_t)self->default_buffer_size))
+    {
+      return APX_MSG_TOO_LARGE_ERROR;
+    }
+    apx_size_t const header_size = numheader_encode32(header, sizeof(header), msg_size);
+    apx_size_t const bytes_to_send = header_size + msg_size;
+    apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes;
+    if (bytes_to_send > buffer_available)
+    {
+      send_packet(self);
+      assert(self->pending_bytes == 0u);
+    }
+    memcpy(adt_bytearray_data(&self->send_buffer), header, header_size);
+    self->pending_bytes += header_size;
+    memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, msg_data, msg_size);
+    self->pending_bytes += msg_size;
+    *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes);
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static void send_packet(apx_client_socket_connection_t* self)
+static void send_packet(apx_client_socket_connection_t *self)
 {
-   if ((self->socket_object != NULL) && (self->pending_bytes > 0u))
-   {
-      uint8_t const* data = adt_bytearray_const_data(&self->send_buffer);
+  if ((self->socket_object != NULL) && (self->pending_bytes > 0u))
+  {
+    uint8_t const *data = adt_bytearray_const_data(&self->send_buffer);
 #if APX_DEBUG_ENABLE
-      printf("[SOCKET-CLIENT-CONNECTION] Sending %d bytes\n", (int)self->pending_bytes);
+    printf("[SOCKET-CLIENT-CONNECTION] Sending %d bytes\n", (int)self->pending_bytes);
 #endif
-      SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
-      adt_bytearray_clear(&self->send_buffer);
-      self->pending_bytes = 0u;
-   }
+    SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
+    adt_bytearray_clear(&self->send_buffer);
+    self->pending_bytes = 0u;
+  }
 }

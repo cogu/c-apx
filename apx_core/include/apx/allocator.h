@@ -1,33 +1,33 @@
 /*****************************************************************************
-* \file      allocator.h
-* \author    Conny Gustafsson
-* \date      2017-02-20
-* \brief     Small object allocator for usage within c-apx
-*
-* Copyright (c) 2017-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      allocator.h
+ * \author    Conny Gustafsson
+ * \date      2017-02-20
+ * \brief     Small object allocator for usage within c-apx
+ *
+ * Copyright (c) 2017-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_ALLOCATOR_H
 #define APX_ALLOCATOR_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/types.h"
 #include "apx/error.h"
+#include "apx/types.h"
 
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
-# define WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
 # endif
-#include <Windows.h>
+# include <Windows.h>
 #else
-#include <pthread.h>
-#include <semaphore.h>
+# include <pthread.h>
+# include <semaphore.h>
 #endif
-#include "osmacro.h"
 #include "adt_ringbuf.h"
+#include "osmacro.h"
 #include "soa.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -39,27 +39,27 @@
  */
 typedef struct apx_allocator_tag
 {
-   THREAD_T workerThread; //local worker thread
-   SPINLOCK_T lock;  //variable lock
-   SEMAPHORE_T semaphore; //thread semaphore
+  THREAD_T workerThread; // local worker thread
+  SPINLOCK_T lock;  // variable lock
+  SEMAPHORE_T semaphore; // thread semaphore
 
-   //data object, all read/write accesses to these must be protected by the lock variable above
-   adt_rbfh_t messages; //pending cleanup messages (ringbuffer)
-   bool isRunning; //when false it's time do shut down
-   bool workerThreadValid; //true if workerThread is a valid variable
-   soa_t soa;
+   // data object, all read/write accesses to these must be protected by the lock variable above
+  adt_rbfh_t messages; // pending cleanup messages (ringbuffer)
+  bool isRunning; // when false it's time do shut down
+  bool workerThreadValid; // true if workerThread is a valid variable
+  soa_t soa;
 
 #ifdef _MSC_VER
-   unsigned int threadId;
+  unsigned int threadId;
 #endif
-}apx_allocator_t;
+} apx_allocator_t;
 
-//this data structure is used as elements in the ring buffer
+// this data structure is used as elements in the ring buffer
 typedef struct rbf_data_tag
 {
-   uint8_t *ptr;
-   uint32_t size;
-}rbf_data_t;
+  uint8_t *ptr;
+  uint32_t size;
+} rbf_data_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -82,4 +82,4 @@ void apx_allocator_process_all(apx_allocator_t *self);
 int32_t apx_allocator_num_pending_messages(apx_allocator_t *self);
 #endif
 
-#endif //APX_ALLOCATOR_H
+#endif // APX_ALLOCATOR_H

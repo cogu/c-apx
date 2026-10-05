@@ -1,24 +1,24 @@
 /*****************************************************************************
-* \file      crypto.h
-* \author    Conny Gustafsson
-* \date      2026-09-26
-* \brief     Cryptographic signing and verification utilities (Mbed TLS)
-*
-* Copyright (c) 2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      crypto.h
+ * \author    Conny Gustafsson
+ * \date      2026-09-26
+ * \brief     Cryptographic signing and verification utilities (Mbed TLS)
+ *
+ * Copyright (c) 2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_CRYPTO_H
 #define APX_CRYPTO_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include "apx/error.h"
 #include "apx/remotefile.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -34,7 +34,7 @@
  * \param data_len Length of input data in bytes
  * \param hash Output buffer (must be at least 32 bytes)
  */
-apx_error_t apx_crypto_sha256(const uint8_t* data, size_t data_len, uint8_t hash[32]);
+apx_error_t apx_crypto_sha256(const uint8_t *data, size_t data_len, uint8_t hash[32]);
 
 /**
  * Verifies an APX signature over data using a public key.
@@ -59,10 +59,8 @@ apx_error_t apx_crypto_sha256(const uint8_t* data, size_t data_len, uint8_t hash
  * \return APX_SIGNATURE_VERIFICATION_ERROR if signature does not match.
  * \return APX_INVALID_ARGUMENT_ERROR if arguments or key are invalid.
  */
-apx_error_t apx_crypto_verify_signature(rmf_signature_type_t sig_type,
-                                        const uint8_t* pub_key, size_t pub_key_len,
-                                        const uint8_t* data, size_t data_len,
-                                        const uint8_t* sig_data, size_t sig_len);
+apx_error_t apx_crypto_verify_signature(rmf_signature_type_t sig_type, const uint8_t *pub_key, size_t pub_key_len,
+  const uint8_t *data, size_t data_len, const uint8_t *sig_data, size_t sig_len);
 
 /**
  * Signs data using a private key and outputs a raw APX signature.
@@ -85,16 +83,13 @@ apx_error_t apx_crypto_verify_signature(rmf_signature_type_t sig_type,
  *
  * \return APX_NO_ERROR on success.
  */
-apx_error_t apx_crypto_sign_data(rmf_signature_type_t sig_type,
-                                 const uint8_t* priv_key, size_t priv_key_len,
-                                 const uint8_t* data, size_t data_len,
-                                 uint8_t* sig_data, size_t sig_buf_size,
-                                 size_t* sig_len);
+apx_error_t apx_crypto_sign_data(rmf_signature_type_t sig_type, const uint8_t *priv_key, size_t priv_key_len,
+  const uint8_t *data, size_t data_len, uint8_t *sig_data, size_t sig_buf_size, size_t *sig_len);
 
 /**
  * Helper to generate a new ECDSA P-256 keypair in PEM format.
  * Dynamically allocates strings; caller must free() *priv_key_pem and *pub_key_pem.
  */
-apx_error_t apx_crypto_generate_keypair_pem(char** priv_key_pem, char** pub_key_pem);
+apx_error_t apx_crypto_generate_keypair_pem(char **priv_key_pem, char **pub_key_pem);
 
-#endif //APX_CRYPTO_H
+#endif // APX_CRYPTO_H

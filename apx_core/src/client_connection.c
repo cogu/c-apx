@@ -1,31 +1,31 @@
 /*****************************************************************************
-* \file      client_connection.c
-* \author    Conny Gustafsson
-* \date      2018-12-31
-* \brief     Base class for client connections
-*
-* Copyright (c) 2018-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      client_connection.c
+ * \author    Conny Gustafsson
+ * \date      2018-12-31
+ * \brief     Base class for client connections
+ *
+ * Copyright (c) 2018-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <assert.h>
-#include <malloc.h>
-#include <string.h>
-#include <stdio.h>
 #include "apx/client_connection.h"
-#include "apx/numheader.h"
-#include "apx/file.h"
-#include "apx/remotefile.h"
 #include "apx/client.h"
 #include "apx/client_internal.h"
+#include "apx/file.h"
+#include "apx/numheader.h"
+#include "apx/remotefile.h"
 #include "pack.h"
+#include <assert.h>
+#include <malloc.h>
+#include <stdio.h>
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #else
-#define vfree free
+# define vfree free
 #endif
 
 
@@ -36,14 +36,17 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void send_greeting_header(apx_client_connection_t* self);
-static void send_monitor_greeting_header(apx_client_connection_t* self);
-static void send_default_greeting_header(apx_client_connection_t* self);
-static apx_error_t remote_file_published_notification(apx_client_connection_t* self, apx_file_t* file);
-static apx_error_t process_new_remote_file(apx_client_connection_t* self, apx_file_t* file);
-static apx_error_t remote_file_write_notification(apx_client_connection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size);
-static uint8_t const* parse_message(apx_client_connection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint);
-static bool parse_greeting(apx_client_connection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code);
+static void send_greeting_header(apx_client_connection_t *self);
+static void send_monitor_greeting_header(apx_client_connection_t *self);
+static void send_default_greeting_header(apx_client_connection_t *self);
+static apx_error_t remote_file_published_notification(apx_client_connection_t *self, apx_file_t *file);
+static apx_error_t process_new_remote_file(apx_client_connection_t *self, apx_file_t *file);
+static apx_error_t remote_file_write_notification(
+  apx_client_connection_t *self, apx_file_t *file, uint32_t offset, uint8_t const *data, apx_size_t size);
+static uint8_t const *parse_message(apx_client_connection_t *self, uint8_t const *begin, uint8_t const *end,
+  apx_error_t *error_code, apx_size_t *msg_size_hint);
+static bool parse_greeting(
+  apx_client_connection_t *self, uint8_t const *msg_data, apx_size_t msg_size, apx_error_t *error_code);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -53,37 +56,38 @@ static bool parse_greeting(apx_client_connection_t* self, uint8_t const* msg_dat
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_client_connection_create(apx_client_connection_t* self, apx_connection_base_vtable_t* base_connection_vtable, apx_connection_interface_t* connection_interface)
+apx_error_t apx_client_connection_create(apx_client_connection_t *self,
+  apx_connection_base_vtable_t *base_connection_vtable, apx_connection_interface_t *connection_interface)
 {
-   if (self != NULL)
-   {
-      apx_error_t error_code;
-      //init non-overridable virtual functions
-      base_connection_vtable->node_created_notification = NULL; //Only used in server mode
-      base_connection_vtable->require_port_write_notification = apx_client_connection_vrequire_port_write_notification;
-      connection_interface->remote_file_published_notification = apx_client_connection_vremote_file_published_notification;
-      connection_interface->remote_file_write_notification = apx_client_connection_vremote_file_write_notification;
-      connection_interface->nack_notification = apx_client_connection_vnack_notification;
-      error_code = apx_connection_base_create(&self->base, APX_CLIENT_MODE, base_connection_vtable, connection_interface);
-      self->is_greeting_accepted = false;
-      self->client = NULL;
-      self->last_error = APX_NO_ERROR;
-      adt_str_create(&self->last_error_node);
-      //apx_connection_base_set_event_handler(&self->base, apx_client_connection_default_event_handler, (void*) self);
-      return error_code;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if (self != NULL)
+  {
+    apx_error_t error_code;
+      // init non-overridable virtual functions
+    base_connection_vtable->node_created_notification = NULL; // Only used in server mode
+    base_connection_vtable->require_port_write_notification = apx_client_connection_vrequire_port_write_notification;
+    connection_interface->remote_file_published_notification =
+      apx_client_connection_vremote_file_published_notification;
+    connection_interface->remote_file_write_notification = apx_client_connection_vremote_file_write_notification;
+    connection_interface->nack_notification = apx_client_connection_vnack_notification;
+    error_code = apx_connection_base_create(&self->base, APX_CLIENT_MODE, base_connection_vtable, connection_interface);
+    self->is_greeting_accepted = false;
+    self->client = NULL;
+    self->last_error = APX_NO_ERROR;
+    adt_str_create(&self->last_error_node);
+    // apx_connection_base_set_event_handler(&self->base, apx_client_connection_default_event_handler, (void*) self);
+    return error_code;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_client_connection_destroy(apx_client_connection_t *self)
 {
-   if (self != NULL)
-   {
-      apx_connection_base_destroy(&self->base);
-      adt_str_destroy(&self->last_error_node);
-   }
+  if (self != NULL)
+  {
+    apx_connection_base_destroy(&self->base);
+    adt_str_destroy(&self->last_error_node);
+  }
 }
-
 
 
 /*
@@ -93,7 +97,8 @@ void apx_client_connection_default_event_handler(void* arg, apx_event_t* event)
    (void)event;
 }
 
-void* apx_client_connection_register_event_listener(apx_client_connection_t* self, apx_connection_event_listener_t* listener)
+void* apx_client_connection_register_event_listener(apx_client_connection_t* self, apx_connection_event_listener_t*
+listener)
 {
    (void)self;
    (void)listener;
@@ -107,513 +112,514 @@ void apx_client_connection_unregister_event_listener(apx_client_connection_t* se
 }
 */
 
-void apx_client_connection_greeting_header_accepted_notification(apx_client_connection_t* self)
+void apx_client_connection_greeting_header_accepted_notification(apx_client_connection_t *self)
 {
-   if (self != NULL)
-   {
-      self->is_greeting_accepted = true;
-      apx_file_manager_connected(&self->base.file_manager);
-   }
+  if (self != NULL)
+  {
+    self->is_greeting_accepted = true;
+    apx_file_manager_connected(&self->base.file_manager);
+  }
 }
 
-void apx_client_connection_connected_notification(apx_client_connection_t* self)
+void apx_client_connection_connected_notification(apx_client_connection_t *self)
 {
-   if (self != NULL)
-   {
-      self->is_greeting_accepted = false;
-      send_greeting_header(self);
-      if (self->client != NULL)
+  if (self != NULL)
+  {
+    self->is_greeting_accepted = false;
+    send_greeting_header(self);
+    if (self->client != NULL)
+    {
+      apx_client_internal_connect_notification(self->client, self);
+    }
+  }
+}
+
+void apx_client_connection_disconnected_notification(apx_client_connection_t *self)
+{
+  if (self != NULL)
+  {
+    if (self->client != NULL)
+    {
+      apx_client_internal_disconnect_notification(self->client, self);
+    }
+  }
+}
+
+void apx_client_connection_attach_node_manager(apx_client_connection_t *self, apx_node_manager_t *node_manager)
+{
+  if (self != NULL)
+  {
+    apx_connection_base_attach_node_manager(&self->base, node_manager);
+  }
+}
+
+apx_node_manager_t *apx_client_connection_get_node_manager(apx_client_connection_t *self)
+{
+  if (self != NULL)
+  {
+    return apx_connection_base_get_node_manager(&self->base);
+  }
+  return NULL;
+}
+
+void apx_client_connection_set_client(apx_client_connection_t *self, struct apx_client_tag *client)
+{
+  if (self != NULL)
+  {
+    self->client = client;
+  }
+}
+
+void apx_client_connection_set_connection_type(apx_client_connection_t *self, apx_connection_type_t connection_type)
+{
+  if (self != NULL)
+  {
+    apx_connection_base_set_connection_type(&self->base, connection_type);
+  }
+}
+
+apx_connection_type_t apx_client_connection_get_connection_type(apx_client_connection_t const *self)
+{
+  if (self != NULL)
+  {
+    return apx_connection_base_get_connection_type(&self->base);
+  }
+  return APX_CONNECTION_TYPE_DEFAULT;
+}
+
+int apx_client_connection_on_data_received(apx_client_connection_t *self, uint8_t const *data, apx_size_t data_size,
+  apx_size_t *parse_len, apx_size_t *msg_size_hint)
+{
+  if ((self != NULL) && (data != NULL) && (data_size > 0u) && (parse_len != NULL))
+  {
+    apx_size_t total_parse_len = 0u;
+    uint8_t const *next = data;
+    uint8_t const *end = data + data_size;
+    if (msg_size_hint != NULL)
+    {
+      *msg_size_hint = 0u;
+    }
+    while (next < end)
+    {
+      uint8_t const *result;
+      apx_error_t error_code = APX_NO_ERROR;
+      result = parse_message(self, next, end, &error_code, msg_size_hint);
+      if (error_code == APX_NO_ERROR)
       {
-         apx_client_internal_connect_notification(self->client, self);
+        assert((result >= next) && (result <= end));
+        if (result == next)
+        {
+          // No more complete messages can be parsed. There may be a partial
+          // message left in buffer, but we leave it in the buffer until
+          // more data has arrived.
+          break;
+        }
+        next = result;
+        total_parse_len = (apx_size_t)(next - data);
+        assert(total_parse_len <= data_size);
       }
-   }
-}
-
-void apx_client_connection_disconnected_notification(apx_client_connection_t* self)
-{
-   if (self != NULL)
-   {
-      if (self->client != NULL)
+      else
       {
-         apx_client_internal_disconnect_notification(self->client, self);
-      }
-   }
-}
-
-void apx_client_connection_attach_node_manager(apx_client_connection_t* self, apx_node_manager_t* node_manager)
-{
-   if (self != NULL)
-   {
-      apx_connection_base_attach_node_manager(&self->base, node_manager);
-   }
-}
-
-apx_node_manager_t* apx_client_connection_get_node_manager(apx_client_connection_t* self)
-{
-   if (self != NULL)
-   {
-      return apx_connection_base_get_node_manager(&self->base);
-   }
-   return NULL;
-}
-
-void apx_client_connection_set_client(apx_client_connection_t* self, struct apx_client_tag* client)
-{
-   if (self != NULL)
-   {
-      self->client = client;
-   }
-}
-
-void apx_client_connection_set_connection_type(apx_client_connection_t* self, apx_connection_type_t connection_type)
-{
-   if (self != NULL)
-   {
-      apx_connection_base_set_connection_type(&self->base, connection_type);
-   }
-}
-
-apx_connection_type_t apx_client_connection_get_connection_type(apx_client_connection_t const* self)
-{
-   if (self != NULL)
-   {
-      return apx_connection_base_get_connection_type(&self->base);
-   }
-   return APX_CONNECTION_TYPE_DEFAULT;
-}
-
-int apx_client_connection_on_data_received(apx_client_connection_t* self, uint8_t const* data, apx_size_t data_size, apx_size_t* parse_len, apx_size_t* msg_size_hint)
-{
-   if ( (self != NULL) && (data != NULL) && (data_size > 0u) && (parse_len != NULL))
-   {
-      apx_size_t total_parse_len = 0u;
-      uint8_t const* next = data;
-      uint8_t const* end = data + data_size;
-      if (msg_size_hint != NULL)
-      {
-         *msg_size_hint = 0u;
-      }
-      while (next < end)
-      {
-         uint8_t const* result;
-         apx_error_t error_code = APX_NO_ERROR;
-         result = parse_message(self, next, end, &error_code, msg_size_hint);
-         if (error_code == APX_NO_ERROR)
-         {
-            assert((result >= next) && (result <= end));
-            if (result == next)
-            {
-               // No more complete messages can be parsed. There may be a partial
-               // message left in buffer, but we leave it in the buffer until
-               // more data has arrived.
-               break;
-            }
-            next = result;
-            total_parse_len = (apx_size_t) (next - data);
-            assert(total_parse_len <= data_size);
-         }
-         else
-         {
 #if APX_DEBUG_ENABLE
-            printf("[CLIENT_CONNECTION] Error %d while parsing message\n", error_code);
+        printf("[CLIENT_CONNECTION] Error %d while parsing message\n", error_code);
 #endif
-            self->last_error = error_code;
-            return -1;
-         }
+        self->last_error = error_code;
+        return -1;
       }
-      if (total_parse_len > 0u && msg_size_hint != NULL)
-      {
-         *msg_size_hint = 0u;
-      }
-      *parse_len = total_parse_len;
-      return 0;
-   }
-   return -1;
+    }
+    if (total_parse_len > 0u && msg_size_hint != NULL)
+    {
+      *msg_size_hint = 0u;
+    }
+    *parse_len = total_parse_len;
+    return 0;
+  }
+  return -1;
 }
 
-apx_error_t apx_client_connection_attach_node_instance(apx_client_connection_t* self, apx_node_instance_t* node_instance)
+apx_error_t apx_client_connection_attach_node_instance(
+  apx_client_connection_t *self, apx_node_instance_t *node_instance)
 {
-   if ((self != NULL) && (node_instance != NULL))
-   {
-      apx_file_manager_t* file_manager = apx_connection_base_get_file_manager(&self->base);
-      assert(file_manager != NULL);
-      return apx_node_instance_attach_to_file_manager(node_instance, file_manager);
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if ((self != NULL) && (node_instance != NULL))
+  {
+    apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(&self->base);
+    assert(file_manager != NULL);
+    return apx_node_instance_attach_to_file_manager(node_instance, file_manager);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_client_connection_set_rmf_proto_id(apx_client_connection_t* self, rmf_version_id_t version_id)
+void apx_client_connection_set_rmf_proto_id(apx_client_connection_t *self, rmf_version_id_t version_id)
 {
-   if (self != NULL)
-   {
-      apx_connection_base_set_rmf_proto_id(&self->base, version_id);
-   }
+  if (self != NULL)
+  {
+    apx_connection_base_set_rmf_proto_id(&self->base, version_id);
+  }
 }
 
-rmf_version_id_t apx_client_connection_get_rmf_proto_id(apx_client_connection_t* self)
+rmf_version_id_t apx_client_connection_get_rmf_proto_id(apx_client_connection_t *self)
 {
-   if (self != NULL)
-   {
-      return apx_connection_base_get_rmf_proto_id(&self->base);
-   }
-   return RMF_PROTOCOL_VERSION_ID_NONE;
+  if (self != NULL)
+  {
+    return apx_connection_base_get_rmf_proto_id(&self->base);
+  }
+  return RMF_PROTOCOL_VERSION_ID_NONE;
 }
 
 // ClientConnection API
 
-apx_file_manager_t* apx_client_connection_get_file_manager(apx_client_connection_t* self)
+apx_file_manager_t *apx_client_connection_get_file_manager(apx_client_connection_t *self)
 {
-   if (self != NULL)
-   {
-      return apx_connection_base_get_file_manager(&self->base);
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return apx_connection_base_get_file_manager(&self->base);
+  }
+  return NULL;
 }
 
-void apx_client_connection_start(apx_client_connection_t* self)
+void apx_client_connection_start(apx_client_connection_t *self) { (void)self; }
+
+
+void apx_client_connection_close(apx_client_connection_t *self) { (void)self; }
+
+uint32_t apx_client_connection_get_total_bytes_received(apx_client_connection_t *self)
 {
-   (void)self;
+  (void)self;
+  return 0u;
 }
 
-
-void apx_client_connection_close(apx_client_connection_t* self)
+uint32_t apx_client_connection_get_total_bytes_sent(apx_client_connection_t *self)
 {
-   (void)self;
+  (void)self;
+  return 0u;
 }
 
-uint32_t apx_client_connection_get_total_bytes_received(apx_client_connection_t* self)
+apx_error_t apx_client_connection_get_last_error(apx_client_connection_t const *self)
 {
-   (void)self;
-   return 0u;
+  if (self != NULL)
+  {
+    return self->last_error;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-uint32_t apx_client_connection_get_total_bytes_sent(apx_client_connection_t* self)
+const char *apx_client_connection_get_last_error_node(apx_client_connection_t const *self)
 {
-   (void)self;
-   return 0u;
+  if (self != NULL && !adt_str_is_empty(&self->last_error_node))
+  {
+    return adt_str_cstr((adt_str_t *)&self->last_error_node);
+  }
+  return NULL;
 }
 
-apx_error_t apx_client_connection_get_last_error(apx_client_connection_t const* self)
+void apx_client_connection_vrequire_port_write_notification(
+  void *arg, apx_port_instance_t *port_instance, uint8_t const *data, apx_size_t size)
 {
-   if (self != NULL)
-   {
-      return self->last_error;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  apx_client_connection_t *self = (apx_client_connection_t *)arg;
+  if ((self != NULL) && (port_instance != NULL) && (self->client != NULL))
+  {
+    apx_client_internal_require_port_write_notification(self->client, self, port_instance, data, size);
+  }
 }
 
-const char* apx_client_connection_get_last_error_node(apx_client_connection_t const* self)
+// ConnectionInterface API
+apx_error_t apx_client_connection_vremote_file_published_notification(void *arg, apx_file_t *file)
 {
-   if (self != NULL && !adt_str_is_empty(&self->last_error_node))
-   {
-      return adt_str_cstr((adt_str_t*)&self->last_error_node);
-   }
-   return NULL;
+  return remote_file_published_notification((apx_client_connection_t *)arg, file);
 }
 
-void apx_client_connection_vrequire_port_write_notification(void* arg, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size)
+apx_error_t apx_client_connection_vremote_file_write_notification(
+  void *arg, apx_file_t *file, uint32_t offset, uint8_t const *data, apx_size_t size)
 {
-   apx_client_connection_t* self = (apx_client_connection_t*)arg;
-   if ( (self != NULL) && (port_instance != NULL) && (self->client != NULL))
-   {
-      apx_client_internal_require_port_write_notification(self->client, self, port_instance, data, size);
-   }
+  return remote_file_write_notification((apx_client_connection_t *)arg, file, offset, data, size);
 }
 
-//ConnectionInterface API
-apx_error_t apx_client_connection_vremote_file_published_notification(void* arg, apx_file_t* file)
+apx_error_t apx_client_connection_vnack_notification(void *arg, apx_error_t error_code, char const *name)
 {
-   return remote_file_published_notification((apx_client_connection_t*)arg, file);
-}
-
-apx_error_t apx_client_connection_vremote_file_write_notification(void* arg, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
-{
-   return remote_file_write_notification((apx_client_connection_t*)arg, file, offset, data, size);
-}
-
-apx_error_t apx_client_connection_vnack_notification(void* arg, apx_error_t error_code, char const* name)
-{
-   apx_client_connection_t* self = (apx_client_connection_t*)arg;
-   if (self != NULL)
-   {
-      self->last_error = error_code;
-      if (name != NULL)
-      {
-         adt_str_set_cstr(&self->last_error_node, name);
-      }
-      else
-      {
-         adt_str_clear(&self->last_error_node);
-      }
-      if (self->client != NULL)
-      {
-         apx_client_internal_error_notification(self->client, self, error_code, name);
-      }
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  apx_client_connection_t *self = (apx_client_connection_t *)arg;
+  if (self != NULL)
+  {
+    self->last_error = error_code;
+    if (name != NULL)
+    {
+      adt_str_set_cstr(&self->last_error_node, name);
+    }
+    else
+    {
+      adt_str_clear(&self->last_error_node);
+    }
+    if (self->client != NULL)
+    {
+      apx_client_internal_error_notification(self->client, self, error_code, name);
+    }
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
 #ifdef UNIT_TEST
-void apx_client_connection_run(apx_client_connection_t* self)
+void apx_client_connection_run(apx_client_connection_t *self)
 {
-   if (self != NULL)
-   {
-      //apx_connection_base_run_all(&self->base);
-      apx_file_manager_run(&self->base.file_manager);
-   }
+  if (self != NULL)
+  {
+    // apx_connection_base_run_all(&self->base);
+    apx_file_manager_run(&self->base.file_manager);
+  }
 }
 #endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void send_greeting_header(apx_client_connection_t* self)
+static void send_greeting_header(apx_client_connection_t *self)
 {
-   if (self->base.connection_type == APX_CONNECTION_TYPE_MONITOR)
-   {
-      send_monitor_greeting_header(self);
-   }
-   else
-   {
-      send_default_greeting_header(self);
-   }
+  if (self->base.connection_type == APX_CONNECTION_TYPE_MONITOR)
+  {
+    send_monitor_greeting_header(self);
+  }
+  else
+  {
+    send_default_greeting_header(self);
+  }
 }
 
-static void send_monitor_greeting_header(apx_client_connection_t* self)
+static void send_monitor_greeting_header(apx_client_connection_t *self)
 {
-   int32_t greeting_size;
-   apx_connection_interface_t const* connection;
-   int message_format = 32;
-   char greeting[RMF_GREETING_MAX_LEN];
-   char* p = &greeting[0];
-   strcpy(greeting, RMF_GREETING_1_1_START);
-   p += strlen(greeting);
-   p += sprintf(p, "%s: %d\n", RMF_MESSAGE_SIZE_HDR, message_format);
-   p += sprintf(p, "%s: Monitor\n\n", RMF_CONNECTION_TYPE_MONITOR_HDR);
-   greeting_size = (int32_t)(p - greeting);
-   connection = apx_connection_base_get_connection(&self->base);
-   if (connection != NULL)
-   {
-      int32_t bytes_available = 0;
-      assert((connection->transmit_begin != NULL) && (connection->transmit_end != NULL) && (connection->transmit_direct_message != NULL));
-      connection->transmit_begin(connection->arg);
-      connection->transmit_direct_message(connection->arg, (uint8_t const*)greeting, greeting_size, &bytes_available);
-      connection->transmit_end(connection->arg);
-   }
+  int32_t greeting_size;
+  apx_connection_interface_t const *connection;
+  int message_format = 32;
+  char greeting[RMF_GREETING_MAX_LEN];
+  char *p = &greeting[0];
+  strcpy(greeting, RMF_GREETING_1_1_START);
+  p += strlen(greeting);
+  p += sprintf(p, "%s: %d\n", RMF_MESSAGE_SIZE_HDR, message_format);
+  p += sprintf(p, "%s: Monitor\n\n", RMF_CONNECTION_TYPE_MONITOR_HDR);
+  greeting_size = (int32_t)(p - greeting);
+  connection = apx_connection_base_get_connection(&self->base);
+  if (connection != NULL)
+  {
+    int32_t bytes_available = 0;
+    assert((connection->transmit_begin != NULL) && (connection->transmit_end != NULL) &&
+      (connection->transmit_direct_message != NULL));
+    connection->transmit_begin(connection->arg);
+    connection->transmit_direct_message(connection->arg, (uint8_t const *)greeting, greeting_size, &bytes_available);
+    connection->transmit_end(connection->arg);
+  }
 }
 
-static void send_default_greeting_header(apx_client_connection_t* self)
+static void send_default_greeting_header(apx_client_connection_t *self)
 {
-   int32_t greeting_size;
-   apx_connection_interface_t const* connection;
-   int message_format = 32;
-   char greeting[RMF_GREETING_MAX_LEN];
-   char* p = &greeting[0];
-   if (self->base.rmf_version_id >= RMF_PROTOCOL_VERSION_ID_1_1)
-   {
-      strcpy(greeting, RMF_GREETING_1_1_START);
-      p += strlen(greeting);
-      p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_SIZE_HDR, message_format);
-   }
-   else
-   {
-      strcpy(greeting, RMF_GREETING_1_0_START);
-      p += strlen(greeting);
-      p += sprintf(p, "NumHeader-Format: %d\n\n", message_format);
-   }
-   greeting_size = (int32_t)(p - greeting);
-   connection = apx_connection_base_get_connection(&self->base);
-   if (connection != NULL)
-   {
-      int32_t bytes_available = 0;
-      assert((connection->transmit_begin != NULL) && (connection->transmit_end != NULL) && (connection->transmit_direct_message != NULL));
-      connection->transmit_begin(connection->arg);
-      connection->transmit_direct_message(connection->arg, (uint8_t const*)greeting, greeting_size, &bytes_available);
-      connection->transmit_end(connection->arg);
-   }
+  int32_t greeting_size;
+  apx_connection_interface_t const *connection;
+  int message_format = 32;
+  char greeting[RMF_GREETING_MAX_LEN];
+  char *p = &greeting[0];
+  if (self->base.rmf_version_id >= RMF_PROTOCOL_VERSION_ID_1_1)
+  {
+    strcpy(greeting, RMF_GREETING_1_1_START);
+    p += strlen(greeting);
+    p += sprintf(p, "%s: %d\n\n", RMF_MESSAGE_SIZE_HDR, message_format);
+  }
+  else
+  {
+    strcpy(greeting, RMF_GREETING_1_0_START);
+    p += strlen(greeting);
+    p += sprintf(p, "NumHeader-Format: %d\n\n", message_format);
+  }
+  greeting_size = (int32_t)(p - greeting);
+  connection = apx_connection_base_get_connection(&self->base);
+  if (connection != NULL)
+  {
+    int32_t bytes_available = 0;
+    assert((connection->transmit_begin != NULL) && (connection->transmit_end != NULL) &&
+      (connection->transmit_direct_message != NULL));
+    connection->transmit_begin(connection->arg);
+    connection->transmit_direct_message(connection->arg, (uint8_t const *)greeting, greeting_size, &bytes_available);
+    connection->transmit_end(connection->arg);
+  }
 }
 
-static apx_error_t remote_file_published_notification(apx_client_connection_t* self, apx_file_t* file)
+static apx_error_t remote_file_published_notification(apx_client_connection_t *self, apx_file_t *file)
 {
-   if ((self != NULL) && (file != NULL))
-   {
+  if ((self != NULL) && (file != NULL))
+  {
 #if APX_DEBUG_ENABLE
-      printf("[CLIENT-CONNECTION] remote_file_published_notification: \"%s\"(%d)\n", apx_file_get_name(file), apx_file_get_apx_file_type(file));
+    printf("[CLIENT-CONNECTION] remote_file_published_notification: \"%s\"(%d)\n", apx_file_get_name(file),
+      apx_file_get_apx_file_type(file));
 #endif
-      apx_file_type_t const file_type = apx_file_get_apx_file_type(file);
-      if ((file_type == APX_REQUIRE_PORT_DATA_FILE_TYPE) ||
-          (file_type == APX_PROVIDE_PORT_COUNT_FILE_TYPE) ||
-          (file_type == APX_REQUIRE_PORT_COUNT_FILE_TYPE))
-      {
-         return process_new_remote_file(self, file);
-      }
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+    apx_file_type_t const file_type = apx_file_get_apx_file_type(file);
+    if ((file_type == APX_REQUIRE_PORT_DATA_FILE_TYPE) || (file_type == APX_PROVIDE_PORT_COUNT_FILE_TYPE) ||
+      (file_type == APX_REQUIRE_PORT_COUNT_FILE_TYPE))
+    {
+      return process_new_remote_file(self, file);
+    }
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static apx_error_t process_new_remote_file(apx_client_connection_t* self, apx_file_t* file)
+static apx_error_t process_new_remote_file(apx_client_connection_t *self, apx_file_t *file)
 {
-   assert((self != NULL) && (file != NULL));
-   char* base_name = rmf_file_info_base_name(apx_file_get_file_info(file));
-   if (base_name != NULL)
-   {
-      assert(self->base.node_manager != NULL);
-      apx_node_instance_t* node_instance = apx_node_manager_find(self->base.node_manager, base_name);
-      if (node_instance != NULL)
-      {
-         free(base_name);
-         return apx_node_instance_remote_file_published_notification(node_instance, file);
-      }
-      else
-      {
+  assert((self != NULL) && (file != NULL));
+  char *base_name = rmf_file_info_base_name(apx_file_get_file_info(file));
+  if (base_name != NULL)
+  {
+    assert(self->base.node_manager != NULL);
+    apx_node_instance_t *node_instance = apx_node_manager_find(self->base.node_manager, base_name);
+    if (node_instance != NULL)
+    {
+      free(base_name);
+      return apx_node_instance_remote_file_published_notification(node_instance, file);
+    }
+    else
+    {
 #if APX_DEBUG_ENABLE
-         printf("Node not found: \"%s\"\n", base_name);
+      printf("Node not found: \"%s\"\n", base_name);
 #endif
-        free(base_name);
-      }
-   }
-   else
-   {
-      return APX_MEM_ERROR;
-   }
-   return APX_NO_ERROR;
+      free(base_name);
+    }
+  }
+  else
+  {
+    return APX_MEM_ERROR;
+  }
+  return APX_NO_ERROR;
 }
 
 
-static apx_error_t remote_file_write_notification(apx_client_connection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
+static apx_error_t remote_file_write_notification(
+  apx_client_connection_t *self, apx_file_t *file, uint32_t offset, uint8_t const *data, apx_size_t size)
 {
-   if ( (self != NULL) && (file != NULL) )
-   {
-      return apx_file_write_notify(file, offset, data, (uint32_t)size);
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if ((self != NULL) && (file != NULL))
+  {
+    return apx_file_write_notify(file, offset, data, (uint32_t)size);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static uint8_t const* parse_message(apx_client_connection_t* self, uint8_t const* begin, uint8_t const* end, apx_error_t* error_code, apx_size_t* msg_size_hint)
+static uint8_t const *parse_message(apx_client_connection_t *self, uint8_t const *begin, uint8_t const *end,
+  apx_error_t *error_code, apx_size_t *msg_size_hint)
 {
-   uint8_t const* msg_end = NULL;
-   *error_code = APX_NO_ERROR;
-   if (begin < end)
-   {
-      uint32_t msg_size = 0u;
-      uint8_t const* result = numheader_decode32(begin, end, &msg_size);
-      if (result == NULL)
-      {
-         *error_code = APX_PARSE_ERROR;
-         return NULL;
-      }
-      else if (result == begin)
-      {
-         //Not enough bytes in buffer, try later when more data has been received
-         return begin;
-      }
-      else
-      {
-         uint8_t const* msg_data = result;
-         msg_end = msg_data + msg_size;
-#if APX_DEBUG_ENABLE
-         apx_size_t const header_size = (apx_size_t)(msg_data - begin);
-         printf("[CLIENT-CONNECTION]: Received message: (%d+%d) bytes\n", (int)header_size, (int)msg_size);
-#endif
-         if (msg_end <= end)
-         {
-            if (self->is_greeting_accepted)
-            {
-               *error_code = apx_connection_base_message_received(&self->base, msg_data, msg_size);
-            }
-            else
-            {
-               if (parse_greeting(self, msg_data, msg_size, error_code))
-               {
-                  apx_client_connection_greeting_header_accepted_notification(self);
-               }
-               else
-               {
-                  if (*error_code == APX_NO_ERROR)
-                  {
-                     *error_code = APX_INVALID_MSG_ERROR;
-                  }
-                  self->last_error = *error_code;
-                  return NULL;
-               }
-            }
-         }
-         else
-         {
-            //Message not complete, try again later
-            if (msg_size_hint != NULL)
-            {
-               *msg_size_hint = (apx_size_t)((msg_data - begin) + msg_size);
-            }
-            return begin;
-         }
-      }
-   }
-   else
-   {
+  uint8_t const *msg_end = NULL;
+  *error_code = APX_NO_ERROR;
+  if (begin < end)
+  {
+    uint32_t msg_size = 0u;
+    uint8_t const *result = numheader_decode32(begin, end, &msg_size);
+    if (result == NULL)
+    {
       *error_code = APX_PARSE_ERROR;
       return NULL;
-   }
-   return msg_end;
-}
-
-static bool parse_greeting(apx_client_connection_t* self, uint8_t const* msg_data, apx_size_t msg_size, apx_error_t* error_code)
-{
-   uint32_t address;
-   bool more_bit = false;
-   uint8_t const* const msg_end = msg_data + msg_size;
-   apx_size_t header_size = rmf_address_decode(msg_data, msg_data + msg_size, &address, &more_bit);
-   if (address == RMF_CMD_AREA_START_ADDRESS)
-   {
-      uint32_t cmd_type = 0u;
-      apx_size_t decode_size = rmf_decode_cmd_type(msg_data + header_size, msg_end, &cmd_type);
-      if (decode_size == RMF_CMD_TYPE_SIZE)
+    }
+    else if (result == begin)
+    {
+      // Not enough bytes in buffer, try later when more data has been received
+      return begin;
+    }
+    else
+    {
+      uint8_t const *msg_data = result;
+      msg_end = msg_data + msg_size;
+#if APX_DEBUG_ENABLE
+      apx_size_t const header_size = (apx_size_t)(msg_data - begin);
+      printf("[CLIENT-CONNECTION]: Received message: (%d+%d) bytes\n", (int)header_size, (int)msg_size);
+#endif
+      if (msg_end <= end)
       {
-         uint32_t data_size = msg_size - header_size - decode_size;
-         if (cmd_type == RMF_CMD_ACK_MSG)
-         {
-            return true;
-         }
-         else if ((cmd_type == RMF_CMD_ACCEPT_HEADER) && (data_size == UINT32_SIZE))
-         {
-            uint32_t connection_id = unpackLE(msg_data + header_size + RMF_CMD_TYPE_SIZE, UINT32_SIZE);
-            apx_connection_base_set_connection_id(&self->base, connection_id);
-            return true;
-         }
-         else if ((cmd_type == RMF_CMD_NACK_MSG) && (data_size >= RMF_CMD_NACK_DATA_SIZE))
-         {
-            uint32_t nack_code = 0;
-            char const* nack_name = NULL;
-            if (rmf_decode_nack_cmd(msg_data + header_size, msg_end, &nack_code, &nack_name) > 0)
+        if (self->is_greeting_accepted)
+        {
+          *error_code = apx_connection_base_message_received(&self->base, msg_data, msg_size);
+        }
+        else
+        {
+          if (parse_greeting(self, msg_data, msg_size, error_code))
+          {
+            apx_client_connection_greeting_header_accepted_notification(self);
+          }
+          else
+          {
+            if (*error_code == APX_NO_ERROR)
             {
-               *error_code = (apx_error_t) nack_code;
-               self->last_error = (apx_error_t) nack_code;
-               if (nack_name != NULL)
-               {
-                  adt_str_set_cstr(&self->last_error_node, nack_name);
-               }
-               else
-               {
-                  adt_str_clear(&self->last_error_node);
-               }
-               if (self->client != NULL)
-               {
-                  apx_client_internal_error_notification(self->client, self, (apx_error_t)nack_code, nack_name);
-               }
-               return false;
+              *error_code = APX_INVALID_MSG_ERROR;
             }
-         }
+            self->last_error = *error_code;
+            return NULL;
+          }
+        }
       }
-   }
-   else
-   {
-      *error_code = APX_INVALID_MSG_ERROR;
-   }
-   return false;
+      else
+      {
+        // Message not complete, try again later
+        if (msg_size_hint != NULL)
+        {
+          *msg_size_hint = (apx_size_t)((msg_data - begin) + msg_size);
+        }
+        return begin;
+      }
+    }
+  }
+  else
+  {
+    *error_code = APX_PARSE_ERROR;
+    return NULL;
+  }
+  return msg_end;
 }
 
+static bool parse_greeting(
+  apx_client_connection_t *self, uint8_t const *msg_data, apx_size_t msg_size, apx_error_t *error_code)
+{
+  uint32_t address;
+  bool more_bit = false;
+  uint8_t const *const msg_end = msg_data + msg_size;
+  apx_size_t header_size = rmf_address_decode(msg_data, msg_data + msg_size, &address, &more_bit);
+  if (address == RMF_CMD_AREA_START_ADDRESS)
+  {
+    uint32_t cmd_type = 0u;
+    apx_size_t decode_size = rmf_decode_cmd_type(msg_data + header_size, msg_end, &cmd_type);
+    if (decode_size == RMF_CMD_TYPE_SIZE)
+    {
+      uint32_t data_size = msg_size - header_size - decode_size;
+      if (cmd_type == RMF_CMD_ACK_MSG)
+      {
+        return true;
+      }
+      else if ((cmd_type == RMF_CMD_ACCEPT_HEADER) && (data_size == UINT32_SIZE))
+      {
+        uint32_t connection_id = unpackLE(msg_data + header_size + RMF_CMD_TYPE_SIZE, UINT32_SIZE);
+        apx_connection_base_set_connection_id(&self->base, connection_id);
+        return true;
+      }
+      else if ((cmd_type == RMF_CMD_NACK_MSG) && (data_size >= RMF_CMD_NACK_DATA_SIZE))
+      {
+        uint32_t nack_code = 0;
+        char const *nack_name = NULL;
+        if (rmf_decode_nack_cmd(msg_data + header_size, msg_end, &nack_code, &nack_name) > 0)
+        {
+          *error_code = (apx_error_t)nack_code;
+          self->last_error = (apx_error_t)nack_code;
+          if (nack_name != NULL)
+          {
+            adt_str_set_cstr(&self->last_error_node, nack_name);
+          }
+          else
+          {
+            adt_str_clear(&self->last_error_node);
+          }
+          if (self->client != NULL)
+          {
+            apx_client_internal_error_notification(self->client, self, (apx_error_t)nack_code, nack_name);
+          }
+          return false;
+        }
+      }
+    }
+  }
+  else
+  {
+    *error_code = APX_INVALID_MSG_ERROR;
+  }
+  return false;
+}

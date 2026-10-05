@@ -11,5 +11,3 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 /docs/_build/
-.clang-format
-.clang-format-ignore

@@ -1,22 +1,22 @@
 /*****************************************************************************
-* \file      client_event_listener_spy.h
-* \author    Conny Gustafsson
-* \date      2019-05-27
-* \brief     Client event listener spy
-*
-* Copyright (c) 2019-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      client_event_listener_spy.h
+ * \author    Conny Gustafsson
+ * \date      2019-05-27
+ * \brief     Client event listener spy
+ *
+ * Copyright (c) 2019-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_CLIENT_EVENT_LISTENER_SPY_H
 #define APX_CLIENT_EVENT_LISTENER_SPY_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/types.h"
-#include "apx/event_listener.h"
 #include "apx/client.h"
+#include "apx/event_listener.h"
+#include "apx/types.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -24,9 +24,9 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_client_event_listener_spy_tag
 {
-   uint32_t connectCount;
-   uint32_t disconnectCount;
-   uint32_t headerAcceptedCount;
+  uint32_t connectCount;
+  uint32_t disconnectCount;
+  uint32_t headerAcceptedCount;
 } apx_client_event_listener_spy_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -35,11 +35,11 @@ typedef struct apx_client_event_listener_spy_tag
 
 void apx_client_event_listener_spy_create(apx_client_event_listener_spy_t *self);
 void apx_client_event_listener_spy_destroy(apx_client_event_listener_spy_t *self);
-apx_client_event_listener_spy_t* apx_client_event_listener_spy_new(void);
+apx_client_event_listener_spy_t *apx_client_event_listener_spy_new(void);
 void apx_client_event_listener_spy_delete(apx_client_event_listener_spy_t *self);
-void* apx_client_event_listener_spy_register(apx_client_event_listener_spy_t *self, apx_client_t *client);
+void *apx_client_event_listener_spy_register(apx_client_event_listener_spy_t *self, apx_client_t *client);
 uint32_t apx_client_event_listener_spy_get_connect_count(apx_client_event_listener_spy_t *self);
 uint32_t apx_client_event_listener_spy_get_disconnect_count(apx_client_event_listener_spy_t *self);
 uint32_t apx_client_event_listener_spy_get_header_accepted(apx_client_event_listener_spy_t *self);
 
-#endif //APX_CLIENT_EVENT_LISTENER_SPY_H
+#endif // APX_CLIENT_EVENT_LISTENER_SPY_H

@@ -1,21 +1,21 @@
 /*****************************************************************************
-* \file      server_cfg.h
-* \author    Conny Gustafsson
-* \date      2026-08-28
-* \brief     APX Server configuration loader (Directory & File)
-*
-* Copyright (c) 2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      server_cfg.h
+ * \author    Conny Gustafsson
+ * \date      2026-08-28
+ * \brief     APX Server configuration loader (Directory & File)
+ *
+ * Copyright (c) 2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_SERVER_CFG_H
 #define APX_SERVER_CFG_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/types.h"
 #include "apx/error.h"
+#include "apx/types.h"
 #include "dtl_type.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -52,4 +52,4 @@ struct apx_server_tag;
  */
 apx_error_t apx_server_configure(struct apx_server_tag *server, dtl_hv_t const *config);
 
-#endif //APX_SERVER_CFG_H
+#endif // APX_SERVER_CFG_H

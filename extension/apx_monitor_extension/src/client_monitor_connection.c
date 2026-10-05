@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      client_monitor_connection.c
-* \author    Conny Gustafsson
-* \date      2021-03-30
-* \brief     Client-side monitor connection
-*
-* Copyright (c) 2021-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      client_monitor_connection.c
+ * \author    Conny Gustafsson
+ * \date      2021-03-30
+ * \brief     Client-side monitor connection
+ *
+ * Copyright (c) 2021-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////

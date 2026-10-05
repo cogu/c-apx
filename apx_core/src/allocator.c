@@ -1,28 +1,28 @@
 /*****************************************************************************
-* \file      allocator.c
-* \author    Conny Gustafsson
-* \date      2017-02-20
-* \brief     Small object allocator for usage within c-apx
-*
-* Copyright (c) 2017-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      allocator.c
+ * \author    Conny Gustafsson
+ * \date      2017-02-20
+ * \brief     Small object allocator for usage within c-apx
+ *
+ * Copyright (c) 2017-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include <assert.h>
 #include <errno.h>
 #include <malloc.h>
-#include <assert.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef _MSC_VER
-#include <process.h>
+# include <process.h>
 #endif
 #include "apx/allocator.h"
 #include "apx/logging.h"
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 
@@ -35,7 +35,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #ifndef UNIT_TEST
 static int8_t apx_allocator_start_thread(apx_allocator_t *self);
-static THREAD_PROTO(thread_task,arg);
+static THREAD_PROTO(thread_task, arg);
 #endif
 static bool apx_allocator_process_event(apx_allocator_t *self);
 
@@ -54,174 +54,175 @@ static bool apx_allocator_process_event(apx_allocator_t *self);
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_allocator_create(apx_allocator_t *self, uint16_t max_pending_messages)
 {
-   if (self != NULL)
-   {
-      size_t elem_size = sizeof(rbf_data_t);
-      adt_buf_err_t buf_result;
+  if (self != NULL)
+  {
+    size_t elem_size = sizeof(rbf_data_t);
+    adt_buf_err_t buf_result;
 
-      buf_result = adt_rbfh_create_with_params(&self->messages, (uint8_t) elem_size, ADT_RBFSH_MIN_NUM_ELEMS_DEFAULT, max_pending_messages);
-      if (buf_result != BUF_E_OK)
-      {
-         return APX_MEM_ERROR;
-      }
+    buf_result = adt_rbfh_create_with_params(
+      &self->messages, (uint8_t)elem_size, ADT_RBFSH_MIN_NUM_ELEMS_DEFAULT, max_pending_messages);
+    if (buf_result != BUF_E_OK)
+    {
+      return APX_MEM_ERROR;
+    }
 
 #ifdef _WIN32
-      self->workerThread = INVALID_HANDLE_VALUE;
+    self->workerThread = INVALID_HANDLE_VALUE;
 #else
-      self->workerThread = 0;
+    self->workerThread = 0;
 #endif
-      self->workerThreadValid=false;
-      SPINLOCK_INIT(self->lock);
+    self->workerThreadValid = false;
+    SPINLOCK_INIT(self->lock);
 #ifndef UNIT_TEST
-      SEMAPHORE_CREATE(self->semaphore);
+    SEMAPHORE_CREATE(self->semaphore);
 #endif
-      self->isRunning = false;
-      soa_init(&self->soa);
-      return APX_NO_ERROR;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+    self->isRunning = false;
+    soa_init(&self->soa);
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_allocator_destroy(apx_allocator_t *self)
 {
-   if (self != NULL)
-   {
-      adt_rbfh_destroy(&self->messages);
-      soa_destroy(&self->soa);
+  if (self != NULL)
+  {
+    adt_rbfh_destroy(&self->messages);
+    soa_destroy(&self->soa);
 #ifndef UNIT_TEST
-      SEMAPHORE_DESTROY(self->semaphore);
+    SEMAPHORE_DESTROY(self->semaphore);
 #endif
-      SPINLOCK_DESTROY(self->lock);
-   }
+    SPINLOCK_DESTROY(self->lock);
+  }
 }
 
 void apx_allocator_start(apx_allocator_t *self)
 {
 #ifndef UNIT_TEST
-   if( (self != NULL) && (self->workerThreadValid == false) )
-   {
-      apx_allocator_start_thread(self);
-   }
+  if ((self != NULL) && (self->workerThreadValid == false))
+  {
+    apx_allocator_start_thread(self);
+  }
 #else
-   (void)self;
+  (void)self;
 #endif
 }
 
 void apx_allocator_stop(apx_allocator_t *self)
 {
-   if( (self != NULL) && (self->workerThreadValid == true) )
-   {
+  if ((self != NULL) && (self->workerThreadValid == true))
+  {
 #ifdef _MSC_VER
-      DWORD result;
+    DWORD result;
 #endif
-      rbf_data_t data = {0,0}; //sending a null-pointer with size 0 should wake up the workerThread
-      //1. enqueue message
-      SPINLOCK_ENTER(self->lock);
-      self->isRunning = false;
-      adt_rbfh_insert(&self->messages,(const uint8_t*) &data);
-      SPINLOCK_LEAVE(self->lock);
-      //2. wake workerThread
+    rbf_data_t data = {0, 0}; // sending a null-pointer with size 0 should wake up the workerThread
+      // 1. enqueue message
+    SPINLOCK_ENTER(self->lock);
+    self->isRunning = false;
+    adt_rbfh_insert(&self->messages, (const uint8_t *)&data);
+    SPINLOCK_LEAVE(self->lock);
+      // 2. wake workerThread
 #ifndef UNIT_TEST
-      SEMAPHORE_POST(self->semaphore);
+    SEMAPHORE_POST(self->semaphore);
 #endif
 #ifdef _MSC_VER
-      result = WaitForSingleObject(self->workerThread, 5000);
-      if (result == WAIT_TIMEOUT)
-      {
-         APX_LOG_ERROR("[APX_ALLOCATOR] timeout while joining workerThread");
-      }
-      else if (result == WAIT_FAILED)
-      {
+    result = WaitForSingleObject(self->workerThread, 5000);
+    if (result == WAIT_TIMEOUT)
+    {
+      APX_LOG_ERROR("[APX_ALLOCATOR] timeout while joining workerThread");
+    }
+    else if (result == WAIT_FAILED)
+    {
 # ifndef UNIT_TEST
-         DWORD lastError = GetLastError();
-         APX_LOG_ERROR("[APX_ALLOCATOR]  joining workerThread failed with %d", (int)lastError);
+      DWORD lastError = GetLastError();
+      APX_LOG_ERROR("[APX_ALLOCATOR]  joining workerThread failed with %d", (int)lastError);
 # endif
-      }
-      CloseHandle(self->workerThread);
-      self->workerThread = INVALID_HANDLE_VALUE;
+    }
+    CloseHandle(self->workerThread);
+    self->workerThread = INVALID_HANDLE_VALUE;
 #else
-      if(pthread_equal(pthread_self(),self->workerThread) == 0)
+    if (pthread_equal(pthread_self(), self->workerThread) == 0)
+    {
+      void *status;
+      int s = pthread_join(self->workerThread, &status);
+      if (s != 0)
       {
-         void *status;
-         int s = pthread_join(self->workerThread, &status);
-         if (s != 0)
-         {
-            APX_LOG_ERROR("[APX_ALLOCATOR] pthread_join error %d\n",s);
-         }
+        APX_LOG_ERROR("[APX_ALLOCATOR] pthread_join error %d\n", s);
       }
-      else
-      {
-         APX_LOG_ERROR("[APX_ALLOCATOR] pthread_join attempted on pthread_self()\n");
-      }
+    }
+    else
+    {
+      APX_LOG_ERROR("[APX_ALLOCATOR] pthread_join attempted on pthread_self()\n");
+    }
 #endif
-   }
+  }
 }
 
 uint8_t *apx_allocator_alloc(apx_allocator_t *self, size_t size)
 {
-   uint8_t *data = NULL;
-   if ( (self != NULL) && (size > 0) )
-   {
-      if (size <= SOA_SMALL_OBJECT_MAX_SIZE)
-      {
-         //use the small object allocator
-         SPINLOCK_ENTER(self->lock);
-         data = (uint8_t*) soa_alloc(&self->soa, size);
-         SPINLOCK_LEAVE(self->lock);
-      }
-      else
-      {
-         //use the default allocator
-         data = (uint8_t*) malloc(size);
-      }
-   }
-   return data;
+  uint8_t *data = NULL;
+  if ((self != NULL) && (size > 0))
+  {
+    if (size <= SOA_SMALL_OBJECT_MAX_SIZE)
+    {
+         // use the small object allocator
+      SPINLOCK_ENTER(self->lock);
+      data = (uint8_t *)soa_alloc(&self->soa, size);
+      SPINLOCK_LEAVE(self->lock);
+    }
+    else
+    {
+         // use the default allocator
+      data = (uint8_t *)malloc(size);
+    }
+  }
+  return data;
 }
 
 void apx_allocator_free(apx_allocator_t *self, uint8_t *ptr, size_t size)
 {
-   if (self != NULL)
-   {
-      rbf_data_t data;
-      data.ptr=ptr;
-      data.size=(uint32_t) size;
-      //1. enqueue message
-      SPINLOCK_ENTER(self->lock);
-      adt_rbfh_insert(&self->messages,(const uint8_t*) &data);
-      SPINLOCK_LEAVE(self->lock);
+  if (self != NULL)
+  {
+    rbf_data_t data;
+    data.ptr = ptr;
+    data.size = (uint32_t)size;
+      // 1. enqueue message
+    SPINLOCK_ENTER(self->lock);
+    adt_rbfh_insert(&self->messages, (const uint8_t *)&data);
+    SPINLOCK_LEAVE(self->lock);
 #ifndef UNIT_TEST
-      //2. wake worker thread
-      SEMAPHORE_POST(self->semaphore);
+      // 2. wake worker thread
+    SEMAPHORE_POST(self->semaphore);
 #endif
-   }
+  }
 }
 
 bool apx_allocator_is_running(apx_allocator_t *self)
 {
-   if ( self != NULL)
-   {
-      return self->isRunning;
-   }
-   return false;
+  if (self != NULL)
+  {
+    return self->isRunning;
+  }
+  return false;
 }
 
 #ifdef UNIT_TEST
 void apx_allocator_process_all(apx_allocator_t *self)
 {
-   bool result = true;
-   while(result)
-   {
-      result = apx_allocator_process_event(self);
-   }
+  bool result = true;
+  while (result)
+  {
+    result = apx_allocator_process_event(self);
+  }
 }
 
 int32_t apx_allocator_num_pending_messages(apx_allocator_t *self)
 {
-   if (self != NULL)
-   {
-      return adt_rbfh_length(&self->messages);
-   }
-   return -1;
+  if (self != NULL)
+  {
+    return adt_rbfh_length(&self->messages);
+  }
+  return -1;
 }
 #endif
 
@@ -231,118 +232,117 @@ int32_t apx_allocator_num_pending_messages(apx_allocator_t *self)
 #ifndef UNIT_TEST
 static int8_t apx_allocator_start_thread(apx_allocator_t *self)
 {
-   if( self != NULL){
-   self->isRunning = true;
-   self->workerThreadValid = true;
-#ifdef _WIN32
-      THREAD_CREATE(self->workerThread,thread_task,self,self->threadId);
-      if(self->workerThread == INVALID_HANDLE_VALUE){
-         self->workerThreadValid = false;
-         return -1;
-      }
-#else
-      int rc = THREAD_CREATE(self->workerThread,thread_task,self);
-      if(rc != 0){
-         self->workerThreadValid = false;
-         return -1;
-      }
-#endif
-      //from this point forward all access to self must be protected by spin lock
-      return 0;
-   }
-   return -1;
+  if (self != NULL)
+  {
+    self->isRunning = true;
+    self->workerThreadValid = true;
+# ifdef _WIN32
+    THREAD_CREATE(self->workerThread, thread_task, self, self->threadId);
+    if (self->workerThread == INVALID_HANDLE_VALUE)
+    {
+      self->workerThreadValid = false;
+      return -1;
+    }
+# else
+    int rc = THREAD_CREATE(self->workerThread, thread_task, self);
+    if (rc != 0)
+    {
+      self->workerThreadValid = false;
+      return -1;
+    }
+# endif
+      // from this point forward all access to self must be protected by spin lock
+    return 0;
+  }
+  return -1;
 }
 
-static THREAD_PROTO(thread_task,arg)
+static THREAD_PROTO(thread_task, arg)
 {
-   if(arg != NULL)
-   {
-
-      apx_allocator_t *self;
-      uint32_t messages_processed=0;
-      self = (apx_allocator_t*) arg;
-      for(;;)
+  if (arg != NULL)
+  {
+    apx_allocator_t *self;
+    uint32_t messages_processed = 0;
+    self = (apx_allocator_t *)arg;
+    for (;;)
+    {
+# ifdef _MSC_VER
+      DWORD result = WaitForSingleObject(self->semaphore, INFINITE);
+      if (result == WAIT_OBJECT_0)
+# else
+      int result = sem_wait(&self->semaphore);
+      if (result == 0)
+# endif
       {
-#ifdef _MSC_VER
-         DWORD result = WaitForSingleObject(self->semaphore, INFINITE);
-         if (result == WAIT_OBJECT_0)
-#else
-         int result = sem_wait(&self->semaphore);
-         if (result == 0)
-#endif
-         {
-            bool processing_result;
-            messages_processed++;
-            processing_result = apx_allocator_process_event(self);
-            if (!processing_result)
-            {
-               break;
-            }
-         }
-         else
-         {
-#ifdef _MSC_VER
-            DWORD lastError = GetLastError();
-            APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, lastError=%d", lastError);
-#else
-            APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, errno=%d", errno);
-#endif
-            break;
-         }
-      }
-      (void)messages_processed;
-      //APX_LOG_DEBUG("[APX_ALLOCATOR]: messages_processed: %u\n", messages_processed);
-   }
-   THREAD_RETURN(0);
-}
-#endif //UNIT_TEST
-
-static bool apx_allocator_process_event(apx_allocator_t *self)
-{
-   bool retval = true;
-   uint8_t rc;
-   rbf_data_t data;
-   bool delayed_free = false;
-   SPINLOCK_ENTER(self->lock);
-   rc = adt_rbfh_remove(&self->messages,(uint8_t*) &data);
-   if (rc == BUF_E_OK)
-   {
-      if (data.ptr != NULL)
-      {
-         if (data.size<=SOA_SMALL_OBJECT_MAX_SIZE)
-         {
-            soa_free(&self->soa,data.ptr,data.size);
-         }
-         else
-         {
-            delayed_free = true;
-         }
+        bool processing_result;
+        messages_processed++;
+        processing_result = apx_allocator_process_event(self);
+        if (!processing_result)
+        {
+          break;
+        }
       }
       else
       {
-         retval = false;
+# ifdef _MSC_VER
+        DWORD lastError = GetLastError();
+        APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, lastError=%d", lastError);
+# else
+        APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, errno=%d", errno);
+# endif
+        break;
       }
-   }
-   else
-   {
-      retval = false;
-   }
-   SPINLOCK_LEAVE(self->lock);
-
-   if (delayed_free == true)
-   {
-      free(data.ptr);
-   }
-   else if ( (rc == BUF_E_OK) && (data.ptr == NULL) )
-   {
-      retval = false; //NULL data pointer is a valid exit message
-   }
-   else
-   {
-      //Already handled by soa_free or buf_result != E_BUF_OK
-   }
-   return retval;
+    }
+    (void)messages_processed;
+      // APX_LOG_DEBUG("[APX_ALLOCATOR]: messages_processed: %u\n", messages_processed);
+  }
+  THREAD_RETURN(0);
 }
+#endif // UNIT_TEST
 
+static bool apx_allocator_process_event(apx_allocator_t *self)
+{
+  bool retval = true;
+  uint8_t rc;
+  rbf_data_t data;
+  bool delayed_free = false;
+  SPINLOCK_ENTER(self->lock);
+  rc = adt_rbfh_remove(&self->messages, (uint8_t *)&data);
+  if (rc == BUF_E_OK)
+  {
+    if (data.ptr != NULL)
+    {
+      if (data.size <= SOA_SMALL_OBJECT_MAX_SIZE)
+      {
+        soa_free(&self->soa, data.ptr, data.size);
+      }
+      else
+      {
+        delayed_free = true;
+      }
+    }
+    else
+    {
+      retval = false;
+    }
+  }
+  else
+  {
+    retval = false;
+  }
+  SPINLOCK_LEAVE(self->lock);
 
-
+  if (delayed_free == true)
+  {
+    free(data.ptr);
+  }
+  else if ((rc == BUF_E_OK) && (data.ptr == NULL))
+  {
+    retval = false; // NULL data pointer is a valid exit message
+  }
+  else
+  {
+      // Already handled by soa_free or buf_result != E_BUF_OK
+  }
+  return retval;
+}

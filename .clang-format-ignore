@@ -1,0 +1,6 @@
+# Submodules with external or independent formatting
+mbedtls/**
+legacy/**
+
+# Build artifacts and third-party
+build/**

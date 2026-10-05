@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      server_model.h
-* \author    Conny Gustafsson
-* \date      2021-01-01
-* \brief     APX server model used by observer extension and its clients
-*
-* Copyright (c) 2021-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      server_model.h
+ * \author    Conny Gustafsson
+ * \date      2021-01-01
+ * \brief     APX server model used by observer extension and its clients
+ *
+ * Copyright (c) 2021-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_SERVER_MODEL_H
 #define APX_SERVER_MODEL_H
 
@@ -23,5 +23,4 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-#endif //APX_SERVER_MODEL_H
-
+#endif // APX_SERVER_MODEL_H

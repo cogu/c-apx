@@ -1,24 +1,24 @@
 /*****************************************************************************
-* \file      testsuite_monitor_extension.c
-* \author    Conny Gustafsson
-* \date      2026-08-26
-* \brief     Unit tests for monitor extension
-*
-* Copyright (c) 2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      testsuite_monitor_extension.c
+ * \author    Conny Gustafsson
+ * \date      2026-08-26
+ * \brief     Unit tests for monitor extension
+ *
+ * Copyright (c) 2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <string.h>
 #include "CuTest.h"
-#include "apx/server.h"
-#include "apx/extension/server_monitor.h"
 #include "apx/extension/monitor_extension.h"
+#include "apx/extension/server_monitor.h"
+#include "apx/server.h"
 #include "apx/server_test_connection.h"
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -28,11 +28,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_new_monitor_connection_receives_connection_id_in_accept_header(CuTest* tc);
-static void test_monitor_connection_transmits_existing_connection_info_on_connect(CuTest* tc);
+static void test_new_monitor_connection_receives_connection_id_in_accept_header(CuTest *tc);
+static void test_monitor_connection_transmits_existing_connection_info_on_connect(CuTest *tc);
 
-//Helper functions
-static void register_extension(CuTest* tc, apx_server_t* server);
+// Helper functions
+static void register_extension(CuTest *tc, apx_server_t *server);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -41,138 +41,140 @@ static void register_extension(CuTest* tc, apx_server_t* server);
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-CuSuite* testsuite_apx_monitor_extension(void)
+CuSuite *testsuite_apx_monitor_extension(void)
 {
-   CuSuite* suite = CuSuiteNew();
-   SUITE_ADD_TEST(suite, test_new_monitor_connection_receives_connection_id_in_accept_header);
-   SUITE_ADD_TEST(suite, test_monitor_connection_transmits_existing_connection_info_on_connect);
-   return suite;
+  CuSuite *suite = CuSuiteNew();
+  SUITE_ADD_TEST(suite, test_new_monitor_connection_receives_connection_id_in_accept_header);
+  SUITE_ADD_TEST(suite, test_monitor_connection_transmits_existing_connection_info_on_connect);
+  return suite;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void test_new_monitor_connection_receives_connection_id_in_accept_header(CuTest* tc)
+static void test_new_monitor_connection_receives_connection_id_in_accept_header(CuTest *tc)
 {
-   apx_server_t* server;
-   apx_server_test_connection_t* monitor_connection = NULL;
-   adt_bytearray_t* packet;
-   uint8_t actual[13];
-   uint8_t expected[13] = {
-      //message size
-      12,
-      //write address
-      0xBFu,
-      0xFFu,
-      0xFCu,
-      0x00u,
-      //command type
-      (uint8_t)RMF_CMD_ACCEPT_HEADER,
-      0u,
-      0u,
-      0u,
-      //connection id
-      0x00u,
-      0x00u,
-      0x00u,
-      0x00u,
-   };
+  apx_server_t *server;
+  apx_server_test_connection_t *monitor_connection = NULL;
+  adt_bytearray_t *packet;
+  uint8_t actual[13];
+  uint8_t expected[13] = {
+      // message size
+    12,
+      // write address
+    0xBFu,
+    0xFFu,
+    0xFCu,
+    0x00u,
+      // command type
+    (uint8_t)RMF_CMD_ACCEPT_HEADER,
+    0u,
+    0u,
+    0u,
+      // connection id
+    0x00u,
+    0x00u,
+    0x00u,
+    0x00u,
+  };
 
-   server = apx_server_new();
-   CuAssertPtrNotNull(tc, server);
-   register_extension(tc, server);
-   apx_server_start(server);
-   monitor_connection = apx_server_test_connection_new();
-   CuAssertPtrNotNull(tc, monitor_connection);
-   apx_server_accept_connection(server, (apx_server_connection_t*)monitor_connection);
-   apx_server_test_connection_set_tester_connection_type(monitor_connection, APX_CONNECTION_TYPE_MONITOR);
-   CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(monitor_connection));
-   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(monitor_connection));
-   apx_server_test_connection_run(monitor_connection);
-   apx_server_run(server);
-   CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(monitor_connection));
-   packet = apx_server_test_connection_get_log_packet(monitor_connection, 0);
-   CuAssertPtrNotNull(tc, packet);
-   CuAssertIntEquals(tc, (int)sizeof(actual), adt_bytearray_length(packet)); //Should contain acknowledge message
-   memcpy(actual, adt_bytearray_data(packet), sizeof(actual));
-   CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(actual)));
-   apx_server_delete(server);
+  server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+  register_extension(tc, server);
+  apx_server_start(server);
+  monitor_connection = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, monitor_connection);
+  apx_server_accept_connection(server, (apx_server_connection_t *)monitor_connection);
+  apx_server_test_connection_set_tester_connection_type(monitor_connection, APX_CONNECTION_TYPE_MONITOR);
+  CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(monitor_connection));
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(monitor_connection));
+  apx_server_test_connection_run(monitor_connection);
+  apx_server_run(server);
+  CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(monitor_connection));
+  packet = apx_server_test_connection_get_log_packet(monitor_connection, 0);
+  CuAssertPtrNotNull(tc, packet);
+  CuAssertIntEquals(tc, (int)sizeof(actual), adt_bytearray_length(packet)); // Should contain acknowledge message
+  memcpy(actual, adt_bytearray_data(packet), sizeof(actual));
+  CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(actual)));
+  apx_server_delete(server);
 }
 
-static void test_monitor_connection_transmits_existing_connection_info_on_connect(CuTest* tc)
+static void test_monitor_connection_transmits_existing_connection_info_on_connect(CuTest *tc)
 {
-   apx_server_t* server;
-   apx_server_test_connection_t* default_connection = NULL;
-   apx_server_test_connection_t* monitor_connection = NULL;
-   adt_bytearray_t* packet;
-   int32_t const default_greeting_accepted_size = 13;
-   int32_t const new_greeting_accepted_size = 13;
-   uint8_t actual[15];
-   uint8_t expected[15] = {
-      //message size
-      UINT32_SIZE+ RMF_CMD_TYPE_SIZE + UINT32_SIZE + UINT8_SIZE + CHAR_SIZE, //last byte is the null-terminator of the connection tag
-      //write address
-      0xBFu,
-      0xFFu,
-      0xFCu,
-      0x00u,
-      //command type
-      (uint8_t)RMF_CMD_CONNECTION_CREATE,
-      0u,
-      0u,
-      0u,
-      //connection id
-      0x00u,
-      0x00u,
-      0x00u,
-      0x00u,
-      APX_CONNECTION_STATE_ACCEPTED,
-      0x00u,
-   };
+  apx_server_t *server;
+  apx_server_test_connection_t *default_connection = NULL;
+  apx_server_test_connection_t *monitor_connection = NULL;
+  adt_bytearray_t *packet;
+  int32_t const default_greeting_accepted_size = 13;
+  int32_t const new_greeting_accepted_size = 13;
+  uint8_t actual[15];
+  uint8_t expected[15] = {
+      // message size
+    UINT32_SIZE + RMF_CMD_TYPE_SIZE + UINT32_SIZE + UINT8_SIZE +
+      CHAR_SIZE, // last byte is the null-terminator of the connection tag
+      // write address
+    0xBFu,
+    0xFFu,
+    0xFCu,
+    0x00u,
+      // command type
+    (uint8_t)RMF_CMD_CONNECTION_CREATE,
+    0u,
+    0u,
+    0u,
+      // connection id
+    0x00u,
+    0x00u,
+    0x00u,
+    0x00u,
+    APX_CONNECTION_STATE_ACCEPTED,
+    0x00u,
+  };
 
-   server = apx_server_new();
-   CuAssertPtrNotNull(tc, server);
-   register_extension(tc, server);
-   apx_server_start(server);
-   default_connection = apx_server_test_connection_new();
-   monitor_connection = apx_server_test_connection_new();
-   CuAssertPtrNotNull(tc, default_connection);
-   CuAssertPtrNotNull(tc, monitor_connection);
+  server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+  register_extension(tc, server);
+  apx_server_start(server);
+  default_connection = apx_server_test_connection_new();
+  monitor_connection = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, default_connection);
+  CuAssertPtrNotNull(tc, monitor_connection);
 
-   //Attach default connection
-   apx_server_accept_connection(server, (apx_server_connection_t*)default_connection);
-   CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(default_connection));
-   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(default_connection));
-   apx_server_test_connection_run(default_connection);
-   apx_server_run(server);
-   CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(default_connection));
-   packet = apx_server_test_connection_get_log_packet(default_connection, 0);
-   CuAssertPtrNotNull(tc, packet);
-   CuAssertIntEquals(tc, default_greeting_accepted_size, adt_bytearray_length(packet)); //Should contain acknowledge message
+   // Attach default connection
+  apx_server_accept_connection(server, (apx_server_connection_t *)default_connection);
+  CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(default_connection));
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(default_connection));
+  apx_server_test_connection_run(default_connection);
+  apx_server_run(server);
+  CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(default_connection));
+  packet = apx_server_test_connection_get_log_packet(default_connection, 0);
+  CuAssertPtrNotNull(tc, packet);
+  CuAssertIntEquals(
+    tc, default_greeting_accepted_size, adt_bytearray_length(packet)); // Should contain acknowledge message
 
-   //Attach monitor Connection
-   apx_server_test_connection_set_tester_connection_type(monitor_connection, APX_CONNECTION_TYPE_MONITOR);
-   apx_server_accept_connection(server, (apx_server_connection_t*)monitor_connection);
-   CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(monitor_connection));
-   CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(monitor_connection));
-   apx_server_test_connection_run(monitor_connection);
-   apx_server_run(server);
-   CuAssertIntEquals(tc, 2u, apx_server_test_connection_log_length(monitor_connection));
-   packet = apx_server_test_connection_get_log_packet(monitor_connection, 0);
-   CuAssertPtrNotNull(tc, packet);
-   CuAssertIntEquals(tc, new_greeting_accepted_size, adt_bytearray_length(packet)); //Should contain acknowledge message
-   packet = apx_server_test_connection_get_log_packet(monitor_connection, 1);
-   CuAssertPtrNotNull(tc, packet);
-   CuAssertIntEquals(tc, (int) sizeof(actual), adt_bytearray_length(packet));
-   memcpy(actual, adt_bytearray_data(packet), sizeof(actual));
-   CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(actual)));
-   apx_server_delete(server);
+   // Attach monitor Connection
+  apx_server_test_connection_set_tester_connection_type(monitor_connection, APX_CONNECTION_TYPE_MONITOR);
+  apx_server_accept_connection(server, (apx_server_connection_t *)monitor_connection);
+  CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(monitor_connection));
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(monitor_connection));
+  apx_server_test_connection_run(monitor_connection);
+  apx_server_run(server);
+  CuAssertIntEquals(tc, 2u, apx_server_test_connection_log_length(monitor_connection));
+  packet = apx_server_test_connection_get_log_packet(monitor_connection, 0);
+  CuAssertPtrNotNull(tc, packet);
+  CuAssertIntEquals(tc, new_greeting_accepted_size, adt_bytearray_length(packet)); // Should contain acknowledge message
+  packet = apx_server_test_connection_get_log_packet(monitor_connection, 1);
+  CuAssertPtrNotNull(tc, packet);
+  CuAssertIntEquals(tc, (int)sizeof(actual), adt_bytearray_length(packet));
+  memcpy(actual, adt_bytearray_data(packet), sizeof(actual));
+  CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(actual)));
+  apx_server_delete(server);
 }
 
 
-//Helper functions
-static void register_extension(CuTest* tc, apx_server_t* server)
+// Helper functions
+static void register_extension(CuTest *tc, apx_server_t *server)
 {
-   CuAssertIntEquals(tc, APX_NO_ERROR, apx_monitor_extension_register(server, NULL));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_monitor_extension_register(server, NULL));
 }

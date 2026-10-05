@@ -1,27 +1,26 @@
 /*****************************************************************************
-* \file      application.c
-* \author    Conny Gustafsson
-* \date      2019-10-13
-* \brief     Performance test application
-*
-* Copyright (c) 2019-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      application.c
+ * \author    Conny Gustafsson
+ * \date      2019-10-13
+ * \brief     Performance test application
+ *
+ * Copyright (c) 2019-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <stddef.h>
-#include <string.h>
+#include "application.h"
+#include "apx/client.h"
 #include "apx/event_listener.h"
 #include "apx/node_data.h"
-#include "apx/client.h"
-#include "application.h"
 #include "pack.h"
+#include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -30,9 +29,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void on_client_connected(void* arg, apx_client_connection_t* client_connection);
-static void on_client_disconnected(void* arg, apx_client_connection_t* client_connection);
-static void on_require_port_write(void *arg, apx_port_instance_t *port_instance, uint8_t const* data, apx_size_t size);
+static void on_client_connected(void *arg, apx_client_connection_t *client_connection);
+static void on_client_disconnected(void *arg, apx_client_connection_t *client_connection);
+static void on_require_port_write(void *arg, apx_port_instance_t *port_instance, uint8_t const *data, apx_size_t size);
 static double calculate_average_events_per_second(void);
 
 
@@ -57,145 +56,145 @@ static application_cfg_t m_cfg;
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 /*
-* Returns true on success, false otherwise
-*/
+ * Returns true on success, false otherwise
+ */
 bool application_init(const application_cfg_t *cfg)
 {
-   apx_client_event_listener_t handlerTable;
-   apx_error_t result;
-   memset(&handlerTable, 0, sizeof(handlerTable));
-   handlerTable.connected = on_client_connected;
-   handlerTable.disconnected = on_client_disconnected;
-   handlerTable.require_port_write = on_require_port_write;
-   if (cfg == NULL)
-   {
-      printf("cfg is NULL, aborting\n");
-      return false;
-   }
-   memcpy(&m_cfg, cfg, sizeof(m_cfg));
+  apx_client_event_listener_t handlerTable;
+  apx_error_t result;
+  memset(&handlerTable, 0, sizeof(handlerTable));
+  handlerTable.connected = on_client_connected;
+  handlerTable.disconnected = on_client_disconnected;
+  handlerTable.require_port_write = on_require_port_write;
+  if (cfg == NULL)
+  {
+    printf("cfg is NULL, aborting\n");
+    return false;
+  }
+  memcpy(&m_cfg, cfg, sizeof(m_cfg));
 
-   m_is_requester = false;
-   m_event_count = 0u;
-   m_is_connected = false;
-   m_has_pending_start_cmd = true;
-   m_is_test_ongoing = false;
-   m_sv = dtl_sv_new();
-   if (m_cfg.timer_init == 0u)
-   {
-      m_cfg.timer_init = 1u; //Default to 1 second
-   }
-   m_client = apx_client_new();
-   if (m_client != NULL)
-   {
-      apx_client_register_event_listener(m_client, &handlerTable);
-      result = apx_client_build_node(m_client, m_cfg.apx_definition);
+  m_is_requester = false;
+  m_event_count = 0u;
+  m_is_connected = false;
+  m_has_pending_start_cmd = true;
+  m_is_test_ongoing = false;
+  m_sv = dtl_sv_new();
+  if (m_cfg.timer_init == 0u)
+  {
+    m_cfg.timer_init = 1u; // Default to 1 second
+  }
+  m_client = apx_client_new();
+  if (m_client != NULL)
+  {
+    apx_client_register_event_listener(m_client, &handlerTable);
+    result = apx_client_build_node(m_client, m_cfg.apx_definition);
+    if (result != APX_NO_ERROR)
+    {
+      printf("apx_client_build_node failed with error %d\n", (int)result);
+      return false;
+    }
+    m_node_instance = apx_client_get_last_attached_node(m_client);
+    if ((strcmp(apx_node_instance_get_name(m_node_instance), "RequestNode") == 0))
+    {
+      printf("Running in requester mode\n");
+      m_is_requester = true;
+      m_rqst_handle = apx_node_instance_get_provide_port(m_node_instance, (apx_port_id_t)0u);
+      m_rsp_handle = apx_node_instance_get_require_port(m_node_instance, (apx_port_id_t)0u);
+    }
+    else
+    {
+      printf("Running in responder mode\n");
+      m_rqst_handle = apx_node_instance_get_require_port(m_node_instance, (apx_port_id_t)0u);
+      m_rsp_handle = apx_node_instance_get_provide_port(m_node_instance, (apx_port_id_t)0u);
+    }
+    assert(m_rqst_handle != NULL);
+    assert(m_rsp_handle != NULL);
+    printf("Connecting to %s\n", m_cfg.server_address);
+    switch (m_cfg.resource_type)
+    {
+    case MSOCKET_ENDPOINT_IPV4: // fall-trough
+    case MSOCKET_ENDPOINT_IPV6:
+      result = apx_client_connect_tcp(m_client, m_cfg.server_address, m_cfg.tcp_port);
       if (result != APX_NO_ERROR)
       {
-         printf("apx_client_build_node failed with error %d\n", (int) result);
-         return false;
+        printf("apx_client_connect_tcp failed with error %d\n", (int)result);
+        return false;
       }
-      m_node_instance = apx_client_get_last_attached_node(m_client);
-      if ( (strcmp(apx_node_instance_get_name(m_node_instance), "RequestNode")==0) )
+      break;
+    case MSOCKET_ENDPOINT_FILE:
+#ifdef _WIN32
+      printf("UNIX domain socket path not supported in Windows\n");
+      return false;
+#else
+      result = apx_client_connect_unix(m_client, m_cfg.server_address);
+      if (result != APX_NO_ERROR)
       {
-         printf("Running in requester mode\n");
-         m_is_requester = true;
-         m_rqst_handle = apx_node_instance_get_provide_port(m_node_instance, (apx_port_id_t) 0u);
-         m_rsp_handle = apx_node_instance_get_require_port(m_node_instance, (apx_port_id_t)0u);
+        printf("apx_client_connect_unix failed with error %d\n", (int)result);
+        return false;
+      }
+#endif
+      break;
+    case MSOCKET_ENDPOINT_NAME:
+      if (strcmp(m_cfg.server_address, "localhost") == 0)
+      {
+        result = apx_client_connect_tcp(m_client, "127.0.0.1", m_cfg.tcp_port);
+        if (result != APX_NO_ERROR)
+        {
+          printf("apx_client_connect_unix failed with error %d\n", (int)result);
+          return false;
+        }
       }
       else
       {
-         printf("Running in responder mode\n");
-         m_rqst_handle = apx_node_instance_get_require_port(m_node_instance, (apx_port_id_t)0u);
-         m_rsp_handle = apx_node_instance_get_provide_port(m_node_instance, (apx_port_id_t)0u);
+        fprintf(stderr, "Error: Unsupported connection name \"%s\"\n", m_cfg.server_address);
+        return false;
       }
-      assert(m_rqst_handle != NULL);
-      assert(m_rsp_handle != NULL);
-      printf("Connecting to %s\n", m_cfg.server_address);
-      switch(m_cfg.resource_type)
-      {
-      case MSOCKET_ENDPOINT_IPV4: //fall-trough
-      case MSOCKET_ENDPOINT_IPV6:
-         result = apx_client_connect_tcp(m_client, m_cfg.server_address, m_cfg.tcp_port);
-         if (result != APX_NO_ERROR)
-         {
-            printf("apx_client_connect_tcp failed with error %d\n", (int) result);
-            return false;
-         }
-         break;
-      case MSOCKET_ENDPOINT_FILE:
-#ifdef _WIN32
-         printf("UNIX domain socket path not supported in Windows\n");
-         return false;
-#else
-         result = apx_client_connect_unix(m_client, m_cfg.server_address);
-         if (result != APX_NO_ERROR)
-         {
-            printf("apx_client_connect_unix failed with error %d\n", (int) result);
-            return false;
-         }
-#endif
-         break;
-      case MSOCKET_ENDPOINT_NAME:
-         if ( strcmp(m_cfg.server_address, "localhost") == 0 )
-         {
-            result = apx_client_connect_tcp(m_client, "127.0.0.1", m_cfg.tcp_port);
-            if (result != APX_NO_ERROR)
-            {
-               printf("apx_client_connect_unix failed with error %d\n", (int) result);
-               return false;
-            }
-         }
-         else
-         {
-            fprintf(stderr, "Error: Unsupported connection name \"%s\"\n", m_cfg.server_address);
-            return false;
-         }
       break;
-      }
-      return true;
-   }
-   printf("apx_client_new failed\n");
-   return false;
+    }
+    return true;
+  }
+  printf("apx_client_new failed\n");
+  return false;
 }
 
 /*
-* Returns true if the application want to continue to run, false otherwise
-*/
+ * Returns true if the application want to continue to run, false otherwise
+ */
 bool application_run(void)
 {
-   if (m_is_connected)
-   {
-      if (m_is_requester)
+  if (m_is_connected)
+  {
+    if (m_is_requester)
+    {
+      if (m_has_pending_start_cmd)
       {
-         if (m_has_pending_start_cmd)
-         {
-            apx_error_t result;
-            m_event_count = 1u;
-            m_has_pending_start_cmd = false;
-            m_is_test_ongoing = true;
-            m_timer = m_cfg.timer_init;
-            dtl_sv_set_u32(m_sv, m_event_count);
-            result = apx_client_write_port_data(m_client, m_rqst_handle, (dtl_dv_t*) m_sv);
-            assert(result == APX_NO_ERROR);
-            printf("Test started\n");
-         }
-         else
-         {
-            if (m_is_test_ongoing)
-            {
-               m_timer--;
-            }
-            if (m_timer == 0u)
-            {
-               m_is_test_ongoing = false;
-               double result = calculate_average_events_per_second();
-               printf("Test completed.\nTotal Events: %u. Events/s: %.2f.\n", m_event_count, result);
-               return false;
-            }
-         }
+        apx_error_t result;
+        m_event_count = 1u;
+        m_has_pending_start_cmd = false;
+        m_is_test_ongoing = true;
+        m_timer = m_cfg.timer_init;
+        dtl_sv_set_u32(m_sv, m_event_count);
+        result = apx_client_write_port_data(m_client, m_rqst_handle, (dtl_dv_t *)m_sv);
+        assert(result == APX_NO_ERROR);
+        printf("Test started\n");
       }
-   }
-   return true;
+      else
+      {
+        if (m_is_test_ongoing)
+        {
+          m_timer--;
+        }
+        if (m_timer == 0u)
+        {
+          m_is_test_ongoing = false;
+          double result = calculate_average_events_per_second();
+          printf("Test completed.\nTotal Events: %u. Events/s: %.2f.\n", m_event_count, result);
+          return false;
+        }
+      }
+    }
+  }
+  return true;
 }
 
 
@@ -203,79 +202,79 @@ bool application_run(void)
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void on_client_connected(void* arg, apx_client_connection_t* client_connection)
+static void on_client_connected(void *arg, apx_client_connection_t *client_connection)
 {
-   (void)arg;
-   (void)client_connection;
-   m_is_connected = true;
-   printf("Connected to server\n");
+  (void)arg;
+  (void)client_connection;
+  m_is_connected = true;
+  printf("Connected to server\n");
 }
 
-static void on_client_disconnected(void* arg, apx_client_connection_t* client_connection)
+static void on_client_disconnected(void *arg, apx_client_connection_t *client_connection)
 {
-   (void)arg;
-   (void)client_connection;
+  (void)arg;
+  (void)client_connection;
 
-   m_is_connected = false;
-   m_has_pending_start_cmd = true;
-   m_is_test_ongoing = false;
-   printf("Disconnected from server\n");
+  m_is_connected = false;
+  m_has_pending_start_cmd = true;
+  m_is_test_ongoing = false;
+  printf("Disconnected from server\n");
 }
 
 
-static void on_require_port_write(void* arg, apx_port_instance_t* port_instance, uint8_t const* data, apx_size_t size)
+static void on_require_port_write(void *arg, apx_port_instance_t *port_instance, uint8_t const *data, apx_size_t size)
 {
-   (void)arg;
-   (void)data;
-   (void)size;
-   if (m_is_requester)
-   {
-      if ((m_is_test_ongoing) && (port_instance == m_rsp_handle))
+  (void)arg;
+  (void)data;
+  (void)size;
+  if (m_is_requester)
+  {
+    if ((m_is_test_ongoing) && (port_instance == m_rsp_handle))
+    {
+      apx_error_t result;
+      uint32_t value;
+      bool ok;
+      dtl_sv_t *sv = NULL;
+      result = apx_client_read_port_data(m_client, m_rsp_handle, (dtl_dv_t **)&sv);
+      assert(result == APX_NO_ERROR);
+      assert(sv != NULL);
+      value = dtl_sv_to_u32(sv, &ok);
+      if (ok)
       {
-         apx_error_t result;
-         uint32_t value;
-         bool ok;
-         dtl_sv_t* sv = NULL;
-         result = apx_client_read_port_data(m_client, m_rsp_handle, (dtl_dv_t**)&sv);
-         assert(result == APX_NO_ERROR);
-         assert(sv != NULL);
-         value = dtl_sv_to_u32(sv, &ok);
-         if (ok)
-         {
-            m_event_count = value;
-            dtl_sv_set_u32(sv, value + 1);
-            result = apx_client_write_port_data(m_client, m_rqst_handle, (dtl_dv_t*)sv);
-            assert(result == APX_NO_ERROR);
-         }
-         dtl_dv_dec_ref((dtl_dv_t*)sv);
+        m_event_count = value;
+        dtl_sv_set_u32(sv, value + 1);
+        result = apx_client_write_port_data(m_client, m_rqst_handle, (dtl_dv_t *)sv);
+        assert(result == APX_NO_ERROR);
       }
-   }
-   else
-   {
-      if ((m_rqst_handle != NULL) && (m_rsp_handle != NULL))
+      dtl_dv_dec_ref((dtl_dv_t *)sv);
+    }
+  }
+  else
+  {
+    if ((m_rqst_handle != NULL) && (m_rsp_handle != NULL))
+    {
+      apx_error_t result;
+      dtl_sv_t *sv = NULL;
+      uint32_t value;
+      bool ok;
+      result = apx_client_read_port_data(m_client, m_rqst_handle, (dtl_dv_t **)&sv);
+      assert(result == APX_NO_ERROR);
+      assert(sv != NULL);
+      value = dtl_sv_to_u32(sv, &ok);
+      if (ok)
       {
-         apx_error_t result;
-         dtl_sv_t* sv = NULL;
-         uint32_t value;
-         bool ok;
-         result = apx_client_read_port_data(m_client, m_rqst_handle, (dtl_dv_t**)&sv);
-         assert(result == APX_NO_ERROR);
-         assert(sv != NULL);
-         value = dtl_sv_to_u32(sv, &ok);
-         if (ok)
-         {
-            dtl_sv_set_u32(sv, value + 1);
-            result = apx_client_write_port_data(m_client, m_rsp_handle, (dtl_dv_t*)sv);
-            assert(result == APX_NO_ERROR);
-         }
-         dtl_dv_dec_ref((dtl_dv_t*)sv);
+        dtl_sv_set_u32(sv, value + 1);
+        result = apx_client_write_port_data(m_client, m_rsp_handle, (dtl_dv_t *)sv);
+        assert(result == APX_NO_ERROR);
       }
-   }
+      dtl_dv_dec_ref((dtl_dv_t *)sv);
+    }
+  }
 }
 
 static double calculate_average_events_per_second(void)
 {
-   double events = (double)m_event_count;
-   double time = (double)m_cfg.timer_init;
-   return events / time;
+  double events = (double)m_event_count;
+  double time = (double)m_cfg.timer_init;
+  return events / time;
 }

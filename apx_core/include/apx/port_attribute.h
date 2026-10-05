@@ -1,21 +1,21 @@
 /*****************************************************************************
-* \file      port_attribute.h
-* \author    Conny Gustafsson
-* \date      2017-02-20
-* \brief     Parse tree: APX port attributes
-*
-* Copyright (c) 2017-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      port_attribute.h
+ * \author    Conny Gustafsson
+ * \date      2017-02-20
+ * \brief     Parse tree: APX port attributes
+ *
+ * Copyright (c) 2017-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_PORT_ATTRIBUTES_H
 #define APX_PORT_ATTRIBUTES_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/types.h"
 #include "apx/error.h"
+#include "apx/types.h"
 #include "dtl_type.h"
 
 
@@ -24,9 +24,9 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_port_attributes_tag
 {
-   bool is_parameter;
-   uint32_t queue_length;
-   dtl_dv_t *init_value;
+  bool is_parameter;
+  uint32_t queue_length;
+  dtl_dv_t *init_value;
 } apx_port_attributes_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -34,18 +34,17 @@ typedef struct apx_port_attributes_tag
 //////////////////////////////////////////////////////////////////////////////
 void apx_port_attributes_create(apx_port_attributes_t *self);
 void apx_port_attributes_destroy(apx_port_attributes_t *self);
-apx_port_attributes_t* apx_port_attributes_new(void);
+apx_port_attributes_t *apx_port_attributes_new(void);
 void apx_port_attributes_delete(apx_port_attributes_t *self);
 void apx_port_attributes_vdelete(void *arg);
-void apx_port_attributes_set_parameter(apx_port_attributes_t* self);
-bool apx_port_attributes_is_parameter(apx_port_attributes_t* self);
-bool apx_port_attributes_is_queued(apx_port_attributes_t* self);
-void apx_port_attributes_set_queue_length(apx_port_attributes_t* self, uint32_t queue_length);
-uint32_t apx_port_attributes_get_queue_length(apx_port_attributes_t* self);
-bool apx_port_attributes_has_init_value(apx_port_attributes_t* self);
-dtl_dv_t* apx_port_attributes_get_init_value(apx_port_attributes_t* self);
-void apx_port_attributes_set_init_value(apx_port_attributes_t* self, dtl_dv_t* init_value);
-
+void apx_port_attributes_set_parameter(apx_port_attributes_t *self);
+bool apx_port_attributes_is_parameter(apx_port_attributes_t *self);
+bool apx_port_attributes_is_queued(apx_port_attributes_t *self);
+void apx_port_attributes_set_queue_length(apx_port_attributes_t *self, uint32_t queue_length);
+uint32_t apx_port_attributes_get_queue_length(apx_port_attributes_t *self);
+bool apx_port_attributes_has_init_value(apx_port_attributes_t *self);
+dtl_dv_t *apx_port_attributes_get_init_value(apx_port_attributes_t *self);
+void apx_port_attributes_set_init_value(apx_port_attributes_t *self, dtl_dv_t *init_value);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -53,5 +52,4 @@ void apx_port_attributes_set_init_value(apx_port_attributes_t* self, dtl_dv_t* i
 //////////////////////////////////////////////////////////////////////////////
 
 
-
-#endif //APX_PORT_ATTRIBUTES_H
+#endif // APX_PORT_ATTRIBUTES_H

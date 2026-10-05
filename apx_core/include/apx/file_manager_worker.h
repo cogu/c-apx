@@ -1,51 +1,51 @@
 /*****************************************************************************
-* \file      file_manager_worker.h
-* \author    Conny Gustafsson
-* \date      2020-01-22
-* \brief     APX file manager worker
-*
-* Copyright (c) 2020-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      file_manager_worker.h
+ * \author    Conny Gustafsson
+ * \date      2020-01-22
+ * \brief     APX file manager worker
+ *
+ * Copyright (c) 2020-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_FILE_MANAGER_WORKER_H
 #define APX_FILE_MANAGER_WORKER_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "apx/command.h"
+#include "apx/error.h"
+#include "apx/event.h"
+#include "apx/file.h"
+#include "apx/file_info.h"
 #include "apx/file_manager_defs.h"
 #include "apx/file_manager_shared.h"
-#include "apx/error.h"
-#include "apx/file.h"
-#include "apx/event.h"
-#include "apx/command.h"
-#include "apx/file_info.h"
 #ifndef ADT_RBFS_ENABLE
-#define ADT_RBFS_ENABLE 1
+# define ADT_RBFS_ENABLE 1
 #endif
 #include "adt_ringbuf.h"
 #ifndef _WIN32
-#include <semaphore.h>
+# include <semaphore.h>
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-//forward declaration
+// forward declaration
 
 typedef struct apx_file_manager_worker_tag
 {
-   apx_file_manager_shared_t *shared; //weak reference
-   MUTEX_T mutex; //for locking variables in this object
-   SPINLOCK_T queue_lock; //used exclusively by workerThread command queue
-   THREAD_T worker_thread; //local transmit thread
-   SEMAPHORE_T semaphore; //queue semaphore
-   adt_rbfh_t queue; //pending actions
-   bool worker_thread_valid; //is worker_thread handle valid (required to support both Windows and Linux)
-   apx_mode_t mode; //server or client mode?
+  apx_file_manager_shared_t *shared; // weak reference
+  MUTEX_T mutex; // for locking variables in this object
+  SPINLOCK_T queue_lock; // used exclusively by workerThread command queue
+  THREAD_T worker_thread; // local transmit thread
+  SEMAPHORE_T semaphore; // queue semaphore
+  adt_rbfh_t queue; // pending actions
+  bool worker_thread_valid; // is worker_thread handle valid (required to support both Windows and Linux)
+  apx_mode_t mode; // server or client mode?
 #ifdef _WIN32
-   unsigned int worker_thread_id;
+  unsigned int worker_thread_id;
 #endif
 } apx_file_manager_worker_t;
 
@@ -56,23 +56,29 @@ typedef struct apx_file_manager_worker_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_file_manager_worker_create(apx_file_manager_worker_t *self, apx_file_manager_shared_t *shared, apx_mode_t mode);
+apx_error_t apx_file_manager_worker_create(
+  apx_file_manager_worker_t *self, apx_file_manager_shared_t *shared, apx_mode_t mode);
 void apx_file_manager_worker_destroy(apx_file_manager_worker_t *self);
-uint16_t apx_file_manager_worker_num_pending_commands(apx_file_manager_worker_t* self);
+uint16_t apx_file_manager_worker_num_pending_commands(apx_file_manager_worker_t *self);
 #ifdef UNIT_TEST
-bool apx_file_manager_worker_run(apx_file_manager_worker_t* self);
+bool apx_file_manager_worker_run(apx_file_manager_worker_t *self);
 #endif
-apx_error_t apx_file_manager_worker_start(apx_file_manager_worker_t* self);
-void apx_file_manager_worker_stop(apx_file_manager_worker_t* self);
+apx_error_t apx_file_manager_worker_start(apx_file_manager_worker_t *self);
+void apx_file_manager_worker_stop(apx_file_manager_worker_t *self);
 
-//Command API
-apx_error_t apx_file_manager_worker_prepare_acknowledge(apx_file_manager_worker_t* self);
-apx_error_t apx_file_manager_worker_prepare_error_code(apx_file_manager_worker_t* self, apx_error_t error_code, char const* name);
-apx_error_t apx_file_manager_worker_prepare_header_accepted(apx_file_manager_worker_t* self, uint32_t connection_id);
-apx_error_t apx_file_manager_worker_prepare_publish_local_file(apx_file_manager_worker_t* self, rmf_file_info_t* file_info); //ownership is taken of the file_info object
-apx_error_t apx_file_manager_worker_prepare_send_local_const_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t const* data, uint32_t size);
-apx_error_t apx_file_manager_worker_prepare_send_local_data(apx_file_manager_worker_t* self, uint32_t address, uint8_t* data, uint32_t size);
-apx_error_t apx_file_manager_worker_prepare_send_open_file_request(apx_file_manager_worker_t* self, uint32_t address);
-apx_error_t apx_file_manager_worker_prepare_send_connection_create(apx_file_manager_worker_t* self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const* tag);
+// Command API
+apx_error_t apx_file_manager_worker_prepare_acknowledge(apx_file_manager_worker_t *self);
+apx_error_t apx_file_manager_worker_prepare_error_code(
+  apx_file_manager_worker_t *self, apx_error_t error_code, char const *name);
+apx_error_t apx_file_manager_worker_prepare_header_accepted(apx_file_manager_worker_t *self, uint32_t connection_id);
+apx_error_t apx_file_manager_worker_prepare_publish_local_file(
+  apx_file_manager_worker_t *self, rmf_file_info_t *file_info); // ownership is taken of the file_info object
+apx_error_t apx_file_manager_worker_prepare_send_local_const_data(
+  apx_file_manager_worker_t *self, uint32_t address, uint8_t const *data, uint32_t size);
+apx_error_t apx_file_manager_worker_prepare_send_local_data(
+  apx_file_manager_worker_t *self, uint32_t address, uint8_t *data, uint32_t size);
+apx_error_t apx_file_manager_worker_prepare_send_open_file_request(apx_file_manager_worker_t *self, uint32_t address);
+apx_error_t apx_file_manager_worker_prepare_send_connection_create(apx_file_manager_worker_t *self,
+  apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const *tag);
 
-#endif //APX_FILE_MANAGER_WORKER_H
+#endif // APX_FILE_MANAGER_WORKER_H

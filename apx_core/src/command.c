@@ -1,18 +1,18 @@
 /*****************************************************************************
-* \file      command.c
-* \author    Conny Gustafsson
-* \date      2021-01-21
-* \brief     Command data structure
-*
-* Copyright (c) 2021-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      command.c
+ * \author    Conny Gustafsson
+ * \date      2021-01-21
+ * \brief     Command data structure
+ *
+ * Copyright (c) 2021-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <string.h>
 #include "apx/command.h"
+#include <string.h>
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -26,28 +26,30 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-void apx_build_command_with_ptr(apx_command_t* self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, void* d3, void* d4)
+void apx_build_command_with_ptr(
+  apx_command_t *self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, void *d3, void *d4)
 {
-   if (self != NULL)
-   {
-      self->cmd_type = cmd_type;
-      self->data1 = d1;
-      self->data2 = d2;
-      self->data3.ptr = d3;
-      self->data4 = d4;
-   }
+  if (self != NULL)
+  {
+    self->cmd_type = cmd_type;
+    self->data1 = d1;
+    self->data2 = d2;
+    self->data3.ptr = d3;
+    self->data4 = d4;
+  }
 }
 
-void apx_build_command_with_data(apx_command_t* self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, uint8_t const* d3, void* d4)
+void apx_build_command_with_data(
+  apx_command_t *self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, uint8_t const *d3, void *d4)
 {
-   if (self != NULL)
-   {
-      self->cmd_type = cmd_type;
-      self->data1 = d1;
-      self->data2 = d2;
-      memcpy(&self->data3.data[0], d3, APX_SMALL_DATA_SIZE);
-      self->data4 = d4;
-   }
+  if (self != NULL)
+  {
+    self->cmd_type = cmd_type;
+    self->data1 = d1;
+    self->data2 = d2;
+    memcpy(&self->data3.data[0], d3, APX_SMALL_DATA_SIZE);
+    self->data4 = d4;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////

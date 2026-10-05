@@ -1,21 +1,21 @@
 /*****************************************************************************
-* \file      server_extension.c
-* \author    Conny Gustafsson
-* \date      2019-09-05
-* \brief     APX server extension data structure
-*
-* Copyright (c) 2019-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      server_extension.c
+ * \author    Conny Gustafsson
+ * \date      2019-09-05
+ * \brief     APX server extension data structure
+ *
+ * Copyright (c) 2019-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "apx/server_extension.h"
 #include <malloc.h>
 #include <string.h>
-#include "apx/server_extension.h"
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -33,63 +33,60 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
-void apx_server_extension_create(apx_server_extension_t *self, const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config)
+void apx_server_extension_create(
+  apx_server_extension_t *self, const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config)
 {
-   if ( (self != NULL) && (name != NULL) && (handler != NULL) )
-   {
-      self->name = STRDUP(name);
-      memcpy(&self->handler, handler, sizeof(apx_server_extension_handler_t));
-      self->config = config;
-      if (self->config != NULL)
-      {
-         dtl_dv_inc_ref(self->config);
-      }
-   }
+  if ((self != NULL) && (name != NULL) && (handler != NULL))
+  {
+    self->name = STRDUP(name);
+    memcpy(&self->handler, handler, sizeof(apx_server_extension_handler_t));
+    self->config = config;
+    if (self->config != NULL)
+    {
+      dtl_dv_inc_ref(self->config);
+    }
+  }
 }
 
 void apx_server_extension_destroy(apx_server_extension_t *self)
 {
-   if (self != NULL)
-   {
-      if (self->name != NULL)
-      {
-         free(self->name);
-      }
-      if (self->config != NULL)
-      {
-         dtl_dv_dec_ref(self->config);
-         self->config = NULL;
-      }
-   }
+  if (self != NULL)
+  {
+    if (self->name != NULL)
+    {
+      free(self->name);
+    }
+    if (self->config != NULL)
+    {
+      dtl_dv_dec_ref(self->config);
+      self->config = NULL;
+    }
+  }
 }
 
-apx_server_extension_t* apx_server_extension_new(const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config)
+apx_server_extension_t *apx_server_extension_new(
+  const char *name, const apx_server_extension_handler_t *handler, dtl_dv_t *config)
 {
-   apx_server_extension_t *self = (apx_server_extension_t*) malloc(sizeof(apx_server_extension_t));
-   if (self != NULL)
-   {
-      apx_server_extension_create(self, name, handler, config);
-   }
-   return self;
+  apx_server_extension_t *self = (apx_server_extension_t *)malloc(sizeof(apx_server_extension_t));
+  if (self != NULL)
+  {
+    apx_server_extension_create(self, name, handler, config);
+  }
+  return self;
 }
 
 
 void apx_server_extension_delete(apx_server_extension_t *self)
 {
-   if (self != NULL)
-   {
-      apx_server_extension_destroy(self);
-      free(self);
-   }
+  if (self != NULL)
+  {
+    apx_server_extension_destroy(self);
+    free(self);
+  }
 }
 
-void apx_server_extension_vdelete(void *arg)
-{
-   apx_server_extension_delete((apx_server_extension_t*) arg);
-}
+void apx_server_extension_vdelete(void *arg) { apx_server_extension_delete((apx_server_extension_t *)arg); }
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-

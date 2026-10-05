@@ -1,24 +1,24 @@
 /*****************************************************************************
-* \file      client_test_connection.c
-* \author    Conny Gustafsson
-* \date      2018-01-15
-* \brief     Unit Test connection for APX clients
-*
-* Copyright (c) 2018-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      client_test_connection.c
+ * \author    Conny Gustafsson
+ * \date      2018-01-15
+ * \brief     Unit Test connection for APX clients
+ *
+ * Copyright (c) 2018-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <malloc.h>
-#include <assert.h>
-#include <string.h>
 #include "apx/client_test_connection.h"
-//#include "apx/client_internal.h"
+#include <assert.h>
+#include <malloc.h>
+#include <string.h>
+// #include "apx/client_internal.h"
 #include "apx/numheader.h"
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -28,14 +28,17 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void create_connection_interface_vtable(apx_client_test_connection_t* self, apx_connection_interface_t* interface);
-static int32_t apx_client_test_connection_transmit_max_bytes_avaiable(apx_client_test_connection_t* self);
-static int32_t apx_client_test_connection_transmit_current_bytes_avaiable(apx_client_test_connection_t* self);
-static void apx_client_test_connection_transmit_begin(apx_client_test_connection_t* self);
-static void apx_client_test_connection_transmit_end(apx_client_test_connection_t* self);
-static apx_error_t apx_client_test_connection_transmit_data_message(apx_client_test_connection_t* self, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
-static apx_error_t apx_client_test_connection_transmit_direct_message(apx_client_test_connection_t* self, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available);
-static void send_packet(apx_client_test_connection_t* self);
+static void create_connection_interface_vtable(
+  apx_client_test_connection_t *self, apx_connection_interface_t *interface);
+static int32_t apx_client_test_connection_transmit_max_bytes_avaiable(apx_client_test_connection_t *self);
+static int32_t apx_client_test_connection_transmit_current_bytes_avaiable(apx_client_test_connection_t *self);
+static void apx_client_test_connection_transmit_begin(apx_client_test_connection_t *self);
+static void apx_client_test_connection_transmit_end(apx_client_test_connection_t *self);
+static apx_error_t apx_client_test_connection_transmit_data_message(apx_client_test_connection_t *self,
+  uint32_t write_address, bool more_bit, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available);
+static apx_error_t apx_client_test_connection_transmit_direct_message(
+  apx_client_test_connection_t *self, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available);
+static void send_packet(apx_client_test_connection_t *self);
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -45,460 +48,472 @@ static void send_packet(apx_client_test_connection_t* self);
 //////////////////////////////////////////////////////////////////////////////
 
 // Constructor/Destructor
-apx_error_t apx_client_test_connection_create(apx_client_test_connection_t* self)
+apx_error_t apx_client_test_connection_create(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      apx_connection_base_vtable_t base_connection_vtable;
-      apx_connection_interface_t connection_interface;
-      self->default_buffer_size = 1024u;
-      self->pending_bytes = 0u;
-      apx_connection_base_vtable_create(&base_connection_vtable,
-            apx_client_test_connection_vdestroy,
-            apx_client_test_connection_vstart,
-            apx_client_test_connection_vclose);
-      create_connection_interface_vtable(self, &connection_interface);
-      apx_error_t result = apx_client_connection_create(&self->base, &base_connection_vtable, &connection_interface);
-      if (result == APX_NO_ERROR)
+  if (self != NULL)
+  {
+    apx_connection_base_vtable_t base_connection_vtable;
+    apx_connection_interface_t connection_interface;
+    self->default_buffer_size = 1024u;
+    self->pending_bytes = 0u;
+    apx_connection_base_vtable_create(&base_connection_vtable, apx_client_test_connection_vdestroy,
+      apx_client_test_connection_vstart, apx_client_test_connection_vclose);
+    create_connection_interface_vtable(self, &connection_interface);
+    apx_error_t result = apx_client_connection_create(&self->base, &base_connection_vtable, &connection_interface);
+    if (result == APX_NO_ERROR)
+    {
+      self->transmit_log = adt_ary_new(adt_bytearray_vdelete);
+      if (self->transmit_log == NULL)
       {
-         self->transmit_log = adt_ary_new(adt_bytearray_vdelete);
-         if (self->transmit_log == NULL)
-         {
-            result = APX_MEM_ERROR;
-         }
-         else
-         {
-            adt_bytearray_create(&self->transmit_buffer);
-         }
+        result = APX_MEM_ERROR;
       }
-      if (result == APX_NO_ERROR)
+      else
       {
-         apx_node_manager_create(&self->node_manager, APX_CLIENT_MODE);
-         apx_client_connection_attach_node_manager(&self->base, &self->node_manager);
+        adt_bytearray_create(&self->transmit_buffer);
       }
-      return result;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+    }
+    if (result == APX_NO_ERROR)
+    {
+      apx_node_manager_create(&self->node_manager, APX_CLIENT_MODE);
+      apx_client_connection_attach_node_manager(&self->base, &self->node_manager);
+    }
+    return result;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
 void apx_client_test_connection_destroy(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      adt_bytearray_destroy(&self->transmit_buffer);
-      if (self->transmit_log != NULL)
-      {
-         adt_ary_delete(self->transmit_log);
-      }
-      apx_client_connection_destroy(&self->base);
-      apx_node_manager_destroy(&self->node_manager);
-   }
+  if (self != NULL)
+  {
+    adt_bytearray_destroy(&self->transmit_buffer);
+    if (self->transmit_log != NULL)
+    {
+      adt_ary_delete(self->transmit_log);
+    }
+    apx_client_connection_destroy(&self->base);
+    apx_node_manager_destroy(&self->node_manager);
+  }
 }
 
 void apx_client_test_connection_vdestroy(void *arg)
 {
-   apx_client_test_connection_destroy((apx_client_test_connection_t*) arg);
+  apx_client_test_connection_destroy((apx_client_test_connection_t *)arg);
 }
 
 apx_client_test_connection_t *apx_client_test_connection_new(void)
 {
-   apx_client_test_connection_t *self = (apx_client_test_connection_t*) malloc(sizeof(apx_client_test_connection_t));
-   if (self != NULL)
-   {
-      apx_error_t result = apx_client_test_connection_create(self);
-      if (result != APX_NO_ERROR)
-      {
-         free(self);
-         self = NULL;
-      }
-   }
-   return self;
+  apx_client_test_connection_t *self = (apx_client_test_connection_t *)malloc(sizeof(apx_client_test_connection_t));
+  if (self != NULL)
+  {
+    apx_error_t result = apx_client_test_connection_create(self);
+    if (result != APX_NO_ERROR)
+    {
+      free(self);
+      self = NULL;
+    }
+  }
+  return self;
 }
 
 void apx_client_test_connection_delete(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      apx_client_test_connection_destroy(self);
-      free(self);
-   }
+  if (self != NULL)
+  {
+    apx_client_test_connection_destroy(self);
+    free(self);
+  }
 }
 
 // BaseConnection API
-void apx_client_test_connection_start(apx_client_test_connection_t* self)
+void apx_client_test_connection_start(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-   }
+  if (self != NULL)
+  {
+  }
 }
 
-void apx_client_test_connection_vstart(void* arg)
+void apx_client_test_connection_vstart(void *arg)
 {
-   apx_client_test_connection_start((apx_client_test_connection_t*)arg);
+  apx_client_test_connection_start((apx_client_test_connection_t *)arg);
 }
 
-void apx_client_test_connection_close(apx_client_test_connection_t* self)
+void apx_client_test_connection_close(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-   }
+  if (self != NULL)
+  {
+  }
 }
 
-void apx_client_test_connection_vclose(void* arg)
+void apx_client_test_connection_vclose(void *arg)
 {
-   apx_client_test_connection_close((apx_client_test_connection_t*)arg);
+  apx_client_test_connection_close((apx_client_test_connection_t *)arg);
 }
 
 // ClientConnection API
-void apx_client_test_connection_greeting_header_accepted_notification(apx_client_test_connection_t* self)
+void apx_client_test_connection_greeting_header_accepted_notification(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      apx_client_connection_greeting_header_accepted_notification(&self->base);
-   }
+  if (self != NULL)
+  {
+    apx_client_connection_greeting_header_accepted_notification(&self->base);
+  }
 }
 
-void apx_client_test_connection_connected_notification(apx_client_test_connection_t* self)
+void apx_client_test_connection_connected_notification(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      apx_client_connection_connected_notification(&self->base);
-   }
+  if (self != NULL)
+  {
+    apx_client_connection_connected_notification(&self->base);
+  }
 }
 
-void apx_client_test_connection_disconnected_notification(apx_client_test_connection_t* self)
+void apx_client_test_connection_disconnected_notification(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      apx_client_connection_disconnected_notification(&self->base);
-   }
+  if (self != NULL)
+  {
+    apx_client_connection_disconnected_notification(&self->base);
+  }
 }
 
 
 // ConnectionInterface API
-int32_t apx_client_test_connection_vtransmit_max_bytes_avaiable(void* arg)
+int32_t apx_client_test_connection_vtransmit_max_bytes_avaiable(void *arg)
 {
-   return apx_client_test_connection_transmit_max_bytes_avaiable((apx_client_test_connection_t*)arg);
+  return apx_client_test_connection_transmit_max_bytes_avaiable((apx_client_test_connection_t *)arg);
 }
 
-int32_t apx_client_test_connection_vtransmit_current_bytes_avaiable(void* arg)
+int32_t apx_client_test_connection_vtransmit_current_bytes_avaiable(void *arg)
 {
-   return apx_client_test_connection_transmit_current_bytes_avaiable((apx_client_test_connection_t*)arg);
+  return apx_client_test_connection_transmit_current_bytes_avaiable((apx_client_test_connection_t *)arg);
 }
 
-void apx_client_test_connection_vtransmit_begin(void* arg)
+void apx_client_test_connection_vtransmit_begin(void *arg)
 {
-   apx_client_test_connection_transmit_begin((apx_client_test_connection_t*)arg);
+  apx_client_test_connection_transmit_begin((apx_client_test_connection_t *)arg);
 }
 
-void apx_client_test_connection_vtransmit_end(void* arg)
+void apx_client_test_connection_vtransmit_end(void *arg)
 {
-   apx_client_test_connection_transmit_end((apx_client_test_connection_t*)arg);
+  apx_client_test_connection_transmit_end((apx_client_test_connection_t *)arg);
 }
 
-apx_error_t apx_client_test_connection_vtransmit_data_message(void* arg, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+apx_error_t apx_client_test_connection_vtransmit_data_message(
+  void *arg, uint32_t write_address, bool more_bit, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
-   return apx_client_test_connection_transmit_data_message((apx_client_test_connection_t*)arg, write_address, more_bit, msg_data, msg_size, bytes_available);
+  return apx_client_test_connection_transmit_data_message(
+    (apx_client_test_connection_t *)arg, write_address, more_bit, msg_data, msg_size, bytes_available);
 }
 
-apx_error_t apx_client_test_connection_vtransmit_direct_message(void* arg, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+apx_error_t apx_client_test_connection_vtransmit_direct_message(
+  void *arg, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
-   return apx_client_test_connection_transmit_direct_message((apx_client_test_connection_t*)arg, msg_data, msg_size, bytes_available);
+  return apx_client_test_connection_transmit_direct_message(
+    (apx_client_test_connection_t *)arg, msg_data, msg_size, bytes_available);
 }
 
-apx_error_t apx_client_test_connection_remote_file_published_notification(apx_client_test_connection_t* self, apx_file_t* file)
+apx_error_t apx_client_test_connection_remote_file_published_notification(
+  apx_client_test_connection_t *self, apx_file_t *file)
 {
-   (void)self;
-   (void)file;
-   return APX_NOT_IMPLEMENTED_ERROR;
+  (void)self;
+  (void)file;
+  return APX_NOT_IMPLEMENTED_ERROR;
 }
 
-apx_error_t apx_client_test_connection_remote_file_write_notification(apx_client_test_connection_t* self, apx_file_t* file, uint32_t offset, uint8_t const* data, apx_size_t size)
+apx_error_t apx_client_test_connection_remote_file_write_notification(
+  apx_client_test_connection_t *self, apx_file_t *file, uint32_t offset, uint8_t const *data, apx_size_t size)
 {
-   (void)self;
-   (void)file;
-   (void)offset;
-   (void)data;
-   (void)size;
-   return APX_NOT_IMPLEMENTED_ERROR;
+  (void)self;
+  (void)file;
+  (void)offset;
+  (void)data;
+  (void)size;
+  return APX_NOT_IMPLEMENTED_ERROR;
 }
 
 
-//Log API
-int32_t apx_client_test_connection_log_length(apx_client_test_connection_t* self)
+// Log API
+int32_t apx_client_test_connection_log_length(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      return adt_ary_length(self->transmit_log);
-   }
-   return -1;
+  if (self != NULL)
+  {
+    return adt_ary_length(self->transmit_log);
+  }
+  return -1;
 }
 
-adt_bytearray_t* apx_client_test_connection_get_log_packet(apx_client_test_connection_t* self, int32_t index)
+adt_bytearray_t *apx_client_test_connection_get_log_packet(apx_client_test_connection_t *self, int32_t index)
 {
-   if (self != NULL)
-   {
-      return (adt_bytearray_t*)adt_ary_value(self->transmit_log, index);
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return (adt_bytearray_t *)adt_ary_value(self->transmit_log, index);
+  }
+  return NULL;
 }
 
-void apx_client_test_connection_clear_log(apx_client_test_connection_t* self)
+void apx_client_test_connection_clear_log(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      adt_ary_clear(self->transmit_log);
-   }
+  if (self != NULL)
+  {
+    adt_ary_clear(self->transmit_log);
+  }
 }
 
-//Test-case API
-apx_file_manager_t* apx_client_test_connection_get_file_manager(apx_client_test_connection_t* self)
+// Test-case API
+apx_file_manager_t *apx_client_test_connection_get_file_manager(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      return apx_client_connection_get_file_manager(&self->base);
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return apx_client_connection_get_file_manager(&self->base);
+  }
+  return NULL;
 }
 
-apx_error_t apx_client_test_connection_request_open_local_file(apx_client_test_connection_t* self, char const* file_name)
+apx_error_t apx_client_test_connection_request_open_local_file(
+  apx_client_test_connection_t *self, char const *file_name)
 {
-   if ( (self != NULL) && (file_name != NULL) )
-   {
-      uint8_t  buffer[RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE];
-      apx_file_manager_t* file_manager = apx_client_connection_get_file_manager(&self->base);
-      assert(file_manager != NULL);
-      apx_file_t* file = apx_file_manager_find_local_file_by_name(file_manager, file_name);
-      if (file == NULL)
-      {
-         return APX_FILE_NOT_FOUND_ERROR;
-      }
-      if (rmf_address_encode(buffer, RMF_HIGH_ADDR_SIZE, RMF_CMD_AREA_START_ADDRESS, false) != RMF_HIGH_ADDR_SIZE)
-      {
-         return APX_INTERNAL_ERROR;
-      }
-      apx_size_t const cmd_size = RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE;
-      apx_size_t result = rmf_encode_open_file_cmd(buffer + RMF_HIGH_ADDR_SIZE, cmd_size, apx_file_get_address_without_flags(file));
-      if (result == 0)
-      {
-         return APX_INTERNAL_ERROR;
-      }
-      return apx_file_manager_message_received(file_manager, buffer, sizeof(buffer));
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if ((self != NULL) && (file_name != NULL))
+  {
+    uint8_t buffer[RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE];
+    apx_file_manager_t *file_manager = apx_client_connection_get_file_manager(&self->base);
+    assert(file_manager != NULL);
+    apx_file_t *file = apx_file_manager_find_local_file_by_name(file_manager, file_name);
+    if (file == NULL)
+    {
+      return APX_FILE_NOT_FOUND_ERROR;
+    }
+    if (rmf_address_encode(buffer, RMF_HIGH_ADDR_SIZE, RMF_CMD_AREA_START_ADDRESS, false) != RMF_HIGH_ADDR_SIZE)
+    {
+      return APX_INTERNAL_ERROR;
+    }
+    apx_size_t const cmd_size = RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE;
+    apx_size_t result =
+      rmf_encode_open_file_cmd(buffer + RMF_HIGH_ADDR_SIZE, cmd_size, apx_file_get_address_without_flags(file));
+    if (result == 0)
+    {
+      return APX_INTERNAL_ERROR;
+    }
+    return apx_file_manager_message_received(file_manager, buffer, sizeof(buffer));
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_client_test_connection_publish_remote_file(apx_client_test_connection_t* self, uint32_t address, char const* file_name, apx_size_t file_size)
+apx_error_t apx_client_test_connection_publish_remote_file(
+  apx_client_test_connection_t *self, uint32_t address, char const *file_name, apx_size_t file_size)
 {
-   if (self != NULL && file_name != NULL)
-   {
-      uint8_t  buffer[RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + RMF_FILE_INFO_HEADER_SIZE + RMF_FILE_NAME_MAX_SIZE];
-      rmf_file_info_t *file_info;
-      apx_file_manager_t* file_manager = apx_client_connection_get_file_manager(&self->base);
-      assert(file_manager != NULL);
+  if (self != NULL && file_name != NULL)
+  {
+    uint8_t buffer[RMF_HIGH_ADDR_SIZE + RMF_CMD_TYPE_SIZE + RMF_FILE_INFO_HEADER_SIZE + RMF_FILE_NAME_MAX_SIZE];
+    rmf_file_info_t *file_info;
+    apx_file_manager_t *file_manager = apx_client_connection_get_file_manager(&self->base);
+    assert(file_manager != NULL);
 
 
-      if (rmf_address_encode(buffer, RMF_HIGH_ADDR_SIZE, RMF_CMD_AREA_START_ADDRESS, false) != RMF_HIGH_ADDR_SIZE)
-      {
-         return APX_INTERNAL_ERROR;
-      }
-      file_info = rmf_file_info_make_fixed(file_name, file_size, address);
-      apx_size_t const max_cmd_size = sizeof(buffer) - RMF_HIGH_ADDR_SIZE;
-      apx_size_t const cmd_size = rmf_encode_publish_file_cmd(buffer + RMF_HIGH_ADDR_SIZE, max_cmd_size, file_info);
-      rmf_file_info_delete(file_info);
-      if (cmd_size == 0)
-      {
-         return APX_INTERNAL_ERROR;
-      }
-      return apx_file_manager_message_received(file_manager, buffer, RMF_HIGH_ADDR_SIZE + cmd_size);
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+    if (rmf_address_encode(buffer, RMF_HIGH_ADDR_SIZE, RMF_CMD_AREA_START_ADDRESS, false) != RMF_HIGH_ADDR_SIZE)
+    {
+      return APX_INTERNAL_ERROR;
+    }
+    file_info = rmf_file_info_make_fixed(file_name, file_size, address);
+    apx_size_t const max_cmd_size = sizeof(buffer) - RMF_HIGH_ADDR_SIZE;
+    apx_size_t const cmd_size = rmf_encode_publish_file_cmd(buffer + RMF_HIGH_ADDR_SIZE, max_cmd_size, file_info);
+    rmf_file_info_delete(file_info);
+    if (cmd_size == 0)
+    {
+      return APX_INTERNAL_ERROR;
+    }
+    return apx_file_manager_message_received(file_manager, buffer, RMF_HIGH_ADDR_SIZE + cmd_size);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_client_test_connection_write_remote_data(apx_client_test_connection_t* self, uint32_t address, uint8_t const* payload_data, apx_size_t payload_size)
+apx_error_t apx_client_test_connection_write_remote_data(
+  apx_client_test_connection_t *self, uint32_t address, uint8_t const *payload_data, apx_size_t payload_size)
 {
-   if ( (self != NULL) && (payload_size > 0))
-   {
-      uint8_t header[RMF_HIGH_ADDR_SIZE];
-      apx_file_manager_t* file_manager = apx_client_connection_get_file_manager(&self->base);
-      assert(file_manager != NULL);
-      apx_size_t header_size = (apx_size_t) rmf_address_encode(header, sizeof(header), address, false);
-      if (header_size == 0u)
-      {
-         return APX_INTERNAL_ERROR;
-      }
-      apx_error_t retval = APX_MEM_ERROR;
-      uint8_t* msg = (uint8_t*)malloc(((size_t)header_size) + payload_size);
-      if (msg != NULL)
-      {
-         memcpy(msg, &header[0], header_size);
-         memcpy(msg + header_size, payload_data, payload_size);
-         retval = apx_file_manager_message_received(file_manager, msg, header_size + payload_size);
-         free(msg);
-      }
-      return retval;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if ((self != NULL) && (payload_size > 0))
+  {
+    uint8_t header[RMF_HIGH_ADDR_SIZE];
+    apx_file_manager_t *file_manager = apx_client_connection_get_file_manager(&self->base);
+    assert(file_manager != NULL);
+    apx_size_t header_size = (apx_size_t)rmf_address_encode(header, sizeof(header), address, false);
+    if (header_size == 0u)
+    {
+      return APX_INTERNAL_ERROR;
+    }
+    apx_error_t retval = APX_MEM_ERROR;
+    uint8_t *msg = (uint8_t *)malloc(((size_t)header_size) + payload_size);
+    if (msg != NULL)
+    {
+      memcpy(msg, &header[0], header_size);
+      memcpy(msg + header_size, payload_data, payload_size);
+      retval = apx_file_manager_message_received(file_manager, msg, header_size + payload_size);
+      free(msg);
+    }
+    return retval;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_node_instance_t* apx_client_test_connection_find_node(apx_client_test_connection_t* self, char const* name)
+apx_node_instance_t *apx_client_test_connection_find_node(apx_client_test_connection_t *self, char const *name)
 {
-   if (self != NULL)
-   {
-      return apx_node_manager_find(&self->node_manager, name);
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return apx_node_manager_find(&self->node_manager, name);
+  }
+  return NULL;
 }
 
-apx_error_t apx_client_test_connection_build_node(apx_client_test_connection_t* self, char const* definition_text)
+apx_error_t apx_client_test_connection_build_node(apx_client_test_connection_t *self, char const *definition_text)
 {
-   if (self != NULL)
-   {
-      apx_node_manager_t* node_manager = apx_client_connection_get_node_manager(&self->base);
-      if (node_manager == NULL)
-      {
-         return APX_NULL_PTR_ERROR;
-      }
-      apx_error_t retval = apx_node_manager_build_node(node_manager, definition_text);
-      if (retval == APX_NO_ERROR)
-      {
-         apx_node_instance_t* node_instance = apx_node_manager_get_last_attached(node_manager);
-         assert(node_instance != NULL);
-         apx_client_connection_attach_node_instance(&self->base, node_instance);
-      }
-      return retval;
-   }
-   return APX_INVALID_ARGUMENT_ERROR;
+  if (self != NULL)
+  {
+    apx_node_manager_t *node_manager = apx_client_connection_get_node_manager(&self->base);
+    if (node_manager == NULL)
+    {
+      return APX_NULL_PTR_ERROR;
+    }
+    apx_error_t retval = apx_node_manager_build_node(node_manager, definition_text);
+    if (retval == APX_NO_ERROR)
+    {
+      apx_node_instance_t *node_instance = apx_node_manager_get_last_attached(node_manager);
+      assert(node_instance != NULL);
+      apx_client_connection_attach_node_instance(&self->base, node_instance);
+    }
+    return retval;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
 }
 
-void apx_client_test_connection_run(apx_client_test_connection_t* self)
+void apx_client_test_connection_run(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
+  if (self != NULL)
+  {
 #ifdef UNIT_TEST
-      apx_client_connection_run(&self->base);
+    apx_client_connection_run(&self->base);
 #endif
-   }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void create_connection_interface_vtable(apx_client_test_connection_t* self, apx_connection_interface_t* interface)
+static void create_connection_interface_vtable(
+  apx_client_test_connection_t *self, apx_connection_interface_t *interface)
 {
-   memset(interface, 0, sizeof(apx_connection_interface_t));
-   interface->arg = (void*)self;
-   interface->transmit_max_buffer_size = apx_client_test_connection_vtransmit_max_bytes_avaiable;
-   interface->transmit_current_bytes_avaiable = apx_client_test_connection_vtransmit_current_bytes_avaiable;
-   interface->transmit_begin = apx_client_test_connection_vtransmit_begin;
-   interface->transmit_end = apx_client_test_connection_vtransmit_end;
-   interface->transmit_data_message = apx_client_test_connection_vtransmit_data_message;
-   interface->transmit_direct_message = apx_client_test_connection_vtransmit_direct_message;
+  memset(interface, 0, sizeof(apx_connection_interface_t));
+  interface->arg = (void *)self;
+  interface->transmit_max_buffer_size = apx_client_test_connection_vtransmit_max_bytes_avaiable;
+  interface->transmit_current_bytes_avaiable = apx_client_test_connection_vtransmit_current_bytes_avaiable;
+  interface->transmit_begin = apx_client_test_connection_vtransmit_begin;
+  interface->transmit_end = apx_client_test_connection_vtransmit_end;
+  interface->transmit_data_message = apx_client_test_connection_vtransmit_data_message;
+  interface->transmit_direct_message = apx_client_test_connection_vtransmit_direct_message;
 }
 
-static int32_t apx_client_test_connection_transmit_max_bytes_avaiable(apx_client_test_connection_t* self)
+static int32_t apx_client_test_connection_transmit_max_bytes_avaiable(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      return (int32_t)self->default_buffer_size;
-   }
-   return -1;
+  if (self != NULL)
+  {
+    return (int32_t)self->default_buffer_size;
+  }
+  return -1;
 }
 
-static int32_t apx_client_test_connection_transmit_current_bytes_avaiable(apx_client_test_connection_t* self)
+static int32_t apx_client_test_connection_transmit_current_bytes_avaiable(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      return (int32_t)adt_bytearray_length(&self->transmit_buffer);
-   }
-   return -1;
+  if (self != NULL)
+  {
+    return (int32_t)adt_bytearray_length(&self->transmit_buffer);
+  }
+  return -1;
 }
 
-static void apx_client_test_connection_transmit_begin(apx_client_test_connection_t* self)
+static void apx_client_test_connection_transmit_begin(apx_client_test_connection_t *self)
 {
-   if (self != NULL)
-   {
-      if (adt_bytearray_length(&self->transmit_buffer) < self->default_buffer_size)
-      {
-         adt_bytearray_resize(&self->transmit_buffer, self->default_buffer_size);
-      }
-      self->pending_bytes = 0u;
-      assert((adt_bytearray_length(&self->transmit_buffer) >= self->default_buffer_size));
-   }
+  if (self != NULL)
+  {
+    if (adt_bytearray_length(&self->transmit_buffer) < self->default_buffer_size)
+    {
+      adt_bytearray_resize(&self->transmit_buffer, self->default_buffer_size);
+    }
+    self->pending_bytes = 0u;
+    assert((adt_bytearray_length(&self->transmit_buffer) >= self->default_buffer_size));
+  }
 }
 
-static void apx_client_test_connection_transmit_end(apx_client_test_connection_t* self)
+static void apx_client_test_connection_transmit_end(apx_client_test_connection_t *self)
 {
-   if ( (self != NULL) && (self->pending_bytes > 0u) )
-   {
-      send_packet(self);
-   }
+  if ((self != NULL) && (self->pending_bytes > 0u))
+  {
+    send_packet(self);
+  }
 }
 
-static apx_error_t apx_client_test_connection_transmit_data_message(apx_client_test_connection_t* self, uint32_t write_address, bool more_bit, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+static apx_error_t apx_client_test_connection_transmit_data_message(apx_client_test_connection_t *self,
+  uint32_t write_address, bool more_bit, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
-   uint8_t header[NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE];
-   apx_size_t const address_size = rmf_needed_encoding_size(write_address);
-   apx_size_t const payload_size = address_size + msg_size;
-   if (payload_size > self->default_buffer_size)
-   {
-      return APX_MSG_TOO_LARGE_ERROR;
-   }
-   apx_size_t const header1_size = numheader_encode32(header, sizeof(header), payload_size);
-   assert(header1_size > 0);
-   apx_size_t const header2_size = rmf_address_encode(header + header1_size, sizeof(header) - header1_size, write_address, more_bit);
-   assert(header2_size == address_size);
-   apx_size_t const bytes_to_send = header1_size + header2_size + payload_size;
-   apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->transmit_buffer)) - self->pending_bytes;
-   if (bytes_to_send > buffer_available)
-   {
-      send_packet(self);
-      assert(self->pending_bytes == 0u);
-   }
-   memcpy(adt_bytearray_data(&self->transmit_buffer) + self->pending_bytes, header, header1_size + header2_size);
-   self->pending_bytes += (header1_size + header2_size);
-   memcpy(adt_bytearray_data(&self->transmit_buffer) + self->pending_bytes, msg_data, msg_size);
-   self->pending_bytes += msg_size;
-   *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->transmit_buffer)) - self->pending_bytes);
-   return APX_NO_ERROR;
+  uint8_t header[NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE];
+  apx_size_t const address_size = rmf_needed_encoding_size(write_address);
+  apx_size_t const payload_size = address_size + msg_size;
+  if (payload_size > self->default_buffer_size)
+  {
+    return APX_MSG_TOO_LARGE_ERROR;
+  }
+  apx_size_t const header1_size = numheader_encode32(header, sizeof(header), payload_size);
+  assert(header1_size > 0);
+  apx_size_t const header2_size =
+    rmf_address_encode(header + header1_size, sizeof(header) - header1_size, write_address, more_bit);
+  assert(header2_size == address_size);
+  apx_size_t const bytes_to_send = header1_size + header2_size + payload_size;
+  apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->transmit_buffer)) - self->pending_bytes;
+  if (bytes_to_send > buffer_available)
+  {
+    send_packet(self);
+    assert(self->pending_bytes == 0u);
+  }
+  memcpy(adt_bytearray_data(&self->transmit_buffer) + self->pending_bytes, header, header1_size + header2_size);
+  self->pending_bytes += (header1_size + header2_size);
+  memcpy(adt_bytearray_data(&self->transmit_buffer) + self->pending_bytes, msg_data, msg_size);
+  self->pending_bytes += msg_size;
+  *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->transmit_buffer)) - self->pending_bytes);
+  return APX_NO_ERROR;
 }
 
-static apx_error_t apx_client_test_connection_transmit_direct_message(apx_client_test_connection_t* self, uint8_t const* msg_data, int32_t msg_size, int32_t* bytes_available)
+static apx_error_t apx_client_test_connection_transmit_direct_message(
+  apx_client_test_connection_t *self, uint8_t const *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
-   uint8_t  header [NUMHEADER32_LONG_SIZE];
-   if (msg_size > ((int32_t)self->default_buffer_size))
-   {
-      return APX_MSG_TOO_LARGE_ERROR;
-   }
-   apx_size_t const header_size = numheader_encode32(header, sizeof(header), msg_size);
-   apx_size_t const bytes_to_send = header_size + msg_size;
-   apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->transmit_buffer)) - self->pending_bytes;
-   if (bytes_to_send > buffer_available)
-   {
-      send_packet(self);
-      assert(self->pending_bytes == 0u);
-   }
-   memcpy(adt_bytearray_data(&self->transmit_buffer), header, header_size);
-   self->pending_bytes += header_size;
-   memcpy(adt_bytearray_data(&self->transmit_buffer) + self->pending_bytes, msg_data, msg_size);
-   self->pending_bytes += msg_size;
-   *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->transmit_buffer)) - self->pending_bytes);
-   return APX_NO_ERROR;
+  uint8_t header[NUMHEADER32_LONG_SIZE];
+  if (msg_size > ((int32_t)self->default_buffer_size))
+  {
+    return APX_MSG_TOO_LARGE_ERROR;
+  }
+  apx_size_t const header_size = numheader_encode32(header, sizeof(header), msg_size);
+  apx_size_t const bytes_to_send = header_size + msg_size;
+  apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->transmit_buffer)) - self->pending_bytes;
+  if (bytes_to_send > buffer_available)
+  {
+    send_packet(self);
+    assert(self->pending_bytes == 0u);
+  }
+  memcpy(adt_bytearray_data(&self->transmit_buffer), header, header_size);
+  self->pending_bytes += header_size;
+  memcpy(adt_bytearray_data(&self->transmit_buffer) + self->pending_bytes, msg_data, msg_size);
+  self->pending_bytes += msg_size;
+  *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->transmit_buffer)) - self->pending_bytes);
+  return APX_NO_ERROR;
 }
 
-static void send_packet(apx_client_test_connection_t* self)
+static void send_packet(apx_client_test_connection_t *self)
 {
-   adt_bytearray_t* packet = adt_bytearray_new();
-   if (packet != NULL)
-   {
-      adt_error_t result = adt_bytearray_resize(packet, (uint32_t) self->pending_bytes);
-      if (result == ADT_NO_ERROR)
-      {
-         memcpy(adt_bytearray_data(packet), adt_bytearray_data(&self->transmit_buffer), self->pending_bytes);
-         adt_ary_push(self->transmit_log, packet);
-      }
-   }
-   adt_bytearray_clear(&self->transmit_buffer);
-   self->pending_bytes = 0u;
+  adt_bytearray_t *packet = adt_bytearray_new();
+  if (packet != NULL)
+  {
+    adt_error_t result = adt_bytearray_resize(packet, (uint32_t)self->pending_bytes);
+    if (result == ADT_NO_ERROR)
+    {
+      memcpy(adt_bytearray_data(packet), adt_bytearray_data(&self->transmit_buffer), self->pending_bytes);
+      adt_ary_push(self->transmit_log, packet);
+    }
+  }
+  adt_bytearray_clear(&self->transmit_buffer);
+  self->pending_bytes = 0u;
 }

@@ -1,23 +1,23 @@
 /*****************************************************************************
-* \file      file_manager_receiver.h
-* \author    Conny Gustafsson
-* \date      2020-02-08
-* \brief     Receive buffer mechanism for file manager
-*
-* Copyright (c) 2020-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      file_manager_receiver.h
+ * \author    Conny Gustafsson
+ * \date      2020-02-08
+ * \brief     Receive buffer mechanism for file manager
+ *
+ * Copyright (c) 2020-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_FILEMANAGER_RECEIVER_H
 #define APX_FILEMANAGER_RECEIVER_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/types.h"
-#include "apx/error.h"
-#include "remotefile.h"
 #include "adt_bytearray.h"
+#include "apx/error.h"
+#include "apx/types.h"
+#include "remotefile.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -25,16 +25,16 @@
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_file_manager_receiver_tag
 {
-   adt_bytearray_t buffer;
-   uint32_t start_address;
+  adt_bytearray_t buffer;
+  uint32_t start_address;
 } apx_file_manager_receiver_t;
 
 typedef struct apx_file_manager_reception_result_tag
 {
-   bool is_complete;
-   uint32_t address;
-   uint8_t const* data;
-   apx_size_t size;
+  bool is_complete;
+  uint32_t address;
+  uint8_t const *data;
+  apx_size_t size;
 } apx_file_manager_reception_result_t;
 
 
@@ -44,6 +44,7 @@ typedef struct apx_file_manager_reception_result_tag
 apx_error_t apx_file_manager_receiver_create(apx_file_manager_receiver_t *self);
 void apx_file_manager_receiver_destroy(apx_file_manager_receiver_t *self);
 void apx_file_manager_receiver_reset(apx_file_manager_receiver_t *self);
-apx_error_t apx_file_manager_receiver_write(apx_file_manager_receiver_t *self, apx_file_manager_reception_result_t *result, uint32_t address, uint8_t const* data, apx_size_t size, bool more_bit);
+apx_error_t apx_file_manager_receiver_write(apx_file_manager_receiver_t *self,
+  apx_file_manager_reception_result_t *result, uint32_t address, uint8_t const *data, apx_size_t size, bool more_bit);
 
-#endif //APX_FILEMANAGER_RECEIVER_H
+#endif // APX_FILEMANAGER_RECEIVER_H

@@ -1,40 +1,40 @@
 /*****************************************************************************
-* \file      observed_file.h
-* \author    Conny Gustafsson
-* \date      2021-04-05
-* \brief     Current state of an observed file. Used by monitor extension.
-*
-* Copyright (c) 2021-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      observed_file.h
+ * \author    Conny Gustafsson
+ * \date      2021-04-05
+ * \brief     Current state of an observed file. Used by monitor extension.
+ *
+ * Copyright (c) 2021-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_OBSERVED_FILE_H
 #define APX_OBSERVED_FILE_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/types.h"
-#include "apx/extended_file_info.h"
-#include "adt_str.h"
 #include "adt_list.h"
+#include "adt_str.h"
+#include "apx/extended_file_info.h"
+#include "apx/types.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 typedef struct apx_observed_file_tag
 {
-   rmf_extended_file_info_t file_info;
+  rmf_extended_file_info_t file_info;
 } apx_observed_file_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_observed_file_create(apx_observed_file_t* self, rmf_extended_file_info_t* const file_info);
-void apx_observed_file_destroy(apx_observed_file_t* self);
-apx_observed_file_t* apx_observed_file_new(rmf_extended_file_info_t* const file_info);
-void apx_observed_file_delete(apx_observed_file_t* self);
-void apx_observed_file_vdelete(void* arg);
+void apx_observed_file_create(apx_observed_file_t *self, rmf_extended_file_info_t *const file_info);
+void apx_observed_file_destroy(apx_observed_file_t *self);
+apx_observed_file_t *apx_observed_file_new(rmf_extended_file_info_t *const file_info);
+void apx_observed_file_delete(apx_observed_file_t *self);
+void apx_observed_file_vdelete(void *arg);
 
-#endif //APX_OBSERVED_FILE_H
+#endif // APX_OBSERVED_FILE_H

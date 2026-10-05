@@ -1,22 +1,22 @@
 /*****************************************************************************
-* \file      type_attribute.c
-* \author    Conny Gustafsson
-* \date      2018-09-11
-* \brief     Parse tree: APX type attributes
-*
-* Copyright (c) 2018-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      type_attribute.c
+ * \author    Conny Gustafsson
+ * \date      2018-09-11
+ * \brief     Parse tree: APX type attributes
+ *
+ * Copyright (c) 2018-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <string.h>
-#include <malloc.h>
 #include "apx/type_attribute.h"
 #include "apx/computation.h"
+#include <malloc.h>
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
-#include "CMemLeak.h"
+# include "CMemLeak.h"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -35,70 +35,68 @@
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_type_attributes_create(apx_type_attributes_t* self)
+void apx_type_attributes_create(apx_type_attributes_t *self)
 {
-   if (self != NULL)
-   {
-      adt_ary_create(&self->computations, apx_computation_vdelete);
-   }
+  if (self != NULL)
+  {
+    adt_ary_create(&self->computations, apx_computation_vdelete);
+  }
 }
 
-void apx_type_attributes_destroy(apx_type_attributes_t* self)
+void apx_type_attributes_destroy(apx_type_attributes_t *self)
 {
-   if (self != NULL)
-   {
-      adt_ary_destroy(&self->computations);
-   }
+  if (self != NULL)
+  {
+    adt_ary_destroy(&self->computations);
+  }
 }
 
-apx_type_attributes_t* apx_type_attributes_new()
+apx_type_attributes_t *apx_type_attributes_new()
 {
-   apx_type_attributes_t *self = (apx_type_attributes_t*) malloc(sizeof(apx_type_attributes_t));
-   if (self != NULL)
-   {
-      apx_type_attributes_create(self);
-   }
-   return self;
+  apx_type_attributes_t *self = (apx_type_attributes_t *)malloc(sizeof(apx_type_attributes_t));
+  if (self != NULL)
+  {
+    apx_type_attributes_create(self);
+  }
+  return self;
 }
 
-void apx_type_attributes_delete(apx_type_attributes_t* self)
+void apx_type_attributes_delete(apx_type_attributes_t *self)
 {
-   if (self != NULL)
-   {
-      apx_type_attributes_destroy(self);
-      free(self);
-   }
+  if (self != NULL)
+  {
+    apx_type_attributes_destroy(self);
+    free(self);
+  }
 }
 
-void apx_type_attributes_append_computation(apx_type_attributes_t* self, struct apx_computation_tag* computation)
+void apx_type_attributes_append_computation(apx_type_attributes_t *self, struct apx_computation_tag *computation)
 {
-   if ( (self != NULL) && (computation != NULL) )
-   {
-      adt_ary_push(&self->computations, (void*)computation);
-   }
+  if ((self != NULL) && (computation != NULL))
+  {
+    adt_ary_push(&self->computations, (void *)computation);
+  }
 }
 
-int32_t apx_type_attributes_num_computations(apx_type_attributes_t* self)
+int32_t apx_type_attributes_num_computations(apx_type_attributes_t *self)
 {
-   if (self != NULL)
-   {
-      return adt_ary_length(&self->computations);
-   }
-   return -1;
+  if (self != NULL)
+  {
+    return adt_ary_length(&self->computations);
+  }
+  return -1;
 }
 
-apx_computation_t* apx_type_attributes_get_computation(apx_type_attributes_t* self, int32_t index)
+apx_computation_t *apx_type_attributes_get_computation(apx_type_attributes_t *self, int32_t index)
 {
-   if (self != NULL)
-   {
-      return adt_ary_value(&self->computations, index);
-   }
-   return NULL;
+  if (self != NULL)
+  {
+    return adt_ary_value(&self->computations, index);
+  }
+  return NULL;
 }
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-

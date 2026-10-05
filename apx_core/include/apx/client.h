@@ -1,31 +1,31 @@
 /*****************************************************************************
-* \file      client.h
-* \author    Conny Gustafsson
-* \date      2017-02-20
-* \brief     APX client class
-*
-* Copyright (c) 2017-2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      client.h
+ * \author    Conny Gustafsson
+ * \date      2017-02-20
+ * \brief     APX client class
+ *
+ * Copyright (c) 2017-2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_CLIENT_H
 #define APX_CLIENT_H
 
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include <stdint.h>
-#include <stdbool.h>
-#include "apx/error.h"
 #include "apx/client_connection.h"
-#include "apx/node_instance.h"
+#include "apx/error.h"
 #include "apx/event_listener.h"
+#include "apx/node_instance.h"
 #include "apx/port_instance.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-//forward declarations
+// forward declarations
 
 struct adt_ary_tag;
 struct adt_list_tag;
@@ -44,7 +44,7 @@ struct msocket_tls_config_tag;
 # else
 #  include <pthread.h>
 # endif
-#include "osmacro.h"
+# include "osmacro.h"
 #endif
 
 #ifdef UNIT_TEST
@@ -53,14 +53,14 @@ struct testsocket_tag;
 
 typedef struct apx_client_tag
 {
-   apx_client_connection_t *connection; //message connection
-   struct adt_list_tag *event_listeners; //weak references to apx_client_event_listener_t
-   struct apx_node_manager_tag *node_manager; //strong reference
-   struct apx_vm_tag *vm; //strong refence
-   MUTEX_T lock;
-   MUTEX_T event_listener_lock;
-   bool is_connected;
-   rmf_version_id_t rmf_version_id;
+  apx_client_connection_t *connection; // message connection
+  struct adt_list_tag *event_listeners; // weak references to apx_client_event_listener_t
+  struct apx_node_manager_tag *node_manager; // strong reference
+  struct apx_vm_tag *vm; // strong refence
+  MUTEX_T lock;
+  MUTEX_T event_listener_lock;
+  bool is_connected;
+  rmf_version_id_t rmf_version_id;
 } apx_client_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -77,13 +77,14 @@ apx_client_t *apx_client_new(void);
 void apx_client_delete(apx_client_t *self);
 void apx_client_vdelete(void *arg);
 void apx_client_set_rmf_proto_id(apx_client_t *self, rmf_version_id_t version_id);
-rmf_version_id_t apx_client_get_rmf_proto_id(apx_client_t const* self);
+rmf_version_id_t apx_client_get_rmf_proto_id(apx_client_t const *self);
 
 #ifdef UNIT_TEST
 apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_tag *socket_object);
 #else
 apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint16_t port);
-apx_error_t apx_client_connect_tls(apx_client_t *self, const char *address, uint16_t port, const struct msocket_tls_config_tag *tls_config);
+apx_error_t apx_client_connect_tls(
+  apx_client_t *self, const char *address, uint16_t port, const struct msocket_tls_config_tag *tls_config);
 # ifndef _WIN32
 apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socket_path);
 apx_error_t apx_client_connect_vsock(apx_client_t *self, uint32_t cid, uint32_t port);
@@ -91,7 +92,7 @@ apx_error_t apx_client_connect_vsock(apx_client_t *self, uint32_t cid, uint32_t 
 #endif
 void apx_client_disconnect(apx_client_t *self);
 
-void* apx_client_register_event_listener(apx_client_t *self, struct apx_client_event_listener_tag *listener);
+void *apx_client_register_event_listener(apx_client_t *self, struct apx_client_event_listener_tag *listener);
 void apx_client_unregister_event_listener(apx_client_t *self, void *handle);
 
 int32_t apx_client_get_num_attached_nodes(apx_client_t *self);
@@ -101,31 +102,34 @@ apx_client_connection_t *apx_client_get_connection(apx_client_t *self);
 
 apx_error_t apx_client_build_node(apx_client_t *self, const char *definition_text);
 int32_t apx_client_get_error_line(apx_client_t *self);
-apx_error_t apx_client_get_last_error(apx_client_t const* self);
-const char* apx_client_get_last_error_node(apx_client_t const* self);
+apx_error_t apx_client_get_last_error(apx_client_t const *self);
+const char *apx_client_get_last_error_node(apx_client_t const *self);
 apx_node_instance_t *apx_client_get_last_attached_node(apx_client_t *self);
 struct apx_file_manager_tag *apx_client_get_file_manager(apx_client_t *self);
 struct apx_node_manager_tag *apx_client_get_node_manager(apx_client_t *self);
 
 /*** Port Handle API ***/
-apx_port_instance_t* apx_client_get_port_instance_by_name(apx_client_t *self, const char *node_name, const char *port_name);
-apx_port_instance_t* apx_client_get_provide_port_instance_by_id(apx_client_t *self, const char *node_name, apx_port_id_t port_id);
-apx_port_instance_t* apx_client_get_require_port_instance_by_id(apx_client_t *self, const char *node_name, apx_port_id_t port_id);
+apx_port_instance_t *apx_client_get_port_instance_by_name(
+  apx_client_t *self, const char *node_name, const char *port_name);
+apx_port_instance_t *apx_client_get_provide_port_instance_by_id(
+  apx_client_t *self, const char *node_name, apx_port_id_t port_id);
+apx_port_instance_t *apx_client_get_require_port_instance_by_id(
+  apx_client_t *self, const char *node_name, apx_port_id_t port_id);
 
 /*** Port Data Write API ***/
-apx_error_t apx_client_write_port_data(apx_client_t *self, apx_port_instance_t* port_instance, const dtl_dv_t *value);
-//apx_error_t apx_client_write_port_data_u8(apx_client_t *self, void *portHandle, uint8_t value);
-//apx_error_t apx_client_write_port_data_u16(apx_client_t *self, void *portHandle, uint16_t value);
-//apx_error_t apx_client_write_port_data_u32(apx_client_t *self, void *portHandle, uint32_t value);
+apx_error_t apx_client_write_port_data(apx_client_t *self, apx_port_instance_t *port_instance, const dtl_dv_t *value);
+// apx_error_t apx_client_write_port_data_u8(apx_client_t *self, void *portHandle, uint8_t value);
+// apx_error_t apx_client_write_port_data_u16(apx_client_t *self, void *portHandle, uint16_t value);
+// apx_error_t apx_client_write_port_data_u32(apx_client_t *self, void *portHandle, uint32_t value);
 
 /*** Port Data Read API ***/
-apx_error_t apx_client_read_port_data(apx_client_t *self, apx_port_instance_t* port_instance, dtl_dv_t **dv);
-//apx_error_t apx_client_read_port_data_u8(apx_client_t *self, void *portHandle, uint8_t *value);
-//apx_error_t apx_client_read_port_data_u16(apx_client_t *self, void *portHandle, uint16_t *value);
-//apx_error_t apx_client_read_port_data_u32(apx_client_t *self, void *portHandle, uint32_t *value);
+apx_error_t apx_client_read_port_data(apx_client_t *self, apx_port_instance_t *port_instance, dtl_dv_t **dv);
+// apx_error_t apx_client_read_port_data_u8(apx_client_t *self, void *portHandle, uint8_t *value);
+// apx_error_t apx_client_read_port_data_u16(apx_client_t *self, void *portHandle, uint16_t *value);
+// apx_error_t apx_client_read_port_data_u32(apx_client_t *self, void *portHandle, uint32_t *value);
 
 #ifdef UNIT_TEST
 void apx_client_run(apx_client_t *self);
 #endif
 
-#endif //APX_CLIENT_H
+#endif // APX_CLIENT_H
