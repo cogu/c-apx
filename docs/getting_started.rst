@@ -57,7 +57,7 @@ From the ``c-apx`` directory, start the server with the example configuration:
 
       .. code-block:: bat
 
-         build\app\apx_server\Debug\apx-server.exe example\config
+         build\app\apx_server\Debug\apx-server.exe example\config\server.json
 
 Leave the server running. Notice that with the example configuration, the
 server text log extension outputs real-time server events (such as extension
