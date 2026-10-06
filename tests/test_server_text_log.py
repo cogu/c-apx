@@ -61,18 +61,24 @@ def test_server_text_log_file_and_timestamp(tmp_path, apx_server_bin: str):
 
     # Gracefully stop server
     proc.terminate()
-    proc.wait(timeout=3.0)
+    stdout_bytes, _ = proc.communicate(timeout=3.0)
     assert proc.returncode == 0
+
+    stdout_str = stdout_bytes.decode("utf-8")
+    assert f"Logging to {log_path}" in stdout_str
+    assert "Starting event loop" not in stdout_str
+    assert "Listening on" not in stdout_str
 
     assert os.path.exists(log_path), "Log file should have been created"
     with open(log_path, "r", encoding="utf-8") as f:
         log_content = f.read()
 
     assert len(log_content) > 0, "Log file should not be empty"
+    assert "Listening on UNIX socket" in log_content
 
-    # Verify timestamp and level formatting: [YYYY-MM-DD HH:MM:SS.mmm] [<LEVEL>] [<LABEL>] <message>
+    # Verify timestamp, level, and label formatting: [YYYY-MM-DD HH:MM:SS.mmm] [<LEVEL>] [<LABEL>] <message>
     pattern = re.compile(
-        r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[(INFO|DEBUG|WARNING|ERROR|CRITICAL)\] \[[^\]]+\] .+$",
+        r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[(INFO |DEBUG|WARNING|ERROR|CRITICAL)\] \[[A-Za-z0-9_ ]{6}\] .+$",
         re.MULTILINE,
     )
     matches = pattern.findall(log_content)
@@ -135,4 +141,4 @@ def test_server_text_log_level_filter(tmp_path, apx_server_bin: str):
 
     # Normal connection / debug events should NOT be logged since level is ERROR
     assert "[DEBUG]" not in log_content
-    assert "[INFO]" not in log_content
+    assert "[INFO ]" not in log_content

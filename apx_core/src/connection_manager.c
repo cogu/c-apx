@@ -149,8 +149,7 @@ void apx_connection_manager_attach(apx_connection_manager_t *self, apx_server_co
     apx_server_connection_connected_notification(connection);
     if (connection->parent != NULL)
     {
-      apx_server_log_write(
-        connection->parent, APX_LOG_LEVEL_INFO, "CONNECTION_MANAGER", "New connection %d", (int)connection_id);
+      apx_server_log(connection->parent, APX_LOG_LEVEL_INFO, "New connection %d", (int)connection_id);
     }
   }
 }
@@ -299,17 +298,17 @@ static void apx_connection_manager_cleanup_task_main(apx_connection_manager_t *s
       adt_list_erase(&self->inactive_connections, iter);
       SPINLOCK_LEAVE(self->lock);
       apx_server_t *server = serverConnection->parent;
+      uint32_t const connection_id = serverConnection->base.connection_id;
       if (server != NULL)
       {
-        apx_server_log_write(server, APX_LOG_LEVEL_DEBUG, "CONNECTION_MANAGER", "Cleaning up %d",
-          (int)serverConnection->base.connection_id);
+        apx_server_log(server, APX_LOG_LEVEL_DEBUG, "[%u] Connection cleanup started", connection_id);
       }
       apx_connection_base_stop(&serverConnection->base);
       apx_connection_base_close(&serverConnection->base);
       apx_connection_base_delete(&serverConnection->base);
       if (server != NULL)
       {
-        apx_server_log_write(server, APX_LOG_LEVEL_DEBUG, "CONNECTION_MANAGER", "Cleanup complete");
+        apx_server_log(server, APX_LOG_LEVEL_DEBUG, "[%u] Connection cleanup complete", connection_id);
       }
       return;
     }

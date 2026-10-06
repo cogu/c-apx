@@ -322,7 +322,7 @@ static void apx_server_text_log_provide_ports_connected(
             char const *remote_node_name =
               (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
             char const *remote_port_name = apx_port_instance_name(remote_port);
-            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "ROUTER", "[%u] %s.%s --> %s.%s", conn_id,
+            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] %s.%s --> %s.%s", conn_id,
               local_node_name, local_port_name, remote_node_name, remote_port_name);
           }
         }
@@ -360,7 +360,7 @@ static void apx_server_text_log_provide_ports_disconnected(
             char const *remote_node_name =
               (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
             char const *remote_port_name = apx_port_instance_name(remote_port);
-            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "ROUTER", "[%u] %s.%s -!-> %s.%s", conn_id,
+            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] %s.%s -!-> %s.%s", conn_id,
               local_node_name, local_port_name, remote_node_name, remote_port_name);
           }
         }
@@ -397,7 +397,7 @@ static void apx_server_text_log_require_ports_connected(
             char const *remote_node_name =
               (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
             char const *remote_port_name = apx_port_instance_name(remote_port);
-            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "ROUTER", "[%u] %s.%s <-- %s.%s", conn_id,
+            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] %s.%s <-- %s.%s", conn_id,
               local_node_name, local_port_name, remote_node_name, remote_port_name);
           }
         }
@@ -435,7 +435,7 @@ static void apx_server_text_log_require_ports_disconnected(
             char const *remote_node_name =
               (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
             char const *remote_port_name = apx_port_instance_name(remote_port);
-            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "ROUTER", "[%u] %s.%s -!-> %s.%s", conn_id,
+            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] %s.%s -!-> %s.%s", conn_id,
               local_node_name, local_port_name, remote_node_name, remote_port_name);
           }
         }

@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_ary.h"
 #include "apx/error.h"
+#include "apx/types.h"
 #include "dtl_type.h"
 #include "msocket.h"
 #include "msocket_server.h"
@@ -72,4 +73,11 @@ void apx_socket_server_stop_tcp_server(apx_socket_server_t *self);
 #ifdef UNIT_TEST
 void apx_socket_server_accept_testsocket(apx_socket_server_t *self, testsocket_t *sock);
 #endif
+#if defined(__GNUC__) || defined(__clang__)
+void apx_socket_server_log(struct apx_server_tag *server, apx_log_level_t level, const char *format, ...)
+  __attribute__((format(printf, 3, 4)));
+#else
+void apx_socket_server_log(struct apx_server_tag *server, apx_log_level_t level, const char *format, ...);
+#endif
+
 #endif // APX_SOCKET_SERVER_H

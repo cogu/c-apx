@@ -91,9 +91,12 @@ apx_error_t apx_server_detach_connection(apx_server_t *self, apx_server_connecti
 apx_error_t apx_server_add_extension(
   apx_server_t *self, const char *name, apx_server_extension_handler_t *handler, dtl_dv_t *config);
 #if defined(__GNUC__) || defined(__clang__)
+void apx_server_log(apx_server_t *self, apx_log_level_t level, const char *format, ...)
+  __attribute__((format(printf, 3, 4)));
 void apx_server_log_write(apx_server_t *self, apx_log_level_t level, const char *label, const char *format, ...)
   __attribute__((format(printf, 4, 5)));
 #else
+void apx_server_log(apx_server_t *self, apx_log_level_t level, const char *format, ...);
 void apx_server_log_write(apx_server_t *self, apx_log_level_t level, const char *label, const char *format, ...);
 #endif
 void apx_server_log_vwrite(

@@ -15,6 +15,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/error.h"
+#include "apx/types.h"
 #include "msocket.h"
 #include "msocket_server.h"
 #include "msocket_tls.h"
@@ -48,5 +49,12 @@ void apx_tls_server_delete(apx_tls_server_t *self);
 apx_error_t apx_tls_server_start(
   apx_tls_server_t *self, uint16_t tcp_port, const msocket_tls_config_t *tls_config, const char *tag);
 void apx_tls_server_stop(apx_tls_server_t *self);
+
+#if defined(__GNUC__) || defined(__clang__)
+void apx_tls_server_log(struct apx_server_tag *server, apx_log_level_t level, const char *format, ...)
+  __attribute__((format(printf, 3, 4)));
+#else
+void apx_tls_server_log(struct apx_server_tag *server, apx_log_level_t level, const char *format, ...);
+#endif
 
 #endif // APX_TLS_SERVER_H

@@ -211,6 +211,8 @@ int main(int argc, char **argv)
     }
     return 1;
   }
+  printf("Loading extensions\n");
+  fflush(stdout);
   result = register_apx_server_extensions(&m_server, config);
   if (result != APX_NO_ERROR)
   {
@@ -233,6 +235,8 @@ int main(int argc, char **argv)
     }
     return 1;
   }
+  printf("Server running\n");
+  fflush(stdout);
 #ifndef _WIN32
   if (m_ready_fd >= 0)
   {

@@ -93,7 +93,7 @@ static void test_text_log_base_level_filtering(CuTest *tc)
   CuAssertIntEquals(tc, 0, fseek(tmp, 0, SEEK_SET));
   memset(buf, 0, sizeof(buf));
   CuAssertPtrNotNull(tc, fgets(buf, sizeof(buf), tmp));
-  CuAssertStrEquals(tc, "[INFO] [TEST] Info message\n", buf);
+  CuAssertStrEquals(tc, "[INFO ] [TEST  ] Info message\n", buf);
 
   // Set level to WARNING: INFO should now be dropped, WARNING should pass
   apx_text_log_base_set_log_level(&log, APX_LOG_LEVEL_WARNING);
@@ -116,7 +116,7 @@ static void test_text_log_base_level_filtering(CuTest *tc)
   CuAssertIntEquals(tc, 0, fseek(tmp, 0, SEEK_SET));
   memset(buf, 0, sizeof(buf));
   CuAssertPtrNotNull(tc, fgets(buf, sizeof(buf), tmp));
-  CuAssertStrEquals(tc, "[WARNING] [TEST] Warning code 123\n", buf);
+  CuAssertStrEquals(tc, "[WARNING] [TEST  ] Warning code 123\n", buf);
 
   // Set level to DEBUG: DEBUG should now pass
   apx_text_log_base_set_log_level(&log, APX_LOG_LEVEL_DEBUG);
@@ -131,7 +131,7 @@ static void test_text_log_base_level_filtering(CuTest *tc)
   CuAssertIntEquals(tc, 0, fseek(tmp, 0, SEEK_SET));
   memset(buf, 0, sizeof(buf));
   CuAssertPtrNotNull(tc, fgets(buf, sizeof(buf), tmp));
-  CuAssertStrEquals(tc, "[DEBUG] [TEST] Debug allowed\n", buf);
+  CuAssertStrEquals(tc, "[DEBUG] [TEST  ] Debug allowed\n", buf);
 
   apx_text_log_base_destroy(&log);
 }
@@ -157,9 +157,9 @@ static void test_text_log_base_timestamp(CuTest *tc)
   memset(buf, 0, sizeof(buf));
   CuAssertPtrNotNull(tc, fgets(buf, sizeof(buf), tmp));
 
-  // Should format as: [<YYYY-MM-DD HH:MM:SS.mmm>] [ERROR] [SYS] Something went wrong\n
+  // Should format as: [<YYYY-MM-DD HH:MM:SS.mmm>] [ERROR] [SYS   ] Something went wrong\n
   CuAssertIntEquals(tc, '[', buf[0]);
-  CuAssertPtrNotNull(tc, strstr(buf, "] [ERROR] [SYS] Something went wrong\n"));
+  CuAssertPtrNotNull(tc, strstr(buf, "] [ERROR] [SYS   ] Something went wrong\n"));
 
   apx_text_log_base_destroy(&log);
 }

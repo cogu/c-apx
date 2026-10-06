@@ -26,6 +26,7 @@
 #else
 # include "msocket.h"
 #endif
+#include "apx/extension/socket_server.h"
 #include "apx/extension/socket_server_connection.h"
 #include "apx/file_manager.h"
 #include "apx/numheader.h"
@@ -266,7 +267,7 @@ static void socket_disconnected_notification(void *arg, void *socket)
   if (self != NULL)
   {
     assert(self->base.parent != NULL);
-    apx_server_log_write(self->base.parent, APX_LOG_LEVEL_INFO, "SERVER_SOCKET", "[%u] Client disconnected",
+    apx_socket_server_log(self->base.parent, APX_LOG_LEVEL_INFO, "[%u] Client disconnected",
       apx_server_connection_get_connection_id(&self->base));
     apx_server_detach_connection(self->base.parent, &self->base);
   }
@@ -277,7 +278,16 @@ static msocket_error_t socket_data_notification(void *arg, void *socket, const u
 {
   (void)socket;
   apx_socket_server_connection_t *self = (apx_socket_server_connection_t *)arg;
+  if (self == NULL)
+  {
+    return MSOCKET_INVALID_ARGUMENT_ERROR;
+  }
   int retval = apx_server_connection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
+  if ((retval == 0) && (self->base.parent != NULL) && (consumed_bytes != NULL) && (*consumed_bytes > 0u))
+  {
+    apx_socket_server_log(self->base.parent, APX_LOG_LEVEL_DEBUG, "[%u] Received %d bytes",
+      apx_server_connection_get_connection_id(&self->base), (int)*consumed_bytes);
+  }
   return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
@@ -411,7 +421,7 @@ static void connection_send_packet(apx_socket_server_connection_t *self)
     uint8_t const *data = adt_bytearray_const_data(&self->send_buffer);
     if (self->base.parent != NULL)
     {
-      apx_server_log_write(self->base.parent, APX_LOG_LEVEL_DEBUG, "SOCKET_SERVER_CONNECTION", "[%u] Sending %d bytes",
+      apx_socket_server_log(self->base.parent, APX_LOG_LEVEL_DEBUG, "[%u] Sending %d bytes",
         apx_server_connection_get_connection_id(&self->base), (int)self->pending_bytes);
     }
     SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);

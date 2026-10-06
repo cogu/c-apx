@@ -17,6 +17,7 @@
 #include "apx/types.h"
 #include <assert.h>
 #include <malloc.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #ifndef _WIN32
@@ -140,6 +141,14 @@ void apx_socket_server_add_allowed_group(apx_socket_server_t *self, const char *
   }
 }
 
+void apx_socket_server_log(apx_server_t *server, apx_log_level_t level, const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  apx_server_log_vwrite(server, level, "SOCKET", format, args);
+  va_end(args);
+}
+
 void apx_socket_server_start_tcp_server(apx_socket_server_t *self, uint16_t tcp_port, const char *tag)
 {
   if (self != NULL)
@@ -164,9 +173,10 @@ void apx_socket_server_start_tcp_server(apx_socket_server_t *self, uint16_t tcp_
     msocket_server_sethandler(&self->tcp_server, &server_handler, self);
     msocket_server_start(&self->tcp_server, NULL, 0, self->tcp_port);
     self->is_tcp_server_started = true;
-    printf("Listening on TCP port %d\n", (int)self->tcp_port);
-      // sprintf(msg, "Listening on TCP port %d", (int) self->tcpPort);
-      // apx_server_log_event(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
+    if (self->parent != NULL)
+    {
+      apx_socket_server_log(self->parent, APX_LOG_LEVEL_INFO, "Listening on TCP port %d", (int)self->tcp_port);
+    }
   }
 }
 
@@ -195,9 +205,10 @@ void apx_socket_server_start_unix_server(apx_socket_server_t *self, const char *
     msocket_server_sethandler(&self->unix_server, &server_handler, self);
     msocket_server_unix_start(&self->unix_server, self->unix_server_file);
     self->is_unix_server_started = true;
-    printf("Listening on UNIX socket %s\n", self->unix_server_file);
-//      sprintf(msg, "Listening on UNIX socket %s", self->unixServerFile);
-//      apx_server_log_event(self->parent, APX_LOG_LEVEL_INFO, APX_SOCKET_SERVER_LABEL, &msg[0]);
+    if (self->parent != NULL)
+    {
+      apx_socket_server_log(self->parent, APX_LOG_LEVEL_INFO, "Listening on UNIX socket %s", self->unix_server_file);
+    }
   }
 }
 
@@ -223,7 +234,10 @@ void apx_socket_server_start_unix_server_fd(apx_socket_server_t *self, int fd, c
     msocket_server_sethandler(&self->unix_server, &server_handler, self);
     msocket_server_unix_start_fd(&self->unix_server, fd);
     self->is_unix_server_started = true;
-    printf("Listening on pre-bound UNIX socket (fd %d)\n", fd);
+    if (self->parent != NULL)
+    {
+      apx_socket_server_log(self->parent, APX_LOG_LEVEL_INFO, "Listening on pre-bound UNIX socket (fd %d)", fd);
+    }
   }
 }
 void apx_socket_server_start_vsock_server(apx_socket_server_t *self, uint32_t cid, uint32_t port, const char *tag)
@@ -248,7 +262,11 @@ void apx_socket_server_start_vsock_server(apx_socket_server_t *self, uint32_t ci
     msocket_server_sethandler(&self->vsock_server, &server_handler, self);
     msocket_server_vsock_start(&self->vsock_server, self->vsock_cid, self->vsock_port);
     self->is_vsock_server_started = true;
-    printf("Listening on VSOCK port %u (CID %u)\n", self->vsock_port, self->vsock_cid);
+    if (self->parent != NULL)
+    {
+      apx_socket_server_log(
+        self->parent, APX_LOG_LEVEL_INFO, "Listening on VSOCK port %u (CID %u)", self->vsock_port, self->vsock_cid);
+    }
   }
 }
 
@@ -315,7 +333,7 @@ static void apx_socket_server_tcp_accept(void *arg, struct msocket_server_tag *s
   {
     if (self->parent != NULL)
     {
-      apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "SOCKET_SERVER", "New TCP connection");
+      apx_socket_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "New TCP connection");
     }
     apx_socket_server_connection_t *new_connection = apx_socket_server_connection_new(sock);
     if (new_connection != NULL)
@@ -438,7 +456,7 @@ static void apx_socket_server_unix_accept(void *arg, struct msocket_server_tag *
   {
     if (self->parent != NULL)
     {
-      apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "SOCKET_SERVER", "New UNIX domain socket connection");
+      apx_socket_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "New UNIX domain socket connection");
     }
     if (!verify_peer_credentials(self, (msocket_t *)sock))
     {
@@ -471,7 +489,7 @@ static void apx_socket_server_vsock_accept(void *arg, struct msocket_server_tag 
   {
     if (self->parent != NULL)
     {
-      apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "SOCKET_SERVER", "New VSOCK connection");
+      apx_socket_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "New VSOCK connection");
     }
     apx_socket_server_connection_t *new_connection = apx_socket_server_connection_new(sock);
     if (new_connection != NULL)

@@ -71,7 +71,7 @@ Log entries follow a standardized prefix format:
 
   .. code-block:: text
 
-     [2026-10-06 21:30:00.123] [INFO] [SERVER] Client connected (id: 1)
+     [2026-10-06 21:30:00.123] [INFO ] [SERVER] [1] Client connected
 
 * **With timestamp disabled (default):**
 
@@ -83,7 +83,7 @@ Log entries follow a standardized prefix format:
 
   .. code-block:: text
 
-     [INFO] [SERVER] Client connected (id: 1)
+     [INFO ] [SERVER] [1] Client connected
 
 Usage Configurations
 --------------------

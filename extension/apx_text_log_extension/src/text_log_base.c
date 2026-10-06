@@ -226,11 +226,11 @@ void apx_text_log_base_log(apx_text_log_base_t *self, apx_log_level_t level, con
       {
         char ts_buf[32];
         format_timestamp(ts_buf, sizeof(ts_buf));
-        fprintf(self->file, "[%s] [%s] [%s] %s%s", ts_buf, lvl_str, lbl_str, msg, self->lineEnding);
+        fprintf(self->file, "[%s] [%-5s] [%-6s] %s%s", ts_buf, lvl_str, lbl_str, msg, self->lineEnding);
       }
       else
       {
-        fprintf(self->file, "[%s] [%s] %s%s", lvl_str, lbl_str, msg, self->lineEnding);
+        fprintf(self->file, "[%-5s] [%-6s] %s%s", lvl_str, lbl_str, msg, self->lineEnding);
       }
       fflush(self->file);
     }

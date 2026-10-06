@@ -17,6 +17,7 @@
 #include "apx/server.h"
 #include "apx/types.h"
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -105,7 +106,10 @@ apx_error_t apx_tls_server_start(
   }
 
   self->is_tcp_server_started = true;
-  printf("Listening on TLS TCP port %d\n", (int)self->tcp_port);
+  if (self->parent != NULL)
+  {
+    apx_tls_server_log(self->parent, APX_LOG_LEVEL_INFO, "Listening on TLS TCP port %d", (int)self->tcp_port);
+  }
   return APX_NO_ERROR;
 }
 
@@ -116,6 +120,14 @@ void apx_tls_server_stop(apx_tls_server_t *self)
     msocket_server_destroy(&self->tcp_server);
     self->is_tcp_server_started = false;
   }
+}
+
+void apx_tls_server_log(apx_server_t *server, apx_log_level_t level, const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  apx_server_log_vwrite(server, level, "TLS", format, args);
+  va_end(args);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -130,7 +142,7 @@ static void apx_tls_server_tcp_accept(void *arg, struct msocket_server_tag *srv,
   {
     if (self->parent != NULL)
     {
-      apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "TLS_SERVER", "New incoming connection");
+      apx_tls_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "New incoming connection");
     }
     apx_tls_server_connection_t *new_connection = apx_tls_server_connection_new((msocket_t *)sock);
     if (new_connection != NULL)

@@ -159,17 +159,24 @@ static apx_error_t apx_server_text_log_extension_configure(apx_server_text_log_t
   svFilePath = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file-path");
   if ((svFileEnabled != NULL) && (dtl_sv_to_bool(svFileEnabled, &ok) != false))
   {
+    const char *filePath = "";
     if (svFilePath != NULL)
     {
-      const char *filePath = dtl_sv_to_cstr(svFilePath, &ok);
-      if (strlen(filePath) == 0u)
+      filePath = dtl_sv_to_cstr(svFilePath, &ok);
+      if (!ok || (filePath == NULL))
       {
-        apx_text_log_base_enable_stdout(&instance->base);
+        filePath = "";
       }
-      else
-      {
-        apx_text_log_base_enable_file(&instance->base, filePath);
-      }
+    }
+    if (strlen(filePath) == 0u)
+    {
+      apx_text_log_base_enable_stdout(&instance->base);
+    }
+    else
+    {
+      apx_text_log_base_enable_file(&instance->base, filePath);
+      printf("Logging to %s\n", filePath);
+      fflush(stdout);
     }
   }
   return APX_NO_ERROR;

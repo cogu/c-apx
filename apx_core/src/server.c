@@ -287,6 +287,14 @@ void apx_server_log_vwrite(apx_server_t *self, apx_log_level_t level, const char
   }
 }
 
+void apx_server_log(apx_server_t *self, apx_log_level_t level, const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  apx_server_log_vwrite(self, level, "SERVER", format, args);
+  va_end(args);
+}
+
 void apx_server_log_write(apx_server_t *self, apx_log_level_t level, const char *label, const char *format, ...)
 {
   va_list args;
@@ -859,7 +867,7 @@ static apx_error_t apx_server_init_extensions(apx_server_t *self)
         }
         if (extension->name != NULL)
         {
-          apx_server_log_write(self, APX_LOG_LEVEL_INFO, "SERVER", "Started extension %s", extension->name);
+          apx_server_log(self, APX_LOG_LEVEL_INFO, "Started extension %s", extension->name);
         }
       }
       iter = adt_list_iter_next(iter);
@@ -1051,7 +1059,6 @@ static THREAD_PROTO(thread_task, arg)
   apx_server_t *self = (apx_server_t *)arg;
   if (self != NULL)
   {
-    printf("[SERVER] Starting event loop\n");
     apx_event_loop_run(&self->event_loop, apx_server_handle_event, (void *)self);
   }
   THREAD_RETURN(0);

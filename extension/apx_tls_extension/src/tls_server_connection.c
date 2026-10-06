@@ -13,6 +13,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/extension/tls_server_connection.h"
+#include "apx/extension/tls_server.h"
 #include "apx/file_manager.h"
 #include "apx/numheader.h"
 #include "apx/remotefile.h"
@@ -212,7 +213,7 @@ static void socket_disconnected_notification(void *arg, void *socket)
   if (self != NULL)
   {
     assert(self->base.parent != NULL);
-    apx_server_log_write(self->base.parent, APX_LOG_LEVEL_INFO, "TLS_SERVER", "[%u] Client disconnected",
+    apx_tls_server_log(self->base.parent, APX_LOG_LEVEL_INFO, "[%u] Client disconnected",
       apx_server_connection_get_connection_id(&self->base));
     apx_server_detach_connection(self->base.parent, &self->base);
   }
@@ -223,7 +224,16 @@ static msocket_error_t socket_data_notification(void *arg, void *socket, const u
 {
   (void)socket;
   apx_tls_server_connection_t *self = (apx_tls_server_connection_t *)arg;
+  if (self == NULL)
+  {
+    return MSOCKET_INVALID_ARGUMENT_ERROR;
+  }
   int retval = apx_server_connection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
+  if ((retval == 0) && (self->base.parent != NULL) && (consumed_bytes != NULL) && (*consumed_bytes > 0u))
+  {
+    apx_tls_server_log(self->base.parent, APX_LOG_LEVEL_DEBUG, "[%u] Received %d bytes",
+      apx_server_connection_get_connection_id(&self->base), (int)*consumed_bytes);
+  }
   return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
@@ -350,6 +360,11 @@ static void connection_send_packet(apx_tls_server_connection_t *self)
 {
   if (self->pending_bytes > 0u)
   {
+    if (self->base.parent != NULL)
+    {
+      apx_tls_server_log(self->base.parent, APX_LOG_LEVEL_DEBUG, "[%u] Sending %d bytes",
+        apx_server_connection_get_connection_id(&self->base), (int)self->pending_bytes);
+    }
     msocket_error_t result =
       msocket_send(self->socket_object, adt_bytearray_data(&self->send_buffer), (uint32_t)self->pending_bytes);
     if (result != MSOCKET_NO_ERROR)
