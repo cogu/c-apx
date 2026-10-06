@@ -162,6 +162,23 @@ In `server_connection.c`, bypassing file download when `file_open_request == fal
   * In `node_manager.c`: if the definition is found in cache, set `*file_open_request = false`.
   * In `server_connection.c`: if `file_open_request` is false, load definition AST directly from cache into `node_instance`, transition data state to `APX_DATA_STATE_READY`, and proceed without requesting the remote `.apx` virtual file.
 
+## 14. Configuration Validation & Unknown Key Diagnostics
+
+Currently in `server_cfg.c` and extension initialization routines (e.g. `server_text_log_extension.c`, `socket_server_extension.c`), configuration parameters are looked up on demand via `dtl_hv_get_cstr(cfg, "key")`. If a user misspells a configuration key (e.g. `"use-time-stamp"`, `"log_lvl"`, or `"prot"` instead of `"tcp-port"`), the key is silently ignored, and the system falls back to default values without any warning or operator feedback.
+
+To improve usability and prevent silent configuration errors:
+
+* **Unknown Key Detection & Warning:**
+  * Implement an allowlist or schema validation helper for dynamic type hashes (e.g. `cutil` / `dtl` hash inspection or a schema checker function `apx_config_validate_keys()`).
+  * Iterate over all keys present in the loaded JSON object/hash:
+    * Emit a warning (via standard error or `apx_server_log_write()` at `APX_LOG_LEVEL_WARNING`) for any unrecognized key in `server.json` top-level sections (e.g. `apx-server`, `socket-server-extension`, `textlog-extension`, etc.).
+    * Emit section-level warnings for unrecognized keys within each extension's configuration block.
+* **Typo Distance Suggestion (Optional Enhancement):**
+  * Use Levenshtein distance to suggest intended keys for minor typos (e.g., *"Unknown key 'use-timestmp'; did you mean 'use-timestamp'?"*).
+* **Strict Validation Option:**
+  * Provide a `--strict-config` CLI flag or `"strict-config": true` option to reject unknown keys and abort server startup with `APX_INVALID_ARGUMENT_ERROR`, preventing unintended fallback behavior in automated deployment or test environments.
+
+
 
 
 
