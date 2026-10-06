@@ -13,6 +13,8 @@
     },
     "textlog-extension": {
         "enabled": true,
+        "use-timestamp": false,
+        "log-level": "INFO",
         "file-enabled": true,
         "file-path": "",
         "syslog-enabled": false
