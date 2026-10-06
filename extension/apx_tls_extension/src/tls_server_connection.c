@@ -209,12 +209,11 @@ static void socket_disconnected_notification(void *arg, void *socket)
 {
   (void)socket;
   apx_tls_server_connection_t *self = (apx_tls_server_connection_t *)arg;
-#if APX_DEBUG_ENABLE
-  printf("[TLS-SERVER] Client disconnected\n");
-#endif
   if (self != NULL)
   {
     assert(self->base.parent != NULL);
+    apx_server_log_write(self->base.parent, APX_LOG_LEVEL_INFO, "TLS_SERVER", "[%u] Client disconnected",
+      apx_server_connection_get_connection_id(&self->base));
     apx_server_detach_connection(self->base.parent, &self->base);
   }
 }

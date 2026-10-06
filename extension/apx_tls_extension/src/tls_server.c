@@ -126,11 +126,12 @@ static void apx_tls_server_tcp_accept(void *arg, struct msocket_server_tag *srv,
 {
   apx_tls_server_t *self = (apx_tls_server_t *)arg;
   (void)srv;
-#if APX_DEBUG_ENABLE
-  printf("[TLS-SERVER] New incoming connection\n");
-#endif
   if (self != NULL && sock != NULL)
   {
+    if (self->parent != NULL)
+    {
+      apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "TLS_SERVER", "New incoming connection");
+    }
     apx_tls_server_connection_t *new_connection = apx_tls_server_connection_new((msocket_t *)sock);
     if (new_connection != NULL)
     {

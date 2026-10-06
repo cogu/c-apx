@@ -143,6 +143,40 @@ void apx_server_text_log_close_all(apx_server_text_log_t *self)
   }
 }
 
+void apx_server_text_log_set_log_level(apx_server_text_log_t *self, apx_log_level_t log_level)
+{
+  if (self != NULL)
+  {
+    apx_text_log_base_set_log_level(&self->base, log_level);
+  }
+}
+
+apx_log_level_t apx_server_text_log_get_log_level(apx_server_text_log_t const *self)
+{
+  if (self != NULL)
+  {
+    return apx_text_log_base_get_log_level(&self->base);
+  }
+  return APX_LOG_LEVEL_INVALID;
+}
+
+void apx_server_text_log_set_timestamp_enabled(apx_server_text_log_t *self, bool enabled)
+{
+  if (self != NULL)
+  {
+    apx_text_log_base_set_timestamp_enabled(&self->base, enabled);
+  }
+}
+
+bool apx_server_text_log_get_timestamp_enabled(apx_server_text_log_t const *self)
+{
+  if (self != NULL)
+  {
+    return apx_text_log_base_get_timestamp_enabled(&self->base);
+  }
+  return false;
+}
+
 void apx_server_text_log_virtual_on_protocol_header_accepted(void *arg, struct apx_connection_base_tag *connection)
 {
   apx_server_text_log_t *self = (apx_server_text_log_t *)arg;
@@ -205,10 +239,9 @@ static void register_connection_listener(apx_server_text_log_t *self, apx_server
 static void apx_server_text_log_on_log_event(void *arg, apx_log_level_t level, const char *label, const char *msg)
 {
   apx_server_text_log_t *self = (apx_server_text_log_t *)arg;
-  (void)level;
-  if ((self != NULL) && (label != NULL) && (msg != NULL))
+  if ((self != NULL) && (msg != NULL))
   {
-    apx_text_log_base_printf(&self->base, "[%s] %s", label, msg);
+    apx_text_log_base_log(&self->base, level, label, msg);
   }
 }
 
@@ -218,7 +251,8 @@ static void apx_server_text_log_on_new_connection(void *arg, apx_server_connecti
   apx_server_text_log_t *self = (apx_server_text_log_t *)arg;
   if ((self != NULL) && (connection != NULL))
   {
-    apx_text_log_base_printf(&self->base, "[%u] New connection", apx_server_connection_get_connection_id(connection));
+    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_INFO, "SERVER", "[%u] New connection",
+      apx_server_connection_get_connection_id(connection));
     register_connection_listener(self, connection);
   }
 }
@@ -228,30 +262,35 @@ static void apx_server_text_log_on_connection_closed(void *arg, apx_server_conne
   apx_server_text_log_t *self = (apx_server_text_log_t *)arg;
   if ((self != NULL) && (connection != NULL))
   {
-    apx_text_log_base_printf(
-      &self->base, "[%u] Connection closed", apx_server_connection_get_connection_id(connection));
+    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_INFO, "SERVER", "[%u] Connection closed",
+      apx_server_connection_get_connection_id(connection));
   }
 }
 
 static void on_protocol_header_accepted(apx_server_text_log_t *self, apx_server_connection_t *connection)
 {
-  apx_text_log_base_printf(&self->base, "[%u] Header Accepted", apx_server_connection_get_connection_id(connection));
+  apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] Header Accepted",
+    apx_server_connection_get_connection_id(connection));
 }
 
 static void on_file_published(
   apx_server_text_log_t *self, apx_server_connection_t *connection, const struct rmf_file_info_tag *file_info)
 {
-  (void)file_info;
-  apx_text_log_base_printf(&self->base, "[%u] New file published: %s",
-    apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info));
+  if (file_info != NULL)
+  {
+    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_INFO, "SERVER", "[%u] New file published: %s",
+      apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info));
+  }
 }
 
 static void on_file_revoked(
   apx_server_text_log_t *self, apx_server_connection_t *connection, const struct rmf_file_info_tag *file_info)
 {
-  (void)self;
-  (void)connection;
-  (void)file_info;
+  if (file_info != NULL)
+  {
+    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_INFO, "SERVER", "[%u] File revoked: %s",
+      apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info));
+  }
 }
 
 
@@ -283,8 +322,8 @@ static void apx_server_text_log_provide_ports_connected(
             char const *remote_node_name =
               (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
             char const *remote_port_name = apx_port_instance_name(remote_port);
-            apx_text_log_base_printf(&self->base, "[%u] %s.%s --> %s.%s", conn_id, local_node_name, local_port_name,
-              remote_node_name, remote_port_name);
+            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "ROUTER", "[%u] %s.%s --> %s.%s", conn_id,
+              local_node_name, local_port_name, remote_node_name, remote_port_name);
           }
         }
       }
@@ -321,8 +360,8 @@ static void apx_server_text_log_provide_ports_disconnected(
             char const *remote_node_name =
               (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
             char const *remote_port_name = apx_port_instance_name(remote_port);
-            apx_text_log_base_printf(&self->base, "[%u] %s.%s -!-> %s.%s", conn_id, local_node_name, local_port_name,
-              remote_node_name, remote_port_name);
+            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "ROUTER", "[%u] %s.%s -!-> %s.%s", conn_id,
+              local_node_name, local_port_name, remote_node_name, remote_port_name);
           }
         }
       }
@@ -358,8 +397,8 @@ static void apx_server_text_log_require_ports_connected(
             char const *remote_node_name =
               (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
             char const *remote_port_name = apx_port_instance_name(remote_port);
-            apx_text_log_base_printf(&self->base, "[%u] %s.%s <-- %s.%s", conn_id, local_node_name, local_port_name,
-              remote_node_name, remote_port_name);
+            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "ROUTER", "[%u] %s.%s <-- %s.%s", conn_id,
+              local_node_name, local_port_name, remote_node_name, remote_port_name);
           }
         }
       }
@@ -396,8 +435,8 @@ static void apx_server_text_log_require_ports_disconnected(
             char const *remote_node_name =
               (remote_node != NULL) ? apx_node_instance_get_name(remote_node) : "<unknown>";
             char const *remote_port_name = apx_port_instance_name(remote_port);
-            apx_text_log_base_printf(&self->base, "[%u] %s.%s -!-> %s.%s", conn_id, local_node_name, local_port_name,
-              remote_node_name, remote_port_name);
+            apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "ROUTER", "[%u] %s.%s -!-> %s.%s", conn_id,
+              local_node_name, local_port_name, remote_node_name, remote_port_name);
           }
         }
       }

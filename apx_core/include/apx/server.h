@@ -61,6 +61,7 @@ typedef struct apx_server_tag
                        // 2. Synchronize data routing
                        // 3. Controlling access to the global port_signature_map.
   MUTEX_T event_listener_lock;
+  int32_t num_log_listeners;
   bool require_signed_nodes; // If true, server rejects unsigned APX nodes
   adt_ary_t trusted_public_keys; // Array of adt_str_t* (PEM strings or raw public keys)
 #ifdef _WIN32

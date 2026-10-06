@@ -14,6 +14,7 @@
 #include "apx/extension/server_text_log_extension.h"
 #include "apx/extension/server_text_log.h"
 #include "apx/server.h"
+#include "apx/util.h"
 #include <string.h>
 #ifdef MEM_LEAK_CHECK
 # include "CMemLeak.h"
@@ -61,10 +62,18 @@ apx_error_t apx_server_text_log_extension_init(struct apx_server_tag *apx_server
     {
       if (dtl_dv_type(config) == DTL_DV_HASH)
       {
-        return apx_server_text_log_extension_configure(m_instance, (dtl_hv_t *)config);
+        apx_error_t result = apx_server_text_log_extension_configure(m_instance, (dtl_hv_t *)config);
+        if (result != APX_NO_ERROR)
+        {
+          apx_server_text_log_delete(m_instance);
+          m_instance = NULL;
+          return result;
+        }
       }
       else
       {
+        apx_server_text_log_delete(m_instance);
+        m_instance = NULL;
         return APX_VALUE_TYPE_ERROR;
       }
     }
@@ -86,10 +95,68 @@ static apx_error_t apx_server_text_log_extension_configure(apx_server_text_log_t
 {
   dtl_sv_t *svFileEnabled;
   dtl_sv_t *svFilePath;
+  dtl_sv_t *svLogLevel;
+  dtl_sv_t *svTimestamp;
   bool ok = false;
+
+  if ((instance == NULL) || (cfg == NULL))
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+
+  svLogLevel = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "log-level");
+  if (svLogLevel == NULL)
+  {
+    svLogLevel = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "log_level");
+  }
+  if (svLogLevel != NULL)
+  {
+    if (dtl_sv_type(svLogLevel) == DTL_SV_STR)
+    {
+      const char *level_str = dtl_sv_to_cstr(svLogLevel, &ok);
+      if (ok && (level_str != NULL))
+      {
+        apx_log_level_t level = apx_log_level_from_string(level_str);
+        if (level != APX_LOG_LEVEL_INVALID)
+        {
+          apx_server_text_log_set_log_level(instance, level);
+        }
+        else
+        {
+          return APX_VALUE_RANGE_ERROR;
+        }
+      }
+    }
+    else
+    {
+      return APX_VALUE_TYPE_ERROR;
+    }
+  }
+  else
+  {
+    apx_server_text_log_set_log_level(instance, APX_LOG_LEVEL_INFO);
+  }
+
+  svTimestamp = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "use-timestamp");
+  if (svTimestamp == NULL)
+  {
+    svTimestamp = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "use_timestamp");
+  }
+  if (svTimestamp != NULL)
+  {
+    bool timestamp_enabled = dtl_sv_to_bool(svTimestamp, &ok);
+    if (ok)
+    {
+      apx_server_text_log_set_timestamp_enabled(instance, timestamp_enabled);
+    }
+  }
+  else
+  {
+    apx_server_text_log_set_timestamp_enabled(instance, false);
+  }
+
   svFileEnabled = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file-enabled");
   svFilePath = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file-path");
-  (void)instance;
   if ((svFileEnabled != NULL) && (dtl_sv_to_bool(svFileEnabled, &ok) != false))
   {
     if (svFilePath != NULL)
@@ -97,11 +164,11 @@ static apx_error_t apx_server_text_log_extension_configure(apx_server_text_log_t
       const char *filePath = dtl_sv_to_cstr(svFilePath, &ok);
       if (strlen(filePath) == 0u)
       {
-        apx_text_log_base_enable_stdout(&m_instance->base);
+        apx_text_log_base_enable_stdout(&instance->base);
       }
       else
       {
-        apx_text_log_base_enable_file(&m_instance->base, filePath);
+        apx_text_log_base_enable_file(&instance->base, filePath);
       }
     }
   }

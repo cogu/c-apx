@@ -22,9 +22,6 @@ target_include_directories(apx-control PRIVATE
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-if(APX_DEBUG)
-    target_compile_definitions(apx-control PUBLIC APX_DEBUG_ENABLE=1)
-endif()
 
 install(
   TARGETS apx-control

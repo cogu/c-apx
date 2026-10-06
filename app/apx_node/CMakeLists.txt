@@ -25,9 +25,6 @@ target_include_directories(apx-node PRIVATE
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-if(APX_DEBUG)
-    target_compile_definitions(apx-node PUBLIC APX_DEBUG_ENABLE=1)
-endif()
 
 install(
   TARGETS apx-node

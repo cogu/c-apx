@@ -263,12 +263,11 @@ static void socket_disconnected_notification(void *arg, void *socket)
 {
   (void)socket;
   apx_socket_server_connection_t *self = (apx_socket_server_connection_t *)arg;
-#if APX_DEBUG_ENABLE
-  printf("[SERVER-SOCKET] Client disconnected\n");
-#endif
   if (self != NULL)
   {
     assert(self->base.parent != NULL);
+    apx_server_log_write(self->base.parent, APX_LOG_LEVEL_INFO, "SERVER_SOCKET", "[%u] Client disconnected",
+      apx_server_connection_get_connection_id(&self->base));
     apx_server_detach_connection(self->base.parent, &self->base);
   }
 }
@@ -410,9 +409,11 @@ static void connection_send_packet(apx_socket_server_connection_t *self)
   if ((self->socket_object != NULL) && (self->pending_bytes > 0u))
   {
     uint8_t const *data = adt_bytearray_const_data(&self->send_buffer);
-#if APX_DEBUG_ENABLE
-    printf("[SOCKET-SERVER-CONNECTION] Sending %d bytes\n", (int)self->pending_bytes);
-#endif
+    if (self->base.parent != NULL)
+    {
+      apx_server_log_write(self->base.parent, APX_LOG_LEVEL_DEBUG, "SOCKET_SERVER_CONNECTION", "[%u] Sending %d bytes",
+        apx_server_connection_get_connection_id(&self->base), (int)self->pending_bytes);
+    }
     SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
     adt_bytearray_clear(&self->send_buffer);
     self->pending_bytes = 0u;

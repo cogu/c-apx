@@ -74,6 +74,9 @@ For general build instructions and platform presets, see [`README.md`](README.md
 Before declaring any feature, bugfix, or refactoring complete (or preparing to merge to `master`), run the full verification matrix in order:
 
 ```bash
+# 0. Code Formatting (clang-format)
+git diff --name-only | grep -E '\.(c|h|cpp)$' | xargs -r clang-format --dry-run --Werror
+
 # 1. C Unit Tests (CuTest / apx_unit)
 cmake --preset clang-test && cmake --build --preset clang-test && ctest --preset clang-test
 
@@ -91,11 +94,16 @@ cmake --preset clang-debug && cmake --build --preset clang-debug
 pytest -v -n auto
 ```
 
-All 5 steps must pass with zero errors, zero sanitizer warnings, zero leaks, and zero data races.
+All steps must pass with zero formatting violations, zero errors, zero sanitizer warnings, zero leaks, and zero data races.
 
 ---
 
 ## 5. Coding Standards & Conventions
+
+### Code Formatting (clang-format)
+* All C and C++ source and header files (`.c`, `.h`, `.cpp`) must strictly adhere to the repository root [`.clang-format`](.clang-format).
+* Automatically format modified files using `clang-format -i <file>` or format uncommitted changes with `git clang-format`.
+* Verify zero format violations using `clang-format --dry-run --Werror <files>`.
 
 ### C99 & Code Quality
 * Write strict, portable C99.

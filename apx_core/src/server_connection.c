@@ -621,11 +621,12 @@ static uint8_t const *parse_message(apx_server_connection_t *self, uint8_t const
     {
       uint8_t const *msg_data = result;
       msg_end = msg_data + msg_size;
-#if APX_DEBUG_ENABLE
-      apx_size_t const header_size = (apx_size_t)(msg_data - begin);
-      printf("[SERVER-CONNECTION %d]: Received message: (%d+%d) bytes\n", (int)self->base.connection_id,
-        (int)header_size, (int)msg_size);
-#endif
+      if (self->parent != NULL)
+      {
+        apx_size_t const header_size = (apx_size_t)(msg_data - begin);
+        apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "SERVER_CONNECTION",
+          "[%d] Received message: (%d+%d) bytes", (int)self->base.connection_id, (int)header_size, (int)msg_size);
+      }
 
       if (msg_end <= end)
       {

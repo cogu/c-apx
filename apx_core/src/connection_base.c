@@ -163,16 +163,6 @@ void apx_connection_base_start(apx_connection_base_t *self)
 {
   if (self != NULL)
   {
-#if APX_DEBUG_ENABLE
-    if (self->mode == APX_SERVER_MODE)
-    {
-      printf("[BASE-CONNECTION %u] Starting connection\n", self->connection_id);
-    }
-    else
-    {
-      printf("[BASE-CONNECTION] Starting connection\n");
-    }
-#endif
     apx_error_t result = apx_file_manager_start(&self->file_manager);
     if ((result == APX_NO_ERROR) && (self->vtable.start != NULL))
     {
@@ -185,9 +175,6 @@ void apx_connection_base_stop(apx_connection_base_t *self)
 {
   if (self != NULL)
   {
-#if APX_DEBUG_ENABLE
-    printf("[BASE-CONNECTION] Stopping connection\n");
-#endif
     apx_file_manager_stop(&self->file_manager);
   }
 }

@@ -255,3 +255,56 @@ const char *apx_strerror(apx_error_t error_code)
     return "Unknown error";
   }
 }
+
+apx_log_level_t apx_log_level_from_string(const char *str)
+{
+  if (str != NULL)
+  {
+#ifdef _MSC_VER
+# define STRCASECMP _stricmp
+#else
+# define STRCASECMP strcasecmp
+#endif
+    if (STRCASECMP(str, "CRITICAL") == 0)
+    {
+      return APX_LOG_LEVEL_CRITICAL;
+    }
+    if (STRCASECMP(str, "ERROR") == 0)
+    {
+      return APX_LOG_LEVEL_ERROR;
+    }
+    if ((STRCASECMP(str, "WARNING") == 0) || (STRCASECMP(str, "WARN") == 0))
+    {
+      return APX_LOG_LEVEL_WARNING;
+    }
+    if (STRCASECMP(str, "INFO") == 0)
+    {
+      return APX_LOG_LEVEL_INFO;
+    }
+    if (STRCASECMP(str, "DEBUG") == 0)
+    {
+      return APX_LOG_LEVEL_DEBUG;
+    }
+#undef STRCASECMP
+  }
+  return APX_LOG_LEVEL_INVALID;
+}
+
+const char *apx_log_level_to_string(apx_log_level_t level)
+{
+  switch (level)
+  {
+  case APX_LOG_LEVEL_CRITICAL:
+    return "CRITICAL";
+  case APX_LOG_LEVEL_ERROR:
+    return "ERROR";
+  case APX_LOG_LEVEL_WARNING:
+    return "WARNING";
+  case APX_LOG_LEVEL_INFO:
+    return "INFO";
+  case APX_LOG_LEVEL_DEBUG:
+    return "DEBUG";
+  default:
+    return "UNKNOWN";
+  }
+}

@@ -48,6 +48,10 @@ void apx_server_text_log_enable_file(apx_server_text_log_t *self, const char *pa
 void apx_server_text_log_enable_std_out(apx_server_text_log_t *self);
 void apx_server_text_log_enable_sys_log(apx_server_text_log_t *self, const char *label);
 void apx_server_text_log_close_all(apx_server_text_log_t *self);
+void apx_server_text_log_set_log_level(apx_server_text_log_t *self, apx_log_level_t log_level);
+apx_log_level_t apx_server_text_log_get_log_level(apx_server_text_log_t const *self);
+void apx_server_text_log_set_timestamp_enabled(apx_server_text_log_t *self, bool enabled);
+bool apx_server_text_log_get_timestamp_enabled(apx_server_text_log_t const *self);
 
 // Virtual functions
 void apx_server_text_log_virtual_on_protocol_header_accepted(void *arg, struct apx_connection_base_tag *connection);

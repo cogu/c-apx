@@ -220,9 +220,6 @@ int apx_client_connection_on_data_received(apx_client_connection_t *self, uint8_
       }
       else
       {
-#if APX_DEBUG_ENABLE
-        printf("[CLIENT_CONNECTION] Error %d while parsing message\n", error_code);
-#endif
         self->last_error = error_code;
         return -1;
       }
@@ -445,10 +442,6 @@ static apx_error_t remote_file_published_notification(apx_client_connection_t *s
 {
   if ((self != NULL) && (file != NULL))
   {
-#if APX_DEBUG_ENABLE
-    printf("[CLIENT-CONNECTION] remote_file_published_notification: \"%s\"(%d)\n", apx_file_get_name(file),
-      apx_file_get_apx_file_type(file));
-#endif
     apx_file_type_t const file_type = apx_file_get_apx_file_type(file);
     if ((file_type == APX_REQUIRE_PORT_DATA_FILE_TYPE) || (file_type == APX_PROVIDE_PORT_COUNT_FILE_TYPE) ||
       (file_type == APX_REQUIRE_PORT_COUNT_FILE_TYPE))
@@ -475,9 +468,6 @@ static apx_error_t process_new_remote_file(apx_client_connection_t *self, apx_fi
     }
     else
     {
-#if APX_DEBUG_ENABLE
-      printf("Node not found: \"%s\"\n", base_name);
-#endif
       free(base_name);
     }
   }
@@ -522,10 +512,6 @@ static uint8_t const *parse_message(apx_client_connection_t *self, uint8_t const
     {
       uint8_t const *msg_data = result;
       msg_end = msg_data + msg_size;
-#if APX_DEBUG_ENABLE
-      apx_size_t const header_size = (apx_size_t)(msg_data - begin);
-      printf("[CLIENT-CONNECTION]: Received message: (%d+%d) bytes\n", (int)header_size, (int)msg_size);
-#endif
       if (msg_end <= end)
       {
         if (self->is_greeting_accepted)

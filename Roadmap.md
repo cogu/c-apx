@@ -96,17 +96,18 @@ Currently, `app/apx_node/src/json_server_connection.c` expects every message to 
 
 The `c-apx` codebase contains numerous compile-time `#if APX_DEBUG_ENABLE` checks and raw `printf` statements across server and connection components. While `apx_log_level_t` exists in `apx_core/include/apx/types.h` and `apx_server_log_write()` is implemented, the `apx_text_log_extension` ignores log levels and lacks runtime level filtering.
 
-* **TextLog Extension Configuration & Level Filtering:**
+* [x] **TextLog Extension Configuration & Level Filtering:**
   * Support a `"log-level"` setting (values: `"CRITICAL"`, `"ERROR"`, `"WARNING"`, `"INFO"`, `"DEBUG"`; default: `"INFO"`) in `server.json` under `"textlog-extension"`.
   * Add string conversion utilities (`apx_log_level_from_string()` / `apx_log_level_to_string()`).
   * Add `log_level` to `apx_text_log_base_t` / `apx_server_text_log_t` and filter incoming log events so only messages with `level <= configured_level` are output.
-* **Standardized Log Message Formatting:**
-  * Format output with consistent prefixes: `[<timestamp>] [<LEVEL>] [<LABEL>] <message>` (e.g. `[2026-10-03 12:00:00.123] [INFO] [NODE_MGR] Node 'TestNode' connected`).
+* [x] **Standardized Log Message Formatting:**
+  * Support a `"use-timestamp"` boolean setting (default: `false`) in `server.json` under `"textlog-extension"`.
+  * Format output with consistent prefixes: `[<timestamp>] [<LEVEL>] [<LABEL>] <message>` (or `[<LEVEL>] [<LABEL>] <message>` when timestamps are disabled).
   * Classify built-in server events in `server_text_log.c` with appropriate log levels instead of direct unlevelled prints (e.g., connections/disconnections and file publishes as `INFO`, port routing and protocol header handshakes as `DEBUG`).
-* **Replace Legacy Server `APX_DEBUG_ENABLE` Prints:**
-  * Replace compile-time `#if APX_DEBUG_ENABLE` prints in server modules (`server_connection.c`, `connection_manager.c`, `socket_server_connection.c`) with `apx_server_log_write(server, APX_LOG_LEVEL_DEBUG, ...)`.
-  * Ensure high-frequency debug logging (such as packet reception/transmission) does not exhaust server event loop memory (e.g. consider early level checks before event allocation).
-* **Complete Syslog Integration (`syslog-enabled`):**
+* [x] **Replace Legacy Server `APX_DEBUG_ENABLE` Prints:**
+  * Replace compile-time `#if APX_DEBUG_ENABLE` prints in server modules (`server_connection.c`, `connection_manager.c`, `socket_server_connection.c`, `socket_server.c`, `tls_server.c`, `tls_server_connection.c`) with `apx_server_log_write(server, APX_LOG_LEVEL_DEBUG, ...)`.
+  * Ensure high-frequency debug logging (such as packet reception/transmission) does not exhaust server event loop memory via early check on active log listeners before event allocation.
+* [ ] **Complete Syslog Integration (`syslog-enabled`):** *(Deferred to separate commit)*
   * Wire up the existing `syslog-enabled` placeholder in `server_text_log_extension.c` and `text_log_base.c` using POSIX `syslog(priority, ...)`, mapping `apx_log_level_t` directly to syslog priorities (`LOG_CRIT`, `LOG_ERR`, `LOG_WARNING`, `LOG_INFO`, `LOG_DEBUG`).
 
 ## 11. Small Data Support in Command Pipeline

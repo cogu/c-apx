@@ -32,6 +32,7 @@ void apx_fprint_hex_bytes(FILE *file, int32_t max_columns, const uint8_t *data_b
 #define apx_print_hex_bytes(c, b, s) apx_fprint_hex_bytes(stdout, c, b, s)
 
 apx_error_t convert_from_adt_to_apx_error(adt_error_t error_code);
-
+apx_log_level_t apx_log_level_from_string(const char *str);
+const char *apx_log_level_to_string(apx_log_level_t level);
 
 #endif // APX_UTIL_H

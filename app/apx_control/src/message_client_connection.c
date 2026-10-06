@@ -204,9 +204,6 @@ static void message_client_connection_on_connect(void *arg, void *socket, const 
     {
       const char *data = (const char *)adt_bytearray_data(self->pendingMessage);
       uint32_t size = adt_bytearray_length(self->pendingMessage);
-#if APX_DEBUG_ENABLE
-      printf("[APX_CONTROL] Message transmitted\n");
-#endif
       msocket_send(self->msocket, data, size);
       SEMAPHORE_POST(self->messageTransmitted);
     }

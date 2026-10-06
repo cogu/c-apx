@@ -377,10 +377,6 @@ static bool process_single_command(apx_file_manager_worker_t *self, apx_command_
 {
   apx_error_t result = APX_NO_ERROR;
   assert((self != NULL) && (cmd != NULL));
-#if APX_DEBUG_ENABLE
-  printf("[FILE-MANAGER-WORKER %d] Processing command: %d\n",
-    (int)apx_file_manager_shared_get_connection_id(self->shared), (int)cmd->cmd_type);
-#endif
   switch (cmd->cmd_type)
   {
   case APX_CMD_EXIT:
@@ -427,15 +423,7 @@ static bool process_single_command(apx_file_manager_worker_t *self, apx_command_
   default:
     return false;
   }
-#if APX_DEBUG_ENABLE
-  if (result != APX_NO_ERROR)
-  {
-    printf("[FILE-MANAGER-WORKER %d] Command %d failed with error: %d\n",
-      (int)apx_file_manager_shared_get_connection_id(self->shared), (int)cmd->cmd_type, (int)result);
-  }
-#else
   (void)result;
-#endif
   return true;
 }
 

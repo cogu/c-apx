@@ -311,11 +311,12 @@ static void apx_socket_server_tcp_accept(void *arg, struct msocket_server_tag *s
 {
   apx_socket_server_t *self = (apx_socket_server_t *)arg;
   (void)srv;
-#if APX_DEBUG_ENABLE
-  printf("[SOCKET-SERVER] New TCP connection\n");
-#endif
   if (self != NULL)
   {
+    if (self->parent != NULL)
+    {
+      apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "SOCKET_SERVER", "New TCP connection");
+    }
     apx_socket_server_connection_t *new_connection = apx_socket_server_connection_new(sock);
     if (new_connection != NULL)
     {
@@ -435,6 +436,10 @@ static void apx_socket_server_unix_accept(void *arg, struct msocket_server_tag *
   (void)srv;
   if (self != NULL)
   {
+    if (self->parent != NULL)
+    {
+      apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "SOCKET_SERVER", "New UNIX domain socket connection");
+    }
     if (!verify_peer_credentials(self, (msocket_t *)sock))
     {
       msocket_close((msocket_t *)sock);
@@ -462,11 +467,12 @@ static void apx_socket_server_vsock_accept(void *arg, struct msocket_server_tag 
 {
   apx_socket_server_t *self = (apx_socket_server_t *)arg;
   (void)srv;
-# if APX_DEBUG_ENABLE
-  printf("[SOCKET-SERVER] New VSOCK connection\n");
-# endif
   if (self != NULL)
   {
+    if (self->parent != NULL)
+    {
+      apx_server_log_write(self->parent, APX_LOG_LEVEL_DEBUG, "SOCKET_SERVER", "New VSOCK connection");
+    }
     apx_socket_server_connection_t *new_connection = apx_socket_server_connection_new(sock);
     if (new_connection != NULL)
     {

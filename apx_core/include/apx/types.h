@@ -14,13 +14,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "apx/cfg.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#if APX_DEBUG_ENABLE
-# include <stdio.h>
-#endif
-#include "apx/cfg.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -165,6 +162,7 @@ typedef uint8_t apx_log_level_t;
 #define APX_LOG_LEVEL_INFO 3 // SYSLOG_LEVEL 6 (+3)
 #define APX_LOG_LEVEL_DEBUG 4 // SYSLOG_LEVEL 7 (+3)
 #define APX_MAX_LOG_LEVEL APX_LOG_LEVEL_DEBUG
+#define APX_LOG_LEVEL_INVALID ((apx_log_level_t)255)
 
 typedef uint8_t scalar_storage_type_t;
 #define APX_VM_SCALAR_STORAGE_TYPE_NONE ((scalar_storage_type_t)0u)

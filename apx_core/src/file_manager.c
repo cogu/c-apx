@@ -213,14 +213,7 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
       }
       else if (result.is_complete)
       {
-        apx_error_t retval = process_message(self, result.address, result.data, result.size);
-#if APX_DEBUG_ENABLE
-        if (retval != APX_NO_ERROR)
-        {
-          printf("[FILE_MANAGER] Failed to process message. Error code: %d\n", (int)retval);
-        }
-#endif
-        return retval;
+        return process_message(self, result.address, result.data, result.size);
       }
       else
       {

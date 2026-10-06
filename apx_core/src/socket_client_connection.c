@@ -419,9 +419,6 @@ static void on_socket_connected(void *arg, void *socket, const char *addr, uint1
   (void)socket;
   (void)addr;
   (void)port;
-#if APX_DEBUG_ENABLE
-  printf("[CLIENT-SOCKET] Connected\n");
-#endif
   self = (apx_client_socket_connection_t *)arg;
   apx_client_connection_connected_notification(&self->base);
 }
@@ -439,9 +436,6 @@ static void on_socket_disconnected(void *arg, void *socket)
 {
   (void)socket;
   apx_client_socket_connection_t *self = (apx_client_socket_connection_t *)arg;
-#if APX_DEBUG_ENABLE
-  printf("[CLIENT-SOCKET] Disconnected\n");
-#endif
   apx_client_connection_disconnected_notification(&self->base);
 }
 
@@ -579,9 +573,6 @@ static void send_packet(apx_client_socket_connection_t *self)
   if ((self->socket_object != NULL) && (self->pending_bytes > 0u))
   {
     uint8_t const *data = adt_bytearray_const_data(&self->send_buffer);
-#if APX_DEBUG_ENABLE
-    printf("[SOCKET-CLIENT-CONNECTION] Sending %d bytes\n", (int)self->pending_bytes);
-#endif
     SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
     adt_bytearray_clear(&self->send_buffer);
     self->pending_bytes = 0u;

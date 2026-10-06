@@ -77,6 +77,7 @@ void apx_server_create(apx_server_t *self)
     MUTEX_INIT(self->event_loop_lock);
     MUTEX_INIT(self->global_lock);
     MUTEX_INIT(self->event_listener_lock);
+    self->num_log_listeners = 0;
     self->require_signed_nodes = false;
     adt_ary_create(&self->trusted_public_keys, adt_str_vdelete);
 #ifdef _WIN32
@@ -96,6 +97,7 @@ void apx_server_destroy(apx_server_t *self)
     adt_ary_destroy(&self->trusted_public_keys);
     MUTEX_LOCK(self->event_listener_lock);
     adt_list_destroy(&self->server_event_listeners);
+    self->num_log_listeners = 0;
     MUTEX_UNLOCK(self->event_listener_lock);
     apx_connection_manager_destroy(&self->connection_manager);
     apx_port_signature_map_destroy(&self->port_signature_map);
@@ -168,6 +170,10 @@ void *apx_server_register_event_listener(apx_server_t *self, apx_server_event_li
     {
       MUTEX_LOCK(self->event_listener_lock);
       adt_list_insert(&self->server_event_listeners, handle);
+      if (event_listener->server_write_log != NULL)
+      {
+        self->num_log_listeners++;
+      }
       MUTEX_UNLOCK(self->event_listener_lock);
     }
     return handle;
@@ -182,6 +188,14 @@ void apx_server_unregister_event_listener(apx_server_t *self, void *handle)
     bool isFound;
     MUTEX_LOCK(self->event_listener_lock);
     isFound = adt_list_remove(&self->server_event_listeners, handle);
+    if (isFound == true)
+    {
+      apx_server_event_listener_t *listener = (apx_server_event_listener_t *)handle;
+      if (listener->server_write_log != NULL)
+      {
+        self->num_log_listeners--;
+      }
+    }
     MUTEX_UNLOCK(self->event_listener_lock);
     if (isFound == true)
     {
@@ -234,6 +248,10 @@ void apx_server_log_vwrite(apx_server_t *self, apx_log_level_t level, const char
 {
   if ((self != NULL) && (level <= APX_MAX_LOG_LEVEL) && (format != NULL))
   {
+    if (self->num_log_listeners <= 0)
+    {
+      return;
+    }
     char msg_buf[MAX_LOG_LEN];
     vsnprintf(msg_buf, sizeof(msg_buf), format, ap);
     apx_event_t event;
@@ -841,9 +859,7 @@ static apx_error_t apx_server_init_extensions(apx_server_t *self)
         }
         if (extension->name != NULL)
         {
-/*               char msg[MAX_LOG_LEN];
-                                   sprintf(msg, "Started extension %s", extension->name);
-                                   apx_server_log_event(self, APX_LOG_LEVEL_INFO, "SERVER", msg);*/
+          apx_server_log_write(self, APX_LOG_LEVEL_INFO, "SERVER", "Started extension %s", extension->name);
         }
       }
       iter = adt_list_iter_next(iter);
@@ -895,7 +911,7 @@ static void apx_server_handle_event(void *arg, apx_event_t *event)
       }
       else
       {
-        printf("%s\n", msg);
+        apx_server_trigger_log_write_event(self, level, "SERVER", msg);
       }
       adt_str_delete(str);
       break;

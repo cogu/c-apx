@@ -17,10 +17,6 @@ target_include_directories(apx-sign PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-if(APX_DEBUG)
-    target_compile_definitions(apx-sign PUBLIC APX_DEBUG_ENABLE=1)
-endif()
-
 install(
   TARGETS apx-sign
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
