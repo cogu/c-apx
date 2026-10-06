@@ -40,6 +40,13 @@ Features
 .. toctree::
    :maxdepth: 2
    :hidden:
+   :caption: Getting Started
+
+   getting_started
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
    :caption: Developer Guides
 
    guides/index
@@ -64,6 +71,11 @@ Features
    :caption: C API Reference
 
    api/index
+
+Getting Started
+===============
+
+Follow the :doc:`getting_started` guide for a hands-on walkthrough building ``c-apx``, starting the server daemon, connecting sample sender/listener nodes, and transmitting live signal values using ``apx-control``.
 
 Developer Guides
 ================
