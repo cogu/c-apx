@@ -1,6 +1,12 @@
 # Submodules with external or independent formatting
-mbedtls/**
+adt/**
+bstr/**
+cutil/**
+dtl_json/**
+dtl_type/**
 legacy/**
+mbedtls/**
+msocket/**
 
 # Build artifacts and third-party
 build/**
