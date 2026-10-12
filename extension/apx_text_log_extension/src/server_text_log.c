@@ -296,7 +296,7 @@ static void on_file_published(
 {
   if (file_info != NULL)
   {
-    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_INFO, "SERVER", "[%u] New file published: %s",
+    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] New file published: %s",
       apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info));
   }
 }
