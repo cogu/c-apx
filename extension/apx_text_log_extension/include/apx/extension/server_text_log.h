@@ -47,6 +47,8 @@ void apx_server_text_log_delete(apx_server_text_log_t *self);
 void apx_server_text_log_enable_file(apx_server_text_log_t *self, const char *path);
 void apx_server_text_log_enable_std_out(apx_server_text_log_t *self);
 void apx_server_text_log_enable_sys_log(apx_server_text_log_t *self, const char *label);
+bool apx_server_text_log_get_sys_log_enabled(apx_server_text_log_t const *self);
+const char *apx_server_text_log_get_sys_log_label(apx_server_text_log_t const *self);
 void apx_server_text_log_close_all(apx_server_text_log_t *self);
 void apx_server_text_log_set_log_level(apx_server_text_log_t *self, apx_log_level_t log_level);
 apx_log_level_t apx_server_text_log_get_log_level(apx_server_text_log_t const *self);

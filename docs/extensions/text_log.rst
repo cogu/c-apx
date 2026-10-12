@@ -54,7 +54,11 @@ Configuration Parameters
    * - ``syslog-enabled``
      - Boolean
      - ``false``
-     - *(Placeholder / Not yet implemented)* Reserved for future system syslog daemon output.
+     - Enables forwarding log events to the POSIX system syslog daemon.
+   * - ``syslog-label``
+     - String
+     - ``"apx-server"``
+     - Identification tag / prefix string passed to ``openlog()`` when syslog logging is enabled.
 
 Message Formatting
 ------------------
@@ -121,3 +125,20 @@ To direct server events to a permanent log file on disk:
        "use-timestamp": false
      }
    }
+
+3. Syslog Daemon Output
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To forward APX server diagnostic logs to the system syslog daemon:
+
+.. code-block:: json
+
+   {
+     "textlog-extension": {
+       "enabled": true,
+       "syslog-enabled": true,
+       "syslog-label": "apx-server",
+       "log-level": "INFO"
+     }
+   }
+

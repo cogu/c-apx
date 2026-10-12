@@ -37,6 +37,8 @@ static void test_text_log_base_timestamp(CuTest *tc);
 static void test_extension_configure_log_level_and_timestamp(CuTest *tc);
 static void test_extension_configure_invalid_log_level(CuTest *tc);
 static void test_server_text_log_properties(CuTest *tc);
+static void test_server_text_log_syslog_properties(CuTest *tc);
+static void test_extension_configure_syslog(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -50,6 +52,8 @@ CuSuite *testsuite_apx_server_text_log_extension(void)
   SUITE_ADD_TEST(suite, test_extension_configure_log_level_and_timestamp);
   SUITE_ADD_TEST(suite, test_extension_configure_invalid_log_level);
   SUITE_ADD_TEST(suite, test_server_text_log_properties);
+  SUITE_ADD_TEST(suite, test_server_text_log_syslog_properties);
+  SUITE_ADD_TEST(suite, test_extension_configure_syslog);
   return suite;
 }
 
@@ -210,4 +214,43 @@ static void test_server_text_log_properties(CuTest *tc)
   CuAssertTrue(tc, apx_server_text_log_get_timestamp_enabled(&server_log) == true);
 
   apx_server_text_log_destroy(&server_log);
+}
+
+static void test_server_text_log_syslog_properties(CuTest *tc)
+{
+  apx_server_text_log_t server_log;
+
+  apx_server_text_log_create(&server_log, NULL);
+  CuAssertTrue(tc, apx_server_text_log_get_sys_log_enabled(&server_log) == false);
+  CuAssertPtrEquals(tc, NULL, (void *)apx_server_text_log_get_sys_log_label(&server_log));
+
+  apx_server_text_log_enable_sys_log(&server_log, "custom-tag");
+  CuAssertTrue(tc, apx_server_text_log_get_sys_log_enabled(&server_log) == true);
+  CuAssertStrEquals(tc, "custom-tag", apx_server_text_log_get_sys_log_label(&server_log));
+
+  apx_server_text_log_enable_sys_log(&server_log, NULL);
+  CuAssertTrue(tc, apx_server_text_log_get_sys_log_enabled(&server_log) == true);
+  CuAssertStrEquals(tc, "apx-server", apx_server_text_log_get_sys_log_label(&server_log));
+
+  apx_server_text_log_close_all(&server_log);
+  CuAssertTrue(tc, apx_server_text_log_get_sys_log_enabled(&server_log) == false);
+  CuAssertPtrEquals(tc, NULL, (void *)apx_server_text_log_get_sys_log_label(&server_log));
+
+  apx_server_text_log_destroy(&server_log);
+}
+
+static void test_extension_configure_syslog(CuTest *tc)
+{
+  apx_server_t apx_server;
+  dtl_hv_t *cfg = dtl_hv_new();
+  CuAssertPtrNotNull(tc, cfg);
+
+  dtl_hv_set_cstr(cfg, "syslog-enabled", (dtl_dv_t *)dtl_sv_make_bool(true), false);
+  dtl_hv_set_cstr(cfg, "syslog-label", (dtl_dv_t *)dtl_sv_make_cstr("test-daemon"), false);
+
+  apx_server_create(&apx_server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_text_log_extension_register(&apx_server, (dtl_dv_t *)cfg));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_start(&apx_server));
+  apx_server_destroy(&apx_server);
+  dtl_dec_ref((dtl_dv_t *)cfg);
 }

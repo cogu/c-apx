@@ -135,6 +135,24 @@ void apx_server_text_log_enable_sys_log(apx_server_text_log_t *self, const char 
   }
 }
 
+bool apx_server_text_log_get_sys_log_enabled(apx_server_text_log_t const *self)
+{
+  if (self != NULL)
+  {
+    return apx_text_log_base_get_sys_log_enabled(&self->base);
+  }
+  return false;
+}
+
+const char *apx_server_text_log_get_sys_log_label(apx_server_text_log_t const *self)
+{
+  if (self != NULL)
+  {
+    return apx_text_log_base_get_sys_log_label(&self->base);
+  }
+  return NULL;
+}
+
 void apx_server_text_log_close_all(apx_server_text_log_t *self)
 {
   if (self != NULL)

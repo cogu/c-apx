@@ -97,6 +97,8 @@ static apx_error_t apx_server_text_log_extension_configure(apx_server_text_log_t
   dtl_sv_t *svFilePath;
   dtl_sv_t *svLogLevel;
   dtl_sv_t *svTimestamp;
+  dtl_sv_t *svSyslogEnabled;
+  dtl_sv_t *svSyslogLabel;
   bool ok = false;
 
   if ((instance == NULL) || (cfg == NULL))
@@ -156,7 +158,15 @@ static apx_error_t apx_server_text_log_extension_configure(apx_server_text_log_t
   }
 
   svFileEnabled = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file-enabled");
+  if (svFileEnabled == NULL)
+  {
+    svFileEnabled = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file_enabled");
+  }
   svFilePath = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file-path");
+  if (svFilePath == NULL)
+  {
+    svFilePath = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file_path");
+  }
   if ((svFileEnabled != NULL) && (dtl_sv_to_bool(svFileEnabled, &ok) != false))
   {
     const char *filePath = "";
@@ -170,14 +180,38 @@ static apx_error_t apx_server_text_log_extension_configure(apx_server_text_log_t
     }
     if (strlen(filePath) == 0u)
     {
-      apx_text_log_base_enable_stdout(&instance->base);
+      apx_server_text_log_enable_std_out(instance);
     }
     else
     {
-      apx_text_log_base_enable_file(&instance->base, filePath);
+      apx_server_text_log_enable_file(instance, filePath);
       printf("Logging to %s\n", filePath);
       fflush(stdout);
     }
+  }
+
+  svSyslogEnabled = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "syslog-enabled");
+  if (svSyslogEnabled == NULL)
+  {
+    svSyslogEnabled = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "syslog_enabled");
+  }
+  if ((svSyslogEnabled != NULL) && (dtl_sv_to_bool(svSyslogEnabled, &ok) != false))
+  {
+    const char *syslogLabel = "apx-server";
+    svSyslogLabel = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "syslog-label");
+    if (svSyslogLabel == NULL)
+    {
+      svSyslogLabel = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "syslog_label");
+    }
+    if (svSyslogLabel != NULL)
+    {
+      const char *label_val = dtl_sv_to_cstr(svSyslogLabel, &ok);
+      if (ok && (label_val != NULL) && (*label_val != '\0'))
+      {
+        syslogLabel = label_val;
+      }
+    }
+    apx_server_text_log_enable_sys_log(instance, syslogLabel);
   }
   return APX_NO_ERROR;
 }

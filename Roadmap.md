@@ -107,8 +107,8 @@ The `c-apx` codebase contains numerous compile-time `#if APX_DEBUG_ENABLE` check
 * [x] **Replace Legacy Server `APX_DEBUG_ENABLE` Prints:**
   * Replace compile-time `#if APX_DEBUG_ENABLE` prints in server modules (`server_connection.c`, `connection_manager.c`, `socket_server_connection.c`, `socket_server.c`, `tls_server.c`, `tls_server_connection.c`) with `apx_server_log_write(server, APX_LOG_LEVEL_DEBUG, ...)`.
   * Ensure high-frequency debug logging (such as packet reception/transmission) does not exhaust server event loop memory via early check on active log listeners before event allocation.
-* [ ] **Complete Syslog Integration (`syslog-enabled`):** *(Deferred to separate commit)*
-  * Wire up the existing `syslog-enabled` placeholder in `server_text_log_extension.c` and `text_log_base.c` using POSIX `syslog(priority, ...)`, mapping `apx_log_level_t` directly to syslog priorities (`LOG_CRIT`, `LOG_ERR`, `LOG_WARNING`, `LOG_INFO`, `LOG_DEBUG`).
+* [x] **Complete Syslog Integration (`syslog-enabled`):**
+  * Wire up `syslog-enabled` and `syslog-label` in `server_text_log_extension.c` and `text_log_base.c` using POSIX `syslog(priority, ...)`, mapping `apx_log_level_t` directly to syslog priorities (`LOG_CRIT`, `LOG_ERR`, `LOG_WARNING`, `LOG_INFO`, `LOG_DEBUG`).
 
 ## 11. Small Data Support in Command Pipeline
 

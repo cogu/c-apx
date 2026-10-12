@@ -34,10 +34,10 @@
 # define STRDUP strdup
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE FUNCTION PROTOTYPES
-//////////////////////////////////////////////////////////////////////////////
 static void format_timestamp(char *buf, size_t buf_size);
+#if !defined(_WIN32) && !defined(__CYGWIN__)
+static int apx_log_level_to_syslog_priority(apx_log_level_t level);
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -84,14 +84,47 @@ void apx_text_log_base_destroy(apx_text_log_base_t *self)
 
 void apx_text_log_base_enable_sys_log(apx_text_log_base_t *self, const char *label)
 {
-  if ((self != NULL) && (label != NULL))
+  if (self != NULL)
   {
-    self->syslogEnabled = true;
-    self->syslogLabel = STRDUP(label);
+    MUTEX_LOCK(self->mutex);
+    if (self->syslogEnabled)
+    {
 #if !defined(_WIN32) && !defined(__CYGWIN__)
-    openlog(self->syslogLabel, 0, LOG_USER);
+      closelog();
 #endif
+      self->syslogEnabled = false;
+    }
+    if (self->syslogLabel != NULL)
+    {
+      free(self->syslogLabel);
+      self->syslogLabel = NULL;
+    }
+    const char *actual_label = (label != NULL && *label != '\0') ? label : "apx-server";
+    self->syslogLabel = STRDUP(actual_label);
+    self->syslogEnabled = true;
+#if !defined(_WIN32) && !defined(__CYGWIN__)
+    openlog(self->syslogLabel, LOG_PID, LOG_USER);
+#endif
+    MUTEX_UNLOCK(self->mutex);
   }
+}
+
+bool apx_text_log_base_get_sys_log_enabled(apx_text_log_base_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->syslogEnabled;
+  }
+  return false;
+}
+
+const char *apx_text_log_base_get_sys_log_label(apx_text_log_base_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->syslogLabel;
+  }
+  return NULL;
 }
 
 void apx_text_log_base_enable_stdout(apx_text_log_base_t *self)
@@ -142,6 +175,11 @@ void apx_text_log_base_close_all(apx_text_log_base_t *self)
 #endif
       self->syslogEnabled = false;
     }
+    if (self->syslogLabel != NULL)
+    {
+      free(self->syslogLabel);
+      self->syslogLabel = NULL;
+    }
     MUTEX_UNLOCK(self->mutex);
   }
 }
@@ -151,10 +189,16 @@ void apx_text_log_base_print(apx_text_log_base_t *self, const char *msg)
   if ((self != NULL) && (msg != NULL))
   {
     MUTEX_LOCK(self->mutex);
-    if (self->fileEnabled)
+    if (self->fileEnabled && (self->file != NULL))
     {
       fprintf(self->file, "%s%s", msg, self->lineEnding);
     }
+#if !defined(_WIN32) && !defined(__CYGWIN__)
+    if (self->syslogEnabled)
+    {
+      syslog(LOG_INFO, "%s", msg);
+    }
+#endif
     MUTEX_UNLOCK(self->mutex);
   }
 }
@@ -234,6 +278,13 @@ void apx_text_log_base_log(apx_text_log_base_t *self, apx_log_level_t level, con
       }
       fflush(self->file);
     }
+#if !defined(_WIN32) && !defined(__CYGWIN__)
+    if (self->syslogEnabled)
+    {
+      int priority = apx_log_level_to_syslog_priority(level);
+      syslog(priority, "[%-6s] %s", lbl_str, msg);
+    }
+#endif
     MUTEX_UNLOCK(self->mutex);
   }
 }
@@ -277,3 +328,24 @@ static void format_timestamp(char *buf, size_t buf_size)
   snprintf(buf, buf_size, "%s.%03d", time_str, millis);
 #endif
 }
+
+#if !defined(_WIN32) && !defined(__CYGWIN__)
+static int apx_log_level_to_syslog_priority(apx_log_level_t level)
+{
+  switch (level)
+  {
+  case APX_LOG_LEVEL_CRITICAL:
+    return LOG_CRIT;
+  case APX_LOG_LEVEL_ERROR:
+    return LOG_ERR;
+  case APX_LOG_LEVEL_WARNING:
+    return LOG_WARNING;
+  case APX_LOG_LEVEL_INFO:
+    return LOG_INFO;
+  case APX_LOG_LEVEL_DEBUG:
+    return LOG_DEBUG;
+  default:
+    return LOG_INFO;
+  }
+}
+#endif

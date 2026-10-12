@@ -142,3 +142,55 @@ def test_server_text_log_level_filter(tmp_path, apx_server_bin: str):
     # Normal connection / debug events should NOT be logged since level is ERROR
     assert "[DEBUG]" not in log_content
     assert "[INFO ]" not in log_content
+
+
+def test_server_text_log_syslog_lifecycle(tmp_path, apx_server_bin: str):
+    """Verify that apx-server successfully initializes with syslog-enabled and runs without errors."""
+    socket_path = str(tmp_path / "apx_test.socket")
+    config_path = str(tmp_path / "server.json")
+
+    config = {
+        "socket-server-extension": {
+            "unix-file": socket_path
+        },
+        "textlog-extension": {
+            "enabled": True,
+            "syslog-enabled": True,
+            "syslog-label": "apx-test",
+            "log-level": "DEBUG",
+        }
+    }
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config, f)
+
+    r_fd, w_fd = os.pipe()
+    os.set_inheritable(w_fd, True)
+
+    cmd = [apx_server_bin, "--ready-fd", str(w_fd), config_path]
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        pass_fds=(w_fd,),
+        preexec_fn=_set_pdeathsig,
+    )
+    os.close(w_fd)
+
+    rlist, _, _ = select.select([r_fd], [], [], 3.0)
+    assert rlist, "Server did not signal readiness in time"
+    os.read(r_fd, 1)
+    os.close(r_fd)
+
+    wait_for_unix_socket(socket_path, timeout=3.0)
+
+    # Connect and disconnect a client to trigger connection logging events through syslog
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    client.connect(socket_path)
+    client.close()
+
+    proc.terminate()
+    stdout_bytes, stderr_bytes = proc.communicate(timeout=3.0)
+    assert proc.returncode == 0
+    assert len(stderr_bytes) == 0, f"Unexpected stderr output: {stderr_bytes.decode('utf-8')}"
+

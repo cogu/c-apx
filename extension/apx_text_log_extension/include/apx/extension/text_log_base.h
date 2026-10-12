@@ -55,6 +55,8 @@ typedef struct apx_text_log_base_tag
 void apx_text_log_base_create(apx_text_log_base_t *self);
 void apx_text_log_base_destroy(apx_text_log_base_t *self);
 void apx_text_log_base_enable_sys_log(apx_text_log_base_t *self, const char *label);
+bool apx_text_log_base_get_sys_log_enabled(apx_text_log_base_t const *self);
+const char *apx_text_log_base_get_sys_log_label(apx_text_log_base_t const *self);
 void apx_text_log_base_enable_stdout(apx_text_log_base_t *self);
 void apx_text_log_base_enable_file(apx_text_log_base_t *self, const char *path);
 void apx_text_log_base_close_all(apx_text_log_base_t *self);

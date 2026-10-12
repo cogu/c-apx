@@ -17,7 +17,8 @@
         "log-level": "INFO",
         "file-enabled": true,
         "file-path": "",
-        "syslog-enabled": false
+        "syslog-enabled": false,
+        "syslog-label": "apx-server"
     },
     "monitor-extension": {
         "enabled": true
