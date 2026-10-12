@@ -13,7 +13,8 @@ Prerequisites
    .. tab-item:: Linux
       :sync: linux
 
-      Install Git, CMake, and GCC or Clang using your distribution's package manager.
+      Install Git, CMake (>= 3.28), Ninja, and Clang 21 (``clang-21``, ``clang++-21``).
+      Clang 21 is required to build the presets, sanitizers (ASan, UBSan, TSan), and run the test suite.
 
    .. tab-item:: Windows
       :sync: windows
@@ -28,15 +29,31 @@ Prerequisites
 Clone and Build c-apx
 ---------------------
 
-Clone the repository, then initialize its Git submodules before building it:
+Clone the repository, initialize its Git submodules, and build the project:
 
-.. code-block:: console
+.. tab-set::
 
-   git clone https://github.com/cogu/c-apx.git
-   cd c-apx
-   git submodule update --init --recursive
-   cmake -S . -B build
-   cmake --build build
+   .. tab-item:: Linux
+      :sync: linux
+
+      .. code-block:: bash
+
+         git clone https://github.com/cogu/c-apx.git
+         cd c-apx
+         git submodule update --init --recursive
+         cmake --preset clang-debug
+         cmake --build --preset clang-debug
+
+   .. tab-item:: Windows
+      :sync: windows
+
+      .. code-block:: bat
+
+         git clone https://github.com/cogu/c-apx.git
+         cd c-apx
+         git submodule update --init --recursive
+         cmake -S . -B build
+         cmake --build build
 
 Start the APX Server
 --------------------
@@ -50,7 +67,7 @@ From the ``c-apx`` directory, start the server with the example configuration:
 
       .. code-block:: bash
 
-         build/app/apx_server/apx-server example/config/server.json
+         build/clang-debug/app/apx_server/apx-server example/config/server.json
 
    .. tab-item:: Windows
       :sync: windows
@@ -75,7 +92,7 @@ Open a second terminal in the ``c-apx`` directory and start the listener node:
 
       .. code-block:: bash
 
-         build/app/apx_node/apx-node --no-bind example/nodes/unsigned_listener.apx
+         build/clang-debug/app/apx_node/apx-node --no-bind example/nodes/unsigned_listener.apx
 
    .. tab-item:: Windows
       :sync: windows
@@ -93,7 +110,7 @@ Open a third terminal in the ``c-apx`` directory and start the sender node:
 
       .. code-block:: bash
 
-         build/app/apx_node/apx-node example/nodes/unsigned_sender.apx
+         build/clang-debug/app/apx_node/apx-node example/nodes/unsigned_sender.apx
 
    .. tab-item:: Windows
       :sync: windows
@@ -115,7 +132,7 @@ Open a fourth terminal in the ``c-apx`` directory and set ``VehicleSpeed`` to
 
       .. code-block:: bash
 
-         build/app/apx_control/apx-control VehicleSpeed 100
+         build/clang-debug/app/apx_control/apx-control VehicleSpeed 100
 
    .. tab-item:: Windows
       :sync: windows
