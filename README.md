@@ -21,7 +21,7 @@ A brand new implementation is being developed on branch `master`. It will remain
   - Parser
   - Compiler
   - Virtual Machine
-- `New:` Port connection count support (server and client).
+- Port connection count support (server and client).
 - Dynamic client support
   - Use `apx-node` together with `apx-control` to dynamically create APX nodes.
 
@@ -31,7 +31,7 @@ Reference implementation of the APX server. It is highly configurable using a si
 
 **Security features (optional):**
 
-- `New:` Cryptographically signed APX node verification (NIST P-256 with SHA-256)
+- Cryptographically signed APX node verification (NIST P-256 with SHA-256)
   - Use the tool `apx-sign` to create keys and sign your APX nodes.
 
 #### APX Server Extensions
@@ -45,7 +45,7 @@ Basic socket server support.
 
 - TCP sockets.
 - UNIX Domain sockets.
-- `New:` Virtual Machine Sockets (VSOCK).
+- Virtual Machine Sockets (VSOCK).
 
 Default settings:
 
@@ -56,7 +56,7 @@ Extension Type: `Source`
 
 ##### TLS Extension
 
-`New:` TLS socket server.
+TLS socket server.
 
 Default settings:
 
