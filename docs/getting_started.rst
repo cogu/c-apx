@@ -13,7 +13,7 @@ Prerequisites
    .. tab-item:: Linux
       :sync: linux
 
-      Install Git, CMake (>= 3.28), Ninja, and Clang 21 (``clang-21``, ``clang++-21``).
+      Install Git, CMake (>= 3.28), Ninja, and Clang 21 (``clang-21``).
       Clang 21 is required to build the presets, sanitizers (ASan, UBSan, TSan), and run the test suite.
 
    .. tab-item:: Windows
