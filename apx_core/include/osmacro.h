@@ -11,6 +11,18 @@
 #ifndef OS_MACRO_H
 #define OS_MACRO_H
 
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+# endif
+# include <Windows.h>
+# include <process.h>
+#else
+# include <pthread.h>
+# include <semaphore.h>
+# include <unistd.h>
+#endif
+
 /* SOCKETS */
 #ifdef _WIN32
 # define SOCKET_T SOCKET
@@ -84,6 +96,7 @@
 # define SEMAPHORE_T HANDLE
 # define SEMAPHORE_CREATE(sem) sem = CreateSemaphore(NULL, 0, SEMAPHORE_MAX_COUNT, NULL)
 # define SEMAPHORE_EV_CREATE(sem) sem = CreateSemaphore(NULL, 0, 1, NULL) // maximum semaphore count=1
+# define SEMAPHORE_WAIT(sem) WaitForSingleObject(sem, INFINITE)
 # define SEMAPHORE_POST(sem) ReleaseSemaphore(sem, 1, NULL)
 # define SEMAPHORE_DESTROY(sem) CloseHandle(sem);
 // timed semaphore wait is too different between linux and Windows, no macro defined
@@ -92,6 +105,7 @@
 # define SEMAPHORE_CREATE(sem) sem_init(&sem, 0, 0)
 # define SEMAPHORE_EV_CREATE(sem)                                                                                      \
    sem_init(&sem, 0, 0) // not possible to choose maximum count in Linux. Use _sem_ev_post helper function in osutil.c
+# define SEMAPHORE_WAIT(sem) sem_wait(&sem)
 # define SEMAPHORE_POST(sem) sem_post(&sem)
 # define SEMAPHORE_DESTROY(sem) sem_destroy(&sem)
 // timed semaphore wait is too different between linux and Windows, no macro defined

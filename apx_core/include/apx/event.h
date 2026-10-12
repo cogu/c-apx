@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_str.h"
 #include "apx/types.h"
+#include "osmacro.h"
 #include "soa.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -50,6 +51,7 @@ typedef struct apx_event_tag
 #define APX_EVENT_PROTOCOL_HEADER_ACCEPTED 1 // data3: apx_connection_base_t* connection (weak)
 #define APX_EVENT_REMOTE_FILE_PUBLISHED                                                                                \
   2 // data3: apx_connection_base_t* connection (weak), data4: rmf_file_info_t* connection (strong)
+#define APX_EVENT_BARRIER 3 // data3: SEMAPHORE_T* sem (weak)
 
 
 typedef void(apx_event_handler_func_t)(void *arg, apx_event_t *event);
@@ -65,6 +67,8 @@ void apx_event_pack_remote_file_published(
   apx_event_t *event, struct apx_connection_base_tag *connection, struct rmf_file_info_tag *file_info);
 void apx_event_unpack_remote_file_published(
   apx_event_t const *event, struct apx_connection_base_tag **connection, struct rmf_file_info_tag **file_info);
+void apx_event_pack_barrier(apx_event_t *event, SEMAPHORE_T *sem);
+void apx_event_unpack_barrier(apx_event_t const *event, SEMAPHORE_T **sem);
 void apx_event_destroy(apx_event_t *event, soa_t *allocator);
 
 #endif // APX_EVENT_H

@@ -161,6 +161,29 @@ void apx_server_stop(apx_server_t *self)
   }
 }
 
+void apx_server_flush_events(apx_server_t *self)
+{
+  if (self != NULL)
+  {
+    if (self->is_event_thread_valid)
+    {
+      SEMAPHORE_T sem;
+      SEMAPHORE_CREATE(sem);
+      apx_event_t event;
+      apx_event_pack_barrier(&event, &sem);
+      apx_event_loop_append(&self->event_loop, &event);
+      SEMAPHORE_WAIT(sem);
+      SEMAPHORE_DESTROY(sem);
+    }
+#ifdef UNIT_TEST
+    else
+    {
+      apx_event_loop_run_all(&self->event_loop, apx_server_handle_event, (void *)self);
+    }
+#endif
+  }
+}
+
 void *apx_server_register_event_listener(apx_server_t *self, apx_server_event_listener_t *event_listener)
 {
   if ((self != NULL) && (event_listener != NULL))
@@ -872,6 +895,7 @@ static apx_error_t apx_server_init_extensions(apx_server_t *self)
       }
       iter = adt_list_iter_next(iter);
     }
+    apx_server_flush_events(self);
   }
   return APX_NO_ERROR;
 }
@@ -946,6 +970,15 @@ static void apx_server_handle_event(void *arg, apx_event_t *event)
         assert(0);
       }
       break;
+    case APX_EVENT_BARRIER: {
+      SEMAPHORE_T *sem = NULL;
+      apx_event_unpack_barrier(event, &sem);
+      if (sem != NULL)
+      {
+        SEMAPHORE_POST(*sem);
+      }
+    }
+    break;
     default:
       printf("[SERVER] Unhandled event %d\n", (int)event->ev_type);
     }

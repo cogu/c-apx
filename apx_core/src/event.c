@@ -95,6 +95,24 @@ void apx_event_unpack_remote_file_published(
   }
 }
 
+void apx_event_pack_barrier(apx_event_t *event, SEMAPHORE_T *sem)
+{
+  if ((event != NULL) && (sem != NULL))
+  {
+    memset(event, 0, APX_EVENT_SIZE);
+    event->ev_type = APX_EVENT_BARRIER;
+    event->data3 = (void *)sem;
+  }
+}
+
+void apx_event_unpack_barrier(apx_event_t const *event, SEMAPHORE_T **sem)
+{
+  if ((event != NULL) && (sem != NULL))
+  {
+    *sem = (SEMAPHORE_T *)event->data3;
+  }
+}
+
 void apx_event_destroy(apx_event_t *event, soa_t *allocator)
 {
   if (event != NULL)
@@ -103,6 +121,7 @@ void apx_event_destroy(apx_event_t *event, soa_t *allocator)
     char *label;
     adt_str_t *str;
     rmf_file_info_t *file_info = NULL;
+    SEMAPHORE_T *sem = NULL;
     switch (event->ev_type)
     {
     case APX_EVENT_LOG_WRITE:
@@ -121,6 +140,13 @@ void apx_event_destroy(apx_event_t *event, soa_t *allocator)
     case APX_EVENT_REMOTE_FILE_PUBLISHED:
       file_info = (rmf_file_info_t *)event->data4;
       rmf_file_info_delete(file_info);
+      break;
+    case APX_EVENT_BARRIER:
+      sem = (SEMAPHORE_T *)event->data3;
+      if (sem != NULL)
+      {
+        SEMAPHORE_POST(*sem);
+      }
       break;
     default:
       assert(0);
