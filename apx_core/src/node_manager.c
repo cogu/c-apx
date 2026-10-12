@@ -208,13 +208,29 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
       result = build_node_instance(self, node_instance, node);
       apx_node_delete(node);
     }
-    if (result != APX_NO_ERROR)
+    if (result == APX_NO_ERROR)
+    {
+      if (server != NULL)
+      {
+        char const *name = apx_node_instance_get_name(node_instance);
+        uint32_t const connection_id = apx_node_instance_get_connection_id(node_instance);
+        if (connection_id != APX_INVALID_CONNECTION_ID)
+        {
+          apx_server_log(
+            server, APX_LOG_LEVEL_INFO, "[%u] Created node %s", connection_id, (name != NULL) ? name : "<unknown>");
+        }
+        else
+        {
+          apx_server_log(server, APX_LOG_LEVEL_INFO, "Created node %s", (name != NULL) ? name : "<unknown>");
+        }
+      }
+    }
+    else
     {
       char const *name = apx_node_instance_get_name(node_instance);
-      apx_server_t *srv = apx_node_instance_get_server(node_instance);
-      if (srv != NULL)
+      if (server != NULL)
       {
-        apx_server_log(srv, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: parse failed (%s)",
+        apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: parse failed (%s)",
           (name != NULL) ? name : "<unknown>", apx_strerror(result));
       }
       if (self->parent_connection != NULL)
