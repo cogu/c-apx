@@ -43,15 +43,30 @@ typedef struct apx_event_tag
 #define APX_EVENT_FLAG_FILE_MANAGER_EVENT 0x01
 #define APX_EVENT_FLAG_REMOTE_ADDRESS 0x02
 
-// APX Log event
-#define APX_EVENT_LOG_WRITE                                                                                            \
-  0 // data1: logLevel (0-3) data3: char[16] label (soa-strong), data4: adt_str_t *msg (strong),
+// APX event IDs
+#define APX_EVENT_LOG_WRITE 0
+#define APX_EVENT_PROTOCOL_HEADER_ACCEPTED 1
+#define APX_EVENT_REMOTE_FILE_PUBLISHED 2
+#define APX_EVENT_BARRIER 3
 
-// APX connection events
-#define APX_EVENT_PROTOCOL_HEADER_ACCEPTED 1 // data3: apx_connection_base_t* connection (weak)
-#define APX_EVENT_REMOTE_FILE_PUBLISHED                                                                                \
-  2 // data3: apx_connection_base_t* connection (weak), data4: rmf_file_info_t* connection (strong)
-#define APX_EVENT_BARRIER 3 // data3: SEMAPHORE_T* sem (weak)
+/**
+ * Event field usage and ownership:
+ *
+ * APX_EVENT_LOG_WRITE:
+ *   - data1: Log level (0-3, apx_log_level_t)
+ *   - data3: Label string (char[16], soa-strong reference: allocated via SOA, freed with soa_free)
+ *   - data4: Log message (adt_str_t *, strong reference: freed with adt_str_delete)
+ *
+ * APX_EVENT_PROTOCOL_HEADER_ACCEPTED:
+ *   - data3: Connection object (apx_connection_base_t *, weak reference)
+ *
+ * APX_EVENT_REMOTE_FILE_PUBLISHED:
+ *   - data3: Connection object (apx_connection_base_t *, weak reference)
+ *   - data4: Remote file info (rmf_file_info_t *, strong reference: freed with rmf_file_info_delete)
+ *
+ * APX_EVENT_BARRIER:
+ *   - data3: Semaphore (SEMAPHORE_T *, weak reference: signaled via SEMAPHORE_POST)
+ */
 
 
 typedef void(apx_event_handler_func_t)(void *arg, apx_event_t *event);
