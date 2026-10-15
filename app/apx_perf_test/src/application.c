@@ -16,7 +16,6 @@
 #include "apx/event_listener.h"
 #include "apx/node_data.h"
 #include "pack.h"
-#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,8 +106,11 @@ bool application_init(const application_cfg_t *cfg)
       m_rqst_handle = apx_node_instance_get_require_port(m_node_instance, (apx_port_id_t)0u);
       m_rsp_handle = apx_node_instance_get_provide_port(m_node_instance, (apx_port_id_t)0u);
     }
-    assert(m_rqst_handle != NULL);
-    assert(m_rsp_handle != NULL);
+    if ((m_rqst_handle == NULL) || (m_rsp_handle == NULL))
+    {
+      fprintf(stderr, "Failed to find request or response port\n");
+      return false;
+    }
     printf("Connecting to %s\n", m_cfg.server_address);
     switch (m_cfg.resource_type)
     {
@@ -175,7 +177,12 @@ bool application_run(void)
         m_timer = m_cfg.timer_init;
         dtl_sv_set_u32(m_sv, m_event_count);
         result = apx_client_write_port_data(m_client, m_rqst_handle, (dtl_dv_t *)m_sv);
-        assert(result == APX_NO_ERROR);
+        if (result != APX_NO_ERROR)
+        {
+          fprintf(stderr, "apx_client_write_port_data failed with error %d\n", (int)result);
+          m_is_test_ongoing = false;
+          return false;
+        }
         printf("Test started\n");
       }
       else
@@ -236,15 +243,26 @@ static void on_require_port_write(void *arg, apx_port_instance_t *port_instance,
       bool ok;
       dtl_sv_t *sv = NULL;
       result = apx_client_read_port_data(m_client, m_rsp_handle, (dtl_dv_t **)&sv);
-      assert(result == APX_NO_ERROR);
-      assert(sv != NULL);
+      if (result != APX_NO_ERROR)
+      {
+        fprintf(stderr, "apx_client_read_port_data failed with error %d\n", (int)result);
+        return;
+      }
+      if (sv == NULL)
+      {
+        fprintf(stderr, "apx_client_read_port_data returned no value\n");
+        return;
+      }
       value = dtl_sv_to_u32(sv, &ok);
       if (ok)
       {
         m_event_count = value;
         dtl_sv_set_u32(sv, value + 1);
         result = apx_client_write_port_data(m_client, m_rqst_handle, (dtl_dv_t *)sv);
-        assert(result == APX_NO_ERROR);
+        if (result != APX_NO_ERROR)
+        {
+          fprintf(stderr, "apx_client_write_port_data failed with error %d\n", (int)result);
+        }
       }
       dtl_dv_dec_ref((dtl_dv_t *)sv);
     }
@@ -258,14 +276,25 @@ static void on_require_port_write(void *arg, apx_port_instance_t *port_instance,
       uint32_t value;
       bool ok;
       result = apx_client_read_port_data(m_client, m_rqst_handle, (dtl_dv_t **)&sv);
-      assert(result == APX_NO_ERROR);
-      assert(sv != NULL);
+      if (result != APX_NO_ERROR)
+      {
+        fprintf(stderr, "apx_client_read_port_data failed with error %d\n", (int)result);
+        return;
+      }
+      if (sv == NULL)
+      {
+        fprintf(stderr, "apx_client_read_port_data returned no value\n");
+        return;
+      }
       value = dtl_sv_to_u32(sv, &ok);
       if (ok)
       {
         dtl_sv_set_u32(sv, value + 1);
         result = apx_client_write_port_data(m_client, m_rsp_handle, (dtl_dv_t *)sv);
-        assert(result == APX_NO_ERROR);
+        if (result != APX_NO_ERROR)
+        {
+          fprintf(stderr, "apx_client_write_port_data failed with error %d\n", (int)result);
+        }
       }
       dtl_dv_dec_ref((dtl_dv_t *)sv);
     }
