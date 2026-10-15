@@ -34,6 +34,7 @@ static void test_new_connection_event_creates_connection_observer(CuTest *tc);
 static void test_connection_observer_destroyed_on_disconnect_event(CuTest *tc);
 static void test_file_published_creates_observed_file(CuTest *tc);
 static void test_file_lifecycle_state_transitions(CuTest *tc);
+static void test_signed_file_observation(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -49,6 +50,7 @@ CuSuite *testsuite_apx_server_monitor_state(void)
   SUITE_ADD_TEST(suite, test_connection_observer_destroyed_on_disconnect_event);
   SUITE_ADD_TEST(suite, test_file_published_creates_observed_file);
   SUITE_ADD_TEST(suite, test_file_lifecycle_state_transitions);
+  SUITE_ADD_TEST(suite, test_signed_file_observation);
   return suite;
 }
 
@@ -180,6 +182,45 @@ static void test_file_lifecycle_state_transitions(CuTest *tc)
   CuAssertPtrEquals(tc, NULL, apx_observed_connection_find_file_by_address(observed_connection, 0x2080u));
 
   apx_file_delete(file);
+  rmf_file_info_delete(file_info);
+  apx_server_monitor_delete(monitor);
+  apx_socket_server_connection_delete(socket_connection);
+}
+
+static void test_signed_file_observation(CuTest *tc)
+{
+  testsocket_t *socket = testsocket_new();
+  apx_socket_server_connection_t *socket_connection = apx_socket_server_connection_new(socket);
+  apx_server_connection_t *server_connection = (apx_server_connection_t *)socket_connection;
+  apx_server_monitor_t *monitor = apx_server_monitor_new(NULL);
+  uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  for (size_t i = 0; i < sizeof(dummy_sig); i++)
+  {
+    dummy_sig[i] = (uint8_t)(0x55 ^ (uint8_t)i);
+  }
+
+  rmf_file_info_t *file_info = rmf_file_info_make_fixed_with_signature(
+    "SecurityNode.apx", 256u, 0x1000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+  CuAssertPtrNotNull(tc, socket_connection);
+  CuAssertPtrNotNull(tc, monitor);
+  CuAssertPtrNotNull(tc, file_info);
+
+  apx_server_connection_set_connection_id(server_connection, 42u);
+  apx_server_monitor_virtual_on_new_connection((void *)monitor, server_connection);
+
+  apx_server_monitor_virtual_on_file_published((void *)monitor, (apx_connection_base_t *)server_connection, file_info);
+
+  apx_observed_connection_t *observed_connection =
+    apx_server_monitor_find_observed_connection(monitor, server_connection);
+  CuAssertPtrNotNull(tc, observed_connection);
+
+  apx_observed_file_t *observed_file =
+    apx_observed_connection_find_file_by_name(observed_connection, "SecurityNode.apx");
+  CuAssertPtrNotNull(tc, observed_file);
+  CuAssertTrue(tc, apx_observed_file_is_signed(observed_file));
+  CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, apx_observed_file_get_signature_type(observed_file));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_sig, apx_observed_file_get_signature_data(observed_file), sizeof(dummy_sig)));
+
   rmf_file_info_delete(file_info);
   apx_server_monitor_delete(monitor);
   apx_socket_server_connection_delete(socket_connection);

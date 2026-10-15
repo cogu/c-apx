@@ -148,3 +148,40 @@ void apx_observed_file_set_data_state(apx_observed_file_t *self, apx_data_state_
     rmf_extended_file_info_set_data_state(&self->file_info, data_state);
   }
 }
+
+rmf_signature_type_t apx_observed_file_get_signature_type(apx_observed_file_t const *self)
+{
+  if (self != NULL)
+  {
+    return rmf_extended_file_info_signature_type(&self->file_info);
+  }
+  return RMF_SIGNATURE_TYPE_NONE;
+}
+
+uint8_t const *apx_observed_file_get_signature_data(apx_observed_file_t const *self)
+{
+  if (self != NULL)
+  {
+    return rmf_extended_file_info_signature_data(&self->file_info);
+  }
+  return NULL;
+}
+
+bool apx_observed_file_is_signed(apx_observed_file_t const *self)
+{
+  if (self != NULL)
+  {
+    return rmf_extended_file_info_is_signed(&self->file_info);
+  }
+  return false;
+}
+
+apx_error_t apx_observed_file_set_signature(
+  apx_observed_file_t *self, rmf_signature_type_t signature_type, const uint8_t *signature_data)
+{
+  if (self != NULL)
+  {
+    return rmf_extended_file_info_set_signature(&self->file_info, signature_type, signature_data);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}

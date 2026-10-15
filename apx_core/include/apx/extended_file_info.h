@@ -32,6 +32,8 @@ typedef struct rmf_extended_file_info_tag
   rmf_digest_type_t digest_type;
   apx_data_state_t data_state;
   uint8_t digest_data[RMF_SHA256_SIZE];
+  rmf_signature_type_t signature_type;
+  uint8_t signature_data[RMF_SIGNATURE_SIZE_ECDSA_P256];
   adt_str_t name;
 } rmf_extended_file_info_t;
 
@@ -45,6 +47,9 @@ rmf_extended_file_info_t *rmf_extended_file_info_make_fixed(
 rmf_extended_file_info_t *rmf_extended_file_info_make_fixed_with_digest(char const *name, uint32_t size,
   uint32_t address, uint32_t connection_id, apx_data_state_t data_state, rmf_digest_type_t digest_type,
   uint8_t const *digest_data);
+rmf_extended_file_info_t *rmf_extended_file_info_make_fixed_with_signature(char const *name, uint32_t size,
+  uint32_t address, uint32_t connection_id, apx_data_state_t data_state, rmf_signature_type_t signature_type,
+  uint8_t const *signature_data);
 
 apx_error_t rmf_extended_file_info_create(rmf_extended_file_info_t *self, uint32_t connection_id, uint32_t address,
   uint32_t size, const char *name, rmf_file_type_t file_type, apx_data_state_t data_state,
@@ -68,6 +73,9 @@ uint32_t rmf_extended_file_info_size(rmf_extended_file_info_t const *self);
 rmf_file_type_t rmf_extended_file_info_rmf_file_type(rmf_extended_file_info_t const *self);
 rmf_digest_type_t rmf_extended_file_info_digest_type(rmf_extended_file_info_t const *self);
 uint8_t const *rmf_extended_file_info_digest_data(rmf_extended_file_info_t const *self);
+rmf_signature_type_t rmf_extended_file_info_signature_type(rmf_extended_file_info_t const *self);
+uint8_t const *rmf_extended_file_info_signature_data(rmf_extended_file_info_t const *self);
+bool rmf_extended_file_info_is_signed(rmf_extended_file_info_t const *self);
 apx_data_state_t rmf_extended_file_info_data_state(rmf_extended_file_info_t const *self);
 void rmf_extended_file_info_set_data_state(rmf_extended_file_info_t *self, apx_data_state_t data_state);
 apx_error_t rmf_extended_file_info_assign(rmf_extended_file_info_t *self, const rmf_extended_file_info_t *other);
@@ -81,11 +89,17 @@ void rmf_extended_file_info_copy_base_name(rmf_extended_file_info_t const *self,
 bool rmf_extended_file_info_address_in_range(rmf_extended_file_info_t const *self, uint32_t address);
 apx_error_t rmf_extended_file_info_set_digest_data(
   rmf_extended_file_info_t *self, rmf_digest_type_t digest_type, const uint8_t *digest_data);
+apx_error_t rmf_extended_file_info_set_signature(
+  rmf_extended_file_info_t *self, rmf_signature_type_t signature_type, const uint8_t *signature_data);
 
 // stateless functions
 apx_size_t rmf_encode_publish_remote_file_cmd(
   uint8_t *buf, apx_size_t buf_size, rmf_extended_file_info_t const *file_info);
 apx_size_t rmf_decode_publish_remote_file_cmd(
+  uint8_t const *buf, apx_size_t buf_size, rmf_extended_file_info_t *file_info);
+apx_size_t rmf_encode_publish_signed_remote_file_cmd(
+  uint8_t *buf, apx_size_t buf_size, rmf_extended_file_info_t const *file_info);
+apx_size_t rmf_decode_publish_signed_remote_file_cmd(
   uint8_t const *buf, apx_size_t buf_size, rmf_extended_file_info_t *file_info);
 bool apx_value_to_data_state(uint8_t value, apx_data_state_t *data_state);
 

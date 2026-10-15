@@ -36,6 +36,8 @@ static void test_clone_and_assign(CuTest *tc);
 static void test_data_state_transitions(CuTest *tc);
 static void test_name_ends_with_and_base_name(CuTest *tc);
 static void test_encode_decode_publish_remote_file(CuTest *tc);
+static void test_extended_file_info_signature(CuTest *tc);
+static void test_encode_decode_publish_signed_remote_file(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
@@ -50,6 +52,8 @@ CuSuite *testsuite_extended_file_info(void)
   SUITE_ADD_TEST(suite, test_data_state_transitions);
   SUITE_ADD_TEST(suite, test_name_ends_with_and_base_name);
   SUITE_ADD_TEST(suite, test_encode_decode_publish_remote_file);
+  SUITE_ADD_TEST(suite, test_extended_file_info_signature);
+  SUITE_ADD_TEST(suite, test_encode_decode_publish_signed_remote_file);
 
   return suite;
 }
@@ -184,4 +188,87 @@ static void test_encode_decode_publish_remote_file(CuTest *tc)
 
   rmf_extended_file_info_destroy(&original);
   rmf_extended_file_info_destroy(&decoded);
+}
+
+static void test_extended_file_info_signature(CuTest *tc)
+{
+  uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  for (size_t i = 0; i < sizeof(dummy_sig); i++)
+  {
+    dummy_sig[i] = (uint8_t)(i + 1);
+  }
+
+  // 1. make_fixed_with_signature
+  rmf_extended_file_info_t *info = rmf_extended_file_info_make_fixed_with_signature("SignedNode.apx", 512u, 0x1000u,
+    10u, APX_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+  CuAssertPtrNotNull(tc, info);
+  CuAssertTrue(tc, rmf_extended_file_info_is_signed(info));
+  CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_extended_file_info_signature_type(info));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_extended_file_info_signature_data(info), sizeof(dummy_sig)));
+
+  // 2. Clone preserves signature
+  rmf_extended_file_info_t *cloned = rmf_extended_file_info_clone(info);
+  CuAssertPtrNotNull(tc, cloned);
+  CuAssertTrue(tc, rmf_extended_file_info_is_signed(cloned));
+  CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_extended_file_info_signature_type(cloned));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_extended_file_info_signature_data(cloned), sizeof(dummy_sig)));
+  rmf_extended_file_info_delete(cloned);
+
+  // 3. Assign preserves signature
+  rmf_extended_file_info_t assigned;
+  rmf_extended_file_info_create(
+    &assigned, 0u, 0u, 0u, NULL, RMF_FILE_TYPE_FIXED, APX_DATA_STATE_INIT, RMF_DIGEST_TYPE_NONE, NULL);
+  rmf_extended_file_info_assign(&assigned, info);
+  CuAssertTrue(tc, rmf_extended_file_info_is_signed(&assigned));
+  CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_extended_file_info_signature_type(&assigned));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_extended_file_info_signature_data(&assigned), sizeof(dummy_sig)));
+  rmf_extended_file_info_destroy(&assigned);
+
+  // 4. create_from_file_info preserves signature
+  rmf_file_info_t *file_info =
+    rmf_file_info_make_fixed_with_signature("SignedNode.apx", 512u, 0x1000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+  CuAssertPtrNotNull(tc, file_info);
+  rmf_extended_file_info_t from_file;
+  apx_error_t rc = rmf_extended_file_info_create_from_file_info(
+    &from_file, 10u, file_info, APX_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST);
+  CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+  CuAssertTrue(tc, rmf_extended_file_info_is_signed(&from_file));
+  CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_extended_file_info_signature_type(&from_file));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_extended_file_info_signature_data(&from_file), sizeof(dummy_sig)));
+
+  rmf_extended_file_info_destroy(&from_file);
+  rmf_file_info_delete(file_info);
+  rmf_extended_file_info_delete(info);
+}
+
+static void test_encode_decode_publish_signed_remote_file(CuTest *tc)
+{
+  uint8_t buffer[256];
+  uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  for (size_t i = 0; i < sizeof(dummy_sig); i++)
+  {
+    dummy_sig[i] = (uint8_t)(0xAA ^ (uint8_t)i);
+  }
+
+  rmf_extended_file_info_t *original = rmf_extended_file_info_make_fixed_with_signature(
+    "Motor.apx", 1024u, 0x8000u, 3u, APX_DATA_STATE_WAITING_FOR_FILE_DATA, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+  CuAssertPtrNotNull(tc, original);
+
+  apx_size_t encoded_len = rmf_encode_publish_signed_remote_file_cmd(buffer, sizeof(buffer), original);
+  CuAssertTrue(tc, encoded_len >= RMF_SIGNED_EXTENDED_FILE_INFO_HEADER_SIZE);
+
+  rmf_extended_file_info_t decoded;
+  apx_size_t decoded_len = rmf_decode_publish_signed_remote_file_cmd(buffer, encoded_len, &decoded);
+  CuAssertUIntEquals(tc, encoded_len, decoded_len);
+  CuAssertUIntEquals(tc, 3u, rmf_extended_file_info_connection_id(&decoded));
+  CuAssertUIntEquals(tc, 0x8000u, rmf_extended_file_info_address(&decoded));
+  CuAssertUIntEquals(tc, 1024u, rmf_extended_file_info_size(&decoded));
+  CuAssertUIntEquals(tc, APX_DATA_STATE_WAITING_FOR_FILE_DATA, rmf_extended_file_info_data_state(&decoded));
+  CuAssertStrEquals(tc, "Motor.apx", rmf_extended_file_info_name(&decoded));
+  CuAssertTrue(tc, rmf_extended_file_info_is_signed(&decoded));
+  CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_extended_file_info_signature_type(&decoded));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_extended_file_info_signature_data(&decoded), sizeof(dummy_sig)));
+
+  rmf_extended_file_info_destroy(&decoded);
+  rmf_extended_file_info_delete(original);
 }

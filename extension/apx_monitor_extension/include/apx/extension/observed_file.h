@@ -45,5 +45,10 @@ uint32_t apx_observed_file_get_address(apx_observed_file_t const *self);
 uint32_t apx_observed_file_get_size(apx_observed_file_t const *self);
 apx_data_state_t apx_observed_file_get_data_state(apx_observed_file_t const *self);
 void apx_observed_file_set_data_state(apx_observed_file_t *self, apx_data_state_t data_state);
+rmf_signature_type_t apx_observed_file_get_signature_type(apx_observed_file_t const *self);
+uint8_t const *apx_observed_file_get_signature_data(apx_observed_file_t const *self);
+bool apx_observed_file_is_signed(apx_observed_file_t const *self);
+apx_error_t apx_observed_file_set_signature(
+  apx_observed_file_t *self, rmf_signature_type_t signature_type, const uint8_t *signature_data);
 
 #endif // APX_OBSERVED_FILE_H
