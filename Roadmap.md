@@ -20,7 +20,7 @@ These are the items left to implement for c-apx v0.4.0.
   * Design chunked, append-only binary container format (file magic header + metadata + sequential event records matching the network payload).
   * Implement file writer/recorder and file reader/playback modules for recording and replaying APX event streams.
 
-## 3. Complete File Observation in Server Monitor
+## 3. Complete File Observation in Server Monitor (Completed)
 
 * **Implement Extended File Info (`apx_core`):**
   * Implement `apx_core/src/extended_file_info.c` (constructors, destructors, clone, accessors) and register in `CMakeLists.txt`.
@@ -156,31 +156,49 @@ In `apx_port_connector_change_entry_t` (`apx_core/include/apx/port_connector_cha
 * **Testing:**
   * Add unit and integration tests verifying multi-provider connect and simultaneous disconnect transitions.
 
-## 13. Node Definition Cache (Text-form and Binary form)
+## 13. Node Definition Cache (Text & Binary Form)
 
-Implement a disk-based cached similar to the Python interpreter.
+Implement disk-based caching similar to Python's `.py` / `.pyc` model to eliminate definition transfer overhead and bytecode compilation during ECU startup and wake-from-sleep.
 
-In Python:
-* .py files are text files.
-* The .py files are compiled into bytecode. Store it on disk as .pyc files for future reference.
-* When the .py file changes, recompile the .pyc file.
+### Background & Motivation
+In automotive production systems, ECUs frequently wake from sleep and restart the APX network. Transferring `.apx` definition files over IPC/network on every wake-up consumes communication bandwidth, and compiling definitions using the APX IDL parser and VM compiler incurs significant CPU latency. Because node definitions only change during workshop software flashing or remote OTA updates, caching definitions locally yields near-instantaneous node initialization.
 
-In APX:
-* .apx files are text files
-* The .apx files are compiled into byte-code (with init data). Store it on disk for future reference.
-* When the .apx file changes, recompile the byte-code and init-data. File format for compiled .apx files needs to be invented.
+The SHA-256 checksum in `rmf_file_info_t` enables zero-overhead, content-addressable cache lookups and automatic cache invalidation.
 
-Currently in `apx_node_manager_remote_file_published_notification` (`apx_core/src/node_manager.c`), `*file_open_request` is unconditionally set to `true`. This causes the server to request and transfer the `.apx` definition file over the network for every connecting node, even when the remote node provides a definition checksum (`rmf_file_info_digest_data()`) identical to a known or previously parsed definition.
+### Cache Hierarchy & Resolution Order
+When a remote node publishes its `.apx` definition file with a valid SHA-256 digest:
 
-In `server_connection.c`, bypassing file download when `file_open_request == false` returns `APX_NOT_IMPLEMENTED_ERROR` ("Retrieving data from cache not yet implemented"). `apx_node_cache_t` exists as an initial stub in `apx_core/include/apx/node_cache.h` and `src/node_cache.c`.
+1. **Tier 1: Level 2 (Binary Bytecode) Cache Hit** (Fastest: zero network, zero compilation)
+   * Check for precompiled binary cache (`<cache_dir>/bin/<node_name>_<sha256>.apxc`).
+   * If valid: deserialize port instances, VM pack/unpack bytecode programs, port signatures, and init data directly into `apx_node_instance_t`.
+   * Set `*file_open_request = false` in `apx_node_manager_remote_file_published_notification`.
+   * In `server_connection.c`, transition definition data state directly to `APX_DATA_STATE_SYNCHRONIZED` and immediately open data exchange files (`.in` / `.out`).
+2. **Tier 2: Level 1 (Text Definition) Cache Hit** (Zero network, local compilation)
+   * If binary cache misses or is invalid, check `<cache_dir>/text/<node_name>_<sha256>.apx`.
+   * If found: read `.apx` text from disk (`*file_open_request = false`), parse and compile into `apx_node_instance_t`.
+   * Write compiled output to Level 2 binary cache for subsequent boots.
+3. **Tier 3: Cache Miss** (Cold boot / First run / OTA update / Missing digest)
+   * If both caches miss or no digest was provided, set `*file_open_request = true`.
+   * Transfer definition over the wire $\to$ save raw text to Level 1 $\to$ compile $\to$ save binary to Level 2.
 
-* **Level 1 (Text file) Cache:**
-  * Store raw `.apx` definition files on disk in a cache directory (with an associated sha-256 checksum file).
-  * When future clients connect and presents the same file again (identical file-name, file-size and sha-256 checksum),
-    read the the file from disk instead of downloading it agaiin over the network.
-* **Level 2 (Binary file) Cache:**
-  * Store the compiled (APX VM2.1) pack/unpack programs and the port-init data in a binary file format.
-  * Next time the same node is published we can reuse the byte-code directly without recompiling it.
+### Interaction with Cryptographically Signed Nodes (RMFP 1.1)
+* **Mandatory File Transfer for Signature Verification**:
+  Because `RMF_CMD_PUBLISH_SIGNED_FILE` only transmits the public signature and not an independent digest, the server must never bypass file download for signed nodes (`*file_open_request = true`). The server must receive the actual definition bytes over the wire to cryptographically verify them against trusted public keys via `apx_server_verify_node_signature()`. Skipping file transfer based solely on a replayed public signature would allow unauthorized clients to spoof node identities.
+* **Compilation Caching Still Active**:
+  Once the received definition is cryptographically verified against the public keys, the server computes its SHA-256 and checks the Level 2 binary cache (`.apxc`). If present, IDL parsing and VM bytecode compilation are completely bypassed, eliminating CPU overhead on startup while preserving full cryptographic integrity.
+
+### Level 2 Binary Format (`.apxc`) Specification
+* **Magic & Header**: 4-byte magic (`\0APX`), binary format version, compiler/VM bytecode version, node definition SHA-256 digest, and node name.
+* **Port Descriptors**:
+  * Port IDs, names, directions, and data offsets/sizes.
+  * Serialized pack and unpack bytecode programs (`apx_program_t`).
+  * Port signature strings/hashes (required for server port routing and matching).
+* **Port Init Data**: Pre-serialized binary buffer for provide and require initial port values.
+
+### Reliability & Embedded Considerations
+* **Atomic Cache Writes**: Write new cache files to a temporary file (`.tmp`) and atomically `rename()` to prevent partial or corrupted cache files on sudden power loss.
+* **Resilient Fallback**: Corrupted or version-mismatched binary cache files transparently fall back to Level 1 or wire download without failing node connection.
+* **Pre-Warming**: Offline tools or OTA post-install scripts can pre-populate `.apxc` cache files during vehicle software installation.
 
 ## 14. Configuration Validation & Unknown Key Diagnostics
 
@@ -197,6 +215,33 @@ To improve usability and prevent silent configuration errors:
   * Use Levenshtein distance to suggest intended keys for minor typos (e.g., *"Unknown key 'use-timestmp'; did you mean 'use-timestamp'?"*).
 * **Strict Validation Option:**
   * Provide a `--strict-config` CLI flag or `"strict-config": true` option to reject unknown keys and abort server startup with `APX_INVALID_ARGUMENT_ERROR`, preventing unintended fallback behavior in automated deployment or test environments.
+
+## 15. Compressed Transfer for Signed APX Definitions (RMFP 1.1)
+
+To reduce wire transfer latency for signed APX nodes by >80% during startup phase while maintaining strict cryptographic verification:
+
+* **Protocol Extension (`RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG` / Opcode `26u`):**
+  * Define opcode `26u` in `apx_core/include/apx/remotefile.h` with an 88-byte fixed header:
+    * `cmd_type` (`uint32_t`, 26u)
+    * `address` (`uint32_t`, base memory address)
+    * `uncompressed_size` (`uint32_t`, decompressed size of `.apx` text)
+    * `compressed_size` (`uint32_t`, total bytes streamed across the wire)
+    * `file_type` (`uint16_t`, `RMF_U16_FILE_TYPE_FIXED`)
+    * `compression_type` (`uint16_t`, `1u` = Deflate)
+    * `sig_type` (`uint16_t`, `1u` = ECDSA-P256)
+    * `reserved` (`uint16_t`, 0u for 32/64-bit alignment)
+    * `signature_data` (`uint8_t[64]`, ECDSA-P256 signature of uncompressed text)
+    * `name` (`char[]`, null-terminated file name)
+  * Implement encoder and decoder functions in `remotefile.c` / `remotefile.h`.
+* **In-Memory Decompression with `miniz`:**
+  * Integrate single-file, zero-dependency C99 Deflate library (`miniz`).
+  * In `apx_file_manager_receiver_t`, buffer the incoming `compressed_size` bytes.
+  * Upon transfer completion, decompress in-memory into an `uncompressed_size` buffer (~0.3 ms for 140 KB definitions).
+* **Cryptographic Verification & Cache Integration:**
+  * Cryptographically verify the uncompressed buffer against `signature_data` via `apx_server_verify_node_signature()`.
+  * Compute SHA-256 of verified text and query Level 2 binary cache (`.apxc` from Item 13) to skip IDL parsing and VM bytecode compilation entirely.
+* **Backward Compatibility Fallback:**
+  * If a legacy server returns `RMF_CMD_NACK_MSG` on opcode 26, the client falls back to uncompressed `RMF_CMD_PUBLISH_SIGNED_FILE_MSG` (opcode 23).
 
 
 
