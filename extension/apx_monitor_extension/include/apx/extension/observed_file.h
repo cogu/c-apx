@@ -31,10 +31,19 @@ typedef struct apx_observed_file_tag
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 
-void apx_observed_file_create(apx_observed_file_t *self, rmf_extended_file_info_t *const file_info);
+void apx_observed_file_create(apx_observed_file_t *self, rmf_extended_file_info_t const *file_info);
 void apx_observed_file_destroy(apx_observed_file_t *self);
-apx_observed_file_t *apx_observed_file_new(rmf_extended_file_info_t *const file_info);
+apx_observed_file_t *apx_observed_file_new(rmf_extended_file_info_t const *file_info);
+apx_observed_file_t *apx_observed_file_new_from_file_info(
+  uint32_t connection_id, rmf_file_info_t const *file_info, apx_data_state_t data_state);
 void apx_observed_file_delete(apx_observed_file_t *self);
 void apx_observed_file_vdelete(void *arg);
+
+rmf_extended_file_info_t *apx_observed_file_get_file_info(apx_observed_file_t *self);
+const char *apx_observed_file_get_name(apx_observed_file_t const *self);
+uint32_t apx_observed_file_get_address(apx_observed_file_t const *self);
+uint32_t apx_observed_file_get_size(apx_observed_file_t const *self);
+apx_data_state_t apx_observed_file_get_data_state(apx_observed_file_t const *self);
+void apx_observed_file_set_data_state(apx_observed_file_t *self, apx_data_state_t data_state);
 
 #endif // APX_OBSERVED_FILE_H

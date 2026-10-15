@@ -970,6 +970,30 @@ static void apx_server_handle_event(void *arg, apx_event_t *event)
         assert(0);
       }
       break;
+    case APX_EVENT_FILE_OPENED:
+      apx_event_unpack_file_opened(event, (apx_connection_base_t **)&server_connection, &file_info);
+      if ((server_connection != NULL) && (file_info != NULL))
+      {
+        apx_server_connection_process_file_opened_event(server_connection, file_info);
+        rmf_file_info_delete(file_info);
+      }
+      else
+      {
+        assert(0);
+      }
+      break;
+    case APX_EVENT_FILE_CLOSED:
+      apx_event_unpack_file_closed(event, (apx_connection_base_t **)&server_connection, &file_info);
+      if ((server_connection != NULL) && (file_info != NULL))
+      {
+        apx_server_connection_process_file_closed_event(server_connection, file_info);
+        rmf_file_info_delete(file_info);
+      }
+      else
+      {
+        assert(0);
+      }
+      break;
     case APX_EVENT_BARRIER: {
       SEMAPHORE_T *sem = NULL;
       apx_event_unpack_barrier(event, &sem);

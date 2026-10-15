@@ -52,5 +52,10 @@ void apx_observed_connection_set_connection_type(
 apx_connection_state_t apx_observed_connection_get_connection_state(apx_observed_connection_t *const self);
 void apx_observed_connection_set_connection_state(
   apx_observed_connection_t *self, apx_connection_state_t connection_state);
+apx_error_t apx_observed_connection_add_file(apx_observed_connection_t *self, apx_observed_file_t *file);
+apx_observed_file_t *apx_observed_connection_find_file_by_name(apx_observed_connection_t *self, const char *name);
+apx_observed_file_t *apx_observed_connection_find_file_by_address(apx_observed_connection_t *self, uint32_t address);
+int32_t apx_observed_connection_num_files(apx_observed_connection_t const *self);
+adt_list_t *apx_observed_connection_get_file_list(apx_observed_connection_t *self);
 
 #endif // APX_OBSERVED_CONNECTION_H

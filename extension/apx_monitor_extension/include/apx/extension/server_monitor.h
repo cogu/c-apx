@@ -59,5 +59,13 @@ apx_observed_connection_t *apx_server_monitor_get_last_observed_connection(apx_s
 void apx_server_monitor_virtual_on_new_connection(void *arg, apx_server_connection_t *connection);
 void apx_server_monitor_virtual_on_connection_closed(void *arg, apx_server_connection_t *connection);
 void apx_server_monitor_virtual_on_protocol_header_accepted(void *arg, apx_connection_base_t *connection);
+void apx_server_monitor_virtual_on_file_published(
+  void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info);
+void apx_server_monitor_virtual_on_file_opened(
+  void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info);
+void apx_server_monitor_virtual_on_file_written(void *arg, apx_connection_base_t *connection, apx_file_t *file,
+  uint32_t offset, const uint8_t *data, apx_size_t size);
+apx_observed_connection_t *apx_server_monitor_find_observed_connection(
+  apx_server_monitor_t *self, apx_server_connection_t *server_connection);
 
 #endif // APX_SERVER_MONITOR_H

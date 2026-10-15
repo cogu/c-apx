@@ -16,7 +16,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_str.h"
 #include "apx/error.h"
+#include "apx/file_info.h"
 #include "apx/remotefile.h"
+#include "apx/types.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
@@ -48,19 +50,26 @@ apx_error_t rmf_extended_file_info_create(rmf_extended_file_info_t *self, uint32
   uint32_t size, const char *name, rmf_file_type_t file_type, apx_data_state_t data_state,
   rmf_digest_type_t digest_type, const uint8_t *digest_data);
 apx_error_t rmf_extended_file_info_create_copy(rmf_extended_file_info_t *self, rmf_extended_file_info_t const *other);
+apx_error_t rmf_extended_file_info_create_from_file_info(rmf_extended_file_info_t *self, uint32_t connection_id,
+  rmf_file_info_t const *file_info, apx_data_state_t data_state);
 void rmf_extended_file_info_destroy(rmf_extended_file_info_t *self);
-rmf_extended_file_info_t *rmf_extended_file_info_new(uint32_t address, uint32_t size, const char *name,
-  rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t *digest_data);
+rmf_extended_file_info_t *rmf_extended_file_info_new(uint32_t connection_id, uint32_t address, uint32_t size,
+  const char *name, rmf_file_type_t file_type, apx_data_state_t data_state, rmf_digest_type_t digest_type,
+  const uint8_t *digest_data);
 void rmf_extended_file_info_delete(rmf_extended_file_info_t *self);
 void rmf_extended_file_info_vdelete(void *arg);
 
 const char *rmf_extended_file_info_name(rmf_extended_file_info_t const *self);
+uint32_t rmf_extended_file_info_connection_id(rmf_extended_file_info_t const *self);
+void rmf_extended_file_info_set_connection_id(rmf_extended_file_info_t *self, uint32_t connection_id);
 uint32_t rmf_extended_file_info_address(rmf_extended_file_info_t const *self);
 uint32_t rmf_extended_file_info_address_without_flags(rmf_extended_file_info_t const *self);
 uint32_t rmf_extended_file_info_size(rmf_extended_file_info_t const *self);
 rmf_file_type_t rmf_extended_file_info_rmf_file_type(rmf_extended_file_info_t const *self);
 rmf_digest_type_t rmf_extended_file_info_digest_type(rmf_extended_file_info_t const *self);
 uint8_t const *rmf_extended_file_info_digest_data(rmf_extended_file_info_t const *self);
+apx_data_state_t rmf_extended_file_info_data_state(rmf_extended_file_info_t const *self);
+void rmf_extended_file_info_set_data_state(rmf_extended_file_info_t *self, apx_data_state_t data_state);
 apx_error_t rmf_extended_file_info_assign(rmf_extended_file_info_t *self, const rmf_extended_file_info_t *other);
 rmf_extended_file_info_t *rmf_extended_file_info_clone(const rmf_extended_file_info_t *other);
 void rmf_extended_file_info_set_address(rmf_extended_file_info_t *self, uint32_t address);

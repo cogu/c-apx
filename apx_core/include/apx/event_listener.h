@@ -51,6 +51,8 @@ typedef void(apx_port_data_write_func_t)(
   void *arg, struct apx_port_instance_tag *port_instance, uint8_t const *data, apx_size_t size);
 typedef void(apx_file_event_func_t)(
   void *arg, struct apx_connection_base_tag *connection, const struct rmf_file_info_tag *file_info);
+typedef void(apx_file_write_event_func_t)(void *arg, struct apx_connection_base_tag *connection,
+  struct apx_file_tag *file, uint32_t offset, uint8_t const *data, apx_size_t size);
 
 typedef struct apx_client_event_listener_tag
 {
@@ -79,6 +81,9 @@ typedef struct apx_server_connection_event_listener_tag
   apx_protocol_header_accepted_func_t *protocol_header_accepted;
   apx_file_event_func_t *file_published;
   apx_file_event_func_t *file_revoked;
+  apx_file_event_func_t *file_opened;
+  apx_file_event_func_t *file_closed;
+  apx_file_write_event_func_t *file_written;
 } apx_server_connection_event_listener_t;
 
 

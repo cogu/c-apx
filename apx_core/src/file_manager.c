@@ -517,6 +517,11 @@ static apx_error_t process_open_file_request(apx_file_manager_t *self, uint32_t 
   }
   apx_file_open(file);
   apx_file_open_notify(file);
+  apx_connection_interface_t const *connection = apx_file_manager_shared_connection(&self->shared);
+  if (connection != NULL && connection->remote_file_open_notification != NULL)
+  {
+    return connection->remote_file_open_notification(connection->arg, file);
+  }
   return APX_NO_ERROR;
 }
 

@@ -13,6 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/extension/server_monitor.h"
 #include "apx/extension/observed_connection.h"
+#include "apx/file.h"
 #include "apx/server.h"
 #include <assert.h>
 #include <malloc.h>
@@ -30,6 +31,11 @@ static void register_server_listener(apx_server_monitor_t *self);
 static void on_new_connection(apx_server_monitor_t *self, apx_server_connection_t *connection);
 static void on_connection_closed(apx_server_monitor_t *self, apx_server_connection_t *connection);
 static void on_protocol_header_accepted(apx_server_monitor_t *self, apx_server_connection_t *connection);
+static void on_file_published(
+  apx_server_monitor_t *self, apx_server_connection_t *server_connection, const struct rmf_file_info_tag *file_info);
+static void on_file_opened(
+  apx_server_monitor_t *self, apx_server_connection_t *server_connection, const struct rmf_file_info_tag *file_info);
+static void on_file_written(apx_server_monitor_t *self, apx_server_connection_t *server_connection, apx_file_t *file);
 static void register_connection_listener(apx_server_monitor_t *self, apx_server_connection_t *connection);
 static void mutex_lock(apx_server_monitor_t *self);
 static void mutex_unlock(apx_server_monitor_t *self);
@@ -140,6 +146,52 @@ void apx_server_monitor_virtual_on_protocol_header_accepted(void *arg, apx_conne
   }
 }
 
+void apx_server_monitor_virtual_on_file_published(
+  void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
+{
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL))
+  {
+    on_file_published(self, (apx_server_connection_t *)connection, file_info);
+  }
+}
+
+void apx_server_monitor_virtual_on_file_opened(
+  void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
+{
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL))
+  {
+    on_file_opened(self, (apx_server_connection_t *)connection, file_info);
+  }
+}
+
+void apx_server_monitor_virtual_on_file_written(
+  void *arg, apx_connection_base_t *connection, apx_file_t *file, uint32_t offset, const uint8_t *data, apx_size_t size)
+{
+  (void)offset;
+  (void)data;
+  (void)size;
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (connection != NULL) && (file != NULL))
+  {
+    on_file_written(self, (apx_server_connection_t *)connection, file);
+  }
+}
+
+apx_observed_connection_t *apx_server_monitor_find_observed_connection(
+  apx_server_monitor_t *self, apx_server_connection_t *server_connection)
+{
+  apx_observed_connection_t *result = NULL;
+  if ((self != NULL) && (server_connection != NULL))
+  {
+    mutex_lock(self);
+    result = find_observed_connection(self, server_connection);
+    mutex_unlock(self);
+  }
+  return result;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -187,6 +239,9 @@ static void register_connection_listener(apx_server_monitor_t *self, apx_server_
   memset(&listener, 0, sizeof(listener));
   listener.arg = (void *)self;
   listener.protocol_header_accepted = apx_server_monitor_virtual_on_protocol_header_accepted;
+  listener.file_published = apx_server_monitor_virtual_on_file_published;
+  listener.file_opened = apx_server_monitor_virtual_on_file_opened;
+  listener.file_written = apx_server_monitor_virtual_on_file_written;
   apx_server_connection_register_event_listener(connection, &listener);
 }
 
@@ -205,6 +260,93 @@ static void on_protocol_header_accepted(apx_server_monitor_t *self, apx_server_c
     {
       adt_list_insert(&self->monitor_connections, (void *)server_connection);
       transmit_connection_info_to_new_monitor_connection(self, server_connection);
+    }
+  }
+  mutex_unlock(self);
+}
+
+static void on_file_published(
+  apx_server_monitor_t *self, apx_server_connection_t *server_connection, const struct rmf_file_info_tag *file_info)
+{
+  assert((self != NULL) && (server_connection != NULL) && (file_info != NULL));
+  mutex_lock(self);
+  apx_observed_connection_t *observed_connection = find_observed_connection(self, server_connection);
+  if (observed_connection != NULL)
+  {
+    const char *name = rmf_file_info_name(file_info);
+    apx_observed_file_t *observed_file = NULL;
+    if (name != NULL)
+    {
+      observed_file = apx_observed_connection_find_file_by_name(observed_connection, name);
+    }
+    if (observed_file == NULL)
+    {
+      observed_file = apx_observed_connection_find_file_by_address(observed_connection, file_info->address);
+    }
+    if (observed_file == NULL)
+    {
+      apx_connection_id_t const connection_id = apx_observed_connection_connection_id(observed_connection);
+      observed_file =
+        apx_observed_file_new_from_file_info(connection_id, file_info, APX_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST);
+      if (observed_file != NULL)
+      {
+        apx_observed_connection_add_file(observed_connection, observed_file);
+      }
+    }
+    else
+    {
+      apx_observed_file_set_data_state(observed_file, APX_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST);
+    }
+  }
+  mutex_unlock(self);
+}
+
+static void on_file_opened(
+  apx_server_monitor_t *self, apx_server_connection_t *server_connection, const struct rmf_file_info_tag *file_info)
+{
+  assert((self != NULL) && (server_connection != NULL) && (file_info != NULL));
+  mutex_lock(self);
+  apx_observed_connection_t *observed_connection = find_observed_connection(self, server_connection);
+  if (observed_connection != NULL)
+  {
+    const char *name = rmf_file_info_name(file_info);
+    apx_observed_file_t *observed_file = NULL;
+    if (name != NULL)
+    {
+      observed_file = apx_observed_connection_find_file_by_name(observed_connection, name);
+    }
+    if (observed_file == NULL)
+    {
+      observed_file = apx_observed_connection_find_file_by_address(observed_connection, file_info->address);
+    }
+    if (observed_file != NULL)
+    {
+      apx_observed_file_set_data_state(observed_file, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
+    }
+  }
+  mutex_unlock(self);
+}
+
+static void on_file_written(apx_server_monitor_t *self, apx_server_connection_t *server_connection, apx_file_t *file)
+{
+  assert((self != NULL) && (server_connection != NULL) && (file != NULL));
+  mutex_lock(self);
+  apx_observed_connection_t *observed_connection = find_observed_connection(self, server_connection);
+  if (observed_connection != NULL)
+  {
+    const char *name = apx_file_get_name(file);
+    apx_observed_file_t *observed_file = NULL;
+    if (name != NULL)
+    {
+      observed_file = apx_observed_connection_find_file_by_name(observed_connection, name);
+    }
+    if (observed_file == NULL)
+    {
+      observed_file = apx_observed_connection_find_file_by_address(observed_connection, apx_file_get_address(file));
+    }
+    if (observed_file != NULL)
+    {
+      apx_observed_file_set_data_state(observed_file, APX_DATA_STATE_SYNCHRONIZED);
     }
   }
   mutex_unlock(self);

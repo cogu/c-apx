@@ -14,6 +14,7 @@
 #include "apx/extension/observed_connection.h"
 #include <assert.h>
 #include <malloc.h>
+#include <string.h>
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
@@ -122,6 +123,76 @@ void apx_observed_connection_set_connection_state(
   {
     self->connection_state = connection_state;
   }
+}
+
+apx_error_t apx_observed_connection_add_file(apx_observed_connection_t *self, apx_observed_file_t *file)
+{
+  if ((self != NULL) && (file != NULL))
+  {
+    adt_list_insert(&self->file_list, file);
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_observed_file_t *apx_observed_connection_find_file_by_name(apx_observed_connection_t *self, const char *name)
+{
+  if ((self != NULL) && (name != NULL))
+  {
+    adt_list_elem_t *iter = adt_list_iter_first(&self->file_list);
+    while (iter != NULL)
+    {
+      apx_observed_file_t *file = (apx_observed_file_t *)iter->pItem;
+      if ((file != NULL) && (strcmp(apx_observed_file_get_name(file), name) == 0))
+      {
+        return file;
+      }
+      iter = adt_list_iter_next(iter);
+    }
+  }
+  return NULL;
+}
+
+apx_observed_file_t *apx_observed_connection_find_file_by_address(apx_observed_connection_t *self, uint32_t address)
+{
+  if (self != NULL)
+  {
+    adt_list_elem_t *iter = adt_list_iter_first(&self->file_list);
+    while (iter != NULL)
+    {
+      apx_observed_file_t *file = (apx_observed_file_t *)iter->pItem;
+      if (file != NULL)
+      {
+        uint32_t const file_addr = apx_observed_file_get_address(file) & RMF_ADDRESS_MASK_INTERNAL;
+        uint32_t const target_addr = address & RMF_ADDRESS_MASK_INTERNAL;
+        uint32_t const file_size = apx_observed_file_get_size(file);
+        if ((target_addr >= file_addr) && (target_addr < (file_addr + file_size)))
+        {
+          return file;
+        }
+      }
+      iter = adt_list_iter_next(iter);
+    }
+  }
+  return NULL;
+}
+
+int32_t apx_observed_connection_num_files(apx_observed_connection_t const *self)
+{
+  if (self != NULL)
+  {
+    return adt_list_length(&self->file_list);
+  }
+  return -1;
+}
+
+adt_list_t *apx_observed_connection_get_file_list(apx_observed_connection_t *self)
+{
+  if (self != NULL)
+  {
+    return &self->file_list;
+  }
+  return NULL;
 }
 
 

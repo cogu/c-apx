@@ -48,6 +48,8 @@ typedef struct apx_event_tag
 #define APX_EVENT_PROTOCOL_HEADER_ACCEPTED 1
 #define APX_EVENT_REMOTE_FILE_PUBLISHED 2
 #define APX_EVENT_BARRIER 3
+#define APX_EVENT_FILE_OPENED 4
+#define APX_EVENT_FILE_CLOSED 5
 
 /**
  * Event field usage and ownership:
@@ -66,6 +68,10 @@ typedef struct apx_event_tag
  *
  * APX_EVENT_BARRIER:
  *   - data3: Semaphore (SEMAPHORE_T *, weak reference: signaled via SEMAPHORE_POST)
+ *
+ * APX_EVENT_FILE_OPENED / APX_EVENT_FILE_CLOSED:
+ *   - data3: Connection object (apx_connection_base_t *, weak reference)
+ *   - data4: Remote file info (rmf_file_info_t *, strong reference: freed with rmf_file_info_delete)
  */
 
 
@@ -81,6 +87,14 @@ void apx_event_unpack_protocol_header_accepted(apx_event_t const *event, struct 
 void apx_event_pack_remote_file_published(
   apx_event_t *event, struct apx_connection_base_tag *connection, struct rmf_file_info_tag *file_info);
 void apx_event_unpack_remote_file_published(
+  apx_event_t const *event, struct apx_connection_base_tag **connection, struct rmf_file_info_tag **file_info);
+void apx_event_pack_file_opened(
+  apx_event_t *event, struct apx_connection_base_tag *connection, struct rmf_file_info_tag *file_info);
+void apx_event_unpack_file_opened(
+  apx_event_t const *event, struct apx_connection_base_tag **connection, struct rmf_file_info_tag **file_info);
+void apx_event_pack_file_closed(
+  apx_event_t *event, struct apx_connection_base_tag *connection, struct rmf_file_info_tag *file_info);
+void apx_event_unpack_file_closed(
   apx_event_t const *event, struct apx_connection_base_tag **connection, struct rmf_file_info_tag **file_info);
 void apx_event_pack_barrier(apx_event_t *event, SEMAPHORE_T *sem);
 void apx_event_unpack_barrier(apx_event_t const *event, SEMAPHORE_T **sem);

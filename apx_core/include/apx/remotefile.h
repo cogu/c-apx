@@ -87,6 +87,7 @@ typedef uint8_t rmf_signature_type_t;
 #define RMF_CMD_CONNECTION_CREATE ((uint32_t)21u)
 #define RMF_CMD_CONNECTION_REVOKE ((uint32_t)22u)
 #define RMF_CMD_PUBLISH_SIGNED_FILE_MSG ((uint32_t)23u)
+#define RMF_CMD_PUBLISH_REMOTE_FILE_MSG ((uint32_t)24u)
 
 #define RMF_FILE_OPEN_CMD_SIZE UINT32_SIZE
 #define RMF_FILE_CLOSE_CMD_SIZE UINT32_SIZE

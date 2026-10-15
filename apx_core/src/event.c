@@ -95,6 +95,50 @@ void apx_event_unpack_remote_file_published(
   }
 }
 
+void apx_event_pack_file_opened(
+  apx_event_t *event, struct apx_connection_base_tag *connection, struct rmf_file_info_tag *file_info)
+{
+  if (event != NULL)
+  {
+    memset(event, 0, APX_EVENT_SIZE);
+    event->ev_type = APX_EVENT_FILE_OPENED;
+    event->data3 = (void *)connection;
+    event->data4 = (void *)file_info;
+  }
+}
+
+void apx_event_unpack_file_opened(
+  apx_event_t const *event, struct apx_connection_base_tag **connection, struct rmf_file_info_tag **file_info)
+{
+  if ((event != NULL) && (connection != NULL) && (file_info != NULL))
+  {
+    *connection = (apx_connection_base_t *)event->data3;
+    *file_info = (rmf_file_info_t *)event->data4;
+  }
+}
+
+void apx_event_pack_file_closed(
+  apx_event_t *event, struct apx_connection_base_tag *connection, struct rmf_file_info_tag *file_info)
+{
+  if (event != NULL)
+  {
+    memset(event, 0, APX_EVENT_SIZE);
+    event->ev_type = APX_EVENT_FILE_CLOSED;
+    event->data3 = (void *)connection;
+    event->data4 = (void *)file_info;
+  }
+}
+
+void apx_event_unpack_file_closed(
+  apx_event_t const *event, struct apx_connection_base_tag **connection, struct rmf_file_info_tag **file_info)
+{
+  if ((event != NULL) && (connection != NULL) && (file_info != NULL))
+  {
+    *connection = (apx_connection_base_t *)event->data3;
+    *file_info = (rmf_file_info_t *)event->data4;
+  }
+}
+
 void apx_event_pack_barrier(apx_event_t *event, SEMAPHORE_T *sem)
 {
   if ((event != NULL) && (sem != NULL))
@@ -138,6 +182,8 @@ void apx_event_destroy(apx_event_t *event, soa_t *allocator)
          // Weak references only
       break;
     case APX_EVENT_REMOTE_FILE_PUBLISHED:
+    case APX_EVENT_FILE_OPENED:
+    case APX_EVENT_FILE_CLOSED:
       file_info = (rmf_file_info_t *)event->data4;
       rmf_file_info_delete(file_info);
       break;

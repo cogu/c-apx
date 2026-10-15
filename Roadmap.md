@@ -22,12 +22,22 @@ These are the items left to implement for c-apx v0.4.0.
 
 ## 3. Complete File Observation in Server Monitor
 
-* Complete `apx/extension/src/observed_file.c` & `observed_file.h`:
-  * Implement `apx_observedFile_create()` to store `rmf_extendedFileInfo_t` / file properties.
-  * Fix syntax typo in `apx_observedFile_delete()` (stray semicolon on `if (self != NULL);`).
-* In `apx/extension/src/server_monitor.c`:
-  * Register `file_published` and `file_revoked` listeners in `register_connection_listener()`.
-  * Track published files per connection in `apx_observedConnection_t->file_list`.
+* **Implement Extended File Info (`apx_core`):**
+  * Implement `apx_core/src/extended_file_info.c` (constructors, destructors, clone, accessors) and register in `CMakeLists.txt`.
+* **Enhance Server Connection Event Listener (`event_listener.h`):**
+  * Add `file_opened` and `file_closed` callbacks to `apx_server_connection_event_listener_t`.
+  * Add connection-level `file_written` callback (`apx_file_write_event_func_t`) to observe data writes without modifying `apx_file_t` internals.
+  * Emit `APX_EVENT_REMOTE_FILE_OPENED` in `file_manager.c` and `server_connection.c`.
+* **Complete `observed_file.c` & `observed_file.h`:**
+  * Implement `apx_observed_file_create()` / `_destroy()` wrapping `rmf_extended_file_info_t`.
+  * Fix syntax typo in `apx_observed_file_delete()` (stray semicolon on `if (self != NULL);`).
+* **State & Lifecycle Tracking in `server_monitor.c`:**
+  * In `register_connection_listener()`, register `file_published`, `file_opened`, and `file_written`.
+  * Manage `apx_observed_file_t` instances in `apx_observed_connection_t->file_list`.
+  * Advance `rmf_extended_file_info_t->data_state` through its lifecycle:
+    `WAITING_FOR_FILE_OPEN_REQUEST` → `WAITING_FOR_FILE_DATA` → `SYNCHRONIZED`.
+* **Unit Tests:**
+  * Add test cases to `testsuite_server_monitor_state.c` verifying file creation, state transitions, and file list management.
 
 ## 4. Live Event Broadcast to Connected Monitors
 
@@ -49,7 +59,7 @@ These are the items left to implement for c-apx v0.4.0.
 * Detailed architecture and design defined in [securing_monitor_extension.md](securing_monitor_extension.md).
 * **Dedicated Listener Integration (`apx_monitor_extension`):**
   * Decouple monitor connections from `apx_socket_extension` so the monitor extension manages its own dedicated `msocket_server_t`.
-  * Support listening on a dedicated UNIX domain socket (e.g. `/run/apx/apx_monitor.socket`) and/or dedicated TCP port (e.g. 5002) configured via `server.json`.
+  * Support listening on a dedicated UNIX domain socket (e.g. `/run/apx/apx_monitor.socket`) and/or dedicated TCP port (e.g. 5082) configured via `server.json`.
   * Automatically instantiate accepted connections directly as `APX_CONNECTION_TYPE_MONITOR`.
 * **Mbed TLS Transport Security (mTLS / PSK):**
   * Integrate `msocket_tls_config_t` into `apx_server_monitor_t` to support TLS on the diagnostic TCP port.
@@ -146,21 +156,31 @@ In `apx_port_connector_change_entry_t` (`apx_core/include/apx/port_connector_cha
 * **Testing:**
   * Add unit and integration tests verifying multi-provider connect and simultaneous disconnect transitions.
 
-## 13. Node Definition Cache (L1 In-Memory & L2 Persistent Disk Cache)
+## 13. Node Definition Cache (Text-form and Binary form)
+
+Implement a disk-based cached similar to the Python interpreter.
+
+In Python:
+* .py files are text files.
+* The .py files are compiled into bytecode. Store it on disk as .pyc files for future reference.
+* When the .py file changes, recompile the .pyc file.
+
+In APX:
+* .apx files are text files
+* The .apx files are compiled into byte-code (with init data). Store it on disk for future reference.
+* When the .apx file changes, recompile the byte-code and init-data. File format for compiled .apx files needs to be invented.
 
 Currently in `apx_node_manager_remote_file_published_notification` (`apx_core/src/node_manager.c`), `*file_open_request` is unconditionally set to `true`. This causes the server to request and transfer the `.apx` definition file over the network for every connecting node, even when the remote node provides a definition checksum (`rmf_file_info_digest_data()`) identical to a known or previously parsed definition.
 
 In `server_connection.c`, bypassing file download when `file_open_request == false` returns `APX_NOT_IMPLEMENTED_ERROR` ("Retrieving data from cache not yet implemented"). `apx_node_cache_t` exists as an initial stub in `apx_core/include/apx/node_cache.h` and `src/node_cache.c`.
 
-* **Level 1 (In-Memory) Cache:**
-  * Store parsed node definitions (`apx_node_t`) in a server-wide hash table indexed by node name and SHA-256 / SHA-1 checksum.
-  * If a connecting client advertises a matching checksum, attach the existing cached node definition directly.
-* **Level 2 (Persistent Disk) Cache:**
-  * Store raw `.apx` definition files on disk in a cache directory (e.g. `/var/cache/apx/nodes/` or configurable via `server.json`).
-  * On server restart, preload or on-demand load cached definitions from disk when matching checksums are received.
-* **Protocol & Connection Handshake:**
-  * In `node_manager.c`: if the definition is found in cache, set `*file_open_request = false`.
-  * In `server_connection.c`: if `file_open_request` is false, load definition AST directly from cache into `node_instance`, transition data state to `APX_DATA_STATE_READY`, and proceed without requesting the remote `.apx` virtual file.
+* **Level 1 (Text file) Cache:**
+  * Store raw `.apx` definition files on disk in a cache directory (with an associated sha-256 checksum file).
+  * When future clients connect and presents the same file again (identical file-name, file-size and sha-256 checksum),
+    read the the file from disk instead of downloading it agaiin over the network.
+* **Level 2 (Binary file) Cache:**
+  * Store the compiled (APX VM2.1) pack/unpack programs and the port-init data in a binary file format.
+  * Next time the same node is published we can reuse the byte-code directly without recompiling it.
 
 ## 14. Configuration Validation & Unknown Key Diagnostics
 

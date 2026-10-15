@@ -91,6 +91,8 @@ uint32_t apx_server_connection_get_total_bytes_sent(apx_server_connection_t *sel
 
 // ConnectionInterface API
 apx_error_t apx_server_connection_vremote_file_published_notification(void *arg, apx_file_t *file);
+apx_error_t apx_server_connection_vremote_file_open_notification(void *arg, apx_file_t *file);
+apx_error_t apx_server_connection_vremote_file_close_notification(void *arg, apx_file_t *file);
 apx_error_t apx_server_connection_vremote_file_write_notification(
   void *arg, apx_file_t *file, uint32_t offset, uint8_t const *data, apx_size_t size);
 
@@ -98,6 +100,8 @@ apx_error_t apx_server_connection_vremote_file_write_notification(
 void apx_server_connection_process_protocol_header_accepted_event(apx_server_connection_t *self);
 void apx_server_connection_process_remote_file_published_event(
   apx_server_connection_t *self, rmf_file_info_t *file_info);
+void apx_server_connection_process_file_opened_event(apx_server_connection_t *self, rmf_file_info_t *file_info);
+void apx_server_connection_process_file_closed_event(apx_server_connection_t *self, rmf_file_info_t *file_info);
 
 /*** UNIT TEST API ***/
 #ifdef UNIT_TEST

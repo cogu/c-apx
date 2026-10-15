@@ -22,6 +22,7 @@
 /** RemoteFile **/
 CuSuite *testsuite_remotefile(void);
 CuSuite *testsuite_file_info(void);
+CuSuite *testsuite_extended_file_info(void);
 CuSuite *testsuite_crypto(void);
 
 
@@ -80,6 +81,7 @@ void RunAllTests(void)
 // RemoteFile
   CuSuiteAddSuite(suite, testsuite_remotefile());
   CuSuiteAddSuite(suite, testsuite_file_info());
+  CuSuiteAddSuite(suite, testsuite_extended_file_info());
   CuSuiteAddSuite(suite, testsuite_crypto());
 
 // Util
