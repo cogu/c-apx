@@ -38,6 +38,7 @@ static void test_name_ends_with_and_base_name(CuTest *tc);
 static void test_encode_decode_publish_remote_file(CuTest *tc);
 static void test_extended_file_info_signature(CuTest *tc);
 static void test_encode_decode_publish_signed_remote_file(CuTest *tc);
+static void test_extended_file_info_sha1_digest(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
@@ -54,6 +55,7 @@ CuSuite *testsuite_extended_file_info(void)
   SUITE_ADD_TEST(suite, test_encode_decode_publish_remote_file);
   SUITE_ADD_TEST(suite, test_extended_file_info_signature);
   SUITE_ADD_TEST(suite, test_encode_decode_publish_signed_remote_file);
+  SUITE_ADD_TEST(suite, test_extended_file_info_sha1_digest);
 
   return suite;
 }
@@ -271,4 +273,33 @@ static void test_encode_decode_publish_signed_remote_file(CuTest *tc)
 
   rmf_extended_file_info_destroy(&decoded);
   rmf_extended_file_info_delete(original);
+}
+
+static void test_extended_file_info_sha1_digest(CuTest *tc)
+{
+  uint8_t buffer[256];
+  uint8_t dummy_sha1[RMF_SHA1_SIZE];
+  for (size_t i = 0; i < sizeof(dummy_sha1); i++)
+  {
+    dummy_sha1[i] = (uint8_t)(i + 0x10);
+  }
+
+  rmf_extended_file_info_t *info = rmf_extended_file_info_make_fixed_with_digest("LegacyNode.apx", 256u, 0x2000u, 7u,
+    APX_DATA_STATE_WAITING_FOR_FILE_OPEN_REQUEST, RMF_DIGEST_TYPE_SHA1, dummy_sha1);
+  CuAssertPtrNotNull(tc, info);
+  CuAssertIntEquals(tc, RMF_DIGEST_TYPE_SHA1, rmf_extended_file_info_digest_type(info));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_sha1, rmf_extended_file_info_digest_data(info), RMF_SHA1_SIZE));
+
+  apx_size_t encoded_len = rmf_encode_publish_remote_file_cmd(buffer, sizeof(buffer), info);
+  CuAssertTrue(tc, encoded_len >= RMF_EXTENDED_FILE_INFO_HEADER_SIZE);
+
+  rmf_extended_file_info_t decoded;
+  apx_size_t decoded_len = rmf_decode_publish_remote_file_cmd(buffer, encoded_len, &decoded);
+  CuAssertUIntEquals(tc, encoded_len, decoded_len);
+  CuAssertUIntEquals(tc, 7u, rmf_extended_file_info_connection_id(&decoded));
+  CuAssertIntEquals(tc, RMF_DIGEST_TYPE_SHA1, rmf_extended_file_info_digest_type(&decoded));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_sha1, rmf_extended_file_info_digest_data(&decoded), RMF_SHA1_SIZE));
+
+  rmf_extended_file_info_destroy(&decoded);
+  rmf_extended_file_info_delete(info);
 }

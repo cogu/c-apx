@@ -443,9 +443,15 @@ apx_error_t rmf_extended_file_info_set_digest_data(
       memset(&self->digest_data[0], 0, sizeof(self->digest_data));
       return APX_NO_ERROR;
     }
-    else if ((digest_type == RMF_DIGEST_TYPE_SHA256) && (digest_data != NULL))
+    else if ((digest_type == RMF_DIGEST_TYPE_SHA1) || (digest_type == RMF_DIGEST_TYPE_SHA256))
     {
-      memcpy(&self->digest_data[0], digest_data, RMF_SHA256_SIZE);
+      if (digest_data == NULL)
+      {
+        return APX_INVALID_ARGUMENT_ERROR;
+      }
+      memset(&self->digest_data[0], 0, sizeof(self->digest_data));
+      size_t const size = (digest_type == RMF_DIGEST_TYPE_SHA1) ? RMF_SHA1_SIZE : RMF_SHA256_SIZE;
+      memcpy(&self->digest_data[0], digest_data, size);
       return APX_NO_ERROR;
     }
     return APX_INVALID_ARGUMENT_ERROR;
@@ -511,13 +517,18 @@ apx_size_t rmf_encode_publish_remote_file_cmd(
     p += UINT16_SIZE;
     packLE(p, (uint32_t)file_info->digest_type, (uint8_t)UINT16_SIZE);
     p += UINT16_SIZE;
-    if (file_info->digest_type == RMF_DIGEST_TYPE_SHA256)
+    switch (file_info->digest_type)
     {
-      memcpy(p, file_info->digest_data, RMF_SHA256_SIZE);
-    }
-    else
-    {
+    case RMF_DIGEST_TYPE_NONE:
       memset(p, 0, RMF_SHA256_SIZE);
+      break;
+    case RMF_DIGEST_TYPE_SHA1:
+      memcpy(p, file_info->digest_data, RMF_SHA1_SIZE);
+      memset(p + RMF_SHA1_SIZE, 0, RMF_SHA256_SIZE - RMF_SHA1_SIZE);
+      break;
+    case RMF_DIGEST_TYPE_SHA256:
+      memcpy(p, file_info->digest_data, RMF_SHA256_SIZE);
+      break;
     }
     p += RMF_SHA256_SIZE;
     memcpy(p, name, name_size);
@@ -553,10 +564,20 @@ apx_size_t rmf_decode_publish_remote_file_cmd(
     p += UINT32_SIZE;
     uint32_t const size = unpackLE(p, UINT32_SIZE);
     p += UINT32_SIZE;
-    rmf_file_type_t const file_type = (rmf_file_type_t)unpackLE(p, UINT16_SIZE);
+    uint16_t const raw_file_type = (uint16_t)unpackLE(p, UINT16_SIZE);
     p += UINT16_SIZE;
-    rmf_digest_type_t const digest_type = (rmf_digest_type_t)unpackLE(p, UINT16_SIZE);
+    uint16_t const raw_digest_type = (uint16_t)unpackLE(p, UINT16_SIZE);
     p += UINT16_SIZE;
+    rmf_file_type_t file_type = RMF_FILE_TYPE_FIXED;
+    if (!rmf_value_to_file_type(raw_file_type, &file_type))
+    {
+      return 0u;
+    }
+    rmf_digest_type_t digest_type = RMF_DIGEST_TYPE_NONE;
+    if (!rmf_value_to_digest_type(raw_digest_type, &digest_type))
+    {
+      return 0u;
+    }
     uint8_t const *digest_data = p;
     p += RMF_SHA256_SIZE;
 
@@ -658,8 +679,13 @@ apx_size_t rmf_decode_publish_signed_remote_file_cmd(
     p += UINT32_SIZE;
     uint32_t const size = unpackLE(p, UINT32_SIZE);
     p += UINT32_SIZE;
-    rmf_file_type_t const file_type = (rmf_file_type_t)unpackLE(p, UINT16_SIZE);
+    uint16_t const raw_file_type = (uint16_t)unpackLE(p, UINT16_SIZE);
     p += UINT16_SIZE;
+    rmf_file_type_t file_type = RMF_FILE_TYPE_FIXED;
+    if (!rmf_value_to_file_type(raw_file_type, &file_type))
+    {
+      return 0u;
+    }
     uint16_t const raw_sig_type = (uint16_t)unpackLE(p, UINT16_SIZE);
     p += UINT16_SIZE;
     rmf_signature_type_t sig_type = RMF_SIGNATURE_TYPE_NONE;
