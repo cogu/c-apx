@@ -29,7 +29,7 @@ pytest -n auto
 
 ## Test Fixtures
 
-All shared fixtures and helper classes are defined in [`conftest.py`](file:///home/cogu/repo/c-apx/tests/conftest.py).
+All shared fixtures and helper classes are defined in [`conftest.py`](tests/conftest.py).
 
 ### 1. Binary Discovery Fixtures (Session Scope)
 
