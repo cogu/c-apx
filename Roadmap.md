@@ -2,23 +2,37 @@
 
 These are the items left to implement for c-apx v0.4.0.
 
+> [!NOTE]
+> Detailed design specifications for diagnostics, event streaming, replay, and transport security are maintained under [`design/`](design/):
+> * [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md): Overall architecture and RemoteFile Stream File model.
+> * [securing_monitor_extension.md](design/securing_monitor_extension.md): Dedicated diagnostic transport (port 5080) and mTLS security.
+> * [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md): `server.log` wire framing, `.apxlog` format, and `apxlog` CLI tool.
+> * [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md): Diagnostic query-response protocol and `apxmon` CLI tool.
+> * [remotefile1_1_stream_file_proposal.md](design/remotefile1_1_stream_file_proposal.md): RemoteFile v1.1 Stream File (`FileStream`) semantics, credit-based flow control, and stream lifecycle.
+
 ## 1. Analyze all TODO comments in the c-apx code (Completed)
 
 * [x] **Completed**: All inline TODO comments across the repository have been investigated and resolved:
   * Implemented missing functionality (e.g. `apx_vm_deserializer_unpack_char8`, file manager error handling/cleanup, socket accept cleanup).
   * Removed obsolete, stale, and duplicate comments.
-  * Extracted major architectural features into dedicated items in this roadmap (Items 7, 11, 12, 13).
+  * Extracted major architectural features into dedicated items in this roadmap (Items 8, 12, 13, 14).
 
-## 2. Design and Implement Event Streaming Protocol & Binary Log Format
+## 2. Event Streaming Protocol & .apxlog Binary Container (apxlog)
 
-* **Application-Level Event Streaming Protocol (RMFP 1.1 Command Area):**
-  * Define `RMF_CMD_EVENT_LOG` / `RMF_CMD_EVENT_STREAM` opcode with a structured header (`timestamp_ns`, `event_type`, `source_id`, `payload_len`).
-  * Implement encoder and decoder functions in `remotefile.c`/`remotefile.h`.
+* Detailed architecture and wire specifications defined in [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md) and [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md).
+* **RemoteFile Stream Delivery (`server.log`):**
+  * Deliver event stream via virtual stream file `server.log` (RemoteFile type `FileStream` / `RMF_FILE_TYPE_STREAM`), avoiding modifications to low-level RemoteFile wire opcodes.
+  * Server announces logging capability on port `5080` / UNIX socket by publishing `server.log`; recorder client subscribes by sending `RMF_CMD_OPEN_FILE`.
+  * Lock-free circular ring buffer in `apx_monitor_extension` with drop-counter record (`APX_LOG_EVENT_DROP_COUNT`) on buffer overflow to guarantee zero real-time bus degradation.
 * **High-Precision Cross-Platform Timestamps:**
   * Implement portable `apx_get_timestamp_ns()` in `cutil` / `osutil.h` using `GetSystemTimePreciseAsFileTime` (Windows) and `clock_gettime(CLOCK_REALTIME)` (Linux/POSIX) returning nanoseconds since Unix Epoch (1970-01-01).
-* **Binary Log File Format (`.apxrec` / `.apxlog`):**
-  * Design chunked, append-only binary container format (file magic header + metadata + sequential event records matching the network payload).
-  * Implement file writer/recorder and file reader/playback modules for recording and replaying APX event streams.
+* **Self-Contained Snapshots & `.apxlog` Binary Format:**
+  * Initial state snapshot on file open: active connections, `.apx` definition IDL texts, and current port values.
+  * 64-byte file header (`\0APXLOG\1`), append-only sequential event records (24-byte record header + payload in Little-Endian), and optional index trailer for fast random-access seeking.
+* **`apxlog` Utility (`app/apx_log`):**
+  * `apxlog record -o session.apxlog [--tls]`: Stream live server events directly to disk.
+  * `apxlog replay session.apxlog [--exclude-node <name>] [--rate <float>] [--loop]`: Play back recorded scenarios by connecting as a standard multi-node client on operational port `5000` (simulates surrounding nodes for HIL / single-node debugging without server-side modifications).
+  * `apxlog info` and `apxlog export --format ndjson`: Metadata inspection and JSON export.
 
 ## 3. Complete File Observation in Server Monitor (Completed)
 
@@ -39,42 +53,98 @@ These are the items left to implement for c-apx v0.4.0.
 * **Unit Tests:**
   * Add test cases to `testsuite_server_monitor_state.c` verifying file creation, state transitions, and file list management.
 
-## 4. Live Event Broadcast to Connected Monitors
+## 4. RemoteFile Stream File Protocol Implementation (`apx_core`)
 
-* In `apx/extension/src/server_monitor.c`:
-  * When a new regular connection is accepted/established after a monitor is already active, broadcast `RMF_CMD_CONNECTION_CREATE` to all active `monitor_connections`.
-  * When a connection disconnects, broadcast `RMF_CMD_CONNECTION_REVOKE` to all active `monitor_connections`.
-  * Broadcast file publish/revoke notifications to active monitor connections.
+Detailed protocol specification and state machine definitions are in [remotefile1_1_stream_file_proposal.md](design/remotefile1_1_stream_file_proposal.md).
 
-## 5. Complete `apx_info` CLI Application
+* **Protocol Commands & Wire Encoders/Decoders (`remotefile.h` / `remotefile.c`):**
+  * Implement encoding and decoding for RemoteFile v1.1 stream commands:
+    * `RMF_CMD_STREAM_OPEN` (opcode `25u`, 16 bytes): `StartAddress`, `MaxBlockSize`, `WindowBlocks`, `Flags`.
+    * `RMF_CMD_STREAM_OPEN_RSP` (opcode `26u`, 20 bytes): `StartAddress`, `Status`, `BlockSize`, `WindowBlocks`, `Flags`.
+    * `RMF_CMD_STREAM_WINDOW_UPDATE` (opcode `27u`, 16 bytes): `StartAddress`, `ConsumedBlockCount` (uint64_t).
+    * `RMF_CMD_STREAM_ABORT` (opcode `28u`, 12 bytes): `StartAddress`, `Status`.
+  * Add unit tests in `testsuite_remotefile.c` covering serialization and deserialization edge cases.
+* **Stream Lifecycle & Negotiation (`file_manager.c` / `file_manager_worker.c`):**
+  * Support `RMF_FILE_TYPE_STREAM` in file manager registration and publication.
+  * Implement receiver-side open request API: `apx_file_manager_open_stream(self, file, max_block_size, window_blocks)`.
+  * Implement publisher-side negotiation in worker:
+    * `BlockSize = min(FileSize, MaxBlockSize)`.
+    * `WindowBlocks = min(requested, max_supported)`.
+    * Emit `RMF_CMD_STREAM_OPEN_RSP` and transition stream state to OPEN.
+  * Implement clean stream abort and release of queued data without closing the transport connection.
+* **Block-Preserving Framing & Reassembly (`file_manager_receiver.c` / `file.c`):**
+  * Enforce offset `0` writing constraint for `FileStream`.
+  * Accumulate fragmented writes where `MORE_BIT = 1` into a continuous buffer up to negotiated `BlockSize`.
+  * On final packet with `MORE_BIT = 0`, dispatch the complete, atomic application block to registered file listener (`apx_file_write_event_func_t`).
+* **Cumulative Credit-Based Flow Control:**
+  * **Publisher**: Maintain `transmitted_blocks` and `consumed_blocks` counters; pause stream writes when `transmitted_blocks - consumed_blocks >= WindowBlocks`.
+  * **Receiver**: Return credit via `RMF_CMD_STREAM_WINDOW_UPDATE` whenever application consumes $\ge 50\%$ of `WindowBlocks`.
+* **Testing:**
+  * Add unit tests in `testsuite_file_manager.c` verifying stream open handshake, block reassembly with `MORE_BIT`, window exhaustion/unblock, and abort teardown.
 
-* In `app/apx_info/src/apx_info_main.c`:
-  * Add reception and decoding of incoming `RMF_CMD_CONNECTION_CREATE` / `RMF_CMD_CONNECTION_REVOKE` packets.
-  * Implement table/formatted printing of connected clients and nodes for the `clients` command.
-  * Handle clean disconnect and exit once initial report or interactive monitor loop is completed.
-* Resolve/reconcile client monitor abstractions (`client_monitor_connection.c` / `monitor_socket_client_connection.c`).
+## 5. Server Event Tap & Stream Producer (`server.log`)
 
-## 6. Dedicated Diagnostic Transport & TLS Security for Server Monitor
+* **Event Tap Integration (`apx_monitor_extension` / `server_monitor.c`):**
+  * Hook into server connection and file lifecycle events:
+    * `on_connection_accepted` $\to$ emit `EVENT_NODE_CONNECTED`.
+    * `on_connection_disconnected` $\to$ emit `EVENT_NODE_DISCONNECTED`.
+    * `on_file_published` $\to$ emit `EVENT_FILE_PUBLISHED`.
+    * `on_file_revoked` $\to$ emit `EVENT_FILE_REVOKED` and remove file from observer state.
+    * `on_file_written` $\to$ emit `EVENT_PORT_WRITTEN` with exact timestamp, address, and payload bytes.
+* **Lock-Free Circular Ring Buffer:**
+  * Implement a bounded, lock-free circular ring buffer to isolate the server real-time signal routing thread from the logging transport.
+  * If a slow logging client cannot keep pace, drop event records and emit `EVENT_EVENTS_DROPPED` with the drop count, guaranteeing zero real-time bus degradation or blocking.
+* **Snapshot Generation on Subscription:**
+  * When a recording client opens `server.log` (via `RMF_CMD_STREAM_OPEN`), generate a complete initial snapshot sequence:
+    `EVENT_SNAPSHOT_START` $\to$ connected client IDs/tags $\to$ active node `.apx` definitions $\to$ current port values $\to$ `EVENT_SNAPSHOT_END`.
+* **RemoteFile Stream Delivery (`FileStream`):**
+  * Publish `server.log` with `FileType = FileStream` (RemoteFile v1.1).
+  * Implement discrete block framing and credit-window flow control (`RMF_CMD_STREAM_WINDOW_UPDATE`).
+* **Unit & Integration Tests:**
+  * Verify lock-free queue enqueue/dequeue, drop-counter behavior under saturated sinks, snapshot generation, and event serialization without memory leaks or race conditions.
 
-* Detailed architecture and design defined in [securing_monitor_extension.md](securing_monitor_extension.md).
+## 6. APX Diagnostic Protocol & `apxmon` CLI Application (Retires `apx_info`)
+
+* Detailed protocol and CLI design defined in [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md) and [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md).
+* **Retire `apx_info` Prototype & Reconcile Client Abstractions:**
+  * Retire throwaway prototype `app/apx_info`.
+  * Resolve and reconcile client monitor connection abstractions (`client_monitor_connection.c` / `monitor_socket_client_connection.c`).
+* **Bidirectional Diagnostic Streams:**
+  * Client publishes `client.request` (`FileStream`); server opens it.
+  * Server publishes `server.response` (`FileStream`); client opens it.
+  * Multiplexed via 32-bit `request_id` in uniform 16-byte diagnostic header.
+* **Server-Side Query Dispatcher (`apx_monitor_extension`):**
+  * `APX_DIAG_CMD_GET_SERVER_INFO`: Version, uptime, active connection and node counts.
+  * `APX_DIAG_CMD_GET_CLIENTS` / `APX_DIAG_CMD_GET_NODES`: Detailed connection tables and registered nodes.
+  * `APX_DIAG_CMD_GET_NODE_DEF`: Fetches complete `.apx` IDL text on demand.
+  * `APX_DIAG_CMD_GET_ROUTING_TABLE`: Full port routing map (Provide Node:Port $\to$ Require Node:Port).
+  * `APX_DIAG_CMD_GET_UNCONNECTED_PORTS`: Detects dangling require ports without providers and unconsumed provide ports.
+  * `APX_DIAG_CMD_WATCH_PORT` / `APX_DIAG_NOTIF_PORT_UPDATE`: Live signal tapping with asynchronous updates.
+* **`apxmon` CLI Application (`app/apx_mon`):**
+  * Subcommands: `info`, `clients`, `nodes`, `routing [--unconnected]`, `get-def <node>`, `watch <node:port>`, and interactive `top`.
+  * Supports aligned formatted ASCII table output and machine-readable `--json` output.
+
+## 7. Dedicated Diagnostic Transport & TLS Security for Server Monitor
+
+* Detailed architecture and design defined in [securing_monitor_extension.md](design/securing_monitor_extension.md).
 * **Dedicated Listener Integration (`apx_monitor_extension`):**
   * Decouple monitor connections from `apx_socket_extension` so the monitor extension manages its own dedicated `msocket_server_t`.
-  * Support listening on a dedicated UNIX domain socket (e.g. `/run/apx/apx_monitor.socket`) and/or dedicated TCP port (e.g. 5082) configured via `server.json`.
-  * Automatically instantiate accepted connections directly as `APX_CONNECTION_TYPE_MONITOR`.
+  * Support listening on a dedicated UNIX domain socket (e.g. `/run/apx/apx_monitor.socket`) and/or dedicated TCP port (default: 5080, following the convention where `apx-server@5000+N` maps to diagnostic port `5080+N`) configured via `server.json`.
+  * Automatically instantiate accepted connections directly as `APX_CONNECTION_TYPE_MONITOR` and publish `server.log` and `server.response`.
 * **Mbed TLS Transport Security (mTLS / PSK):**
   * Integrate `msocket_tls_config_t` into `apx_server_monitor_t` to support TLS on the diagnostic TCP port.
   * Enforce Mutual TLS (`require-client-cert: true`) so only authorized diagnostic clients possessing a valid client certificate can connect.
   * Verify client certificate Subject / Common Name to prevent standard node certificates from connecting to the monitor endpoint.
-* **Update `apx_info` CLI Application:**
-  * Add TLS connection arguments (`--tls`, `--ca-cert`, `--client-cert`, `--client-key`) and default port/socket to target the dedicated monitor endpoint.
+* **Client Tooling Connection Support:**
+  * Add TLS connection arguments (`--tls`, `--ca-cert`, `--client-cert`, `--client-key`) and default port/socket (`5080` / `/run/apx/apx_monitor.socket`) to `apxmon` and `apxlog`.
 
-## 7. Implement Worker Command Stubs (`file_manager_worker.c`)
+## 8. Implement Worker Command Stubs (`file_manager_worker.c`)
 
 * Implement `APX_CMD_REVOKE_LOCAL_FILE` (line 351).
 * Implement `APX_CMD_CLOSE_REMOTE_FILE` (line 357).
 * [x] Implement `APX_CMD_SEND_ERROR_CODE` (completed).
 
-## 8. Shared Library Symbol Visibility and Windows DLL Export
+## 9. Shared Library Symbol Visibility and Windows DLL Export
 
 Control symbol visibility in `libapx_core` shared library builds and enable Windows DLL support.
 
@@ -90,7 +160,7 @@ Control symbol visibility in `libapx_core` shared library builds and enable Wind
   * Uncomment `target_compile_options(apx_core PRIVATE -fvisibility=hidden)` in `CMakeLists.txt` for ELF/Linux builds.
   * Enable Windows DLL builds (`BUILD_SHARED_LIBS=ON`) once MSVC export definitions are in place.
 
-## 9. Support Newline-Delimited JSON (NDJSON) in `apx-node` JSON Message Server
+## 10. Support Newline-Delimited JSON (NDJSON) in `apx-node` JSON Message Server
 
 Currently, `app/apx_node/src/json_server_connection.c` expects every message to be framed using a binary `numheader32` length prefix. This prevents generic tools (such as `nc`, `socat`, or standard shell pipelines) from sending raw JSON directly (e.g. `echo '{"VehicleSpeed": 72.5}' | nc -U /tmp/apx_node.socket` fails because `{` / `0x7B` is interpreted as a binary length byte).
 
@@ -102,7 +172,7 @@ Currently, `app/apx_node/src/json_server_connection.c` expects every message to 
   * Enable direct shell integration and piping from `nc -U`, `socat`, and standard POSIX utilities without needing helper wrappers.
   * Add pytest integration test verifying NDJSON updates sent via raw socket.
 
-## 10. Modernize TextLog Extension & Logging Infrastructure
+## 11. Modernize TextLog Extension & Logging Infrastructure
 
 The `c-apx` codebase contains numerous compile-time `#if APX_DEBUG_ENABLE` checks and raw `printf` statements across server and connection components. While `apx_log_level_t` exists in `apx_core/include/apx/types.h` and `apx_server_log_write()` is implemented, the `apx_text_log_extension` ignores log levels and lacks runtime level filtering.
 
@@ -120,7 +190,7 @@ The `c-apx` codebase contains numerous compile-time `#if APX_DEBUG_ENABLE` check
 * [x] **Complete Syslog Integration (`syslog-enabled`):**
   * Wire up `syslog-enabled` and `syslog-label` in `server_text_log_extension.c` and `text_log_base.c` using POSIX `syslog(priority, ...)`, mapping `apx_log_level_t` directly to syslog priorities (`LOG_CRIT`, `LOG_ERR`, `LOG_WARNING`, `LOG_INFO`, `LOG_DEBUG`).
 
-## 11. Small Data Support in Command Pipeline
+## 12. Small Data Support in Command Pipeline
 
 In `apx_command_t` (`apx_core/include/apx/command.h`), the union `msgData3_tag` includes an inline buffer `uint8_t data[APX_SMALL_DATA_SIZE]` (where `APX_SMALL_DATA_SIZE` is 8 bytes, defined in `cfg.h`). This is designed to optimize transmission of small port/signal data (scalar numeric types, booleans, and small byte arrays) without requiring dynamic heap allocation.
 
@@ -142,7 +212,7 @@ To eliminate heap allocation and deallocation overhead for high-frequency signal
   * When publishing port changes (`node_instance.c:2100` / `//TODO: use small object allocator later on`), check if payload size `<= APX_SMALL_DATA_SIZE`.
   * If small, copy directly into stack buffer and route via `apx_file_manager_send_local_small_data()`, avoiding heap allocation entirely.
 
-## 12. Support Multiple Providers per Require Port
+## 13. Support Multiple Providers per Require Port
 
 In `apx_node_instance_handle_require_ports_disconnected` (`apx_core/src/node_instance.c`), the connector change table supports disconnect transitions where `entry->count == -1` (single provider disconnection). When `entry->count < -1`, the function currently returns `APX_NOT_IMPLEMENTED_ERROR`.
 
@@ -156,7 +226,7 @@ In `apx_port_connector_change_entry_t` (`apx_core/include/apx/port_connector_cha
 * **Testing:**
   * Add unit and integration tests verifying multi-provider connect and simultaneous disconnect transitions.
 
-## 13. Node Definition Cache (Text & Binary Form)
+## 14. Node Definition Cache (Text & Binary Form)
 
 Implement disk-based caching similar to Python's `.py` / `.pyc` model to eliminate definition transfer overhead and bytecode compilation during ECU startup and wake-from-sleep.
 
@@ -200,7 +270,7 @@ When a remote node publishes its `.apx` definition file with a valid SHA-256 dig
 * **Resilient Fallback**: Corrupted or version-mismatched binary cache files transparently fall back to Level 1 or wire download without failing node connection.
 * **Pre-Warming**: Offline tools or OTA post-install scripts can pre-populate `.apxc` cache files during vehicle software installation.
 
-## 14. Configuration Validation & Unknown Key Diagnostics
+## 15. Configuration Validation & Unknown Key Diagnostics
 
 Currently in `server_cfg.c` and extension initialization routines (e.g. `server_text_log_extension.c`, `socket_server_extension.c`), configuration parameters are looked up on demand via `dtl_hv_get_cstr(cfg, "key")`. If a user misspells a configuration key (e.g. `"use-time-stamp"`, `"log_lvl"`, or `"prot"` instead of `"tcp-port"`), the key is silently ignored, and the system falls back to default values without any warning or operator feedback.
 
@@ -216,13 +286,13 @@ To improve usability and prevent silent configuration errors:
 * **Strict Validation Option:**
   * Provide a `--strict-config` CLI flag or `"strict-config": true` option to reject unknown keys and abort server startup with `APX_INVALID_ARGUMENT_ERROR`, preventing unintended fallback behavior in automated deployment or test environments.
 
-## 15. Compressed Transfer for Signed APX Definitions (RMFP 1.1)
+## 16. Compressed Transfer for Signed APX Definitions (RMFP 1.1)
 
 To reduce wire transfer latency for signed APX nodes by >80% during startup phase while maintaining strict cryptographic verification:
 
-* **Protocol Extension (`RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG` / Opcode `26u`):**
-  * Define opcode `26u` in `apx_core/include/apx/remotefile.h` with an 88-byte fixed header:
-    * `cmd_type` (`uint32_t`, 26u)
+* **Protocol Extension (`RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG` / Opcode `24u`):**
+  * Define opcode `24u` in `apx_core/include/apx/remotefile.h` with an 88-byte fixed header:
+    * `cmd_type` (`uint32_t`, 24u)
     * `address` (`uint32_t`, base memory address)
     * `uncompressed_size` (`uint32_t`, decompressed size of `.apx` text)
     * `compressed_size` (`uint32_t`, total bytes streamed across the wire)
@@ -239,9 +309,9 @@ To reduce wire transfer latency for signed APX nodes by >80% during startup phas
   * Upon transfer completion, decompress in-memory into an `uncompressed_size` buffer (~0.3 ms for 140 KB definitions).
 * **Cryptographic Verification & Cache Integration:**
   * Cryptographically verify the uncompressed buffer against `signature_data` via `apx_server_verify_node_signature()`.
-  * Compute SHA-256 of verified text and query Level 2 binary cache (`.apxc` from Item 13) to skip IDL parsing and VM bytecode compilation entirely.
+  * Compute SHA-256 of verified text and query Level 2 binary cache (`.apxc` from Item 14) to skip IDL parsing and VM bytecode compilation entirely.
 * **Backward Compatibility Fallback:**
-  * If a legacy server returns `RMF_CMD_NACK_MSG` on opcode 26, the client falls back to uncompressed `RMF_CMD_PUBLISH_SIGNED_FILE_MSG` (opcode 23).
+  * If a legacy server returns `RMF_CMD_NACK_MSG` on opcode 24, the client falls back to uncompressed `RMF_CMD_PUBLISH_SIGNED_FILE_MSG` (opcode 23).
 
 
 
