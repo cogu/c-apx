@@ -373,6 +373,13 @@ static void test_close_file_cmd_encode(CuTest *tc)
   CuAssertUIntEquals(tc, sizeof(buf), rmf_encode_close_file_cmd(buf, sizeof(buf), 0x00102030u));
   CuAssertUIntEquals(tc, RMF_CMD_CLOSE_FILE_MSG, unpackLE(buf, UINT32_SIZE));
   CuAssertUIntEquals(tc, 0x00102030u, unpackLE(buf + UINT32_SIZE, UINT32_SIZE));
+
+  CuAssertUIntEquals(tc, 0u, rmf_encode_revoke_file_cmd(NULL, sizeof(buf), 0x1000u));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_revoke_file_cmd(buf, sizeof(buf) - 1u, 0x1000u));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_revoke_file_cmd(buf, sizeof(buf), RMF_HIGH_ADDR_MAX + 1u));
+  CuAssertUIntEquals(tc, sizeof(buf), rmf_encode_revoke_file_cmd(buf, sizeof(buf), 0x00102030u));
+  CuAssertUIntEquals(tc, RMF_CMD_REVOKE_FILE_MSG, unpackLE(buf, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 0x00102030u, unpackLE(buf + UINT32_SIZE, UINT32_SIZE));
 }
 
 static void test_stream_open_cmd_encode_decode(CuTest *tc)

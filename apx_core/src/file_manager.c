@@ -173,6 +173,27 @@ apx_error_t apx_file_manager_publish_local_file(apx_file_manager_t *self, rmf_fi
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_file_manager_revoke_local_file(apx_file_manager_t *self, uint32_t address)
+{
+  if (self != NULL)
+  {
+    uint32_t const clean_addr = address & RMF_ADDRESS_MASK_INTERNAL;
+    apx_file_t *local_file = apx_file_manager_shared_find_file_by_address(&self->shared, clean_addr);
+    if ((local_file == NULL) || (apx_file_get_address_without_flags(local_file) != clean_addr))
+    {
+      return APX_FILE_NOT_FOUND_ERROR;
+    }
+    apx_file_close(local_file);
+    if (apx_file_is_stream(local_file))
+    {
+      apx_file_set_stream_state(local_file, APX_STREAM_STATE_REVOKED);
+    }
+    (void)apx_file_close_notify(local_file);
+    return apx_file_manager_worker_prepare_revoke_local_file(&self->worker, clean_addr);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_file_t *apx_file_manager_find_file_by_address(apx_file_manager_t *self, uint32_t address)
 {
   if (self != NULL)

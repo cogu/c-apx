@@ -98,6 +98,7 @@ typedef uint8_t rmf_signature_type_t;
 
 #define RMF_FILE_OPEN_CMD_SIZE UINT32_SIZE
 #define RMF_FILE_CLOSE_CMD_SIZE UINT32_SIZE
+#define RMF_FILE_REVOKE_CMD_SIZE UINT32_SIZE
 #define RMF_CMD_TYPE_SIZE UINT32_SIZE
 #define RMF_CMD_NACK_SIZE (RMF_CMD_TYPE_SIZE + UINT32_SIZE)
 #define RMF_CMD_NACK_DATA_SIZE UINT32_SIZE
@@ -171,6 +172,7 @@ apx_size_t rmf_address_encode(uint8_t *buf, apx_size_t buf_size, uint32_t addres
 apx_size_t rmf_address_decode(uint8_t const *begin, uint8_t const *end, uint32_t *address, bool *more_bit);
 apx_size_t rmf_encode_open_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address);
 apx_size_t rmf_encode_close_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address);
+apx_size_t rmf_encode_revoke_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address);
 apx_size_t rmf_encode_acknowledge_cmd(uint8_t *buf, apx_size_t buf_size);
 apx_size_t rmf_encode_nack_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t error_code, char const *name);
 apx_size_t rmf_decode_cmd_type(uint8_t const *begin, uint8_t const *end, uint32_t *cmd_type);

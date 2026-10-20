@@ -53,6 +53,7 @@ void apx_file_manager_connected(apx_file_manager_t *self);
 void apx_file_manager_disconnected(apx_file_manager_t *self);
 apx_file_t *apx_file_manager_create_local_file(apx_file_manager_t *self, rmf_file_info_t const *file_info);
 apx_error_t apx_file_manager_publish_local_file(apx_file_manager_t *self, rmf_file_info_t const *file_info);
+apx_error_t apx_file_manager_revoke_local_file(apx_file_manager_t *self, uint32_t address);
 apx_file_t *apx_file_manager_find_file_by_address(apx_file_manager_t *self, uint32_t address);
 apx_file_t *apx_file_manager_find_local_file_by_name(apx_file_manager_t *self, char const *name);
 apx_file_t *apx_file_manager_find_remote_file_by_name(apx_file_manager_t *self, char const *name);

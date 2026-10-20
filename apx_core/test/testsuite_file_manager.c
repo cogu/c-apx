@@ -871,12 +871,10 @@ static void test_stream_close_abort_revoke_and_disconnect(CuTest *tc)
   CuAssertIntEquals(tc, APX_STREAM_STATE_CLOSED, apx_file_get_stream_state(sub_file));
   CuAssertUIntEquals(tc, RMF_INVALID_ADDRESS, apx_file_manager_receiver_active_address(&sub.file_manager.receiver));
 
-  // 4. Publisher revoke transitions stream to APX_STREAM_STATE_REVOKED
-  uint8_t revoke_cmd[RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE];
-  packLE(revoke_cmd, RMF_CMD_REVOKE_FILE_MSG, UINT32_SIZE);
-  packLE(revoke_cmd + UINT32_SIZE, 0x20000000u, UINT32_SIZE);
-  CuAssertIntEquals(tc, APX_NO_ERROR,
-    mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, revoke_cmd, sizeof(revoke_cmd)));
+  // 4. Publisher revoke transitions both local and remote stream to APX_STREAM_STATE_REVOKED
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_revoke_local_file(&pub.file_manager, 0x20000000u));
+  CuAssertIntEquals(tc, APX_STREAM_STATE_REVOKED, apx_file_get_stream_state(pub_file));
+  mock_endpoint_deliver_all(&pub, &sub);
   CuAssertIntEquals(tc, APX_STREAM_STATE_REVOKED, apx_file_get_stream_state(sub_file));
 
   mock_endpoint_destroy(&sub);

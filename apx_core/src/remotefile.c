@@ -136,6 +136,20 @@ apx_size_t rmf_encode_close_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t
   return required_size;
 }
 
+apx_size_t rmf_encode_revoke_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address)
+{
+  apx_size_t const required_size = RMF_CMD_TYPE_SIZE + RMF_FILE_REVOKE_CMD_SIZE;
+  if ((buf == NULL) || (address > RMF_HIGH_ADDR_MAX) || (required_size > buf_size))
+  {
+    return 0u;
+  }
+  uint8_t *p = buf;
+  packLE(p, RMF_CMD_REVOKE_FILE_MSG, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, address, (uint8_t)UINT32_SIZE);
+  return required_size;
+}
+
 apx_size_t rmf_encode_acknowledge_cmd(uint8_t *buf, apx_size_t buf_size)
 {
   apx_size_t const required_size = RMF_CMD_TYPE_SIZE;
