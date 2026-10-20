@@ -53,18 +53,18 @@ These are the items left to implement for c-apx v0.4.0.
 * **Unit Tests:**
   * Add test cases to `testsuite_server_monitor_state.c` verifying file creation, state transitions, and file list management.
 
-## 4. RemoteFile Stream File Protocol Implementation (`apx_core`)
+## 4. RemoteFile Stream File Protocol Implementation (`apx_core`) (Completed)
 
 Detailed protocol specification and state machine definitions are in [remotefile1_1_stream_file_proposal.md](design/remotefile1_1_stream_file_proposal.md).
 
-* **Protocol Commands & Wire Encoders/Decoders (`remotefile.h` / `remotefile.c`):**
+* [x] **Protocol Commands & Wire Encoders/Decoders (`remotefile.h` / `remotefile.c`):**
   * Implement encoding and decoding for RemoteFile v1.1 stream commands:
     * `RMF_CMD_STREAM_OPEN` (opcode `25u`, 16 bytes): `StartAddress`, `MaxBlockSize`, `WindowBlocks`, `Flags`.
     * `RMF_CMD_STREAM_OPEN_RSP` (opcode `26u`, 20 bytes): `StartAddress`, `Status`, `BlockSize`, `WindowBlocks`, `Flags`.
     * `RMF_CMD_STREAM_WINDOW_UPDATE` (opcode `27u`, 16 bytes): `StartAddress`, `ConsumedBlockCount` (uint64_t).
     * `RMF_CMD_STREAM_ABORT` (opcode `28u`, 12 bytes): `StartAddress`, `Status`.
   * Add unit tests in `testsuite_remotefile.c` covering serialization and deserialization edge cases.
-* **Stream Lifecycle & Negotiation (`file_manager.c` / `file_manager_worker.c`):**
+* [x] **Stream Lifecycle & Negotiation (`file_manager.c` / `file_manager_worker.c`):**
   * Support `RMF_FILE_TYPE_STREAM` in file manager registration and publication.
   * Implement receiver-side open request API: `apx_file_manager_open_stream(self, file, max_block_size, window_blocks)`.
   * Implement publisher-side negotiation in worker:
@@ -72,14 +72,14 @@ Detailed protocol specification and state machine definitions are in [remotefile
     * `WindowBlocks = min(requested, max_supported)`.
     * Emit `RMF_CMD_STREAM_OPEN_RSP` and transition stream state to OPEN.
   * Implement clean stream abort and release of queued data without closing the transport connection.
-* **Block-Preserving Framing & Reassembly (`file_manager_receiver.c` / `file.c`):**
+* [x] **Block-Preserving Framing & Reassembly (`file_manager_receiver.c` / `file.c`):**
   * Enforce offset `0` writing constraint for `FileStream`.
   * Accumulate fragmented writes where `MORE_BIT = 1` into a continuous buffer up to negotiated `BlockSize`.
   * On final packet with `MORE_BIT = 0`, dispatch the complete, atomic application block to registered file listener (`apx_file_write_event_func_t`).
-* **Cumulative Credit-Based Flow Control:**
+* [x] **Cumulative Credit-Based Flow Control:**
   * **Publisher**: Maintain `transmitted_blocks` and `consumed_blocks` counters; pause stream writes when `transmitted_blocks - consumed_blocks >= WindowBlocks`.
   * **Receiver**: Return credit via `RMF_CMD_STREAM_WINDOW_UPDATE` whenever application consumes $\ge 50\%$ of `WindowBlocks`.
-* **Testing:**
+* [x] **Testing:**
   * Add unit tests in `testsuite_file_manager.c` verifying stream open handshake, block reassembly with `MORE_BIT`, window exhaustion/unblock, and abort teardown.
 
 ## 5. Server Event Tap & Stream Producer (`server.log`)
@@ -138,10 +138,10 @@ Detailed protocol specification and state machine definitions are in [remotefile
 * **Client Tooling Connection Support:**
   * Add TLS connection arguments (`--tls`, `--ca-cert`, `--client-cert`, `--client-key`) and default port/socket (`5080` / `/run/apx/apx_monitor.socket`) to `apxmon` and `apxlog`.
 
-## 8. Implement Worker Command Stubs (`file_manager_worker.c`)
+## 8. Implement Worker Command Stubs (`file_manager_worker.c`) (Completed)
 
-* Implement `APX_CMD_REVOKE_LOCAL_FILE` (line 351).
-* Implement `APX_CMD_CLOSE_REMOTE_FILE` (line 357).
+* [x] Implement `APX_CMD_REVOKE_LOCAL_FILE` (completed).
+* [x] Implement `APX_CMD_CLOSE_REMOTE_FILE` (completed).
 * [x] Implement `APX_CMD_SEND_ERROR_CODE` (completed).
 
 ## 9. Shared Library Symbol Visibility and Windows DLL Export
@@ -172,7 +172,7 @@ Currently, `app/apx_node/src/json_server_connection.c` expects every message to 
   * Enable direct shell integration and piping from `nc -U`, `socat`, and standard POSIX utilities without needing helper wrappers.
   * Add pytest integration test verifying NDJSON updates sent via raw socket.
 
-## 11. Modernize TextLog Extension & Logging Infrastructure
+## 11. Modernize TextLog Extension & Logging Infrastructure (Completed)
 
 The `c-apx` codebase contains numerous compile-time `#if APX_DEBUG_ENABLE` checks and raw `printf` statements across server and connection components. While `apx_log_level_t` exists in `apx_core/include/apx/types.h` and `apx_server_log_write()` is implemented, the `apx_text_log_extension` ignores log levels and lacks runtime level filtering.
 
