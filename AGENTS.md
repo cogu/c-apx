@@ -62,7 +62,30 @@ c-apx/
 
 ---
 
-## 4. Mandatory Verification & Release Checks
+## 4. Normative APX Specifications (`../apx`)
+
+The official APX documentation and normative specification repository (`apx`) is checked out as a sibling directory at `../apx` relative to the `c-apx` workspace root:
+
+* **Specification Index**: `../apx/specifications/specifications.md`
+* **Interface Definition Language (IDL)**: `../apx/specifications/idl/`
+  * `idl.md` (Overview)
+  * `apx_idl_12.md` (APX IDL v1.2)
+  * `apx_idl_13.md` (APX IDL v1.3)
+* **Virtual Machine & Serialization**: `../apx/specifications/vm/`
+  * `vm.md` (Overview)
+  * `vm2_0.md` (APX VM v2.0)
+  * `vm2_1.md` (APX VM v2.1)
+  * `serialization_rules.md` (Binary layout & padding rules)
+* **Wire & Transport Protocols**: `../apx/specifications/protocols/`
+  * `protocols.md` (Overview)
+  * `numheader.md` (NumHeader16 / NumHeader32 framing)
+  * `remotefile1_0.md` (RemoteFile v1.0)
+  * `remotefile1_1.md` (RemoteFile v1.1, including signed files, NACK, and `FileStream`)
+* **Local Design Proposals**: `design/` (in this repository) contains `c-apx`-specific architecture and feature specifications.
+
+---
+
+## 5. Mandatory Verification & Release Checks
 
 > [!IMPORTANT]
 > **ThreadSanitizer (TSan) is Mandatory**: `c-apx` is inherently multi-threaded (`msocket` background workers, mutexes, event loops). Never consider any code change complete or ready for merge without verifying both AddressSanitizer (`clang-asan`) **and** ThreadSanitizer (`clang-tsan`).
@@ -98,7 +121,7 @@ All steps must pass with zero formatting violations, zero errors, zero sanitizer
 
 ---
 
-## 5. Coding Standards & Conventions
+## 6. Coding Standards & Conventions
 
 ### Code Formatting (clang-format)
 * All C and C++ source and header files (`.c`, `.h`, `.cpp`) must strictly adhere to the repository root [`.clang-format`](.clang-format).
@@ -144,7 +167,7 @@ All steps must pass with zero formatting violations, zero errors, zero sanitizer
 
 ---
 
-## 6. Testing Practices
+## 7. Testing Practices
 
 * **C Unit Tests**: Built with `cutest` (from `cutil`). Test suites live in `apx_core/test/`, `extension/*/test/`, and `app/*/test/`. Registered in `CMakeLists.txt` and built into `apx_unit`.
 * **Integration Tests**: Written in Python using `pytest` under `tests/`. Uses process management fixtures in `tests/conftest.py` to test multi-process communication across `apx-server`, `apx-node`, and `apx-control`.
