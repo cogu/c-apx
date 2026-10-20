@@ -47,6 +47,7 @@ CuSuite *testsuite_apx_node_manager_client_mode(void);
 CuSuite *testsuite_apx_node_manager_server_mode(void);
 CuSuite *testsuite_apx_file(void);
 CuSuite *testsuite_apx_file_map(void);
+CuSuite *testsuite_apx_file_manager(void);
 CuSuite *testsuite_apx_file_manager_receiver(void);
 CuSuite *testsuite_apx_util(void);
 CuSuite *testsuite_apx_port_connector_change_entry(void);
@@ -110,6 +111,7 @@ void RunAllTests(void)
   CuSuiteAddSuite(suite, testsuite_apx_node_manager_server_mode());
   CuSuiteAddSuite(suite, testsuite_apx_file());
   CuSuiteAddSuite(suite, testsuite_apx_file_map());
+  CuSuiteAddSuite(suite, testsuite_apx_file_manager());
   CuSuiteAddSuite(suite, testsuite_apx_file_manager_receiver());
   CuSuiteAddSuite(suite, testsuite_apx_port_connector_change_entry());
   CuSuiteAddSuite(suite, testsuite_apx_port_connector_change_table());

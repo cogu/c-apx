@@ -18,6 +18,7 @@
 # include <process.h>
 #endif
 #include "apx/file_manager_worker.h"
+#include "pack.h"
 #ifdef MEM_LEAK_CHECK
 # include "CMemLeak.h"
 #endif
@@ -26,13 +27,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-/*
-#ifdef UNIT_TEST
-#define DYN_STATIC
-#else
-#define DYN_STATIC static
-#endif
-*/
+#define RMF_FRAME_OVERHEAD_MARGIN 16u
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -45,9 +41,18 @@ static apx_error_t run_send_local_const_data(
   apx_file_manager_worker_t *self, uint32_t address, uint8_t const *data, uint32_t size);
 static apx_error_t run_send_local_data(apx_file_manager_worker_t *self, uint32_t address, uint8_t *data, uint32_t size);
 static apx_error_t run_open_remote_file(apx_file_manager_worker_t *self, uint32_t address);
+static apx_error_t run_close_remote_file(apx_file_manager_worker_t *self, uint32_t address);
 static apx_error_t run_send_header_accepted(apx_file_manager_worker_t *self, uint32_t connection_id);
 static apx_error_t run_send_create_connection(
   apx_file_manager_worker_t *self, uint32_t connection_id, apx_connection_state_t connection_state, char const *tag);
+static apx_error_t run_send_stream_open(apx_file_manager_worker_t *self, rmf_stream_open_cmd_t const *cmd);
+static apx_error_t run_send_stream_open_rsp(apx_file_manager_worker_t *self, rmf_stream_open_rsp_cmd_t const *cmd);
+static apx_error_t run_send_stream_window_update(
+  apx_file_manager_worker_t *self, rmf_stream_window_update_cmd_t const *cmd);
+static apx_error_t run_send_stream_abort(apx_file_manager_worker_t *self, rmf_stream_abort_cmd_t const *cmd);
+static apx_error_t run_drain_stream_data(apx_file_manager_worker_t *self, uint32_t address);
+static apx_error_t transmit_data_with_fragmentation(
+  apx_connection_interface_t const *connection, uint32_t address, uint8_t const *data, uint32_t size);
 static apx_error_t apx_file_manager_worker_process_ringbuffer_error(adt_buf_err_t error_code);
 #ifndef UNIT_TEST
 static apx_error_t start_worker_thread(apx_file_manager_worker_t *self);
@@ -321,6 +326,24 @@ apx_error_t apx_file_manager_worker_prepare_send_open_file_request(apx_file_mana
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_file_manager_worker_prepare_send_close_file_request(apx_file_manager_worker_t *self, uint32_t address)
+{
+  if (self != NULL)
+  {
+    adt_buf_err_t rc;
+    apx_command_t cmd = {APX_CMD_CLOSE_REMOTE_FILE, 0, 0, {0}, 0};
+    cmd.data1 = address;
+    SPINLOCK_ENTER(self->queue_lock);
+    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+    SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+    SEMAPHORE_POST(self->semaphore);
+#endif
+    return apx_file_manager_worker_process_ringbuffer_error(rc);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_error_t apx_file_manager_worker_prepare_send_connection_create(apx_file_manager_worker_t *self,
   apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const *tag)
 {
@@ -338,6 +361,109 @@ apx_error_t apx_file_manager_worker_prepare_send_connection_create(apx_file_mana
         return APX_MEM_ERROR;
       }
     }
+    SPINLOCK_ENTER(self->queue_lock);
+    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+    SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+    SEMAPHORE_POST(self->semaphore);
+#endif
+    return apx_file_manager_worker_process_ringbuffer_error(rc);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_worker_prepare_send_stream_open(
+  apx_file_manager_worker_t *self, rmf_stream_open_cmd_t const *cmd_in)
+{
+  if ((self != NULL) && (cmd_in != NULL))
+  {
+    adt_buf_err_t rc;
+    apx_command_t cmd = {APX_CMD_SEND_STREAM_OPEN, 0, 0, {0}, 0};
+    cmd.data1 = cmd_in->start_address;
+    cmd.data2 = cmd_in->max_block_size;
+    packLE(&cmd.data3.data[0], (uint32_t)cmd_in->window_blocks, (uint8_t)UINT16_SIZE);
+    packLE(&cmd.data3.data[2], (uint32_t)cmd_in->flags, (uint8_t)UINT16_SIZE);
+    SPINLOCK_ENTER(self->queue_lock);
+    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+    SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+    SEMAPHORE_POST(self->semaphore);
+#endif
+    return apx_file_manager_worker_process_ringbuffer_error(rc);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_worker_prepare_send_stream_open_rsp(
+  apx_file_manager_worker_t *self, rmf_stream_open_rsp_cmd_t const *cmd_in)
+{
+  if ((self != NULL) && (cmd_in != NULL))
+  {
+    adt_buf_err_t rc;
+    apx_command_t cmd = {APX_CMD_SEND_STREAM_OPEN_RSP, 0, 0, {0}, 0};
+    cmd.data1 = cmd_in->start_address;
+    cmd.data2 = cmd_in->status;
+    packLE(&cmd.data3.data[0], cmd_in->block_size, (uint8_t)UINT32_SIZE);
+    packLE(&cmd.data3.data[4], (uint32_t)cmd_in->window_blocks, (uint8_t)UINT16_SIZE);
+    packLE(&cmd.data3.data[6], (uint32_t)cmd_in->flags, (uint8_t)UINT16_SIZE);
+    SPINLOCK_ENTER(self->queue_lock);
+    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+    SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+    SEMAPHORE_POST(self->semaphore);
+#endif
+    return apx_file_manager_worker_process_ringbuffer_error(rc);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_worker_prepare_send_stream_window_update(
+  apx_file_manager_worker_t *self, rmf_stream_window_update_cmd_t const *cmd_in)
+{
+  if ((self != NULL) && (cmd_in != NULL))
+  {
+    adt_buf_err_t rc;
+    apx_command_t cmd = {APX_CMD_SEND_STREAM_WINDOW_UPDATE, 0, 0, {0}, 0};
+    cmd.data1 = cmd_in->start_address;
+    packLE64(&cmd.data3.data[0], cmd_in->consumed_block_count, (uint8_t)UINT64_SIZE);
+    SPINLOCK_ENTER(self->queue_lock);
+    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+    SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+    SEMAPHORE_POST(self->semaphore);
+#endif
+    return apx_file_manager_worker_process_ringbuffer_error(rc);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_worker_prepare_send_stream_abort(
+  apx_file_manager_worker_t *self, rmf_stream_abort_cmd_t const *cmd_in)
+{
+  if ((self != NULL) && (cmd_in != NULL))
+  {
+    adt_buf_err_t rc;
+    apx_command_t cmd = {APX_CMD_SEND_STREAM_ABORT, 0, 0, {0}, 0};
+    cmd.data1 = cmd_in->start_address;
+    cmd.data2 = cmd_in->status;
+    SPINLOCK_ENTER(self->queue_lock);
+    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+    SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+    SEMAPHORE_POST(self->semaphore);
+#endif
+    return apx_file_manager_worker_process_ringbuffer_error(rc);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_worker_prepare_drain_stream_data(apx_file_manager_worker_t *self, uint32_t address)
+{
+  if (self != NULL)
+  {
+    adt_buf_err_t rc;
+    apx_command_t cmd = {APX_CMD_DRAIN_STREAM_DATA, 0, 0, {0}, 0};
+    cmd.data1 = address;
     SPINLOCK_ENTER(self->queue_lock);
     rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
     SPINLOCK_LEAVE(self->queue_lock);
@@ -401,7 +527,7 @@ static bool process_single_command(apx_file_manager_worker_t *self, apx_command_
     result = run_open_remote_file(self, cmd->data1);
     break;
   case APX_CMD_CLOSE_REMOTE_FILE:
-      // Deferred to roadmap Item 7
+    result = run_close_remote_file(self, cmd->data1);
     break;
   case APX_CMD_SEND_LOCAL_CONST_DATA:
     result = run_send_local_const_data(self, cmd->data1, (uint8_t const *)cmd->data3.ptr, cmd->data2);
@@ -419,6 +545,42 @@ static bool process_single_command(apx_file_manager_worker_t *self, apx_command_
     {
       free(cmd->data3.ptr);
     }
+    break;
+  case APX_CMD_SEND_STREAM_OPEN: {
+    rmf_stream_open_cmd_t stream_open_cmd;
+    stream_open_cmd.start_address = cmd->data1;
+    stream_open_cmd.max_block_size = cmd->data2;
+    stream_open_cmd.window_blocks = (uint16_t)unpackLE(&cmd->data3.data[0], (uint8_t)UINT16_SIZE);
+    stream_open_cmd.flags = (uint16_t)unpackLE(&cmd->data3.data[2], (uint8_t)UINT16_SIZE);
+    result = run_send_stream_open(self, &stream_open_cmd);
+    break;
+  }
+  case APX_CMD_SEND_STREAM_OPEN_RSP: {
+    rmf_stream_open_rsp_cmd_t stream_open_rsp_cmd;
+    stream_open_rsp_cmd.start_address = cmd->data1;
+    stream_open_rsp_cmd.status = cmd->data2;
+    stream_open_rsp_cmd.block_size = unpackLE(&cmd->data3.data[0], (uint8_t)UINT32_SIZE);
+    stream_open_rsp_cmd.window_blocks = (uint16_t)unpackLE(&cmd->data3.data[4], (uint8_t)UINT16_SIZE);
+    stream_open_rsp_cmd.flags = (uint16_t)unpackLE(&cmd->data3.data[6], (uint8_t)UINT16_SIZE);
+    result = run_send_stream_open_rsp(self, &stream_open_rsp_cmd);
+    break;
+  }
+  case APX_CMD_SEND_STREAM_WINDOW_UPDATE: {
+    rmf_stream_window_update_cmd_t window_update_cmd;
+    window_update_cmd.start_address = cmd->data1;
+    window_update_cmd.consumed_block_count = unpackLE64(&cmd->data3.data[0], (uint8_t)UINT64_SIZE);
+    result = run_send_stream_window_update(self, &window_update_cmd);
+    break;
+  }
+  case APX_CMD_SEND_STREAM_ABORT: {
+    rmf_stream_abort_cmd_t abort_cmd;
+    abort_cmd.start_address = cmd->data1;
+    abort_cmd.status = cmd->data2;
+    result = run_send_stream_abort(self, &abort_cmd);
+    break;
+  }
+  case APX_CMD_DRAIN_STREAM_DATA:
+    result = run_drain_stream_data(self, cmd->data1);
     break;
   default:
     return false;
@@ -521,8 +683,27 @@ static apx_error_t run_send_local_const_data(
   apx_error_t retval = APX_NO_ERROR;
   if (connection != NULL)
   {
-    int32_t bytes_available = 0;
-    retval = connection->transmit_data_message(connection->arg, address, false, data, (int32_t)size, &bytes_available);
+    apx_file_t *file = apx_file_manager_shared_find_file_by_address(self->shared, address);
+    if ((file != NULL) && apx_file_is_stream(file))
+    {
+      if (apx_file_get_stream_state(file) != APX_STREAM_STATE_OPEN)
+      {
+        return APX_FILE_NOT_OPEN_ERROR;
+      }
+      if ((apx_file_stream_pending_block_count(file) > 0) || (!apx_file_stream_can_transmit(file)))
+      {
+        return apx_file_stream_enqueue_block(file, data, size);
+      }
+      retval = transmit_data_with_fragmentation(connection, address, data, size);
+      if (retval == APX_NO_ERROR)
+      {
+        apx_file_stream_increment_transmitted(file);
+      }
+    }
+    else
+    {
+      retval = transmit_data_with_fragmentation(connection, address, data, size);
+    }
   }
   else
   {
@@ -533,25 +714,41 @@ static apx_error_t run_send_local_const_data(
 
 static apx_error_t run_send_local_data(apx_file_manager_worker_t *self, uint32_t address, uint8_t *data, uint32_t size)
 {
-  apx_connection_interface_t const *connection = apx_file_manager_shared_connection(self->shared);
-  apx_error_t retval = APX_NO_ERROR;
-  if (connection != NULL)
-  {
-    int32_t bytes_available = 0;
-    retval = connection->transmit_data_message(connection->arg, address, false, data, (int32_t)size, &bytes_available);
-  }
-  else
-  {
-    retval = APX_NOT_CONNECTED_ERROR;
-  }
+  apx_error_t retval = run_send_local_const_data(self, address, data, size);
   free(data);
   return retval;
 }
 
 static apx_error_t run_open_remote_file(apx_file_manager_worker_t *self, uint32_t address)
 {
-  uint8_t buffer[RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE]; // add 1 byte for null-terminator
+  uint8_t buffer[RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE];
   apx_size_t const encoded_size = rmf_encode_open_file_cmd(buffer, (apx_size_t)sizeof(buffer), address);
+  apx_error_t retval = APX_NO_ERROR;
+  if (encoded_size == 0u)
+  {
+    retval = APX_BUFFER_BOUNDARY_ERROR;
+  }
+  else
+  {
+    apx_connection_interface_t const *connection = apx_file_manager_shared_connection(self->shared);
+    if (connection != NULL)
+    {
+      int32_t bytes_available = 0;
+      retval = connection->transmit_data_message(
+        connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+    }
+    else
+    {
+      retval = APX_NOT_CONNECTED_ERROR;
+    }
+  }
+  return retval;
+}
+
+static apx_error_t run_close_remote_file(apx_file_manager_worker_t *self, uint32_t address)
+{
+  uint8_t buffer[RMF_CMD_TYPE_SIZE + RMF_FILE_CLOSE_CMD_SIZE];
+  apx_size_t const encoded_size = rmf_encode_close_file_cmd(buffer, (apx_size_t)sizeof(buffer), address);
   apx_error_t retval = APX_NO_ERROR;
   if (encoded_size == 0u)
   {
@@ -624,6 +821,184 @@ static apx_error_t run_send_create_connection(
     {
       retval = APX_NOT_CONNECTED_ERROR;
     }
+  }
+  return retval;
+}
+
+static apx_error_t run_send_stream_open(apx_file_manager_worker_t *self, rmf_stream_open_cmd_t const *cmd)
+{
+  uint8_t buffer[RMF_STREAM_OPEN_CMD_SIZE];
+  apx_size_t const encoded_size = rmf_encode_stream_open_cmd(buffer, (apx_size_t)sizeof(buffer), cmd);
+  apx_error_t retval = APX_NO_ERROR;
+  if (encoded_size == 0u)
+  {
+    retval = APX_BUFFER_BOUNDARY_ERROR;
+  }
+  else
+  {
+    apx_connection_interface_t const *connection = apx_file_manager_shared_connection(self->shared);
+    if (connection != NULL)
+    {
+      int32_t bytes_available = 0;
+      retval = connection->transmit_data_message(
+        connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+    }
+    else
+    {
+      retval = APX_NOT_CONNECTED_ERROR;
+    }
+  }
+  return retval;
+}
+
+static apx_error_t run_send_stream_open_rsp(apx_file_manager_worker_t *self, rmf_stream_open_rsp_cmd_t const *cmd)
+{
+  uint8_t buffer[RMF_STREAM_OPEN_RSP_CMD_SIZE];
+  apx_size_t const encoded_size = rmf_encode_stream_open_rsp_cmd(buffer, (apx_size_t)sizeof(buffer), cmd);
+  apx_error_t retval = APX_NO_ERROR;
+  if (encoded_size == 0u)
+  {
+    retval = APX_BUFFER_BOUNDARY_ERROR;
+  }
+  else
+  {
+    apx_connection_interface_t const *connection = apx_file_manager_shared_connection(self->shared);
+    if (connection != NULL)
+    {
+      int32_t bytes_available = 0;
+      retval = connection->transmit_data_message(
+        connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+    }
+    else
+    {
+      retval = APX_NOT_CONNECTED_ERROR;
+    }
+  }
+  return retval;
+}
+
+static apx_error_t run_send_stream_window_update(
+  apx_file_manager_worker_t *self, rmf_stream_window_update_cmd_t const *cmd)
+{
+  uint8_t buffer[RMF_STREAM_WINDOW_UPDATE_CMD_SIZE];
+  apx_size_t const encoded_size = rmf_encode_stream_window_update_cmd(buffer, (apx_size_t)sizeof(buffer), cmd);
+  apx_error_t retval = APX_NO_ERROR;
+  if (encoded_size == 0u)
+  {
+    retval = APX_BUFFER_BOUNDARY_ERROR;
+  }
+  else
+  {
+    apx_connection_interface_t const *connection = apx_file_manager_shared_connection(self->shared);
+    if (connection != NULL)
+    {
+      int32_t bytes_available = 0;
+      retval = connection->transmit_data_message(
+        connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+    }
+    else
+    {
+      retval = APX_NOT_CONNECTED_ERROR;
+    }
+  }
+  return retval;
+}
+
+static apx_error_t run_send_stream_abort(apx_file_manager_worker_t *self, rmf_stream_abort_cmd_t const *cmd)
+{
+  uint8_t buffer[RMF_STREAM_ABORT_CMD_SIZE];
+  apx_size_t const encoded_size = rmf_encode_stream_abort_cmd(buffer, (apx_size_t)sizeof(buffer), cmd);
+  apx_error_t retval = APX_NO_ERROR;
+  if (encoded_size == 0u)
+  {
+    retval = APX_BUFFER_BOUNDARY_ERROR;
+  }
+  else
+  {
+    apx_connection_interface_t const *connection = apx_file_manager_shared_connection(self->shared);
+    if (connection != NULL)
+    {
+      int32_t bytes_available = 0;
+      retval = connection->transmit_data_message(
+        connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+    }
+    else
+    {
+      retval = APX_NOT_CONNECTED_ERROR;
+    }
+  }
+  return retval;
+}
+
+static apx_error_t run_drain_stream_data(apx_file_manager_worker_t *self, uint32_t address)
+{
+  apx_connection_interface_t const *connection = apx_file_manager_shared_connection(self->shared);
+  if (connection == NULL)
+  {
+    return APX_NOT_CONNECTED_ERROR;
+  }
+  apx_file_t *file = apx_file_manager_shared_find_file_by_address(self->shared, address);
+  if ((file == NULL) || (!apx_file_is_stream(file)))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  uint32_t const start_address = apx_file_get_address_without_flags(file);
+  apx_error_t retval = APX_NO_ERROR;
+  while ((apx_file_get_stream_state(file) == APX_STREAM_STATE_OPEN) && apx_file_stream_can_transmit(file) &&
+    (apx_file_stream_pending_block_count(file) > 0))
+  {
+    apx_stream_block_item_t *item = apx_file_stream_dequeue_block(file);
+    if (item == NULL)
+    {
+      break;
+    }
+    retval = transmit_data_with_fragmentation(connection, start_address, item->data, item->size);
+    apx_stream_block_item_delete(item);
+    if (retval != APX_NO_ERROR)
+    {
+      break;
+    }
+    apx_file_stream_increment_transmitted(file);
+  }
+  return retval;
+}
+
+static apx_error_t transmit_data_with_fragmentation(
+  apx_connection_interface_t const *connection, uint32_t address, uint8_t const *data, uint32_t size)
+{
+  if ((connection == NULL) || (connection->transmit_data_message == NULL))
+  {
+    return APX_NOT_CONNECTED_ERROR;
+  }
+  uint32_t max_chunk_size = size;
+  if (connection->transmit_max_buffer_size != NULL)
+  {
+    int32_t const max_buf = connection->transmit_max_buffer_size(connection->arg);
+    if ((max_buf > (int32_t)RMF_FRAME_OVERHEAD_MARGIN) && (size > ((uint32_t)max_buf - RMF_FRAME_OVERHEAD_MARGIN)))
+    {
+      max_chunk_size = (uint32_t)max_buf - RMF_FRAME_OVERHEAD_MARGIN;
+    }
+  }
+  if ((size == 0u) || (size <= max_chunk_size))
+  {
+    int32_t bytes_available = 0;
+    return connection->transmit_data_message(connection->arg, address, false, data, (int32_t)size, &bytes_available);
+  }
+  uint32_t offset = 0u;
+  apx_error_t retval = APX_NO_ERROR;
+  while (offset < size)
+  {
+    uint32_t const remaining = size - offset;
+    uint32_t const chunk_size = (remaining > max_chunk_size) ? max_chunk_size : remaining;
+    bool const more_bit = (offset + chunk_size) < size;
+    int32_t bytes_available = 0;
+    retval = connection->transmit_data_message(
+      connection->arg, address + offset, more_bit, data + offset, (int32_t)chunk_size, &bytes_available);
+    if (retval != APX_NO_ERROR)
+    {
+      break;
+    }
+    offset += chunk_size;
   }
   return retval;
 }

@@ -94,6 +94,7 @@ set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_data_element.c
     apx_core/test/testsuite_extended_file_info.c
     apx_core/test/testsuite_file_info.c
+    apx_core/test/testsuite_file_manager.c
     apx_core/test/testsuite_file_manager_receiver.c
     apx_core/test/testsuite_file_map.c
     apx_core/test/testsuite_file.c

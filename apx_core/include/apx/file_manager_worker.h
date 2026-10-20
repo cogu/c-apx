@@ -78,7 +78,17 @@ apx_error_t apx_file_manager_worker_prepare_send_local_const_data(
 apx_error_t apx_file_manager_worker_prepare_send_local_data(
   apx_file_manager_worker_t *self, uint32_t address, uint8_t *data, uint32_t size);
 apx_error_t apx_file_manager_worker_prepare_send_open_file_request(apx_file_manager_worker_t *self, uint32_t address);
+apx_error_t apx_file_manager_worker_prepare_send_close_file_request(apx_file_manager_worker_t *self, uint32_t address);
 apx_error_t apx_file_manager_worker_prepare_send_connection_create(apx_file_manager_worker_t *self,
   apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const *tag);
+apx_error_t apx_file_manager_worker_prepare_send_stream_open(
+  apx_file_manager_worker_t *self, rmf_stream_open_cmd_t const *cmd);
+apx_error_t apx_file_manager_worker_prepare_send_stream_open_rsp(
+  apx_file_manager_worker_t *self, rmf_stream_open_rsp_cmd_t const *cmd);
+apx_error_t apx_file_manager_worker_prepare_send_stream_window_update(
+  apx_file_manager_worker_t *self, rmf_stream_window_update_cmd_t const *cmd);
+apx_error_t apx_file_manager_worker_prepare_send_stream_abort(
+  apx_file_manager_worker_t *self, rmf_stream_abort_cmd_t const *cmd);
+apx_error_t apx_file_manager_worker_prepare_drain_stream_data(apx_file_manager_worker_t *self, uint32_t address);
 
 #endif // APX_FILE_MANAGER_WORKER_H

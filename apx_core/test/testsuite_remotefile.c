@@ -52,6 +52,11 @@ static void test_encode_remote_file_request(CuTest *tc);
 static void test_decode_remote_file_request(CuTest *tc);
 static void test_encode_nack_cmd(CuTest *tc);
 static void test_decode_nack_cmd(CuTest *tc);
+static void test_close_file_cmd_encode(CuTest *tc);
+static void test_stream_open_cmd_encode_decode(CuTest *tc);
+static void test_stream_open_rsp_cmd_encode_decode(CuTest *tc);
+static void test_stream_window_update_cmd_encode_decode(CuTest *tc);
+static void test_stream_abort_cmd_encode_decode(CuTest *tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -90,6 +95,11 @@ CuSuite *testsuite_remotefile(void)
   SUITE_ADD_TEST(suite, test_decode_remote_file_request);
   SUITE_ADD_TEST(suite, test_encode_nack_cmd);
   SUITE_ADD_TEST(suite, test_decode_nack_cmd);
+  SUITE_ADD_TEST(suite, test_close_file_cmd_encode);
+  SUITE_ADD_TEST(suite, test_stream_open_cmd_encode_decode);
+  SUITE_ADD_TEST(suite, test_stream_open_rsp_cmd_encode_decode);
+  SUITE_ADD_TEST(suite, test_stream_window_update_cmd_encode_decode);
+  SUITE_ADD_TEST(suite, test_stream_abort_cmd_encode_decode);
 
   return suite;
 }
@@ -352,4 +362,137 @@ static void test_decode_nack_cmd(CuTest *tc)
 
    // Too short buffer (< 4 bytes)
   CuAssertUIntEquals(tc, 0u, rmf_decode_nack_cmd(full_cmd, full_cmd + 3, &error_code, &name));
+}
+
+static void test_close_file_cmd_encode(CuTest *tc)
+{
+  uint8_t buf[RMF_CMD_TYPE_SIZE + RMF_FILE_CLOSE_CMD_SIZE];
+  CuAssertUIntEquals(tc, 0u, rmf_encode_close_file_cmd(NULL, sizeof(buf), 0x1000u));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_close_file_cmd(buf, sizeof(buf) - 1u, 0x1000u));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_close_file_cmd(buf, sizeof(buf), RMF_HIGH_ADDR_MAX + 1u));
+  CuAssertUIntEquals(tc, sizeof(buf), rmf_encode_close_file_cmd(buf, sizeof(buf), 0x00102030u));
+  CuAssertUIntEquals(tc, RMF_CMD_CLOSE_FILE_MSG, unpackLE(buf, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 0x00102030u, unpackLE(buf + UINT32_SIZE, UINT32_SIZE));
+}
+
+static void test_stream_open_cmd_encode_decode(CuTest *tc)
+{
+  uint8_t buf[RMF_STREAM_OPEN_CMD_SIZE];
+  rmf_stream_open_cmd_t in_cmd = {
+    .start_address = 0x20001000u,
+    .max_block_size = 4096u,
+    .window_blocks = 8u,
+    .flags = 0u,
+  };
+  rmf_stream_open_cmd_t out_cmd;
+  memset(&out_cmd, 0, sizeof(out_cmd));
+
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_open_cmd(NULL, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_open_cmd(buf, sizeof(buf), NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_open_cmd(buf, RMF_STREAM_OPEN_CMD_SIZE - 1u, &in_cmd));
+
+  CuAssertUIntEquals(tc, RMF_STREAM_OPEN_CMD_SIZE, rmf_encode_stream_open_cmd(buf, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, RMF_CMD_STREAM_OPEN_MSG, unpackLE(buf, UINT32_SIZE));
+
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_open_cmd(NULL, buf + sizeof(buf), &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_open_cmd(buf, NULL, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_open_cmd(buf, buf + sizeof(buf), NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_open_cmd(buf, buf + RMF_STREAM_OPEN_CMD_SIZE - 1u, &out_cmd));
+
+  CuAssertUIntEquals(tc, RMF_STREAM_OPEN_CMD_SIZE, rmf_decode_stream_open_cmd(buf, buf + sizeof(buf), &out_cmd));
+  CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
+  CuAssertUIntEquals(tc, in_cmd.max_block_size, out_cmd.max_block_size);
+  CuAssertUIntEquals(tc, in_cmd.window_blocks, out_cmd.window_blocks);
+  CuAssertUIntEquals(tc, in_cmd.flags, out_cmd.flags);
+
+  // Wrong command type fails decode
+  packLE(buf, RMF_CMD_OPEN_FILE_MSG, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_open_cmd(buf, buf + sizeof(buf), &out_cmd));
+}
+
+static void test_stream_open_rsp_cmd_encode_decode(CuTest *tc)
+{
+  uint8_t buf[RMF_STREAM_OPEN_RSP_CMD_SIZE];
+  rmf_stream_open_rsp_cmd_t in_cmd = {
+    .start_address = 0x20001000u,
+    .status = (uint32_t)APX_NO_ERROR,
+    .block_size = 2048u,
+    .window_blocks = 4u,
+    .flags = 0u,
+  };
+  rmf_stream_open_rsp_cmd_t out_cmd;
+  memset(&out_cmd, 0, sizeof(out_cmd));
+
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_open_rsp_cmd(NULL, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_open_rsp_cmd(buf, sizeof(buf), NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_open_rsp_cmd(buf, RMF_STREAM_OPEN_RSP_CMD_SIZE - 1u, &in_cmd));
+
+  CuAssertUIntEquals(tc, RMF_STREAM_OPEN_RSP_CMD_SIZE, rmf_encode_stream_open_rsp_cmd(buf, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, RMF_CMD_STREAM_OPEN_RSP_MSG, unpackLE(buf, UINT32_SIZE));
+
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_open_rsp_cmd(NULL, buf + sizeof(buf), &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_open_rsp_cmd(buf, buf + RMF_STREAM_OPEN_RSP_CMD_SIZE - 1u, &out_cmd));
+
+  CuAssertUIntEquals(
+    tc, RMF_STREAM_OPEN_RSP_CMD_SIZE, rmf_decode_stream_open_rsp_cmd(buf, buf + sizeof(buf), &out_cmd));
+  CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
+  CuAssertUIntEquals(tc, in_cmd.status, out_cmd.status);
+  CuAssertUIntEquals(tc, in_cmd.block_size, out_cmd.block_size);
+  CuAssertUIntEquals(tc, in_cmd.window_blocks, out_cmd.window_blocks);
+  CuAssertUIntEquals(tc, in_cmd.flags, out_cmd.flags);
+}
+
+static void test_stream_window_update_cmd_encode_decode(CuTest *tc)
+{
+  uint8_t buf[RMF_STREAM_WINDOW_UPDATE_CMD_SIZE];
+  rmf_stream_window_update_cmd_t in_cmd = {
+    .start_address = 0x20001000u,
+    .consumed_block_count = 0x0102030405060708ULL,
+  };
+  rmf_stream_window_update_cmd_t out_cmd;
+  memset(&out_cmd, 0, sizeof(out_cmd));
+
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_window_update_cmd(NULL, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_window_update_cmd(buf, sizeof(buf), NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_window_update_cmd(buf, RMF_STREAM_WINDOW_UPDATE_CMD_SIZE - 1u, &in_cmd));
+
+  CuAssertUIntEquals(
+    tc, RMF_STREAM_WINDOW_UPDATE_CMD_SIZE, rmf_encode_stream_window_update_cmd(buf, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, RMF_CMD_STREAM_WINDOW_UPDATE_MSG, unpackLE(buf, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 0x08u, buf[8]);
+  CuAssertUIntEquals(tc, 0x01u, buf[15]);
+
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_window_update_cmd(NULL, buf + sizeof(buf), &out_cmd));
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_stream_window_update_cmd(buf, buf + RMF_STREAM_WINDOW_UPDATE_CMD_SIZE - 1u, &out_cmd));
+
+  CuAssertUIntEquals(
+    tc, RMF_STREAM_WINDOW_UPDATE_CMD_SIZE, rmf_decode_stream_window_update_cmd(buf, buf + sizeof(buf), &out_cmd));
+  CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
+  CuAssertTrue(tc, in_cmd.consumed_block_count == out_cmd.consumed_block_count);
+}
+
+static void test_stream_abort_cmd_encode_decode(CuTest *tc)
+{
+  uint8_t buf[RMF_STREAM_ABORT_CMD_SIZE];
+  rmf_stream_abort_cmd_t in_cmd = {
+    .start_address = 0x20001000u,
+    .status = (uint32_t)APX_FILE_TOO_LARGE_ERROR,
+  };
+  rmf_stream_abort_cmd_t out_cmd;
+  memset(&out_cmd, 0, sizeof(out_cmd));
+
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_abort_cmd(NULL, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_abort_cmd(buf, sizeof(buf), NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_stream_abort_cmd(buf, RMF_STREAM_ABORT_CMD_SIZE - 1u, &in_cmd));
+
+  CuAssertUIntEquals(tc, RMF_STREAM_ABORT_CMD_SIZE, rmf_encode_stream_abort_cmd(buf, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, RMF_CMD_STREAM_ABORT_MSG, unpackLE(buf, UINT32_SIZE));
+
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_abort_cmd(NULL, buf + sizeof(buf), &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_stream_abort_cmd(buf, buf + RMF_STREAM_ABORT_CMD_SIZE - 1u, &out_cmd));
+
+  CuAssertUIntEquals(tc, RMF_STREAM_ABORT_CMD_SIZE, rmf_decode_stream_abort_cmd(buf, buf + sizeof(buf), &out_cmd));
+  CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
+  CuAssertUIntEquals(tc, in_cmd.status, out_cmd.status);
 }

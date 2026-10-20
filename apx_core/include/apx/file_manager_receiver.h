@@ -27,6 +27,7 @@ typedef struct apx_file_manager_receiver_tag
 {
   adt_bytearray_t buffer;
   uint32_t start_address;
+  apx_size_t max_write_size;
 } apx_file_manager_receiver_t;
 
 typedef struct apx_file_manager_reception_result_tag
@@ -44,6 +45,8 @@ typedef struct apx_file_manager_reception_result_tag
 apx_error_t apx_file_manager_receiver_create(apx_file_manager_receiver_t *self);
 void apx_file_manager_receiver_destroy(apx_file_manager_receiver_t *self);
 void apx_file_manager_receiver_reset(apx_file_manager_receiver_t *self);
+void apx_file_manager_receiver_set_max_write_size(apx_file_manager_receiver_t *self, apx_size_t max_size);
+uint32_t apx_file_manager_receiver_active_address(apx_file_manager_receiver_t const *self);
 apx_error_t apx_file_manager_receiver_write(apx_file_manager_receiver_t *self,
   apx_file_manager_reception_result_t *result, uint32_t address, uint8_t const *data, apx_size_t size, bool more_bit);
 

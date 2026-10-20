@@ -33,6 +33,11 @@ typedef uint8_t apx_cmd_type_t;
 #define APX_CMD_SEND_LOCAL_DATA ((apx_cmd_type_t)8u)
 #define APX_CMD_SEND_HEADER_ACCEPTED ((apx_cmd_type_t)9u)
 #define APX_CMD_CREATE_CONNECTION ((apx_cmd_type_t)10u)
+#define APX_CMD_SEND_STREAM_OPEN ((apx_cmd_type_t)11u)
+#define APX_CMD_SEND_STREAM_OPEN_RSP ((apx_cmd_type_t)12u)
+#define APX_CMD_SEND_STREAM_WINDOW_UPDATE ((apx_cmd_type_t)13u)
+#define APX_CMD_SEND_STREAM_ABORT ((apx_cmd_type_t)14u)
+#define APX_CMD_DRAIN_STREAM_DATA ((apx_cmd_type_t)15u)
 
 
 typedef struct apx_command_tag

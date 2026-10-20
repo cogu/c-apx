@@ -51,6 +51,11 @@ rmf_file_info_t *rmf_file_info_make_fixed(char const *name, uint32_t size, uint3
   return rmf_file_info_new(address, size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
 }
 
+rmf_file_info_t *rmf_file_info_make_stream(char const *name, uint32_t max_block_size, uint32_t address)
+{
+  return rmf_file_info_new(address, max_block_size, name, RMF_FILE_TYPE_STREAM, RMF_DIGEST_TYPE_NONE, NULL);
+}
+
 rmf_file_info_t *rmf_file_info_make_fixed_with_digest(
   char const *name, uint32_t size, uint32_t address, rmf_digest_type_t digest_type, uint8_t const *digest_data)
 {

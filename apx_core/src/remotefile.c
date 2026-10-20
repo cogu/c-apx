@@ -111,12 +111,26 @@ apx_size_t rmf_address_decode(uint8_t const *begin, uint8_t const *end, uint32_t
 apx_size_t rmf_encode_open_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address)
 {
   apx_size_t const required_size = RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE;
-  if ((address > RMF_HIGH_ADDR_MAX) || (required_size > buf_size))
+  if ((buf == NULL) || (address > RMF_HIGH_ADDR_MAX) || (required_size > buf_size))
   {
     return 0;
   }
   uint8_t *p = buf;
   packLE(p, RMF_CMD_OPEN_FILE_MSG, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, address, (uint8_t)UINT32_SIZE);
+  return required_size;
+}
+
+apx_size_t rmf_encode_close_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address)
+{
+  apx_size_t const required_size = RMF_CMD_TYPE_SIZE + RMF_FILE_CLOSE_CMD_SIZE;
+  if ((buf == NULL) || (address > RMF_HIGH_ADDR_MAX) || (required_size > buf_size))
+  {
+    return 0u;
+  }
+  uint8_t *p = buf;
+  packLE(p, RMF_CMD_CLOSE_FILE_MSG, (uint8_t)UINT32_SIZE);
   p += UINT32_SIZE;
   packLE(p, address, (uint8_t)UINT32_SIZE);
   return required_size;
@@ -564,6 +578,184 @@ bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t *signature
     return true;
   }
   return false;
+}
+
+apx_size_t rmf_encode_stream_open_cmd(uint8_t *buf, apx_size_t buf_size, rmf_stream_open_cmd_t const *cmd)
+{
+  if ((buf == NULL) || (cmd == NULL) || (buf_size < RMF_STREAM_OPEN_CMD_SIZE) ||
+    (cmd->start_address > RMF_HIGH_ADDR_MAX))
+  {
+    return 0u;
+  }
+  uint8_t *p = buf;
+  packLE(p, RMF_CMD_STREAM_OPEN_MSG, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, cmd->start_address, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, cmd->max_block_size, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, (uint32_t)cmd->window_blocks, (uint8_t)UINT16_SIZE);
+  p += UINT16_SIZE;
+  packLE(p, (uint32_t)cmd->flags, (uint8_t)UINT16_SIZE);
+  return RMF_STREAM_OPEN_CMD_SIZE;
+}
+
+apx_size_t rmf_decode_stream_open_cmd(uint8_t const *begin, uint8_t const *end, rmf_stream_open_cmd_t *cmd)
+{
+  if ((begin == NULL) || (end == NULL) || (cmd == NULL) || (begin >= end))
+  {
+    return 0u;
+  }
+  if ((apx_size_t)(end - begin) < RMF_STREAM_OPEN_CMD_SIZE)
+  {
+    return 0u;
+  }
+  uint8_t const *p = begin;
+  uint32_t const cmd_type = unpackLE(p, (uint8_t)UINT32_SIZE);
+  if (cmd_type != RMF_CMD_STREAM_OPEN_MSG)
+  {
+    return 0u;
+  }
+  p += UINT32_SIZE;
+  cmd->start_address = unpackLE(p, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  cmd->max_block_size = unpackLE(p, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  cmd->window_blocks = (uint16_t)unpackLE(p, (uint8_t)UINT16_SIZE);
+  p += UINT16_SIZE;
+  cmd->flags = (uint16_t)unpackLE(p, (uint8_t)UINT16_SIZE);
+  return RMF_STREAM_OPEN_CMD_SIZE;
+}
+
+apx_size_t rmf_encode_stream_open_rsp_cmd(uint8_t *buf, apx_size_t buf_size, rmf_stream_open_rsp_cmd_t const *cmd)
+{
+  if ((buf == NULL) || (cmd == NULL) || (buf_size < RMF_STREAM_OPEN_RSP_CMD_SIZE) ||
+    (cmd->start_address > RMF_HIGH_ADDR_MAX))
+  {
+    return 0u;
+  }
+  uint8_t *p = buf;
+  packLE(p, RMF_CMD_STREAM_OPEN_RSP_MSG, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, cmd->start_address, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, cmd->status, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, cmd->block_size, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, (uint32_t)cmd->window_blocks, (uint8_t)UINT16_SIZE);
+  p += UINT16_SIZE;
+  packLE(p, (uint32_t)cmd->flags, (uint8_t)UINT16_SIZE);
+  return RMF_STREAM_OPEN_RSP_CMD_SIZE;
+}
+
+apx_size_t rmf_decode_stream_open_rsp_cmd(uint8_t const *begin, uint8_t const *end, rmf_stream_open_rsp_cmd_t *cmd)
+{
+  if ((begin == NULL) || (end == NULL) || (cmd == NULL) || (begin >= end))
+  {
+    return 0u;
+  }
+  if ((apx_size_t)(end - begin) < RMF_STREAM_OPEN_RSP_CMD_SIZE)
+  {
+    return 0u;
+  }
+  uint8_t const *p = begin;
+  uint32_t const cmd_type = unpackLE(p, (uint8_t)UINT32_SIZE);
+  if (cmd_type != RMF_CMD_STREAM_OPEN_RSP_MSG)
+  {
+    return 0u;
+  }
+  p += UINT32_SIZE;
+  cmd->start_address = unpackLE(p, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  cmd->status = unpackLE(p, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  cmd->block_size = unpackLE(p, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  cmd->window_blocks = (uint16_t)unpackLE(p, (uint8_t)UINT16_SIZE);
+  p += UINT16_SIZE;
+  cmd->flags = (uint16_t)unpackLE(p, (uint8_t)UINT16_SIZE);
+  return RMF_STREAM_OPEN_RSP_CMD_SIZE;
+}
+
+apx_size_t rmf_encode_stream_window_update_cmd(
+  uint8_t *buf, apx_size_t buf_size, rmf_stream_window_update_cmd_t const *cmd)
+{
+  if ((buf == NULL) || (cmd == NULL) || (buf_size < RMF_STREAM_WINDOW_UPDATE_CMD_SIZE) ||
+    (cmd->start_address > RMF_HIGH_ADDR_MAX))
+  {
+    return 0u;
+  }
+  uint8_t *p = buf;
+  packLE(p, RMF_CMD_STREAM_WINDOW_UPDATE_MSG, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, cmd->start_address, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE64(p, cmd->consumed_block_count, (uint8_t)UINT64_SIZE);
+  return RMF_STREAM_WINDOW_UPDATE_CMD_SIZE;
+}
+
+apx_size_t rmf_decode_stream_window_update_cmd(
+  uint8_t const *begin, uint8_t const *end, rmf_stream_window_update_cmd_t *cmd)
+{
+  if ((begin == NULL) || (end == NULL) || (cmd == NULL) || (begin >= end))
+  {
+    return 0u;
+  }
+  if ((apx_size_t)(end - begin) < RMF_STREAM_WINDOW_UPDATE_CMD_SIZE)
+  {
+    return 0u;
+  }
+  uint8_t const *p = begin;
+  uint32_t const cmd_type = unpackLE(p, (uint8_t)UINT32_SIZE);
+  if (cmd_type != RMF_CMD_STREAM_WINDOW_UPDATE_MSG)
+  {
+    return 0u;
+  }
+  p += UINT32_SIZE;
+  cmd->start_address = unpackLE(p, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  cmd->consumed_block_count = unpackLE64(p, (uint8_t)UINT64_SIZE);
+  return RMF_STREAM_WINDOW_UPDATE_CMD_SIZE;
+}
+
+apx_size_t rmf_encode_stream_abort_cmd(uint8_t *buf, apx_size_t buf_size, rmf_stream_abort_cmd_t const *cmd)
+{
+  if ((buf == NULL) || (cmd == NULL) || (buf_size < RMF_STREAM_ABORT_CMD_SIZE) ||
+    (cmd->start_address > RMF_HIGH_ADDR_MAX))
+  {
+    return 0u;
+  }
+  uint8_t *p = buf;
+  packLE(p, RMF_CMD_STREAM_ABORT_MSG, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, cmd->start_address, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  packLE(p, cmd->status, (uint8_t)UINT32_SIZE);
+  return RMF_STREAM_ABORT_CMD_SIZE;
+}
+
+apx_size_t rmf_decode_stream_abort_cmd(uint8_t const *begin, uint8_t const *end, rmf_stream_abort_cmd_t *cmd)
+{
+  if ((begin == NULL) || (end == NULL) || (cmd == NULL) || (begin >= end))
+  {
+    return 0u;
+  }
+  if ((apx_size_t)(end - begin) < RMF_STREAM_ABORT_CMD_SIZE)
+  {
+    return 0u;
+  }
+  uint8_t const *p = begin;
+  uint32_t const cmd_type = unpackLE(p, (uint8_t)UINT32_SIZE);
+  if (cmd_type != RMF_CMD_STREAM_ABORT_MSG)
+  {
+    return 0u;
+  }
+  p += UINT32_SIZE;
+  cmd->start_address = unpackLE(p, (uint8_t)UINT32_SIZE);
+  p += UINT32_SIZE;
+  cmd->status = unpackLE(p, (uint8_t)UINT32_SIZE);
+  return RMF_STREAM_ABORT_CMD_SIZE;
 }
 
 

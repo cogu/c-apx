@@ -50,6 +50,7 @@ apx_error_t apx_file_manager_receiver_create(apx_file_manager_receiver_t *self)
   {
     adt_bytearray_create(&self->buffer);
     self->start_address = RMF_INVALID_ADDRESS;
+    self->max_write_size = APX_MAX_FILE_SIZE;
     return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -68,8 +69,26 @@ void apx_file_manager_receiver_reset(apx_file_manager_receiver_t *self)
   if (self != NULL)
   {
     self->start_address = RMF_INVALID_ADDRESS;
+    self->max_write_size = APX_MAX_FILE_SIZE;
     adt_bytearray_clear(&self->buffer);
   }
+}
+
+void apx_file_manager_receiver_set_max_write_size(apx_file_manager_receiver_t *self, apx_size_t max_size)
+{
+  if (self != NULL)
+  {
+    self->max_write_size = (max_size <= APX_MAX_FILE_SIZE) ? max_size : APX_MAX_FILE_SIZE;
+  }
+}
+
+uint32_t apx_file_manager_receiver_active_address(apx_file_manager_receiver_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->start_address;
+  }
+  return RMF_INVALID_ADDRESS;
 }
 
 apx_error_t apx_file_manager_receiver_write(apx_file_manager_receiver_t *self,
@@ -78,8 +97,9 @@ apx_error_t apx_file_manager_receiver_write(apx_file_manager_receiver_t *self,
   if ((self != NULL) && (result != NULL) && (data != NULL) && (address < RMF_INVALID_ADDRESS))
   {
     apx_error_t retval = APX_NO_ERROR;
-    if (size > APX_MAX_FILE_SIZE)
+    if ((size > APX_MAX_FILE_SIZE) || (size > self->max_write_size))
     {
+      apx_file_manager_receiver_reset(self);
       retval = APX_FILE_TOO_LARGE_ERROR;
     }
     else
@@ -134,10 +154,13 @@ static apx_error_t continue_reception(apx_file_manager_receiver_t *self, apx_fil
   uint32_t const expected_address = self->start_address + current_len;
   if (expected_address != address)
   {
+    apx_file_manager_receiver_reset(self);
     return APX_INVALID_ADDRESS_ERROR;
   }
-  if (((uint64_t)current_len + (uint64_t)size) > APX_MAX_FILE_SIZE)
+  if ((((uint64_t)current_len + (uint64_t)size) > APX_MAX_FILE_SIZE) ||
+    (((uint64_t)current_len + (uint64_t)size) > (uint64_t)self->max_write_size))
   {
+    apx_file_manager_receiver_reset(self);
     return APX_FILE_TOO_LARGE_ERROR;
   }
   if (size > 0u)
@@ -162,5 +185,6 @@ static void process_more_bit(
     result->data = adt_bytearray_const_data(&self->buffer);
     result->size = (apx_size_t)adt_bytearray_length(&self->buffer);
     self->start_address = RMF_INVALID_ADDRESS;
+    self->max_write_size = APX_MAX_FILE_SIZE;
   }
 }

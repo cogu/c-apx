@@ -252,6 +252,34 @@ void apx_file_manager_shared_disconnected(apx_file_manager_shared_t *self)
   {
     MUTEX_LOCK(self->lock);
     self->is_connected = false;
+    adt_list_t const *local_list = apx_file_map_get_list(&self->local_file_map);
+    if (local_list != NULL)
+    {
+      adt_list_elem_t *iter = adt_list_iter_first(local_list);
+      while (iter != NULL)
+      {
+        apx_file_t *file = (apx_file_t *)iter->pItem;
+        if (file != NULL)
+        {
+          apx_file_close(file);
+        }
+        iter = adt_list_iter_next(iter);
+      }
+    }
+    adt_list_t const *remote_list = apx_file_map_get_list(&self->remote_file_map);
+    if (remote_list != NULL)
+    {
+      adt_list_elem_t *iter = adt_list_iter_first(remote_list);
+      while (iter != NULL)
+      {
+        apx_file_t *file = (apx_file_t *)iter->pItem;
+        if (file != NULL)
+        {
+          apx_file_close(file);
+        }
+        iter = adt_list_iter_next(iter);
+      }
+    }
     MUTEX_UNLOCK(self->lock);
   }
 }

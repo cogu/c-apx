@@ -91,12 +91,49 @@ typedef uint8_t rmf_signature_type_t;
 #define RMF_CMD_PUBLISH_SIGNED_FILE_MSG ((uint32_t)23u)
 #define RMF_CMD_PUBLISH_REMOTE_FILE_MSG ((uint32_t)24u)
 #define RMF_CMD_PUBLISH_SIGNED_REMOTE_FILE_MSG ((uint32_t)25u)
+#define RMF_CMD_STREAM_OPEN_MSG ((uint32_t)25u)
+#define RMF_CMD_STREAM_OPEN_RSP_MSG ((uint32_t)26u)
+#define RMF_CMD_STREAM_WINDOW_UPDATE_MSG ((uint32_t)27u)
+#define RMF_CMD_STREAM_ABORT_MSG ((uint32_t)28u)
 
 #define RMF_FILE_OPEN_CMD_SIZE UINT32_SIZE
 #define RMF_FILE_CLOSE_CMD_SIZE UINT32_SIZE
 #define RMF_CMD_TYPE_SIZE UINT32_SIZE
 #define RMF_CMD_NACK_SIZE (RMF_CMD_TYPE_SIZE + UINT32_SIZE)
 #define RMF_CMD_NACK_DATA_SIZE UINT32_SIZE
+#define RMF_STREAM_OPEN_CMD_SIZE 16u
+#define RMF_STREAM_OPEN_RSP_CMD_SIZE 20u
+#define RMF_STREAM_WINDOW_UPDATE_CMD_SIZE 16u
+#define RMF_STREAM_ABORT_CMD_SIZE 12u
+
+typedef struct rmf_stream_open_cmd_tag
+{
+  uint32_t start_address;
+  uint32_t max_block_size;
+  uint16_t window_blocks;
+  uint16_t flags;
+} rmf_stream_open_cmd_t;
+
+typedef struct rmf_stream_open_rsp_cmd_tag
+{
+  uint32_t start_address;
+  uint32_t status;
+  uint32_t block_size;
+  uint16_t window_blocks;
+  uint16_t flags;
+} rmf_stream_open_rsp_cmd_t;
+
+typedef struct rmf_stream_window_update_cmd_tag
+{
+  uint32_t start_address;
+  uint64_t consumed_block_count;
+} rmf_stream_window_update_cmd_t;
+
+typedef struct rmf_stream_abort_cmd_tag
+{
+  uint32_t start_address;
+  uint32_t status;
+} rmf_stream_abort_cmd_t;
 
 
 #define RMF_U16_FILE_TYPE_FIXED ((uint16_t)0u)
@@ -133,6 +170,7 @@ apx_size_t rmf_needed_encoding_size(uint32_t address);
 apx_size_t rmf_address_encode(uint8_t *buf, apx_size_t buf_size, uint32_t address, bool more_bit);
 apx_size_t rmf_address_decode(uint8_t const *begin, uint8_t const *end, uint32_t *address, bool *more_bit);
 apx_size_t rmf_encode_open_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address);
+apx_size_t rmf_encode_close_file_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t address);
 apx_size_t rmf_encode_acknowledge_cmd(uint8_t *buf, apx_size_t buf_size);
 apx_size_t rmf_encode_nack_cmd(uint8_t *buf, apx_size_t buf_size, uint32_t error_code, char const *name);
 apx_size_t rmf_decode_cmd_type(uint8_t const *begin, uint8_t const *end, uint32_t *cmd_type);
@@ -148,6 +186,16 @@ apx_size_t rmf_decode_publish_file_cmd(uint8_t const *buf, apx_size_t buf_size, 
 apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t *buf, apx_size_t buf_size, struct rmf_file_info_tag const *file);
 apx_size_t rmf_decode_publish_signed_file_cmd(
   uint8_t const *buf, apx_size_t buf_size, struct rmf_file_info_tag *file_info);
+apx_size_t rmf_encode_stream_open_cmd(uint8_t *buf, apx_size_t buf_size, rmf_stream_open_cmd_t const *cmd);
+apx_size_t rmf_decode_stream_open_cmd(uint8_t const *begin, uint8_t const *end, rmf_stream_open_cmd_t *cmd);
+apx_size_t rmf_encode_stream_open_rsp_cmd(uint8_t *buf, apx_size_t buf_size, rmf_stream_open_rsp_cmd_t const *cmd);
+apx_size_t rmf_decode_stream_open_rsp_cmd(uint8_t const *begin, uint8_t const *end, rmf_stream_open_rsp_cmd_t *cmd);
+apx_size_t rmf_encode_stream_window_update_cmd(
+  uint8_t *buf, apx_size_t buf_size, rmf_stream_window_update_cmd_t const *cmd);
+apx_size_t rmf_decode_stream_window_update_cmd(
+  uint8_t const *begin, uint8_t const *end, rmf_stream_window_update_cmd_t *cmd);
+apx_size_t rmf_encode_stream_abort_cmd(uint8_t *buf, apx_size_t buf_size, rmf_stream_abort_cmd_t const *cmd);
+apx_size_t rmf_decode_stream_abort_cmd(uint8_t const *begin, uint8_t const *end, rmf_stream_abort_cmd_t *cmd);
 bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t *file_type);
 bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t *digest_type);
 bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t *signature_type);

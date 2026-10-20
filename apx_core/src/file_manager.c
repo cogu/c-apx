@@ -36,8 +36,14 @@ static apx_error_t process_file_write_message(
   apx_file_manager_t *self, uint32_t address, uint8_t const *data, apx_size_t size);
 static apx_error_t process_open_file_request(apx_file_manager_t *self, uint32_t start_address);
 static apx_error_t process_close_file_request(apx_file_manager_t *self, uint32_t start_address);
+static apx_error_t process_revoke_file_request(apx_file_manager_t *self, uint32_t start_address);
 static apx_error_t process_remote_file_published(apx_file_manager_t *self, rmf_file_info_t const *file_info);
 static apx_error_t process_nack_message(apx_file_manager_t *self, apx_error_t error_code, char const *name);
+static apx_error_t process_stream_open_request(apx_file_manager_t *self, uint8_t const *data, apx_size_t size);
+static apx_error_t process_stream_open_response(apx_file_manager_t *self, uint8_t const *data, apx_size_t size);
+static apx_error_t process_stream_window_update(apx_file_manager_t *self, uint8_t const *data, apx_size_t size);
+static apx_error_t process_stream_abort(apx_file_manager_t *self, uint8_t const *data, apx_size_t size);
+static void abort_stream_with_error(apx_file_manager_t *self, apx_file_t *file, apx_error_t status);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -129,6 +135,7 @@ void apx_file_manager_disconnected(apx_file_manager_t *self)
 {
   if (self != NULL)
   {
+    apx_file_manager_receiver_reset(&self->receiver);
     apx_file_manager_shared_disconnected(&self->shared);
   }
 }
@@ -205,10 +212,64 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
       apx_error_t error_code;
       apx_file_manager_reception_result_t result;
       assert(msg_len >= header_size);
+      apx_size_t const payload_len = msg_len - header_size;
+      uint32_t const active_address = apx_file_manager_receiver_active_address(&self->receiver);
+      apx_file_t *active_stream_file = NULL;
+
+      if (active_address == RMF_INVALID_ADDRESS)
+      {
+        if (address < RMF_CMD_AREA_START_ADDRESS)
+        {
+          apx_file_t *remote_file =
+            apx_file_manager_shared_find_file_by_address(&self->shared, address | RMF_REMOTE_ADDRESS_BIT);
+          if ((remote_file != NULL) && apx_file_is_stream(remote_file))
+          {
+            active_stream_file = remote_file;
+            if (apx_file_get_stream_state(remote_file) != APX_STREAM_STATE_OPEN)
+            {
+              abort_stream_with_error(self, remote_file, APX_FILE_NOT_OPEN_ERROR);
+              return APX_FILE_NOT_OPEN_ERROR;
+            }
+            if (address != apx_file_get_address_without_flags(remote_file))
+            {
+              abort_stream_with_error(self, remote_file, APX_INVALID_ADDRESS_ERROR);
+              return APX_INVALID_ADDRESS_ERROR;
+            }
+            if (payload_len == 0u)
+            {
+              abort_stream_with_error(self, remote_file, APX_VALUE_LENGTH_ERROR);
+              return APX_VALUE_LENGTH_ERROR;
+            }
+            apx_file_manager_receiver_set_max_write_size(&self->receiver, apx_file_get_stream_block_size(remote_file));
+          }
+          else
+          {
+            apx_file_manager_receiver_set_max_write_size(&self->receiver, APX_MAX_FILE_SIZE);
+          }
+        }
+        else
+        {
+          apx_file_manager_receiver_set_max_write_size(&self->receiver, APX_MAX_FILE_SIZE);
+        }
+      }
+      else if (active_address < RMF_CMD_AREA_START_ADDRESS)
+      {
+        apx_file_t *remote_file =
+          apx_file_manager_shared_find_file_by_address(&self->shared, active_address | RMF_REMOTE_ADDRESS_BIT);
+        if ((remote_file != NULL) && apx_file_is_stream(remote_file))
+        {
+          active_stream_file = remote_file;
+        }
+      }
+
       error_code = apx_file_manager_receiver_write(
-        &self->receiver, &result, address, msg_data + header_size, msg_len - header_size, more_bit);
+        &self->receiver, &result, address, msg_data + header_size, payload_len, more_bit);
       if (error_code != APX_NO_ERROR)
       {
+        if (active_stream_file != NULL)
+        {
+          abort_stream_with_error(self, active_stream_file, error_code);
+        }
         return error_code;
       }
       else if (result.is_complete)
@@ -243,6 +304,21 @@ apx_error_t apx_file_manager_send_local_const_data(
     {
       return APX_FILE_NOT_OPEN_ERROR;
     }
+    if (apx_file_is_stream(file))
+    {
+      if (address != apx_file_get_address_without_flags(file))
+      {
+        return APX_INVALID_ADDRESS_ERROR;
+      }
+      if (size == 0u)
+      {
+        return APX_VALUE_LENGTH_ERROR;
+      }
+      if (size > apx_file_get_stream_block_size(file))
+      {
+        return APX_FILE_TOO_LARGE_ERROR;
+      }
+    }
     return apx_file_manager_worker_prepare_send_local_const_data(&self->worker, address, data, (uint32_t)size);
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -263,6 +339,24 @@ apx_error_t apx_file_manager_send_local_data(apx_file_manager_t *self, uint32_t 
       free(data);
       return APX_FILE_NOT_OPEN_ERROR;
     }
+    if (apx_file_is_stream(file))
+    {
+      if (address != apx_file_get_address_without_flags(file))
+      {
+        free(data);
+        return APX_INVALID_ADDRESS_ERROR;
+      }
+      if (size == 0u)
+      {
+        free(data);
+        return APX_VALUE_LENGTH_ERROR;
+      }
+      if (size > apx_file_get_stream_block_size(file))
+      {
+        free(data);
+        return APX_FILE_TOO_LARGE_ERROR;
+      }
+    }
     apx_error_t retval = apx_file_manager_worker_prepare_send_local_data(&self->worker, address, data, (uint32_t)size);
     if (retval != APX_NO_ERROR)
     {
@@ -277,9 +371,126 @@ apx_error_t apx_file_manager_send_open_file_request(apx_file_manager_t *self, ui
 {
   if (self != NULL)
   {
-    return apx_file_manager_worker_prepare_send_open_file_request(&self->worker, address);
+    apx_file_t *remote_file =
+      apx_file_manager_shared_find_file_by_address(&self->shared, address | RMF_REMOTE_ADDRESS_BIT);
+    if ((remote_file != NULL) && apx_file_is_stream(remote_file))
+    {
+      return APX_UNSUPPORTED_ERROR;
+    }
+    return apx_file_manager_worker_prepare_send_open_file_request(&self->worker, address & RMF_ADDRESS_MASK_INTERNAL);
   }
   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_send_close_file_request(apx_file_manager_t *self, uint32_t address)
+{
+  if (self != NULL)
+  {
+    uint32_t const clean_addr = address & RMF_ADDRESS_MASK_INTERNAL;
+    if (apx_file_manager_receiver_active_address(&self->receiver) == clean_addr)
+    {
+      apx_file_manager_receiver_reset(&self->receiver);
+    }
+    apx_file_t *remote_file =
+      apx_file_manager_shared_find_file_by_address(&self->shared, clean_addr | RMF_REMOTE_ADDRESS_BIT);
+    if (remote_file != NULL)
+    {
+      apx_file_close(remote_file);
+    }
+    return apx_file_manager_worker_prepare_send_close_file_request(&self->worker, clean_addr);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_open_stream(
+  apx_file_manager_t *self, uint32_t address, uint32_t max_block_size, uint16_t window_blocks)
+{
+  if ((self == NULL) || (max_block_size == 0u) || (window_blocks == 0u))
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  uint32_t const clean_addr = address & RMF_ADDRESS_MASK_INTERNAL;
+  apx_file_t *remote_file =
+    apx_file_manager_shared_find_file_by_address(&self->shared, clean_addr | RMF_REMOTE_ADDRESS_BIT);
+  if ((remote_file == NULL) || (apx_file_get_address_without_flags(remote_file) != clean_addr))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  if (!apx_file_is_stream(remote_file))
+  {
+    return APX_INVALID_FILE_ERROR;
+  }
+  if (apx_file_get_stream_state(remote_file) != APX_STREAM_STATE_CLOSED)
+  {
+    return APX_BUSY_ERROR;
+  }
+  apx_file_set_stream_open_pending(remote_file, max_block_size, window_blocks, 0u);
+  rmf_stream_open_cmd_t cmd = {
+    .start_address = clean_addr,
+    .max_block_size = max_block_size,
+    .window_blocks = window_blocks,
+    .flags = 0u,
+  };
+  return apx_file_manager_worker_prepare_send_stream_open(&self->worker, &cmd);
+}
+
+apx_error_t apx_file_manager_abort_stream(apx_file_manager_t *self, uint32_t address, apx_error_t status)
+{
+  if ((self == NULL) || (status == APX_NO_ERROR))
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  uint32_t const clean_addr = address & RMF_ADDRESS_MASK_INTERNAL;
+  apx_file_t *file = apx_file_manager_shared_find_file_by_address(&self->shared, address);
+  if ((file == NULL) || (apx_file_get_address_without_flags(file) != clean_addr))
+  {
+    file = apx_file_manager_shared_find_file_by_address(&self->shared, clean_addr | RMF_REMOTE_ADDRESS_BIT);
+  }
+  if ((file == NULL) || (apx_file_get_address_without_flags(file) != clean_addr))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  if (!apx_file_is_stream(file))
+  {
+    return APX_INVALID_FILE_ERROR;
+  }
+  abort_stream_with_error(self, file, status);
+  return APX_NO_ERROR;
+}
+
+apx_error_t apx_file_manager_consume_stream_blocks(apx_file_manager_t *self, uint32_t address, uint32_t count)
+{
+  if ((self == NULL) || (count == 0u))
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  uint32_t const clean_addr = address & RMF_ADDRESS_MASK_INTERNAL;
+  apx_file_t *remote_file =
+    apx_file_manager_shared_find_file_by_address(&self->shared, clean_addr | RMF_REMOTE_ADDRESS_BIT);
+  if ((remote_file == NULL) || (apx_file_get_address_without_flags(remote_file) != clean_addr))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  if (!apx_file_is_stream(remote_file))
+  {
+    return APX_INVALID_FILE_ERROR;
+  }
+  bool should_send_update = false;
+  uint64_t new_consumed_count = 0u;
+  apx_error_t err = apx_file_stream_consume_blocks(remote_file, count, &should_send_update, &new_consumed_count);
+  if (err != APX_NO_ERROR)
+  {
+    return err;
+  }
+  if (should_send_update)
+  {
+    rmf_stream_window_update_cmd_t cmd = {
+      .start_address = clean_addr,
+      .consumed_block_count = new_consumed_count,
+    };
+    return apx_file_manager_worker_prepare_send_stream_window_update(&self->worker, &cmd);
+  }
+  return APX_NO_ERROR;
 }
 
 apx_error_t apx_file_manager_send_error_code(apx_file_manager_t *self, apx_error_t error_code, char const *name)
@@ -435,6 +646,15 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
     }
     break;
   case RMF_CMD_REVOKE_FILE_MSG:
+    if (cmd_size == RMF_FILE_OPEN_CMD_SIZE)
+    {
+      uint32_t const address = unpackLE(next, UINT32_SIZE);
+      retval = process_revoke_file_request(self, address);
+    }
+    else
+    {
+      retval = APX_INVALID_MSG_ERROR;
+    }
     break;
   case RMF_CMD_NACK_MSG:
     if (cmd_size >= RMF_CMD_NACK_DATA_SIZE)
@@ -478,6 +698,18 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
       retval = APX_INVALID_MSG_ERROR;
     }
     break;
+  case RMF_CMD_STREAM_OPEN_MSG:
+    retval = process_stream_open_request(self, data, size);
+    break;
+  case RMF_CMD_STREAM_OPEN_RSP_MSG:
+    retval = process_stream_open_response(self, data, size);
+    break;
+  case RMF_CMD_STREAM_WINDOW_UPDATE_MSG:
+    retval = process_stream_window_update(self, data, size);
+    break;
+  case RMF_CMD_STREAM_ABORT_MSG:
+    retval = process_stream_abort(self, data, size);
+    break;
   default:
     retval = APX_UNSUPPORTED_ERROR;
   }
@@ -492,6 +724,72 @@ static apx_error_t process_file_write_message(
   {
     return APX_INVALID_WRITE_ERROR;
   }
+  if (apx_file_is_stream(file))
+  {
+    if (apx_file_get_stream_state(file) != APX_STREAM_STATE_OPEN)
+    {
+      abort_stream_with_error(self, file, APX_FILE_NOT_OPEN_ERROR);
+      return APX_FILE_NOT_OPEN_ERROR;
+    }
+    uint32_t const start_address = apx_file_get_address_without_flags(file);
+    if (address != start_address)
+    {
+      abort_stream_with_error(self, file, APX_INVALID_ADDRESS_ERROR);
+      return APX_INVALID_ADDRESS_ERROR;
+    }
+    if (size == 0u)
+    {
+      abort_stream_with_error(self, file, APX_VALUE_LENGTH_ERROR);
+      return APX_VALUE_LENGTH_ERROR;
+    }
+    if (size > apx_file_get_stream_block_size(file))
+    {
+      abort_stream_with_error(self, file, APX_FILE_TOO_LARGE_ERROR);
+      return APX_FILE_TOO_LARGE_ERROR;
+    }
+    apx_error_t const win_err = apx_file_stream_on_block_received(file);
+    if (win_err != APX_NO_ERROR)
+    {
+      abort_stream_with_error(self, file, win_err);
+      return win_err;
+    }
+    apx_connection_interface_t const *connection = apx_file_manager_shared_connection(&self->shared);
+    apx_error_t notify_err = APX_NO_ERROR;
+    if ((connection != NULL) && (connection->remote_file_write_notification != NULL))
+    {
+      notify_err = connection->remote_file_write_notification(connection->arg, file, 0u, data, size);
+      if (notify_err == APX_NOT_IMPLEMENTED_ERROR)
+      {
+        notify_err = apx_file_write_notify(file, 0u, data, (uint32_t)size);
+      }
+    }
+    else
+    {
+      notify_err = apx_file_write_notify(file, 0u, data, (uint32_t)size);
+    }
+    if (notify_err == APX_INVALID_WRITE_HANDLER_ERROR)
+    {
+      notify_err = APX_NO_ERROR;
+    }
+    if ((notify_err == APX_NO_ERROR) && apx_file_get_stream_auto_consume(file))
+    {
+      bool should_send_update = false;
+      uint64_t new_consumed_count = 0u;
+      if (apx_file_stream_consume_blocks(file, 1u, &should_send_update, &new_consumed_count) == APX_NO_ERROR)
+      {
+        if (should_send_update)
+        {
+          rmf_stream_window_update_cmd_t update_cmd = {
+            .start_address = start_address,
+            .consumed_block_count = new_consumed_count,
+          };
+          (void)apx_file_manager_worker_prepare_send_stream_window_update(&self->worker, &update_cmd);
+        }
+      }
+    }
+    return notify_err;
+  }
+
   if (!apx_file_is_open(file))
   {
       // Ignore writes on closed files
@@ -505,7 +803,11 @@ static apx_error_t process_file_write_message(
   uint32_t const start_address = apx_file_get_address_without_flags(file);
   assert(start_address <= address);
   uint32_t const offset = address - start_address;
-  return connection->remote_file_write_notification(connection->arg, file, offset, data, size);
+  if (connection->remote_file_write_notification != NULL)
+  {
+    return connection->remote_file_write_notification(connection->arg, file, offset, data, size);
+  }
+  return apx_file_write_notify(file, offset, data, (uint32_t)size);
 }
 
 static apx_error_t process_open_file_request(apx_file_manager_t *self, uint32_t start_address)
@@ -514,6 +816,11 @@ static apx_error_t process_open_file_request(apx_file_manager_t *self, uint32_t 
   if (file == NULL)
   {
     return APX_FILE_NOT_FOUND_ERROR;
+  }
+  if (apx_file_is_stream(file))
+  {
+    (void)apx_file_manager_worker_prepare_error_code(&self->worker, APX_UNSUPPORTED_ERROR, apx_file_get_name(file));
+    return APX_UNSUPPORTED_ERROR;
   }
   apx_file_open(file);
   apx_file_open_notify(file);
@@ -527,9 +834,40 @@ static apx_error_t process_open_file_request(apx_file_manager_t *self, uint32_t 
 
 static apx_error_t process_close_file_request(apx_file_manager_t *self, uint32_t start_address)
 {
-  (void)self;
-  (void)start_address;
-  return APX_NOT_IMPLEMENTED_ERROR;
+  apx_file_t *file = apx_file_manager_shared_find_file_by_address(&self->shared, start_address);
+  if ((file == NULL) || (apx_file_get_address_without_flags(file) != start_address))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  apx_file_close(file);
+  (void)apx_file_close_notify(file);
+  apx_connection_interface_t const *connection = apx_file_manager_shared_connection(&self->shared);
+  if ((connection != NULL) && (connection->remote_file_close_notification != NULL))
+  {
+    return connection->remote_file_close_notification(connection->arg, file);
+  }
+  return APX_NO_ERROR;
+}
+
+static apx_error_t process_revoke_file_request(apx_file_manager_t *self, uint32_t start_address)
+{
+  if (apx_file_manager_receiver_active_address(&self->receiver) == start_address)
+  {
+    apx_file_manager_receiver_reset(&self->receiver);
+  }
+  apx_file_t *file =
+    apx_file_manager_shared_find_file_by_address(&self->shared, start_address | RMF_REMOTE_ADDRESS_BIT);
+  if ((file == NULL) || (apx_file_get_address_without_flags(file) != start_address))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  apx_file_close(file);
+  if (apx_file_is_stream(file))
+  {
+    apx_file_set_stream_state(file, APX_STREAM_STATE_REVOKED);
+  }
+  (void)apx_file_close_notify(file);
+  return APX_NO_ERROR;
 }
 
 static apx_error_t process_remote_file_published(apx_file_manager_t *self, rmf_file_info_t const *file_info)
@@ -545,8 +883,11 @@ static apx_error_t process_remote_file_published(apx_file_manager_t *self, rmf_f
   {
     return APX_NULL_PTR_ERROR;
   }
-  assert(connection->remote_file_published_notification != NULL);
-  return connection->remote_file_published_notification(connection->arg, file);
+  if (connection->remote_file_published_notification != NULL)
+  {
+    return connection->remote_file_published_notification(connection->arg, file);
+  }
+  return APX_NO_ERROR;
 }
 
 static apx_error_t process_nack_message(apx_file_manager_t *self, apx_error_t error_code, char const *name)
@@ -557,4 +898,197 @@ static apx_error_t process_nack_message(apx_file_manager_t *self, apx_error_t er
     return connection->nack_notification(connection->arg, error_code, name);
   }
   return APX_NO_ERROR;
+}
+
+static apx_error_t process_stream_open_request(apx_file_manager_t *self, uint8_t const *data, apx_size_t size)
+{
+  if (size != RMF_STREAM_OPEN_CMD_SIZE)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  rmf_stream_open_cmd_t cmd;
+  if (rmf_decode_stream_open_cmd(data, data + size, &cmd) != RMF_STREAM_OPEN_CMD_SIZE)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  rmf_stream_open_rsp_cmd_t rsp = {
+    .start_address = cmd.start_address,
+    .status = (uint32_t)APX_NO_ERROR,
+    .block_size = 0u,
+    .window_blocks = 0u,
+    .flags = 0u,
+  };
+  apx_file_t *local_file = apx_file_manager_shared_find_file_by_address(&self->shared, cmd.start_address);
+  if ((local_file == NULL) || (apx_file_get_address_without_flags(local_file) != cmd.start_address))
+  {
+    rsp.status = (uint32_t)APX_FILE_NOT_FOUND_ERROR;
+  }
+  else if (!apx_file_is_stream(local_file))
+  {
+    rsp.status = (uint32_t)APX_INVALID_FILE_ERROR;
+  }
+  else if ((cmd.max_block_size == 0u) || (cmd.window_blocks == 0u) || (cmd.flags != 0u))
+  {
+    rsp.status = (uint32_t)APX_INVALID_ARGUMENT_ERROR;
+  }
+  else if (apx_file_get_stream_state(local_file) != APX_STREAM_STATE_CLOSED)
+  {
+    rsp.status = (uint32_t)APX_BUSY_ERROR;
+  }
+  else
+  {
+    uint32_t const published_size = apx_file_get_size(local_file);
+    uint32_t const negotiated_block_size = (cmd.max_block_size < published_size) ? cmd.max_block_size : published_size;
+    uint16_t const max_local_win = apx_file_get_stream_local_max_window_blocks(local_file);
+    uint16_t const negotiated_window = (cmd.window_blocks < max_local_win) ? cmd.window_blocks : max_local_win;
+    if ((negotiated_block_size == 0u) || (negotiated_window == 0u))
+    {
+      rsp.status = (uint32_t)APX_BUSY_ERROR;
+    }
+    else
+    {
+      rsp.status = (uint32_t)APX_NO_ERROR;
+      rsp.block_size = negotiated_block_size;
+      rsp.window_blocks = negotiated_window;
+      rsp.flags = 0u;
+      apx_file_open_stream(local_file, negotiated_block_size, negotiated_window, 0u);
+    }
+  }
+  apx_error_t const send_rc = apx_file_manager_worker_prepare_send_stream_open_rsp(&self->worker, &rsp);
+  if ((rsp.status == (uint32_t)APX_NO_ERROR) && (local_file != NULL))
+  {
+    (void)apx_file_open_notify(local_file);
+    apx_connection_interface_t const *connection = apx_file_manager_shared_connection(&self->shared);
+    if ((connection != NULL) && (connection->remote_file_open_notification != NULL))
+    {
+      (void)connection->remote_file_open_notification(connection->arg, local_file);
+    }
+  }
+  return send_rc;
+}
+
+static apx_error_t process_stream_open_response(apx_file_manager_t *self, uint8_t const *data, apx_size_t size)
+{
+  if (size != RMF_STREAM_OPEN_RSP_CMD_SIZE)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  rmf_stream_open_rsp_cmd_t rsp;
+  if (rmf_decode_stream_open_rsp_cmd(data, data + size, &rsp) != RMF_STREAM_OPEN_RSP_CMD_SIZE)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  apx_file_t *remote_file =
+    apx_file_manager_shared_find_file_by_address(&self->shared, rsp.start_address | RMF_REMOTE_ADDRESS_BIT);
+  if ((remote_file == NULL) || (apx_file_get_address_without_flags(remote_file) != rsp.start_address) ||
+    (!apx_file_is_stream(remote_file)))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  if (apx_file_get_stream_state(remote_file) != APX_STREAM_STATE_OPEN_PENDING)
+  {
+    return APX_INVALID_STATE_ERROR;
+  }
+  if (rsp.status != (uint32_t)APX_NO_ERROR)
+  {
+    apx_file_abort_stream(remote_file, rsp.status);
+    return APX_NO_ERROR;
+  }
+  uint32_t const requested_max_block = apx_file_get_stream_block_size(remote_file);
+  uint16_t const requested_window = apx_file_get_stream_window_blocks(remote_file);
+  uint32_t const published_size = apx_file_get_size(remote_file);
+  if ((rsp.block_size == 0u) || (rsp.block_size > published_size) || (rsp.block_size > requested_max_block) ||
+    (rsp.window_blocks == 0u) || (rsp.window_blocks > requested_window) || (rsp.flags != 0u))
+  {
+    abort_stream_with_error(self, remote_file, APX_INVALID_MSG_ERROR);
+    return APX_INVALID_MSG_ERROR;
+  }
+  apx_file_open_stream(remote_file, rsp.block_size, rsp.window_blocks, rsp.flags);
+  (void)apx_file_open_notify(remote_file);
+  return APX_NO_ERROR;
+}
+
+static apx_error_t process_stream_window_update(apx_file_manager_t *self, uint8_t const *data, apx_size_t size)
+{
+  if (size != RMF_STREAM_WINDOW_UPDATE_CMD_SIZE)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  rmf_stream_window_update_cmd_t cmd;
+  if (rmf_decode_stream_window_update_cmd(data, data + size, &cmd) != RMF_STREAM_WINDOW_UPDATE_CMD_SIZE)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  apx_file_t *local_file = apx_file_manager_shared_find_file_by_address(&self->shared, cmd.start_address);
+  if ((local_file == NULL) || (apx_file_get_address_without_flags(local_file) != cmd.start_address) ||
+    (!apx_file_is_stream(local_file)))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  apx_error_t const update_err = apx_file_stream_update_consumed_from_peer(local_file, cmd.consumed_block_count);
+  if (update_err != APX_NO_ERROR)
+  {
+    abort_stream_with_error(self, local_file, update_err);
+    return update_err;
+  }
+  if ((apx_file_stream_pending_block_count(local_file) > 0) && apx_file_stream_can_transmit(local_file))
+  {
+    return apx_file_manager_worker_prepare_drain_stream_data(&self->worker, cmd.start_address);
+  }
+  return APX_NO_ERROR;
+}
+
+static apx_error_t process_stream_abort(apx_file_manager_t *self, uint8_t const *data, apx_size_t size)
+{
+  if (size != RMF_STREAM_ABORT_CMD_SIZE)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  rmf_stream_abort_cmd_t cmd;
+  if (rmf_decode_stream_abort_cmd(data, data + size, &cmd) != RMF_STREAM_ABORT_CMD_SIZE)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  if (cmd.status == (uint32_t)APX_NO_ERROR)
+  {
+    return APX_INVALID_MSG_ERROR;
+  }
+  if (apx_file_manager_receiver_active_address(&self->receiver) == cmd.start_address)
+  {
+    apx_file_manager_receiver_reset(&self->receiver);
+  }
+  apx_file_t *local_file = apx_file_manager_shared_find_file_by_address(&self->shared, cmd.start_address);
+  if ((local_file != NULL) && (apx_file_get_address_without_flags(local_file) == cmd.start_address) &&
+    apx_file_is_stream(local_file))
+  {
+    apx_file_abort_stream(local_file, cmd.status);
+    (void)apx_file_close_notify(local_file);
+  }
+  apx_file_t *remote_file =
+    apx_file_manager_shared_find_file_by_address(&self->shared, cmd.start_address | RMF_REMOTE_ADDRESS_BIT);
+  if ((remote_file != NULL) && (apx_file_get_address_without_flags(remote_file) == cmd.start_address) &&
+    apx_file_is_stream(remote_file))
+  {
+    apx_file_abort_stream(remote_file, cmd.status);
+    (void)apx_file_close_notify(remote_file);
+  }
+  return APX_NO_ERROR;
+}
+
+static void abort_stream_with_error(apx_file_manager_t *self, apx_file_t *file, apx_error_t status)
+{
+  if ((self != NULL) && (file != NULL))
+  {
+    uint32_t const start_address = apx_file_get_address_without_flags(file);
+    if (apx_file_manager_receiver_active_address(&self->receiver) == start_address)
+    {
+      apx_file_manager_receiver_reset(&self->receiver);
+    }
+    apx_file_abort_stream(file, (uint32_t)status);
+    rmf_stream_abort_cmd_t abort_cmd = {
+      .start_address = start_address,
+      .status = (uint32_t)status,
+    };
+    (void)apx_file_manager_worker_prepare_send_stream_abort(&self->worker, &abort_cmd);
+  }
 }
