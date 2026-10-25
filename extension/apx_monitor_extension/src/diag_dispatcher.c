@@ -25,17 +25,12 @@
 #include "apx/port_signature_map_entry.h"
 #include "apx/server.h"
 #include "apx/server_connection.h"
+#include "apx/util.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#ifdef _WIN32
-# ifndef WIN32_LEAN_AND_MEAN
-#  define WIN32_LEAN_AND_MEAN
-# endif
-# include <windows.h>
-#endif
 #ifdef MEM_LEAK_CHECK
 # include "CMemLeak.h"
 #endif
@@ -85,9 +80,6 @@ typedef struct apx_diag_unconnected_port_item_tag
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static uint64_t get_monotonic_time_ns(void);
-static uint64_t get_unix_time_ns(void);
-
 static void pack_le_u16(uint8_t *dst, uint16_t val);
 static void pack_le_u32(uint8_t *dst, uint32_t val);
 static void pack_le_u64(uint8_t *dst, uint64_t val);
@@ -439,51 +431,6 @@ int32_t apx_diag_dispatcher_num_snapshots(apx_diag_dispatcher_t *self)
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-static uint64_t get_monotonic_time_ns(void)
-{
-#ifdef _WIN32
-  LARGE_INTEGER freq;
-  LARGE_INTEGER count;
-  if (QueryPerformanceFrequency(&freq) && (freq.QuadPart > 0) && QueryPerformanceCounter(&count))
-  {
-    uint64_t const sec = (uint64_t)count.QuadPart / (uint64_t)freq.QuadPart;
-    uint64_t const rem = (uint64_t)count.QuadPart % (uint64_t)freq.QuadPart;
-    return (sec * 1000000000ULL) + ((rem * 1000000000ULL) / (uint64_t)freq.QuadPart);
-  }
-  return (uint64_t)GetTickCount64() * 1000000ULL;
-#else
-  struct timespec ts;
-  if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
-  {
-    return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
-  }
-  return 0ULL;
-#endif
-}
-
-static uint64_t get_unix_time_ns(void)
-{
-#ifdef _WIN32
-  FILETIME ft;
-  GetSystemTimeAsFileTime(&ft);
-  ULARGE_INTEGER uli;
-  uli.LowPart = ft.dwLowDateTime;
-  uli.HighPart = ft.dwHighDateTime;
-  if (uli.QuadPart >= 116444736000000000ULL)
-  {
-    return (uli.QuadPart - 116444736000000000ULL) * 100ULL;
-  }
-  return 0ULL;
-#else
-  struct timespec ts;
-  if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
-  {
-    return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
-  }
-  return 0ULL;
-#endif
-}
-
 static void pack_le_u16(uint8_t *dst, uint16_t val)
 {
   dst[0] = (uint8_t)(val & 0xFFu);
@@ -685,7 +632,7 @@ static apx_diag_snapshot_t *apx_diag_snapshot_new(uint64_t snapshot_id, uint16_t
   {
     self->snapshot_id = snapshot_id;
     self->opcode = opcode;
-    self->created_at_ns = get_monotonic_time_ns();
+    self->created_at_ns = apx_get_monotonic_time_ns();
     adt_ary_create(&self->items, NULL);
   }
   return self;
@@ -817,7 +764,7 @@ static apx_error_t send_notification(apx_diag_dispatcher_t *self, uint32_t subsc
   }
 
   uint64_t const seq = self->notify_sequence++;
-  uint64_t const now_ns = get_monotonic_time_ns();
+  uint64_t const now_ns = apx_get_monotonic_time_ns();
 
   pack_le_u32(msg + 0, subscription_id);
   pack_le_u16(msg + 4, event_type);
@@ -889,8 +836,8 @@ static void handle_get_server_info(
   }
   MUTEX_UNLOCK(server->global_lock);
 
-  uint64_t const now_ns = get_monotonic_time_ns();
-  uint64_t const unix_ns = get_unix_time_ns();
+  uint64_t const now_ns = apx_get_monotonic_time_ns();
+  uint64_t const unix_ns = apx_get_unix_time_ns();
   const char *ver_str = APX_VERSION_STRING;
   uint32_t const ver_len = (uint32_t)strlen(ver_str);
   uint32_t const resp_size = 2u + 2u + 8u + 8u + 4u + 4u + 4u + 2u + ver_len;

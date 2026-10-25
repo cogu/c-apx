@@ -28,6 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_strerror(CuTest *tc);
 static void test_apx_log_level_conversions(CuTest *tc);
+static void test_apx_timestamps(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -42,6 +43,7 @@ CuSuite *testsuite_apx_util(void)
 
   SUITE_ADD_TEST(suite, test_apx_strerror);
   SUITE_ADD_TEST(suite, test_apx_log_level_conversions);
+  SUITE_ADD_TEST(suite, test_apx_timestamps);
 
   return suite;
 }
@@ -85,4 +87,21 @@ static void test_apx_log_level_conversions(CuTest *tc)
   CuAssertStrEquals(tc, "INFO", apx_log_level_to_string(APX_LOG_LEVEL_INFO));
   CuAssertStrEquals(tc, "DEBUG", apx_log_level_to_string(APX_LOG_LEVEL_DEBUG));
   CuAssertStrEquals(tc, "UNKNOWN", apx_log_level_to_string(APX_LOG_LEVEL_INVALID));
+}
+
+static void test_apx_timestamps(CuTest *tc)
+{
+  uint64_t const unix_ns1 = apx_get_unix_time_ns();
+  uint64_t const ts_ns = apx_get_timestamp_ns();
+  uint64_t const unix_ns2 = apx_get_unix_time_ns();
+
+  // Unix epoch nanoseconds in 2024+ is > 1.7e18 ns
+  CuAssertTrue(tc, unix_ns1 > 1700000000000000000ULL);
+  CuAssertTrue(tc, ts_ns >= unix_ns1);
+  CuAssertTrue(tc, unix_ns2 >= ts_ns);
+
+  uint64_t const mono_ns1 = apx_get_monotonic_time_ns();
+  uint64_t const mono_ns2 = apx_get_monotonic_time_ns();
+  CuAssertTrue(tc, mono_ns1 > 0ULL);
+  CuAssertTrue(tc, mono_ns2 >= mono_ns1);
 }

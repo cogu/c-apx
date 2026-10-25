@@ -35,4 +35,8 @@ apx_error_t convert_from_adt_to_apx_error(adt_error_t error_code);
 apx_log_level_t apx_log_level_from_string(const char *str);
 const char *apx_log_level_to_string(apx_log_level_t level);
 
+uint64_t apx_get_monotonic_time_ns(void);
+uint64_t apx_get_unix_time_ns(void);
+uint64_t apx_get_timestamp_ns(void);
+
 #endif // APX_UTIL_H

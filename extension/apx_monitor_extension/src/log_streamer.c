@@ -23,18 +23,13 @@
 #include "apx/node_manager.h"
 #include "apx/server.h"
 #include "apx/server_connection.h"
+#include "apx/util.h"
 #include "apx_version.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#ifdef _WIN32
-# ifndef WIN32_LEAN_AND_MEAN
-#  define WIN32_LEAN_AND_MEAN
-# endif
-# include <windows.h>
-#endif
 #ifdef MEM_LEAK_CHECK
 # include "CMemLeak.h"
 #endif
@@ -51,8 +46,6 @@ static inline void pack_le_u16(uint8_t *p, uint16_t v);
 static inline void pack_le_u32(uint8_t *p, uint32_t v);
 static inline void pack_le_u64(uint8_t *p, uint64_t v);
 static uint32_t encode_string16(uint8_t *dst, const char *str);
-static uint64_t get_unix_time_ns(void);
-static uint64_t get_monotonic_time_ns(void);
 static void generate_stream_id(uint8_t stream_id[16]);
 static apx_error_t emit_event_direct(apx_log_streamer_t *self, uint16_t event_type, uint16_t event_flags,
   uint64_t sequence, uint64_t timestamp_ns, uint32_t connection_id, uint32_t object_id, const uint8_t *payload,
@@ -162,8 +155,8 @@ apx_error_t apx_log_streamer_start(apx_log_streamer_t *self)
     self->next_file_id = 0;
     self->next_node_id = 0;
     generate_stream_id(self->stream_id);
-    self->stream_start_unix_ns = get_unix_time_ns();
-    self->monotonic_origin_ns = get_monotonic_time_ns();
+    self->stream_start_unix_ns = apx_get_unix_time_ns();
+    self->monotonic_origin_ns = apx_get_monotonic_time_ns();
     MUTEX_UNLOCK(self->lock);
 
     // Notify server monitor that this session is now actively recording
@@ -200,7 +193,7 @@ apx_error_t apx_log_streamer_start(apx_log_streamer_t *self)
     snap_end_seq = ++self->sequence;
     MUTEX_UNLOCK(self->lock);
 
-    uint64_t now_ns = get_monotonic_time_ns();
+    uint64_t now_ns = apx_get_monotonic_time_ns();
     uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
     emit_event_direct(self, APX_LOG_EVENT_SNAPSHOT_END, 0u, snap_end_seq, rel_ns, 0u, 0u, NULL, 0u);
 
@@ -222,7 +215,7 @@ void apx_log_streamer_stop(apx_log_streamer_t *self)
 
     uint8_t payload[4];
     pack_le_u32(payload, (uint32_t)APX_NO_ERROR);
-    uint64_t now_ns = get_monotonic_time_ns();
+    uint64_t now_ns = apx_get_monotonic_time_ns();
     uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
     emit_event_direct(self, APX_LOG_EVENT_STREAM_END, 0u, end_seq, rel_ns, 0u, 0u, payload, sizeof(payload));
 
@@ -575,51 +568,6 @@ static uint32_t encode_string16(uint8_t *dst, const char *str)
   return 2u + (uint32_t)len;
 }
 
-static uint64_t get_unix_time_ns(void)
-{
-#ifdef _WIN32
-  FILETIME ft;
-  GetSystemTimeAsFileTime(&ft);
-  ULARGE_INTEGER uli;
-  uli.LowPart = ft.dwLowDateTime;
-  uli.HighPart = ft.dwHighDateTime;
-  if (uli.QuadPart >= 116444736000000000ULL)
-  {
-    return (uli.QuadPart - 116444736000000000ULL) * 100ULL;
-  }
-  return 0ULL;
-#else
-  struct timespec ts;
-  if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
-  {
-    return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
-  }
-  return 0ULL;
-#endif
-}
-
-static uint64_t get_monotonic_time_ns(void)
-{
-#ifdef _WIN32
-  LARGE_INTEGER freq;
-  LARGE_INTEGER count;
-  if (QueryPerformanceFrequency(&freq) && (freq.QuadPart > 0) && QueryPerformanceCounter(&count))
-  {
-    uint64_t const sec = (uint64_t)count.QuadPart / (uint64_t)freq.QuadPart;
-    uint64_t const rem = (uint64_t)count.QuadPart % (uint64_t)freq.QuadPart;
-    return (sec * 1000000000ULL) + ((rem * 1000000000ULL) / (uint64_t)freq.QuadPart);
-  }
-  return (uint64_t)GetTickCount64() * 1000000ULL;
-#else
-  struct timespec ts;
-  if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
-  {
-    return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
-  }
-  return 0ULL;
-#endif
-}
-
 static void generate_stream_id(uint8_t stream_id[16])
 {
   FILE *f = fopen("/dev/urandom", "rb");
@@ -632,7 +580,7 @@ static void generate_stream_id(uint8_t stream_id[16])
       return;
     }
   }
-  uint64_t t = get_monotonic_time_ns() ^ get_unix_time_ns();
+  uint64_t t = apx_get_monotonic_time_ns() ^ apx_get_unix_time_ns();
   for (int i = 0; i < 16; ++i)
   {
     t = (t * 6364136223846793005ULL) + 1ULL;
@@ -720,7 +668,7 @@ static void enqueue_event_entry(apx_log_streamer_t *self, uint16_t event_type, u
     }
 
     uint64_t drop_seq = ++self->sequence;
-    uint64_t now_ns = get_monotonic_time_ns();
+    uint64_t now_ns = apx_get_monotonic_time_ns();
     uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
     uint8_t *drop_payload = (uint8_t *)malloc(16u);
     if (drop_payload != NULL)
@@ -746,7 +694,7 @@ static void enqueue_event_entry(apx_log_streamer_t *self, uint16_t event_type, u
 
   // Enqueue new event
   uint64_t seq = ++self->sequence;
-  uint64_t now_ns = get_monotonic_time_ns();
+  uint64_t now_ns = apx_get_monotonic_time_ns();
   uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
 
   apx_log_event_entry_t *entry = &self->queue[self->write_idx];
@@ -876,7 +824,7 @@ static void generate_snapshot(apx_log_streamer_t *self)
       MUTEX_LOCK(self->lock);
       seq = ++self->sequence;
       MUTEX_UNLOCK(self->lock);
-      uint64_t now_ns = get_monotonic_time_ns();
+      uint64_t now_ns = apx_get_monotonic_time_ns();
       uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
       emit_event_direct(self, APX_LOG_EVENT_CONNECTION_CREATE, APX_LOG_FLAG_SNAPSHOT, seq, rel_ns, conn_id, 0u,
         conn_payload, conn_payload_size);
@@ -908,7 +856,7 @@ static void generate_snapshot(apx_log_streamer_t *self)
               MUTEX_LOCK(self->lock);
               seq = ++self->sequence;
               MUTEX_UNLOCK(self->lock);
-              uint64_t now_ns = get_monotonic_time_ns();
+              uint64_t now_ns = apx_get_monotonic_time_ns();
               uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
               emit_event_direct(self, APX_LOG_EVENT_NODE_ATTACH, APX_LOG_FLAG_SNAPSHOT, seq, rel_ns, conn_id, node_id,
                 node_payload, node_payload_size);
@@ -961,7 +909,7 @@ static void generate_snapshot(apx_log_streamer_t *self)
             MUTEX_LOCK(self->lock);
             seq = ++self->sequence;
             MUTEX_UNLOCK(self->lock);
-            uint64_t now_ns = get_monotonic_time_ns();
+            uint64_t now_ns = apx_get_monotonic_time_ns();
             uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
             emit_event_direct(self, APX_LOG_EVENT_FILE_PUBLISH, APX_LOG_FLAG_SNAPSHOT, seq, rel_ns, conn_id, file_id,
               pub_payload, pub_payload_size);
@@ -1011,7 +959,7 @@ static void generate_snapshot(apx_log_streamer_t *self)
                         MUTEX_LOCK(self->lock);
                         seq = ++self->sequence;
                         MUTEX_UNLOCK(self->lock);
-                        uint64_t now_ns = get_monotonic_time_ns();
+                        uint64_t now_ns = apx_get_monotonic_time_ns();
                         uint64_t rel_ns =
                           now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
                         emit_event_direct(self, APX_LOG_EVENT_FILE_WRITE,
@@ -1046,7 +994,7 @@ static void generate_snapshot(apx_log_streamer_t *self)
                           MUTEX_LOCK(self->lock);
                           seq = ++self->sequence;
                           MUTEX_UNLOCK(self->lock);
-                          uint64_t now_ns = get_monotonic_time_ns();
+                          uint64_t now_ns = apx_get_monotonic_time_ns();
                           uint64_t rel_ns =
                             now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
                           emit_event_direct(self, APX_LOG_EVENT_FILE_WRITE,
