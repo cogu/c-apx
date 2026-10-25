@@ -22,7 +22,6 @@
 /** RemoteFile **/
 CuSuite *testsuite_remotefile(void);
 CuSuite *testsuite_file_info(void);
-CuSuite *testsuite_extended_file_info(void);
 CuSuite *testsuite_crypto(void);
 
 
@@ -68,7 +67,6 @@ CuSuite *testsuite_apx_server(void);
 // Server extensions
 CuSuite *testsuite_apx_socket_server_extension(void);
 CuSuite *testsuite_apx_socket_server_connection(void);
-CuSuite *testsuite_apx_server_monitor_state(void);
 CuSuite *testsuite_apx_monitor_extension(void);
 
 // Applications / Server config
@@ -82,7 +80,6 @@ void RunAllTests(void)
 // RemoteFile
   CuSuiteAddSuite(suite, testsuite_remotefile());
   CuSuiteAddSuite(suite, testsuite_file_info());
-  CuSuiteAddSuite(suite, testsuite_extended_file_info());
   CuSuiteAddSuite(suite, testsuite_crypto());
 
 // Util
@@ -132,7 +129,6 @@ void RunAllTests(void)
    // Server extensions
   CuSuiteAddSuite(suite, testsuite_apx_socket_server_extension());
   CuSuiteAddSuite(suite, testsuite_apx_socket_server_connection());
-  CuSuiteAddSuite(suite, testsuite_apx_server_monitor_state());
   CuSuiteAddSuite(suite, testsuite_apx_monitor_extension());
 
    // Applications / Server config

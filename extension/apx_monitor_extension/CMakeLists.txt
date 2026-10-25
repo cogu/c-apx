@@ -1,20 +1,18 @@
 project(apx_monitor_extension LANGUAGES C)
 
 set (APX_MONITOR_EXTENSION_HEADERS
-    include/apx/extension/client_monitor_connection.h
+    include/apx/extension/diag_dispatcher.h
+    include/apx/extension/log_streamer.h
     include/apx/extension/monitor_extension.h
-    include/apx/extension/monitor_socket_client_connection.h
-    include/apx/extension/observed_connection.h
-    include/apx/extension/observed_file.h
+    include/apx/extension/monitor_session.h
     include/apx/extension/server_monitor.h
 )
 
 set (APX_MONITOR_EXTENSION_SOURCES
-    src/client_monitor_connection.c
+    src/diag_dispatcher.c
+    src/log_streamer.c
     src/monitor_extension.c
-    src/monitor_socket_client_connection.c
-    src/observed_connection.c
-    src/observed_file.c
+    src/monitor_session.c
     src/server_monitor.c
 )
 

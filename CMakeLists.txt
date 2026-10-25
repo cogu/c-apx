@@ -92,7 +92,6 @@ set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_computation.c
     apx_core/test/testsuite_crypto.c
     apx_core/test/testsuite_data_element.c
-    apx_core/test/testsuite_extended_file_info.c
     apx_core/test/testsuite_file_info.c
     apx_core/test/testsuite_file_manager.c
     apx_core/test/testsuite_file_manager_receiver.c
@@ -214,7 +213,6 @@ set (APX_COMMON_SOURCES
     apx_core/src/deserializer.c
     apx_core/src/event_listener.c
     apx_core/src/event_loop.c
-    apx_core/src/extended_file_info.c
     apx_core/src/file_info.c
     apx_core/src/file.c
     apx_core/src/file_manager_receiver.c
@@ -438,7 +436,6 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             extension/apx_socket_extension/test/testsuite_socket_server_extension.c
             extension/apx_text_log_extension/test/testsuite_server_text_log.c
             extension/apx_monitor_extension/test/testsuite_monitor_extension.c
-            extension/apx_monitor_extension/test/testsuite_server_monitor_state.c
             app/apx_server/src/server_cfg.c
             ${GENERATED_EXTENSIONS_CFG}
             app/apx_server/test/testsuite_server_cfg.c

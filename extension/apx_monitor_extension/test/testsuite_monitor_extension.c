@@ -12,8 +12,14 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "CuTest.h"
+#include "apx/connection_base.h"
+#include "apx/extension/diag_dispatcher.h"
+#include "apx/extension/log_streamer.h"
 #include "apx/extension/monitor_extension.h"
+#include "apx/extension/monitor_session.h"
 #include "apx/extension/server_monitor.h"
+#include "apx/file.h"
+#include "apx/file_manager.h"
 #include "apx/server.h"
 #include "apx/server_test_connection.h"
 #include <string.h>
@@ -28,15 +34,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void test_new_monitor_connection_receives_connection_id_in_accept_header(CuTest *tc);
-static void test_monitor_connection_transmits_existing_connection_info_on_connect(CuTest *tc);
-
-// Helper functions
-static void register_extension(CuTest *tc, apx_server_t *server);
-
-//////////////////////////////////////////////////////////////////////////////
-// PRIVATE VARIABLES
-//////////////////////////////////////////////////////////////////////////////
+static void test_server_monitor_create_and_destroy(CuTest *tc);
+static void test_server_monitor_session_management(CuTest *tc);
+static void test_monitor_session_publish_stream_files(CuTest *tc);
+static void test_monitor_session_file_open_activates_streamer(CuTest *tc);
+static void test_monitor_extension_register_lifecycle(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -44,137 +46,134 @@ static void register_extension(CuTest *tc, apx_server_t *server);
 CuSuite *testsuite_apx_monitor_extension(void)
 {
   CuSuite *suite = CuSuiteNew();
-  SUITE_ADD_TEST(suite, test_new_monitor_connection_receives_connection_id_in_accept_header);
-  SUITE_ADD_TEST(suite, test_monitor_connection_transmits_existing_connection_info_on_connect);
+  SUITE_ADD_TEST(suite, test_server_monitor_create_and_destroy);
+  SUITE_ADD_TEST(suite, test_server_monitor_session_management);
+  SUITE_ADD_TEST(suite, test_monitor_session_publish_stream_files);
+  SUITE_ADD_TEST(suite, test_monitor_session_file_open_activates_streamer);
+  SUITE_ADD_TEST(suite, test_monitor_extension_register_lifecycle);
   return suite;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
-
-static void test_new_monitor_connection_receives_connection_id_in_accept_header(CuTest *tc)
+static void test_server_monitor_create_and_destroy(CuTest *tc)
 {
-  apx_server_t *server;
-  apx_server_test_connection_t *monitor_connection = NULL;
-  adt_bytearray_t *packet;
-  uint8_t actual[13];
-  uint8_t expected[13] = {
-      // message size
-    12,
-      // write address
-    0xBFu,
-    0xFFu,
-    0xFCu,
-    0x00u,
-      // command type
-    (uint8_t)RMF_CMD_ACCEPT_HEADER,
-    0u,
-    0u,
-    0u,
-      // connection id
-    0x00u,
-    0x00u,
-    0x00u,
-    0x00u,
-  };
-
-  server = apx_server_new();
+  apx_server_t *server = apx_server_new();
   CuAssertPtrNotNull(tc, server);
-  register_extension(tc, server);
-  apx_server_start(server);
-  monitor_connection = apx_server_test_connection_new();
-  CuAssertPtrNotNull(tc, monitor_connection);
-  apx_server_accept_connection(server, (apx_server_connection_t *)monitor_connection);
-  apx_server_test_connection_set_tester_connection_type(monitor_connection, APX_CONNECTION_TYPE_MONITOR);
-  CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(monitor_connection));
-  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(monitor_connection));
-  apx_server_test_connection_run(monitor_connection);
-  apx_server_run(server);
-  CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(monitor_connection));
-  packet = apx_server_test_connection_get_log_packet(monitor_connection, 0);
-  CuAssertPtrNotNull(tc, packet);
-  CuAssertIntEquals(tc, (int)sizeof(actual), adt_bytearray_length(packet)); // Should contain acknowledge message
-  memcpy(actual, adt_bytearray_data(packet), sizeof(actual));
-  CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(actual)));
+
+  apx_server_monitor_t *monitor = apx_server_monitor_new(server);
+  CuAssertPtrNotNull(tc, monitor);
+  CuAssertIntEquals(tc, 0, apx_server_monitor_num_sessions(monitor));
+
+  apx_server_monitor_delete(monitor);
   apx_server_delete(server);
 }
 
-static void test_monitor_connection_transmits_existing_connection_info_on_connect(CuTest *tc)
+static void test_server_monitor_session_management(CuTest *tc)
 {
-  apx_server_t *server;
-  apx_server_test_connection_t *default_connection = NULL;
-  apx_server_test_connection_t *monitor_connection = NULL;
-  adt_bytearray_t *packet;
-  int32_t const default_greeting_accepted_size = 13;
-  int32_t const new_greeting_accepted_size = 13;
-  uint8_t actual[15];
-  uint8_t expected[15] = {
-      // message size
-    UINT32_SIZE + RMF_CMD_TYPE_SIZE + UINT32_SIZE + UINT8_SIZE +
-      CHAR_SIZE, // last byte is the null-terminator of the connection tag
-      // write address
-    0xBFu,
-    0xFFu,
-    0xFCu,
-    0x00u,
-      // command type
-    (uint8_t)RMF_CMD_CONNECTION_CREATE,
-    0u,
-    0u,
-    0u,
-      // connection id
-    0x00u,
-    0x00u,
-    0x00u,
-    0x00u,
-    APX_CONNECTION_STATE_ACCEPTED,
-    0x00u,
-  };
-
-  server = apx_server_new();
+  apx_server_t *server = apx_server_new();
   CuAssertPtrNotNull(tc, server);
-  register_extension(tc, server);
-  apx_server_start(server);
-  default_connection = apx_server_test_connection_new();
-  monitor_connection = apx_server_test_connection_new();
-  CuAssertPtrNotNull(tc, default_connection);
-  CuAssertPtrNotNull(tc, monitor_connection);
 
-   // Attach default connection
-  apx_server_accept_connection(server, (apx_server_connection_t *)default_connection);
-  CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(default_connection));
-  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(default_connection));
-  apx_server_test_connection_run(default_connection);
-  apx_server_run(server);
-  CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(default_connection));
-  packet = apx_server_test_connection_get_log_packet(default_connection, 0);
-  CuAssertPtrNotNull(tc, packet);
-  CuAssertIntEquals(
-    tc, default_greeting_accepted_size, adt_bytearray_length(packet)); // Should contain acknowledge message
+  apx_server_monitor_t *monitor = apx_server_monitor_new(server);
+  CuAssertPtrNotNull(tc, monitor);
 
-   // Attach monitor Connection
-  apx_server_test_connection_set_tester_connection_type(monitor_connection, APX_CONNECTION_TYPE_MONITOR);
-  apx_server_accept_connection(server, (apx_server_connection_t *)monitor_connection);
-  CuAssertIntEquals(tc, 0u, apx_server_test_connection_log_length(monitor_connection));
-  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(monitor_connection));
-  apx_server_test_connection_run(monitor_connection);
-  apx_server_run(server);
-  CuAssertIntEquals(tc, 2u, apx_server_test_connection_log_length(monitor_connection));
-  packet = apx_server_test_connection_get_log_packet(monitor_connection, 0);
-  CuAssertPtrNotNull(tc, packet);
-  CuAssertIntEquals(tc, new_greeting_accepted_size, adt_bytearray_length(packet)); // Should contain acknowledge message
-  packet = apx_server_test_connection_get_log_packet(monitor_connection, 1);
-  CuAssertPtrNotNull(tc, packet);
-  CuAssertIntEquals(tc, (int)sizeof(actual), adt_bytearray_length(packet));
-  memcpy(actual, adt_bytearray_data(packet), sizeof(actual));
-  CuAssertIntEquals(tc, 0, memcmp(actual, expected, sizeof(actual)));
+  apx_server_test_connection_t *conn = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn);
+
+  apx_monitor_session_t *session = apx_server_monitor_create_session(monitor, (apx_server_connection_t *)conn);
+  CuAssertPtrNotNull(tc, session);
+  CuAssertIntEquals(tc, 1, apx_server_monitor_num_sessions(monitor));
+
+  apx_monitor_session_t *found = apx_server_monitor_find_session(monitor, (apx_server_connection_t *)conn);
+  CuAssertPtrEquals(tc, session, found);
+  CuAssertPtrNotNull(tc, apx_monitor_session_get_log_streamer(session));
+  CuAssertPtrNotNull(tc, apx_monitor_session_get_diag_dispatcher(session));
+
+  apx_server_monitor_remove_session(monitor, session);
+  CuAssertIntEquals(tc, 0, apx_server_monitor_num_sessions(monitor));
+
+  apx_server_monitor_delete(monitor);
   apx_server_delete(server);
 }
 
-
-// Helper functions
-static void register_extension(CuTest *tc, apx_server_t *server)
+static void test_monitor_session_publish_stream_files(CuTest *tc)
 {
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+
+  apx_server_monitor_t *monitor = apx_server_monitor_new(server);
+  CuAssertPtrNotNull(tc, monitor);
+
+  apx_server_test_connection_t *conn = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn);
+
+  apx_monitor_session_t *session = apx_server_monitor_create_session(monitor, (apx_server_connection_t *)conn);
+  CuAssertPtrNotNull(tc, session);
+
+  apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(&conn->base.base);
+  CuAssertPtrNotNull(tc, file_manager);
+
+  apx_file_t *log_file = apx_file_manager_find_local_file_by_name(file_manager, APX_SERVER_LOG_FILE_NAME);
+  CuAssertPtrNotNull(tc, log_file);
+  CuAssertTrue(tc, apx_file_is_stream(log_file));
+
+  apx_file_t *diag_resp = apx_file_manager_find_local_file_by_name(file_manager, APX_DIAG_RESPONSE_FILE_NAME);
+  CuAssertPtrNotNull(tc, diag_resp);
+  CuAssertTrue(tc, apx_file_is_stream(diag_resp));
+
+  apx_file_t *diag_notif = apx_file_manager_find_local_file_by_name(file_manager, APX_DIAG_NOTIFY_FILE_NAME);
+  CuAssertPtrNotNull(tc, diag_notif);
+  CuAssertTrue(tc, apx_file_is_stream(diag_notif));
+
+  apx_server_monitor_delete(monitor);
+  apx_server_delete(server);
+}
+
+static void test_monitor_session_file_open_activates_streamer(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+
+  apx_server_monitor_t *monitor = apx_server_monitor_new(server);
+  CuAssertPtrNotNull(tc, monitor);
+
+  apx_server_test_connection_t *conn = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn);
+
+  apx_monitor_session_t *session = apx_server_monitor_create_session(monitor, (apx_server_connection_t *)conn);
+  CuAssertPtrNotNull(tc, session);
+
+  apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+  CuAssertPtrNotNull(tc, streamer);
+  CuAssertTrue(tc, !apx_log_streamer_is_active(streamer));
+
+  apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(&conn->base.base);
+  apx_file_t *log_file = apx_file_manager_find_local_file_by_name(file_manager, APX_SERVER_LOG_FILE_NAME);
+  CuAssertPtrNotNull(tc, log_file);
+
+  apx_monitor_session_on_file_opened(session, log_file);
+  CuAssertTrue(tc, apx_log_streamer_is_active(streamer));
+
+  apx_monitor_session_on_file_closed(session, log_file);
+  CuAssertTrue(tc, !apx_log_streamer_is_active(streamer));
+
+  apx_server_monitor_delete(monitor);
+  apx_server_delete(server);
+}
+
+static void test_monitor_extension_register_lifecycle(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_monitor_extension_register(server, NULL));
+  apx_error_t const start_err = apx_server_start(server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, start_err);
+
+  apx_server_stop(server);
+  apx_server_delete(server);
 }
