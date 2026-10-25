@@ -75,6 +75,8 @@ void apx_monitor_session_on_file_written(
   apx_monitor_session_t *self, struct apx_file_tag *file, uint32_t offset, const uint8_t *data, apx_size_t size);
 
 struct apx_server_connection_tag *apx_monitor_session_get_connection(apx_monitor_session_t *self);
+struct apx_server_monitor_tag *apx_monitor_session_get_server_monitor(apx_monitor_session_t *self);
+struct apx_file_manager_tag *apx_monitor_session_get_file_manager(apx_monitor_session_t *self);
 struct apx_log_streamer_tag *apx_monitor_session_get_log_streamer(apx_monitor_session_t *self);
 struct apx_diag_dispatcher_tag *apx_monitor_session_get_diag_dispatcher(apx_monitor_session_t *self);
 

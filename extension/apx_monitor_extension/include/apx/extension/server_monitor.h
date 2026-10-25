@@ -89,6 +89,9 @@ void apx_server_monitor_remove_session(apx_server_monitor_t *self, struct apx_mo
 struct apx_monitor_session_tag *apx_server_monitor_find_session(
   apx_server_monitor_t *self, struct apx_server_connection_tag *connection);
 
+void apx_server_monitor_on_log_stream_started(apx_server_monitor_t *self, struct apx_monitor_session_tag *session);
+void apx_server_monitor_on_log_stream_stopped(apx_server_monitor_t *self, struct apx_monitor_session_tag *session);
+
 // Gated fast-path hooks registered on apx_server_t
 void apx_server_monitor_on_new_connection(void *arg, struct apx_server_connection_tag *connection);
 void apx_server_monitor_on_connection_closed(void *arg, struct apx_server_connection_tag *connection);

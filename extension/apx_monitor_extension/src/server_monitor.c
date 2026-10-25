@@ -14,6 +14,7 @@
 #include "apx/extension/server_monitor.h"
 #include "adt_bytearray.h"
 #include "apx/connection_base.h"
+#include "apx/extension/log_streamer.h"
 #include "apx/extension/monitor_session.h"
 #include "apx/file_manager.h"
 #include "apx/node_manager.h"
@@ -427,6 +428,31 @@ apx_monitor_session_t *apx_server_monitor_find_session(apx_server_monitor_t *sel
   return NULL;
 }
 
+void apx_server_monitor_on_log_stream_started(apx_server_monitor_t *self, apx_monitor_session_t *session)
+{
+  (void)session;
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->lock);
+    self->num_active_log_streams++;
+    MUTEX_UNLOCK(self->lock);
+  }
+}
+
+void apx_server_monitor_on_log_stream_stopped(apx_server_monitor_t *self, apx_monitor_session_t *session)
+{
+  (void)session;
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->lock);
+    if (self->num_active_log_streams > 0)
+    {
+      self->num_active_log_streams--;
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
+}
+
 void apx_server_monitor_on_new_connection(void *arg, apx_server_connection_t *connection)
 {
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
@@ -440,6 +466,29 @@ void apx_server_monitor_on_new_connection(void *arg, apx_server_connection_t *co
         apx_server_monitor_create_session(self, connection);
       }
     }
+    else
+    {
+      if (self->num_active_log_streams > 0)
+      {
+        uint32_t conn_id = apx_server_connection_get_connection_id(connection);
+        uint8_t conn_type = (uint8_t)apx_server_connection_get_connection_type(connection);
+        uint8_t conn_state = (uint8_t)connection->connection_state;
+        const char *tag_str = connection->tag != NULL ? adt_str_cstr(connection->tag) : "";
+        MUTEX_LOCK(self->lock);
+        adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+        while (iter != NULL)
+        {
+          apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+          apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+          if (apx_log_streamer_is_active(streamer))
+          {
+            apx_log_streamer_enqueue_connection_create(streamer, conn_id, conn_type, conn_state, tag_str, "");
+          }
+          iter = adt_list_iter_next(iter);
+        }
+        MUTEX_UNLOCK(self->lock);
+      }
+    }
   }
 }
 
@@ -448,10 +497,33 @@ void apx_server_monitor_on_connection_closed(void *arg, apx_server_connection_t 
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
   if ((self != NULL) && (connection != NULL))
   {
-    apx_monitor_session_t *session = apx_server_monitor_find_session(self, connection);
-    if (session != NULL)
+    if (apx_server_connection_get_connection_type(connection) == APX_CONNECTION_TYPE_MONITOR)
     {
-      apx_server_monitor_remove_session(self, session);
+      apx_monitor_session_t *session = apx_server_monitor_find_session(self, connection);
+      if (session != NULL)
+      {
+        apx_server_monitor_remove_session(self, session);
+      }
+    }
+    else
+    {
+      if (self->num_active_log_streams > 0)
+      {
+        uint32_t conn_id = apx_server_connection_get_connection_id(connection);
+        MUTEX_LOCK(self->lock);
+        adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+        while (iter != NULL)
+        {
+          apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+          apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+          if (apx_log_streamer_is_active(streamer))
+          {
+            apx_log_streamer_enqueue_connection_close(streamer, conn_id, (uint32_t)APX_NO_ERROR);
+          }
+          iter = adt_list_iter_next(iter);
+        }
+        MUTEX_UNLOCK(self->lock);
+      }
     }
   }
 }
@@ -475,44 +547,117 @@ void apx_server_monitor_on_protocol_header_accepted(void *arg, apx_connection_ba
 void apx_server_monitor_on_file_published(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
-  (void)arg;
-  (void)connection;
-  (void)file_info;
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && (self->num_active_log_streams > 0))
+  {
+    uint32_t conn_id = connection->connection_id;
+    MUTEX_LOCK(self->lock);
+    adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+    while (iter != NULL)
+    {
+      apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+      apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+      if (apx_log_streamer_is_active(streamer))
+      {
+        apx_log_streamer_enqueue_file_publish(streamer, conn_id, file_info);
+      }
+      iter = adt_list_iter_next(iter);
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
 }
 
 void apx_server_monitor_on_file_revoked(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
-  (void)arg;
-  (void)connection;
-  (void)file_info;
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && (self->num_active_log_streams > 0))
+  {
+    uint32_t conn_id = connection->connection_id;
+    MUTEX_LOCK(self->lock);
+    adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+    while (iter != NULL)
+    {
+      apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+      apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+      if (apx_log_streamer_is_active(streamer))
+      {
+        apx_log_streamer_enqueue_file_revoke(streamer, conn_id, file_info->address);
+      }
+      iter = adt_list_iter_next(iter);
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
 }
 
 void apx_server_monitor_on_file_opened(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
-  (void)arg;
-  (void)connection;
-  (void)file_info;
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && (self->num_active_log_streams > 0))
+  {
+    uint32_t conn_id = connection->connection_id;
+    MUTEX_LOCK(self->lock);
+    adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+    while (iter != NULL)
+    {
+      apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+      apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+      if (apx_log_streamer_is_active(streamer))
+      {
+        apx_log_streamer_enqueue_file_open(streamer, conn_id, file_info->address);
+      }
+      iter = adt_list_iter_next(iter);
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
 }
 
 void apx_server_monitor_on_file_closed(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
-  (void)arg;
-  (void)connection;
-  (void)file_info;
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && (self->num_active_log_streams > 0))
+  {
+    uint32_t conn_id = connection->connection_id;
+    MUTEX_LOCK(self->lock);
+    adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+    while (iter != NULL)
+    {
+      apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+      apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+      if (apx_log_streamer_is_active(streamer))
+      {
+        apx_log_streamer_enqueue_file_close(streamer, conn_id, file_info->address);
+      }
+      iter = adt_list_iter_next(iter);
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
 }
 
 void apx_server_monitor_on_file_written(
   void *arg, apx_connection_base_t *connection, apx_file_t *file, uint32_t offset, const uint8_t *data, apx_size_t size)
 {
-  (void)arg;
-  (void)connection;
-  (void)file;
-  (void)offset;
-  (void)data;
-  (void)size;
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (connection != NULL) && (file != NULL) && (self->num_active_log_streams > 0))
+  {
+    uint32_t conn_id = connection->connection_id;
+    uint32_t address = file->file_info.address;
+    MUTEX_LOCK(self->lock);
+    adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+    while (iter != NULL)
+    {
+      apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+      apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+      if (apx_log_streamer_is_active(streamer))
+      {
+        apx_log_streamer_enqueue_file_write(streamer, conn_id, address, offset, data, (uint32_t)size);
+      }
+      iter = adt_list_iter_next(iter);
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
 }
 
 #ifdef UNIT_TEST

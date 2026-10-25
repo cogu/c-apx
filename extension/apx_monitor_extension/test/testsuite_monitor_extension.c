@@ -43,6 +43,9 @@ static void test_server_monitor_accept_testsocket(CuTest *tc);
 static void test_monitor_session_publish_stream_files(CuTest *tc);
 static void test_monitor_session_file_open_activates_streamer(CuTest *tc);
 static void test_monitor_extension_register_lifecycle(CuTest *tc);
+static void test_log_streamer_start_and_stop(CuTest *tc);
+static void test_log_streamer_ringbuffer_overflow_and_drop_tracking(CuTest *tc);
+static void test_server_monitor_fast_path_tap(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -57,6 +60,9 @@ CuSuite *testsuite_apx_monitor_extension(void)
   SUITE_ADD_TEST(suite, test_monitor_session_publish_stream_files);
   SUITE_ADD_TEST(suite, test_monitor_session_file_open_activates_streamer);
   SUITE_ADD_TEST(suite, test_monitor_extension_register_lifecycle);
+  SUITE_ADD_TEST(suite, test_log_streamer_start_and_stop);
+  SUITE_ADD_TEST(suite, test_log_streamer_ringbuffer_overflow_and_drop_tracking);
+  SUITE_ADD_TEST(suite, test_server_monitor_fast_path_tap);
   return suite;
 }
 
@@ -254,5 +260,187 @@ static void test_monitor_extension_register_lifecycle(CuTest *tc)
   CuAssertIntEquals(tc, APX_NO_ERROR, start_err);
 
   apx_server_stop(server);
+  apx_server_delete(server);
+}
+
+static void test_log_streamer_start_and_stop(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+
+  apx_server_monitor_t *monitor = apx_server_monitor_new(server);
+  CuAssertPtrNotNull(tc, monitor);
+
+  apx_server_test_connection_t *conn = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn);
+  apx_server_connection_set_connection_type((apx_server_connection_t *)conn, APX_CONNECTION_TYPE_MONITOR);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn);
+
+  apx_monitor_session_t *session = apx_server_monitor_create_session(monitor, (apx_server_connection_t *)conn);
+  CuAssertPtrNotNull(tc, session);
+
+  apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+  CuAssertPtrNotNull(tc, streamer);
+  CuAssertTrue(tc, !apx_log_streamer_is_active(streamer));
+  CuAssertIntEquals(tc, 0, monitor->num_active_log_streams);
+
+  // Start streamer
+  apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(&conn->base.base);
+  apx_file_t *log_file = apx_file_manager_find_local_file_by_name(file_manager, APX_SERVER_LOG_FILE_NAME);
+  CuAssertPtrNotNull(tc, log_file);
+
+  apx_file_open_stream(log_file, 4096u, 64u, 0u);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_start(streamer));
+  CuAssertTrue(tc, apx_log_streamer_is_active(streamer));
+  CuAssertIntEquals(tc, 1, monitor->num_active_log_streams);
+  CuAssertUIntEquals(tc, 1, apx_log_streamer_get_sequence(streamer)); // STREAM_BEGIN (0) and SNAPSHOT_END (1)
+
+  // Verify stream_id is non-zero
+  bool has_non_zero_id = false;
+  for (int i = 0; i < 16; ++i)
+  {
+    if (streamer->stream_id[i] != 0u)
+    {
+      has_non_zero_id = true;
+      break;
+    }
+  }
+  CuAssertTrue(tc, has_non_zero_id);
+
+  // Stop streamer
+  apx_log_streamer_stop(streamer);
+  CuAssertTrue(tc, !apx_log_streamer_is_active(streamer));
+  CuAssertIntEquals(tc, 0, monitor->num_active_log_streams);
+  CuAssertUIntEquals(tc, 2, apx_log_streamer_get_sequence(streamer)); // STREAM_END (2)
+
+  apx_server_monitor_delete(monitor);
+  apx_server_delete(server);
+}
+
+static void test_log_streamer_ringbuffer_overflow_and_drop_tracking(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+
+  apx_server_monitor_t *monitor = apx_server_monitor_new(server);
+  CuAssertPtrNotNull(tc, monitor);
+
+  apx_server_test_connection_t *conn = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn);
+
+  apx_monitor_session_t *session = apx_server_monitor_create_session(monitor, (apx_server_connection_t *)conn);
+  CuAssertPtrNotNull(tc, session);
+
+  apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+  CuAssertPtrNotNull(tc, streamer);
+
+  // Set tiny queue capacity of 3
+  apx_log_streamer_set_queue_capacity(streamer, 3u);
+  streamer->is_active = true;
+  streamer->sequence = 0ULL;
+  streamer->drop_count = 0ULL;
+
+  // Insert 3 events while server.log is closed (so queue will not drain)
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 10u));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 11u));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 12u));
+
+  CuAssertUIntEquals(tc, 3, apx_log_streamer_get_queue_count(streamer));
+  CuAssertUIntEquals(tc, 0, apx_log_streamer_get_drop_count(streamer));
+  CuAssertUIntEquals(tc, 3, apx_log_streamer_get_sequence(streamer));
+
+  // 4th and 5th events overflow and get dropped!
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 13u));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 14u));
+
+  CuAssertUIntEquals(tc, 3, apx_log_streamer_get_queue_count(streamer));
+  CuAssertUIntEquals(tc, 2, apx_log_streamer_get_drop_count(streamer));
+  CuAssertUIntEquals(tc, 5, apx_log_streamer_get_sequence(streamer));
+  CuAssertUIntEquals(tc, 4, streamer->drop_first_sequence);
+
+  // Free queue manually to simulate draining
+  MUTEX_LOCK(streamer->lock);
+  while (streamer->queue_count > 1)
+  {
+    uint32_t idx = streamer->read_idx;
+    if (streamer->queue[idx].payload != NULL)
+    {
+      free(streamer->queue[idx].payload);
+      streamer->queue[idx].payload = NULL;
+    }
+    streamer->read_idx = (streamer->read_idx + 1) % streamer->queue_capacity;
+    streamer->queue_count--;
+  }
+  MUTEX_UNLOCK(streamer->lock);
+
+  // Next event enqueued must trigger EVENTS_DROPPED first!
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 15u));
+
+  // Sequence should advance for EVENTS_DROPPED (seq 6) and the new event (seq 7)
+  CuAssertUIntEquals(tc, 7, apx_log_streamer_get_sequence(streamer));
+  CuAssertUIntEquals(tc, 0, apx_log_streamer_get_drop_count(streamer));
+
+  streamer->is_active = false;
+  apx_server_monitor_delete(monitor);
+  apx_server_delete(server);
+}
+
+static void test_server_monitor_fast_path_tap(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+
+  apx_server_monitor_t *monitor = apx_server_monitor_new(server);
+  CuAssertPtrNotNull(tc, monitor);
+  CuAssertIntEquals(tc, 0, monitor->num_active_log_streams);
+
+  // Connect operational client
+  apx_server_test_connection_t *conn_op = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn_op);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn_op);
+  CuAssertIntEquals(tc, 0, monitor->num_active_log_streams);
+
+  // Connect monitor client
+  apx_server_test_connection_t *conn_mon = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn_mon);
+  apx_server_connection_set_connection_type((apx_server_connection_t *)conn_mon, APX_CONNECTION_TYPE_MONITOR);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn_mon);
+
+  CuAssertIntEquals(tc, 1, apx_server_monitor_num_sessions(monitor));
+  CuAssertIntEquals(tc, 0, monitor->num_active_log_streams);
+
+  apx_monitor_session_t *session = apx_server_monitor_find_session(monitor, (apx_server_connection_t *)conn_mon);
+  CuAssertPtrNotNull(tc, session);
+  apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+  CuAssertPtrNotNull(tc, streamer);
+  CuAssertTrue(tc, !apx_log_streamer_is_active(streamer));
+
+  // Open server.log -> activates streamer
+  apx_file_manager_t *fm_mon = apx_connection_base_get_file_manager(&conn_mon->base.base);
+  apx_file_t *log_file = apx_file_manager_find_local_file_by_name(fm_mon, APX_SERVER_LOG_FILE_NAME);
+  CuAssertPtrNotNull(tc, log_file);
+  apx_file_open_stream(log_file, 4096u, 64u, 0u);
+
+  apx_monitor_session_on_file_opened(session, log_file);
+  CuAssertTrue(tc, apx_log_streamer_is_active(streamer));
+  CuAssertIntEquals(tc, 1, monitor->num_active_log_streams);
+
+  // Fast-path tap live event capture: publish a file on the operational node
+  rmf_file_info_t test_file;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    rmf_file_info_create(&test_file, 0x1000u, 16u, "test.out", RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL));
+  apx_server_monitor_on_file_published(monitor, &conn_op->base.base, &test_file);
+  rmf_file_info_destroy(&test_file);
+
+  // Sequence must have advanced due to live event capture
+  CuAssertTrue(tc, apx_log_streamer_get_sequence(streamer) > 1);
+
+  // Close server.log -> deactivates streamer
+  apx_monitor_session_on_file_closed(session, log_file);
+  CuAssertTrue(tc, !apx_log_streamer_is_active(streamer));
+  CuAssertIntEquals(tc, 0, monitor->num_active_log_streams);
+
+  apx_server_monitor_delete(monitor);
   apx_server_delete(server);
 }

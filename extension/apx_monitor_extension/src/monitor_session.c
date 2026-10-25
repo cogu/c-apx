@@ -237,6 +237,24 @@ apx_server_connection_t *apx_monitor_session_get_connection(apx_monitor_session_
   return NULL;
 }
 
+apx_server_monitor_t *apx_monitor_session_get_server_monitor(apx_monitor_session_t *self)
+{
+  if (self != NULL)
+  {
+    return self->monitor;
+  }
+  return NULL;
+}
+
+apx_file_manager_t *apx_monitor_session_get_file_manager(apx_monitor_session_t *self)
+{
+  if (self != NULL && self->connection != NULL)
+  {
+    return apx_connection_base_get_file_manager(&self->connection->base);
+  }
+  return NULL;
+}
+
 apx_log_streamer_t *apx_monitor_session_get_log_streamer(apx_monitor_session_t *self)
 {
   if (self != NULL)
