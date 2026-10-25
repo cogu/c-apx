@@ -1,0 +1,38 @@
+{
+    "apx-server": {
+        "apx-cache-enabled": false,
+        "apx-cache-path": "",
+        "max-num-events": 200
+    },
+    "socket-server-extension": {
+        "enabled": true,
+        "tcp-port": 5000,
+        "tcp-tag": "tcp",
+        "unix-file": "/tmp/apx.socket",
+        "unix-tag": "local"
+    },
+    "textlog-extension": {
+        "enabled": true,
+        "use-timestamp": false,
+        "log-level": "INFO",
+        "file-enabled": true,
+        "file-path": "",
+        "syslog-enabled": false,
+        "syslog-label": "apx-server"
+    },
+    "monitor-extension": {
+        "enabled": true,
+        "socket-file": "/tmp/apx_monitor.socket",
+        "tcp-port": 5080,
+        "bind-address": "127.0.0.1",
+        "tls": {
+            "server-cert": "example/monitor/config/certs/server_cert.pem",
+            "server-key": "example/monitor/config/certs/server_key.pem",
+            "ca-cert": "example/monitor/config/certs/ca_cert.pem",
+            "require-client-cert": true
+        }
+    },
+    "tls-server-extension": {
+        "enabled": false
+    }
+}
