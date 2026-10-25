@@ -31,8 +31,5 @@
             "ca-cert": "example/monitor/config/certs/ca_cert.pem",
             "require-client-cert": true
         }
-    },
-    "tls-server-extension": {
-        "enabled": false
     }
 }

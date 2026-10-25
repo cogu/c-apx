@@ -32,28 +32,29 @@ const apx_server_extension_entry_t* apx_server_get_registered_extensions(void)
 
 apx_error_t register_apx_server_extensions(struct apx_server_tag *server, dtl_hv_t *extensions_config)
 {
+   if (extensions_config == NULL)
+   {
+      return APX_NO_ERROR;
+   }
    for (const apx_server_extension_entry_t *entry = m_extension_registry; entry->name != NULL; ++entry)
    {
-      dtl_dv_t *config = NULL;
-      if (extensions_config != NULL)
+      char key[128];
+      snprintf(key, sizeof(key), "%s-extension", entry->name);
+      dtl_dv_t *config = dtl_hv_get_cstr(extensions_config, key);
+      if (config == NULL)
       {
-         char key[128];
-         snprintf(key, sizeof(key), "%s-extension", entry->name);
-         config = dtl_hv_get_cstr(extensions_config, key);
-         if (config != NULL)
+         continue;
+      }
+      if (dtl_dv_type(config) == DTL_DV_HASH)
+      {
+         dtl_sv_t *enabled_sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) config, "enabled");
+         if (enabled_sv != NULL)
          {
-            if (dtl_dv_type(config) == DTL_DV_HASH)
+            bool ok = false;
+            bool is_enabled = dtl_sv_to_bool(enabled_sv, &ok);
+            if (ok && !is_enabled)
             {
-               dtl_sv_t *enabled_sv = (dtl_sv_t*) dtl_hv_get_cstr((dtl_hv_t*) config, "enabled");
-               if (enabled_sv != NULL)
-               {
-                  bool ok = false;
-                  bool is_enabled = dtl_sv_to_bool(enabled_sv, &ok);
-                  if (ok && !is_enabled)
-                  {
-                     continue;
-                  }
-               }
+               continue;
             }
          }
       }

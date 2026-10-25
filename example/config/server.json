@@ -22,8 +22,5 @@
     },
     "monitor-extension": {
         "enabled": false
-    },
-    "tls-server-extension": {
-        "enabled": false
     }
 }

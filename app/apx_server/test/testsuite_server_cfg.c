@@ -28,6 +28,7 @@
 #include "apx/crypto.h"
 #include "apx/error.h"
 #include "apx/server.h"
+#include "apx/server_extension.h"
 #include "dtl_type.h"
 #include "extensions_cfg.h"
 #include "server_cfg.h"
@@ -52,6 +53,7 @@ static void test_load_config_malformed_json(CuTest *tc);
 static void test_load_config_invalid_root_type(CuTest *tc);
 static void test_load_config_missing_server_key(CuTest *tc);
 static void test_register_extensions_with_single_config(CuTest *tc);
+static void test_register_extensions_omitted_keys_disabled(CuTest *tc);
 static void test_configure_server_null_arguments(CuTest *tc);
 static void test_configure_server_security_require_signed_nodes(CuTest *tc);
 static void test_configure_server_security_trusted_keys(CuTest *tc);
@@ -72,6 +74,7 @@ CuSuite *testsuite_server_cfg(void)
   SUITE_ADD_TEST(suite, test_load_config_invalid_root_type);
   SUITE_ADD_TEST(suite, test_load_config_missing_server_key);
   SUITE_ADD_TEST(suite, test_register_extensions_with_single_config);
+  SUITE_ADD_TEST(suite, test_register_extensions_omitted_keys_disabled);
   SUITE_ADD_TEST(suite, test_configure_server_null_arguments);
   SUITE_ADD_TEST(suite, test_configure_server_security_require_signed_nodes);
   SUITE_ADD_TEST(suite, test_configure_server_security_trusted_keys);
@@ -301,6 +304,38 @@ static void test_register_extensions_with_single_config(CuTest *tc)
 
   result = register_apx_server_extensions(&server, cfg);
   CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertIntEquals(tc, 1, adt_list_length(&server.extension_manager));
+  apx_server_extension_t *ext = (apx_server_extension_t *)adt_list_first(&server.extension_manager);
+  CuAssertPtrNotNull(tc, ext);
+  CuAssertStrEquals(tc, "SOCKET", ext->name);
+
+  apx_server_destroy(&server);
+
+  dtl_dec_ref(cfg);
+
+  remove(filepath);
+}
+
+static void test_register_extensions_omitted_keys_disabled(CuTest *tc)
+{
+  const char *filepath = "test_ext_omitted.json";
+  const char *content = "{\n"
+                        "    \"apx-server\": {\n"
+                        "        \"max-num-events\": 200\n"
+                        "    }\n"
+                        "}\n";
+  write_test_file(filepath, content);
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+
+  apx_server_t server;
+  apx_server_create(&server);
+
+  result = register_apx_server_extensions(&server, cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertIntEquals(tc, 0, adt_list_length(&server.extension_manager));
 
   apx_server_destroy(&server);
 
