@@ -29,7 +29,7 @@ c-apx/
 │   ├── apx_server/     # APX server daemon
 │   ├── apx_node/       # APX node runtime
 │   ├── apx_control/    # Interactive CLI control utility
-│   ├── apx_info/       # Server query and monitoring client
+│   ├── apx_mon/        # Diagnostic and monitoring client (apxmon)
 │   └── apx_perf_test/  # Performance benchmarking tool
 ├── tests/           # Integration & end-to-end tests (pytest + process fixtures)
 ├── docs/            # Sphinx + Furo + Doxygen documentation

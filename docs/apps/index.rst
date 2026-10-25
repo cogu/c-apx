@@ -9,7 +9,7 @@ Applications
    apx_server
    apx_node
    apx_control
-   apx_info
+   apxmon
    apx_sign
    apx_perf_test
 
@@ -32,9 +32,9 @@ Overview of Applications
    * - :doc:`apx_control`
      - ``apx-control``
      - Command-line utility for interacting with an ``apx-node``'s JSON router interface to get/set signal values or inject signal batches from JSON files.
-   * - :doc:`apx_info`
-     - ``apx-info``
-     - Query client that inspects connected nodes and active files on an APX server.
+   * - :doc:`apxmon`
+     - ``apxmon``
+     - Interactive diagnostic utility for inspecting server state, connected clients, signal routes, and live port streaming over the monitor extension.
    * - :doc:`apx_sign`
      - ``apx-sign``
      - Cryptographic signing tool implementing RMFP/1.1 file signing and verification using ECDSA NIST P-256 (secp256r1) and SHA-256 with PEM key management.

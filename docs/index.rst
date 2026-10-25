@@ -110,9 +110,9 @@ Applications
    * - :doc:`apps/apx_control`
      - ``apx-control``
      - Command-line utility to get/set signal values on running nodes.
-   * - :doc:`apps/apx_info`
-     - ``apx-info``
-     - Query tool for inspecting server status and connected clients.
+   * - :doc:`apps/apxmon`
+     - ``apxmon``
+     - Interactive diagnostic utility for inspecting server state, routes, and signal streams.
    * - :doc:`apps/apx_sign`
      - ``apx-sign``
      - Cryptographic signing tool (ECDSA NIST P-256) for APX definition files.
