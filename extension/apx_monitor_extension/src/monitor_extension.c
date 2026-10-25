@@ -26,7 +26,6 @@
 static apx_error_t init(struct apx_server_tag *apx_server, dtl_dv_t *config);
 static void shutdown(void);
 
-
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
 //////////////////////////////////////////////////////////////////////////////
@@ -41,12 +40,21 @@ apx_error_t apx_monitor_extension_register(struct apx_server_tag *apx_server, dt
   return apx_server_add_extension(apx_server, "MONITOR", &handler, config);
 }
 
+#ifdef UNIT_TEST
+void apx_monitor_extension_accept_testsocket(struct testsocket_tag *sock)
+{
+  if (m_instance != NULL)
+  {
+    apx_server_monitor_accept_testsocket(m_instance, (testsocket_t *)sock);
+  }
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-  (void)config;
   if (m_instance == NULL)
   {
     m_instance = apx_server_monitor_new(apx_server);
@@ -54,12 +62,32 @@ static apx_error_t init(struct apx_server_tag *apx_server, dtl_dv_t *config)
     {
       return APX_MEM_ERROR;
     }
+    if (config != NULL)
+    {
+      if (dtl_dv_type(config) == DTL_DV_HASH)
+      {
+        apx_error_t err = apx_server_monitor_configure(m_instance, (dtl_hv_t *)config);
+        if (err != APX_NO_ERROR)
+        {
+          return err;
+        }
+      }
+      else
+      {
+        return APX_VALUE_TYPE_ERROR;
+      }
+    }
+    return apx_server_monitor_start(m_instance);
   }
   return APX_NO_ERROR;
 }
 
 static void shutdown(void)
 {
-  apx_server_monitor_delete(m_instance);
-  m_instance = NULL;
+  if (m_instance != NULL)
+  {
+    apx_server_monitor_stop(m_instance);
+    apx_server_monitor_delete(m_instance);
+    m_instance = NULL;
+  }
 }
