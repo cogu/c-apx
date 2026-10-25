@@ -885,6 +885,7 @@ static void generate_snapshot(apx_log_streamer_t *self)
             }
           }
         }
+        adt_ary_delete(nodes);
       }
     }
 
@@ -1029,6 +1030,7 @@ static void generate_snapshot(apx_log_streamer_t *self)
                 }
               }
             }
+            adt_ary_delete(nodes);
           }
         }
       }

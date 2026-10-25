@@ -233,6 +233,9 @@ def _find_binary(env_var: str, app_name: str) -> str:
         names_to_try.append(alt_name)
 
     dir_names = list(dict.fromkeys([app_name.replace("-", "_"), app_name]))
+    if app_name in ("apxmon", "apx_mon"):
+        dir_names.extend(["apx_mon", "apxmon"])
+        names_to_try.extend(["apxmon", "apx_mon"])
 
     candidate_paths = []
 
@@ -295,6 +298,12 @@ def apx_control_bin() -> str:
 def apx_sign_bin() -> str:
     """Finds the apx-sign executable from environment or build directories."""
     return _find_binary("APX_SIGN_BIN", "apx-sign")
+
+
+@pytest.fixture(scope="session")
+def apxmon_bin() -> str:
+    """Finds the apxmon executable from environment or build directories."""
+    return _find_binary("APX_MON_BIN", "apxmon")
 
 
 @pytest.fixture

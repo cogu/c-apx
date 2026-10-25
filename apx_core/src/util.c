@@ -251,6 +251,8 @@ const char *apx_strerror(apx_error_t error_code)
     return "Signature missing";
   case APX_SIGNATURE_VERIFICATION_ERROR:
     return "Signature verification failed";
+  case APX_TIMEOUT_ERROR:
+    return "Timeout";
   default:
     return "Unknown error";
   }

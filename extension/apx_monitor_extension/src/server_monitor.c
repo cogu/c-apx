@@ -89,14 +89,14 @@ static void socket_disconnected_notification(void *arg, void *socket);
 static msocket_error_t socket_data_notification(void *arg, void *socket, const uint8_t *data, const uint32_t num_bytes,
   uint32_t *consumed_bytes, uint32_t *msg_size_hint);
 
-static int32_t connection_transmit_max_bytes_available(apx_monitor_server_connection_t *self);
-static int32_t connection_transmit_current_bytes_available(apx_monitor_server_connection_t *self);
-static void connection_transmit_begin(apx_monitor_server_connection_t *self);
-static void connection_transmit_end(apx_monitor_server_connection_t *self);
-static apx_error_t connection_transmit_data_message(apx_monitor_server_connection_t *self, uint32_t write_address,
-  bool more_bit, const uint8_t *msg_data, int32_t msg_size, int32_t *bytes_available);
+static int32_t connection_transmit_max_bytes_available(void *arg);
+static int32_t connection_transmit_current_bytes_available(void *arg);
+static void connection_transmit_begin(void *arg);
+static void connection_transmit_end(void *arg);
+static apx_error_t connection_transmit_data_message(void *arg, uint32_t write_address, bool more_bit,
+  const uint8_t *msg_data, int32_t msg_size, int32_t *bytes_available);
 static apx_error_t connection_transmit_direct_message(
-  apx_monitor_server_connection_t *self, const uint8_t *msg_data, int32_t msg_size, int32_t *bytes_available);
+  void *arg, const uint8_t *msg_data, int32_t msg_size, int32_t *bytes_available);
 static void connection_send_packet(apx_monitor_server_connection_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -408,6 +408,7 @@ void apx_server_monitor_remove_session(apx_server_monitor_t *self, apx_monitor_s
     MUTEX_LOCK(self->lock);
     adt_list_remove(&self->sessions, session);
     MUTEX_UNLOCK(self->lock);
+    apx_monitor_session_delete(session);
   }
 }
 
@@ -520,12 +521,37 @@ void apx_server_monitor_decrement_port_watches(apx_server_monitor_t *self)
   }
 }
 
+static bool server_monitor_has_active_log_streams(apx_server_monitor_t *self)
+{
+  if (self == NULL)
+  {
+    return false;
+  }
+  MUTEX_LOCK(self->lock);
+  bool const active = self->num_active_log_streams > 0;
+  MUTEX_UNLOCK(self->lock);
+  return active;
+}
+
+static bool server_monitor_has_active_port_watches(apx_server_monitor_t *self)
+{
+  if (self == NULL)
+  {
+    return false;
+  }
+  MUTEX_LOCK(self->lock);
+  bool const active = self->num_active_port_watches > 0;
+  MUTEX_UNLOCK(self->lock);
+  return active;
+}
+
 void apx_server_monitor_on_new_connection(void *arg, apx_server_connection_t *connection)
 {
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
   if ((self != NULL) && (connection != NULL))
   {
     register_connection_listener(self, connection);
+#ifdef UNIT_TEST
     if (apx_server_connection_get_connection_type(connection) == APX_CONNECTION_TYPE_MONITOR)
     {
       if (apx_server_monitor_find_session(self, connection) == NULL)
@@ -533,9 +559,10 @@ void apx_server_monitor_on_new_connection(void *arg, apx_server_connection_t *co
         apx_server_monitor_create_session(self, connection);
       }
     }
-    else
+#endif
+    if (apx_server_connection_get_connection_type(connection) != APX_CONNECTION_TYPE_MONITOR)
     {
-      if (self->num_active_log_streams > 0)
+      if (server_monitor_has_active_log_streams(self))
       {
         uint32_t conn_id = apx_server_connection_get_connection_id(connection);
         uint8_t conn_type = (uint8_t)apx_server_connection_get_connection_type(connection);
@@ -574,7 +601,7 @@ void apx_server_monitor_on_connection_closed(void *arg, apx_server_connection_t 
     }
     else
     {
-      if (self->num_active_log_streams > 0)
+      if (server_monitor_has_active_log_streams(self))
       {
         uint32_t conn_id = apx_server_connection_get_connection_id(connection);
         MUTEX_LOCK(self->lock);
@@ -591,22 +618,40 @@ void apx_server_monitor_on_connection_closed(void *arg, apx_server_connection_t 
         }
         MUTEX_UNLOCK(self->lock);
       }
-      if (self->num_active_port_watches > 0)
+      if (server_monitor_has_active_port_watches(self))
       {
         uint32_t conn_id = apx_server_connection_get_connection_id(connection);
         MUTEX_LOCK(self->lock);
-        adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
-        while (iter != NULL)
+        int32_t const num_sessions = adt_list_length(&self->sessions);
+        apx_diag_dispatcher_t **diags = NULL;
+        int32_t session_count = 0;
+        if (num_sessions > 0)
         {
-          apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
-          apx_diag_dispatcher_t *diag = apx_monitor_session_get_diag_dispatcher(session);
-          if (diag != NULL)
+          diags = (apx_diag_dispatcher_t **)calloc((size_t)num_sessions, sizeof(apx_diag_dispatcher_t *));
+          if (diags != NULL)
           {
-            apx_diag_dispatcher_notify_connection_closed(diag, conn_id);
+            adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+            while (iter != NULL && session_count < num_sessions)
+            {
+              apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+              diags[session_count++] = apx_monitor_session_get_diag_dispatcher(session);
+              iter = adt_list_iter_next(iter);
+            }
           }
-          iter = adt_list_iter_next(iter);
         }
         MUTEX_UNLOCK(self->lock);
+
+        if (diags != NULL)
+        {
+          for (int32_t idx = 0; idx < session_count; ++idx)
+          {
+            if (diags[idx] != NULL)
+            {
+              apx_diag_dispatcher_notify_connection_closed(diags[idx], conn_id);
+            }
+          }
+          free(diags);
+        }
       }
     }
   }
@@ -632,18 +677,32 @@ void apx_server_monitor_on_file_published(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
-  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && (self->num_active_log_streams > 0))
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL))
   {
     uint32_t conn_id = connection->connection_id;
+    const char *fname = rmf_file_info_name(file_info);
     MUTEX_LOCK(self->lock);
     adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
     while (iter != NULL)
     {
       apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
-      apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
-      if (apx_log_streamer_is_active(streamer))
+      if (session != NULL)
       {
-        apx_log_streamer_enqueue_file_publish(streamer, conn_id, file_info);
+        if (apx_monitor_session_get_connection(session) == (apx_server_connection_t *)connection)
+        {
+          if (fname != NULL && strcmp(fname, APX_DIAG_REQUEST_FILE_NAME) == 0)
+          {
+            apx_monitor_session_on_request_file_published(session, file_info);
+          }
+        }
+        if (self->num_active_log_streams > 0)
+        {
+          apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+          if (apx_log_streamer_is_active(streamer))
+          {
+            apx_log_streamer_enqueue_file_publish(streamer, conn_id, file_info);
+          }
+        }
       }
       iter = adt_list_iter_next(iter);
     }
@@ -655,7 +714,7 @@ void apx_server_monitor_on_file_revoked(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
-  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && (self->num_active_log_streams > 0))
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && server_monitor_has_active_log_streams(self))
   {
     uint32_t conn_id = connection->connection_id;
     MUTEX_LOCK(self->lock);
@@ -678,7 +737,7 @@ void apx_server_monitor_on_file_opened(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
-  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && (self->num_active_log_streams > 0))
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && server_monitor_has_active_log_streams(self))
   {
     uint32_t conn_id = connection->connection_id;
     MUTEX_LOCK(self->lock);
@@ -701,7 +760,7 @@ void apx_server_monitor_on_file_closed(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
-  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && (self->num_active_log_streams > 0))
+  if ((self != NULL) && (connection != NULL) && (file_info != NULL) && server_monitor_has_active_log_streams(self))
   {
     uint32_t conn_id = connection->connection_id;
     MUTEX_LOCK(self->lock);
@@ -726,7 +785,7 @@ void apx_server_monitor_on_file_written(
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
   if ((self != NULL) && (connection != NULL) && (file != NULL))
   {
-    if (self->num_active_log_streams > 0)
+    if (server_monitor_has_active_log_streams(self))
     {
       uint32_t conn_id = connection->connection_id;
       uint32_t address = file->file_info.address;
@@ -744,7 +803,7 @@ void apx_server_monitor_on_file_written(
       }
       MUTEX_UNLOCK(self->lock);
     }
-    if (self->num_active_port_watches > 0)
+    if (server_monitor_has_active_port_watches(self))
     {
       const char *fname = rmf_file_info_name(&file->file_info);
       if (fname != NULL)
@@ -759,18 +818,36 @@ void apx_server_monitor_on_file_written(
             memcpy(node_name, fname, nlen);
             node_name[nlen] = '\0';
             MUTEX_LOCK(self->lock);
-            adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
-            while (iter != NULL)
+            int32_t const num_sessions = adt_list_length(&self->sessions);
+            apx_diag_dispatcher_t **diags = NULL;
+            int32_t session_count = 0;
+            if (num_sessions > 0)
             {
-              apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
-              apx_diag_dispatcher_t *diag = apx_monitor_session_get_diag_dispatcher(session);
-              if (diag != NULL)
+              diags = (apx_diag_dispatcher_t **)calloc((size_t)num_sessions, sizeof(apx_diag_dispatcher_t *));
+              if (diags != NULL)
               {
-                apx_diag_dispatcher_notify_port_change(diag, node_name, offset, data, (uint32_t)size);
+                adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+                while (iter != NULL && session_count < num_sessions)
+                {
+                  apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+                  diags[session_count++] = apx_monitor_session_get_diag_dispatcher(session);
+                  iter = adt_list_iter_next(iter);
+                }
               }
-              iter = adt_list_iter_next(iter);
             }
             MUTEX_UNLOCK(self->lock);
+
+            if (diags != NULL)
+            {
+              for (int32_t idx = 0; idx < session_count; ++idx)
+              {
+                if (diags[idx] != NULL)
+                {
+                  apx_diag_dispatcher_notify_port_change(diags[idx], node_name, offset, data, (uint32_t)size);
+                }
+              }
+              free(diags);
+            }
           }
         }
       }
@@ -967,14 +1044,12 @@ static void create_connection_interface_vtable(
 {
   memset(interface, 0, sizeof(apx_connection_interface_t));
   interface->arg = (void *)self;
-  interface->transmit_max_buffer_size = (int32_t(*)(void *))connection_transmit_max_bytes_available;
-  interface->transmit_current_bytes_avaiable = (int32_t(*)(void *))connection_transmit_current_bytes_available;
-  interface->transmit_begin = (void (*)(void *))connection_transmit_begin;
-  interface->transmit_end = (void (*)(void *))connection_transmit_end;
-  interface->transmit_data_message =
-    (apx_error_t(*)(void *, uint32_t, bool, const uint8_t *, int32_t, int32_t *))connection_transmit_data_message;
-  interface->transmit_direct_message =
-    (apx_error_t(*)(void *, const uint8_t *, int32_t, int32_t *))connection_transmit_direct_message;
+  interface->transmit_max_buffer_size = connection_transmit_max_bytes_available;
+  interface->transmit_current_bytes_avaiable = connection_transmit_current_bytes_available;
+  interface->transmit_begin = connection_transmit_begin;
+  interface->transmit_end = connection_transmit_end;
+  interface->transmit_data_message = connection_transmit_data_message;
+  interface->transmit_direct_message = connection_transmit_direct_message;
 }
 
 static void socket_disconnected_notification(void *arg, void *socket)
@@ -1010,8 +1085,9 @@ static msocket_error_t socket_data_notification(void *arg, void *socket, const u
   return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
-static int32_t connection_transmit_max_bytes_available(apx_monitor_server_connection_t *self)
+static int32_t connection_transmit_max_bytes_available(void *arg)
 {
+  apx_monitor_server_connection_t *self = (apx_monitor_server_connection_t *)arg;
   if (self != NULL)
   {
     return (int32_t)self->default_buffer_size;
@@ -1019,8 +1095,9 @@ static int32_t connection_transmit_max_bytes_available(apx_monitor_server_connec
   return -1;
 }
 
-static int32_t connection_transmit_current_bytes_available(apx_monitor_server_connection_t *self)
+static int32_t connection_transmit_current_bytes_available(void *arg)
 {
+  apx_monitor_server_connection_t *self = (apx_monitor_server_connection_t *)arg;
   if (self != NULL)
   {
     return (int32_t)(adt_bytearray_length(&self->send_buffer) - self->pending_bytes);
@@ -1028,8 +1105,9 @@ static int32_t connection_transmit_current_bytes_available(apx_monitor_server_co
   return -1;
 }
 
-static void connection_transmit_begin(apx_monitor_server_connection_t *self)
+static void connection_transmit_begin(void *arg)
 {
+  apx_monitor_server_connection_t *self = (apx_monitor_server_connection_t *)arg;
   if (self != NULL)
   {
     MUTEX_LOCK(self->lock);
@@ -1042,8 +1120,9 @@ static void connection_transmit_begin(apx_monitor_server_connection_t *self)
   }
 }
 
-static void connection_transmit_end(apx_monitor_server_connection_t *self)
+static void connection_transmit_end(void *arg)
 {
+  apx_monitor_server_connection_t *self = (apx_monitor_server_connection_t *)arg;
   if (self != NULL)
   {
     if (self->pending_bytes > 0u)
@@ -1054,9 +1133,10 @@ static void connection_transmit_end(apx_monitor_server_connection_t *self)
   }
 }
 
-static apx_error_t connection_transmit_data_message(apx_monitor_server_connection_t *self, uint32_t write_address,
-  bool more_bit, const uint8_t *msg_data, int32_t msg_size, int32_t *bytes_available)
+static apx_error_t connection_transmit_data_message(
+  void *arg, uint32_t write_address, bool more_bit, const uint8_t *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
+  apx_monitor_server_connection_t *self = (apx_monitor_server_connection_t *)arg;
   if (self != NULL)
   {
     uint8_t header[NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE];
@@ -1089,8 +1169,9 @@ static apx_error_t connection_transmit_data_message(apx_monitor_server_connectio
 }
 
 static apx_error_t connection_transmit_direct_message(
-  apx_monitor_server_connection_t *self, const uint8_t *msg_data, int32_t msg_size, int32_t *bytes_available)
+  void *arg, const uint8_t *msg_data, int32_t msg_size, int32_t *bytes_available)
 {
+  apx_monitor_server_connection_t *self = (apx_monitor_server_connection_t *)arg;
   if (self != NULL)
   {
     uint8_t header[NUMHEADER32_LONG_SIZE];

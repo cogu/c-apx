@@ -74,6 +74,12 @@ apx_error_t apx_client_connection_create(apx_client_connection_t *self,
     self->client = NULL;
     self->last_error = APX_NO_ERROR;
     adt_str_create(&self->last_error_node);
+    self->file_published_func = NULL;
+    self->file_published_arg = NULL;
+    self->greeting_accepted_func = NULL;
+    self->greeting_accepted_arg = NULL;
+    self->disconnected_func = NULL;
+    self->disconnected_arg = NULL;
     // apx_connection_base_set_event_handler(&self->base, apx_client_connection_default_event_handler, (void*) self);
     return error_code;
   }
@@ -118,6 +124,10 @@ void apx_client_connection_greeting_header_accepted_notification(apx_client_conn
   {
     self->is_greeting_accepted = true;
     apx_file_manager_connected(&self->base.file_manager);
+    if (self->greeting_accepted_func != NULL)
+    {
+      self->greeting_accepted_func(self->greeting_accepted_arg, self);
+    }
   }
 }
 
@@ -138,10 +148,44 @@ void apx_client_connection_disconnected_notification(apx_client_connection_t *se
 {
   if (self != NULL)
   {
+    if (self->disconnected_func != NULL)
+    {
+      self->disconnected_func(self->disconnected_arg, self);
+    }
     if (self->client != NULL)
     {
       apx_client_internal_disconnect_notification(self->client, self);
     }
+  }
+}
+
+void apx_client_connection_set_file_published_notification(
+  apx_client_connection_t *self, apx_client_file_published_func_t *func, void *arg)
+{
+  if (self != NULL)
+  {
+    self->file_published_func = func;
+    self->file_published_arg = arg;
+  }
+}
+
+void apx_client_connection_set_greeting_accepted_notification(
+  apx_client_connection_t *self, apx_client_greeting_accepted_func_t *func, void *arg)
+{
+  if (self != NULL)
+  {
+    self->greeting_accepted_func = func;
+    self->greeting_accepted_arg = arg;
+  }
+}
+
+void apx_client_connection_set_disconnected_notification(
+  apx_client_connection_t *self, apx_client_disconnected_func_t *func, void *arg)
+{
+  if (self != NULL)
+  {
+    self->disconnected_func = func;
+    self->disconnected_arg = arg;
   }
 }
 
@@ -442,6 +486,10 @@ static apx_error_t remote_file_published_notification(apx_client_connection_t *s
 {
   if ((self != NULL) && (file != NULL))
   {
+    if (self->file_published_func != NULL)
+    {
+      self->file_published_func(self->file_published_arg, file);
+    }
     apx_file_type_t const file_type = apx_file_get_apx_file_type(file);
     if ((file_type == APX_REQUIRE_PORT_DATA_FILE_TYPE) || (file_type == APX_PROVIDE_PORT_COUNT_FILE_TYPE) ||
       (file_type == APX_REQUIRE_PORT_COUNT_FILE_TYPE))

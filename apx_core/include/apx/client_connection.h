@@ -22,6 +22,11 @@
 //////////////////////////////////////////////////////////////////////////////
 struct apx_client_tag;
 struct apx_node_instance_tag;
+struct apx_file_tag;
+
+typedef apx_error_t(apx_client_file_published_func_t)(void *arg, struct apx_file_tag *file);
+typedef void(apx_client_greeting_accepted_func_t)(void *arg, struct apx_client_connection_tag *connection);
+typedef void(apx_client_disconnected_func_t)(void *arg, struct apx_client_connection_tag *connection);
 
 typedef struct apx_client_connection_tag
 {
@@ -30,6 +35,12 @@ typedef struct apx_client_connection_tag
   bool is_greeting_accepted;
   apx_error_t last_error;
   adt_str_t last_error_node;
+  apx_client_file_published_func_t *file_published_func;
+  void *file_published_arg;
+  apx_client_greeting_accepted_func_t *greeting_accepted_func;
+  void *greeting_accepted_arg;
+  apx_client_disconnected_func_t *disconnected_func;
+  void *disconnected_arg;
 } apx_client_connection_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -42,6 +53,12 @@ void apx_client_connection_destroy(apx_client_connection_t *self);
 void apx_client_connection_greeting_header_accepted_notification(apx_client_connection_t *self);
 void apx_client_connection_connected_notification(apx_client_connection_t *self);
 void apx_client_connection_disconnected_notification(apx_client_connection_t *self);
+void apx_client_connection_set_file_published_notification(
+  apx_client_connection_t *self, apx_client_file_published_func_t *func, void *arg);
+void apx_client_connection_set_greeting_accepted_notification(
+  apx_client_connection_t *self, apx_client_greeting_accepted_func_t *func, void *arg);
+void apx_client_connection_set_disconnected_notification(
+  apx_client_connection_t *self, apx_client_disconnected_func_t *func, void *arg);
 void apx_client_connection_attach_node_manager(apx_client_connection_t *self, apx_node_manager_t *node_manager);
 apx_node_manager_t *apx_client_connection_get_node_manager(apx_client_connection_t *self);
 void apx_client_connection_require_port_data_written(

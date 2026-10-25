@@ -159,7 +159,6 @@ void apx_diag_dispatcher_destroy(apx_diag_dispatcher_t *self)
     MUTEX_LOCK(self->lock);
     apx_server_monitor_t *monitor =
       self->session != NULL ? apx_monitor_session_get_server_monitor(self->session) : NULL;
-    apx_file_manager_t *fm = self->session != NULL ? apx_monitor_session_get_file_manager(self->session) : NULL;
 
     // Decrement port watches for active subscriptions
     if (monitor != NULL)
@@ -173,16 +172,6 @@ void apx_diag_dispatcher_destroy(apx_diag_dispatcher_t *self)
     adt_ary_destroy(&self->subscriptions);
     adt_ary_destroy(&self->snapshots);
 
-    // Revoke any outstanding temporary definition files
-    int32_t num_temp = adt_ary_length(&self->temp_files);
-    for (int32_t i = 0; i < num_temp; ++i)
-    {
-      apx_diag_temp_file_t *tf = (apx_diag_temp_file_t *)adt_ary_value(&self->temp_files, i);
-      if (tf != NULL && fm != NULL)
-      {
-        apx_file_manager_revoke_local_file(fm, tf->address);
-      }
-    }
     adt_ary_destroy(&self->temp_files);
     MUTEX_UNLOCK(self->lock);
 
@@ -277,6 +266,10 @@ void apx_diag_dispatcher_on_file_opened(apx_diag_dispatcher_t *self, apx_file_t 
     return;
   }
 
+  uint32_t send_addr = 0u;
+  uint8_t *copy = NULL;
+  uint32_t copy_size = 0u;
+
   MUTEX_LOCK(self->lock);
   int32_t const num_temp = adt_ary_length(&self->temp_files);
   for (int32_t i = 0; i < num_temp; ++i)
@@ -284,21 +277,33 @@ void apx_diag_dispatcher_on_file_opened(apx_diag_dispatcher_t *self, apx_file_t 
     apx_diag_temp_file_t *tf = (apx_diag_temp_file_t *)adt_ary_value(&self->temp_files, i);
     if (tf != NULL && strcmp(tf->file_name, fname) == 0)
     {
-      apx_file_manager_t *fm = apx_monitor_session_get_file_manager(self->session);
-      if (fm != NULL && tf->data != NULL && tf->size > 0u)
+      if (tf->data != NULL && tf->size > 0u)
       {
-        uint8_t *copy = (uint8_t *)malloc(tf->size);
+        copy = (uint8_t *)malloc(tf->size);
         if (copy != NULL)
         {
           memcpy(copy, tf->data, tf->size);
-          apx_error_t const err = apx_file_manager_send_local_data(fm, tf->address, copy, tf->size);
-          (void)err;
+          copy_size = tf->size;
+          send_addr = tf->address;
         }
       }
       break;
     }
   }
   MUTEX_UNLOCK(self->lock);
+
+  if (copy != NULL)
+  {
+    apx_file_manager_t *fm = apx_monitor_session_get_file_manager(self->session);
+    if (fm != NULL)
+    {
+      (void)apx_file_manager_send_local_data(fm, send_addr, copy, copy_size);
+    }
+    else
+    {
+      free(copy);
+    }
+  }
 }
 
 void apx_diag_dispatcher_on_file_closed(apx_diag_dispatcher_t *self, apx_file_t *file)
@@ -313,6 +318,9 @@ void apx_diag_dispatcher_on_file_closed(apx_diag_dispatcher_t *self, apx_file_t 
     return;
   }
 
+  uint32_t revoke_addr = 0u;
+  bool found = false;
+
   MUTEX_LOCK(self->lock);
   int32_t const num_temp = adt_ary_length(&self->temp_files);
   for (int32_t i = 0; i < num_temp; ++i)
@@ -320,16 +328,22 @@ void apx_diag_dispatcher_on_file_closed(apx_diag_dispatcher_t *self, apx_file_t 
     apx_diag_temp_file_t *tf = (apx_diag_temp_file_t *)adt_ary_value(&self->temp_files, i);
     if (tf != NULL && strcmp(tf->file_name, fname) == 0)
     {
-      apx_file_manager_t *fm = apx_monitor_session_get_file_manager(self->session);
-      if (fm != NULL)
-      {
-        apx_file_manager_revoke_local_file(fm, tf->address);
-      }
+      revoke_addr = tf->address;
+      found = true;
       adt_ary_splice(&self->temp_files, i, 1);
       break;
     }
   }
   MUTEX_UNLOCK(self->lock);
+
+  if (found)
+  {
+    apx_file_manager_t *fm = apx_monitor_session_get_file_manager(self->session);
+    if (fm != NULL)
+    {
+      apx_file_manager_revoke_local_file(fm, revoke_addr);
+    }
+  }
 }
 
 void apx_diag_dispatcher_notify_port_change(
@@ -1082,6 +1096,7 @@ static void handle_list_nodes(
                   }
                 }
               }
+              adt_ary_delete(nodes);
             }
           }
         }
@@ -1606,6 +1621,7 @@ static void handle_get_node_definition(
     send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)APX_MEM_ERROR, NULL, 0u);
     return;
   }
+  apx_monitor_session_attach_file_handler(self->session, local_file);
 
   uint32_t const file_address = apx_file_get_address_without_flags(local_file);
   apx_file_manager_publish_local_file(fm, &local_file->file_info);
@@ -1654,10 +1670,11 @@ static void handle_subscribe_ports(
 
   MUTEX_LOCK(self->lock);
   uint32_t const subscription_id = ++self->next_subscription_id;
+  MUTEX_UNLOCK(self->lock);
+
   apx_diag_subscription_t *sub = apx_diag_subscription_new(subscription_id);
   if (sub == NULL)
   {
-    MUTEX_UNLOCK(self->lock);
     send_response(self, request_id, APX_DIAG_CMD_SUBSCRIBE_PORTS, 0u, (uint32_t)APX_MEM_ERROR, NULL, 0u);
     return;
   }
@@ -1667,7 +1684,6 @@ static void handle_subscribe_ports(
   if (resp == NULL)
   {
     apx_diag_subscription_delete(sub);
-    MUTEX_UNLOCK(self->lock);
     send_response(self, request_id, APX_DIAG_CMD_SUBSCRIBE_PORTS, 0u, (uint32_t)APX_MEM_ERROR, NULL, 0u);
     return;
   }
@@ -1742,7 +1758,9 @@ static void handle_subscribe_ports(
 
   if (resolved_count > 0u)
   {
+    MUTEX_LOCK(self->lock);
     adt_ary_push(&self->subscriptions, sub);
+    MUTEX_UNLOCK(self->lock);
     apx_server_monitor_increment_port_watches(monitor);
 
     // Initial values if SEND_INITIAL flag set
@@ -1790,13 +1808,11 @@ static void handle_subscribe_ports(
       }
     }
 
-    MUTEX_UNLOCK(self->lock);
     send_response(self, request_id, APX_DIAG_CMD_SUBSCRIBE_PORTS, 0u, (uint32_t)APX_NO_ERROR, resp, resp_len);
   }
   else
   {
     apx_diag_subscription_delete(sub);
-    MUTEX_UNLOCK(self->lock);
     send_response(self, request_id, APX_DIAG_CMD_SUBSCRIBE_PORTS, 0u, (uint32_t)APX_NOT_FOUND_ERROR, NULL, 0u);
   }
 

@@ -131,6 +131,7 @@ void apx_client_socket_connection_destroy(apx_client_socket_connection_t *self)
 {
   if (self != NULL)
   {
+    apx_connection_base_stop(&self->base.base);
     if (self->socket_object != NULL)
     {
       SOCKET_OBJECT_CLOSE(self->socket_object);
@@ -300,6 +301,33 @@ apx_error_t apx_client_socket_connection_connect_vsock(
 }
 # endif // _WIN32
 #endif // UNIT_TEST
+
+void apx_client_socket_connection_set_file_published_notification(
+  apx_client_socket_connection_t *self, apx_client_file_published_func_t *func, void *arg)
+{
+  if (self != NULL)
+  {
+    apx_client_connection_set_file_published_notification(&self->base, func, arg);
+  }
+}
+
+void apx_client_socket_connection_set_greeting_accepted_notification(
+  apx_client_socket_connection_t *self, apx_client_greeting_accepted_func_t *func, void *arg)
+{
+  if (self != NULL)
+  {
+    apx_client_connection_set_greeting_accepted_notification(&self->base, func, arg);
+  }
+}
+
+void apx_client_socket_connection_set_disconnected_notification(
+  apx_client_socket_connection_t *self, apx_client_disconnected_func_t *func, void *arg)
+{
+  if (self != NULL)
+  {
+    apx_client_connection_set_disconnected_notification(&self->base, func, arg);
+  }
+}
 
 // ConnectionInterface API
 int32_t apx_client_socket_connection_vtransmit_max_bytes_avaiable(void *arg)

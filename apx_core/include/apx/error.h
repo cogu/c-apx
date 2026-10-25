@@ -102,6 +102,7 @@ typedef int32_t apx_error_t;
 #define APX_NOT_A_DIRECTORY_ERROR 78
 #define APX_SIGNATURE_MISSING_ERROR 79
 #define APX_SIGNATURE_VERIFICATION_ERROR 80
+#define APX_TIMEOUT_ERROR 81
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES

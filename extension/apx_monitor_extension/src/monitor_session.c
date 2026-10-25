@@ -242,6 +242,46 @@ void apx_monitor_session_on_file_written(
   }
 }
 
+void apx_monitor_session_on_request_file_published(
+  apx_monitor_session_t *self, const struct rmf_file_info_tag *file_info)
+{
+  (void)file_info;
+  if (self == NULL || self->connection == NULL)
+  {
+    return;
+  }
+  apx_file_manager_t *fm = apx_connection_base_get_file_manager(&self->connection->base);
+  if (fm != NULL)
+  {
+    apx_file_t *remote_file = apx_file_manager_find_remote_file_by_name(fm, APX_DIAG_REQUEST_FILE_NAME);
+    if (remote_file != NULL)
+    {
+      apx_file_notification_handler_t handler;
+      memset(&handler, 0, sizeof(handler));
+      handler.arg = self;
+      handler.write_notify = on_file_write_notify;
+      apx_file_set_notification_handler(remote_file, &handler);
+
+      uint32_t const addr = apx_file_get_address_without_flags(remote_file);
+      (void)apx_file_manager_open_stream(fm, addr, APX_MONITOR_DEFAULT_STREAM_FILE_SIZE, 64u);
+    }
+  }
+}
+
+void apx_monitor_session_attach_file_handler(apx_monitor_session_t *self, apx_file_t *file)
+{
+  if (self != NULL && file != NULL)
+  {
+    apx_file_notification_handler_t handler;
+    memset(&handler, 0, sizeof(handler));
+    handler.arg = self;
+    handler.open_notify = on_file_open_notify;
+    handler.close_notify = on_file_close_notify;
+    handler.write_notify = on_file_write_notify;
+    apx_file_set_notification_handler(file, &handler);
+  }
+}
+
 apx_server_connection_t *apx_monitor_session_get_connection(apx_monitor_session_t *self)
 {
   if (self != NULL)

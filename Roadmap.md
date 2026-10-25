@@ -104,24 +104,24 @@ Detailed protocol specification and state machine definitions are in [remotefile
 * [x] **Unit & Integration Tests:**
   * Add unit tests in `testsuite_monitor_extension.c` verifying ring buffer overflow and drop accounting, fast-path tap activation/deactivation, and snapshot generation without memory leaks or race conditions.
 
-## 6. APX Diagnostic Protocol & `apxmon` CLI Application (Retires `apx_info`)
+## 6. APX Diagnostic Protocol & `apxmon` CLI Application (Retires `apx_info`) (Completed)
 
 * Detailed protocol and CLI design defined in [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md) and [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md).
-* **Retire `apx_info` Prototype & Reconcile Client Abstractions:**
+* [x] **Retire `apx_info` Prototype & Reconcile Client Abstractions:**
   * Retire throwaway prototype `app/apx_info`.
   * Resolve and reconcile client monitor connection abstractions (`client_monitor_connection.c` / `monitor_socket_client_connection.c`).
-* **Bidirectional Diagnostic Streams:**
+* [x] **Bidirectional Diagnostic Streams:**
   * Client publishes `client.request` (`FileStream`); server opens it.
   * Server publishes `server.response` (`FileStream`); client opens it.
   * Multiplexed via 32-bit `request_id` in uniform 16-byte diagnostic header.
-* **Server-Side Query Dispatcher (`apx_monitor_extension`):**
+* [x] **Server-Side Query Dispatcher (`apx_monitor_extension`):**
   * `APX_DIAG_CMD_GET_SERVER_INFO`: Version, uptime, active connection and node counts.
   * `APX_DIAG_CMD_GET_CLIENTS` / `APX_DIAG_CMD_GET_NODES`: Detailed connection tables and registered nodes.
   * `APX_DIAG_CMD_GET_NODE_DEF`: Fetches complete `.apx` IDL text on demand.
   * `APX_DIAG_CMD_GET_ROUTING_TABLE`: Full port routing map (Provide Node:Port $\to$ Require Node:Port).
   * `APX_DIAG_CMD_GET_UNCONNECTED_PORTS`: Detects dangling require ports without providers and unconsumed provide ports.
   * `APX_DIAG_CMD_WATCH_PORT` / `APX_DIAG_NOTIF_PORT_UPDATE`: Live signal tapping with asynchronous updates.
-* **`apxmon` CLI Application (`app/apx_mon`):**
+* [x] **`apxmon` CLI Application (`app/apx_mon`):**
   * Subcommands: `info`, `clients`, `nodes`, `routing [--unconnected]`, `get-def <node>`, `watch <node:port>`, and interactive `top`.
   * Supports aligned formatted ASCII table output and machine-readable `--json` output.
 

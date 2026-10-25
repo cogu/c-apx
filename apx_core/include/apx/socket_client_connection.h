@@ -63,6 +63,13 @@ apx_error_t apx_client_socket_connection_connect_vsock(
 # endif
 #endif
 
+void apx_client_socket_connection_set_file_published_notification(
+  apx_client_socket_connection_t *self, apx_client_file_published_func_t *func, void *arg);
+void apx_client_socket_connection_set_greeting_accepted_notification(
+  apx_client_socket_connection_t *self, apx_client_greeting_accepted_func_t *func, void *arg);
+void apx_client_socket_connection_set_disconnected_notification(
+  apx_client_socket_connection_t *self, apx_client_disconnected_func_t *func, void *arg);
+
 // ConnectionInterface API
 int32_t apx_client_socket_connection_vtransmit_max_bytes_avaiable(void *arg);
 int32_t apx_client_socket_connection_vtransmit_current_bytes_avaiable(void *arg);

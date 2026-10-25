@@ -44,6 +44,7 @@ struct apx_server_connection_tag;
 struct apx_log_streamer_tag;
 struct apx_diag_dispatcher_tag;
 struct apx_file_tag;
+struct rmf_file_info_tag;
 
 typedef struct apx_monitor_session_tag
 {
@@ -73,6 +74,9 @@ void apx_monitor_session_on_file_opened(apx_monitor_session_t *self, struct apx_
 void apx_monitor_session_on_file_closed(apx_monitor_session_t *self, struct apx_file_tag *file);
 void apx_monitor_session_on_file_written(
   apx_monitor_session_t *self, struct apx_file_tag *file, uint32_t offset, const uint8_t *data, apx_size_t size);
+void apx_monitor_session_on_request_file_published(
+  apx_monitor_session_t *self, const struct rmf_file_info_tag *file_info);
+void apx_monitor_session_attach_file_handler(apx_monitor_session_t *self, struct apx_file_tag *file);
 
 struct apx_server_connection_tag *apx_monitor_session_get_connection(apx_monitor_session_t *self);
 struct apx_server_monitor_tag *apx_monitor_session_get_server_monitor(apx_monitor_session_t *self);
