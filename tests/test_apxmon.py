@@ -280,3 +280,89 @@ def test_apxmon_watch(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: st
                 watch_proc.kill()
     finally:
         sender.stop()
+
+
+def test_apxmon_tls_mtls(tmp_path: Path, apx_server_bin: str, apxmon_bin: str):
+    """Verify that apxmon can connect to the monitor extension over TLS with mTLS."""
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        monitor_port = s.getsockname()[1]
+
+    repo_root = Path(__file__).resolve().parent.parent
+    certs_dir = repo_root / "tests" / "certs"
+    ca_cert = str(certs_dir / "ca_cert.pem")
+    server_cert = str(certs_dir / "server_cert.pem")
+    server_key = str(certs_dir / "server_key.pem")
+    client_cert = str(certs_dir / "client_cert.pem")
+    client_key = str(certs_dir / "client_key.pem")
+
+    server_socket = str(tmp_path / "apx.socket")
+    config_file = str(tmp_path / "server.json")
+
+    config = {
+        "socket-server-extension": {
+            "unix-file": server_socket
+        },
+        "monitor-extension": {
+            "enabled": True,
+            "tcp-port": monitor_port,
+            "bind-address": "127.0.0.1",
+            "tls": {
+                "server-cert": server_cert,
+                "server-key": server_key,
+                "ca-cert": ca_cert,
+                "require-client-cert": True
+            }
+        }
+    }
+
+    with open(config_file, "w", encoding="utf-8") as f:
+        json.dump(config, f)
+
+    r_fd, w_fd = os.pipe()
+    os.set_inheritable(w_fd, True)
+
+    cmd = [apx_server_bin, "--ready-fd", str(w_fd), config_file]
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        pass_fds=(w_fd,),
+        preexec_fn=_set_pdeathsig,
+    )
+    os.close(w_fd)
+
+    rlist, _, _ = select.select([r_fd], [], [], 3.0)
+    assert rlist, "Server did not signal readiness in time"
+    os.read(r_fd, 1)
+    os.close(r_fd)
+
+    try:
+        # 1. Connect with valid client cert -> should succeed
+        res = subprocess.run([
+            apxmon_bin,
+            "-c", f"127.0.0.1:{monitor_port}",
+            "--tls",
+            "--ca-cert", ca_cert,
+            "--client-cert", client_cert,
+            "--client-key", client_key,
+            "info"
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        assert "Server Version:" in res.stdout
+
+        # 2. Connect without client cert -> should fail due to require-client-cert
+        res_fail = subprocess.run([
+            apxmon_bin,
+            "-c", f"127.0.0.1:{monitor_port}",
+            "--tls",
+            "--ca-cert", ca_cert,
+            "info"
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        assert res_fail.returncode != 0
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=3.0)
+        except subprocess.TimeoutExpired:
+            proc.kill()

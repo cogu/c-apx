@@ -125,18 +125,18 @@ Detailed protocol specification and state machine definitions are in [remotefile
   * Subcommands: `info`, `clients`, `nodes`, `routing [--unconnected]`, `get-def <node>`, `watch <node:port>`, and interactive `top`.
   * Supports aligned formatted ASCII table output and machine-readable `--json` output.
 
-## 7. Dedicated Diagnostic Transport & TLS Security for Server Monitor
+## 7. Dedicated Diagnostic Transport & TLS Security for Server Monitor (Completed)
 
 * Detailed architecture and design defined in [securing_monitor_extension.md](design/securing_monitor_extension.md).
-* **Dedicated Listener Integration (`apx_monitor_extension`):**
+* [x] **Dedicated Listener Integration (`apx_monitor_extension`):**
   * Decouple monitor connections from `apx_socket_extension` so the monitor extension manages its own dedicated `msocket_server_t`.
   * Support listening on a dedicated UNIX domain socket (e.g. `/run/apx/apx_monitor.socket`) and/or dedicated TCP port (default: 5080, following the convention where `apx-server@5000+N` maps to diagnostic port `5080+N`) configured via `server.json`.
   * Automatically instantiate accepted connections directly as `APX_CONNECTION_TYPE_MONITOR` and publish `server.log` and `server.response`.
-* **Mbed TLS Transport Security (mTLS / PSK):**
+* [x] **Mbed TLS Transport Security (mTLS / PSK):**
   * Integrate `msocket_tls_config_t` into `apx_server_monitor_t` to support TLS on the diagnostic TCP port.
   * Enforce Mutual TLS (`require-client-cert: true`) so only authorized diagnostic clients possessing a valid client certificate can connect.
   * Verify client certificate Subject / Common Name to prevent standard node certificates from connecting to the monitor endpoint.
-* **Client Tooling Connection Support:**
+* [x] **Client Tooling Connection Support:**
   * Add TLS connection arguments (`--tls`, `--ca-cert`, `--client-cert`, `--client-key`) and default port/socket (`5080` / `/run/apx/apx_monitor.socket`) to `apxmon` and `apxlog`.
 
 ## 8. Implement Worker Command Stubs (`file_manager_worker.c`) (Completed)
