@@ -18,6 +18,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+# endif
+# include <windows.h>
+#endif
 
 #define APX_DIAG_REQ_FILE_NAME "apx.diag.v1.request"
 #define APX_DIAG_RESP_FILE_NAME "apx.diag.v1.response"
@@ -105,7 +111,26 @@ static char *decode_string16(const uint8_t *src, uint32_t max_bytes, uint32_t *c
 static struct timespec compute_deadline(uint32_t timeout_ms)
 {
   struct timespec ts;
+#ifdef _WIN32
+  FILETIME ft;
+  GetSystemTimeAsFileTime(&ft);
+  ULARGE_INTEGER uli;
+  uli.LowPart = ft.dwLowDateTime;
+  uli.HighPart = ft.dwHighDateTime;
+  if (uli.QuadPart >= 116444736000000000ULL)
+  {
+    uint64_t const ns = (uli.QuadPart - 116444736000000000ULL) * 100ULL;
+    ts.tv_sec = (time_t)(ns / 1000000000ULL);
+    ts.tv_nsec = (long)(ns % 1000000000ULL);
+  }
+  else
+  {
+    ts.tv_sec = 0;
+    ts.tv_nsec = 0;
+  }
+#else
   clock_gettime(CLOCK_REALTIME, &ts);
+#endif
   ts.tv_sec += timeout_ms / 1000u;
   ts.tv_nsec += (long)(timeout_ms % 1000u) * 1000000L;
   if (ts.tv_nsec >= 1000000000L)

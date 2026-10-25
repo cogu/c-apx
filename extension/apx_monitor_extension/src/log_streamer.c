@@ -29,6 +29,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifdef _WIN32
+# ifndef WIN32_LEAN_AND_MEAN
+#  define WIN32_LEAN_AND_MEAN
+# endif
+# include <windows.h>
+#endif
 #ifdef MEM_LEAK_CHECK
 # include "CMemLeak.h"
 #endif
@@ -571,22 +577,47 @@ static uint32_t encode_string16(uint8_t *dst, const char *str)
 
 static uint64_t get_unix_time_ns(void)
 {
+#ifdef _WIN32
+  FILETIME ft;
+  GetSystemTimeAsFileTime(&ft);
+  ULARGE_INTEGER uli;
+  uli.LowPart = ft.dwLowDateTime;
+  uli.HighPart = ft.dwHighDateTime;
+  if (uli.QuadPart >= 116444736000000000ULL)
+  {
+    return (uli.QuadPart - 116444736000000000ULL) * 100ULL;
+  }
+  return 0ULL;
+#else
   struct timespec ts;
   if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
   {
     return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
   }
   return 0ULL;
+#endif
 }
 
 static uint64_t get_monotonic_time_ns(void)
 {
+#ifdef _WIN32
+  LARGE_INTEGER freq;
+  LARGE_INTEGER count;
+  if (QueryPerformanceFrequency(&freq) && (freq.QuadPart > 0) && QueryPerformanceCounter(&count))
+  {
+    uint64_t const sec = (uint64_t)count.QuadPart / (uint64_t)freq.QuadPart;
+    uint64_t const rem = (uint64_t)count.QuadPart % (uint64_t)freq.QuadPart;
+    return (sec * 1000000000ULL) + ((rem * 1000000000ULL) / (uint64_t)freq.QuadPart);
+  }
+  return (uint64_t)GetTickCount64() * 1000000ULL;
+#else
   struct timespec ts;
   if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
   {
     return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
   }
   return 0ULL;
+#endif
 }
 
 static void generate_stream_id(uint8_t stream_id[16])
