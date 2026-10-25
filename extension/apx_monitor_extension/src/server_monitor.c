@@ -14,6 +14,7 @@
 #include "apx/extension/server_monitor.h"
 #include "adt_bytearray.h"
 #include "apx/connection_base.h"
+#include "apx/extension/diag_dispatcher.h"
 #include "apx/extension/log_streamer.h"
 #include "apx/extension/monitor_session.h"
 #include "apx/file_manager.h"
@@ -118,6 +119,8 @@ void apx_server_monitor_create(apx_server_monitor_t *self, apx_server_t *server)
     self->tls_enabled = false;
     msocket_tls_config_create(&self->tls_config);
     msocket_tls_config_set_require_client_cert(&self->tls_config, true);
+    self->next_node_id = 0u;
+    adt_hash_create(&self->node_id_map, free);
     MUTEX_INIT(self->lock);
     adt_list_create(&self->sessions, apx_monitor_session_vdelete);
     if (server != NULL)
@@ -136,6 +139,7 @@ void apx_server_monitor_destroy(apx_server_monitor_t *self)
     MUTEX_LOCK(self->lock);
     adt_list_destroy(&self->sessions);
     MUTEX_UNLOCK(self->lock);
+    adt_hash_destroy(&self->node_id_map);
     MUTEX_DESTROY(self->lock);
     if (self->socket_file != NULL)
     {
@@ -453,6 +457,69 @@ void apx_server_monitor_on_log_stream_stopped(apx_server_monitor_t *self, apx_mo
   }
 }
 
+uint32_t apx_server_monitor_get_or_create_node_id(apx_server_monitor_t *self, const char *node_name)
+{
+  if (self == NULL || node_name == NULL)
+  {
+    return 0u;
+  }
+  MUTEX_LOCK(self->lock);
+  uint32_t *p_id = (uint32_t *)adt_hash_value(&self->node_id_map, node_name);
+  if (p_id != NULL)
+  {
+    uint32_t id = *p_id;
+    MUTEX_UNLOCK(self->lock);
+    return id;
+  }
+  p_id = (uint32_t *)malloc(sizeof(uint32_t));
+  if (p_id != NULL)
+  {
+    *p_id = ++self->next_node_id;
+    adt_hash_set(&self->node_id_map, node_name, p_id);
+    uint32_t id = *p_id;
+    MUTEX_UNLOCK(self->lock);
+    return id;
+  }
+  MUTEX_UNLOCK(self->lock);
+  return 0u;
+}
+
+uint32_t apx_server_monitor_get_node_id(apx_server_monitor_t *self, const char *node_name)
+{
+  if (self == NULL || node_name == NULL)
+  {
+    return 0u;
+  }
+  MUTEX_LOCK(self->lock);
+  uint32_t *p_id = (uint32_t *)adt_hash_value(&self->node_id_map, node_name);
+  uint32_t id = p_id != NULL ? *p_id : 0u;
+  MUTEX_UNLOCK(self->lock);
+  return id;
+}
+
+void apx_server_monitor_increment_port_watches(apx_server_monitor_t *self)
+{
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->lock);
+    self->num_active_port_watches++;
+    MUTEX_UNLOCK(self->lock);
+  }
+}
+
+void apx_server_monitor_decrement_port_watches(apx_server_monitor_t *self)
+{
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->lock);
+    if (self->num_active_port_watches > 0)
+    {
+      self->num_active_port_watches--;
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
+}
+
 void apx_server_monitor_on_new_connection(void *arg, apx_server_connection_t *connection)
 {
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
@@ -519,6 +586,23 @@ void apx_server_monitor_on_connection_closed(void *arg, apx_server_connection_t 
           if (apx_log_streamer_is_active(streamer))
           {
             apx_log_streamer_enqueue_connection_close(streamer, conn_id, (uint32_t)APX_NO_ERROR);
+          }
+          iter = adt_list_iter_next(iter);
+        }
+        MUTEX_UNLOCK(self->lock);
+      }
+      if (self->num_active_port_watches > 0)
+      {
+        uint32_t conn_id = apx_server_connection_get_connection_id(connection);
+        MUTEX_LOCK(self->lock);
+        adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+        while (iter != NULL)
+        {
+          apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+          apx_diag_dispatcher_t *diag = apx_monitor_session_get_diag_dispatcher(session);
+          if (diag != NULL)
+          {
+            apx_diag_dispatcher_notify_connection_closed(diag, conn_id);
           }
           iter = adt_list_iter_next(iter);
         }
@@ -640,23 +724,57 @@ void apx_server_monitor_on_file_written(
   void *arg, apx_connection_base_t *connection, apx_file_t *file, uint32_t offset, const uint8_t *data, apx_size_t size)
 {
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
-  if ((self != NULL) && (connection != NULL) && (file != NULL) && (self->num_active_log_streams > 0))
+  if ((self != NULL) && (connection != NULL) && (file != NULL))
   {
-    uint32_t conn_id = connection->connection_id;
-    uint32_t address = file->file_info.address;
-    MUTEX_LOCK(self->lock);
-    adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
-    while (iter != NULL)
+    if (self->num_active_log_streams > 0)
     {
-      apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
-      apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
-      if (apx_log_streamer_is_active(streamer))
+      uint32_t conn_id = connection->connection_id;
+      uint32_t address = file->file_info.address;
+      MUTEX_LOCK(self->lock);
+      adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+      while (iter != NULL)
       {
-        apx_log_streamer_enqueue_file_write(streamer, conn_id, address, offset, data, (uint32_t)size);
+        apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+        apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+        if (apx_log_streamer_is_active(streamer))
+        {
+          apx_log_streamer_enqueue_file_write(streamer, conn_id, address, offset, data, (uint32_t)size);
+        }
+        iter = adt_list_iter_next(iter);
       }
-      iter = adt_list_iter_next(iter);
+      MUTEX_UNLOCK(self->lock);
     }
-    MUTEX_UNLOCK(self->lock);
+    if (self->num_active_port_watches > 0)
+    {
+      const char *fname = rmf_file_info_name(&file->file_info);
+      if (fname != NULL)
+      {
+        const char *dot = strrchr(fname, '.');
+        if (dot != NULL && (strcmp(dot, ".out") == 0 || strcmp(dot, ".in") == 0))
+        {
+          size_t nlen = (size_t)(dot - fname);
+          char node_name[128];
+          if (nlen < sizeof(node_name))
+          {
+            memcpy(node_name, fname, nlen);
+            node_name[nlen] = '\0';
+            MUTEX_LOCK(self->lock);
+            adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+            while (iter != NULL)
+            {
+              apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+              apx_diag_dispatcher_t *diag = apx_monitor_session_get_diag_dispatcher(session);
+              if (diag != NULL)
+              {
+                apx_diag_dispatcher_notify_port_change(diag, node_name, offset, data, (uint32_t)size);
+              }
+              iter = adt_list_iter_next(iter);
+            }
+            MUTEX_UNLOCK(self->lock);
+          }
+        }
+      }
+    }
   }
 }
 

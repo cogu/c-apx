@@ -179,6 +179,13 @@ void apx_monitor_session_on_file_opened(apx_monitor_session_t *self, apx_file_t 
       self->is_diag_notify_open = true;
       MUTEX_UNLOCK(self->lock);
     }
+    else if (strncmp(name, "apx.diag.v1.def.", 16) == 0)
+    {
+      if (self->diag_dispatcher != NULL)
+      {
+        apx_diag_dispatcher_on_file_opened(self->diag_dispatcher, file);
+      }
+    }
   }
 }
 
@@ -208,6 +215,13 @@ void apx_monitor_session_on_file_closed(apx_monitor_session_t *self, apx_file_t 
       MUTEX_LOCK(self->lock);
       self->is_diag_notify_open = false;
       MUTEX_UNLOCK(self->lock);
+    }
+    else if (strncmp(name, "apx.diag.v1.def.", 16) == 0)
+    {
+      if (self->diag_dispatcher != NULL)
+      {
+        apx_diag_dispatcher_on_file_closed(self->diag_dispatcher, file);
+      }
     }
   }
 }
