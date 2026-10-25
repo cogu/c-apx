@@ -82,26 +82,27 @@ Detailed protocol specification and state machine definitions are in [remotefile
 * [x] **Testing:**
   * Add unit tests in `testsuite_file_manager.c` verifying stream open handshake, block reassembly with `MORE_BIT`, window exhaustion/unblock, and abort teardown.
 
-## 5. Server Event Tap & Stream Producer (`server.log`)
+## 5. Server Event Tap & Stream Producer (`server.log`) (Completed)
 
-* **Event Tap Integration (`apx_monitor_extension` / `server_monitor.c`):**
+* [x] **Event Tap Integration (`apx_monitor_extension` / `server_monitor.c`):**
   * Hook into server connection and file lifecycle events:
-    * `on_connection_accepted` $\to$ emit `EVENT_NODE_CONNECTED`.
-    * `on_connection_disconnected` $\to$ emit `EVENT_NODE_DISCONNECTED`.
-    * `on_file_published` $\to$ emit `EVENT_FILE_PUBLISHED`.
-    * `on_file_revoked` $\to$ emit `EVENT_FILE_REVOKED` and remove file from observer state.
-    * `on_file_written` $\to$ emit `EVENT_PORT_WRITTEN` with exact timestamp, address, and payload bytes.
-* **Lock-Free Circular Ring Buffer:**
-  * Implement a bounded, lock-free circular ring buffer to isolate the server real-time signal routing thread from the logging transport.
-  * If a slow logging client cannot keep pace, drop event records and emit `EVENT_EVENTS_DROPPED` with the drop count, guaranteeing zero real-time bus degradation or blocking.
-* **Snapshot Generation on Subscription:**
-  * When a recording client opens `server.log` (via `RMF_CMD_STREAM_OPEN`), generate a complete initial snapshot sequence:
-    `EVENT_SNAPSHOT_START` $\to$ connected client IDs/tags $\to$ active node `.apx` definitions $\to$ current port values $\to$ `EVENT_SNAPSHOT_END`.
-* **RemoteFile Stream Delivery (`FileStream`):**
+    * `on_connection_accepted` $\to$ emit `EVENT_CONNECTION_CREATE`.
+    * `on_connection_disconnected` $\to$ emit `EVENT_CONNECTION_CLOSE`.
+    * `on_file_published` $\to$ emit `EVENT_FILE_PUBLISH`.
+    * `on_file_revoked` $\to$ emit `EVENT_FILE_REVOKE`.
+    * `on_file_written` $\to$ emit `EVENT_FILE_WRITE` with exact timestamp, address, and payload bytes.
+  * Fast-path gating (`num_active_log_streams == 0`) ensures zero overhead on the operational bus when no monitor sessions are subscribed.
+* [x] **Circular Ring Buffer & Drop-Count Accounting:**
+  * Implement a bounded circular ring buffer with drop tracking to isolate the server real-time signal routing thread from the logging transport.
+  * When buffer capacity is exceeded, drop incoming events and enqueue an `EVENT_EVENTS_DROPPED` record with drop counts and sequence intervals upon recovery.
+* [x] **Snapshot Generation on Subscription:**
+  * When a recording client opens `server.log`, generate a coherent initial snapshot sequence:
+    `STREAM_BEGIN` $\to$ connected client IDs/tags $\to$ active node `.apx` definitions $\to$ current port values $\to$ `SNAPSHOT_END`.
+* [x] **RemoteFile Stream Delivery (`FileStream`):**
   * Publish `server.log` with `FileType = FileStream` (RemoteFile v1.1).
-  * Implement discrete block framing and credit-window flow control (`RMF_CMD_STREAM_WINDOW_UPDATE`).
-* **Unit & Integration Tests:**
-  * Verify lock-free queue enqueue/dequeue, drop-counter behavior under saturated sinks, snapshot generation, and event serialization without memory leaks or race conditions.
+  * Enqueue discrete binary event blocks via `apx_file_manager_send_local_data`.
+* [x] **Unit & Integration Tests:**
+  * Add unit tests in `testsuite_monitor_extension.c` verifying ring buffer overflow and drop accounting, fast-path tap activation/deactivation, and snapshot generation without memory leaks or race conditions.
 
 ## 6. APX Diagnostic Protocol & `apxmon` CLI Application (Retires `apx_info`)
 
