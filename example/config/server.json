@@ -21,6 +21,9 @@
         "syslog-label": "apx-server"
     },
     "monitor-extension": {
-        "enabled": true
+        "enabled": false
+    },
+    "tls-server-extension": {
+        "enabled": false
     }
 }
