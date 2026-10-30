@@ -210,10 +210,12 @@ Each value change produces an immediate timestamped event line:
    Subscribed (id=1) to 2 selector(s). Press Ctrl+C to stop.
      Selector #0 -> Node 1, Port 0 (size=2, status=0)
      Selector #1 -> Node 1, Port 1 (size=2, status=0)
-   [128392100 ns] Node 1, Port 0: (len=2) 0x2710
-   [158910400 ns] Node 1, Port 1: (len=2) 0x0BB8
+   [+0.128 s] Node 1, Port 0: (len=2) 0x2710
+   [+0.158 s] Node 1, Port 1: (len=2) 0x0BB8
 
-In ``--json`` mode, events are streamed as Newline-Delimited JSON (NDJSON) objects containing event type, timestamp, sequence numbers, and hexadecimal payload values:
+In ``--json`` mode, events are streamed as Newline-Delimited JSON (NDJSON)
+objects containing event type, timestamp, sequence numbers, and hexadecimal
+payload values:
 
 .. code-block:: json
 

@@ -404,7 +404,11 @@ def test_apxmon_routing_names_and_fanout(
             node.stop()
 
 
-def test_apxmon_watch(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, apx_control: ApxControl, tmp_path: Path):
+@pytest.mark.parametrize("json_output", [False, True], ids=["text", "json"])
+def test_apxmon_watch(
+    apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str,
+    apx_control: ApxControl, tmp_path: Path, json_output: bool,
+):
     """Verify live signal watch notifications via apxmon watch command."""
     sock = apx_server_with_monitor.monitor_socket
     repo_root = Path(__file__).resolve().parent.parent
@@ -419,7 +423,10 @@ def test_apxmon_watch(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: st
         wait_for_unix_socket(bind_socket, timeout=3.0)
 
         # Launch apxmon watch as background process
-        watch_cmd = [apxmon_bin, "-c", sock, "--json", "watch", "apx_sender:VehicleSpeed"]
+        watch_cmd = [
+            apxmon_bin, "-c", sock, *(["--json"] if json_output else []),
+            "watch", "apx_sender:VehicleSpeed",
+        ]
         watch_proc = subprocess.Popen(
             watch_cmd,
             stdout=subprocess.PIPE,
@@ -435,35 +442,58 @@ def test_apxmon_watch(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: st
             res = apx_control.set_signal("VehicleSpeed", 123, connect_path=bind_socket)
             assert res.returncode == 0
 
-            # Read lines from watch_proc stdout
-            start = time.monotonic()
+            assert watch_proc.stdout is not None
+            deadline = time.monotonic() + 3.0
+            buffer = b""
             received_signal = False
-            notification_timestamp_ns = None
-            while time.monotonic() - start < 3.0:
-                line = watch_proc.stdout.readline()
-                if line:
-                    try:
+            while not received_signal:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                readable, _, _ = select.select([watch_proc.stdout], [], [], remaining)
+                if not readable:
+                    break
+                chunk = os.read(watch_proc.stdout.fileno(), 4096)
+                if not chunk:
+                    break
+                buffer += chunk
+                while b"\n" in buffer:
+                    raw_line, buffer = buffer.split(b"\n", 1)
+                    line = raw_line.decode("utf-8")
+                    max_timestamp_ns = (
+                        time.monotonic_ns() - apx_server_with_monitor.startup_monotonic_time_ns[0]
+                    )
+                    if json_output:
                         entry = json.loads(line)
-                        if entry.get("type") == "PORT_VALUE":
-                            received_signal = True
-                            notification_timestamp_ns = entry["timestamp_ns"]
-                            break
-                    except Exception:
-                        pass
-                else:
-                    time.sleep(0.05)
+                        if entry.get("type") != "PORT_VALUE":
+                            continue
+                        assert isinstance(entry["timestamp_ns"], int)
+                        assert 0 <= entry["timestamp_ns"] <= max_timestamp_ns
+                        received_signal = entry["value_hex"] == "7B00"
+                    else:
+                        if not line.startswith("["):
+                            continue
+                        sample = re.fullmatch(
+                            r"\[\+(\d+)\.(\d{3}) s\] Node \d+, Port \d+: \(len=2\) 0x([0-9A-F]{4})",
+                            line,
+                        )
+                        assert sample is not None, line
+                        seconds, milliseconds, value_hex = sample.groups()
+                        timestamp_ms = int(seconds) * 1000 + int(milliseconds)
+                        assert 0 <= timestamp_ms <= max_timestamp_ns // 1_000_000
+                        received_signal = value_hex == "7B00"
+                    if received_signal:
+                        break
 
             assert received_signal, "apxmon watch did not receive expected PORT_VALUE notification"
-            assert notification_timestamp_ns is not None
-            assert 0 <= notification_timestamp_ns <= (
-                time.monotonic_ns() - apx_server_with_monitor.startup_monotonic_time_ns[0]
-            )
         finally:
             watch_proc.terminate()
             try:
-                watch_proc.wait(timeout=1.0)
+                _, watch_error = watch_proc.communicate(timeout=3.0)
             except subprocess.TimeoutExpired:
                 watch_proc.kill()
+                _, watch_error = watch_proc.communicate(timeout=3.0)
+            assert watch_proc.returncode == 0, watch_error
     finally:
         sender.stop()
 

@@ -121,10 +121,13 @@ static void on_watch_notification(void *arg, apx_diag_client_notification_t cons
   }
   else
   {
+    uint64_t const timestamp_ms = notif->timestamp_ns / 1000000ULL;
+    char timestamp[32];
+    snprintf(
+      timestamp, sizeof(timestamp), "[+%" PRIu64 ".%03" PRIu64 " s]", timestamp_ms / 1000u, timestamp_ms % 1000u);
     if (notif->event_type == 0x0001u)
     {
-      printf("[%" PRIu64 " ns] Node %u, Port %u: (len=%u) 0x", notif->timestamp_ns, notif->node_id, notif->port_id,
-        notif->value_size);
+      printf("%s Node %u, Port %u: (len=%u) 0x", timestamp, notif->node_id, notif->port_id, notif->value_size);
       for (uint32_t i = 0; i < notif->value_size; ++i)
       {
         printf("%02X", notif->value[i]);
@@ -133,13 +136,13 @@ static void on_watch_notification(void *arg, apx_diag_client_notification_t cons
     }
     else if (notif->event_type == 0x0002u)
     {
-      printf("[%" PRIu64 " ns] SUBSCRIPTION INVALIDATED: Node %u, Port %u (reason=%u)\n", notif->timestamp_ns,
-        notif->node_id, notif->port_id, notif->reason);
+      printf("%s SUBSCRIPTION INVALIDATED: Node %u, Port %u (reason=%u)\n", timestamp, notif->node_id, notif->port_id,
+        notif->reason);
     }
     else if (notif->event_type == 0x00FEu)
     {
-      printf("[%" PRIu64 " ns] WARNING: NOTIFICATIONS DROPPED (first=%" PRIu64 ", count=%" PRIu64 ")\n",
-        notif->timestamp_ns, notif->first_sequence, notif->dropped_count);
+      printf("%s WARNING: NOTIFICATIONS DROPPED (first=%" PRIu64 ", count=%" PRIu64 ")\n", timestamp,
+        notif->first_sequence, notif->dropped_count);
     }
     fflush(stdout);
   }
