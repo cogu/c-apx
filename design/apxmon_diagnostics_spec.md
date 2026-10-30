@@ -267,8 +267,10 @@ Each response item is:
 | `require_port_count` | `U32` | Require ports |
 | `node_name` | `String16` | APX node name |
 
-Node IDs are stable only while the node remains attached. Names are the
-portable identifier across diagnostic sessions.
+Node IDs distinguish nodes by their owning connection and node name, and are
+stable only while the node remains attached. Node names need only be unique
+within a connection; identically named nodes on different connections MUST
+have distinct diagnostic node IDs.
 
 ### 7.6 `LIST_ROUTES`
 
@@ -482,11 +484,19 @@ Options:
 | `apxmon info` | `GET_SERVER_INFO` |
 | `apxmon clients` | all pages of `LIST_CONNECTIONS` |
 | `apxmon nodes` | all pages of `LIST_NODES`, optionally joined with connections |
-| `apxmon routing` | all pages of `LIST_ROUTES` |
-| `apxmon routing --unconnected` | all pages of `LIST_UNCONNECTED_PORTS` |
+| `apxmon routing` | all pages of `LIST_ROUTES`, joined with `LIST_NODES` for human-readable endpoint names |
+| `apxmon routing --unconnected` | all pages of `LIST_UNCONNECTED_PORTS`, joined with `LIST_NODES` for human-readable node names |
 | `apxmon get-def NODE` | `GET_NODE_DEFINITION`, then open the returned file |
 | `apxmon watch NODE:PORT...` | open notify file, then `SUBSCRIBE_PORTS` |
 | `apxmon top` | periodic list snapshots plus selected subscriptions |
+
+Human-readable routing output uses one row per directed connection, displaying
+the port name, provider endpoint, and requirer endpoint. Each endpoint uses
+`connection_id:node_name`, with the same connection ID reported by `apxmon nodes`.
+Unconnected ports remain a separate view and use the same qualified node
+format. JSON output retains the numeric IDs and existing item
+schemas. Node and route lists are separate snapshots; if a referenced node
+cannot be resolved, the CLI reports an error and asks the user to retry.
 
 `--json` changes only local output. It does not change the binary diagnostic
 protocol.

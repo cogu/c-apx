@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <malloc.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 #ifdef MEM_LEAK_CHECK
 # include "CMemLeak.h"
@@ -70,6 +71,7 @@ typedef struct apx_monitor_server_connection_tag
 static void register_server_listener(apx_server_monitor_t *self);
 static void unregister_server_listener(apx_server_monitor_t *self);
 static void register_connection_listener(apx_server_monitor_t *self, apx_server_connection_t *connection);
+static char *create_node_id_key(uint32_t connection_id, const char *node_name);
 static void apx_server_monitor_on_stream_accept(void *arg, struct msocket_server_tag *srv, void *sock);
 
 // Monitor server connection methods
@@ -458,43 +460,64 @@ void apx_server_monitor_on_log_stream_stopped(apx_server_monitor_t *self, apx_mo
   }
 }
 
-uint32_t apx_server_monitor_get_or_create_node_id(apx_server_monitor_t *self, const char *node_name)
+uint32_t apx_server_monitor_get_or_create_node_id(
+  apx_server_monitor_t *self, uint32_t connection_id, const char *node_name)
 {
   if (self == NULL || node_name == NULL)
   {
     return 0u;
   }
+  char *key = create_node_id_key(connection_id, node_name);
+  if (key == NULL)
+  {
+    apx_server_monitor_log(self->server, APX_LOG_LEVEL_ERROR,
+      "Failed to allocate diagnostic node identity for connection %u", connection_id);
+    return 0u;
+  }
   MUTEX_LOCK(self->lock);
-  uint32_t *p_id = (uint32_t *)adt_hash_value(&self->node_id_map, node_name);
-  if (p_id != NULL)
+  uint32_t *p_id = (uint32_t *)adt_hash_value(&self->node_id_map, key);
+  if (p_id == NULL)
   {
-    uint32_t id = *p_id;
-    MUTEX_UNLOCK(self->lock);
-    return id;
+    p_id = (uint32_t *)malloc(sizeof(uint32_t));
+    if (p_id != NULL)
+    {
+      *p_id = ++self->next_node_id;
+      if (!adt_hash_insert(&self->node_id_map, key, p_id))
+      {
+        free(p_id);
+        p_id = NULL;
+      }
+    }
   }
-  p_id = (uint32_t *)malloc(sizeof(uint32_t));
-  if (p_id != NULL)
-  {
-    *p_id = ++self->next_node_id;
-    adt_hash_set(&self->node_id_map, node_name, p_id);
-    uint32_t id = *p_id;
-    MUTEX_UNLOCK(self->lock);
-    return id;
-  }
+  uint32_t const id = p_id != NULL ? *p_id : 0u;
   MUTEX_UNLOCK(self->lock);
-  return 0u;
+  free(key);
+  if (id == 0u)
+  {
+    apx_server_monitor_log(self->server, APX_LOG_LEVEL_ERROR,
+      "Failed to allocate diagnostic node identity for connection %u", connection_id);
+  }
+  return id;
 }
 
-uint32_t apx_server_monitor_get_node_id(apx_server_monitor_t *self, const char *node_name)
+uint32_t apx_server_monitor_get_node_id(apx_server_monitor_t *self, uint32_t connection_id, const char *node_name)
 {
   if (self == NULL || node_name == NULL)
   {
     return 0u;
   }
+  char *key = create_node_id_key(connection_id, node_name);
+  if (key == NULL)
+  {
+    apx_server_monitor_log(self->server, APX_LOG_LEVEL_ERROR,
+      "Failed to allocate diagnostic node identity for connection %u", connection_id);
+    return 0u;
+  }
   MUTEX_LOCK(self->lock);
-  uint32_t *p_id = (uint32_t *)adt_hash_value(&self->node_id_map, node_name);
+  uint32_t *p_id = (uint32_t *)adt_hash_value(&self->node_id_map, key);
   uint32_t id = p_id != NULL ? *p_id : 0u;
   MUTEX_UNLOCK(self->lock);
+  free(key);
   return id;
 }
 
@@ -879,6 +902,22 @@ void apx_server_monitor_log(apx_server_t *server, apx_log_level_t level, const c
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+static char *create_node_id_key(uint32_t connection_id, const char *node_name)
+{
+  int const length = snprintf(NULL, 0, "%u:%s", connection_id, node_name);
+  if (length < 0)
+  {
+    return NULL;
+  }
+  size_t const size = (size_t)length + 1u;
+  char *key = (char *)malloc(size);
+  if (key != NULL)
+  {
+    snprintf(key, size, "%u:%s", connection_id, node_name);
+  }
+  return key;
+}
+
 static void register_server_listener(apx_server_monitor_t *self)
 {
   assert(self->server != NULL);

@@ -56,7 +56,7 @@ typedef struct apx_server_monitor_tag
   int32_t num_active_log_streams;
   int32_t num_active_port_watches;
   uint32_t next_node_id;
-  adt_hash_t node_id_map; // maps node_name -> uint32_t (allocated)
+  adt_hash_t node_id_map; // maps connection_id:node_name -> uint32_t (allocated)
   MUTEX_T lock;
 
   // Transport configuration
@@ -95,8 +95,9 @@ struct apx_monitor_session_tag *apx_server_monitor_find_session(
 void apx_server_monitor_on_log_stream_started(apx_server_monitor_t *self, struct apx_monitor_session_tag *session);
 void apx_server_monitor_on_log_stream_stopped(apx_server_monitor_t *self, struct apx_monitor_session_tag *session);
 
-uint32_t apx_server_monitor_get_or_create_node_id(apx_server_monitor_t *self, const char *node_name);
-uint32_t apx_server_monitor_get_node_id(apx_server_monitor_t *self, const char *node_name);
+uint32_t apx_server_monitor_get_or_create_node_id(
+  apx_server_monitor_t *self, uint32_t connection_id, const char *node_name);
+uint32_t apx_server_monitor_get_node_id(apx_server_monitor_t *self, uint32_t connection_id, const char *node_name);
 void apx_server_monitor_increment_port_watches(apx_server_monitor_t *self);
 void apx_server_monitor_decrement_port_watches(apx_server_monitor_t *self);
 

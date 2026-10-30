@@ -38,6 +38,7 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_server_monitor_create_and_destroy(CuTest *tc);
+static void test_server_monitor_node_ids_are_connection_scoped(CuTest *tc);
 static void test_server_monitor_session_management(CuTest *tc);
 static void test_server_monitor_configuration(CuTest *tc);
 static void test_server_monitor_accept_testsocket(CuTest *tc);
@@ -59,6 +60,7 @@ CuSuite *testsuite_apx_monitor_extension(void)
 {
   CuSuite *suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_server_monitor_create_and_destroy);
+  SUITE_ADD_TEST(suite, test_server_monitor_node_ids_are_connection_scoped);
   SUITE_ADD_TEST(suite, test_server_monitor_session_management);
   SUITE_ADD_TEST(suite, test_server_monitor_configuration);
   SUITE_ADD_TEST(suite, test_server_monitor_accept_testsocket);
@@ -86,6 +88,31 @@ static void test_server_monitor_create_and_destroy(CuTest *tc)
   apx_server_monitor_t *monitor = apx_server_monitor_new(server);
   CuAssertPtrNotNull(tc, monitor);
   CuAssertIntEquals(tc, 0, apx_server_monitor_num_sessions(monitor));
+
+  apx_server_monitor_delete(monitor);
+  apx_server_delete(server);
+}
+
+static void test_server_monitor_node_ids_are_connection_scoped(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+  apx_server_monitor_t *monitor = apx_server_monitor_new(server);
+  CuAssertPtrNotNull(tc, monitor);
+
+  uint32_t const first = apx_server_monitor_get_or_create_node_id(monitor, 0u, "EngineController");
+  uint32_t const second = apx_server_monitor_get_or_create_node_id(monitor, 1u, "EngineController");
+  uint32_t const third = apx_server_monitor_get_or_create_node_id(monitor, 0u, "Dashboard");
+  uint32_t const fourth = apx_server_monitor_get_or_create_node_id(monitor, UINT32_MAX - 1u, "EngineController");
+  CuAssertTrue(tc, first != 0u && second != 0u && third != 0u && fourth != 0u);
+  CuAssertTrue(tc, first != second && first != third && first != fourth);
+  CuAssertTrue(tc, second != third && second != fourth && third != fourth);
+  CuAssertUIntEquals(tc, first, apx_server_monitor_get_or_create_node_id(monitor, 0u, "EngineController"));
+  CuAssertUIntEquals(tc, second, apx_server_monitor_get_node_id(monitor, 1u, "EngineController"));
+  CuAssertUIntEquals(tc, third, apx_server_monitor_get_node_id(monitor, 0u, "Dashboard"));
+  CuAssertUIntEquals(tc, fourth, apx_server_monitor_get_node_id(monitor, UINT32_MAX - 1u, "EngineController"));
+  CuAssertUIntEquals(tc, 0u, apx_server_monitor_get_node_id(monitor, 2u, "EngineController"));
+  CuAssertUIntEquals(tc, 0u, apx_server_monitor_get_node_id(monitor, 1u, "Dashboard"));
 
   apx_server_monitor_delete(monitor);
   apx_server_delete(server);

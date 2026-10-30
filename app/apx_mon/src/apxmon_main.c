@@ -346,6 +346,20 @@ static int cmd_nodes(apx_diag_client_t *client)
   return 0;
 }
 
+static apx_diag_client_node_item_t const *find_node(adt_ary_t const *nodes, uint32_t node_id)
+{
+  int32_t const len = adt_ary_length(nodes);
+  for (int32_t i = 0; i < len; ++i)
+  {
+    apx_diag_client_node_item_t const *node = (apx_diag_client_node_item_t const *)adt_ary_value(nodes, i);
+    if (node != NULL && node->node_id == node_id && node->node_name != NULL)
+    {
+      return node;
+    }
+  }
+  return NULL;
+}
+
 static int cmd_routing(apx_diag_client_t *client, bool unconnected)
 {
   if (unconnected)
@@ -386,7 +400,41 @@ static int cmd_routing(apx_diag_client_t *client, bool unconnected)
     }
     else
     {
-      printf("%-8s %-8s %-10s %-14s %s\n", "NODE_ID", "PORT_ID", "DIRECTION", "REASON", "PORT_NAME");
+      adt_ary_t nodes;
+      err = apx_diag_client_list_nodes(client, &nodes, 5000u);
+      if (err != APX_NO_ERROR)
+      {
+        fprintf(stderr, "Error: Failed to list nodes (error=%d)\n", err);
+        adt_ary_destroy(&nodes);
+        adt_ary_destroy(&list);
+        return 1;
+      }
+
+      int node_width = 24;
+      for (int32_t i = 0; i < len; ++i)
+      {
+        apx_diag_client_unconnected_port_item_t *item =
+          (apx_diag_client_unconnected_port_item_t *)adt_ary_value(&list, i);
+        if (item != NULL)
+        {
+          apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
+          if (node == NULL)
+          {
+            fprintf(stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n",
+              item->node_id);
+            adt_ary_destroy(&nodes);
+            adt_ary_destroy(&list);
+            return 1;
+          }
+          int const name_width = snprintf(NULL, 0, "%u:%s", node->connection_id, node->node_name);
+          if (name_width > node_width)
+          {
+            node_width = name_width;
+          }
+        }
+      }
+
+      printf("%-*s %-10s %-14s %s\n", node_width, "NODE_NAME", "DIRECTION", "REASON", "PORT_NAME");
       printf("----------------------------------------------------------------------\n");
       for (int32_t i = 0; i < len; ++i)
       {
@@ -396,10 +444,13 @@ static int cmd_routing(apx_diag_client_t *client, bool unconnected)
         {
           const char *dir = (item->direction == 0) ? "REQUIRE" : "PROVIDE";
           const char *rsn = (item->reason == 0) ? "NO_PROVIDER" : "NO_CONSUMER";
-          printf("%-8u %-8u %-10s %-14s %s\n", item->node_id, item->port_id, dir, rsn,
+          apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
+          int const prefix_width = snprintf(NULL, 0, "%u:", node->connection_id);
+          printf("%u:%-*s %-10s %-14s %s\n", node->connection_id, node_width - prefix_width, node->node_name, dir, rsn,
             item->port_name ? item->port_name : "");
         }
       }
+      adt_ary_destroy(&nodes);
     }
     adt_ary_destroy(&list);
   }
@@ -438,19 +489,62 @@ static int cmd_routing(apx_diag_client_t *client, bool unconnected)
     }
     else
     {
-      printf("%-24s %-20s %-20s\n", "PORT_NAME", "PROVIDER (NODE:PORT)", "CONSUMER (NODE:PORT)");
+      adt_ary_t nodes;
+      err = apx_diag_client_list_nodes(client, &nodes, 5000u);
+      if (err != APX_NO_ERROR)
+      {
+        fprintf(stderr, "Error: Failed to list nodes (error=%d)\n", err);
+        adt_ary_destroy(&nodes);
+        adt_ary_destroy(&list);
+        return 1;
+      }
+
+      int port_width = 24;
+      int provider_width = 20;
+      for (int32_t i = 0; i < len; ++i)
+      {
+        apx_diag_client_route_item_t *item = (apx_diag_client_route_item_t *)adt_ary_value(&list, i);
+        if (item != NULL)
+        {
+          apx_diag_client_node_item_t const *provider = find_node(&nodes, item->provide_node_id);
+          apx_diag_client_node_item_t const *requirer = find_node(&nodes, item->require_node_id);
+          if (provider == NULL || requirer == NULL)
+          {
+            uint32_t const node_id = (provider == NULL) ? item->provide_node_id : item->require_node_id;
+            fprintf(
+              stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n", node_id);
+            adt_ary_destroy(&nodes);
+            adt_ary_destroy(&list);
+            return 1;
+          }
+          int const name_width = item->port_name ? (int)strlen(item->port_name) : 0;
+          int const node_width = snprintf(NULL, 0, "%u:%s", provider->connection_id, provider->node_name);
+          if (name_width > port_width)
+          {
+            port_width = name_width;
+          }
+          if (node_width > provider_width)
+          {
+            provider_width = node_width;
+          }
+        }
+      }
+
+      printf("%-*s %-*s %s\n", port_width, "PORT_NAME", provider_width, "PROVIDER_NODE", "REQUIRER_NODE");
       printf("----------------------------------------------------------------------\n");
       for (int32_t i = 0; i < len; ++i)
       {
         apx_diag_client_route_item_t *item = (apx_diag_client_route_item_t *)adt_ary_value(&list, i);
         if (item != NULL)
         {
-          char prov[32], req[32];
-          snprintf(prov, sizeof(prov), "%u:%u", item->provide_node_id, item->provide_port_id);
-          snprintf(req, sizeof(req), "%u:%u", item->require_node_id, item->require_port_id);
-          printf("%-24s %-20s %-20s\n", item->port_name ? item->port_name : "", prov, req);
+          apx_diag_client_node_item_t const *provider = find_node(&nodes, item->provide_node_id);
+          apx_diag_client_node_item_t const *requirer = find_node(&nodes, item->require_node_id);
+          int const prefix_width = snprintf(NULL, 0, "%u:", provider->connection_id);
+          printf("%-*s %u:%-*s %u:%s\n", port_width, item->port_name ? item->port_name : "", provider->connection_id,
+            provider_width - prefix_width, provider->node_name, requirer->connection_id, requirer->node_name);
         }
       }
+      adt_ary_destroy(&nodes);
     }
     adt_ary_destroy(&list);
   }

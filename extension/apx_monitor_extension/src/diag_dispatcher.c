@@ -1065,7 +1065,7 @@ static void handle_list_nodes(
                   apx_diag_node_item_t *item = (apx_diag_node_item_t *)malloc(sizeof(apx_diag_node_item_t));
                   if (item != NULL)
                   {
-                    item->node_id = apx_server_monitor_get_or_create_node_id(monitor, nname);
+                    item->node_id = apx_server_monitor_get_or_create_node_id(monitor, conn_id, nname);
                     item->connection_id = conn_id;
                     item->provide_port_count = (uint32_t)apx_node_instance_get_num_provide_ports(node);
                     item->require_port_count = (uint32_t)apx_node_instance_get_num_require_ports(node);
@@ -1213,7 +1213,8 @@ static void handle_list_routes(
           apx_port_instance_t *provider = entry->preferred_provider;
           apx_node_instance_t *pnode = apx_port_instance_parent(provider);
           const char *pname = pnode != NULL ? apx_node_instance_get_name(pnode) : "";
-          uint32_t pnode_id = apx_server_monitor_get_or_create_node_id(monitor, pname);
+          uint32_t pnode_id =
+            apx_server_monitor_get_or_create_node_id(monitor, apx_node_instance_get_connection_id(pnode), pname);
 
           adt_list_elem_t *riter = adt_list_iter_first(&entry->require_ports);
           while (riter != NULL)
@@ -1224,7 +1225,8 @@ static void handle_list_routes(
             {
               apx_node_instance_t *rnode = apx_port_instance_parent(requester);
               const char *rname = rnode != NULL ? apx_node_instance_get_name(rnode) : "";
-              uint32_t rnode_id = apx_server_monitor_get_or_create_node_id(monitor, rname);
+              uint32_t rnode_id =
+                apx_server_monitor_get_or_create_node_id(monitor, apx_node_instance_get_connection_id(rnode), rname);
 
               apx_diag_route_item_t *item = (apx_diag_route_item_t *)malloc(sizeof(apx_diag_route_item_t));
               if (item != NULL)
@@ -1387,7 +1389,8 @@ static void handle_list_unconnected_ports(
               {
                 apx_node_instance_t *rnode = apx_port_instance_parent(req);
                 const char *rname = rnode != NULL ? apx_node_instance_get_name(rnode) : "";
-                uint32_t rnode_id = apx_server_monitor_get_or_create_node_id(monitor, rname);
+                uint32_t rnode_id =
+                  apx_server_monitor_get_or_create_node_id(monitor, apx_node_instance_get_connection_id(rnode), rname);
 
                 apx_diag_unconnected_port_item_t *item =
                   (apx_diag_unconnected_port_item_t *)malloc(sizeof(apx_diag_unconnected_port_item_t));
@@ -1415,7 +1418,8 @@ static void handle_list_unconnected_ports(
               {
                 apx_node_instance_t *pnode = apx_port_instance_parent(prov);
                 const char *pname = pnode != NULL ? apx_node_instance_get_name(pnode) : "";
-                uint32_t pnode_id = apx_server_monitor_get_or_create_node_id(monitor, pname);
+                uint32_t pnode_id =
+                  apx_server_monitor_get_or_create_node_id(monitor, apx_node_instance_get_connection_id(pnode), pname);
 
                 apx_diag_unconnected_port_item_t *item =
                   (apx_diag_unconnected_port_item_t *)malloc(sizeof(apx_diag_unconnected_port_item_t));
@@ -1706,7 +1710,8 @@ static void handle_subscribe_ports(
       apx_port_instance_t *port = apx_node_instance_find_port_by_name(node, port_name);
       if (port != NULL)
       {
-        node_id = apx_server_monitor_get_or_create_node_id(monitor, node_name);
+        node_id =
+          apx_server_monitor_get_or_create_node_id(monitor, apx_node_instance_get_connection_id(node), node_name);
         port_id = port->port_id;
         val_size = port->data_size;
         status = (uint32_t)APX_NO_ERROR;

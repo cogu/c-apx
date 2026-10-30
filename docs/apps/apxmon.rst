@@ -128,24 +128,50 @@ Lists each attached APX node along with its port statistics:
 routing
 ~~~~~~~
 
-Inspects the server's signal routing table. By default, active routes between provider ports and consumer ports are displayed:
+Inspects the server's signal routing table. Each row represents one active
+provider-to-requirer connection, identified by port name and qualified node
+names rather than numeric node and port IDs. Each endpoint is displayed as
+``connection_id:node_name``:
 
 .. code-block:: text
 
-   PORT_NAME                PROVIDER (NODE:PORT) CONSUMER (NODE:PORT)
+   PORT_NAME                PROVIDER_NODE        REQUIRER_NODE
    ----------------------------------------------------------------------
-   VehicleSpeed             1:0                  2:0
-   EngineSpeed              1:1                  2:1
-   CoolantTemp              1:2                  2:2
+   VehicleSpeed             1:EngineController   0:Dashboard
+   VehicleSpeed             1:EngineController   2:DataLogger
+   EngineSpeed              1:EngineController   0:Dashboard
+   CoolantTemp              1:EngineController   0:Dashboard
+
+A port with multiple connections appears on multiple rows, preserving each
+actual connection instead of combining node names into lists. Column widths
+expand to accommodate long names.
+
+The prefix is the ``CONN_ID`` reported by ``apxmon nodes``, not the diagnostic
+node ID or a port ID. Node names need only be unique within a connection, so
+the prefix distinguishes identically named nodes on different connections:
+
+.. code-block:: text
+
+   PORT_NAME                PROVIDER_NODE        REQUIRER_NODE
+   ----------------------------------------------------------------------
+   VehicleSpeed             1:EngineController   0:Dashboard
+   VehicleSpeed             1:EngineController   3:Dashboard
 
 When invoked with ``--unconnected``, the command reveals ports that are not currently routed:
 
 .. code-block:: text
 
-   NODE_ID  PORT_ID  DIRECTION  REASON         PORT_NAME
+   NODE_NAME                DIRECTION  REASON         PORT_NAME
    ----------------------------------------------------------------------
-   1        3        PROVIDE    NO_CONSUMER    BatteryVoltage
-   2        5        REQUIRE    NO_PROVIDER    AmbientAirTemp
+   1:EngineController       PROVIDE    NO_CONSUMER    BatteryVoltage
+   0:Dashboard              REQUIRE    NO_PROVIDER    AmbientAirTemp
+
+The default view excludes unconnected ports. Both modes retain their existing
+numeric node and port ID fields in ``--json`` output.
+
+Human-readable output resolves node names using a separate node-list query.
+If a referenced node disappears between the queries, the command reports an
+error instead of printing an unidentified endpoint; run the command again.
 
 get-def
 ~~~~~~~

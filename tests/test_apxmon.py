@@ -224,6 +224,124 @@ def test_apxmon_routing(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: 
         listener.stop()
 
 
+@pytest.mark.parametrize("unconnected", [False, True])
+def test_apxmon_routing_empty(apx_server_with_monitor, apxmon_bin: str, unconnected: bool):
+    args = ["routing", *(["--unconnected"] if unconnected else [])]
+    command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket]
+    result = subprocess.run([*command, *args], capture_output=True, text=True, check=True, timeout=5.0)
+    lines = result.stdout.splitlines()
+    expected_header = (
+        ["NODE_NAME", "DIRECTION", "REASON", "PORT_NAME"]
+        if unconnected else ["PORT_NAME", "PROVIDER_NODE", "REQUIRER_NODE"]
+    )
+    assert len(lines) == 2
+    assert lines[0].split() == expected_header
+    result_json = subprocess.run(
+        [*command, "--json", *args], capture_output=True, text=True, check=True, timeout=5.0
+    )
+    assert json.loads(result_json.stdout) == []
+
+
+@pytest.mark.parametrize("duplicate_names", [False, True])
+def test_apxmon_routing_names_and_fanout(
+    apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path, duplicate_names: bool
+):
+    provider = "PowertrainControllerWithALongName"
+    requirers = (
+        (provider, provider) if duplicate_names else ("Dashboard", "DiagnosticRecorderWithALongName")
+    )
+    port_name = "VehicleSpeedWithALongPortName"
+    definitions = [
+        (provider, f'P"{port_name}"C\nP"UnconsumedValue"C\n'),
+        (requirers[0], f'R"{port_name}"C\nR"MissingValue"C\n'),
+        (requirers[1], f'R"{port_name}"C\n'),
+    ]
+    nodes = []
+    command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket]
+    try:
+        for index, (node_name, ports) in enumerate(definitions):
+            subprocess.run(
+                [*command, "info"], capture_output=True, text=True, check=True, timeout=5.0
+            )
+            definition = tmp_path / f"node_{index}.apx"
+            definition.write_text(f'APX/1.3\nN"{node_name}"\n{ports}', encoding="utf-8")
+            node = _spawn_node(
+                [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "--no-bind", str(definition)],
+                definition,
+            )
+            nodes.append(node)
+            assert node.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+
+        deadline = time.monotonic() + 3.0
+        while True:
+            result_json = subprocess.run(
+                [*command, "--json", "routing"], capture_output=True, text=True, check=True, timeout=5.0
+            )
+            routes = json.loads(result_json.stdout)
+            if len(routes) == 2:
+                break
+            assert time.monotonic() < deadline, routes
+            time.sleep(0.05)
+
+        for route in routes:
+            assert set(route) == {
+                "port_name", "provide_node_id", "provide_port_id", "require_node_id", "require_port_id"
+            }
+            assert route["port_name"] == port_name
+            assert all(isinstance(value, int) for key, value in route.items() if key != "port_name")
+        assert len({route["provide_node_id"] for route in routes}) == 1
+        assert len({route["require_node_id"] for route in routes}) == 2
+
+        result_nodes = subprocess.run(
+            [*command, "--json", "nodes"], capture_output=True, text=True, check=True, timeout=5.0
+        )
+        node_items = json.loads(result_nodes.stdout)
+        assert len(node_items) == 3
+        assert len({node["connection_id"] for node in node_items}) == 3
+        assert len({node["node_name"] for node in node_items}) == (1 if duplicate_names else 3)
+        assert any(node["connection_id"] != node["node_id"] for node in node_items)
+        endpoints = {
+            node["node_id"]: f'{node["connection_id"]}:{node["node_name"]}' for node in node_items
+        }
+
+        result = subprocess.run(
+            [*command, "routing"], capture_output=True, text=True, check=True, timeout=5.0
+        )
+        lines = result.stdout.splitlines()
+        assert lines[0].split() == ["PORT_NAME", "PROVIDER_NODE", "REQUIRER_NODE"]
+        rows = [line.split() for line in lines[2:]]
+        assert len(rows) == 2
+        assert {tuple(row) for row in rows} == {
+            (port_name, endpoints[route["provide_node_id"]], endpoints[route["require_node_id"]])
+            for route in routes
+        }
+        for line, row in zip(lines[2:], rows):
+            assert line.index(row[1]) == lines[0].index("PROVIDER_NODE")
+            assert line.rindex(row[2]) == lines[0].index("REQUIRER_NODE")
+
+        result_unconnected = subprocess.run(
+            [*command, "routing", "--unconnected"], capture_output=True, text=True, check=True, timeout=5.0
+        )
+        result_unconnected_json = subprocess.run(
+            [*command, "--json", "routing", "--unconnected"],
+            capture_output=True, text=True, check=True, timeout=5.0,
+        )
+        unconnected = json.loads(result_unconnected_json.stdout)
+        assert len(unconnected) == 2
+        assert {port["port_name"] for port in unconnected} == {"UnconsumedValue", "MissingValue"}
+        for port in unconnected:
+            assert set(port) == {"node_id", "port_id", "direction", "reason", "port_name"}
+            assert isinstance(port["node_id"], int)
+            assert isinstance(port["port_id"], int)
+        assert {tuple(line.split()) for line in result_unconnected.stdout.splitlines()[2:]} == {
+            (endpoints[port["node_id"]], port["direction"], port["reason"], port["port_name"])
+            for port in unconnected
+        }
+    finally:
+        for node in reversed(nodes):
+            node.stop()
+
+
 def test_apxmon_watch(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, apx_control: ApxControl, tmp_path: Path):
     """Verify live signal watch notifications via apxmon watch command."""
     sock = apx_server_with_monitor.monitor_socket
