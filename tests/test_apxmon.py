@@ -4,6 +4,7 @@ Integration tests for apxmon CLI diagnostic application and APX diagnostic proto
 
 import json
 import os
+import re
 import select
 import subprocess
 import time
@@ -39,6 +40,8 @@ def apx_server_with_monitor(tmp_path: Path, apx_server_bin: str):
     os.set_inheritable(w_fd, True)
 
     cmd = [apx_server_bin, "--ready-fd", str(w_fd), config_file]
+    startup_wall_ns = time.time_ns()
+    startup_monotonic_ns = time.monotonic_ns()
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -52,12 +55,16 @@ def apx_server_with_monitor(tmp_path: Path, apx_server_bin: str):
     assert rlist, "Server did not signal readiness in time"
     os.read(r_fd, 1)
     os.close(r_fd)
+    ready_wall_ns = time.time_ns()
+    ready_monotonic_ns = time.monotonic_ns()
 
     wait_for_unix_socket(server_socket, timeout=3.0)
     wait_for_unix_socket(monitor_socket, timeout=3.0)
 
     server = ApxServerInstance(proc, server_socket, tmp_path, config_path=config_file)
     server.monitor_socket = monitor_socket
+    server.startup_wall_time_ns = (startup_wall_ns, ready_wall_ns)
+    server.startup_monotonic_time_ns = (startup_monotonic_ns, ready_monotonic_ns)
 
     yield server
 
@@ -91,6 +98,7 @@ def test_apxmon_info(apx_server_with_monitor, apxmon_bin: str):
     res = subprocess.run([apxmon_bin, "-c", sock, "info"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
     assert "Server Version:" in res.stdout
     assert "Uptime:" in res.stdout
+    assert re.search(r"^Uptime:\s+\d+h \d+m \d+s \(\d+ ms\)$", res.stdout, re.MULTILINE)
     assert "Active Connections:" in res.stdout
     assert "Active Nodes:" in res.stdout
 
@@ -103,6 +111,60 @@ def test_apxmon_info(apx_server_with_monitor, apxmon_bin: str):
     assert "active_nodes" in data
     assert "total_ports" in data
     assert isinstance(data["uptime_ms"], int)
+
+
+def test_apxmon_server_uptime(apx_server_with_monitor, apxmon_bin: str):
+    command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket, "--json", "info"]
+    startup_wall_ns, ready_wall_ns = apx_server_with_monitor.startup_wall_time_ns
+    startup_monotonic_ns, ready_monotonic_ns = apx_server_with_monitor.startup_monotonic_time_ns
+
+    def query_info():
+        before_ns = time.monotonic_ns()
+        result = subprocess.run(command, capture_output=True, text=True, check=True, timeout=5.0)
+        after_ns = time.monotonic_ns()
+        data = json.loads(result.stdout)
+        assert before_ns - ready_monotonic_ns <= data["uptime_ns"] <= after_ns - startup_monotonic_ns
+        assert startup_wall_ns <= data["server_start_unix_ns"] <= ready_wall_ns
+        assert data["uptime_ms"] == data["uptime_ns"] // 1_000_000
+        return data
+
+    first = query_info()
+    second = query_info()
+    assert second["server_start_unix_ns"] == first["server_start_unix_ns"]
+    assert second["uptime_ns"] > first["uptime_ns"]
+
+
+def test_apxmon_top_server_uptime(apx_server_with_monitor, apxmon_bin: str):
+    process = subprocess.Popen(
+        [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket, "top"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        preexec_fn=_set_pdeathsig,
+    )
+    try:
+        try:
+            output, error = process.communicate(timeout=1.2)
+        except subprocess.TimeoutExpired:
+            process.terminate()
+            output, error = process.communicate(timeout=5.0)
+        assert process.returncode == 0, error
+        uptime_lines = [line for line in output.splitlines() if line.startswith("Uptime:")]
+        assert uptime_lines, output
+        max_uptime_seconds = (
+            time.monotonic_ns() - apx_server_with_monitor.startup_monotonic_time_ns[0]
+        ) // 1_000_000_000
+        for line in uptime_lines:
+            sample = re.fullmatch(r"Uptime:\s+(\d+)h (\d+)m (\d+)s", line)
+            assert sample is not None, line
+            hours, minutes, seconds = map(int, sample.groups())
+            assert 0 <= minutes < 60
+            assert 0 <= seconds < 60
+            assert 0 <= hours * 3600 + minutes * 60 + seconds <= max_uptime_seconds
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.communicate(timeout=5.0)
 
 
 def test_apxmon_clients(apx_server_with_monitor, apxmon_bin: str):
@@ -376,6 +438,7 @@ def test_apxmon_watch(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: st
             # Read lines from watch_proc stdout
             start = time.monotonic()
             received_signal = False
+            notification_timestamp_ns = None
             while time.monotonic() - start < 3.0:
                 line = watch_proc.stdout.readline()
                 if line:
@@ -383,6 +446,7 @@ def test_apxmon_watch(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: st
                         entry = json.loads(line)
                         if entry.get("type") == "PORT_VALUE":
                             received_signal = True
+                            notification_timestamp_ns = entry["timestamp_ns"]
                             break
                     except Exception:
                         pass
@@ -390,6 +454,10 @@ def test_apxmon_watch(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: st
                     time.sleep(0.05)
 
             assert received_signal, "apxmon watch did not receive expected PORT_VALUE notification"
+            assert notification_timestamp_ns is not None
+            assert 0 <= notification_timestamp_ns <= (
+                time.monotonic_ns() - apx_server_with_monitor.startup_monotonic_time_ns[0]
+            )
         finally:
             watch_proc.terminate()
             try:

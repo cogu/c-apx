@@ -16,6 +16,7 @@
 // #include "apx/logging.h"
 #include "apx/event_listener.h"
 #include "apx/file_manager.h"
+#include "apx/util.h"
 #include <assert.h>
 #include <malloc.h>
 #include <stdio.h> //DEBUG ONLY
@@ -77,6 +78,9 @@ void apx_server_create(apx_server_t *self)
     MUTEX_INIT(self->event_loop_lock);
     MUTEX_INIT(self->global_lock);
     MUTEX_INIT(self->event_listener_lock);
+    MUTEX_INIT(self->time_lock);
+    self->start_unix_ns = 0u;
+    self->start_monotonic_ns = 0u;
     self->num_log_listeners = 0;
     self->require_signed_nodes = false;
     adt_ary_create(&self->trusted_public_keys, adt_str_vdelete);
@@ -107,6 +111,7 @@ void apx_server_destroy(apx_server_t *self)
     MUTEX_DESTROY(self->event_loop_lock);
     MUTEX_DESTROY(self->global_lock);
     MUTEX_DESTROY(self->event_listener_lock);
+    MUTEX_DESTROY(self->time_lock);
   }
 }
 
@@ -140,7 +145,30 @@ apx_error_t apx_server_start(apx_server_t *self)
     }
     apx_connection_manager_start(&self->connection_manager);
 #endif
-    return apx_server_init_extensions(self);
+    apx_error_t result = apx_server_init_extensions(self);
+    if (result != APX_NO_ERROR)
+    {
+      return result;
+    }
+
+    MUTEX_LOCK(self->time_lock);
+    uint64_t const unix_ns = apx_get_unix_time_ns();
+    uint64_t const monotonic_ns = apx_get_monotonic_time_ns();
+    if (unix_ns == 0u || monotonic_ns == 0u)
+    {
+      result = APX_INTERNAL_ERROR;
+    }
+    else
+    {
+      self->start_unix_ns = unix_ns;
+      self->start_monotonic_ns = monotonic_ns;
+    }
+    MUTEX_UNLOCK(self->time_lock);
+    if (result != APX_NO_ERROR)
+    {
+      apx_server_log(self, APX_LOG_LEVEL_ERROR, "Failed to read server startup clocks");
+    }
+    return result;
   }
   return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -158,7 +186,40 @@ void apx_server_stop(apx_server_t *self)
     }
 #endif
     apx_server_shutdown_extensions(self);
+    MUTEX_LOCK(self->time_lock);
+    self->start_unix_ns = 0u;
+    self->start_monotonic_ns = 0u;
+    MUTEX_UNLOCK(self->time_lock);
   }
+}
+
+apx_error_t apx_server_get_time_info(apx_server_t *self, uint64_t *start_unix_ns, uint64_t *uptime_ns)
+{
+  if (self == NULL || start_unix_ns == NULL || uptime_ns == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  apx_error_t result = APX_NO_ERROR;
+  MUTEX_LOCK(self->time_lock);
+  if (self->start_unix_ns == 0u)
+  {
+    result = APX_INVALID_STATE_ERROR;
+  }
+  else
+  {
+    uint64_t const now_ns = apx_get_monotonic_time_ns();
+    if (now_ns == 0u || now_ns < self->start_monotonic_ns)
+    {
+      result = APX_INTERNAL_ERROR;
+    }
+    else
+    {
+      *start_unix_ns = self->start_unix_ns;
+      *uptime_ns = now_ns - self->start_monotonic_ns;
+    }
+  }
+  MUTEX_UNLOCK(self->time_lock);
+  return result;
 }
 
 void apx_server_flush_events(apx_server_t *self)

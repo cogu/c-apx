@@ -17,6 +17,7 @@
 #include "apx/remotefile.h"
 #include "apx/server.h"
 #include "apx/server_test_connection.h"
+#include "apx/util.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -35,6 +36,10 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_create_destroy(CuTest *tc);
+static void test_server_start_time(CuTest *tc);
+static void test_server_failed_start_has_no_time(CuTest *tc);
+static apx_error_t on_server_extension_init(apx_server_t *server, dtl_dv_t *config);
+static apx_error_t on_server_extension_init_failed(apx_server_t *server, dtl_dv_t *config);
 static void test_connectors_connect_disconnect_node_with_only_require_ports(CuTest *tc);
 static void test_connectors_connect_disconnect_node_with_only_provide_ports(CuTest *tc);
 static void test_connectors_node_with_require_port_is_connected_after_node_with_provide_port(CuTest *tc);
@@ -90,6 +95,8 @@ CuSuite *testsuite_apx_server(void)
   CuSuite *suite = CuSuiteNew();
 
   SUITE_ADD_TEST(suite, test_create_destroy);
+  SUITE_ADD_TEST(suite, test_server_start_time);
+  SUITE_ADD_TEST(suite, test_server_failed_start_has_no_time);
   SUITE_ADD_TEST(suite, test_connectors_connect_disconnect_node_with_only_require_ports);
   SUITE_ADD_TEST(suite, test_connectors_connect_disconnect_node_with_only_provide_ports);
   SUITE_ADD_TEST(suite, test_connectors_node_with_require_port_is_connected_after_node_with_provide_port);
@@ -114,6 +121,74 @@ static void test_create_destroy(CuTest *tc)
   server = apx_server_new();
   CuAssertPtrNotNull(tc, server);
   apx_server_delete(server);
+}
+
+static void test_server_start_time(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+  uint64_t start_unix_ns;
+  uint64_t uptime_ns;
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_get_time_info(NULL, &start_unix_ns, &uptime_ns));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_get_time_info(server, NULL, &uptime_ns));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_get_time_info(server, &start_unix_ns, NULL));
+  CuAssertIntEquals(tc, APX_INVALID_STATE_ERROR, apx_server_get_time_info(server, &start_unix_ns, &uptime_ns));
+
+  apx_server_extension_handler_t handler = {on_server_extension_init, NULL};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_add_extension(server, "startup-time-test", &handler, NULL));
+  uint64_t const before_unix_ns = apx_get_unix_time_ns();
+  uint64_t const before_monotonic_ns = apx_get_monotonic_time_ns();
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_start(server));
+  uint64_t const after_start_ns = apx_get_monotonic_time_ns();
+  uint64_t const after_unix_ns = apx_get_unix_time_ns();
+  uint64_t const before_query_ns = apx_get_monotonic_time_ns();
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_get_time_info(server, &start_unix_ns, &uptime_ns));
+  uint64_t const after_query_ns = apx_get_monotonic_time_ns();
+  CuAssertTrue(tc, start_unix_ns >= before_unix_ns && start_unix_ns <= after_unix_ns);
+  CuAssertTrue(tc, uptime_ns >= before_query_ns - after_start_ns);
+  CuAssertTrue(tc, uptime_ns <= after_query_ns - before_monotonic_ns);
+
+  uint64_t second_start_ns;
+  uint64_t second_uptime_ns;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_get_time_info(server, &second_start_ns, &second_uptime_ns));
+  CuAssertTrue(tc, second_start_ns == start_unix_ns);
+  CuAssertTrue(tc, second_uptime_ns >= uptime_ns);
+
+  apx_server_stop(server);
+  CuAssertIntEquals(tc, APX_INVALID_STATE_ERROR, apx_server_get_time_info(server, &second_start_ns, &second_uptime_ns));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_start(server));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_get_time_info(server, &second_start_ns, &second_uptime_ns));
+  CuAssertTrue(tc, second_start_ns >= start_unix_ns);
+  apx_server_delete(server);
+}
+
+static void test_server_failed_start_has_no_time(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+  apx_server_extension_handler_t handler = {on_server_extension_init_failed, NULL};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_add_extension(server, "failed-startup-test", &handler, NULL));
+  CuAssertIntEquals(tc, APX_GENERIC_ERROR, apx_server_start(server));
+  uint64_t start_unix_ns;
+  uint64_t uptime_ns;
+  CuAssertIntEquals(tc, APX_INVALID_STATE_ERROR, apx_server_get_time_info(server, &start_unix_ns, &uptime_ns));
+  apx_server_delete(server);
+}
+
+static apx_error_t on_server_extension_init(apx_server_t *server, dtl_dv_t *config)
+{
+  (void)config;
+  uint64_t start_unix_ns;
+  uint64_t uptime_ns;
+  return apx_server_get_time_info(server, &start_unix_ns, &uptime_ns) == APX_INVALID_STATE_ERROR ? APX_NO_ERROR :
+                                                                                                   APX_INTERNAL_ERROR;
+}
+
+static apx_error_t on_server_extension_init_failed(apx_server_t *server, dtl_dv_t *config)
+{
+  (void)server;
+  (void)config;
+  return APX_GENERIC_ERROR;
 }
 
 static void test_connectors_connect_disconnect_node_with_only_require_ports(CuTest *tc)

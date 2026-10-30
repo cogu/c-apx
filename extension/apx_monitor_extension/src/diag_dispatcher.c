@@ -755,6 +755,18 @@ static apx_error_t send_notification(apx_diag_dispatcher_t *self, uint32_t subsc
   {
     return APX_FILE_NOT_FOUND_ERROR;
   }
+  apx_server_monitor_t *monitor = apx_monitor_session_get_server_monitor(self->session);
+  if (monitor == NULL || monitor->server == NULL)
+  {
+    return APX_INVALID_STATE_ERROR;
+  }
+  uint64_t start_unix_ns;
+  uint64_t uptime_ns;
+  apx_error_t const time_result = apx_server_get_time_info(monitor->server, &start_unix_ns, &uptime_ns);
+  if (time_result != APX_NO_ERROR)
+  {
+    return time_result;
+  }
   uint32_t const address = apx_file_get_address_without_flags(file);
   uint32_t const total_size = APX_DIAG_NOTIFY_HEADER_SIZE + payload_size;
   uint8_t *msg = (uint8_t *)malloc(total_size);
@@ -764,13 +776,11 @@ static apx_error_t send_notification(apx_diag_dispatcher_t *self, uint32_t subsc
   }
 
   uint64_t const seq = self->notify_sequence++;
-  uint64_t const now_ns = apx_get_monotonic_time_ns();
-
   pack_le_u32(msg + 0, subscription_id);
   pack_le_u16(msg + 4, event_type);
   pack_le_u16(msg + 6, flags);
   pack_le_u64(msg + 8, seq);
-  pack_le_u64(msg + 16, now_ns);
+  pack_le_u64(msg + 16, uptime_ns);
   if (payload_size > 0u && payload != NULL)
   {
     memcpy(msg + APX_DIAG_NOTIFY_HEADER_SIZE, payload, payload_size);
@@ -798,6 +808,14 @@ static void handle_get_server_info(
     return;
   }
   apx_server_t *server = monitor->server;
+  uint64_t start_unix_ns;
+  uint64_t uptime_ns;
+  apx_error_t const time_result = apx_server_get_time_info(server, &start_unix_ns, &uptime_ns);
+  if (time_result != APX_NO_ERROR)
+  {
+    send_response(self, request_id, APX_DIAG_CMD_GET_SERVER_INFO, 0u, (uint32_t)time_result, NULL, 0u);
+    return;
+  }
 
   uint32_t conn_count = 0u;
   uint32_t node_count = 0u;
@@ -836,8 +854,6 @@ static void handle_get_server_info(
   }
   MUTEX_UNLOCK(server->global_lock);
 
-  uint64_t const now_ns = apx_get_monotonic_time_ns();
-  uint64_t const unix_ns = apx_get_unix_time_ns();
   const char *ver_str = APX_VERSION_STRING;
   uint32_t const ver_len = (uint32_t)strlen(ver_str);
   uint32_t const resp_size = 2u + 2u + 8u + 8u + 4u + 4u + 4u + 2u + ver_len;
@@ -851,8 +867,8 @@ static void handle_get_server_info(
 
   pack_le_u16(resp + 0, 0u); // protocol_minor
   pack_le_u16(resp + 2, 0u); // reserved
-  pack_le_u64(resp + 4, unix_ns); // server_start_unix_ns
-  pack_le_u64(resp + 12, now_ns); // uptime_ns
+  pack_le_u64(resp + 4, start_unix_ns); // server_start_unix_ns
+  pack_le_u64(resp + 12, uptime_ns); // uptime_ns
   pack_le_u32(resp + 20, conn_count);
   pack_le_u32(resp + 24, node_count);
   pack_le_u32(resp + 28, route_count);

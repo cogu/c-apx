@@ -141,7 +141,7 @@ payload unless the opcode explicitly defines error details.
 | 4 | `event_type` | `U16` | Notification type from Section 8 |
 | 6 | `flags` | `U16` | Notification flags |
 | 8 | `sequence` | `U64` | Notification-channel sequence |
-| 16 | `timestamp_ns` | `U64` | Nanoseconds since server process start |
+| 16 | `timestamp_ns` | `U64` | Nanoseconds since the server-running transition |
 | 24 | `payload` | bytes | Event payload through message end |
 
 Sequence numbers are global to the notification file, begin at zero when the
@@ -205,6 +205,14 @@ Success response:
 | `node_count` | `U32` | Active APX nodes |
 | `route_count` | `U32` | Active provider-to-requirer routes |
 | `server_version` | `String16` | Server software version |
+
+The server captures its wall-clock start timestamp and monotonic origin after
+successful extension initialization, immediately before the daemon prints
+`Server running`. Configuration and extension loading are excluded from uptime.
+`server_start_unix_ns` remains fixed for that run; `uptime_ns` is the current
+monotonic time minus the saved origin, independent of wall-clock adjustments.
+A query before startup completes returns `APX_INVALID_STATE_ERROR`.
+Notification timestamps use the same monotonic origin.
 
 Notification timestamps can be correlated to Unix time as:
 

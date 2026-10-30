@@ -35,6 +35,7 @@
 #include "osmacro.h"
 #include "soa.h"
 #include <stdarg.h>
+#include <stdint.h>
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -61,6 +62,9 @@ typedef struct apx_server_tag
                        // 2. Synchronize data routing
                        // 3. Controlling access to the global port_signature_map.
   MUTEX_T event_listener_lock;
+  MUTEX_T time_lock;
+  uint64_t start_unix_ns;
+  uint64_t start_monotonic_ns;
   int32_t num_log_listeners;
   bool require_signed_nodes; // If true, server rejects unsigned APX nodes
   adt_ary_t trusted_public_keys; // Array of adt_str_t* (PEM strings or raw public keys)
@@ -83,6 +87,8 @@ apx_server_t *apx_server_new(void);
 void apx_server_delete(apx_server_t *self);
 apx_error_t apx_server_start(apx_server_t *self);
 void apx_server_stop(apx_server_t *self);
+// Returns APX_INVALID_STATE_ERROR before successful startup or after shutdown.
+apx_error_t apx_server_get_time_info(apx_server_t *self, uint64_t *start_unix_ns, uint64_t *uptime_ns);
 void apx_server_flush_events(apx_server_t *self);
 void *apx_server_register_event_listener(apx_server_t *self, apx_server_event_listener_t *event_listener);
 void apx_server_unregister_event_listener(apx_server_t *self, void *handle);

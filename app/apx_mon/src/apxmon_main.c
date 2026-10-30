@@ -191,7 +191,7 @@ static apx_error_t connect_client(apx_diag_client_t *client)
   }
 }
 
-static int cmd_info(apx_diag_client_t *client)
+static int cmd_info(apx_diag_client_t *client, bool show_milliseconds)
 {
   apx_diag_server_info_t info;
   memset(&info, 0, sizeof(info));
@@ -230,7 +230,12 @@ static int cmd_info(apx_diag_client_t *client)
 
     printf("Server Version:     %s\n", version_str);
     printf("Protocol Minor:     %u\n", (unsigned int)info.protocol_minor);
-    printf("Uptime:             %" PRIu64 "h %" PRIu64 "m %" PRIu64 "s (%" PRIu64 " ms)\n", h, m, sec, uptime_ms);
+    printf("Uptime:             %" PRIu64 "h %" PRIu64 "m %" PRIu64 "s", h, m, sec);
+    if (show_milliseconds)
+    {
+      printf(" (%" PRIu64 " ms)", uptime_ms);
+    }
+    printf("\n");
     printf("Active Connections: %u\n", info.connection_count);
     printf("Active Nodes:       %u\n", info.node_count);
     printf("Active Routes:      %u\n", info.route_count);
@@ -707,7 +712,7 @@ static int cmd_top(apx_diag_client_t *client)
       // Clear ANSI screen
       printf("\033[H\033[J");
     }
-    cmd_info(client);
+    cmd_info(client, false);
     if (!m_json_output)
     {
       printf("\n--- Nodes ---\n");
@@ -900,7 +905,7 @@ int main(int argc, char **argv)
   int exit_code = 0;
   if (strcmp(command, "info") == 0)
   {
-    exit_code = cmd_info(m_client);
+    exit_code = cmd_info(m_client, true);
   }
   else if (strcmp(command, "clients") == 0)
   {

@@ -485,6 +485,7 @@ static void test_diag_dispatcher_get_server_info(CuTest *tc)
 {
   apx_server_t *server = apx_server_new();
   CuAssertPtrNotNull(tc, server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_start(server));
 
   apx_server_monitor_t *monitor = apx_server_monitor_new(server);
   CuAssertPtrNotNull(tc, monitor);
@@ -669,6 +670,7 @@ static void test_diag_dispatcher_subscribe_and_notify(CuTest *tc)
 {
   apx_server_t *server = apx_server_new();
   CuAssertPtrNotNull(tc, server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_start(server));
 
   apx_server_monitor_t *monitor = apx_server_monitor_new(server);
   CuAssertPtrNotNull(tc, monitor);
