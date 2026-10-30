@@ -1248,7 +1248,7 @@ static apx_error_t on_notif_file_written(
   }
 
   apx_diag_client_notification_t notif;
-  memset(&notif, 0, sizeof(notif));
+  apx_diag_client_notification_create(&notif);
 
   notif.subscription_id = unpack_le_u32(data + 0);
   notif.event_type = unpack_le_u16(data + 4);

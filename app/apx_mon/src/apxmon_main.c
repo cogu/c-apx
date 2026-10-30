@@ -11,11 +11,13 @@
 #include "adt_ary.h"
 #include "adt_str.h"
 #include "apx_diag_client.h"
+#include "apx_diag_client_notification.h"
 #include "apx_version.h"
 #include "argparse.h"
 #include "dtl_json.h"
 #include "dtl_type.h"
 #include "msocket.h"
+#include <assert.h>
 #include <inttypes.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -25,6 +27,14 @@
 #include <unistd.h>
 
 #define APP_NAME "apxmon"
+
+typedef struct watch_output_tag
+{
+  MUTEX_T lock;
+  adt_ary_t pending_notifications;
+  bool is_ready;
+  apx_error_t error_code;
+} watch_output_t;
 
 #ifdef _WIN32
 static const char *m_connect_address_default = "127.0.0.1:5000";
@@ -43,6 +53,7 @@ static adt_str_t *m_client_key = NULL;
 static volatile sig_atomic_t m_running = 1;
 static apx_diag_client_t *m_client = NULL;
 static uint32_t m_active_subscription_id = 0u;
+static watch_output_t *m_watch_output = NULL;
 
 static void sigint_handler(int sig)
 {
@@ -74,12 +85,31 @@ static void print_usage(const char *prog_name)
 
 static void print_version(void) { printf("%s %s\n", APP_NAME, APX_VERSION_STRING); }
 
-static void on_watch_notification(void *arg, apx_diag_client_notification_t const *notif)
+static watch_output_t *watch_output_new(void)
 {
-  (void)arg;
-  if (notif == NULL)
-    return;
+  watch_output_t *self = (watch_output_t *)malloc(sizeof(watch_output_t));
+  if (self != NULL)
+  {
+    MUTEX_INIT(self->lock);
+    adt_ary_create(&self->pending_notifications, apx_diag_client_notification_vdelete);
+    self->is_ready = false;
+    self->error_code = APX_NO_ERROR;
+  }
+  return self;
+}
 
+static void watch_output_delete(watch_output_t *self)
+{
+  if (self != NULL)
+  {
+    adt_ary_destroy(&self->pending_notifications);
+    MUTEX_DESTROY(self->lock);
+    free(self);
+  }
+}
+
+static void print_watch_notification(apx_diag_client_notification_t const *notif)
+{
   if (m_json_output)
   {
     dtl_hv_t *hv = dtl_hv_new();
@@ -146,6 +176,38 @@ static void on_watch_notification(void *arg, apx_diag_client_notification_t cons
     }
     fflush(stdout);
   }
+}
+
+static void on_watch_notification(void *arg, apx_diag_client_notification_t const *notif)
+{
+  watch_output_t *output = (watch_output_t *)arg;
+  assert(output != NULL);
+  assert(notif != NULL);
+  MUTEX_LOCK(output->lock);
+  if (output->error_code == APX_NO_ERROR)
+  {
+    if (output->is_ready)
+    {
+      print_watch_notification(notif);
+    }
+    else
+    {
+      apx_diag_client_notification_t *copy = apx_diag_client_notification_clone(notif);
+      if (copy == NULL)
+      {
+        output->error_code = APX_MEM_ERROR;
+      }
+      else
+      {
+        if (adt_ary_push(&output->pending_notifications, copy) != ADT_NO_ERROR)
+        {
+          apx_diag_client_notification_delete(copy);
+          output->error_code = APX_MEM_ERROR;
+        }
+      }
+    }
+  }
+  MUTEX_UNLOCK(output->lock);
 }
 
 static apx_error_t connect_client(apx_diag_client_t *client)
@@ -658,7 +720,13 @@ static int cmd_watch(apx_diag_client_t *client, const char **selectors, int num_
   signal(SIGINT, sigint_handler);
   signal(SIGTERM, sigint_handler);
 
-  apx_diag_client_set_notification_callback(client, on_watch_notification, NULL);
+  m_watch_output = watch_output_new();
+  if (m_watch_output == NULL)
+  {
+    fprintf(stderr, "Error: Failed to create watch output buffer\n");
+    return 1;
+  }
+  apx_diag_client_set_notification_callback(client, on_watch_notification, m_watch_output);
 
   uint32_t sub_id = 0u;
   adt_ary_t resolutions;
@@ -673,6 +741,15 @@ static int cmd_watch(apx_diag_client_t *client, const char **selectors, int num_
 
   m_active_subscription_id = sub_id;
 
+  MUTEX_LOCK(m_watch_output->lock);
+  if (m_watch_output->error_code != APX_NO_ERROR)
+  {
+    err = m_watch_output->error_code;
+    MUTEX_UNLOCK(m_watch_output->lock);
+    adt_ary_destroy(&resolutions);
+    fprintf(stderr, "Error: Failed to buffer watch notifications (error=%d)\n", err);
+    return 1;
+  }
   if (!m_json_output)
   {
     printf("Subscribed (id=%u) to %d selector(s). Press Ctrl+C to stop.\n", sub_id, num_selectors);
@@ -686,7 +763,19 @@ static int cmd_watch(apx_diag_client_t *client, const char **selectors, int num_
           r->value_size, r->status);
       }
     }
+    fflush(stdout);
   }
+
+  int32_t const num_pending = adt_ary_length(&m_watch_output->pending_notifications);
+  for (int32_t i = 0; i < num_pending; ++i)
+  {
+    apx_diag_client_notification_t const *notification =
+      (apx_diag_client_notification_t const *)adt_ary_value(&m_watch_output->pending_notifications, i);
+    print_watch_notification(notification);
+  }
+  adt_ary_clear(&m_watch_output->pending_notifications);
+  m_watch_output->is_ready = true;
+  MUTEX_UNLOCK(m_watch_output->lock);
 
   adt_ary_destroy(&resolutions);
 
@@ -697,7 +786,10 @@ static int cmd_watch(apx_diag_client_t *client, const char **selectors, int num_
 
   if (!m_json_output)
   {
+    MUTEX_LOCK(m_watch_output->lock);
     printf("\nUnsubscribing...\n");
+    fflush(stdout);
+    MUTEX_UNLOCK(m_watch_output->lock);
   }
   apx_diag_client_unsubscribe(client, sub_id, 2000u);
   return 0;
@@ -968,6 +1060,8 @@ int main(int argc, char **argv)
   }
 
   apx_diag_client_delete(m_client);
+  // The client has joined its receiver thread, so the callback context can be freed.
+  watch_output_delete(m_watch_output);
   if (m_connect_address != NULL)
     adt_str_delete(m_connect_address);
   if (m_ca_cert != NULL)

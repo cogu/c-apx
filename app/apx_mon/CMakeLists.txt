@@ -4,11 +4,13 @@ project(apx-mon LANGUAGES C)
 
 set(APX_MON_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/apx_diag_client.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/apx_diag_client_notification.h
 )
 
 set(APX_MON_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/apxmon_main.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/apx_diag_client.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/apx_diag_client_notification.c
 )
 
 add_executable(apxmon ${APX_MON_HEADERS} ${APX_MON_SOURCES})

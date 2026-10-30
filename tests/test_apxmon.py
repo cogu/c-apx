@@ -405,9 +405,10 @@ def test_apxmon_routing_names_and_fanout(
 
 
 @pytest.mark.parametrize("json_output", [False, True], ids=["text", "json"])
+@pytest.mark.parametrize("selector_count", [1, 2])
 def test_apxmon_watch(
     apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str,
-    apx_control: ApxControl, tmp_path: Path, json_output: bool,
+    apx_control: ApxControl, tmp_path: Path, json_output: bool, selector_count: int,
 ):
     """Verify live signal watch notifications via apxmon watch command."""
     sock = apx_server_with_monitor.monitor_socket
@@ -423,9 +424,11 @@ def test_apxmon_watch(
         wait_for_unix_socket(bind_socket, timeout=3.0)
 
         # Launch apxmon watch as background process
+        selectors = ["apx_sender:VehicleSpeed", "apx_sender:VehicleMode"][:selector_count]
+        initial_values = [(1, 2, "FFFF"), (0, 1, "0F")][:selector_count]
         watch_cmd = [
             apxmon_bin, "-c", sock, *(["--json"] if json_output else []),
-            "watch", "apx_sender:VehicleSpeed",
+            "watch", *selectors,
         ]
         watch_proc = subprocess.Popen(
             watch_cmd,
@@ -437,15 +440,14 @@ def test_apxmon_watch(
         )
 
         try:
-            # Send signal update via apx_control
-            time.sleep(0.3)
-            res = apx_control.set_signal("VehicleSpeed", 123, connect_path=bind_socket)
-            assert res.returncode == 0
-
             assert watch_proc.stdout is not None
             deadline = time.monotonic() + 3.0
             buffer = b""
             received_signal = False
+            subscribed = False
+            mapped_selectors = 0
+            received_initial = 0
+            last_sequence = -1
             while not received_signal:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
@@ -469,19 +471,52 @@ def test_apxmon_watch(
                             continue
                         assert isinstance(entry["timestamp_ns"], int)
                         assert 0 <= entry["timestamp_ns"] <= max_timestamp_ns
-                        received_signal = entry["value_hex"] == "7B00"
+                        assert entry["sequence"] == last_sequence + 1
+                        last_sequence = entry["sequence"]
+                        port_id = entry["port_id"]
+                        value_hex = entry["value_hex"]
+                        value_size = len(value_hex) // 2
                     else:
+                        if line.startswith("Subscribed "):
+                            assert not subscribed
+                            assert f"to {selector_count} selector(s)" in line
+                            subscribed = True
+                            continue
+                        if line.startswith("  Selector #"):
+                            assert subscribed
+                            mapping = re.fullmatch(
+                                r"  Selector #(\d+) -> Node \d+, Port (\d+) \(size=(\d+), status=0\)",
+                                line,
+                            )
+                            assert mapping is not None, line
+                            assert int(mapping.group(1)) == mapped_selectors
+                            assert int(mapping.group(2)) == initial_values[mapped_selectors][0]
+                            assert int(mapping.group(3)) == initial_values[mapped_selectors][1]
+                            mapped_selectors += 1
+                            continue
                         if not line.startswith("["):
                             continue
+                        assert subscribed, f"Notification printed before subscription announcement: {line}"
+                        assert mapped_selectors == selector_count, line
                         sample = re.fullmatch(
-                            r"\[\+(\d+)\.(\d{3}) s\] Node \d+, Port \d+: \(len=2\) 0x([0-9A-F]{4})",
+                            r"\[\+(\d+)\.(\d{3}) s\] Node \d+, Port (\d+): \(len=(\d+)\) 0x([0-9A-F]+)",
                             line,
                         )
                         assert sample is not None, line
-                        seconds, milliseconds, value_hex = sample.groups()
+                        seconds, milliseconds, port, size, value_hex = sample.groups()
                         timestamp_ms = int(seconds) * 1000 + int(milliseconds)
                         assert 0 <= timestamp_ms <= max_timestamp_ns // 1_000_000
-                        received_signal = value_hex == "7B00"
+                        port_id = int(port)
+                        value_size = int(size)
+                        assert len(value_hex) == value_size * 2
+                    if received_initial < selector_count:
+                        assert (port_id, value_size, value_hex) == initial_values[received_initial]
+                        received_initial += 1
+                        if received_initial == selector_count:
+                            res = apx_control.set_signal("VehicleSpeed", 123, connect_path=bind_socket)
+                            assert res.returncode == 0
+                    else:
+                        received_signal = port_id == 1 and value_hex == "7B00"
                     if received_signal:
                         break
 
@@ -496,6 +531,16 @@ def test_apxmon_watch(
             assert watch_proc.returncode == 0, watch_error
     finally:
         sender.stop()
+
+
+def test_apxmon_watch_failed_subscription(apx_server_with_monitor, apxmon_bin: str):
+    result = subprocess.run(
+        [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket, "watch", "MissingNode:MissingPort"],
+        capture_output=True, text=True, timeout=5.0,
+    )
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert result.stderr == "Error: Failed to subscribe to ports (error=12)\n"
 
 
 def test_apxmon_tls_mtls(tmp_path: Path, apx_server_bin: str, apxmon_bin: str):

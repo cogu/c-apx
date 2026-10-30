@@ -15,6 +15,7 @@
 #include "adt_str.h"
 #include "apx/error.h"
 #include "apx/socket_client_connection.h"
+#include "apx_diag_client_notification.h"
 #include "osmacro.h"
 #include <pthread.h>
 #include <stdbool.h>
@@ -105,23 +106,8 @@ typedef struct apx_diag_client_resolution_tag
   uint32_t value_size;
 } apx_diag_client_resolution_t;
 
-// Notification event
-typedef struct apx_diag_client_notification_tag
-{
-  uint32_t subscription_id;
-  uint16_t event_type; // 0x0001 = PORT_VALUE, 0x0002 = SUBSCRIPTION_INVALIDATED, 0x00FE = NOTIFICATIONS_DROPPED
-  uint16_t flags;      // bit 0 = INITIAL_VALUE
-  uint64_t sequence;
-  uint64_t timestamp_ns;
-  uint32_t node_id;
-  uint32_t port_id;
-  uint8_t const *value;
-  uint32_t value_size;
-  uint32_t reason;
-  uint64_t first_sequence;
-  uint64_t dropped_count;
-} apx_diag_client_notification_t;
-
+// Callback notifications borrow their payload and are valid only until the callback returns.
+// Retain a notification with apx_diag_client_notification_clone().
 typedef void(apx_diag_notification_cb_t)(void *arg, apx_diag_client_notification_t const *notif);
 
 // Client struct

@@ -437,6 +437,8 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             extension/apx_socket_extension/test/testsuite_socket_server_extension.c
             extension/apx_text_log_extension/test/testsuite_server_text_log.c
             extension/apx_monitor_extension/test/testsuite_monitor_extension.c
+            app/apx_mon/src/apx_diag_client_notification.c
+            app/apx_mon/test/testsuite_diag_client_notification.c
             app/apx_server/src/server_cfg.c
             ${GENERATED_EXTENSIONS_CFG}
             app/apx_server/test/testsuite_server_cfg.c
@@ -451,6 +453,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         target_include_directories(apx_unit PRIVATE
             "${PROJECT_BINARY_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/apx_core/test"
+            "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_mon/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_server/include"
         )
         target_compile_definitions(apx_unit PRIVATE UNIT_TEST)
