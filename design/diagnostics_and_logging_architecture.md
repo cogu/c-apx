@@ -113,7 +113,7 @@ flowchart TD
 * **Diagnostic Capabilities**:
   * **Node & Connection Inspection (`apxmon nodes`)**:
     * Lists all active connections: connection ID, type (`DEFAULT` vs `MONITOR`), remote IP/PID, connection tag, connected timestamp, and attached nodes.
-  * **Definition Retrieval (`apxmon get-def <node_name>`)**:
+  * **Definition Retrieval (`apxmon get-apx <node_name>`)**:
     * Fetches the complete `.apx` IDL text definition for any active node directly from the server's cache or memory.
   * **Routing Table Analysis (`apxmon routing`)**:
     * Displays active signal routing links (Provide Port $\to$ Require Port).
@@ -256,7 +256,7 @@ apxmon nodes --connect /run/apx/apx_monitor.socket
 apxmon routing --unconnected
 
 # Download and print the .apx definition of a connected node
-apxmon get-def EngineECU
+apxmon get-apx EngineECU
 
 # Live watch of specific signals
 apxmon watch EngineECU:VehicleSpeed EngineECU:EngineRPM

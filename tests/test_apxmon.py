@@ -83,7 +83,8 @@ def test_apxmon_help_and_version(apxmon_bin: str):
     assert "clients" in res.stdout
     assert "nodes" in res.stdout
     assert "routing" in res.stdout
-    assert "get-def" in res.stdout
+    assert "get-apx" in res.stdout
+    assert "get-def" not in res.stdout
     assert "watch" in res.stdout
 
     res_ver = subprocess.run([apxmon_bin, "-v"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
@@ -199,8 +200,8 @@ def _spawn_node(cmd: list[str], apx_file: Path, bind_path: str | None = None) ->
     return ApxNodeInstance(proc, apx_file, bind_path=bind_path)
 
 
-def test_apxmon_nodes_and_get_def(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path):
-    """Verify nodes listing and get-def command."""
+def test_apxmon_nodes_and_get_apx(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path):
+    """Verify nodes listing and get-apx command."""
     sock = apx_server_with_monitor.monitor_socket
     repo_root = Path(__file__).resolve().parent.parent
     sender_apx = repo_root / "example" / "nodes" / "unsigned_sender.apx"
@@ -225,20 +226,38 @@ def test_apxmon_nodes_and_get_def(apx_server_with_monitor, apxmon_bin: str, apx_
         assert len(matching) == 1
         assert matching[0]["provide_port_count"] >= 1
 
-        # Run get-def in text format
-        res_def = subprocess.run([apxmon_bin, "-c", sock, "get-def", "apx_sender"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # Run get-apx in text format
+        res_def = subprocess.run([apxmon_bin, "-c", sock, "get-apx", "apx_sender"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         assert res_def.returncode == 0, f"res_def failed:\nstdout: {res_def.stdout}\nstderr: {res_def.stderr}"
         assert "APX/1.3" in res_def.stdout
         assert 'N"apx_sender"' in res_def.stdout
 
-        # Run get-def in json format
-        res_def_json = subprocess.run([apxmon_bin, "-c", sock, "--json", "get-def", "apx_sender"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # Run get-apx in json format
+        res_def_json = subprocess.run([apxmon_bin, "-c", sock, "--json", "get-apx", "apx_sender"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         assert res_def_json.returncode == 0, f"res_def_json failed:\nstdout: {res_def_json.stdout}\nstderr: {res_def_json.stderr}"
         def_obj = json.loads(res_def_json.stdout)
         assert def_obj.get("node_name") == "apx_sender"
         assert "APX/1.3" in def_obj.get("definition", "")
     finally:
         node.stop()
+
+
+@pytest.mark.parametrize(
+    ("arguments", "expected_error"),
+    [
+        (["get-apx"], "Error: 'get-apx' requires a node name argument"),
+        (["get-def", "apx_sender"], "Error: Unknown command 'get-def'"),
+    ],
+)
+def test_apxmon_get_apx_usage_errors(
+    apx_server_with_monitor, apxmon_bin: str, arguments: list[str], expected_error: str,
+):
+    result = subprocess.run(
+        [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket, *arguments],
+        capture_output=True, text=True, timeout=5.0,
+    )
+    assert result.returncode == 1
+    assert expected_error in result.stderr
 
 
 def test_apxmon_routing(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str):

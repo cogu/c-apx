@@ -122,7 +122,7 @@ Detailed protocol specification and state machine definitions are in [remotefile
   * `APX_DIAG_CMD_GET_UNCONNECTED_PORTS`: Detects dangling require ports without providers and unconsumed provide ports.
   * `APX_DIAG_CMD_WATCH_PORT` / `APX_DIAG_NOTIF_PORT_UPDATE`: Live signal tapping with asynchronous updates.
 * [x] **`apxmon` CLI Application (`app/apx_mon`):**
-  * Subcommands: `info`, `clients`, `nodes`, `routing [--unconnected]`, `get-def <node>`, `watch <node:port>`, and interactive `top`.
+  * Subcommands: `info`, `clients`, `nodes`, `routing [--unconnected]`, `get-apx <node>`, `watch <node:port>`, and interactive `top`.
   * Supports aligned formatted ASCII table output and machine-readable `--json` output.
 
 ## 7. Dedicated Diagnostic Transport & TLS Security for Server Monitor (Completed)
@@ -313,7 +313,6 @@ To reduce wire transfer latency for signed APX nodes by >80% during startup phas
   * Compute SHA-256 of verified text and query Level 2 binary cache (`.apxc` from Item 14) to skip IDL parsing and VM bytecode compilation entirely.
 * **Backward Compatibility Fallback:**
   * If a legacy server returns `RMF_CMD_NACK_MSG` on opcode 24, the client falls back to uncompressed `RMF_CMD_PUBLISH_SIGNED_FILE_MSG` (opcode 23).
-
 
 
 

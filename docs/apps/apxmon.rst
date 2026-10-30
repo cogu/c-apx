@@ -22,7 +22,7 @@ Architecture & How It Works
    Requests and responses carry 32-bit correlation IDs (``request_id``), allowing requests to be matched deterministically. The server maintains zero shadow copies or duplicate caches while idle; queries take immediate, read-only snapshots directly from internal server structures.
 
 4. **Dynamic Node Definition Transfer**:
-   When requesting node definitions with ``get-def``, the server dynamically provisions a temporary APX file (``<NodeName>.apx``) and streams it directly across the RemoteFile channel.
+   When requesting node definitions with ``get-apx``, the server dynamically provisions a temporary APX file (``<NodeName>.apx``) and streams it directly across the RemoteFile channel.
 
 Synopsis
 --------
@@ -74,7 +74,7 @@ Commands
      - List all registered APX nodes, their connection IDs, and provide/require port counts.
    * - ``routing [--unconnected]``
      - List active signal routes connecting provide-ports to require-ports. When ``--unconnected`` is passed, displays unconnected require-ports (missing providers) and provide-ports (missing consumers).
-   * - ``get-def <node_name>``
+   * - ``get-apx <node_name>``
      - Fetch and display the full APX IDL specification text (``.apx``) for the specified node.
    * - ``watch <selector...>``
      - Subscribe to live signal changes on one or more port selectors (e.g. ``NodeName:PortName`` or ``NodeID:PortID``). Streams updates continuously until interrupted.
@@ -173,14 +173,14 @@ Human-readable output resolves node names using a separate node-list query.
 If a referenced node disappears between the queries, the command reports an
 error instead of printing an unidentified endpoint; run the command again.
 
-get-def
+get-apx
 ~~~~~~~
 
 Retrieves the APX Interface Definition Language (IDL) text for any registered node:
 
 .. code-block:: bash
 
-   apxmon get-def EngineController
+   apxmon get-apx EngineController
 
 Outputs the complete text definition directly to standard output:
 

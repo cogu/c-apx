@@ -78,7 +78,7 @@ static void print_usage(const char *prog_name)
   printf("  clients                   List connected clients\n");
   printf("  nodes                     List registered nodes\n");
   printf("  routing [--unconnected]   List port routing or unconnected ports\n");
-  printf("  get-def <NODE>            Fetch node APX definition text\n");
+  printf("  get-apx <NODE>            Fetch node APX definition text\n");
   printf("  watch <NODE:PORT...>      Live signal watch notifications\n");
   printf("  top                       Interactive server dashboard\n");
 }
@@ -683,7 +683,7 @@ static char *json_escape_string(const char *input)
   return out;
 }
 
-static int cmd_get_def(apx_diag_client_t *client, const char *node_name)
+static int cmd_get_apx(apx_diag_client_t *client, const char *node_name)
 {
   char *def_text = NULL;
   apx_error_t err = apx_diag_client_get_node_definition(client, node_name, &def_text, 5000u);
@@ -1022,16 +1022,16 @@ int main(int argc, char **argv)
     }
     exit_code = cmd_routing(m_client, unconnected);
   }
-  else if (strcmp(command, "get-def") == 0)
+  else if (strcmp(command, "get-apx") == 0)
   {
     if (cmd_idx + 1 >= argc)
     {
-      fprintf(stderr, "Error: 'get-def' requires a node name argument\n");
+      fprintf(stderr, "Error: 'get-apx' requires a node name argument\n");
       exit_code = 1;
     }
     else
     {
-      exit_code = cmd_get_def(m_client, argv[cmd_idx + 1]);
+      exit_code = cmd_get_apx(m_client, argv[cmd_idx + 1]);
     }
   }
   else if (strcmp(command, "watch") == 0)

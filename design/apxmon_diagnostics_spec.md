@@ -494,7 +494,7 @@ Options:
 | `apxmon nodes` | all pages of `LIST_NODES`, optionally joined with connections |
 | `apxmon routing` | all pages of `LIST_ROUTES`, joined with `LIST_NODES` for human-readable endpoint names |
 | `apxmon routing --unconnected` | all pages of `LIST_UNCONNECTED_PORTS`, joined with `LIST_NODES` for human-readable node names |
-| `apxmon get-def NODE` | `GET_NODE_DEFINITION`, then open the returned file |
+| `apxmon get-apx NODE` | `GET_NODE_DEFINITION`, then open the returned file |
 | `apxmon watch NODE:PORT...` | open notify file, then `SUBSCRIBE_PORTS` |
 | `apxmon top` | periodic list snapshots plus selected subscriptions |
 
