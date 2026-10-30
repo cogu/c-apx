@@ -260,6 +260,10 @@ const char *apx_strerror(apx_error_t error_code)
     return "Signature verification failed";
   case APX_TIMEOUT_ERROR:
     return "Timeout";
+  case APX_AMBIGUOUS_NODE_ERROR:
+    return "Multiple nodes have that name";
+  case APX_FILE_WRITE_ERROR:
+    return "File write failed";
   default:
     return "Unknown error";
   }

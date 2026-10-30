@@ -457,6 +457,59 @@ uint8_t *apx_node_data_take_require_port_data_snapshot(apx_node_data_t *self)
   return NULL;
 }
 
+apx_error_t apx_node_data_take_port_data_snapshot(apx_node_data_t *self, uint8_t **provide_data, uint8_t **require_data)
+{
+  if (self == NULL || provide_data == NULL || require_data == NULL || provide_data == require_data)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  *provide_data = NULL;
+  *require_data = NULL;
+  apx_error_t result = APX_NO_ERROR;
+  MUTEX_LOCK(self->lock);
+  if ((self->provide_port_data_size > 0u && self->provide_port_data == NULL) ||
+    (self->require_port_data_size > 0u && self->require_port_data == NULL))
+  {
+    result = APX_INVALID_STATE_ERROR;
+  }
+  else
+  {
+    if (self->provide_port_data_size > 0u)
+    {
+      *provide_data = (uint8_t *)malloc(self->provide_port_data_size);
+      if (*provide_data != NULL)
+      {
+        memcpy(*provide_data, self->provide_port_data, self->provide_port_data_size);
+      }
+      else
+      {
+        result = APX_MEM_ERROR;
+      }
+    }
+    if (result == APX_NO_ERROR && self->require_port_data_size > 0u)
+    {
+      *require_data = (uint8_t *)malloc(self->require_port_data_size);
+      if (*require_data != NULL)
+      {
+        memcpy(*require_data, self->require_port_data, self->require_port_data_size);
+      }
+      else
+      {
+        result = APX_MEM_ERROR;
+      }
+    }
+  }
+  MUTEX_UNLOCK(self->lock);
+  if (result != APX_NO_ERROR)
+  {
+    free(*provide_data);
+    free(*require_data);
+    *provide_data = NULL;
+    *require_data = NULL;
+  }
+  return result;
+}
+
 void apx_node_data_set_checksum_data(
   apx_node_data_t *self, rmf_digest_type_t checksum_type, uint8_t const *checksum_data)
 {

@@ -10,6 +10,7 @@
  ******************************************************************************/
 #include "adt_ary.h"
 #include "adt_str.h"
+#include "apx/util.h"
 #include "apx_diag_client.h"
 #include "apx_diag_client_notification.h"
 #include "apx_version.h"
@@ -78,7 +79,8 @@ static void print_usage(const char *prog_name)
   printf("  clients                   List connected clients\n");
   printf("  nodes                     List registered nodes\n");
   printf("  routing [--unconnected]   List port routing or unconnected ports\n");
-  printf("  get-apx <NODE>            Fetch node APX definition text\n");
+  printf("  get-apx <[CONN_ID:]NODE>  Fetch node APX definition text\n");
+  printf("  dump <[CONN_ID:]NODE>     Save raw .out and .in snapshots (overwrites files)\n");
   printf("  watch <NODE:PORT...>      Live signal watch notifications\n");
   printf("  top                       Interactive server dashboard\n");
 }
@@ -689,14 +691,25 @@ static int cmd_get_apx(apx_diag_client_t *client, const char *node_name)
   apx_error_t err = apx_diag_client_get_node_definition(client, node_name, &def_text, 5000u);
   if (err != APX_NO_ERROR || def_text == NULL)
   {
-    fprintf(stderr, "Error: Failed to get definition for node '%s' (error=%d)\n", node_name, err);
+    if (err == APX_AMBIGUOUS_NODE_ERROR)
+    {
+      fprintf(stderr,
+        "Error: Server has multiple nodes named '%s'. Use 'apxmon nodes' and retry with connection-id:node-name.\n",
+        node_name);
+    }
+    else
+    {
+      fprintf(stderr, "Error: Failed to get definition for node '%s' (error=%d)\n", node_name, err);
+    }
     return 1;
   }
 
   if (m_json_output)
   {
+    char const *separator = strchr(node_name, ':');
+    char const *resolved_name = separator != NULL ? separator + 1 : node_name;
     char *escaped = json_escape_string(def_text);
-    printf("{\n  \"node_name\": \"%s\",\n  \"definition\": \"%s\"\n}\n", node_name, escaped != NULL ? escaped : "");
+    printf("{\n  \"node_name\": \"%s\",\n  \"definition\": \"%s\"\n}\n", resolved_name, escaped != NULL ? escaped : "");
     if (escaped != NULL)
     {
       free(escaped);
@@ -705,7 +718,8 @@ static int cmd_get_apx(apx_diag_client_t *client, const char *node_name)
   else
   {
     fputs(def_text, stdout);
-    if (def_text[strlen(def_text) - 1] != '\n')
+    size_t const length = strlen(def_text);
+    if (length == 0u || def_text[length - 1] != '\n')
     {
       printf("\n");
     }
@@ -713,6 +727,111 @@ static int cmd_get_apx(apx_diag_client_t *client, const char *node_name)
 
   free(def_text);
   return 0;
+}
+
+static apx_error_t save_dump_file(
+  apx_diag_client_file_t const *file, char const *node_name, char const *extension, dtl_av_t *saved_files)
+{
+  adt_str_t path;
+  adt_str_create(&path);
+  apx_error_t result = APX_MEM_ERROR;
+  if (adt_str_set_cstr(&path, node_name) == ADT_NO_ERROR && adt_str_append_cstr(&path, extension) == ADT_NO_ERROR)
+  {
+    result = apx_diag_client_file_save(file, adt_str_cstr(&path));
+    if (result == APX_NO_ERROR)
+    {
+      if (m_json_output)
+      {
+        dtl_hv_t *item = dtl_hv_new();
+        dtl_sv_t *name_value = dtl_sv_make_cstr(adt_str_cstr(&path));
+        dtl_sv_t *size_value = dtl_sv_make_u32(file->size);
+        if (item == NULL || name_value == NULL || size_value == NULL)
+        {
+          dtl_hv_delete(item);
+          dtl_sv_delete(name_value);
+          dtl_sv_delete(size_value);
+          result = APX_MEM_ERROR;
+        }
+        else
+        {
+          dtl_hv_set_cstr(item, "name", (dtl_dv_t *)name_value, false);
+          dtl_hv_set_cstr(item, "size", (dtl_dv_t *)size_value, false);
+          dtl_av_push(saved_files, (dtl_dv_t *)item, false);
+        }
+      }
+      else
+      {
+        printf("Saved %s (%u bytes)\n", adt_str_cstr(&path), file->size);
+      }
+    }
+  }
+  if (result != APX_NO_ERROR)
+  {
+    fprintf(stderr, "Error: Failed to save %s%s: %s (error=%d)\n", node_name, extension, apx_strerror(result), result);
+  }
+  adt_str_destroy(&path);
+  return result;
+}
+
+static int cmd_dump(apx_diag_client_t *client, char const *selector)
+{
+  char const *separator = strchr(selector, ':');
+  char const *node_name = separator != NULL ? separator + 1 : selector;
+  if (*node_name == '\0' || strchr(node_name, '/') != NULL || strchr(node_name, '\\') != NULL ||
+    strchr(node_name, ':') != NULL || strcmp(node_name, ".") == 0 || strcmp(node_name, "..") == 0)
+  {
+    fprintf(stderr, "Error: Node name cannot be used as a local snapshot filename\n");
+    return 1;
+  }
+  apx_diag_client_file_t *out_file = NULL;
+  apx_diag_client_file_t *in_file = NULL;
+  apx_error_t result = apx_diag_client_snapshot_node_data(client, selector, &out_file, &in_file, 5000u);
+  if (result != APX_NO_ERROR)
+  {
+    if (result == APX_AMBIGUOUS_NODE_ERROR)
+    {
+      fprintf(stderr,
+        "Error: Server has multiple nodes named '%s'. Use 'apxmon nodes' and retry with connection-id:node-name.\n",
+        node_name);
+    }
+    else
+    {
+      fprintf(stderr, "Error: Failed to snapshot node '%s': %s (error=%d)\n", selector, apx_strerror(result), result);
+    }
+    return 1;
+  }
+  dtl_av_t *saved_files = dtl_av_new();
+  if (saved_files == NULL)
+  {
+    fprintf(stderr, "Error: Failed to allocate snapshot result\n");
+    apx_diag_client_file_delete(out_file);
+    apx_diag_client_file_delete(in_file);
+    return 1;
+  }
+  if (out_file != NULL)
+  {
+    result = save_dump_file(out_file, node_name, ".out", saved_files);
+  }
+  if (result == APX_NO_ERROR && in_file != NULL)
+  {
+    result = save_dump_file(in_file, node_name, ".in", saved_files);
+  }
+  if (result == APX_NO_ERROR)
+  {
+    if (m_json_output)
+    {
+      dtl_json_dump((dtl_dv_t *)saved_files, stdout, 2, false);
+      printf("\n");
+    }
+    else if (out_file == NULL && in_file == NULL)
+    {
+      printf("Node '%s' has no port-data files\n", node_name);
+    }
+  }
+  dtl_av_delete(saved_files);
+  apx_diag_client_file_delete(out_file);
+  apx_diag_client_file_delete(in_file);
+  return result == APX_NO_ERROR ? 0 : 1;
 }
 
 static int cmd_watch(apx_diag_client_t *client, const char **selectors, int num_selectors)
@@ -1032,6 +1151,18 @@ int main(int argc, char **argv)
     else
     {
       exit_code = cmd_get_apx(m_client, argv[cmd_idx + 1]);
+    }
+  }
+  else if (strcmp(command, "dump") == 0)
+  {
+    if (cmd_idx + 1 >= argc)
+    {
+      fprintf(stderr, "Error: 'dump' requires a node name argument\n");
+      exit_code = 1;
+    }
+    else
+    {
+      exit_code = cmd_dump(m_client, argv[cmd_idx + 1]);
     }
   }
   else if (strcmp(command, "watch") == 0)

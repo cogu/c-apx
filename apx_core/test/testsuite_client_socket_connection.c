@@ -44,6 +44,7 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_connection_create(CuTest *tc);
+static void test_transmit_multiple_buffer_flushes(CuTest *tc);
 static void test_send_greeting_on_connect(CuTest *tc);
 static void test_send_file_info_after_acknowledge_from_single_node(CuTest *tc);
 
@@ -68,6 +69,7 @@ CuSuite *testsuite_apx_client_socket_connection(void)
 {
   CuSuite *suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_connection_create);
+  SUITE_ADD_TEST(suite, test_transmit_multiple_buffer_flushes);
   SUITE_ADD_TEST(suite, test_send_greeting_on_connect);
   SUITE_ADD_TEST(suite, test_send_file_info_after_acknowledge_from_single_node);
 
@@ -87,6 +89,29 @@ static void test_connection_create(CuTest *tc)
   CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
   CuAssertPtrEquals(tc, sock1, conn.socket_object);
   apx_client_socket_connection_destroy(&conn);
+}
+
+static void test_transmit_multiple_buffer_flushes(CuTest *tc)
+{
+  testsocket_t *sock = testsocket_new();
+  CuAssertPtrNotNull(tc, sock);
+  apx_client_socket_connection_t client;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_socket_connection_create(&client, sock, APX_CONNECTION_TYPE_MONITOR));
+  apx_connection_interface_t const *connection = apx_connection_base_get_connection(&client.base.base);
+  CuAssertPtrNotNull(tc, connection);
+  uint8_t data[3000] = {0};
+  int32_t available = 0;
+  connection->transmit_begin(connection->arg);
+  for (uint32_t i = 0; i < 4u; ++i)
+  {
+    CuAssertIntEquals(tc, APX_NO_ERROR,
+      connection->transmit_data_message(
+        connection->arg, 0x1000u + i * sizeof(data), i != 3u, data, sizeof(data), &available));
+    CuAssertTrue(tc, available >= 0);
+    CuAssertTrue(tc, available <= connection->transmit_max_buffer_size(connection->arg));
+  }
+  connection->transmit_end(connection->arg);
+  apx_client_socket_connection_destroy(&client);
 }
 
 static void test_send_greeting_on_connect(CuTest *tc)

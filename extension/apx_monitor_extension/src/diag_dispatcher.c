@@ -125,6 +125,11 @@ static void handle_list_unconnected_ports(
   apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size);
 static void handle_get_node_definition(
   apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size);
+static void handle_node_files(apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t opcode, uint16_t flags,
+  const uint8_t *payload, uint32_t payload_size);
+static apx_error_t resolve_node(apx_server_t *server, char const *selector, apx_node_instance_t **out_node);
+static apx_error_t publish_temp_file(apx_diag_dispatcher_t *self, uint32_t request_id, char const *name,
+  uint8_t const *data, uint32_t size, uint32_t *address);
 static void handle_subscribe_ports(
   apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size);
 static void handle_unsubscribe(
@@ -239,6 +244,9 @@ void apx_diag_dispatcher_on_request_written(
     break;
   case APX_DIAG_CMD_GET_NODE_DEFINITION:
     handle_get_node_definition(self, request_id, flags, payload, payload_size);
+    break;
+  case APX_DIAG_CMD_SNAPSHOT_NODE_DATA:
+    handle_node_files(self, request_id, opcode, flags, payload, payload_size);
     break;
   case APX_DIAG_CMD_SUBSCRIBE_PORTS:
     handle_subscribe_ports(self, request_id, flags, payload, payload_size);
@@ -666,7 +674,12 @@ static apx_diag_temp_file_t *apx_diag_temp_file_new(
     self->file_name = file_name != NULL ? strdup(file_name) : NULL;
     self->size = size;
     self->data = (uint8_t *)malloc(size);
-    if (self->data != NULL && data != NULL && size > 0u)
+    if (self->file_name == NULL || (size > 0u && self->data == NULL))
+    {
+      apx_diag_temp_file_delete(self);
+      return NULL;
+    }
+    if (size > 0u)
     {
       memcpy(self->data, data, size);
     }
@@ -1548,98 +1561,172 @@ static void handle_list_unconnected_ports(
 static void handle_get_node_definition(
   apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size)
 {
-  (void)flags;
-  char *node_name = NULL;
-  uint32_t bytes_read = 0u;
-  if (!decode_string16(payload, payload_size, &node_name, &bytes_read))
-  {
-    send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)APX_INVALID_MSG_ERROR, NULL, 0u);
-    return;
-  }
+  handle_node_files(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, flags, payload, payload_size);
+}
 
-  apx_server_monitor_t *monitor = apx_monitor_session_get_server_monitor(self->session);
-  if (monitor == NULL || monitor->server == NULL || self->session == NULL)
-  {
-    free(node_name);
-    send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)APX_INVALID_STATE_ERROR, NULL, 0u);
-    return;
-  }
-  apx_server_t *server = monitor->server;
-
-  MUTEX_LOCK(server->global_lock);
-  apx_node_instance_t *node = find_node_in_server(server, node_name);
-  if (node == NULL)
-  {
-    MUTEX_UNLOCK(server->global_lock);
-    free(node_name);
-    send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)APX_NOT_FOUND_ERROR, NULL, 0u);
-    return;
-  }
-
-  uint8_t const *def_data = apx_node_instance_get_definition_data(node);
-  apx_size_t const def_size = apx_node_instance_get_definition_size(node);
-  if (def_data == NULL || def_size == 0u)
-  {
-    MUTEX_UNLOCK(server->global_lock);
-    free(node_name);
-    send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)APX_NOT_FOUND_ERROR, NULL, 0u);
-    return;
-  }
-
-  // Publish temporary fixed file: apx.diag.v1.def.<request_id>
-  char file_name[64];
-  snprintf(file_name, sizeof(file_name), "apx.diag.v1.def.%u", request_id);
-
+static apx_error_t publish_temp_file(apx_diag_dispatcher_t *self, uint32_t request_id, char const *name,
+  uint8_t const *data, uint32_t size, uint32_t *address)
+{
   apx_file_manager_t *fm = apx_monitor_session_get_file_manager(self->session);
   if (fm == NULL)
   {
-    MUTEX_UNLOCK(server->global_lock);
-    free(node_name);
-    send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)APX_NOT_FOUND_ERROR, NULL, 0u);
-    return;
+    return APX_INVALID_STATE_ERROR;
   }
-
-  rmf_file_info_t file_info;
-  apx_error_t const err = rmf_file_info_create(
-    &file_info, RMF_INVALID_ADDRESS, (uint32_t)def_size, file_name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
-  if (err != APX_NO_ERROR)
+  apx_diag_temp_file_t *tf = apx_diag_temp_file_new(request_id, RMF_INVALID_ADDRESS, name, data, size);
+  if (tf == NULL)
   {
-    MUTEX_UNLOCK(server->global_lock);
-    free(node_name);
-    send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)err, NULL, 0u);
-    return;
+    return APX_MEM_ERROR;
   }
-
-  apx_file_t *local_file = apx_file_manager_create_local_file(fm, &file_info);
-  if (local_file == NULL)
+  rmf_file_info_t file_info;
+  apx_error_t result =
+    rmf_file_info_create(&file_info, RMF_INVALID_ADDRESS, size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+  if (result != APX_NO_ERROR)
   {
     rmf_file_info_destroy(&file_info);
-    MUTEX_UNLOCK(server->global_lock);
-    free(node_name);
-    send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)APX_MEM_ERROR, NULL, 0u);
-    return;
+    apx_diag_temp_file_delete(tf);
+    return result;
   }
-  apx_monitor_session_attach_file_handler(self->session, local_file);
-
-  uint32_t const file_address = apx_file_get_address_without_flags(local_file);
-  apx_file_manager_publish_local_file(fm, &local_file->file_info);
+  apx_file_t *local_file = apx_file_manager_create_local_file(fm, &file_info);
   rmf_file_info_destroy(&file_info);
-
-  MUTEX_LOCK(self->lock);
-  apx_diag_temp_file_t *tf = apx_diag_temp_file_new(request_id, file_address, file_name, def_data, (uint32_t)def_size);
-  if (tf != NULL)
+  if (local_file == NULL)
   {
-    adt_ary_push(&self->temp_files, tf);
+    apx_diag_temp_file_delete(tf);
+    return APX_MEM_ERROR;
+  }
+  tf->address = apx_file_get_address_without_flags(local_file);
+  uint32_t const file_address = tf->address;
+  MUTEX_LOCK(self->lock);
+  if (adt_ary_push(&self->temp_files, tf) != ADT_NO_ERROR)
+  {
+    result = APX_MEM_ERROR;
   }
   MUTEX_UNLOCK(self->lock);
+  if (result != APX_NO_ERROR)
+  {
+    apx_diag_temp_file_delete(tf);
+  }
+  else
+  {
+    apx_monitor_session_attach_file_handler(self->session, local_file);
+    result = apx_file_manager_publish_local_file(fm, &local_file->file_info);
+  }
+  if (result != APX_NO_ERROR)
+  {
+    apx_file_manager_revoke_local_file(fm, file_address);
+    return result;
+  }
+  *address = file_address;
+  return APX_NO_ERROR;
+}
 
-  MUTEX_UNLOCK(server->global_lock);
-  free(node_name);
-
-  // Send response payload containing file_address
-  uint8_t resp_payload[4];
-  pack_le_u32(resp_payload, file_address);
-  send_response(self, request_id, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, (uint32_t)APX_NO_ERROR, resp_payload, 4u);
+static void handle_node_files(apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t opcode, uint16_t flags,
+  const uint8_t *payload, uint32_t payload_size)
+{
+  char *selector = NULL;
+  uint32_t bytes_read = 0u;
+  if (flags != 0u)
+  {
+    send_response(self, request_id, opcode, 0u, (uint32_t)APX_INVALID_ARGUMENT_ERROR, NULL, 0u);
+    return;
+  }
+  if (!decode_string16(payload, payload_size, &selector, &bytes_read))
+  {
+    send_response(self, request_id, opcode, 0u, (uint32_t)APX_INVALID_MSG_ERROR, NULL, 0u);
+    return;
+  }
+  if (bytes_read != payload_size || strlen(selector) != bytes_read - 2u)
+  {
+    free(selector);
+    send_response(self, request_id, opcode, 0u, (uint32_t)APX_INVALID_MSG_ERROR, NULL, 0u);
+    return;
+  }
+  apx_server_monitor_t *monitor = apx_monitor_session_get_server_monitor(self->session);
+  apx_error_t result = APX_INVALID_STATE_ERROR;
+  uint8_t *out_data = NULL;
+  uint8_t *in_data = NULL;
+  uint32_t out_size = 0u;
+  uint32_t in_size = 0u;
+  if (monitor != NULL && monitor->server != NULL)
+  {
+    apx_server_t *server = monitor->server;
+    MUTEX_LOCK(server->global_lock);
+    apx_node_instance_t *node = NULL;
+    result = resolve_node(server, selector, &node);
+    if (result == APX_NO_ERROR)
+    {
+      if (opcode == APX_DIAG_CMD_GET_NODE_DEFINITION)
+      {
+        uint8_t const *definition = apx_node_instance_get_definition_data(node);
+        out_size = apx_node_instance_get_definition_size(node);
+        if (definition == NULL || out_size == 0u)
+        {
+          result = APX_NOT_FOUND_ERROR;
+        }
+        else
+        {
+          out_data = apx_node_data_take_definition_data_snapshot(apx_node_instance_get_node_data(node));
+          if (out_data == NULL)
+          {
+            result = APX_MEM_ERROR;
+          }
+        }
+      }
+      else
+      {
+        apx_node_data_t *nd = apx_node_instance_get_node_data(node);
+        if (nd == NULL)
+        {
+          result = APX_INVALID_STATE_ERROR;
+        }
+        else
+        {
+          out_size = apx_node_data_provide_port_data_size(nd);
+          in_size = apx_node_data_require_port_data_size(nd);
+          result = apx_node_data_take_port_data_snapshot(nd, &out_data, &in_data);
+        }
+      }
+    }
+    MUTEX_UNLOCK(server->global_lock);
+  }
+  free(selector);
+  uint32_t addresses[2] = {RMF_INVALID_ADDRESS, RMF_INVALID_ADDRESS};
+  char name[64];
+  if (result == APX_NO_ERROR && out_size > 0u)
+  {
+    if (opcode == APX_DIAG_CMD_GET_NODE_DEFINITION)
+    {
+      snprintf(name, sizeof(name), "apx.diag.v1.def.%u", request_id);
+    }
+    else
+    {
+      snprintf(name, sizeof(name), "apx.diag.v1.data.%u.p", request_id);
+    }
+    result = publish_temp_file(self, request_id, name, out_data, out_size, &addresses[0]);
+  }
+  if (result == APX_NO_ERROR && in_size > 0u)
+  {
+    snprintf(name, sizeof(name), "apx.diag.v1.data.%u.r", request_id);
+    result = publish_temp_file(self, request_id, name, in_data, in_size, &addresses[1]);
+  }
+  free(out_data);
+  free(in_data);
+  if (result != APX_NO_ERROR)
+  {
+    apx_file_manager_t *fm = apx_monitor_session_get_file_manager(self->session);
+    for (size_t i = 0; i < 2u; ++i)
+    {
+      if (fm != NULL && addresses[i] != RMF_INVALID_ADDRESS)
+      {
+        apx_file_manager_revoke_local_file(fm, addresses[i]);
+      }
+    }
+    send_response(self, request_id, opcode, 0u, (uint32_t)result, NULL, 0u);
+    return;
+  }
+  uint8_t response[8];
+  pack_le_u32(response, addresses[0]);
+  pack_le_u32(response + 4, addresses[1]);
+  send_response(self, request_id, opcode, 0u, 0u, response, opcode == APX_DIAG_CMD_GET_NODE_DEFINITION ? 4u : 8u);
 }
 
 static void handle_subscribe_ports(
@@ -1858,6 +1945,56 @@ static void handle_unsubscribe(
   {
     send_response(self, request_id, APX_DIAG_CMD_UNSUBSCRIBE, 0u, (uint32_t)APX_NOT_FOUND_ERROR, NULL, 0u);
   }
+}
+
+static apx_error_t resolve_node(apx_server_t *server, char const *selector, apx_node_instance_t **out_node)
+{
+  *out_node = NULL;
+  char const *node_name = selector;
+  char const *separator = strchr(selector, ':');
+  uint32_t connection_id = 0u;
+  if (separator != NULL)
+  {
+    if (separator == selector || separator[1] == '\0')
+    {
+      return APX_INVALID_NAME_ERROR;
+    }
+    for (char const *p = selector; p < separator; ++p)
+    {
+      if (*p < '0' || *p > '9' || connection_id > (UINT32_MAX - (uint32_t)(*p - '0')) / 10u)
+      {
+        return APX_INVALID_NAME_ERROR;
+      }
+      connection_id = connection_id * 10u + (uint32_t)(*p - '0');
+    }
+    node_name = separator + 1;
+  }
+  if (*node_name == '\0' || strchr(node_name, ':') != NULL)
+  {
+    return APX_INVALID_NAME_ERROR;
+  }
+  adt_list_elem_t *iter = adt_list_iter_first(&server->connection_manager.active_connections);
+  while (iter != NULL)
+  {
+    apx_server_connection_t *connection = (apx_server_connection_t *)iter->pItem;
+    iter = adt_list_iter_next(iter);
+    if (connection != NULL && apx_server_connection_get_connection_type(connection) != APX_CONNECTION_TYPE_MONITOR &&
+      (separator == NULL || apx_server_connection_get_connection_id(connection) == connection_id))
+    {
+      apx_node_manager_t *manager = apx_server_connection_get_node_manager(connection);
+      apx_node_instance_t *node = manager != NULL ? apx_node_manager_find(manager, node_name) : NULL;
+      if (node != NULL)
+      {
+        if (*out_node != NULL)
+        {
+          *out_node = NULL;
+          return APX_AMBIGUOUS_NODE_ERROR;
+        }
+        *out_node = node;
+      }
+    }
+  }
+  return *out_node != NULL ? APX_NO_ERROR : APX_NOT_FOUND_ERROR;
 }
 
 static apx_node_instance_t *find_node_in_server(apx_server_t *server, const char *node_name)

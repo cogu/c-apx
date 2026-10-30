@@ -15,6 +15,7 @@
 #include "adt_str.h"
 #include "apx/error.h"
 #include "apx/socket_client_connection.h"
+#include "apx_diag_client_file.h"
 #include "apx_diag_client_notification.h"
 #include "osmacro.h"
 #include <pthread.h>
@@ -32,6 +33,7 @@
 #define APX_DIAG_CMD_LIST_ROUTES ((uint16_t)0x0004u)
 #define APX_DIAG_CMD_LIST_UNCONNECTED_PORTS ((uint16_t)0x0005u)
 #define APX_DIAG_CMD_GET_NODE_DEFINITION ((uint16_t)0x0006u)
+#define APX_DIAG_CMD_SNAPSHOT_NODE_DATA ((uint16_t)0x0007u)
 #define APX_DIAG_CMD_SUBSCRIBE_PORTS ((uint16_t)0x0010u)
 #define APX_DIAG_CMD_UNSUBSCRIBE ((uint16_t)0x0011u)
 
@@ -131,12 +133,9 @@ typedef struct apx_diag_client_tag
   uint32_t response_status;
   uint8_t *response_payload;
   uint32_t response_payload_len;
-  // Node definition temporary file reception
-  uint32_t def_req_id;
-  uint32_t def_file_address;
-  uint8_t *def_data;
-  uint32_t def_data_size;
-  bool def_received;
+  uint32_t transfer_address;
+  apx_diag_client_file_t *transfer_file;
+  apx_error_t transfer_error;
   // Notification handling
   apx_diag_notification_cb_t *notification_cb;
   void *notification_arg;
@@ -176,6 +175,9 @@ apx_error_t apx_diag_client_list_routes(apx_diag_client_t *self, adt_ary_t *out_
 apx_error_t apx_diag_client_list_unconnected_ports(apx_diag_client_t *self, adt_ary_t *out_list, uint32_t timeout_ms);
 apx_error_t apx_diag_client_get_node_definition(
   apx_diag_client_t *self, const char *node_name, char **out_def_text, uint32_t timeout_ms);
+// Successful results are owned by the caller; absent directions return NULL.
+apx_error_t apx_diag_client_snapshot_node_data(apx_diag_client_t *self, char const *selector,
+  apx_diag_client_file_t **provide_data, apx_diag_client_file_t **require_data, uint32_t timeout_ms);
 apx_error_t apx_diag_client_subscribe_ports(apx_diag_client_t *self, uint32_t flags, const char **selectors,
   uint16_t num_selectors, uint32_t *out_subscription_id, adt_ary_t *out_resolutions, uint32_t timeout_ms);
 apx_error_t apx_diag_client_unsubscribe(apx_diag_client_t *self, uint32_t subscription_id, uint32_t timeout_ms);

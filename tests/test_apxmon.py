@@ -84,6 +84,7 @@ def test_apxmon_help_and_version(apxmon_bin: str):
     assert "nodes" in res.stdout
     assert "routing" in res.stdout
     assert "get-apx" in res.stdout
+    assert "dump" in res.stdout
     assert "get-def" not in res.stdout
     assert "watch" in res.stdout
 
@@ -246,6 +247,7 @@ def test_apxmon_nodes_and_get_apx(apx_server_with_monitor, apxmon_bin: str, apx_
     ("arguments", "expected_error"),
     [
         (["get-apx"], "Error: 'get-apx' requires a node name argument"),
+        (["dump"], "Error: 'dump' requires a node name argument"),
         (["get-def", "apx_sender"], "Error: Unknown command 'get-def'"),
     ],
 )
@@ -560,6 +562,247 @@ def test_apxmon_watch_failed_subscription(apx_server_with_monitor, apxmon_bin: s
     assert result.returncode == 1
     assert result.stdout == ""
     assert result.stderr == "Error: Failed to subscribe to ports (error=12)\n"
+
+
+@pytest.mark.parametrize("directions", ["provide", "require", "both", "none"])
+def test_apxmon_dump(
+    apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path, directions: str,
+):
+    node_name = "SnapshotNode"
+    ports = ""
+    expected = {}
+    if directions in ("provide", "both"):
+        ports += 'P"Speed"S:=100\nP"Bytes"C[20000]\n'
+        expected["SnapshotNode.out"] = b"\x64\x00" + bytes(20000)
+    if directions in ("require", "both"):
+        ports += 'R"Requested"L:=0x01000002\n'
+        expected["SnapshotNode.in"] = b"\x02\x00\x00\x01"
+    definition_text = f'APX/1.3\nN"{node_name}"\n{ports}'
+    definition = tmp_path / "source.apx"
+    definition.write_text(definition_text, encoding="utf-8")
+    node = _spawn_node(
+        [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "--no-bind", str(definition)], definition
+    )
+    command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket]
+    output_dir = tmp_path / "dump"
+    output_dir.mkdir()
+    try:
+        assert node.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+        deadline = time.monotonic() + 3.0
+        while True:
+            nodes_result = subprocess.run(
+                [*command, "--json", "nodes"], capture_output=True, text=True, check=True, timeout=5.0
+            )
+            listed = json.loads(nodes_result.stdout)
+            if any(item["node_name"] == node_name for item in listed):
+                break
+            assert time.monotonic() < deadline, nodes_result.stdout
+            time.sleep(0.05)
+
+        # Existing files must be replaced, not appended to or left with trailing bytes.
+        for name in expected:
+            (output_dir / name).write_bytes(b"old" * 10000)
+        result = subprocess.run(
+            [*command, "dump", node_name], cwd=output_dir,
+            capture_output=True, text=True, timeout=10.0,
+        )
+        assert result.returncode == 0, result.stderr
+        assert {path.name for path in output_dir.iterdir()} == set(expected)
+        for name, value in expected.items():
+            assert (output_dir / name).read_bytes() == value
+            assert f"Saved {name} ({len(value)} bytes)" in result.stdout
+        result_json = subprocess.run(
+            [*command, "--json", "dump", node_name], cwd=output_dir,
+            capture_output=True, text=True, check=True, timeout=10.0,
+        )
+        assert json.loads(result_json.stdout) == [
+            {"name": name, "size": len(value)} for name, value in expected.items()
+        ]
+        result_apx = subprocess.run(
+            [*command, "get-apx", node_name], capture_output=True, text=True, check=True, timeout=10.0
+        )
+        assert result_apx.stdout == definition_text
+    finally:
+        node.stop()
+
+
+def test_apxmon_dump_live_data(
+    apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str,
+    apx_control: ApxControl, tmp_path: Path,
+):
+    repo_root = Path(__file__).resolve().parent.parent
+    listener_definition = repo_root / "example" / "nodes" / "unsigned_listener.apx"
+    sender_definition = repo_root / "example" / "nodes" / "unsigned_sender.apx"
+    bind_socket = str(tmp_path / "sender.socket")
+    listener = _spawn_node(
+        [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "--no-bind", str(listener_definition)],
+        listener_definition,
+    )
+    sender = _spawn_node(
+        [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "-b", bind_socket, str(sender_definition)],
+        sender_definition, bind_path=bind_socket,
+    )
+    command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket, "dump"]
+    try:
+        assert listener.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+        assert sender.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+        wait_for_unix_socket(bind_socket, timeout=3.0)
+        assert listener.wait_for_output('"VehicleSpeed": 65535', timeout=3.0)
+        for value in (100, 123):
+            written = apx_control.set_signal("VehicleSpeed", value, connect_path=bind_socket)
+            assert written.returncode == 0
+            assert listener.wait_for_output(f'"VehicleSpeed": {value}', timeout=3.0)
+            expected = b"\x0f" + value.to_bytes(2, "little") + b"\xff" * 4 + bytes(21)
+            for name, extension in (("apx_sender", ".out"), ("apx_listener", ".in")):
+                subprocess.run(
+                    [*command, name], cwd=tmp_path,
+                    capture_output=True, text=True, check=True, timeout=10.0,
+                )
+                assert (tmp_path / f"{name}{extension}").read_bytes() == expected
+    finally:
+        sender.stop()
+        listener.stop()
+
+
+def test_apxmon_node_selection(
+    apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path,
+):
+    command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket]
+    nodes = []
+    try:
+        for index, value in enumerate((17, 34)):
+            definition = tmp_path / f"source_{index}.apx"
+            definition.write_text(f'APX/1.3\nN"Duplicate"\nP"Value"C:={value}\n', encoding="utf-8")
+            node = _spawn_node(
+                [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "--no-bind", str(definition)], definition
+            )
+            nodes.append(node)
+            assert node.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+        deadline = time.monotonic() + 3.0
+        while True:
+            result = subprocess.run(
+                [*command, "--json", "nodes"], capture_output=True, text=True, check=True, timeout=5.0
+            )
+            listed = json.loads(result.stdout)
+            if len(listed) == 2:
+                break
+            assert time.monotonic() < deadline, result.stdout
+            time.sleep(0.05)
+
+        (tmp_path / "Duplicate.out").write_bytes(b"unchanged")
+        for subcommand in ("get-apx", "dump"):
+            ambiguous = subprocess.run(
+                [*command, subcommand, "Duplicate"], cwd=tmp_path,
+                capture_output=True, text=True, timeout=5.0,
+            )
+            assert ambiguous.returncode == 1
+            assert ambiguous.stdout == ""
+            assert "multiple nodes named 'Duplicate'" in ambiguous.stderr
+            assert "apxmon nodes" in ambiguous.stderr
+            assert "connection-id:node-name" in ambiguous.stderr
+        assert (tmp_path / "Duplicate.out").read_bytes() == b"unchanged"
+
+        observed = set()
+        for item in listed:
+            selector = f'{item["connection_id"]}:Duplicate'
+            definition_result = subprocess.run(
+                [*command, "get-apx", selector], capture_output=True, text=True, check=True, timeout=5.0
+            )
+            value = 17 if ":=17\n" in definition_result.stdout else 34
+            assert f":={value}\n" in definition_result.stdout
+            observed.add(value)
+            definition_json = subprocess.run(
+                [*command, "--json", "get-apx", selector],
+                capture_output=True, text=True, check=True, timeout=5.0,
+            )
+            assert json.loads(definition_json.stdout) == {
+                "node_name": "Duplicate", "definition": definition_result.stdout,
+            }
+            dumped = subprocess.run(
+                [*command, "dump", selector], cwd=tmp_path,
+                capture_output=True, text=True, check=True, timeout=5.0,
+            )
+            assert "Saved Duplicate.out (1 bytes)" in dumped.stdout
+            assert (tmp_path / "Duplicate.out").read_bytes() == bytes([value])
+        assert observed == {17, 34}
+
+        for selector in ("MissingNode", "4294967294:Duplicate", "x:Duplicate", "4294967296:Duplicate", ":Duplicate"):
+            for subcommand in ("get-apx", "dump"):
+                result = subprocess.run(
+                    [*command, subcommand, selector], cwd=tmp_path,
+                    capture_output=True, text=True, timeout=5.0,
+                )
+                assert result.returncode == 1, (selector, result.stdout)
+                assert result.stderr.startswith("Error:")
+    finally:
+        for node in reversed(nodes):
+            node.stop()
+
+
+def test_apxmon_large_definition(
+    apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path,
+):
+    definition_text = 'APX/1.3\nN"LargeDefinition"\n' + "".join(
+        f'P"Signal_{index:04d}_WithALongNameToExerciseMultiChunkDefinitionTransfers"C\n'
+        for index in range(1500)
+    )
+    assert len(definition_text.encode()) > 65536
+    definition = tmp_path / "large.apx"
+    definition.write_text(definition_text, encoding="utf-8")
+    node = _spawn_node(
+        [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "--no-bind", str(definition)], definition
+    )
+    command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket]
+    try:
+        assert node.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+        deadline = time.monotonic() + 5.0
+        while True:
+            listed = subprocess.run(
+                [*command, "--json", "nodes"],
+                capture_output=True, text=True, check=True, timeout=10.0,
+            )
+            if any(item["provide_port_count"] == 1500 for item in json.loads(listed.stdout)):
+                break
+            assert time.monotonic() < deadline, (listed.stdout, node.output, node.stderr)
+            time.sleep(0.05)
+        result = subprocess.run(
+            [*command, "get-apx", "LargeDefinition"],
+            capture_output=True, text=True, check=True, timeout=10.0,
+        )
+        assert result.stdout == definition_text
+    finally:
+        node.stop()
+
+
+@pytest.mark.parametrize("failure", ["create", "write"])
+def test_apxmon_dump_write_error(
+    apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path, failure: str,
+):
+    definition = tmp_path / "source.apx"
+    definition.write_text('APX/1.3\nN"WriteError"\nP"Value"C\n', encoding="utf-8")
+    node = _spawn_node(
+        [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "--no-bind", str(definition)], definition
+    )
+    try:
+        assert node.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+        if failure == "create":
+            (tmp_path / "WriteError.out").mkdir()
+        else:
+            if not Path("/dev/full").exists():
+                pytest.skip("write-failure test requires /dev/full")
+            (tmp_path / "WriteError.out").symlink_to("/dev/full")
+        time.sleep(0.1)
+        result = subprocess.run(
+            [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket, "dump", "WriteError"],
+            cwd=tmp_path, capture_output=True, text=True, timeout=5.0,
+        )
+        assert result.returncode == 1
+        assert "Failed to save WriteError.out" in result.stderr
+        if failure == "write":
+            assert "File write failed" in result.stderr
+        assert "Saved" not in result.stdout
+    finally:
+        node.stop()
 
 
 def test_apxmon_tls_mtls(tmp_path: Path, apx_server_bin: str, apxmon_bin: str):

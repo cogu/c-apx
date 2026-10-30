@@ -1247,7 +1247,6 @@ static void connection_send_packet(apx_monitor_server_connection_t *self)
         apx_server_connection_get_connection_id(&self->base), (int)self->pending_bytes);
     }
     SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
-    adt_bytearray_clear(&self->send_buffer);
     self->pending_bytes = 0u;
   }
 }

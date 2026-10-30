@@ -213,6 +213,21 @@ static void test_server_monitor_accept_testsocket(CuTest *tc)
   CuAssertPtrNotNull(tc, diag_notif);
   CuAssertTrue(tc, apx_file_is_stream(diag_notif));
 
+  apx_connection_interface_t const *connection = apx_connection_base_get_connection(&conn->base);
+  CuAssertPtrNotNull(tc, connection);
+  uint8_t data[3000] = {0};
+  int32_t available = 0;
+  connection->transmit_begin(connection->arg);
+  for (uint32_t i = 0; i < 4u; ++i)
+  {
+    CuAssertIntEquals(tc, APX_NO_ERROR,
+      connection->transmit_data_message(
+        connection->arg, 0x1000u + i * sizeof(data), i != 3u, data, sizeof(data), &available));
+    CuAssertTrue(tc, available >= 0);
+    CuAssertTrue(tc, available <= connection->transmit_max_buffer_size(connection->arg));
+  }
+  connection->transmit_end(connection->arg);
+
   testsocket_on_disconnect(sock);
 
   apx_server_stop(server);

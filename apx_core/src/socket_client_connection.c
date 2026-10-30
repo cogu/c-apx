@@ -551,7 +551,7 @@ static apx_error_t apx_client_socket_connection_transmit_data_message(apx_client
     apx_size_t const header2_size =
       rmf_address_encode(header + header1_size, sizeof(header) - header1_size, write_address, more_bit);
     assert(header2_size == address_size);
-    apx_size_t const bytes_to_send = header1_size + header2_size + payload_size;
+    apx_size_t const bytes_to_send = header1_size + header2_size + msg_size;
     apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes;
     if (bytes_to_send > buffer_available)
     {
@@ -602,7 +602,6 @@ static void send_packet(apx_client_socket_connection_t *self)
   {
     uint8_t const *data = adt_bytearray_const_data(&self->send_buffer);
     SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
-    adt_bytearray_clear(&self->send_buffer);
     self->pending_bytes = 0u;
   }
 }

@@ -74,8 +74,10 @@ Commands
      - List all registered APX nodes, their connection IDs, and provide/require port counts.
    * - ``routing [--unconnected]``
      - List active signal routes connecting provide-ports to require-ports. When ``--unconnected`` is passed, displays unconnected require-ports (missing providers) and provide-ports (missing consumers).
-   * - ``get-apx <node_name>``
+   * - ``get-apx <[connection_id:]node_name>``
      - Fetch and display the full APX IDL specification text (``.apx``) for the specified node.
+   * - ``dump <[connection_id:]node_name>``
+     - Save snapshots of the node's raw provide- and require-port buffers as ``node_name.out`` and ``node_name.in`` in the current directory, overwriting existing files.
    * - ``watch <selector...>``
      - Subscribe to live signal changes on one or more port selectors (e.g. ``NodeName:PortName`` or ``NodeID:PortID``). Streams updates continuously until interrupted.
    * - ``top``
@@ -182,6 +184,16 @@ Retrieves the APX Interface Definition Language (IDL) text for any registered no
 
    apxmon get-apx EngineController
 
+Both ``get-apx`` and ``dump`` accept a node name alone when it is unique on
+the server. If multiple connections host that name, the server refuses the
+request. Run ``apxmon nodes`` to find the desired ``CONN_ID``, then use a
+qualified selector:
+
+.. code-block:: bash
+
+   apxmon get-apx 1:EngineController
+   apxmon dump 1:EngineController
+
 Outputs the complete text definition directly to standard output:
 
 .. code-block:: text
@@ -193,6 +205,29 @@ Outputs the complete text definition directly to standard output:
    P"CoolantTemp"C:=255
 
 When combined with ``--json``, the definition is wrapped inside a JSON object: ``{"node_name": "EngineController", "definition": "..."}``.
+
+dump
+~~~~
+
+Captures the server's current view of a node's port-data buffers without
+adding an operational APX node:
+
+.. code-block:: bash
+
+   apxmon dump EngineController
+
+The server copies both buffers under one node-data lock, then transfers
+immutable snapshots. The command writes ``EngineController.out`` for provide
+ports and ``EngineController.in`` for require ports. Absent directions produce
+no file. Existing snapshot files are overwritten; unrelated files are not
+removed.
+
+The saved files contain only the original binary port-data bytes, including
+embedded zeros, without headers or text encoding. A connection prefix selects
+the node but is not part of the local filename. Data is not decoded to JSON.
+With ``--json``, stdout lists the saved filenames and sizes; the files remain
+raw binary. Transfer or file-write failures produce an error and a nonzero
+exit status.
 
 watch
 ~~~~~

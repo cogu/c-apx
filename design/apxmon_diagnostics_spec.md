@@ -184,6 +184,7 @@ version 1 request receive `APX_INVALID_ARGUMENT_ERROR`.
 | `0x0004` | `LIST_ROUTES` | Snapshot-paged provider-to-requirer routes |
 | `0x0005` | `LIST_UNCONNECTED_PORTS` | Snapshot-paged dangling ports |
 | `0x0006` | `GET_NODE_DEFINITION` | Publish and identify a node's `.apx` file |
+| `0x0007` | `SNAPSHOT_NODE_DATA` | Capture and publish raw `.out` and `.in` buffers |
 | `0x0010` | `SUBSCRIBE_PORTS` | Subscribe to selected port values |
 | `0x0011` | `UNSUBSCRIBE` | Remove one subscription |
 
@@ -314,7 +315,13 @@ Request:
 
 | Field | Type | Description |
 |:---|:---:|:---|
-| `node_name` | `String16` | Exact APX node name |
+| `node_selector` | `String16` | Node name or `connection_id:node_name` |
+
+A bare name MUST match exactly one operational node across all connections.
+Multiple matches return `APX_AMBIGUOUS_NODE_ERROR` (`82`); no match returns
+`APX_NOT_FOUND_ERROR`. A qualified selector uses a decimal U32 connection ID
+and resolves only within that connection. Both this command and
+`SNAPSHOT_NODE_DATA` use these rules.
 
 On success, the server first publishes a temporary fixed RemoteFile named:
 
@@ -337,6 +344,32 @@ connection ends.
 
 This design avoids response chunking, duplicates no file size or digest fields,
 and lets RemoteFile enforce normal file bounds.
+
+#### `SNAPSHOT_NODE_DATA` (`0x0007`)
+
+The request is the same `node_selector: String16`, with flags zero. The server
+copies both port-data buffers while holding the same node-data lock. Network
+transfer occurs after releasing the node-data and topology locks.
+
+For each present direction, publish a temporary fixed RemoteFile:
+
+* `apx.diag.v1.data.<request_id>.p` for provide-port data;
+* `apx.diag.v1.data.<request_id>.r` for require-port data.
+
+These are diagnostic-only transport names, not operational `.out`/`.in` files.
+The eight-byte response contains `provide_file_address: U32`, then
+`require_file_address: U32`. An absent direction uses `RMF_INVALID_ADDRESS`
+(`0x7FFFFFFF`). File sizes come from the RemoteFile announcements.
+
+The client opens each announced file, assembles writes by offset until every
+advertised byte is received, then closes it. The server revokes closed
+temporary files and releases remaining snapshots on diagnostic disconnect.
+Captured bytes stay immutable even if the operational data changes.
+
+`apxmon dump` saves the bytes as `<node_name>.out` and/or `<node_name>.in` in the
+current directory, overwriting existing files. Connection qualification is
+not included in local filenames. There is no application header, terminator,
+or encoding conversion in the output files.
 
 ### 7.9 `SUBSCRIBE_PORTS`
 
@@ -495,6 +528,7 @@ Options:
 | `apxmon routing` | all pages of `LIST_ROUTES`, joined with `LIST_NODES` for human-readable endpoint names |
 | `apxmon routing --unconnected` | all pages of `LIST_UNCONNECTED_PORTS`, joined with `LIST_NODES` for human-readable node names |
 | `apxmon get-apx NODE` | `GET_NODE_DEFINITION`, then open the returned file |
+| `apxmon dump NODE` | `SNAPSHOT_NODE_DATA`, then fetch and save each present binary file |
 | `apxmon watch NODE:PORT...` | open notify file, then `SUBSCRIBE_PORTS` |
 | `apxmon top` | periodic list snapshots plus selected subscriptions |
 

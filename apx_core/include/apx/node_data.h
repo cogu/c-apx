@@ -107,6 +107,9 @@ uint8_t const* apx_node_data_get_require_port_data(apx_node_data_t const* self);
 uint8_t *apx_node_data_take_definition_data_snapshot(apx_node_data_t *self);
 uint8_t *apx_node_data_take_provide_port_data_snapshot(apx_node_data_t *self);
 uint8_t *apx_node_data_take_require_port_data_snapshot(apx_node_data_t *self);
+// Copies both port-data buffers under one lock. The caller owns the returned buffers.
+apx_error_t apx_node_data_take_port_data_snapshot(
+  apx_node_data_t *self, uint8_t **provide_data, uint8_t **require_data);
 void apx_node_data_set_checksum_data(
   apx_node_data_t *self, rmf_digest_type_t checksum_type, uint8_t const *checksum_data);
 rmf_digest_type_t apx_node_data_get_checksum_type(apx_node_data_t const *self);

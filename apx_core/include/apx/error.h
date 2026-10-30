@@ -103,6 +103,8 @@ typedef int32_t apx_error_t;
 #define APX_SIGNATURE_MISSING_ERROR 79
 #define APX_SIGNATURE_VERIFICATION_ERROR 80
 #define APX_TIMEOUT_ERROR 81
+#define APX_AMBIGUOUS_NODE_ERROR 82
+#define APX_FILE_WRITE_ERROR 83
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES

@@ -24,6 +24,7 @@
 #define APX_DIAG_RESP_FILE_NAME "apx.diag.v1.response"
 #define APX_DIAG_NOTIF_FILE_NAME "apx.diag.v1.notify"
 #define APX_DIAG_DEF_FILE_PREFIX "apx.diag.v1.def."
+#define APX_DIAG_DATA_FILE_PREFIX "apx.diag.v1.data."
 
 #define APX_DIAG_STREAM_SIZE ((uint32_t)(64u * 1024u))
 #define APX_DIAG_HEADER_SIZE 8u
@@ -40,8 +41,12 @@ static apx_error_t on_resp_file_written(
 static apx_error_t on_notif_file_written(
   void *arg, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t size);
 static apx_error_t on_req_file_opened(void *arg, apx_file_t *file);
-static apx_error_t on_def_file_written(
+static apx_error_t on_binary_file_written(
   void *arg, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t size);
+static apx_error_t receive_binary_file(
+  apx_diag_client_t *self, uint32_t address, apx_diag_client_file_t **out_file, uint32_t timeout_ms);
+static apx_error_t request_node_files(apx_diag_client_t *self, char const *selector, uint16_t opcode,
+  uint32_t *addresses, uint32_t count, uint32_t timeout_ms);
 
 static void pack_le_u16(uint8_t *dst, uint16_t val)
 {
@@ -129,7 +134,7 @@ apx_error_t apx_diag_client_create(apx_diag_client_t *self)
   self->request_file_address = RMF_INVALID_ADDRESS;
   self->response_file_address = RMF_INVALID_ADDRESS;
   self->notify_file_address = RMF_INVALID_ADDRESS;
-  self->def_file_address = RMF_INVALID_ADDRESS;
+  self->transfer_address = RMF_INVALID_ADDRESS;
 
   apx_error_t err = apx_client_socket_connection_create(&self->connection, NULL, APX_CONNECTION_TYPE_MONITOR);
   if (err != APX_NO_ERROR)
@@ -158,11 +163,7 @@ void apx_diag_client_destroy(apx_diag_client_t *self)
       free(self->response_payload);
       self->response_payload = NULL;
     }
-    if (self->def_data != NULL)
-    {
-      free(self->def_data);
-      self->def_data = NULL;
-    }
+    apx_diag_client_file_delete(self->transfer_file);
 
     MUTEX_DESTROY(self->lock);
     pthread_cond_destroy(&self->cond);
@@ -318,6 +319,11 @@ apx_error_t apx_diag_client_send_request(apx_diag_client_t *self, uint16_t opcod
   struct timespec deadline = compute_deadline(timeout_ms);
   while (!self->response_received)
   {
+    if (!self->is_connected)
+    {
+      MUTEX_UNLOCK(self->lock);
+      return APX_NOT_CONNECTED_ERROR;
+    }
     int rc = pthread_cond_timedwait(&self->cond, &self->lock, &deadline);
     if (rc == ETIMEDOUT)
     {
@@ -698,92 +704,212 @@ apx_error_t apx_diag_client_get_node_definition(
   }
   *out_def_text = NULL;
 
-  uint32_t const nlen = (uint32_t)strlen(node_name);
-  uint32_t const req_payload_size = 2u + nlen;
-  uint8_t *req_payload = (uint8_t *)malloc(req_payload_size);
-  if (req_payload == NULL)
-  {
-    return APX_MEM_ERROR;
-  }
-  pack_le_u16(req_payload, (uint16_t)nlen);
-  memcpy(req_payload + 2, node_name, nlen);
-
-  MUTEX_LOCK(self->lock);
-  self->def_received = false;
-  self->def_file_address = RMF_INVALID_ADDRESS;
-  if (self->def_data != NULL)
-  {
-    free(self->def_data);
-    self->def_data = NULL;
-    self->def_data_size = 0u;
-  }
-  MUTEX_UNLOCK(self->lock);
-
-  uint32_t status = 0u;
-  uint8_t *resp = NULL;
-  uint32_t resp_len = 0u;
-
-  apx_error_t err = apx_diag_client_send_request(
-    self, APX_DIAG_CMD_GET_NODE_DEFINITION, 0u, req_payload, req_payload_size, &status, &resp, &resp_len, timeout_ms);
-  free(req_payload);
-
+  uint32_t address;
+  apx_error_t err = request_node_files(self, node_name, APX_DIAG_CMD_GET_NODE_DEFINITION, &address, 1u, timeout_ms);
   if (err != APX_NO_ERROR)
   {
     return err;
   }
-  if (status != 0u || resp == NULL || resp_len < 4u)
+  apx_diag_client_file_t *file = NULL;
+  err = receive_binary_file(self, address, &file, timeout_ms);
+  if (err == APX_NO_ERROR)
   {
-    if (resp != NULL)
-      free(resp);
-    return (status != 0u) ? (apx_error_t)status : APX_INVALID_MSG_ERROR;
+    if ((uint64_t)file->size + 1u > SIZE_MAX)
+    {
+      err = APX_LENGTH_ERROR;
+    }
+    else
+    {
+      *out_def_text = (char *)malloc((size_t)file->size + 1u);
+      if (*out_def_text == NULL)
+      {
+        err = APX_MEM_ERROR;
+      }
+      else
+      {
+        if (file->size > 0u)
+        {
+          memcpy(*out_def_text, file->data, file->size);
+        }
+        (*out_def_text)[file->size] = '\0';
+      }
+    }
   }
+  apx_diag_client_file_delete(file);
+  return err;
+}
 
-  uint32_t const file_address = unpack_le_u32(resp);
-  free(resp);
+apx_error_t apx_diag_client_snapshot_node_data(apx_diag_client_t *self, char const *selector,
+  apx_diag_client_file_t **provide_data, apx_diag_client_file_t **require_data, uint32_t timeout_ms)
+{
+  if (self == NULL || selector == NULL || provide_data == NULL || require_data == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  *provide_data = NULL;
+  *require_data = NULL;
+  uint32_t addresses[2];
+  apx_error_t result = request_node_files(self, selector, APX_DIAG_CMD_SNAPSHOT_NODE_DATA, addresses, 2u, timeout_ms);
+  if (result != APX_NO_ERROR)
+  {
+    return result;
+  }
+  apx_diag_client_file_t **outputs[] = {provide_data, require_data};
+  for (uint32_t i = 0; i < 2u; ++i)
+  {
+    if (addresses[i] != RMF_INVALID_ADDRESS)
+    {
+      if (result == APX_NO_ERROR)
+      {
+        result = receive_binary_file(self, addresses[i], outputs[i], timeout_ms);
+      }
+      else
+      {
+        apx_file_manager_t *fm = apx_client_connection_get_file_manager(&self->connection.base);
+        apx_file_manager_send_close_file_request(fm, addresses[i]);
+      }
+    }
+  }
+  if (result != APX_NO_ERROR)
+  {
+    apx_diag_client_file_delete(*provide_data);
+    apx_diag_client_file_delete(*require_data);
+    *provide_data = NULL;
+    *require_data = NULL;
+  }
+  return result;
+}
 
-  MUTEX_LOCK(self->lock);
-  self->def_file_address = file_address;
-  MUTEX_UNLOCK(self->lock);
+static apx_error_t request_node_files(apx_diag_client_t *self, char const *selector, uint16_t opcode,
+  uint32_t *addresses, uint32_t count, uint32_t timeout_ms)
+{
+  size_t const name_size = strlen(selector);
+  if (name_size == 0u || name_size > UINT16_MAX)
+  {
+    return APX_INVALID_NAME_ERROR;
+  }
+  uint32_t const payload_size = 2u + (uint32_t)name_size;
+  uint8_t *payload = (uint8_t *)malloc(payload_size);
+  if (payload == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
+  pack_le_u16(payload, (uint16_t)name_size);
+  memcpy(payload + 2, selector, name_size); // NOLINT(bugprone-not-null-terminated-result)
+  uint32_t status = 0u;
+  uint8_t *response = NULL;
+  uint32_t response_size = 0u;
+  apx_error_t result = apx_diag_client_send_request(
+    self, opcode, 0u, payload, payload_size, &status, &response, &response_size, timeout_ms);
+  free(payload);
+  if (result == APX_NO_ERROR)
+  {
+    if (status != 0u)
+    {
+      result = (apx_error_t)status;
+    }
+    else if (response == NULL || response_size != count * 4u)
+    {
+      result = APX_INVALID_MSG_ERROR;
+    }
+    else
+    {
+      for (uint32_t i = 0; i < count; ++i)
+      {
+        addresses[i] = unpack_le_u32(response + (size_t)i * 4u);
+      }
+    }
+  }
+  free(response);
+  return result;
+}
 
+static apx_error_t receive_binary_file(
+  apx_diag_client_t *self, uint32_t address, apx_diag_client_file_t **out_file, uint32_t timeout_ms)
+{
+  *out_file = NULL;
   apx_file_manager_t *fm = apx_client_connection_get_file_manager(&self->connection.base);
-  if (fm != NULL)
+  if (fm == NULL || address == RMF_INVALID_ADDRESS)
   {
-    // Request server to open the file to transfer definition data
-    apx_file_manager_send_open_file_request(fm, file_address);
+    return APX_INVALID_MSG_ERROR;
   }
-
-  // Wait for definition data to be received
-  struct timespec deadline = compute_deadline(timeout_ms);
+  struct timespec const deadline = compute_deadline(timeout_ms);
+  apx_error_t result = APX_NO_ERROR;
   MUTEX_LOCK(self->lock);
-  while (!self->def_received)
+  apx_file_t *remote_file = NULL;
+  while (result == APX_NO_ERROR)
   {
-    int rc = pthread_cond_timedwait(&self->cond, &self->lock, &deadline);
-    if (rc == ETIMEDOUT && !self->def_received)
+    remote_file = apx_file_manager_find_file_by_address(fm, address | RMF_REMOTE_ADDRESS_BIT);
+    if (remote_file != NULL)
     {
-      MUTEX_UNLOCK(self->lock);
-      return APX_TIMEOUT_ERROR;
+      break;
+    }
+    if (!self->is_connected)
+    {
+      result = APX_NOT_CONNECTED_ERROR;
+      break;
+    }
+    int const rc = pthread_cond_timedwait(&self->cond, &self->lock, &deadline);
+    if (rc != 0)
+    {
+      result = rc == ETIMEDOUT ? APX_TIMEOUT_ERROR : APX_INTERNAL_ERROR;
     }
   }
-
-  if (self->def_data != NULL && self->def_data_size > 0u)
+  if (result == APX_NO_ERROR)
   {
-    *out_def_text = (char *)malloc(self->def_data_size + 1u);
-    if (*out_def_text != NULL)
+    self->transfer_file = apx_diag_client_file_new(rmf_file_info_size(&remote_file->file_info));
+    if (self->transfer_file == NULL)
     {
-      memcpy(*out_def_text, self->def_data, self->def_data_size);
-      (*out_def_text)[self->def_data_size] = '\0';
+      result = APX_MEM_ERROR;
+    }
+    else
+    {
+      self->transfer_address = address;
+      self->transfer_error = APX_NO_ERROR;
+      result = apx_file_manager_send_open_file_request(fm, address);
+      while (result == APX_NO_ERROR && !apx_diag_client_file_is_complete(self->transfer_file))
+      {
+        if (!self->is_connected)
+        {
+          result = APX_NOT_CONNECTED_ERROR;
+          break;
+        }
+        if (self->transfer_error != APX_NO_ERROR)
+        {
+          result = self->transfer_error;
+          break;
+        }
+        int const rc = pthread_cond_timedwait(&self->cond, &self->lock, &deadline);
+        if (rc != 0)
+        {
+          result = rc == ETIMEDOUT ? APX_TIMEOUT_ERROR : APX_INTERNAL_ERROR;
+        }
+      }
+      if (result == APX_NO_ERROR && self->transfer_error != APX_NO_ERROR)
+      {
+        result = self->transfer_error;
+      }
     }
   }
-
+  if (result == APX_NO_ERROR)
+  {
+    *out_file = self->transfer_file;
+  }
+  else
+  {
+    apx_diag_client_file_delete(self->transfer_file);
+  }
+  self->transfer_file = NULL;
+  self->transfer_address = RMF_INVALID_ADDRESS;
   MUTEX_UNLOCK(self->lock);
-
-  // Close remote definition file to signal server to revoke
-  if (fm != NULL)
+  apx_error_t const close_result = apx_file_manager_send_close_file_request(fm, address);
+  if (result == APX_NO_ERROR && close_result != APX_NO_ERROR)
   {
-    apx_file_manager_send_close_file_request(fm, file_address);
+    apx_diag_client_file_delete(*out_file);
+    *out_file = NULL;
+    result = close_result;
   }
-
-  return (*out_def_text != NULL) ? APX_NO_ERROR : APX_MEM_ERROR;
+  return result;
 }
 
 apx_error_t apx_diag_client_subscribe_ports(apx_diag_client_t *self, uint32_t flags, const char **selectors,
@@ -1163,13 +1289,14 @@ static apx_error_t on_client_file_published(void *arg, apx_file_t *file)
     pthread_cond_broadcast(&self->cond);
     MUTEX_UNLOCK(self->lock);
   }
-  else if (strncmp(fname, APX_DIAG_DEF_FILE_PREFIX, strlen(APX_DIAG_DEF_FILE_PREFIX)) == 0)
+  else if (strncmp(fname, APX_DIAG_DEF_FILE_PREFIX, strlen(APX_DIAG_DEF_FILE_PREFIX)) == 0 ||
+    strncmp(fname, APX_DIAG_DATA_FILE_PREFIX, strlen(APX_DIAG_DATA_FILE_PREFIX)) == 0)
   {
     MUTEX_LOCK(self->lock);
     apx_file_notification_handler_t def_handler;
     memset(&def_handler, 0, sizeof(def_handler));
     def_handler.arg = self;
-    def_handler.write_notify = (apx_file_write_notify_func *)on_def_file_written;
+    def_handler.write_notify = (apx_file_write_notify_func *)on_binary_file_written;
     apx_file_set_notification_handler(file, &def_handler);
     apx_file_open(file);
 
@@ -1300,29 +1427,22 @@ static apx_error_t on_notif_file_written(
   return APX_NO_ERROR;
 }
 
-static apx_error_t on_def_file_written(void *arg, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t size)
+static apx_error_t on_binary_file_written(
+  void *arg, apx_file_t *file, uint32_t offset, const uint8_t *data, uint32_t size)
 {
-  (void)file;
-  (void)offset;
   apx_diag_client_t *self = (apx_diag_client_t *)arg;
-  if (self == NULL || data == NULL || size == 0u)
+  if (self == NULL || file == NULL)
   {
     return APX_INVALID_ARGUMENT_ERROR;
   }
 
   MUTEX_LOCK(self->lock);
-  if (self->def_data != NULL)
+  if (self->transfer_file != NULL && self->transfer_error == APX_NO_ERROR &&
+    apx_file_get_address_without_flags(file) == self->transfer_address)
   {
-    free(self->def_data);
+    self->transfer_error = apx_diag_client_file_write(self->transfer_file, offset, data, size);
+    pthread_cond_broadcast(&self->cond);
   }
-  self->def_data = (uint8_t *)malloc(size);
-  if (self->def_data != NULL)
-  {
-    memcpy(self->def_data, data, size);
-    self->def_data_size = size;
-  }
-  self->def_received = true;
-  pthread_cond_broadcast(&self->cond);
   MUTEX_UNLOCK(self->lock);
 
   return APX_NO_ERROR;

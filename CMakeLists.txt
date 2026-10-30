@@ -438,6 +438,8 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             extension/apx_text_log_extension/test/testsuite_server_text_log.c
             extension/apx_monitor_extension/test/testsuite_monitor_extension.c
             app/apx_mon/src/apx_diag_client_notification.c
+            app/apx_mon/src/apx_diag_client_file.c
+            app/apx_mon/test/testsuite_diag_client_file.c
             app/apx_mon/test/testsuite_diag_client_notification.c
             app/apx_server/src/server_cfg.c
             ${GENERATED_EXTENSIONS_CFG}
