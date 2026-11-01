@@ -204,6 +204,25 @@ def _spawn_node(cmd: list[str], apx_file: Path, bind_path: str | None = None) ->
     return ApxNodeInstance(proc, apx_file, bind_path=bind_path)
 
 
+def _wait_for_node(sock: str, apxmon_bin: str, node_name: str, timeout: float = 3.0) -> dict:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        res = subprocess.run(
+            [apxmon_bin, "-c", sock, "--json", "nodes"],
+            capture_output=True, text=True
+        )
+        if res.returncode == 0:
+            try:
+                nodes = json.loads(res.stdout)
+                for node in nodes:
+                    if node.get("node_name") == node_name:
+                        return node
+            except Exception:
+                pass
+        time.sleep(0.05)
+    raise TimeoutError(f"Node '{node_name}' did not register in server within {timeout}s")
+
+
 def test_apxmon_nodes_and_get_apx(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path):
     """Verify nodes listing and get-apx command."""
     sock = apx_server_with_monitor.monitor_socket
@@ -217,6 +236,7 @@ def test_apxmon_nodes_and_get_apx(apx_server_with_monitor, apxmon_bin: str, apx_
 
     try:
         assert node.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+        _wait_for_node(sock, apxmon_bin, "apx_sender", timeout=3.0)
 
         # Run nodes in text format
         res = subprocess.run([apxmon_bin, "-c", sock, "nodes"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
@@ -280,7 +300,7 @@ def test_apxmon_routing(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: 
 
     try:
         assert listener.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
-        time.sleep(0.3)
+        _wait_for_node(sock, apxmon_bin, "apx_listener", timeout=3.0)
 
         # Before sender is connected: VehicleSpeed should be unconnected
         res_unconn = subprocess.run([apxmon_bin, "-c", sock, "routing", "--unconnected"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
@@ -308,7 +328,7 @@ def test_apxmon_routing(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: 
 
         try:
             assert sender.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
-            time.sleep(0.3)
+            _wait_for_node(sock, apxmon_bin, "apx_sender", timeout=3.0)
 
             # Route should now exist
             res_routes = subprocess.run([apxmon_bin, "-c", sock, "routing"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
@@ -545,6 +565,7 @@ def test_apxmon_watch(
     try:
         assert sender.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
         wait_for_unix_socket(bind_socket, timeout=3.0)
+        _wait_for_node(sock, apxmon_bin, "apx_sender", timeout=3.0)
 
         # Launch apxmon watch as background process
         selectors = ["apx_sender:VehicleSpeed", "apx_sender:VehicleMode"][:selector_count]
@@ -887,13 +908,13 @@ def test_apxmon_dump_write_error(
     )
     try:
         assert node.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+        _wait_for_node(apx_server_with_monitor.monitor_socket, apxmon_bin, "WriteError", timeout=3.0)
         if failure == "create":
             (tmp_path / "WriteError.out").mkdir()
         else:
             if not Path("/dev/full").exists():
                 pytest.skip("write-failure test requires /dev/full")
             (tmp_path / "WriteError.out").symlink_to("/dev/full")
-        time.sleep(0.1)
         result = subprocess.run(
             [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket, "dump", "WriteError"],
             cwd=tmp_path, capture_output=True, text=True, timeout=5.0,
