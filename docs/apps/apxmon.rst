@@ -72,8 +72,8 @@ Commands
      - List all client and monitor connections currently established with the APX server.
    * - ``nodes``
      - List all registered APX nodes, their connection IDs, and provide/require port counts.
-   * - ``routing [--unconnected]``
-     - List active signal routes connecting provide-ports to require-ports. When ``--unconnected`` is passed, displays unconnected require-ports (missing providers) and provide-ports (missing consumers).
+   * - ``routing [OPTIONS]``
+     - List active signal routes or unconnected ports.
    * - ``get-apx <[connection_id:]node_name>``
      - Fetch and display the full APX IDL specification text (``.apx``) for the specified node.
    * - ``dump <[connection_id:]node_name>``
@@ -149,12 +149,20 @@ When invoked with ``--unconnected``, the command reveals ports that are not curr
 
 .. code-block:: text
 
-   NODE_NAME                DIRECTION  REASON         PORT_NAME
+   PORT_NAME                PROVIDER_NODE        REQUIRER_NODE
    ----------------------------------------------------------------------
-   1:EngineController       PROVIDE    NO_CONSUMER    BatteryVoltage
-   0:Dashboard              REQUIRE    NO_PROVIDER    AmbientAirTemp
+   BatteryVoltage           1:EngineController   -
+   AmbientAirTemp           -                    0:Dashboard
 
-In ``--json`` mode, returns a JSON array of route objects with numeric connection, node, and port identifiers.
+Options:
+
+* ``--all``: Lists active routes and unconnected ports together in the three-column table.
+* ``--unconnected``: Lists all unconnected ports (missing providers or consumers).
+* ``--no-provider``: Lists require-ports waiting for a provider in a two-column table (``PORT_NAME``, ``NODE``).
+* ``--no-requester`` (or ``--no-consumer``): Lists provide-ports waiting for a consumer in a two-column table (``PORT_NAME``, ``NODE``).
+* ``--strip-id``: Omits the connection ID prefix from the node columns in tabular reports, displaying only the node name.
+
+In ``--json`` mode, returns a JSON representation of the routes or unconnected ports.
 
 get-apx
 ~~~~~~~

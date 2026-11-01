@@ -285,11 +285,22 @@ def test_apxmon_routing(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: 
         # Before sender is connected: VehicleSpeed should be unconnected
         res_unconn = subprocess.run([apxmon_bin, "-c", sock, "routing", "--unconnected"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
         assert "VehicleSpeed" in res_unconn.stdout
-        assert "REQUIRE" in res_unconn.stdout
+        assert "-" in res_unconn.stdout
+        assert "apx_listener" in res_unconn.stdout
 
         res_unconn_json = subprocess.run([apxmon_bin, "-c", sock, "--json", "routing", "--unconnected"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
         unconn_list = json.loads(res_unconn_json.stdout)
         assert any(item.get("port_name") == "VehicleSpeed" for item in unconn_list)
+
+        # Test --no-provider
+        res_np = subprocess.run([apxmon_bin, "-c", sock, "routing", "--no-provider"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        assert "VehicleSpeed" in res_np.stdout
+        assert "apx_listener" in res_np.stdout
+
+        res_np_strip = subprocess.run([apxmon_bin, "-c", sock, "routing", "--no-provider", "--strip-id"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        assert "VehicleSpeed" in res_np_strip.stdout
+        assert "apx_listener" in res_np_strip.stdout
+        assert ":" not in res_np_strip.stdout
 
         # Start sender node
         sender_cmd = [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "--no-bind", str(sender_apx)]
@@ -312,22 +323,27 @@ def test_apxmon_routing(apx_server_with_monitor, apxmon_bin: str, apx_node_bin: 
         listener.stop()
 
 
-@pytest.mark.parametrize("unconnected", [False, True])
-def test_apxmon_routing_empty(apx_server_with_monitor, apxmon_bin: str, unconnected: bool):
-    args = ["routing", *(["--unconnected"] if unconnected else [])]
+@pytest.mark.parametrize("flag", [None, "--unconnected", "--all", "--no-provider", "--no-consumer", "--no-requester"])
+def test_apxmon_routing_empty(apx_server_with_monitor, apxmon_bin: str, flag: str | None):
+    args = ["routing", *([flag] if flag else [])]
     command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket]
     result = subprocess.run([*command, *args], capture_output=True, text=True, check=True, timeout=5.0)
     lines = result.stdout.splitlines()
     expected_header = (
-        ["NODE_NAME", "DIRECTION", "REASON", "PORT_NAME"]
-        if unconnected else ["PORT_NAME", "PROVIDER_NODE", "REQUIRER_NODE"]
+        ["PORT_NAME", "NODE"]
+        if flag in ("--no-provider", "--no-consumer", "--no-requester")
+        else ["PORT_NAME", "PROVIDER_NODE", "REQUIRER_NODE"]
     )
     assert len(lines) == 2
     assert lines[0].split() == expected_header
     result_json = subprocess.run(
         [*command, "--json", *args], capture_output=True, text=True, check=True, timeout=5.0
     )
-    assert json.loads(result_json.stdout) == []
+    data = json.loads(result_json.stdout)
+    if flag == "--all":
+        assert data == {"routes": [], "unconnected": []}
+    else:
+        assert data == []
 
 
 @pytest.mark.parametrize("duplicate_names", [False, True])
@@ -421,10 +437,91 @@ def test_apxmon_routing_names_and_fanout(
             assert set(port) == {"node_id", "port_id", "direction", "reason", "port_name"}
             assert isinstance(port["node_id"], int)
             assert isinstance(port["port_id"], int)
-        assert {tuple(line.split()) for line in result_unconnected.stdout.splitlines()[2:]} == {
-            (endpoints[port["node_id"]], port["direction"], port["reason"], port["port_name"])
+        expected_unconn_rows = {
+            ("UnconsumedValue", endpoints[port["node_id"]], "-") if port["direction"] == "PROVIDE"
+            else ("MissingValue", "-", endpoints[port["node_id"]])
             for port in unconnected
         }
+        assert {tuple(line.split()) for line in result_unconnected.stdout.splitlines()[2:]} == expected_unconn_rows
+
+        # Also test --all
+        result_all = subprocess.run(
+            [*command, "routing", "--all"], capture_output=True, text=True, check=True, timeout=5.0
+        )
+        all_lines = result_all.stdout.splitlines()
+        assert all_lines[0].split() == ["PORT_NAME", "PROVIDER_NODE", "REQUIRER_NODE"]
+        all_rows = [tuple(line.split()) for line in all_lines[2:]]
+        assert len(all_rows) == len(routes) + len(unconnected)
+
+        # Also test --no-provider
+        result_np = subprocess.run(
+            [*command, "routing", "--no-provider"], capture_output=True, text=True, check=True, timeout=5.0
+        )
+        np_lines = result_np.stdout.splitlines()
+        assert np_lines[0].split() == ["PORT_NAME", "NODE"]
+        assert any("MissingValue" in line for line in np_lines[2:])
+        assert not any("UnconsumedValue" in line for line in np_lines[2:])
+
+        result_np_strip = subprocess.run(
+            [*command, "routing", "--no-provider", "--strip-id"], capture_output=True, text=True, check=True, timeout=5.0
+        )
+        np_strip_lines = result_np_strip.stdout.splitlines()
+        assert np_strip_lines[0].split() == ["PORT_NAME", "NODE"]
+        for line in np_strip_lines[2:]:
+            parts = line.split()
+            if parts[0] == "MissingValue":
+                assert parts[1] == requirers[0]
+                assert ":" not in parts[1]
+
+        # Also test --no-consumer and alias --no-requester
+        for flag in ["--no-consumer", "--no-requester"]:
+            result_nc = subprocess.run(
+                [*command, "routing", flag], capture_output=True, text=True, check=True, timeout=5.0
+            )
+            nc_lines = result_nc.stdout.splitlines()
+            assert nc_lines[0].split() == ["PORT_NAME", "NODE"]
+            assert any("UnconsumedValue" in line for line in nc_lines[2:])
+            assert not any("MissingValue" in line for line in nc_lines[2:])
+
+            result_nc_strip = subprocess.run(
+                [*command, "routing", flag, "--strip-id"], capture_output=True, text=True, check=True, timeout=5.0
+            )
+            nc_strip_lines = result_nc_strip.stdout.splitlines()
+            assert nc_strip_lines[0].split() == ["PORT_NAME", "NODE"]
+            for line in nc_strip_lines[2:]:
+                parts = line.split()
+                if parts[0] == "UnconsumedValue":
+                    assert parts[1] == provider
+                    assert ":" not in parts[1]
+
+        # Also test --unconnected with --strip-id
+        result_unconn_strip = subprocess.run(
+            [*command, "routing", "--unconnected", "--strip-id"], capture_output=True, text=True, check=True, timeout=5.0
+        )
+        unconn_strip_lines = result_unconn_strip.stdout.splitlines()
+        assert unconn_strip_lines[0].split() == ["PORT_NAME", "PROVIDER_NODE", "REQUIRER_NODE"]
+        for line in unconn_strip_lines[2:]:
+            parts = line.split()
+            if parts[0] == "UnconsumedValue":
+                assert parts[1] == provider
+                assert parts[2] == "-"
+            elif parts[0] == "MissingValue":
+                assert parts[1] == "-"
+                assert parts[2] == requirers[0]
+
+        # Also test routing with --strip-id
+        result_routes_strip = subprocess.run(
+            [*command, "routing", "--strip-id"], capture_output=True, text=True, check=True, timeout=5.0
+        )
+        routes_strip_lines = result_routes_strip.stdout.splitlines()
+        assert routes_strip_lines[0].split() == ["PORT_NAME", "PROVIDER_NODE", "REQUIRER_NODE"]
+        for line in routes_strip_lines[2:]:
+            parts = line.split()
+            assert parts[0] == port_name
+            assert parts[1] == provider
+            assert parts[2] in requirers
+            assert ":" not in parts[1]
+            assert ":" not in parts[2]
     finally:
         for node in reversed(nodes):
             node.stop()
