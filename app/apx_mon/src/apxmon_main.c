@@ -422,7 +422,7 @@ static int cmd_clients(apx_diag_client_t *client)
   }
   else
   {
-    printf("%-5s %-10s %-12s %-20s %s\n", "ID", "TYPE", "STATE", "NODE", "ENDPOINT");
+    printf("%-8s %-10s %-12s %-20s %s\n", "CONN_ID", "TYPE", "STATE", "NODE", "ENDPOINT");
     printf("----------------------------------------------------------------------\n");
     for (int32_t i = 0; i < len; ++i)
     {
@@ -434,7 +434,7 @@ static int cmd_clients(apx_diag_client_t *client)
 
         const char *tname = (item->connection_type == 1) ? "MONITOR" : "CLIENT";
         const char *sname = (item->connection_state == 2) ? "CONNECTED" : "DISCONNECTED";
-        printf("%-5u %-10s %-12s %-20s %s\n", item->connection_id, tname, sname, node_buf,
+        printf("%-8u %-10s %-12s %-20s %s\n", item->connection_id, tname, sname, node_buf,
           item->endpoint ? item->endpoint : "");
       }
     }
@@ -480,15 +480,29 @@ static int cmd_nodes(apx_diag_client_t *client)
   }
   else
   {
-    printf("%-5s %-8s %-14s %-14s %s\n", "ID", "CONN_ID", "PROVIDE_PORTS", "REQUIRE_PORTS", "NODE_NAME");
+    int node_width = 20;
+    for (int32_t i = 0; i < len; ++i)
+    {
+      apx_diag_client_node_item_t const *item = (apx_diag_client_node_item_t const *)adt_ary_value(&list, i);
+      if (item != NULL && item->node_name != NULL)
+      {
+        int const name_len = (int)strlen(item->node_name);
+        if (name_len > node_width)
+        {
+          node_width = name_len;
+        }
+      }
+    }
+
+    printf("%-8s %-*s %-14s %s\n", "CONN_ID", node_width, "NODE_NAME", "PROVIDE_PORTS", "REQUIRE_PORTS");
     printf("----------------------------------------------------------------------\n");
     for (int32_t i = 0; i < len; ++i)
     {
       apx_diag_client_node_item_t *item = (apx_diag_client_node_item_t *)adt_ary_value(&list, i);
       if (item != NULL)
       {
-        printf("%-5u %-8u %-14u %-14u %s\n", item->node_id, item->connection_id, item->provide_port_count,
-          item->require_port_count, item->node_name ? item->node_name : "");
+        printf("%-8u %-*s %-14u %u\n", item->connection_id, node_width, item->node_name ? item->node_name : "",
+          item->provide_port_count, item->require_port_count);
       }
     }
   }

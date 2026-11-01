@@ -109,11 +109,11 @@ Displays a tabular summary of all active client sessions:
 
 .. code-block:: text
 
-   ID    TYPE       STATE        NODE                 ENDPOINT
+   CONN_ID  TYPE       STATE        NODE                 ENDPOINT
    ----------------------------------------------------------------------
-   1     CLIENT     CONNECTED    EngineController     127.0.0.1:48212
-   2     CLIENT     CONNECTED    DashboardNode        127.0.0.1:48218
-   3     MONITOR    CONNECTED    -                    /tmp/apx.socket
+   1        CLIENT     CONNECTED    EngineController     127.0.0.1:48212
+   2        CLIENT     CONNECTED    DashboardNode        127.0.0.1:48218
+   3        MONITOR    CONNECTED    -                    /tmp/apx.socket
 
 nodes
 ~~~~~
@@ -122,18 +122,16 @@ Lists each attached APX node along with its port statistics:
 
 .. code-block:: text
 
-   ID    CONN_ID  PROVIDE_PORTS  REQUIRE_PORTS  NODE_NAME
+   CONN_ID  NODE_NAME            PROVIDE_PORTS  REQUIRE_PORTS
    ----------------------------------------------------------------------
-   1     1        8              2              EngineController
-   2     2        0              6              DashboardNode
+   1        EngineController     8              2
+   2        DashboardNode        0              6
 
 routing
 ~~~~~~~
 
 Inspects the server's signal routing table. Each row represents one active
-provider-to-requirer connection, identified by port name and qualified node
-names rather than numeric node and port IDs. Each endpoint is displayed as
-``connection_id:node_name``:
+route from a provide-port to a require-port, displayed as ``connection_id:node_name``:
 
 .. code-block:: text
 
@@ -144,20 +142,8 @@ names rather than numeric node and port IDs. Each endpoint is displayed as
    EngineSpeed              1:EngineController   0:Dashboard
    CoolantTemp              1:EngineController   0:Dashboard
 
-A port with multiple connections appears on multiple rows, preserving each
-actual connection instead of combining node names into lists. Column widths
-expand to accommodate long names.
-
-The prefix is the ``CONN_ID`` reported by ``apxmon nodes``, not the diagnostic
-node ID or a port ID. Node names need only be unique within a connection, so
-the prefix distinguishes identically named nodes on different connections:
-
-.. code-block:: text
-
-   PORT_NAME                PROVIDER_NODE        REQUIRER_NODE
-   ----------------------------------------------------------------------
-   VehicleSpeed             1:EngineController   0:Dashboard
-   VehicleSpeed             1:EngineController   3:Dashboard
+The ``connection_id:`` prefix matches the ``CONN_ID`` reported by ``apxmon nodes``,
+disambiguating nodes with identical names across different connections.
 
 When invoked with ``--unconnected``, the command reveals ports that are not currently routed:
 
@@ -168,12 +154,7 @@ When invoked with ``--unconnected``, the command reveals ports that are not curr
    1:EngineController       PROVIDE    NO_CONSUMER    BatteryVoltage
    0:Dashboard              REQUIRE    NO_PROVIDER    AmbientAirTemp
 
-The default view excludes unconnected ports. Both modes retain their existing
-numeric node and port ID fields in ``--json`` output.
-
-Human-readable output resolves node names using a separate node-list query.
-If a referenced node disappears between the queries, the command reports an
-error instead of printing an unidentified endpoint; run the command again.
+In ``--json`` mode, returns a JSON array of route objects with numeric connection, node, and port identifiers.
 
 get-apx
 ~~~~~~~

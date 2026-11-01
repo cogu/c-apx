@@ -175,7 +175,7 @@ def test_apxmon_clients(apx_server_with_monitor, apxmon_bin: str):
 
     # Text output
     res = subprocess.run([apxmon_bin, "-c", sock, "clients"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-    assert "ID" in res.stdout
+    assert "CONN_ID" in res.stdout
     assert "TYPE" in res.stdout
     assert "STATE" in res.stdout
     assert "NODE" in res.stdout
@@ -220,6 +220,8 @@ def test_apxmon_nodes_and_get_apx(apx_server_with_monitor, apxmon_bin: str, apx_
 
         # Run nodes in text format
         res = subprocess.run([apxmon_bin, "-c", sock, "nodes"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        assert "CONN_ID" in res.stdout
+        assert "NODE_NAME" in res.stdout
         assert "apx_sender" in res.stdout
 
         # Run nodes in json format
