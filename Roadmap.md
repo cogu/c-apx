@@ -21,22 +21,22 @@ These are the items left to implement for c-apx v0.4.0.
   * Removed obsolete, stale, and duplicate comments.
   * Extracted major architectural features into dedicated items in this roadmap (Items 8, 12, 13, 14).
 
-## 2. Event Streaming Protocol & .apxlog Binary Container (apx-log)
+## 2. Event Streaming Protocol & .apxlog Binary Container (apx-log) (Completed)
 
 * Detailed architecture and wire specifications defined in [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md) and [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md).
-* **RemoteFile Stream Delivery (`server.log`):**
+* [x] **RemoteFile Stream Delivery (`server.log`):**
   * Deliver event stream via virtual stream file `server.log` (RemoteFile type `FileStream` / `RMF_FILE_TYPE_STREAM`), avoiding modifications to low-level RemoteFile wire opcodes.
-  * Server announces logging capability on port `5080` / UNIX socket by publishing `server.log`; recorder client subscribes by sending `RMF_CMD_OPEN_FILE`.
-  * Lock-free circular ring buffer in `apx_monitor_extension` with drop-counter record (`APX_LOG_EVENT_DROP_COUNT`) on buffer overflow to guarantee zero real-time bus degradation.
-* **High-Precision Cross-Platform Timestamps:**
-  * Implement portable `apx_get_timestamp_ns()` in `cutil` / `osutil.h` using `GetSystemTimePreciseAsFileTime` (Windows) and `clock_gettime(CLOCK_REALTIME)` (Linux/POSIX) returning nanoseconds since Unix Epoch (1970-01-01).
-* **Self-Contained Snapshots & `.apxlog` Binary Format:**
-  * Initial state snapshot on file open: active connections, `.apx` definition IDL texts, and current port values.
-  * 64-byte file header (`\0APXLOG\1`), append-only sequential event records (24-byte record header + payload in Little-Endian), and optional index trailer for fast random-access seeking.
-* **`apx-log` Utility (`app/apx_log`):**
-  * `apx-log record -o session.apxlog [--tls]`: Stream live server events directly to disk into `.apxlog` binary container format.
-  * `apx-log info session.apxlog`: Metadata inspection and file summary (timestamps, record counts, flags).
-  * `apx-log print session.apxlog [--json]`: Sequential event stream decoding and console display.
+  * Server announces logging capability on port `5080` / UNIX socket by publishing `server.log`; recorder client subscribes by opening the stream.
+  * Circular ring buffer in `apx_monitor_extension` with drop-counter record (`APX_LOG_EVENT_EVENTS_DROPPED`) on buffer overflow to guarantee zero real-time bus degradation.
+* [x] **High-Precision Cross-Platform Timestamps:**
+  * Portable `apx_get_unix_time_ns()` and `apx_get_monotonic_time_ns()` in `apx_core` / `apx/util.h` returning nanoseconds.
+* [x] **Self-Contained Snapshots & `.apxlog` Binary Format:**
+  * Initial state snapshot on stream open: active connections, `.apx` definition IDL texts, and published files/ports.
+  * 64-byte file header (`\0APXLOG\n`), append-only sequential event records (canonical NumHeader32 length prefix + 28-byte event header + payload in Little-Endian).
+* [x] **`apx-log` Utility (`app/apx_log`):**
+  * `apx-log record [OPTIONS] <FILE>`: Stream live server events directly to disk into `.apxlog` binary container format.
+  * `apx-log info [OPTIONS] <FILE>`: Metadata inspection and file summary (timestamps, duration, record count, file size, optional `--json`).
+  * `apx-log print [OPTIONS] <FILE>`: Sequential event stream decoding and console display (formatted text and `--json` NDJSON output).
 
 ## 3. Complete File Observation in Server Monitor (Completed)
 
