@@ -2,7 +2,7 @@
  * \file      log_streamer.c
  * \author    Conny Gustafsson
  * \date      2026-10-25
- * \brief     Event log streaming producer (server.log / apxlog)
+ * \brief     Event log streaming producer (server.log / apx-log)
  *
  * Copyright (c) 2026 Conny Gustafsson
  * SPDX-License-Identifier: MIT

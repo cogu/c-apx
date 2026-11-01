@@ -7,8 +7,8 @@ This document specifies:
 * the event stream published by `apx-server` as the RemoteFile stream file
   `server.log`;
 * the ordering, snapshot, overflow, and timestamp rules for that stream;
-* the append-only `.apxlog` container written by `apxlog record`; and
-* the minimum behavior required from `apxlog replay`.
+* the append-only `.apxlog` container written by `apx-log record`; and
+* the minimum behavior required from `apx-log replay`.
 
 The event protocol is an application protocol carried by RemoteFile v1.1. It
 does not add a RemoteFile command and it does not add another length field to
@@ -409,7 +409,7 @@ fall back to sequential scanning.
 
 ## 10. Replay requirements
 
-`apxlog replay` connects to the operational APX endpoint as a normal APX
+`apx-log replay` connects to the operational APX endpoint as a normal APX
 client. It does not inject events through the diagnostic endpoint.
 
 Before timed playback it MUST:

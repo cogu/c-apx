@@ -1,20 +1,20 @@
-apxmon
-======
+apx-mon
+=======
 
-``apxmon`` is an interactive diagnostic and inspection utility for querying active state, routing tables, connected clients, and live signal values from a running :doc:`apx_server` daemon. It connects to the server's :doc:`../extensions/monitor` and provides both human-readable tabular output and machine-readable JSON/NDJSON streams.
+``apx-mon`` is an interactive diagnostic and inspection utility for querying active state, routing tables, connected clients, and live signal values from a running :doc:`apx_server` daemon. It connects to the server's :doc:`../extensions/monitor` and provides both human-readable tabular output and machine-readable JSON/NDJSON streams.
 
 Architecture & How It Works
 ---------------------------
 
-``apxmon`` interacts with ``apx-server`` via a dedicated, secure diagnostic session:
+``apx-mon`` interacts with ``apx-server`` via a dedicated, secure diagnostic session:
 
 1. **Dedicated Diagnostic Endpoint**:
-   Rather than connecting through the operational signal port (default ``5000``), ``apxmon`` connects to the dedicated diagnostic listener hosted by ``monitor-extension`` (UNIX domain socket ``/tmp/apx.socket`` or TCP port ``5080``, with optional mutual TLS).
+   Rather than connecting through the operational signal port (default ``5000``), ``apx-mon`` connects to the dedicated diagnostic listener hosted by ``monitor-extension`` (UNIX domain socket ``/tmp/apx.socket`` or TCP port ``5080``, with optional mutual TLS).
 
 2. **RemoteFile v1.1 Stream Files**:
    The diagnostic protocol is layered entirely on RemoteFile v1.1 Stream Files (``FileStream``), avoiding custom socket framing:
 
-   * **``apx.diag.v1.request``**: Published by ``apxmon`` to transmit diagnostic requests to the server.
+   * **``apx.diag.v1.request``**: Published by ``apx-mon`` to transmit diagnostic requests to the server.
    * **``apx.diag.v1.response``**: Published by the server to return query results and command acknowledgments.
    * **``apx.diag.v1.notify``**: Published by the server for asynchronous port value notifications and invalidation events.
 
@@ -29,7 +29,7 @@ Synopsis
 
 .. code-block:: text
 
-   apxmon [OPTIONS] COMMAND [ARGS...]
+   apx-mon [OPTIONS] COMMAND [ARGS...]
 
 Global Options
 --------------
@@ -142,7 +142,7 @@ route from a provide-port to a require-port, displayed as ``connection_id:node_n
    EngineSpeed              1:EngineController   0:Dashboard
    CoolantTemp              1:EngineController   0:Dashboard
 
-The ``connection_id:`` prefix matches the ``CONN_ID`` reported by ``apxmon nodes``,
+The ``connection_id:`` prefix matches the ``CONN_ID`` reported by ``apx-mon nodes``,
 disambiguating nodes with identical names across different connections.
 
 When invoked with ``--unconnected``, the command reveals ports that are not currently routed:
@@ -171,17 +171,17 @@ Retrieves the APX Interface Definition Language (IDL) text for any registered no
 
 .. code-block:: bash
 
-   apxmon get-apx EngineController
+   apx-mon get-apx EngineController
 
 Both ``get-apx`` and ``dump`` accept a node name alone when it is unique on
 the server. If multiple connections host that name, the server refuses the
-request. Run ``apxmon nodes`` to find the desired ``CONN_ID``, then use a
+request. Run ``apx-mon nodes`` to find the desired ``CONN_ID``, then use a
 qualified selector:
 
 .. code-block:: bash
 
-   apxmon get-apx 1:EngineController
-   apxmon dump 1:EngineController
+   apx-mon get-apx 1:EngineController
+   apx-mon dump 1:EngineController
 
 Outputs the complete text definition directly to standard output:
 
@@ -203,7 +203,7 @@ adding an operational APX node:
 
 .. code-block:: bash
 
-   apxmon dump EngineController
+   apx-mon dump EngineController
 
 The server copies both buffers under one node-data lock, then transfers
 immutable snapshots. The command writes ``EngineController.out`` for provide
@@ -225,7 +225,7 @@ Subscribes to live port updates on specified node ports using the ``apx.diag.v1.
 
 .. code-block:: bash
 
-   apxmon watch EngineController:VehicleSpeed EngineController:EngineSpeed
+   apx-mon watch EngineController:VehicleSpeed EngineController:EngineSpeed
 
 Each value change produces an immediate timestamped event line:
 
@@ -258,42 +258,42 @@ Usage Examples
 
 .. code-block:: bash
 
-   apxmon info
+   apx-mon info
 
 2. Connect via Custom UNIX Domain Socket
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   apxmon -c /run/apx/apx_monitor.socket clients
+   apx-mon -c /run/apx/apx_monitor.socket clients
 
 3. Connect Over TCP with JSON Output
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   apxmon -c 192.168.1.100:5080 --json nodes
+   apx-mon -c 192.168.1.100:5080 --json nodes
 
 4. Inspect Unconnected Ports
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   apxmon routing --unconnected
+   apx-mon routing --unconnected
 
 5. Live Watch Signal Changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   apxmon watch EngineController:VehicleSpeed
+   apx-mon watch EngineController:VehicleSpeed
 
 6. Connect with Mutual TLS (mTLS)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-   apxmon -c 127.0.0.1:5020 --tls \
+   apx-mon -c 127.0.0.1:5020 --tls \
      --ca-cert /etc/apx/certs/ca.pem \
      --client-cert /etc/apx/certs/monitor_client.pem \
      --client-key /etc/apx/certs/monitor_client.key \

@@ -6,8 +6,8 @@ These are the items left to implement for c-apx v0.4.0.
 > Detailed design specifications for diagnostics, event streaming, replay, and transport security are maintained under [`design/`](design/):
 > * [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md): Overall architecture and RemoteFile Stream File model.
 > * [securing_monitor_extension.md](design/securing_monitor_extension.md): Dedicated diagnostic transport (port 5080) and mTLS security.
-> * [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md): `server.log` wire framing, `.apxlog` format, and `apxlog` CLI tool.
-> * [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md): Diagnostic query-response protocol and `apxmon` CLI tool.
+> * [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md): `server.log` wire framing, `.apxlog` format, and `apx-log` CLI tool.
+> * [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md): Diagnostic query-response protocol and `apx-mon` CLI tool.
 > * [remotefile1_1_stream_file_proposal.md](design/remotefile1_1_stream_file_proposal.md): RemoteFile v1.1 Stream File (`FileStream`) semantics, credit-based flow control, and stream lifecycle.
 
 ## 1. Analyze all TODO comments in the c-apx code (Completed)
@@ -17,7 +17,7 @@ These are the items left to implement for c-apx v0.4.0.
   * Removed obsolete, stale, and duplicate comments.
   * Extracted major architectural features into dedicated items in this roadmap (Items 8, 12, 13, 14).
 
-## 2. Event Streaming Protocol & .apxlog Binary Container (apxlog)
+## 2. Event Streaming Protocol & .apxlog Binary Container (apx-log)
 
 * Detailed architecture and wire specifications defined in [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md) and [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md).
 * **RemoteFile Stream Delivery (`server.log`):**
@@ -29,10 +29,10 @@ These are the items left to implement for c-apx v0.4.0.
 * **Self-Contained Snapshots & `.apxlog` Binary Format:**
   * Initial state snapshot on file open: active connections, `.apx` definition IDL texts, and current port values.
   * 64-byte file header (`\0APXLOG\1`), append-only sequential event records (24-byte record header + payload in Little-Endian), and optional index trailer for fast random-access seeking.
-* **`apxlog` Utility (`app/apx_log`):**
-  * `apxlog record -o session.apxlog [--tls]`: Stream live server events directly to disk.
-  * `apxlog replay session.apxlog [--exclude-node <name>] [--rate <float>] [--loop]`: Play back recorded scenarios by connecting as a standard multi-node client on operational port `5000` (simulates surrounding nodes for HIL / single-node debugging without server-side modifications).
-  * `apxlog info` and `apxlog export --format ndjson`: Metadata inspection and JSON export.
+* **`apx-log` Utility (`app/apx_log`):**
+  * `apx-log record -o session.apxlog [--tls]`: Stream live server events directly to disk.
+  * `apx-log replay session.apxlog [--exclude-node <name>] [--rate <float>] [--loop]`: Play back recorded scenarios by connecting as a standard multi-node client on operational port `5000` (simulates surrounding nodes for HIL / single-node debugging without server-side modifications).
+  * `apx-log info` and `apx-log export --format ndjson`: Metadata inspection and JSON export.
 
 ## 3. Complete File Observation in Server Monitor (Completed)
 
@@ -104,7 +104,7 @@ Detailed protocol specification and state machine definitions are in [remotefile
 * [x] **Unit & Integration Tests:**
   * Add unit tests in `testsuite_monitor_extension.c` verifying ring buffer overflow and drop accounting, fast-path tap activation/deactivation, and snapshot generation without memory leaks or race conditions.
 
-## 6. APX Diagnostic Protocol & `apxmon` CLI Application (Retires `apx_info`) (Completed)
+## 6. APX Diagnostic Protocol & `apx-mon` CLI Application (Retires `apx_info`) (Completed)
 
 * Detailed protocol and CLI design defined in [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md) and [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md).
 * [x] **Retire `apx_info` Prototype & Reconcile Client Abstractions:**
@@ -121,7 +121,7 @@ Detailed protocol specification and state machine definitions are in [remotefile
   * `APX_DIAG_CMD_GET_ROUTING_TABLE`: Full port routing map (Provide Node:Port $\to$ Require Node:Port).
   * `APX_DIAG_CMD_GET_UNCONNECTED_PORTS`: Detects dangling require ports without providers and unconsumed provide ports.
   * `APX_DIAG_CMD_WATCH_PORT` / `APX_DIAG_NOTIF_PORT_UPDATE`: Live signal tapping with asynchronous updates.
-* [x] **`apxmon` CLI Application (`app/apx_mon`):**
+* [x] **`apx-mon` CLI Application (`app/apx_mon`):**
   * Subcommands: `info`, `clients`, `nodes`, `routing [--unconnected]`, `get-apx <node>`, `dump <node>`, `watch <node:port>`, and interactive `top`.
   * Supports aligned formatted ASCII table output and machine-readable `--json` output.
 
@@ -137,7 +137,7 @@ Detailed protocol specification and state machine definitions are in [remotefile
   * Enforce Mutual TLS (`require-client-cert: true`) so only authorized diagnostic clients possessing a valid client certificate can connect.
   * Verify client certificate Subject / Common Name to prevent standard node certificates from connecting to the monitor endpoint.
 * [x] **Client Tooling Connection Support:**
-  * Add TLS connection arguments (`--tls`, `--ca-cert`, `--client-cert`, `--client-key`) and default port/socket (`5080` / `/run/apx/apx_monitor.socket`) to `apxmon` and `apxlog`.
+  * Add TLS connection arguments (`--tls`, `--ca-cert`, `--client-cert`, `--client-key`) and default port/socket (`5080` / `/run/apx/apx_monitor.socket`) to `apx-mon` and `apx-log`.
 
 ## 8. Implement Worker Command Stubs (`file_manager_worker.c`) (Completed)
 

@@ -7,7 +7,7 @@ The original 2020/2021 prototype of `apx_monitor_extension` relied on:
 * Custom low-level RemoteFile command opcodes (`RMF_CMD_CONNECTION_CREATE`, `RMF_CMD_PUBLISH_REMOTE_FILE_MSG`).
 * Maintaining continuous shadow copies of server state (`apx_observed_connection_t`, `apx_observed_file_t`, and `rmf_extended_file_info_t`) on every connection, file, and write event—even when no monitor client was connected.
 
-With the introduction of RemoteFile v1.1 Stream Files (`FileStream`), dedicated diagnostic endpoints (`5080` / `/run/apx/apx_monitor.socket`), and the companion specifications ([`diagnostics_and_logging_architecture.md`](diagnostics_and_logging_architecture.md), [`apxmon_diagnostics_spec.md`](apxmon_diagnostics_spec.md), [`event_streaming_and_apxlog_spec.md`](event_streaming_and_apxlog_spec.md), and [`securing_monitor_extension.md`](securing_monitor_extension.md)), the extension should be rewritten to support both **`apxmon`** (interactive diagnostics) and **`apxlog`** (event streaming and recording) from a single, unified server extension.
+With the introduction of RemoteFile v1.1 Stream Files (`FileStream`), dedicated diagnostic endpoints (`5080` / `/run/apx/apx_monitor.socket`), and the companion specifications ([`diagnostics_and_logging_architecture.md`](diagnostics_and_logging_architecture.md), [`apxmon_diagnostics_spec.md`](apxmon_diagnostics_spec.md), [`event_streaming_and_apxlog_spec.md`](event_streaming_and_apxlog_spec.md), and [`securing_monitor_extension.md`](securing_monitor_extension.md)), the extension should be rewritten to support both **`apx-mon`** (interactive diagnostics) and **`apx-log`** (event streaming and recording) from a single, unified server extension.
 
 ---
 
@@ -19,8 +19,8 @@ extension/apx_monitor_extension/
 │   ├── monitor_extension.h   # Public registration entry point for apx-server
 │   ├── server_monitor.h      # Owns msocket_server_t (TCP 5080 / UNIX / mTLS) & server hooks
 │   ├── monitor_session.h     # Per-client session (manages the 3 FileStream channels)
-│   ├── diag_dispatcher.h     # Handles apx.diag.v1.request -> response & notify (apxmon)
-│   └── log_streamer.h        # Handles server.log snapshot + lock-free ring buffer (apxlog)
+│   ├── diag_dispatcher.h     # Handles apx.diag.v1.request -> response & notify (apx-mon)
+│   └── log_streamer.h        # Handles server.log snapshot + lock-free ring buffer (apx-log)
 └── src/
     ├── monitor_extension.c
     ├── server_monitor.c
@@ -36,7 +36,7 @@ extension/apx_monitor_extension/
 | **`monitor_extension`** | Parses `"monitor-extension"` configuration from `server.json` and registers `init` and `shutdown` lifecycle callbacks with `apx_server_t`. |
 | **`server_monitor`** | Owns the dedicated `msocket_server_t` listener (UNIX domain socket and TCP/mTLS on port `5080`), tracks active `apx_monitor_session_t` connections, and registers the fast-path gated event listener on `apx_server_t`. |
 | **`monitor_session`** | Created when a diagnostic or logging client connects on port `5080`. Wraps `apx_server_connection_t`, publishes `server.log`, `apx.diag.v1.response`, and `apx.diag.v1.notify` (`FileStream`), and routes stream open/close/write callbacks to either `diag_dispatcher` or `log_streamer`. |
-| **`diag_dispatcher`** | Decodes `apxmon` requests from `apx.diag.v1.request`, takes brief read-only snapshots from `apx_server_t` for `LIST_*` and `GET_NODE_DEFINITION`, manages `SUBSCRIBE_PORTS` watches, and writes responses to `apx.diag.v1.response` and notifications to `apx.diag.v1.notify`. |
+| **`diag_dispatcher`** | Decodes `apx-mon` requests from `apx.diag.v1.request`, takes brief read-only snapshots from `apx_server_t` for `LIST_*` and `GET_NODE_DEFINITION`, manages `SUBSCRIBE_PORTS` watches, and writes responses to `apx.diag.v1.response` and notifications to `apx.diag.v1.notify`. |
 | **`log_streamer`** | Activated only when a session opens `server.log`. Generates the initial `STREAM_BEGIN` $\to$ `SNAPSHOT` $\to$ `SNAPSHOT_END` sequence and drains the lock-free event ring buffer into `server.log` while respecting `FileStream` window credits. |
 
 ---
@@ -55,9 +55,9 @@ The following legacy files and types are superseded by this design and should be
 
 ---
 
-## 4. Serving Both `apxmon` and `apxlog` from One Extension
+## 4. Serving Both `apx-mon` and `apx-log` from One Extension
 
-A single `apx_monitor_extension` cleanly supports both interactive query/response (`apxmon`) and continuous event recording (`apxlog`) without mode switching:
+A single `apx_monitor_extension` cleanly supports both interactive query/response (`apx-mon`) and continuous event recording (`apx-log`) without mode switching:
 
 1. **Shared Listener & Security Boundary**:
    * Both tools connect to the same privileged diagnostic endpoint (TCP port `5080` with mTLS or `/run/apx/apx_monitor.socket`).
@@ -67,8 +67,8 @@ A single `apx_monitor_extension` cleanly supports both interactive query/respons
      * `apx.diag.v1.response`
      * `apx.diag.v1.notify`
    * The connected client declares its role purely through standard RemoteFile operations:
-     * **`apxlog record`** sends `RMF_CMD_STREAM_OPEN` for `server.log`, activating `log_streamer` for that session.
-     * **`apxmon`** publishes `apx.diag.v1.request` and sends `RMF_CMD_STREAM_OPEN` for `apx.diag.v1.response` (and `apx.diag.v1.notify` when using `apxmon watch`), activating `diag_dispatcher` for that session.
+     * **`apx-log record`** sends `RMF_CMD_STREAM_OPEN` for `server.log`, activating `log_streamer` for that session.
+     * **`apx-mon`** publishes `apx.diag.v1.request` and sends `RMF_CMD_STREAM_OPEN` for `apx.diag.v1.response` (and `apx.diag.v1.notify` when using `apx-mon watch`), activating `diag_dispatcher` for that session.
 3. **Zero Overhead When Idle**:
    * `apx_server_t` remains the single source of truth.
    * Paged `LIST_*` queries take a quick, lock-protected snapshot of `apx_server_t` only when requested (`snapshot_id == 0`) and immediately release the server lock before encoding or transmitting responses.

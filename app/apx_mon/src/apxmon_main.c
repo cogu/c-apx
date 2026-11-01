@@ -2,7 +2,7 @@
  * \file      apxmon_main.c
  * \author    Conny Gustafsson
  * \date      2026-10-25
- * \brief     apxmon CLI diagnostic application
+ * \brief     apx-mon CLI diagnostic application
  *
  * Copyright (c) 2026 Conny Gustafsson
  * SPDX-License-Identifier: MIT
@@ -27,7 +27,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define APP_NAME "apxmon"
+#define APP_NAME "apx-mon"
 
 typedef struct watch_output_tag
 {
@@ -1010,7 +1010,7 @@ static int cmd_get_apx(apx_diag_client_t *client, const char *node_name)
     if (err == APX_AMBIGUOUS_NODE_ERROR)
     {
       fprintf(stderr,
-        "Error: Server has multiple nodes named '%s'. Use 'apxmon nodes' and retry with connection-id:node-name.\n",
+        "Error: Server has multiple nodes named '%s'. Use 'apx-mon nodes' and retry with connection-id:node-name.\n",
         node_name);
     }
     else
@@ -1107,7 +1107,7 @@ static int cmd_dump(apx_diag_client_t *client, char const *selector)
     if (result == APX_AMBIGUOUS_NODE_ERROR)
     {
       fprintf(stderr,
-        "Error: Server has multiple nodes named '%s'. Use 'apxmon nodes' and retry with connection-id:node-name.\n",
+        "Error: Server has multiple nodes named '%s'. Use 'apx-mon nodes' and retry with connection-id:node-name.\n",
         node_name);
     }
     else

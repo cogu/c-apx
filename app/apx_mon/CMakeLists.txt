@@ -15,19 +15,19 @@ set(APX_MON_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/apx_diag_client_notification.c
 )
 
-add_executable(apxmon ${APX_MON_HEADERS} ${APX_MON_SOURCES})
-target_link_libraries(apxmon PRIVATE
+add_executable(apx-mon ${APX_MON_HEADERS} ${APX_MON_SOURCES})
+target_link_libraries(apx-mon PRIVATE
     apx_core
     Threads::Threads
 )
 
-target_include_directories(apxmon PRIVATE
+target_include_directories(apx-mon PRIVATE
     ${PROJECT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 install(
-  TARGETS apxmon
+  TARGETS apx-mon
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   COMPONENT App
 )

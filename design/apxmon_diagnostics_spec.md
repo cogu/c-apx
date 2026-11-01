@@ -1,9 +1,9 @@
-# APX Diagnostic Protocol and `apxmon`
+# APX Diagnostic Protocol and `apx-mon`
 
 ## 1. Scope
 
 This document specifies the version 1 diagnostic application protocol used by
-`apxmon` and the APX server monitor extension.
+`apx-mon` and the APX server monitor extension.
 
 The protocol runs entirely over RemoteFile v1.1. It does not define a socket
 frame, a RemoteFile command, or a second message-size header. RemoteFile
@@ -366,7 +366,7 @@ advertised byte is received, then closes it. The server revokes closed
 temporary files and releases remaining snapshots on diagnostic disconnect.
 Captured bytes stay immutable even if the operational data changes.
 
-`apxmon dump` saves the bytes as `<node_name>.out` and/or `<node_name>.in` in the
+`apx-mon dump` saves the bytes as `<node_name>.out` and/or `<node_name>.in` in the
 current directory, overwriting existing files. Connection qualification is
 not included in local filenames. There is no application header, terminator,
 or encoding conversion in the output files.
@@ -504,10 +504,10 @@ Servers SHOULD enforce per-connection limits for:
 
 Limit exhaustion returns `APX_BUSY_ERROR`.
 
-## 10. `apxmon` command mapping
+## 10. `apx-mon` command mapping
 
 ```text
-apxmon [OPTIONS] COMMAND [ARGS...]
+apx-mon [OPTIONS] COMMAND [ARGS...]
 
 Options:
   -c, --connect <ADDR>      Diagnostic endpoint
@@ -522,19 +522,19 @@ Options:
 
 | CLI command | Protocol operation |
 |:---|:---|
-| `apxmon info` | `GET_SERVER_INFO` |
-| `apxmon clients` | all pages of `LIST_CONNECTIONS` |
-| `apxmon nodes` | all pages of `LIST_NODES`, optionally joined with connections |
-| `apxmon routing` | all pages of `LIST_ROUTES`, joined with `LIST_NODES` for human-readable endpoint names |
-| `apxmon routing --unconnected` | all pages of `LIST_UNCONNECTED_PORTS`, joined with `LIST_NODES` for human-readable node names |
-| `apxmon get-apx NODE` | `GET_NODE_DEFINITION`, then open the returned file |
-| `apxmon dump NODE` | `SNAPSHOT_NODE_DATA`, then fetch and save each present binary file |
-| `apxmon watch NODE:PORT...` | open notify file, then `SUBSCRIBE_PORTS` |
-| `apxmon top` | periodic list snapshots plus selected subscriptions |
+| `apx-mon info` | `GET_SERVER_INFO` |
+| `apx-mon clients` | all pages of `LIST_CONNECTIONS` |
+| `apx-mon nodes` | all pages of `LIST_NODES`, optionally joined with connections |
+| `apx-mon routing` | all pages of `LIST_ROUTES`, joined with `LIST_NODES` for human-readable endpoint names |
+| `apx-mon routing --unconnected` | all pages of `LIST_UNCONNECTED_PORTS`, joined with `LIST_NODES` for human-readable node names |
+| `apx-mon get-apx NODE` | `GET_NODE_DEFINITION`, then open the returned file |
+| `apx-mon dump NODE` | `SNAPSHOT_NODE_DATA`, then fetch and save each present binary file |
+| `apx-mon watch NODE:PORT...` | open notify file, then `SUBSCRIBE_PORTS` |
+| `apx-mon top` | periodic list snapshots plus selected subscriptions |
 
 Human-readable routing output uses one row per directed connection, displaying
 the port name, provider endpoint, and requirer endpoint. Each endpoint uses
-`connection_id:node_name`, with the same connection ID reported by `apxmon nodes`.
+`connection_id:node_name`, with the same connection ID reported by `apx-mon nodes`.
 Unconnected ports remain a separate view and use the same qualified node
 format. JSON output retains the numeric IDs and existing item
 schemas. Node and route lists are separate snapshots; if a referenced node

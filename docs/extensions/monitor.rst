@@ -1,7 +1,7 @@
 Server Monitor Extension
 ========================
 
-The ``monitor-extension`` provides dedicated diagnostic, introspection, and live streaming capabilities within the APX server daemon. It powers the :doc:`../apps/apxmon` CLI tool by exposing an interactive diagnostic endpoint and event notification stream over RemoteFile v1.1 stream files (``FileStream``).
+The ``monitor-extension`` provides dedicated diagnostic, introspection, and live streaming capabilities within the APX server daemon. It powers the :doc:`../apps/apx_mon` CLI tool by exposing an interactive diagnostic endpoint and event notification stream over RemoteFile v1.1 stream files (``FileStream``).
 
 Configuration Key
 -----------------
@@ -84,4 +84,4 @@ When the ``tls`` object is configured, diagnostic connections require TLS encryp
 Usage
 -----
 
-The monitor extension observes server lifecycle hooks without blocking signal routing performance. When idle, zero state tracking overhead is incurred. Diagnostic clients such as :doc:`../apps/apxmon` can query active connections, list registered nodes and routes, fetch node definitions, and subscribe to real-time signal change notifications.
+The monitor extension observes server lifecycle hooks without blocking signal routing performance. When idle, zero state tracking overhead is incurred. Diagnostic clients such as :doc:`../apps/apx_mon` can query active connections, list registered nodes and routes, fetch node definitions, and subscribe to real-time signal change notifications.

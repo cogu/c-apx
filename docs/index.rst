@@ -110,8 +110,8 @@ Applications
    * - :doc:`apps/apx_control`
      - ``apx-control``
      - Command-line utility to get/set signal values on running nodes.
-   * - :doc:`apps/apxmon`
-     - ``apxmon``
+   * - :doc:`apps/apx_mon`
+     - ``apx-mon``
      - Interactive diagnostic utility for inspecting server state, routes, and signal streams.
    * - :doc:`apps/apx_sign`
      - ``apx-sign``

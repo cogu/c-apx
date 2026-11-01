@@ -78,7 +78,7 @@ def apx_server_with_monitor(tmp_path: Path, apx_server_bin: str):
 def test_apxmon_help_and_version(apxmon_bin: str):
     """Verify that apxmon responds to -h and -v."""
     res = subprocess.run([apxmon_bin, "-h"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-    assert "Usage: apxmon [OPTIONS] COMMAND" in res.stdout
+    assert "Usage: apx-mon [OPTIONS] COMMAND" in res.stdout
     assert "info" in res.stdout
     assert "clients" in res.stdout
     assert "nodes" in res.stdout
@@ -89,7 +89,7 @@ def test_apxmon_help_and_version(apxmon_bin: str):
     assert "watch" in res.stdout
 
     res_ver = subprocess.run([apxmon_bin, "-v"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-    assert "apxmon" in res_ver.stdout
+    assert "apx-mon" in res_ver.stdout
 
 
 def test_apxmon_info(apx_server_with_monitor, apxmon_bin: str):
@@ -800,7 +800,7 @@ def test_apxmon_node_selection(
             assert ambiguous.returncode == 1
             assert ambiguous.stdout == ""
             assert "multiple nodes named 'Duplicate'" in ambiguous.stderr
-            assert "apxmon nodes" in ambiguous.stderr
+            assert "apx-mon nodes" in ambiguous.stderr
             assert "connection-id:node-name" in ambiguous.stderr
         assert (tmp_path / "Duplicate.out").read_bytes() == b"unchanged"
 

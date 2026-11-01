@@ -233,9 +233,9 @@ def _find_binary(env_var: str, app_name: str) -> str:
         names_to_try.append(alt_name)
 
     dir_names = list(dict.fromkeys([app_name.replace("-", "_"), app_name]))
-    if app_name in ("apxmon", "apx_mon"):
-        dir_names.extend(["apx_mon", "apxmon"])
-        names_to_try.extend(["apxmon", "apx_mon"])
+    if app_name in ("apxmon", "apx_mon", "apx-mon"):
+        dir_names.extend(["apx_mon", "apxmon", "apx-mon"])
+        names_to_try.extend(["apx-mon", "apxmon", "apx_mon"])
 
     candidate_paths = []
 
@@ -301,9 +301,15 @@ def apx_sign_bin() -> str:
 
 
 @pytest.fixture(scope="session")
-def apxmon_bin() -> str:
-    """Finds the apxmon executable from environment or build directories."""
-    return _find_binary("APX_MON_BIN", "apxmon")
+def apx_mon_bin() -> str:
+    """Finds the apx-mon executable from environment or build directories."""
+    return _find_binary("APX_MON_BIN", "apx-mon")
+
+
+@pytest.fixture(scope="session")
+def apxmon_bin(apx_mon_bin: str) -> str:
+    """Backward compatibility alias for apx_mon_bin."""
+    return apx_mon_bin
 
 
 @pytest.fixture

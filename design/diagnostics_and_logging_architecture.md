@@ -23,21 +23,21 @@ flowchart TD
     end
 
     subgraph UC1["Use Case 1: Recording"]
-        ClientLog["apxlog record"]
+        ClientLog["apx-log record"]
         FileLog[("session.apxlog")]
         ClientLog -->|writes| FileLog
     end
 
     subgraph UC2["Use Case 2: Replay"]
         FileReplay[("session.apxlog")]
-        ClientReplay["apxlog replay"]
+        ClientReplay["apx-log replay"]
         FileReplay -->|reads| ClientReplay
         ClientReplay -->|"Simulated APX Nodes (TCP 5000)"| Core
         RealNode["Real ECU Node Under Test"] -->|"Standard Client (TCP 5000)"| Core
     end
 
     subgraph UC3["Use Case 3: Diagnostics"]
-        ClientMon["apxmon (CLI / TUI)"]
+        ClientMon["apx-mon (CLI / TUI)"]
     end
 
     ExtLog -->|"Push Event Stream (Port 5080 / UNIX Socket)"| ClientLog
@@ -49,7 +49,7 @@ flowchart TD
 * **Objective**: Capture complete system activity over a period of time for post-mortem analysis, signal graphing, validation, or compliance auditing.
 * **Workflow**:
   1. The APX server starts and accepts standard client connections on the operational port (default: TCP `5000`).
-  2. A recording client (`apxlog record`) connects to the dedicated diagnostic endpoint (TCP port `5080` with TLS or `/run/apx/apx_monitor.socket`).
+  2. A recording client (`apx-log record`) connects to the dedicated diagnostic endpoint (TCP port `5080` with TLS or `/run/apx/apx_monitor.socket`).
   3. **Capability Announcement**: The server publishes `server.log` with file type `FileStream` (`RMF_FILE_TYPE_STREAM`).
   4. **Intent-Based Subscription**: The recording client sends an `RMF_CMD_OPEN_FILE` command for `server.log`. Until this file is opened, the server generates zero logging overhead.
   5. **Initial State Snapshot**: Once `server.log` is opened, the server immediately pushes initial state records through the `server.log` stream:
@@ -76,13 +76,13 @@ flowchart TD
 * **Objective**: Re-run recorded vehicle or test bench scenarios against an APX server. This allows developers to test a single real ECU node against a simulated fleet of other nodes without needing physical hardware.
 * **Workflow**:
   1. An APX server starts with an empty or clean routing state.
-  2. The replay tool (`apxlog replay`) inspects a recorded `.apxlog` file.
+  2. The replay tool (`apx-log replay`) inspects a recorded `.apxlog` file.
   3. **Node Filtering**: The operator specifies filtering rules:
      * `--exclude-node <name>`: Exclude specific nodes from playback.
      * `--include-nodes <n1,n2>`: Play back only selected nodes.
      * Example: While developing `BatteryManagementECU`, the operator runs:
        ```bash
-       apxlog replay drive_cycle.apxlog --exclude-node BatteryManagementECU
+       apx-log replay drive_cycle.apxlog --exclude-node BatteryManagementECU
        ```
   4. A real `BatteryManagementECU` instance connects to the APX server over its regular connection.
   5. The replay tool connects to the server as a **standard APX client** (e.g. over TCP port `5000` or standard UNIX socket) and instantiates all non-excluded recorded nodes.
@@ -101,7 +101,7 @@ flowchart TD
 
 * **Objective**: Enable operators and automated diagnostics to inspect the health, configuration, and routing state of a running APX server on demand.
 * **Workflow**:
-  1. The diagnostic client (`apxmon`) connects to the dedicated diagnostic endpoint (port `5080` or UNIX socket).
+  1. The diagnostic client (`apx-mon`) connects to the dedicated diagnostic endpoint (port `5080` or UNIX socket).
   2. The server publishes `apx.diag.v1.response` and `apx.diag.v1.notify`
      (type `FileStream`).
   3. The client publishes `apx.diag.v1.request` (type `FileStream`).
@@ -111,16 +111,16 @@ flowchart TD
      notification according to its target file.
   6. The client can run a one-shot query and exit, or maintain an open stream for an interactive monitor/TUI session.
 * **Diagnostic Capabilities**:
-  * **Node & Connection Inspection (`apxmon nodes`)**:
+  * **Node & Connection Inspection (`apx-mon nodes`)**:
     * Lists all active connections: connection ID, type (`DEFAULT` vs `MONITOR`), remote IP/PID, connection tag, connected timestamp, and attached nodes.
-  * **Definition Retrieval (`apxmon get-apx <node_name>`)**:
+  * **Definition Retrieval (`apx-mon get-apx <node_name>`)**:
     * Fetches the complete `.apx` IDL text definition for any active node directly from the server's cache or memory.
-  * **Routing Table Analysis (`apxmon routing`)**:
+  * **Routing Table Analysis (`apx-mon routing`)**:
     * Displays active signal routing links (Provide Port $\to$ Require Port).
-    * Highlights **unconnected / dangling ports** (`apxmon routing --unconnected`):
+    * Highlights **unconnected / dangling ports** (`apx-mon routing --unconnected`):
       * Require ports expecting a signal that has no active provider on the bus.
       * Provide ports producing a signal that has no active consumer.
-  * **Live Signal Tapping (`apxmon watch <node>:<port>`)**:
+  * **Live Signal Tapping (`apx-mon watch <node>:<port>`)**:
     * Subscribes to updates for specific signals without dumping the full high-volume event log.
 
 ---
@@ -132,7 +132,7 @@ To uphold security, quality-of-service, and deterministic execution, diagnostic 
 | Bus Type | Endpoint Type | Default Port / Path | Purpose |
 | :--- | :--- | :--- | :--- |
 | **Operational Signal Bus** | TCP / UNIX Socket | TCP `5000` (or `5000+N`)<br>`/run/apx/apx.socket` | Standard client node connections, low-latency signal exchange, deterministic routing. |
-| **Diagnostic & Telemetry Bus** | TCP (mTLS) / UNIX Socket | TCP `5080`<br>`/run/apx/apx_monitor.socket` | Privileged administrative access: `apxmon` diagnostics, `apxlog record` event streaming. |
+| **Diagnostic & Telemetry Bus** | TCP (mTLS) / UNIX Socket | TCP `5080`<br>`/run/apx/apx_monitor.socket` | Privileged administrative access: `apx-mon` diagnostics, `apx-log record` event streaming. |
 
 > [!NOTE]
 > Diagnostic port `5080` is the default for an APX server on operational port `5000`. By convention, when multiple APX server instances co-exist on the same host, an `apx-server` on operational port `5000 + N` assigns diagnostic port `5080 + N` (e.g. `apx-server@5000` $\to$ diag `5080`, `apx-server@5001` $\to$ diag `5081`).
@@ -177,12 +177,12 @@ Instead of hardcoded greeting sub-modes or custom "logging enable" commands, cap
         |<--- RMF_CMD_PUBLISH_FILE ("apx.diag.v1.response", FileStream) ------|  (Announce diagnostics)
         |<--- RMF_CMD_PUBLISH_FILE ("apx.diag.v1.notify", FileStream) --------|  (Announce notifications)
         |                                                                     |
-        |--- (Scenario A: Logging Client - apxlog record) -------------------|
+        |--- (Scenario A: Logging Client - apx-log record) -------------------|
         |                                                                     |
         |---> RMF_CMD_OPEN_FILE (address of "server.log") ------------------->|  (Subscribe to log stream)
         |<=== RMF File Write (chunked event records into "server.log") =======|  (Streaming active)
         |                                                                     |
-        |--- (Scenario B: Diagnostic Client - apxmon) -----------------------|
+        |--- (Scenario B: Diagnostic Client - apx-mon) -----------------------|
         |                                                                     |
         |---> RMF_CMD_PUBLISH_FILE ("apx.diag.v1.request", FileStream) ------>|  (Client query channel)
         |<--- RMF_CMD_OPEN_FILE (address of request file) --------------------|  (Server listens for queries)
@@ -220,7 +220,7 @@ By leveraging standard RemoteFile stream files, a **single unified extension** (
 ## 6. Tooling Landscape
 
 The prototype `apx_info` remains a compatibility tool while two dedicated
-utilities are introduced. It can be retired after `apxmon` reaches feature
+utilities are introduced. It can be retired after `apx-mon` reaches feature
 parity:
 
 ```text
@@ -228,38 +228,38 @@ c-apx/app/
 ├── apx_server/     # Core APX daemon
 ├── apx_node/       # Client runtime daemon
 ├── apx_control/    # Interactive port-injection CLI
-├── apx_mon/        # New: Diagnostic & routing inspection utility (apxmon)
-└── apx_log/        # New: Recording & replay utility (apxlog)
+├── apx_mon/        # New: Diagnostic & routing inspection utility (apx-mon)
+└── apx_log/        # New: Recording & replay utility (apx-log)
 ```
 
-### 6.1. `apxlog` (Recorder & Playback Engine)
+### 6.1. `apx-log` (Recorder & Playback Engine)
 ```bash
 # Record live APX activity to a binary log
-apxlog record -o drive_cycle.apxlog --connect 127.0.0.1:5080 --tls
+apx-log record -o drive_cycle.apxlog --connect 127.0.0.1:5080 --tls
 
 # Replay pre-recorded log into an APX network, excluding the ECU under test
-apxlog replay drive_cycle.apxlog --connect 127.0.0.1:5000 --exclude-node EngineECU --rate 1.0
+apx-log replay drive_cycle.apxlog --connect 127.0.0.1:5000 --exclude-node EngineECU --rate 1.0
 
 # Print header metadata, start/end timestamps, and node list of a log file
-apxlog info drive_cycle.apxlog
+apx-log info drive_cycle.apxlog
 
 # Export log records to human-readable JSON or CSV
-apxlog export drive_cycle.apxlog --format ndjson -o events.ndjson
+apx-log export drive_cycle.apxlog --format ndjson -o events.ndjson
 ```
 
-### 6.2. `apxmon` (Diagnostic & Topology Inspector)
+### 6.2. `apx-mon` (Diagnostic & Topology Inspector)
 ```bash
 # List connected clients and nodes
-apxmon nodes --connect /run/apx/apx_monitor.socket
+apx-mon nodes --connect /run/apx/apx_monitor.socket
 
 # Inspect signal routing and list unconnected/dangling ports
-apxmon routing --unconnected
+apx-mon routing --unconnected
 
 # Download and print the .apx definition of a connected node
-apxmon get-apx EngineECU
+apx-mon get-apx EngineECU
 
 # Live watch of specific signals
-apxmon watch EngineECU:VehicleSpeed EngineECU:EngineRPM
+apx-mon watch EngineECU:VehicleSpeed EngineECU:EngineRPM
 ```
 
 ---
@@ -275,7 +275,7 @@ This document serves as the top-level architectural blueprint. Two detailed comp
      index, and NumHeader32-framed event records).
    * Message-preserving RemoteFile stream semantics and non-blocking event
      delivery.
-   * `apxlog` playback engine design.
+   * `apx-log` playback engine design.
 3. **[`apxmon_diagnostics_spec.md`](apxmon_diagnostics_spec.md)**:
    * Query/response protocol design for routing table queries, dangling port detection, and definition transfer.
    * `apxmon` CLI subcommands and formatting options.

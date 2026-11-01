@@ -9,7 +9,7 @@ Applications
    apx_server
    apx_node
    apx_control
-   apxmon
+   apx_mon
    apx_sign
    apx_perf_test
 
@@ -32,8 +32,8 @@ Overview of Applications
    * - :doc:`apx_control`
      - ``apx-control``
      - Command-line utility for interacting with an ``apx-node``'s JSON router interface to get/set signal values or inject signal batches from JSON files.
-   * - :doc:`apxmon`
-     - ``apxmon``
+   * - :doc:`apx_mon`
+     - ``apx-mon``
      - Interactive diagnostic utility for inspecting server state, connected clients, signal routes, and live port streaming over the monitor extension.
    * - :doc:`apx_sign`
      - ``apx-sign``

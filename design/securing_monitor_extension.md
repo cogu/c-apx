@@ -97,9 +97,9 @@ In `server.json`, configure the monitor extension under the `"monitor-extension"
 
 ---
 
-## 5. Client Application Support (`apxmon` / `apxdiag`, `apxlog`, and prototype `apx_info`)
+## 5. Client Application Support (`apx-mon` / `apxdiag`, `apx-log`, and prototype `apx_info`)
 
-To communicate with the secured monitor/diagnostic endpoint, client tools (`apxmon` / `apxdiag`, `apxlog`, and legacy `apx_info`) will:
+To communicate with the secured monitor/diagnostic endpoint, client tools (`apx-mon` / `apxdiag`, `apx-log`, and legacy `apx_info`) will:
 1. Accept `--port 5080` (or default to the dedicated diagnostic port/socket).
 2. Support optional TLS flags:
    * `--tls`: Enable TLS connection.
