@@ -126,9 +126,9 @@ static void print_watch_notification(apx_diag_client_notification_t const *notif
       dtl_hv_set_cstr(hv, "node_id", (dtl_dv_t *)dtl_sv_make_u32(notif->node_id), false);
       dtl_hv_set_cstr(hv, "port_id", (dtl_dv_t *)dtl_sv_make_u32(notif->port_id), false);
       char hex[512] = {0};
-      for (uint32_t i = 0; i < notif->value_size && (i * 2 + 2) < sizeof(hex); ++i)
+      for (uint32_t i = 0; i < notif->value_size && ((size_t)i * 2u + 2u) < sizeof(hex); ++i)
       {
-        sprintf(hex + i * 2, "%02X", notif->value[i]);
+        sprintf(hex + (size_t)i * 2u, "%02X", notif->value[i]);
       }
       dtl_hv_set_cstr(hv, "value_hex", (dtl_dv_t *)dtl_sv_make_cstr(hex), false);
     }
