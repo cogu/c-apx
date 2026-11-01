@@ -286,7 +286,7 @@ static THREAD_PROTO(thread_task, arg)
       {
 # ifdef _MSC_VER
         DWORD lastError = GetLastError();
-        APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, lastError=%d", lastError);
+        APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, lastError=%lu", lastError);
 # else
         APX_LOG_ERROR("[APX_ALLOCATOR]: failure while waiting for semaphore, errno=%d", errno);
 # endif

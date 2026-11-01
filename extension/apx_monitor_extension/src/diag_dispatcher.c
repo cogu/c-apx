@@ -1021,8 +1021,9 @@ static void handle_list_connections(
       if (item_len >= 20u && payload_len >= off && (payload_len - off) >= item_len)
       {
         pack_le_u32(resp + off + 0, item->connection_id);
-        resp[off + 4] = item->connection_type;
-        resp[off + 5] = item->connection_state;
+        pack_le_u16(
+          resp + off + 4, (uint16_t)(((uint16_t)item->connection_type) | (((uint16_t)item->connection_state) << 8u)));
+
         pack_le_u16(resp + off + 6, 0u);
         pack_le_u64(resp + off + 8, item->connected_at_ns);
         off += 16u;
@@ -1543,8 +1544,8 @@ static void handle_list_unconnected_ports(
       {
         pack_le_u32(resp + off + 0, item->node_id);
         pack_le_u32(resp + off + 4, item->port_id);
-        resp[off + 8] = item->direction;
-        resp[off + 9] = item->reason;
+        pack_le_u16(resp + off + 8, (uint16_t)(((uint16_t)item->direction) | (((uint16_t)item->reason) << 8u)));
+
         pack_le_u16(resp + off + 10, 0u);
         off += 12u;
         off += encode_string16(resp + off, item->port_name);

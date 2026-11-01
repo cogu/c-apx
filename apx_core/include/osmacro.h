@@ -51,7 +51,15 @@
 # define THREAD_PROTO_PTR(name, arg) unsigned(__stdcall * name)(void *arg)
 # define THREAD_RETURN(retval) return (unsigned int)retval
 # define THREAD_JOIN(thread) WaitForSingleObject(thread, INFINITE);
-# define THREAD_DESTROY(thread) CloseHandle(thread)
+# define THREAD_DESTROY(thread)                                                                                        \
+   do                                                                                                                  \
+   {                                                                                                                   \
+     if ((thread) != NULL)                                                                                             \
+     {                                                                                                                 \
+       CloseHandle(thread);                                                                                            \
+     }                                                                                                                 \
+   }                                                                                                                   \
+   while (0)
 #else
 # define THREAD_T pthread_t
 # define THREAD_CREATE(thread, func, arg) pthread_create(&thread, NULL, func, arg);
@@ -72,7 +80,15 @@
 #ifdef _WIN32
 # define COND_T HANDLE
 # define COND_INIT(cond) cond = CreateEvent(NULL, FALSE, FALSE, NULL)
-# define COND_DESTROY(cond) CloseHandle(cond)
+# define COND_DESTROY(cond)                                                                                            \
+   do                                                                                                                  \
+   {                                                                                                                   \
+     if ((cond) != NULL)                                                                                               \
+     {                                                                                                                 \
+       CloseHandle(cond);                                                                                              \
+     }                                                                                                                 \
+   }                                                                                                                   \
+   while (0)
 # define COND_SIGNAL(cond) SetEvent(cond)
 # define COND_BROADCAST(cond) SetEvent(cond)
 # define COND_WAIT(cond, mutex)                                                                                        \
@@ -118,7 +134,15 @@
 # define MUTEX_INIT(mutex) mutex = CreateMutex(NULL, FALSE, NULL)
 # define MUTEX_LOCK(mutex) WaitForSingleObject(mutex, INFINITE)
 # define MUTEX_UNLOCK(mutex) ReleaseMutex(mutex)
-# define MUTEX_DESTROY(mutex) CloseHandle(mutex)
+# define MUTEX_DESTROY(mutex)                                                                                          \
+   do                                                                                                                  \
+   {                                                                                                                   \
+     if ((mutex) != NULL)                                                                                              \
+     {                                                                                                                 \
+       CloseHandle(mutex);                                                                                             \
+     }                                                                                                                 \
+   }                                                                                                                   \
+   while (0)
 #else
 # define MUTEX_T pthread_mutex_t
 # define MUTEX_INIT(mutex) pthread_mutex_init(&mutex, 0)

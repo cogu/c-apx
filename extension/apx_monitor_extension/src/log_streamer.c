@@ -256,8 +256,7 @@ apx_error_t apx_log_streamer_enqueue_connection_create(apx_log_streamer_t *self,
   {
     return APX_MEM_ERROR;
   }
-  payload[0] = connection_type;
-  payload[1] = connection_state;
+  pack_le_u16(payload + 0, (uint16_t)(((uint16_t)connection_type) | (((uint16_t)connection_state) << 8u)));
   pack_le_u16(payload + 2, 0u); // reserved
   uint32_t offset = 4u;
   offset += encode_string16(payload + offset, tag);
@@ -513,9 +512,14 @@ void apx_log_streamer_set_queue_capacity(apx_log_streamer_t *self, uint32_t capa
       if (self->queue[idx].payload != NULL)
       {
         free(self->queue[idx].payload);
+        self->queue[idx].payload = NULL;
       }
     }
-    free(self->queue);
+    if (self->queue != NULL)
+    {
+      free(self->queue);
+      self->queue = NULL;
+    }
     self->queue = (apx_log_event_entry_t *)calloc(capacity, sizeof(apx_log_event_entry_t));
     self->queue_capacity = capacity;
     self->queue_count = 0u;

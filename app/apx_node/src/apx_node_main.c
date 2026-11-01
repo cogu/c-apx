@@ -543,9 +543,9 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
         {
           return ARGPARSE_VALUE_ERROR;
         }
-        char *end = NULL;
-        unsigned long port_val = strtoul(colon + 1, &end, 0);
-        if ((end == colon + 1) || (*end != '\0') || (port_val == 0) || (port_val > UINT32_MAX))
+        char *port_end = NULL;
+        unsigned long port_val = strtoul(colon + 1, &port_end, 0);
+        if ((port_end == colon + 1) || (*port_end != '\0') || (port_val == 0) || (port_val > UINT32_MAX))
         {
           return ARGPARSE_VALUE_ERROR;
         }

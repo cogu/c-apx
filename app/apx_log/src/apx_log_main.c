@@ -331,6 +331,13 @@ static int cmd_record(const char *out_path)
 {
   // Open output writer
   MUTEX_INIT(m_record_ctx.lock);
+#ifdef _WIN32
+  if (m_record_ctx.lock == NULL)
+  {
+    fprintf(stderr, "Error: Failed to create mutex\n");
+    return 1;
+  }
+#endif
   apx_log_writer_create(&m_record_ctx.writer);
   m_record_ctx.is_writer_open = false;
   m_record_ctx.record_count = 0u;
