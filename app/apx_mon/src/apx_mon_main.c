@@ -18,6 +18,7 @@
 #include "dtl_json.h"
 #include "dtl_type.h"
 #include "msocket.h"
+#include "osmacro.h"
 #include <assert.h>
 #include <inttypes.h>
 #include <signal.h>
@@ -25,7 +26,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#ifndef _WIN32
+# include <unistd.h>
+#endif
 
 #define APP_NAME "apx-mon"
 
@@ -250,10 +253,16 @@ static apx_error_t connect_client(apx_diag_client_t *client)
   }
   case MSOCKET_ENDPOINT_FILE:
   default: {
+#ifndef _WIN32
     apx_error_t err = apx_diag_client_connect_unix(client, addr_str);
     if (err != APX_NO_ERROR)
       return err;
     return apx_diag_client_wait_ready(client, 5000u);
+#else
+    (void)client;
+    (void)addr_str;
+    return APX_NOT_IMPLEMENTED_ERROR;
+#endif
   }
   }
 }
@@ -832,9 +841,9 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
         routing_row_t *row = (routing_row_t *)malloc(sizeof(routing_row_t));
         if (row != NULL)
         {
-          row->port_name = strdup(item->port_name ? item->port_name : "");
-          row->provider_node = strdup(pbuf);
-          row->requirer_node = strdup(rbuf);
+          row->port_name = STRDUP(item->port_name ? item->port_name : "");
+          row->provider_node = STRDUP(pbuf);
+          row->requirer_node = STRDUP(rbuf);
           adt_ary_push(&rows, row);
         }
       }
@@ -877,16 +886,16 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
         routing_row_t *row = (routing_row_t *)malloc(sizeof(routing_row_t));
         if (row != NULL)
         {
-          row->port_name = strdup(item->port_name ? item->port_name : "");
+          row->port_name = STRDUP(item->port_name ? item->port_name : "");
           if (item->direction == 1) // PROVIDE -> no consumer
           {
-            row->provider_node = strdup(nbuf);
-            row->requirer_node = strdup("-");
+            row->provider_node = STRDUP(nbuf);
+            row->requirer_node = STRDUP("-");
           }
           else // REQUIRE -> no provider
           {
-            row->provider_node = strdup("-");
-            row->requirer_node = strdup(nbuf);
+            row->provider_node = STRDUP("-");
+            row->requirer_node = STRDUP(nbuf);
           }
           adt_ary_push(&rows, row);
         }
@@ -1216,7 +1225,7 @@ static int cmd_watch(apx_diag_client_t *client, const char **selectors, int num_
 
   while (m_running)
   {
-    usleep(100000);
+    SLEEP(100);
   }
 
   if (!m_json_output)
@@ -1251,7 +1260,7 @@ static int cmd_top(apx_diag_client_t *client)
 
     for (int i = 0; i < 10 && m_running; ++i)
     {
-      usleep(100000);
+      SLEEP(100);
     }
   }
   return 0;

@@ -108,15 +108,6 @@ static char *decode_string16(const uint8_t *src, uint32_t max_bytes, uint32_t *c
   return str;
 }
 
-static struct timespec compute_deadline(uint32_t timeout_ms)
-{
-  struct timespec ts;
-  uint64_t const total_ns = apx_get_unix_time_ns() + ((uint64_t)timeout_ms * 1000000ULL);
-  ts.tv_sec = (time_t)(total_ns / 1000000000ULL);
-  ts.tv_nsec = (long)(total_ns % 1000000000ULL);
-  return ts;
-}
-
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
@@ -129,7 +120,7 @@ apx_error_t apx_diag_client_create(apx_diag_client_t *self)
   }
   memset(self, 0, sizeof(apx_diag_client_t));
   MUTEX_INIT(self->lock);
-  pthread_cond_init(&self->cond, NULL);
+  COND_INIT(self->cond);
 
   self->request_file_address = RMF_INVALID_ADDRESS;
   self->response_file_address = RMF_INVALID_ADDRESS;
@@ -140,7 +131,7 @@ apx_error_t apx_diag_client_create(apx_diag_client_t *self)
   if (err != APX_NO_ERROR)
   {
     MUTEX_DESTROY(self->lock);
-    pthread_cond_destroy(&self->cond);
+    COND_DESTROY(self->cond);
     return err;
   }
 
@@ -166,7 +157,7 @@ void apx_diag_client_destroy(apx_diag_client_t *self)
     apx_diag_client_file_delete(self->transfer_file);
 
     MUTEX_DESTROY(self->lock);
-    pthread_cond_destroy(&self->cond);
+    COND_DESTROY(self->cond);
   }
 }
 
@@ -194,6 +185,7 @@ void apx_diag_client_delete(apx_diag_client_t *self)
   }
 }
 
+#ifndef _WIN32
 apx_error_t apx_diag_client_connect_unix(apx_diag_client_t *self, const char *socket_path)
 {
   if (self == NULL || socket_path == NULL)
@@ -202,6 +194,7 @@ apx_error_t apx_diag_client_connect_unix(apx_diag_client_t *self, const char *so
   }
   return apx_client_socket_connection_connect_unix(&self->connection, socket_path);
 }
+#endif
 
 apx_error_t apx_diag_client_connect_tcp(apx_diag_client_t *self, const char *address, uint16_t port)
 {
@@ -246,12 +239,21 @@ apx_error_t apx_diag_client_wait_ready(apx_diag_client_t *self, uint32_t timeout
   {
     return APX_INVALID_ARGUMENT_ERROR;
   }
-  struct timespec deadline = compute_deadline(timeout_ms);
+  uint64_t const start_ms = apx_get_monotonic_time_ns() / 1000000ULL;
   MUTEX_LOCK(self->lock);
   while (!self->is_request_file_open || !self->is_response_file_open)
   {
-    int rc = pthread_cond_timedwait(&self->cond, &self->lock, &deadline);
-    if (rc == ETIMEDOUT)
+    uint64_t const now_ms = apx_get_monotonic_time_ns() / 1000000ULL;
+    uint64_t const elapsed_ms = (now_ms >= start_ms) ? (now_ms - start_ms) : 0ULL;
+    if (elapsed_ms >= (uint64_t)timeout_ms)
+    {
+      MUTEX_UNLOCK(self->lock);
+      return APX_TIMEOUT_ERROR;
+    }
+    uint32_t const remaining_ms = timeout_ms - (uint32_t)elapsed_ms;
+    bool timed_out = false;
+    COND_TIMEDWAIT_MS(self->cond, self->lock, remaining_ms, timed_out);
+    if (timed_out && (!self->is_request_file_open || !self->is_response_file_open))
     {
       MUTEX_UNLOCK(self->lock);
       return APX_TIMEOUT_ERROR;
@@ -316,7 +318,7 @@ apx_error_t apx_diag_client_send_request(apx_diag_client_t *self, uint16_t opcod
     return send_err;
   }
 
-  struct timespec deadline = compute_deadline(timeout_ms);
+  uint64_t const start_ms = apx_get_monotonic_time_ns() / 1000000ULL;
   while (!self->response_received)
   {
     if (!self->is_connected)
@@ -324,8 +326,17 @@ apx_error_t apx_diag_client_send_request(apx_diag_client_t *self, uint16_t opcod
       MUTEX_UNLOCK(self->lock);
       return APX_NOT_CONNECTED_ERROR;
     }
-    int rc = pthread_cond_timedwait(&self->cond, &self->lock, &deadline);
-    if (rc == ETIMEDOUT)
+    uint64_t const now_ms = apx_get_monotonic_time_ns() / 1000000ULL;
+    uint64_t const elapsed_ms = (now_ms >= start_ms) ? (now_ms - start_ms) : 0ULL;
+    if (elapsed_ms >= (uint64_t)timeout_ms)
+    {
+      MUTEX_UNLOCK(self->lock);
+      return APX_TIMEOUT_ERROR;
+    }
+    uint32_t const remaining_ms = timeout_ms - (uint32_t)elapsed_ms;
+    bool timed_out = false;
+    COND_TIMEDWAIT_MS(self->cond, self->lock, remaining_ms, timed_out);
+    if (timed_out && !self->response_received)
     {
       MUTEX_UNLOCK(self->lock);
       return APX_TIMEOUT_ERROR;
@@ -833,7 +844,7 @@ static apx_error_t receive_binary_file(
   {
     return APX_INVALID_MSG_ERROR;
   }
-  struct timespec const deadline = compute_deadline(timeout_ms);
+  uint64_t const start_ms = apx_get_monotonic_time_ns() / 1000000ULL;
   apx_error_t result = APX_NO_ERROR;
   MUTEX_LOCK(self->lock);
   apx_file_t *remote_file = NULL;
@@ -849,10 +860,20 @@ static apx_error_t receive_binary_file(
       result = APX_NOT_CONNECTED_ERROR;
       break;
     }
-    int const rc = pthread_cond_timedwait(&self->cond, &self->lock, &deadline);
-    if (rc != 0)
+    uint64_t const now_ms = apx_get_monotonic_time_ns() / 1000000ULL;
+    uint64_t const elapsed_ms = (now_ms >= start_ms) ? (now_ms - start_ms) : 0ULL;
+    if (elapsed_ms >= (uint64_t)timeout_ms)
     {
-      result = rc == ETIMEDOUT ? APX_TIMEOUT_ERROR : APX_INTERNAL_ERROR;
+      result = APX_TIMEOUT_ERROR;
+      break;
+    }
+    uint32_t const remaining_ms = timeout_ms - (uint32_t)elapsed_ms;
+    bool timed_out = false;
+    COND_TIMEDWAIT_MS(self->cond, self->lock, remaining_ms, timed_out);
+    if (timed_out)
+    {
+      result = APX_TIMEOUT_ERROR;
+      break;
     }
   }
   if (result == APX_NO_ERROR)
@@ -879,10 +900,20 @@ static apx_error_t receive_binary_file(
           result = self->transfer_error;
           break;
         }
-        int const rc = pthread_cond_timedwait(&self->cond, &self->lock, &deadline);
-        if (rc != 0)
+        uint64_t const now_ms = apx_get_monotonic_time_ns() / 1000000ULL;
+        uint64_t const elapsed_ms = (now_ms >= start_ms) ? (now_ms - start_ms) : 0ULL;
+        if (elapsed_ms >= (uint64_t)timeout_ms)
         {
-          result = rc == ETIMEDOUT ? APX_TIMEOUT_ERROR : APX_INTERNAL_ERROR;
+          result = APX_TIMEOUT_ERROR;
+          break;
+        }
+        uint32_t const remaining_ms = timeout_ms - (uint32_t)elapsed_ms;
+        bool timed_out = false;
+        COND_TIMEDWAIT_MS(self->cond, self->lock, remaining_ms, timed_out);
+        if (timed_out && !apx_diag_client_file_is_complete(self->transfer_file))
+        {
+          result = APX_TIMEOUT_ERROR;
+          break;
         }
       }
       if (result == APX_NO_ERROR && self->transfer_error != APX_NO_ERROR)
@@ -1185,7 +1216,7 @@ static void on_client_greeting_accepted(void *arg, apx_client_connection_t *conn
     MUTEX_LOCK(self->lock);
     self->is_connected = true;
     self->is_greeting_accepted = true;
-    pthread_cond_broadcast(&self->cond);
+    COND_BROADCAST(self->cond);
     MUTEX_UNLOCK(self->lock);
   }
 }
@@ -1202,7 +1233,7 @@ static void on_client_disconnected(void *arg, apx_client_connection_t *connectio
     self->is_request_file_open = false;
     self->is_response_file_open = false;
     self->is_notify_file_open = false;
-    pthread_cond_broadcast(&self->cond);
+    COND_BROADCAST(self->cond);
     MUTEX_UNLOCK(self->lock);
   }
 }
@@ -1269,7 +1300,7 @@ static apx_error_t on_client_file_published(void *arg, apx_file_t *file)
       }
     }
 
-    pthread_cond_broadcast(&self->cond);
+    COND_BROADCAST(self->cond);
     MUTEX_UNLOCK(self->lock);
   }
   else if (strcmp(fname, APX_DIAG_NOTIF_FILE_NAME) == 0)
@@ -1286,7 +1317,7 @@ static apx_error_t on_client_file_published(void *arg, apx_file_t *file)
 
     apx_file_manager_open_stream(fm, clean_addr, APX_DIAG_STREAM_SIZE, 64u);
 
-    pthread_cond_broadcast(&self->cond);
+    COND_BROADCAST(self->cond);
     MUTEX_UNLOCK(self->lock);
   }
   else if (strncmp(fname, APX_DIAG_DEF_FILE_PREFIX, strlen(APX_DIAG_DEF_FILE_PREFIX)) == 0 ||
@@ -1300,7 +1331,7 @@ static apx_error_t on_client_file_published(void *arg, apx_file_t *file)
     apx_file_set_notification_handler(file, &def_handler);
     apx_file_open(file);
 
-    pthread_cond_broadcast(&self->cond);
+    COND_BROADCAST(self->cond);
     MUTEX_UNLOCK(self->lock);
   }
 
@@ -1315,7 +1346,7 @@ static apx_error_t on_req_file_opened(void *arg, apx_file_t *file)
   {
     MUTEX_LOCK(self->lock);
     self->is_request_file_open = true;
-    pthread_cond_broadcast(&self->cond);
+    COND_BROADCAST(self->cond);
     MUTEX_UNLOCK(self->lock);
   }
   return APX_NO_ERROR;
@@ -1356,7 +1387,7 @@ static apx_error_t on_resp_file_written(
       }
     }
     self->response_received = true;
-    pthread_cond_broadcast(&self->cond);
+    COND_BROADCAST(self->cond);
   }
   MUTEX_UNLOCK(self->lock);
 
@@ -1441,7 +1472,7 @@ static apx_error_t on_binary_file_written(
     apx_file_get_address_without_flags(file) == self->transfer_address)
   {
     self->transfer_error = apx_diag_client_file_write(self->transfer_file, offset, data, size);
-    pthread_cond_broadcast(&self->cond);
+    COND_BROADCAST(self->cond);
   }
   MUTEX_UNLOCK(self->lock);
 

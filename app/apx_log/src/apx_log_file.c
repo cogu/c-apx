@@ -10,6 +10,7 @@
  ******************************************************************************/
 #include "apx_log_file.h"
 #include "apx/numheader.h"
+#include "osmacro.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -159,7 +160,7 @@ apx_error_t apx_log_writer_open(apx_log_writer_t *self, const char *path)
   {
     free(self->path);
   }
-  self->path = strdup(path);
+  self->path = STRDUP(path);
 
   // Write initial 64-byte header
   uint8_t header_buf[APX_LOG_HEADER_SIZE];
@@ -373,7 +374,7 @@ apx_error_t apx_log_reader_open(apx_log_reader_t *self, const char *path)
   {
     free(self->path);
   }
-  self->path = strdup(path);
+  self->path = STRDUP(path);
 
   // Position at data_offset
   if (fseek(self->fh, (long)self->header.data_offset, SEEK_SET) != 0)

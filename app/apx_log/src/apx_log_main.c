@@ -30,7 +30,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
+#ifndef _WIN32
+# include <unistd.h>
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // CONSTANTS AND DATA TYPES
@@ -207,7 +209,11 @@ static void format_iso8601(char *buf, size_t buf_size, uint64_t unix_ns)
   time_t const sec = (time_t)(unix_ns / 1000000000ULL);
   uint32_t const rem_ms = (uint32_t)((unix_ns % 1000000000ULL) / 1000000ULL);
   struct tm tm_buf;
+#ifdef _WIN32
+  gmtime_s(&tm_buf, &sec);
+#else
   gmtime_r(&sec, &tm_buf);
+#endif
   char time_str[64];
   strftime(time_str, sizeof(time_str), "%Y-%m-%dT%H:%M:%S", &tm_buf);
   snprintf(buf, buf_size, "%s.%03uZ", time_str, rem_ms);
@@ -264,12 +270,18 @@ static apx_error_t init_client(apx_log_client_t *client)
   }
   case MSOCKET_ENDPOINT_FILE:
   default: {
+#ifndef _WIN32
     apx_error_t err = apx_log_client_connect_unix(client, addr_str);
     if (err != APX_NO_ERROR)
     {
       return err;
     }
     return apx_log_client_wait_ready(client, 5000u);
+#else
+    (void)client;
+    (void)addr_str;
+    return APX_NOT_IMPLEMENTED_ERROR;
+#endif
   }
   }
 }
@@ -364,7 +376,7 @@ static int cmd_record(const char *out_path)
 
   while (m_running && apx_log_client_is_connected(&client))
   {
-    usleep(50000);
+    SLEEP(50);
   }
 
   // Finalize

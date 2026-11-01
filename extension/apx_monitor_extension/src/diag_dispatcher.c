@@ -533,8 +533,8 @@ static apx_diag_port_watch_t *apx_diag_port_watch_new(uint32_t node_id, uint32_t
     self->port_type = port_type;
     self->data_offset = data_offset;
     self->value_size = value_size;
-    self->node_name = node_name != NULL ? strdup(node_name) : NULL;
-    self->port_name = port_name != NULL ? strdup(port_name) : NULL;
+    self->node_name = node_name != NULL ? STRDUP(node_name) : NULL;
+    self->port_name = port_name != NULL ? STRDUP(port_name) : NULL;
   }
   return self;
 }
@@ -671,7 +671,7 @@ static apx_diag_temp_file_t *apx_diag_temp_file_new(
   {
     self->request_id = request_id;
     self->address = address;
-    self->file_name = file_name != NULL ? strdup(file_name) : NULL;
+    self->file_name = file_name != NULL ? STRDUP(file_name) : NULL;
     self->size = size;
     self->data = (uint8_t *)malloc(size);
     if (self->file_name == NULL || (size > 0u && self->data == NULL))
@@ -937,8 +937,8 @@ static void handle_list_connections(
             item->connection_type = (uint8_t)apx_server_connection_get_connection_type(conn);
             item->connection_state = (uint8_t)conn->connection_state;
             item->connected_at_ns = 0ULL;
-            item->tag = conn->tag != NULL ? strdup(adt_str_cstr(conn->tag)) : strdup("");
-            item->endpoint = strdup("");
+            item->tag = conn->tag != NULL ? STRDUP(adt_str_cstr(conn->tag)) : STRDUP("");
+            item->endpoint = STRDUP("");
             adt_ary_push(&snapshot->items, item);
           }
         }
@@ -1098,7 +1098,7 @@ static void handle_list_nodes(
                     item->connection_id = conn_id;
                     item->provide_port_count = (uint32_t)apx_node_instance_get_num_provide_ports(node);
                     item->require_port_count = (uint32_t)apx_node_instance_get_num_require_ports(node);
-                    item->node_name = nname != NULL ? strdup(nname) : strdup("");
+                    item->node_name = nname != NULL ? STRDUP(nname) : STRDUP("");
                     adt_ary_push(&snapshot->items, item);
                   }
                 }
@@ -1264,7 +1264,7 @@ static void handle_list_routes(
                 item->provide_port_id = provider->port_id;
                 item->require_node_id = rnode_id;
                 item->require_port_id = requester->port_id;
-                item->port_name = provider->name != NULL ? strdup(provider->name) : strdup("");
+                item->port_name = provider->name != NULL ? STRDUP(provider->name) : STRDUP("");
                 adt_ary_push(&snapshot->items, item);
               }
             }
@@ -1429,7 +1429,7 @@ static void handle_list_unconnected_ports(
                   item->port_id = req->port_id;
                   item->direction = 0u; // require
                   item->reason = 0u;    // no provider
-                  item->port_name = req->name != NULL ? strdup(req->name) : strdup("");
+                  item->port_name = req->name != NULL ? STRDUP(req->name) : STRDUP("");
                   adt_ary_push(&snapshot->items, item);
                 }
               }
@@ -1458,7 +1458,7 @@ static void handle_list_unconnected_ports(
                   item->port_id = prov->port_id;
                   item->direction = 1u; // provide
                   item->reason = 1u;    // no consumer
-                  item->port_name = prov->name != NULL ? strdup(prov->name) : strdup("");
+                  item->port_name = prov->name != NULL ? STRDUP(prov->name) : STRDUP("");
                   adt_ary_push(&snapshot->items, item);
                 }
               }

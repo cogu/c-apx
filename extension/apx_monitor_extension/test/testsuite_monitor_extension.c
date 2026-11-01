@@ -344,7 +344,7 @@ static void test_log_streamer_start_and_stop(CuTest *tc)
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_start(streamer));
   CuAssertTrue(tc, apx_log_streamer_is_active(streamer));
   CuAssertIntEquals(tc, 1, monitor->num_active_log_streams);
-  CuAssertUIntEquals(tc, 1, apx_log_streamer_get_sequence(streamer)); // STREAM_BEGIN (0) and SNAPSHOT_END (1)
+  CuAssertULIntEquals(tc, 1ULL, apx_log_streamer_get_sequence(streamer)); // STREAM_BEGIN (0) and SNAPSHOT_END (1)
 
   // Verify stream_id is non-zero
   bool has_non_zero_id = false;
@@ -362,7 +362,7 @@ static void test_log_streamer_start_and_stop(CuTest *tc)
   apx_log_streamer_stop(streamer);
   CuAssertTrue(tc, !apx_log_streamer_is_active(streamer));
   CuAssertIntEquals(tc, 0, monitor->num_active_log_streams);
-  CuAssertUIntEquals(tc, 2, apx_log_streamer_get_sequence(streamer)); // STREAM_END (2)
+  CuAssertULIntEquals(tc, 2ULL, apx_log_streamer_get_sequence(streamer)); // STREAM_END (2)
 
   apx_server_monitor_delete(monitor);
   apx_server_delete(server);
@@ -398,17 +398,17 @@ static void test_log_streamer_ringbuffer_overflow_and_drop_tracking(CuTest *tc)
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 12u));
 
   CuAssertUIntEquals(tc, 3, apx_log_streamer_get_queue_count(streamer));
-  CuAssertUIntEquals(tc, 0, apx_log_streamer_get_drop_count(streamer));
-  CuAssertUIntEquals(tc, 3, apx_log_streamer_get_sequence(streamer));
+  CuAssertULIntEquals(tc, 0ULL, apx_log_streamer_get_drop_count(streamer));
+  CuAssertULIntEquals(tc, 3ULL, apx_log_streamer_get_sequence(streamer));
 
   // 4th and 5th events overflow and get dropped!
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 13u));
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 14u));
 
   CuAssertUIntEquals(tc, 3, apx_log_streamer_get_queue_count(streamer));
-  CuAssertUIntEquals(tc, 2, apx_log_streamer_get_drop_count(streamer));
-  CuAssertUIntEquals(tc, 5, apx_log_streamer_get_sequence(streamer));
-  CuAssertUIntEquals(tc, 4, streamer->drop_first_sequence);
+  CuAssertULIntEquals(tc, 2ULL, apx_log_streamer_get_drop_count(streamer));
+  CuAssertULIntEquals(tc, 5ULL, apx_log_streamer_get_sequence(streamer));
+  CuAssertULIntEquals(tc, 4ULL, streamer->drop_first_sequence);
 
   // Free queue manually to simulate draining
   MUTEX_LOCK(streamer->lock);
@@ -429,8 +429,8 @@ static void test_log_streamer_ringbuffer_overflow_and_drop_tracking(CuTest *tc)
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_streamer_enqueue_node_detach(streamer, 1u, 15u));
 
   // Sequence should advance for EVENTS_DROPPED (seq 6) and the new event (seq 7)
-  CuAssertUIntEquals(tc, 7, apx_log_streamer_get_sequence(streamer));
-  CuAssertUIntEquals(tc, 0, apx_log_streamer_get_drop_count(streamer));
+  CuAssertULIntEquals(tc, 7ULL, apx_log_streamer_get_sequence(streamer));
+  CuAssertULIntEquals(tc, 0ULL, apx_log_streamer_get_drop_count(streamer));
 
   streamer->is_active = false;
   apx_server_monitor_delete(monitor);

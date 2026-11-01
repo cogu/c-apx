@@ -17,7 +17,6 @@
 #include "apx/error.h"
 #include "apx/socket_client_connection.h"
 #include "osmacro.h"
-#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -34,7 +33,7 @@ typedef struct apx_log_client_tag
 {
   apx_client_socket_connection_t connection;
   MUTEX_T lock;
-  pthread_cond_t cond;
+  COND_T cond;
   bool is_connected;
   bool is_greeting_accepted;
   bool is_server_log_open;
@@ -54,7 +53,9 @@ apx_log_client_t *apx_log_client_new(void);
 void apx_log_client_delete(apx_log_client_t *self);
 
 // Connection
+#ifndef _WIN32
 apx_error_t apx_log_client_connect_unix(apx_log_client_t *self, const char *socket_path);
+#endif
 apx_error_t apx_log_client_connect_tcp(apx_log_client_t *self, const char *address, uint16_t port);
 #if defined(MSOCKET_ENABLE_TLS)
 apx_error_t apx_log_client_connect_tls(

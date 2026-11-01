@@ -18,8 +18,10 @@
 # include <Windows.h>
 # include <process.h>
 #else
+# include <errno.h>
 # include <pthread.h>
 # include <semaphore.h>
+# include <time.h>
 # include <unistd.h>
 #endif
 
@@ -65,12 +67,48 @@
 # define THREAD_DESTROY(thread)
 #endif
 
+/* CONDITION VARIABLE */
+// include Windows.h for Windows, pthread.h for Linux/Cygwin
 #ifdef _WIN32
-
-
+# define COND_T HANDLE
+# define COND_INIT(cond) cond = CreateEvent(NULL, FALSE, FALSE, NULL)
+# define COND_DESTROY(cond) CloseHandle(cond)
+# define COND_SIGNAL(cond) SetEvent(cond)
+# define COND_BROADCAST(cond) SetEvent(cond)
+# define COND_WAIT(cond, mutex)                                                                                        \
+   do                                                                                                                  \
+   {                                                                                                                   \
+     SignalObjectAndWait(mutex, cond, INFINITE, FALSE);                                                                \
+     WaitForSingleObject(mutex, INFINITE);                                                                             \
+   }                                                                                                                   \
+   while (0)
+# define COND_TIMEDWAIT_MS(cond, mutex, timeout_ms, timed_out)                                                         \
+   do                                                                                                                  \
+   {                                                                                                                   \
+     DWORD _cond_res = SignalObjectAndWait(mutex, cond, (DWORD)(timeout_ms), FALSE);                                   \
+     WaitForSingleObject(mutex, INFINITE);                                                                             \
+     (timed_out) = (_cond_res == WAIT_TIMEOUT);                                                                        \
+   }                                                                                                                   \
+   while (0)
 #else
-
-
+# define COND_T pthread_cond_t
+# define COND_INIT(cond) pthread_cond_init(&cond, NULL)
+# define COND_DESTROY(cond) pthread_cond_destroy(&cond)
+# define COND_SIGNAL(cond) pthread_cond_signal(&cond)
+# define COND_BROADCAST(cond) pthread_cond_broadcast(&cond)
+# define COND_WAIT(cond, mutex) pthread_cond_wait(&cond, &mutex)
+# define COND_TIMEDWAIT_MS(cond, mutex, timeout_ms, timed_out)                                                         \
+   do                                                                                                                  \
+   {                                                                                                                   \
+     struct timespec _cond_ts;                                                                                         \
+     clock_gettime(CLOCK_REALTIME, &_cond_ts);                                                                         \
+     uint64_t const _cond_ns = (uint64_t)_cond_ts.tv_nsec + ((uint64_t)(timeout_ms) * 1000000ULL);                     \
+     _cond_ts.tv_sec += (time_t)(_cond_ns / 1000000000ULL);                                                            \
+     _cond_ts.tv_nsec = (long)(_cond_ns % 1000000000ULL);                                                              \
+     int const _cond_rc = pthread_cond_timedwait(&cond, &mutex, &_cond_ts);                                            \
+     (timed_out) = (_cond_rc == ETIMEDOUT);                                                                            \
+   }                                                                                                                   \
+   while (0)
 #endif
 
 /* MUTEX MECHANISM */
@@ -133,6 +171,15 @@
 # define SLEEP(ms) Sleep(ms);
 #else
 # define SLEEP(ms) usleep((ms) * 1000);
+#endif
+
+/* STRING UTILITY */
+#ifndef STRDUP
+# ifdef _WIN32
+#  define STRDUP _strdup
+# else
+#  define STRDUP strdup
+# endif
 #endif
 
 

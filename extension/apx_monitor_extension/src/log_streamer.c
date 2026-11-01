@@ -432,7 +432,7 @@ void apx_log_streamer_drain(apx_log_streamer_t *self)
 
   for (;;)
   {
-    apx_log_event_entry_t entry;
+    apx_log_event_entry_t entry = {0};
     bool has_entry = false;
 
     MUTEX_LOCK(self->lock);
