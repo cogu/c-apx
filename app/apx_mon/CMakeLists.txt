@@ -10,7 +10,7 @@ set(APX_MON_HEADERS
 
 set(APX_MON_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/apx_diag_client_file.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/apxmon_main.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/apx_mon_main.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/apx_diag_client.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/apx_diag_client_notification.c
 )

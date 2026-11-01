@@ -1,5 +1,5 @@
 /*****************************************************************************
- * \file      apxmon_main.c
+ * \file      apx_mon_main.c
  * \author    Conny Gustafsson
  * \date      2026-10-25
  * \brief     apx-mon CLI diagnostic application
