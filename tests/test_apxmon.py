@@ -178,11 +178,14 @@ def test_apxmon_clients(apx_server_with_monitor, apxmon_bin: str):
     assert "ID" in res.stdout
     assert "TYPE" in res.stdout
     assert "STATE" in res.stdout
+    assert "NODE" in res.stdout
 
     # JSON output
     res_json = subprocess.run([apxmon_bin, "-c", sock, "--json", "clients"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
     clients = json.loads(res_json.stdout)
     assert isinstance(clients, list)
+    if len(clients) > 0:
+        assert "nodes" in clients[0]
 
 
 def _spawn_node(cmd: list[str], apx_file: Path, bind_path: str | None = None) -> ApxNodeInstance:

@@ -95,7 +95,7 @@ Queries overall operational status from the APX server:
 
    Server Version:     0.3.0
    Protocol Minor:     0
-   Uptime:             1h 12m 34s (4354000 ms)
+   Uptime:             1h 12m 34s
    Active Connections: 3
    Active Nodes:       2
    Active Routes:      14
@@ -109,11 +109,11 @@ Displays a tabular summary of all active client sessions:
 
 .. code-block:: text
 
-   ID    TYPE       STATE        TAG                  ENDPOINT
+   ID    TYPE       STATE        NODE                 ENDPOINT
    ----------------------------------------------------------------------
    1     CLIENT     CONNECTED    EngineController     127.0.0.1:48212
    2     CLIENT     CONNECTED    DashboardNode        127.0.0.1:48218
-   3     MONITOR    CONNECTED    apxmon               /tmp/apx.socket
+   3     MONITOR    CONNECTED    -                    /tmp/apx.socket
 
 nodes
 ~~~~~

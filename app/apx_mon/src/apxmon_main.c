@@ -311,6 +311,59 @@ static int cmd_info(apx_diag_client_t *client, bool show_milliseconds)
   return 0;
 }
 
+static void format_connection_nodes(
+  adt_ary_t const *nodes, uint32_t connection_id, char *buf, size_t buf_size, size_t max_len)
+{
+  if (buf == NULL || buf_size == 0)
+  {
+    return;
+  }
+  buf[0] = '\0';
+
+  int32_t const total = (nodes != NULL) ? adt_ary_length(nodes) : 0;
+  int match_count = 0;
+  size_t written = 0;
+
+  for (int32_t i = 0; i < total; ++i)
+  {
+    apx_diag_client_node_item_t const *node = (apx_diag_client_node_item_t const *)adt_ary_value(nodes, i);
+    if (node != NULL && node->connection_id == connection_id && node->node_name != NULL)
+    {
+      if (match_count == 0)
+      {
+        written = (size_t)snprintf(buf, buf_size, "%s", node->node_name);
+        if (written >= buf_size)
+        {
+          written = buf_size - 1;
+        }
+      }
+      else
+      {
+        size_t needed = 2 + strlen(node->node_name);
+        if (written + needed <= max_len && written + needed < buf_size)
+        {
+          snprintf(buf + written, buf_size - written, ", %s", node->node_name);
+          written += needed;
+        }
+        else
+        {
+          if (written + 5 <= buf_size && written + 5 <= max_len + 5)
+          {
+            snprintf(buf + written, buf_size - written, ", ...");
+          }
+          break;
+        }
+      }
+      match_count++;
+    }
+  }
+
+  if (match_count == 0)
+  {
+    snprintf(buf, buf_size, "-");
+  }
+}
+
 static int cmd_clients(apx_diag_client_t *client)
 {
   adt_ary_t list;
@@ -321,7 +374,17 @@ static int cmd_clients(apx_diag_client_t *client)
     return 1;
   }
 
+  adt_ary_t nodes;
+  apx_error_t node_err = apx_diag_client_list_nodes(client, &nodes, 5000u);
+  if (node_err != APX_NO_ERROR)
+  {
+    fprintf(stderr, "Error: Failed to list nodes (error=%d)\n", node_err);
+    adt_ary_destroy(&list);
+    return 1;
+  }
+
   int32_t const len = adt_ary_length(&list);
+  int32_t const total_nodes = adt_ary_length(&nodes);
 
   if (m_json_output)
   {
@@ -338,6 +401,18 @@ static int cmd_clients(apx_diag_client_t *client)
         dtl_hv_set_cstr(hv, "connected_at_ns", (dtl_dv_t *)dtl_sv_make_u64(item->connected_at_ns), false);
         dtl_hv_set_cstr(hv, "tag", (dtl_dv_t *)dtl_sv_make_cstr(item->tag ? item->tag : ""), false);
         dtl_hv_set_cstr(hv, "endpoint", (dtl_dv_t *)dtl_sv_make_cstr(item->endpoint ? item->endpoint : ""), false);
+
+        dtl_av_t *nodes_av = dtl_av_new();
+        for (int32_t j = 0; j < total_nodes; ++j)
+        {
+          apx_diag_client_node_item_t const *node = (apx_diag_client_node_item_t const *)adt_ary_value(&nodes, j);
+          if (node != NULL && node->connection_id == item->connection_id && node->node_name != NULL)
+          {
+            dtl_av_push(nodes_av, (dtl_dv_t *)dtl_sv_make_cstr(node->node_name), false);
+          }
+        }
+        dtl_hv_set_cstr(hv, "nodes", (dtl_dv_t *)nodes_av, false);
+
         dtl_av_push(av, (dtl_dv_t *)hv, false);
       }
     }
@@ -347,21 +422,25 @@ static int cmd_clients(apx_diag_client_t *client)
   }
   else
   {
-    printf("%-5s %-10s %-12s %-20s %s\n", "ID", "TYPE", "STATE", "TAG", "ENDPOINT");
+    printf("%-5s %-10s %-12s %-20s %s\n", "ID", "TYPE", "STATE", "NODE", "ENDPOINT");
     printf("----------------------------------------------------------------------\n");
     for (int32_t i = 0; i < len; ++i)
     {
       apx_diag_client_conn_item_t *item = (apx_diag_client_conn_item_t *)adt_ary_value(&list, i);
       if (item != NULL)
       {
+        char node_buf[64];
+        format_connection_nodes(&nodes, item->connection_id, node_buf, sizeof(node_buf), 20u);
+
         const char *tname = (item->connection_type == 1) ? "MONITOR" : "CLIENT";
         const char *sname = (item->connection_state == 2) ? "CONNECTED" : "DISCONNECTED";
-        printf("%-5u %-10s %-12s %-20s %s\n", item->connection_id, tname, sname, item->tag ? item->tag : "",
+        printf("%-5u %-10s %-12s %-20s %s\n", item->connection_id, tname, sname, node_buf,
           item->endpoint ? item->endpoint : "");
       }
     }
   }
 
+  adt_ary_destroy(&nodes);
   adt_ary_destroy(&list);
   return 0;
 }
