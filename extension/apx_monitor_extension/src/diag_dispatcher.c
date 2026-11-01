@@ -26,6 +26,7 @@
 #include "apx/server.h"
 #include "apx/server_connection.h"
 #include "apx/util.h"
+#include "apx_version.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +39,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define APX_VERSION_STRING "0.3.15a1"
 
 typedef struct apx_diag_conn_item_tag
 {
