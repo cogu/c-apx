@@ -6,7 +6,6 @@
 > * [securing_monitor_extension.md](design/securing_monitor_extension.md): Dedicated diagnostic transport (port 5080) and mTLS security.
 > * [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md): `server.log` wire framing, `.apxlog` format, and `apx-log` CLI tool.
 > * [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md): Diagnostic query-response protocol and `apx-mon` CLI tool.
-> * [remotefile1_1_stream_file_proposal.md](design/remotefile1_1_stream_file_proposal.md): RemoteFile v1.1 Stream File (`FileStream`) semantics, credit-based flow control, and stream lifecycle.
 
 ---
 
@@ -59,7 +58,7 @@ These are the items left to implement for c-apx v0.4.0.
 
 ## 4. RemoteFile Stream File Protocol Implementation (`apx_core`) (Completed)
 
-Detailed protocol specification and state machine definitions are in [remotefile1_1_stream_file_proposal.md](design/remotefile1_1_stream_file_proposal.md).
+Detailed protocol specification and state machine definitions are formalized in the normative RemoteFile v1.1 specification (`remotefile1_1.md`).
 
 * [x] **Protocol Commands & Wire Encoders/Decoders (`remotefile.h` / `remotefile.c`):**
   * Implement encoding and decoding for RemoteFile v1.1 stream commands:
