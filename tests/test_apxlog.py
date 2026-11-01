@@ -135,7 +135,7 @@ def test_apxlog_record_info_print(apx_server_with_monitor, apx_log_bin: str, tmp
     assert "Status:          finalized" in res_info.stdout
     assert "Record Count:    " in res_info.stdout
 
-    # 2. Test 'apx-log info --json'
+    # 2. Test 'apx-log info --json' (also verify --json before command)
     res_info_json = subprocess.run(
         [apx_log_bin, "info", "--json", str(log_file)],
         capture_output=True, text=True, check=True
@@ -147,6 +147,12 @@ def test_apxlog_record_info_print(apx_server_with_monitor, apx_log_bin: str, tmp
     assert info_data["record_count"] >= 2
     assert info_data["file_size"] >= 64
 
+    res_info_json_pre = subprocess.run(
+        [apx_log_bin, "--json", "info", str(log_file)],
+        capture_output=True, text=True, check=True
+    )
+    assert json.loads(res_info_json_pre.stdout) == info_data
+
     # 3. Test 'apx-log print'
     res_print = subprocess.run(
         [apx_log_bin, "print", str(log_file)],
@@ -155,7 +161,7 @@ def test_apxlog_record_info_print(apx_server_with_monitor, apx_log_bin: str, tmp
     assert "STREAM_BEGIN" in res_print.stdout
     assert "SNAPSHOT_END" in res_print.stdout
 
-    # 4. Test 'apx-log print --json' (NDJSON output)
+    # 4. Test 'apx-log print --json' (NDJSON output, also verify --json before command)
     res_print_json = subprocess.run(
         [apx_log_bin, "print", "--json", str(log_file)],
         capture_output=True, text=True, check=True
@@ -166,6 +172,12 @@ def test_apxlog_record_info_print(apx_server_with_monitor, apx_log_bin: str, tmp
     assert "STREAM_BEGIN" in events
     assert "SNAPSHOT_END" in events
     assert events[0] == "STREAM_BEGIN"
+
+    res_print_json_pre = subprocess.run(
+        [apx_log_bin, "--json", "print", str(log_file)],
+        capture_output=True, text=True, check=True
+    )
+    assert res_print_json_pre.stdout == res_print_json.stdout
 
 
 def _spawn_node(cmd: list[str], apx_file: Path, bind_path: str | None = None) -> ApxNodeInstance:

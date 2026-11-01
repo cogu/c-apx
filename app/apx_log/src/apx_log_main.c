@@ -18,6 +18,7 @@
 #include "apx_log_event.h"
 #include "apx_log_file.h"
 #include "apx_version.h"
+#include "argparse.h"
 #include "dtl_json.h"
 #include "dtl_type.h"
 #include "msocket.h"
@@ -120,6 +121,78 @@ static void print_print_usage(const char *prog_name)
 
 static void print_version(void) { printf("%s %s\n", APP_NAME, APX_VERSION_STRING); }
 
+static void print_cmd_usage(const char *command)
+{
+  if (command != NULL && strcmp(command, "record") == 0)
+  {
+    print_record_usage(APP_NAME);
+  }
+  else if (command != NULL && strcmp(command, "info") == 0)
+  {
+    print_info_usage(APP_NAME);
+  }
+  else if (command != NULL && strcmp(command, "print") == 0)
+  {
+    print_print_usage(APP_NAME);
+  }
+  else
+  {
+    print_usage(APP_NAME);
+  }
+}
+
+static argparse_result_t parse_arg(const char *short_name, const char *long_name, const char *value)
+{
+  if ((short_name != NULL && strcmp(short_name, "c") == 0) || (long_name != NULL && strcmp(long_name, "connect") == 0))
+  {
+    if (m_connect_address != NULL)
+    {
+      adt_str_delete(m_connect_address);
+    }
+    m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
+    if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN || m_connect_resource_type == MSOCKET_ENDPOINT_ERROR)
+    {
+      return ARGPARSE_VALUE_ERROR;
+    }
+  }
+  else if (long_name != NULL)
+  {
+    if (strcmp(long_name, "tls") == 0)
+    {
+      m_use_tls = true;
+    }
+    else if (strcmp(long_name, "json") == 0)
+    {
+      m_json_output = true;
+    }
+    else if (strcmp(long_name, "ca-cert") == 0)
+    {
+      if (m_ca_cert != NULL)
+      {
+        adt_str_delete(m_ca_cert);
+      }
+      m_ca_cert = adt_str_new_cstr(value);
+    }
+    else if (strcmp(long_name, "client-cert") == 0)
+    {
+      if (m_client_cert != NULL)
+      {
+        adt_str_delete(m_client_cert);
+      }
+      m_client_cert = adt_str_new_cstr(value);
+    }
+    else if (strcmp(long_name, "client-key") == 0)
+    {
+      if (m_client_key != NULL)
+      {
+        adt_str_delete(m_client_key);
+      }
+      m_client_key = adt_str_new_cstr(value);
+    }
+  }
+  return ARGPARSE_SUCCESS;
+}
+
 static void format_iso8601(char *buf, size_t buf_size, uint64_t unix_ns)
 {
   if (buf == NULL || buf_size == 0u)
@@ -142,16 +215,18 @@ static void format_iso8601(char *buf, size_t buf_size, uint64_t unix_ns)
 
 static apx_error_t init_client(apx_log_client_t *client)
 {
-  const char *addr_str = (m_connect_address != NULL) ? adt_str_cstr(m_connect_address) : m_connect_address_default;
-
   if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN)
   {
-    m_connect_resource_type = msocket_parse_endpoint(addr_str, &m_connect_address, &m_connect_port);
-    if (m_connect_address != NULL)
+    uint16_t dummy_port = 0;
+    const char *default_addr = m_use_tls ? "127.0.0.1" : m_connect_address_default;
+    m_connect_resource_type = msocket_parse_endpoint(default_addr, &m_connect_address, &dummy_port);
+    if (m_use_tls)
     {
-      addr_str = adt_str_cstr(m_connect_address);
+      m_connect_port = 5020;
     }
   }
+
+  const char *addr_str = (m_connect_address != NULL) ? adt_str_cstr(m_connect_address) : m_connect_address_default;
 
 #if defined(MSOCKET_ENABLE_TLS)
   if (m_use_tls)
@@ -240,109 +315,8 @@ static void on_event_received(void *arg, const uint8_t *data, uint32_t size)
   MUTEX_UNLOCK(ctx->lock);
 }
 
-static int cmd_record(int argc, char **argv)
+static int cmd_record(const char *out_path)
 {
-  const char *out_path = NULL;
-
-  for (int i = 0; i < argc; ++i)
-  {
-    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-    {
-      print_record_usage(APP_NAME);
-      return 0;
-    }
-    if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--connect") == 0)
-    {
-      if (i + 1 >= argc)
-      {
-        fprintf(stderr, "Error: Missing value for %s\n", argv[i]);
-        return 1;
-      }
-      i++;
-      if (m_connect_address != NULL)
-      {
-        adt_str_delete(m_connect_address);
-      }
-      m_connect_resource_type = msocket_parse_endpoint(argv[i], &m_connect_address, &m_connect_port);
-      if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN || m_connect_resource_type == MSOCKET_ENDPOINT_ERROR)
-      {
-        fprintf(stderr, "Error: Invalid endpoint '%s'\n", argv[i]);
-        return 1;
-      }
-    }
-    else if (strcmp(argv[i], "--tls") == 0)
-    {
-      m_use_tls = true;
-    }
-    else if (strcmp(argv[i], "--ca-cert") == 0)
-    {
-      if (i + 1 >= argc)
-      {
-        fprintf(stderr, "Error: Missing value for --ca-cert\n");
-        return 1;
-      }
-      i++;
-      if (m_ca_cert != NULL)
-      {
-        adt_str_delete(m_ca_cert);
-      }
-      m_ca_cert = adt_str_new_cstr(argv[i]);
-    }
-    else if (strcmp(argv[i], "--client-cert") == 0)
-    {
-      if (i + 1 >= argc)
-      {
-        fprintf(stderr, "Error: Missing value for --client-cert\n");
-        return 1;
-      }
-      i++;
-      if (m_client_cert != NULL)
-      {
-        adt_str_delete(m_client_cert);
-      }
-      m_client_cert = adt_str_new_cstr(argv[i]);
-    }
-    else if (strcmp(argv[i], "--client-key") == 0)
-    {
-      if (i + 1 >= argc)
-      {
-        fprintf(stderr, "Error: Missing value for --client-key\n");
-        return 1;
-      }
-      i++;
-      if (m_client_key != NULL)
-      {
-        adt_str_delete(m_client_key);
-      }
-      m_client_key = adt_str_new_cstr(argv[i]);
-    }
-    else if (argv[i][0] == '-')
-    {
-      fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
-      print_record_usage(APP_NAME);
-      return 1;
-    }
-    else
-    {
-      if (out_path == NULL)
-      {
-        out_path = argv[i];
-      }
-      else
-      {
-        fprintf(stderr, "Error: Unexpected positional argument '%s'\n", argv[i]);
-        return 1;
-      }
-    }
-  }
-
-  if (out_path == NULL)
-  {
-    fprintf(stderr, "Error: Missing required container file argument <FILE>\n");
-    print_record_usage(APP_NAME);
-    return 1;
-  }
-
   // Open output writer
   MUTEX_INIT(m_record_ctx.lock);
   apx_log_writer_create(&m_record_ctx.writer);
@@ -411,49 +385,8 @@ static int cmd_record(int argc, char **argv)
   return 0;
 }
 
-static int cmd_info(int argc, char **argv)
+static int cmd_info(const char *in_path)
 {
-  const char *in_path = NULL;
-  bool json_mode = m_json_output;
-
-  for (int i = 0; i < argc; ++i)
-  {
-    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-    {
-      print_info_usage(APP_NAME);
-      return 0;
-    }
-    if (strcmp(argv[i], "--json") == 0)
-    {
-      json_mode = true;
-    }
-    else if (argv[i][0] == '-')
-    {
-      fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
-      print_info_usage(APP_NAME);
-      return 1;
-    }
-    else
-    {
-      if (in_path == NULL)
-      {
-        in_path = argv[i];
-      }
-      else
-      {
-        fprintf(stderr, "Error: Unexpected positional argument '%s'\n", argv[i]);
-        return 1;
-      }
-    }
-  }
-
-  if (in_path == NULL)
-  {
-    fprintf(stderr, "Error: Missing required container file argument <FILE>\n");
-    print_info_usage(APP_NAME);
-    return 1;
-  }
-
   apx_log_reader_t reader;
   apx_log_reader_create(&reader);
   apx_error_t const err = apx_log_reader_open(&reader, in_path);
@@ -467,7 +400,7 @@ static int cmd_info(int argc, char **argv)
   bool const is_finalized = (reader.header.flags & APX_LOG_FLAG_FINALIZED) != 0u;
   const char *status_str = is_finalized ? "finalized" : "unfinalized / crashed";
 
-  if (json_mode)
+  if (m_json_output)
   {
     dtl_hv_t *hv = dtl_hv_new();
     dtl_hv_set_cstr(hv, "file", (dtl_dv_t *)dtl_sv_make_cstr(in_path), false);
@@ -520,49 +453,8 @@ static int cmd_info(int argc, char **argv)
   return 0;
 }
 
-static int cmd_print(int argc, char **argv)
+static int cmd_print(const char *in_path)
 {
-  const char *in_path = NULL;
-  bool json_mode = m_json_output;
-
-  for (int i = 0; i < argc; ++i)
-  {
-    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-    {
-      print_print_usage(APP_NAME);
-      return 0;
-    }
-    if (strcmp(argv[i], "--json") == 0)
-    {
-      json_mode = true;
-    }
-    else if (argv[i][0] == '-')
-    {
-      fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
-      print_print_usage(APP_NAME);
-      return 1;
-    }
-    else
-    {
-      if (in_path == NULL)
-      {
-        in_path = argv[i];
-      }
-      else
-      {
-        fprintf(stderr, "Error: Unexpected positional argument '%s'\n", argv[i]);
-        return 1;
-      }
-    }
-  }
-
-  if (in_path == NULL)
-  {
-    fprintf(stderr, "Error: Missing required container file argument <FILE>\n");
-    print_print_usage(APP_NAME);
-    return 1;
-  }
-
   apx_log_reader_t reader;
   apx_log_reader_create(&reader);
   apx_error_t const err = apx_log_reader_open(&reader, in_path);
@@ -581,7 +473,7 @@ static int cmd_print(int argc, char **argv)
     apx_log_event_t event;
     if (apx_log_event_parse(&event, record_buf, record_size) == APX_NO_ERROR)
     {
-      if (json_mode)
+      if (m_json_output)
       {
         apx_log_event_print_json(&event, stdout);
       }
@@ -611,56 +503,117 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  int cmd_idx = 1;
-  while (cmd_idx < argc && argv[cmd_idx][0] == '-')
+  const char *command = NULL;
+  const char *file_path = NULL;
+  bool display_help = false;
+  bool display_version = false;
+
+  for (int i = 1; i < argc; ++i)
   {
-    if (strcmp(argv[cmd_idx], "-h") == 0 || strcmp(argv[cmd_idx], "--help") == 0)
+    if (argv[i][0] == '-')
     {
-      print_usage(APP_NAME);
-      return 0;
+      if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+      {
+        display_help = true;
+      }
+      else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0)
+      {
+        display_version = true;
+      }
+      else if (strcmp(argv[i], "--json") == 0)
+      {
+        parse_arg(NULL, "json", NULL);
+      }
+      else if (strcmp(argv[i], "--tls") == 0)
+      {
+        parse_arg(NULL, "tls", NULL);
+      }
+      else if ((strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--connect") == 0) && (i + 1 < argc))
+      {
+        if (parse_arg(NULL, "connect", argv[++i]) != ARGPARSE_SUCCESS)
+        {
+          fprintf(stderr, "Error: Invalid endpoint '%s'\n", argv[i]);
+          return 1;
+        }
+      }
+      else if (strcmp(argv[i], "--ca-cert") == 0 && (i + 1 < argc))
+      {
+        parse_arg(NULL, "ca-cert", argv[++i]);
+      }
+      else if (strcmp(argv[i], "--client-cert") == 0 && (i + 1 < argc))
+      {
+        parse_arg(NULL, "client-cert", argv[++i]);
+      }
+      else if (strcmp(argv[i], "--client-key") == 0 && (i + 1 < argc))
+      {
+        parse_arg(NULL, "client-key", argv[++i]);
+      }
+      else
+      {
+        fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
+        print_usage(APP_NAME);
+        return 1;
+      }
     }
-    if (strcmp(argv[cmd_idx], "-v") == 0 || strcmp(argv[cmd_idx], "--version") == 0)
+    else
     {
-      print_version();
-      return 0;
+      if (command == NULL)
+      {
+        command = argv[i];
+      }
+      else if (file_path == NULL)
+      {
+        file_path = argv[i];
+      }
+      else
+      {
+        fprintf(stderr, "Error: Unexpected positional argument '%s'\n", argv[i]);
+        return 1;
+      }
     }
-    if (strcmp(argv[cmd_idx], "--json") == 0)
-    {
-      m_json_output = true;
-      cmd_idx++;
-      continue;
-    }
-    fprintf(stderr, "Error: Unknown option '%s'\n", argv[cmd_idx]);
+  }
+
+  if (display_help)
+  {
+    print_cmd_usage(command);
+    return 0;
+  }
+
+  if (display_version)
+  {
+    print_version();
+    return 0;
+  }
+
+  if (command == NULL)
+  {
     print_usage(APP_NAME);
     return 1;
   }
 
-  if (cmd_idx >= argc)
+  if (file_path == NULL)
   {
-    print_usage(APP_NAME);
+    fprintf(stderr, "Error: Missing required container file argument <FILE>\n");
+    print_cmd_usage(command);
     return 1;
   }
-
-  const char *cmd = argv[cmd_idx];
-  int const sub_argc = argc - (cmd_idx + 1);
-  char **sub_argv = &argv[cmd_idx + 1];
 
   int ret = 0;
-  if (strcmp(cmd, "record") == 0)
+  if (strcmp(command, "record") == 0)
   {
-    ret = cmd_record(sub_argc, sub_argv);
+    ret = cmd_record(file_path);
   }
-  else if (strcmp(cmd, "info") == 0)
+  else if (strcmp(command, "info") == 0)
   {
-    ret = cmd_info(sub_argc, sub_argv);
+    ret = cmd_info(file_path);
   }
-  else if (strcmp(cmd, "print") == 0)
+  else if (strcmp(command, "print") == 0)
   {
-    ret = cmd_print(sub_argc, sub_argv);
+    ret = cmd_print(file_path);
   }
   else
   {
-    fprintf(stderr, "Error: Unknown command '%s'\n\n", cmd);
+    fprintf(stderr, "Error: Unknown command '%s'\n\n", command);
     print_usage(APP_NAME);
     ret = 1;
   }
