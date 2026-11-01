@@ -1,7 +1,9 @@
 apx-control
 ===========
 
-``apx-control`` is a command-line client designed to interact with the JSON message server hosted by an :doc:`apx_node` instance. It allows developers and automated test harnesses to write signal values directly into a running node's provide-ports.
+``apx-control`` is a command-line client designed to interact with the JSON message server hosted by an
+:doc:`apx_node` instance. It allows developers and automated test harnesses to write signal values directly into
+a running node's provide-ports.
 
 Synopsis
 --------
@@ -24,13 +26,16 @@ Command-Line Options
    * - Option
      - Description
    * - ``-c <path>``, ``--connect <path>``
-     - Target address of the ``apx-node`` control socket. Accepts a UNIX domain socket path (e.g. ``/tmp/apx_node.socket``) or a TCP hostname/IP address. Default on Linux: ``/tmp/apx_node.socket``. Default on Windows: ``127.0.0.1``.
+     - Target address of the ``apx-node`` control socket. Accepts a UNIX domain socket path (e.g.
+       ``/tmp/apx_node.socket``) or a TCP hostname/IP address. Default on Linux: ``/tmp/apx_node.socket``.
+       Default on Windows: ``127.0.0.1``.
    * - ``-p <port>``, ``--port <port>``
      - Target TCP port number when connecting to a remote node over TCP. Default: ``5100``.
    * - ``-i <json_file>``
      - Read the JSON signal payload from a file on disk instead of positional command-line arguments.
    * - ``<name> <value>``
-     - Positional arguments specifying the signal name and value to publish. Values can be numeric (integers or floating point) or strings.
+     - Positional arguments specifying the signal name and value to publish. Values can be numeric (integers or
+       floating point) or strings.
    * - ``--version``
      - Display version information and exit.
    * - ``-h``, ``--help``
@@ -39,7 +44,8 @@ Command-Line Options
 JSON Message Format
 -------------------
 
-``apx-control`` sends JSON objects to the ``apx-node`` process over the connected socket:
+``apx-control`` formats updates as Newline-Delimited JSON (NDJSON) messages sent to the ``apx-node`` process over
+the connected socket:
 
 .. code-block:: json
 

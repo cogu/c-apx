@@ -1,7 +1,10 @@
 apx-node
 ========
 
-``apx-node`` is an interactive APX client node runner. It instantiates an APX node based on an input definition file (``.apx``), connects to the ``apx-server`` over a variety of network transports, publishes provide-ports, observes require-ports, and exposes a JSON message router socket for external tools to inspect and alter signal values at runtime.
+``apx-node`` is an interactive APX client node runner. It instantiates an APX node based on an input definition
+file (``.apx``), connects to the ``apx-server`` over a variety of network transports, publishes provide-ports, observes
+require-ports, and exposes a JSON message router socket for external tools to inspect and alter signal values at
+runtime.
 
 Synopsis
 --------
@@ -28,15 +31,20 @@ Command-Line Options
    * - ``<file.apx>``
      - Path to the APX definition file describing the node, port interfaces, and data types (mandatory argument).
    * - ``-b <path>``, ``--bind <path>``
-     - Path to UNIX domain socket or TCP IP address on which ``apx-node`` starts its local JSON message server. External utilities (such as ``apx-control``) connect here to manipulate provide-ports. Default on Linux: ``/tmp/apx_node.socket``. Default on Windows: ``127.0.0.1``.
+     - Path to UNIX domain socket or TCP IP address on which ``apx-node`` starts its local JSON message server.
+       External utilities (such as :doc:`apx_control` or ``nc``) connect here to manipulate provide-ports.
+       Default on Linux: ``/tmp/apx_node.socket``. Default on Windows: ``127.0.0.1``.
    * - ``-p <port>``, ``--bind-port <port>``
      - Port number for the local JSON message server when binding over TCP. Default: ``5100``.
    * - ``--no-bind``
-     - Disable the local JSON message server. In this mode, ``apx-node`` runs purely as an observer and signal publisher.
+     - Disable the local JSON message server. In this mode, ``apx-node`` runs purely as an observer and signal
+       publisher.
    * - ``-c <path>``, ``--connect <path>``
-     - Path to UNIX domain socket or hostname/IP address of the remote ``apx-server``. Default on Linux: ``/tmp/apx.socket``. Default on Windows: ``127.0.0.1``.
+     - Path to UNIX domain socket or hostname/IP address of the remote ``apx-server``. Default on Linux:
+       ``/tmp/apx.socket``. Default on Windows: ``127.0.0.1``.
    * - ``-r <port>``, ``--connect-port <port>``
-     - Port number to connect to on the ``apx-server``. Defaults to ``5000`` for plain TCP, or ``5020`` when ``--tls`` is specified.
+     - Port number to connect to on the ``apx-server``. Defaults to ``5000`` for plain TCP, or ``5020`` when ``--tls``
+       is specified.
    * - ``--tls``
      - Connect to ``apx-server`` over encrypted TLS. Automatically defaults port to ``5020``.
    * - ``--ca-cert <path>``
@@ -48,7 +56,8 @@ Command-Line Options
    * - ``--no-signature``
      - Bypass automatic discovery of companion signature files and force connecting as an unsigned node (RMFP/1.0).
    * - ``--vsock <cid>:<port>``
-     - Connect to ``apx-server`` using Linux VSOCK (AF_VSOCK) transport. The ``<cid>`` parameter can be a numeric Context ID or alias: ``host`` (2), ``local`` (1), ``hypervisor`` (0), or ``any`` (0xFFFFFFFF).
+     - Connect to ``apx-server`` using Linux VSOCK (AF_VSOCK) transport. The ``<cid>`` parameter can be a numeric
+       Context ID or alias: ``host`` (2), ``local`` (1), ``hypervisor`` (0), or ``any`` (0xFFFFFFFF).
    * - ``--version``
      - Display version information and exit.
    * - ``-h``, ``--help``
@@ -60,18 +69,22 @@ Core Capabilities
 1. JSON Signal Router Interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, ``apx-node`` opens a local control socket (UNIX socket at ``/tmp/apx_node.socket`` or TCP). External tools (such as :doc:`apx_control` or custom test scripts) connect to this socket and exchange newline-delimited or framed JSON messages to get or set provide-port values:
+By default, ``apx-node`` opens a local control socket (UNIX socket at ``/tmp/apx_node.socket`` or TCP). External tools
+(such as :doc:`apx_control`, shell utilities like ``nc`` or ``socat``, or test scripts) connect to this socket and
+send Newline-Delimited JSON (NDJSON) messages to set provide-port values:
 
 .. code-block:: json
 
    {"VehicleSpeed": 72.5}
 
-When ``apx-node`` receives this command, it serializes the value into the node's local output virtual file (``<Node>.out``) using the APX VM bytecode, which triggers transmission to the server.
+When ``apx-node`` receives this command, it serializes the value into the node's local output virtual file
+(``<Node>.out``) using the APX VM bytecode, which triggers transmission to the server.
 
 2. Require-Port Monitoring
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When any require-port on the node receives updated data from the APX server, ``apx-node`` deserializes the payload and prints the signal change directly to standard output as formatted JSON:
+When any require-port on the node receives updated data from the APX server, ``apx-node`` deserializes the payload and
+prints the signal change directly to standard output as formatted JSON:
 
 .. code-block:: text
 
@@ -85,7 +98,8 @@ When supplied with ``EngineNode.apx``, ``apx-node`` checks for companion signatu
 * ``EngineNode.apx.sig``
 * ``EngineNode.sig``
 
-If found, ``apx-node`` reads the 64-byte raw binary ECDSA NIST P-256 signature, initializes the Remote File Protocol in version 1.1 mode, and authenticates the definition file to the server.
+If found, ``apx-node`` reads the 64-byte raw binary ECDSA NIST P-256 signature, initializes the Remote File Protocol
+in version 1.1 mode, and authenticates the definition file to the server.
 
 Usage Examples
 --------------
@@ -122,3 +136,10 @@ Connect Over Linux VSOCK (Guest to Host)
 .. code-block:: bash
 
    apx-node --vsock 2:52000 nodes/SensorNode.apx
+
+Send Signal Updates via Netcat (NDJSON)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   echo '{"VehicleSpeed": 75}' | nc -U /tmp/apx_node.socket
