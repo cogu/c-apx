@@ -407,7 +407,83 @@ If `index present` is set, event scanning stops at `index_offset`. A reader
 MUST ignore an index whose bounds, magic, entry size, or ordering is invalid and
 fall back to sequential scanning.
 
-## 10. Replay requirements
+## 10. `apx-log` command mapping
+
+```text
+apx-log [OPTIONS] COMMAND [ARGS...]
+
+Global Options:
+  -h, --help                Show help message
+  -v, --version             Show version
+
+Commands:
+  record [OPTIONS] <FILE>   Stream server events directly to a .apxlog container
+  info <FILE>               Display .apxlog header and summary metadata
+  print [OPTIONS] <FILE>    Parse and display sequential events from a .apxlog container
+```
+
+### 10.1 `record`
+
+```text
+apx-log record [OPTIONS] <FILE>
+
+Options:
+  -c, --connect <ADDR>      Diagnostic endpoint (UNIX socket path or TCP host:port)
+  --tls                     Enable TLS
+  --ca-cert <PATH>          Server verification CA certificate
+  --client-cert <PATH>      Client certificate for mTLS
+  --client-key <PATH>       Client private key for mTLS
+```
+
+Workflow:
+1. Connect to the server's diagnostic endpoint.
+2. Wait for `server.log` to be published by the server.
+3. Open output `<FILE>` and write the 64-byte file header with `flags = 0` (unfinalized), `capture_start_unix_ns = 0`, and `data_offset = 64`.
+4. Send `RMF_CMD_OPEN_FILE` for `server.log`.
+5. Upon receiving `STREAM_BEGIN`, update `capture_start_unix_ns` in memory.
+6. For each delivered event, write canonical NumHeader32 followed by the raw event payload.
+7. Upon SIGINT (`Ctrl+C`), SIGTERM, or server disconnection, seek to offset 0 and finalize the 64-byte header:
+   - set `capture_end_unix_ns`
+   - set `record_count`
+   - set `flags = 1` (`finalized`)
+   - close the file.
+
+### 10.2 `info`
+
+```text
+apx-log info <FILE>
+```
+
+Prints header summary:
+- Magic and format version (`1.0`)
+- Status (`finalized` or `unfinalized / crashed`)
+- Start time (ISO 8601 UTC and unix ns)
+- End time (ISO 8601 UTC and unix ns, if finalized)
+- Total duration (if finalized)
+- Total records written
+- File size on disk
+
+### 10.3 `print`
+
+```text
+apx-log print [OPTIONS] <FILE>
+
+Options:
+  --json                    Output each event record as an NDJSON / JSON line
+```
+
+Decodes and formats each record sequentially:
+```text
+[+0.000000s] [seq=0] STREAM_BEGIN v1.0 clock=monotonic server=0.3.15
+[+0.001234s] [seq=1] [SNAP] CONNECTION_CREATE id=1 type=CLIENT endpoint=127.0.0.1:48212
+[+0.001300s] [seq=2] [SNAP] NODE_ATTACH conn=1 node=EngineController
+[+0.001400s] [seq=3] [SNAP] FILE_PUBLISH conn=1 address=0x00000000 file=EngineController.out size=4
+[+0.001500s] [seq=4] [SNAP] FILE_WRITE conn=1 file_id=0 offset=0 size=4 [00 00 00 00]
+[+0.002000s] [seq=5] SNAPSHOT_END
+[+0.100500s] [seq=6] FILE_WRITE conn=1 file_id=0 offset=0 size=4 [12 34 56 78]
+```
+
+## 11. Replay requirements (Deferred to v0.8.0)
 
 `apx-log replay` connects to the operational APX endpoint as a normal APX
 client. It does not inject events through the diagnostic endpoint.
@@ -433,7 +509,7 @@ Connection and file lifecycle events belonging only to excluded nodes are not
 replayed. Writes to `.out` files are reproduced through normal node/file APIs;
 recorded `.in` values are observational and are not injected as providers.
 
-## 11. Validation requirements
+## 12. Validation requirements
 
 Implementations require tests for:
 

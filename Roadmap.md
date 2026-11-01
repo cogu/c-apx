@@ -1,7 +1,5 @@
 # c-apx Roadmap
 
-These are the items left to implement for c-apx v0.4.0.
-
 > [!NOTE]
 > Detailed design specifications for diagnostics, event streaming, replay, and transport security are maintained under [`design/`](design/):
 > * [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md): Overall architecture and RemoteFile Stream File model.
@@ -9,6 +7,12 @@ These are the items left to implement for c-apx v0.4.0.
 > * [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md): `server.log` wire framing, `.apxlog` format, and `apx-log` CLI tool.
 > * [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md): Diagnostic query-response protocol and `apx-mon` CLI tool.
 > * [remotefile1_1_stream_file_proposal.md](design/remotefile1_1_stream_file_proposal.md): RemoteFile v1.1 Stream File (`FileStream`) semantics, credit-based flow control, and stream lifecycle.
+
+---
+
+# Release v0.4.0 (Current Phase)
+
+These are the items left to implement for c-apx v0.4.0.
 
 ## 1. Analyze all TODO comments in the c-apx code (Completed)
 
@@ -30,9 +34,9 @@ These are the items left to implement for c-apx v0.4.0.
   * Initial state snapshot on file open: active connections, `.apx` definition IDL texts, and current port values.
   * 64-byte file header (`\0APXLOG\1`), append-only sequential event records (24-byte record header + payload in Little-Endian), and optional index trailer for fast random-access seeking.
 * **`apx-log` Utility (`app/apx_log`):**
-  * `apx-log record -o session.apxlog [--tls]`: Stream live server events directly to disk.
-  * `apx-log replay session.apxlog [--exclude-node <name>] [--rate <float>] [--loop]`: Play back recorded scenarios by connecting as a standard multi-node client on operational port `5000` (simulates surrounding nodes for HIL / single-node debugging without server-side modifications).
-  * `apx-log info` and `apx-log export --format ndjson`: Metadata inspection and JSON export.
+  * `apx-log record -o session.apxlog [--tls]`: Stream live server events directly to disk into `.apxlog` binary container format.
+  * `apx-log info session.apxlog`: Metadata inspection and file summary (timestamps, record counts, flags).
+  * `apx-log print session.apxlog [--json]`: Sequential event stream decoding and console display.
 
 ## 3. Complete File Observation in Server Monitor (Completed)
 
@@ -313,6 +317,24 @@ To reduce wire transfer latency for signed APX nodes by >80% during startup phas
   * Compute SHA-256 of verified text and query Level 2 binary cache (`.apxc` from Item 14) to skip IDL parsing and VM bytecode compilation entirely.
 * **Backward Compatibility Fallback:**
   * If a legacy server returns `RMF_CMD_NACK_MSG` on opcode 24, the client falls back to uncompressed `RMF_CMD_PUBLISH_SIGNED_FILE_MSG` (opcode 23).
+
+---
+
+# Release v0.8.0 (Future Phase)
+
+## 1. Event Stream Playback Engine (`apx-log replay`)
+
+* Implemented during the v0.7.x phase as companion tooling for GUI log viewers and analyzers.
+* Detailed requirements defined in [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md) (Section 11) and [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md) (Section 2.2).
+* **Playback Functionality:**
+  * Connects to the operational APX endpoint (port `5000` / standard UNIX socket) as a standard multi-node client.
+  * Reconstructs initial node definitions and data files from the `.apxlog` snapshot (`STREAM_BEGIN` through `SNAPSHOT_END`).
+  * Replays recorded `.out` signal writes based on monotonic `timestamp_ns` timing deltas:
+    `target = playback_start + (event_time - first_replayed_time) / rate`
+  * Playback controls:
+    * `--rate <float>`: Time scaling (e.g. `1.0` real-time, `2.0` 2x speed, `0.5` half speed).
+    * `--loop`: Loop playback indefinitely.
+    * `--exclude-node <name>` / `--include-nodes <names>`: Node filtering to simulate surrounding vehicle bus nodes while running real ECU node under test.
 
 
 
