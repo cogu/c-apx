@@ -12,16 +12,14 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "message_client_connection.h"
-#include "apx/numheader.h"
 #include <assert.h>
-#include <malloc.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
-#define UINT32_SIZE 4
 #define BUFFER_GROW_SIZE 256
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -100,9 +98,6 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
 {
   if ((self != NULL) && (message != NULL))
   {
-    uint8_t headerData[UINT32_SIZE];
-    uint32_t messageSize;
-    int32_t headerSize;
     adt_bytearray_t *messageBytes = adt_str_bytearray(message);
     if (messageBytes == NULL)
     {
@@ -113,6 +108,7 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
       self->pendingMessage = adt_bytearray_new();
       if (self->pendingMessage == NULL)
       {
+        adt_bytearray_delete(messageBytes);
         return ADT_MEM_ERROR;
       }
     }
@@ -120,25 +116,28 @@ adt_error_t message_client_prepare_message(message_client_connection_t *self, ad
     {
       adt_bytearray_clear(self->pendingMessage);
     }
-    assert(self->pendingMessage != NULL);
-    assert(messageBytes != NULL);
-    messageSize = adt_bytearray_length(messageBytes);
-    headerSize = numheader_encode32(&headerData[0], UINT32_SIZE, messageSize);
-    if ((headerSize > 0) && (headerSize <= UINT32_SIZE))
+
+    uint32_t messageSize = adt_bytearray_length(messageBytes);
+    adt_error_t rc = adt_bytearray_append(self->pendingMessage, adt_bytearray_data(messageBytes), messageSize);
+    adt_bytearray_delete(messageBytes);
+    if (rc != ADT_NO_ERROR)
     {
-      adt_error_t rc = adt_bytearray_append(self->pendingMessage, &headerData[0], (uint32_t)headerSize);
-      if (rc != ADT_NO_ERROR)
-      {
-        return rc;
-      }
-      rc = adt_bytearray_append(self->pendingMessage, adt_bytearray_data(messageBytes), messageSize);
+      return rc;
+    }
+
+    // Ensure the message ends with a newline for NDJSON framing
+    const uint8_t *data = adt_bytearray_data(self->pendingMessage);
+    uint32_t len = adt_bytearray_length(self->pendingMessage);
+    if ((len == 0u) || (data[len - 1u] != (uint8_t)'\n'))
+    {
+      const uint8_t nl = (uint8_t)'\n';
+      rc = adt_bytearray_append(self->pendingMessage, &nl, 1u);
       if (rc != ADT_NO_ERROR)
       {
         return rc;
       }
     }
-    adt_bytearray_delete(messageBytes);
-      // printf("Prepared %d+%d bytes of data\n", (int) headerSize, (int) messageSize);
+
     return ADT_NO_ERROR;
   }
   return ADT_INVALID_ARGUMENT_ERROR;

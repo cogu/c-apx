@@ -288,7 +288,11 @@ apx_size_t apx_node_instance_get_num_provide_ports(apx_node_instance_t const *se
 {
   if (self != NULL)
   {
-    return self->num_provide_ports;
+    apx_size_t val;
+    MUTEX_LOCK(((apx_node_instance_t *)self)->lock);
+    val = self->num_provide_ports;
+    MUTEX_UNLOCK(((apx_node_instance_t *)self)->lock);
+    return val;
   }
   return 0;
 }
@@ -297,7 +301,11 @@ apx_size_t apx_node_instance_get_num_require_ports(apx_node_instance_t const *se
 {
   if (self != NULL)
   {
-    return self->num_require_ports;
+    apx_size_t val;
+    MUTEX_LOCK(((apx_node_instance_t *)self)->lock);
+    val = self->num_require_ports;
+    MUTEX_UNLOCK(((apx_node_instance_t *)self)->lock);
+    return val;
   }
   return 0u;
 }
@@ -380,6 +388,7 @@ apx_error_t apx_node_instance_alloc_port_instance_memory(
 {
   if (self != NULL)
   {
+    MUTEX_LOCK(self->lock);
     self->num_provide_ports = num_provide_ports;
     self->num_require_ports = num_require_ports;
     if (num_provide_ports > 0u)
@@ -387,6 +396,7 @@ apx_error_t apx_node_instance_alloc_port_instance_memory(
       self->provide_ports = (apx_port_instance_t *)malloc(num_provide_ports * sizeof(apx_port_instance_t));
       if (self->provide_ports == NULL)
       {
+        MUTEX_UNLOCK(self->lock);
         return APX_MEM_ERROR;
       }
     }
@@ -395,9 +405,11 @@ apx_error_t apx_node_instance_alloc_port_instance_memory(
       self->require_ports = (apx_port_instance_t *)malloc(num_require_ports * sizeof(apx_port_instance_t));
       if (self->require_ports == NULL)
       {
+        MUTEX_UNLOCK(self->lock);
         return APX_MEM_ERROR;
       }
     }
+    MUTEX_UNLOCK(self->lock);
   }
   return APX_NO_ERROR;
 }

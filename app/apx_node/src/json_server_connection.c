@@ -13,13 +13,14 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "json_server_connection.h"
 #include "apx/error.h"
-#include "apx/numheader.h"
 #include "apx_connection.h"
+#include "bstr.h"
 #include "dtl_json.h"
 #include "json_server.h"
 #include <assert.h>
-#include <malloc.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 //////////////////////////////////////////////////////////////////////////////
@@ -114,35 +115,36 @@ static msocket_error_t json_server_connection_data(void *arg, void *socket, cons
 {
   (void)socket;
   json_server_connection_t *self = (json_server_connection_t *)arg;
-  if (self != NULL)
+  if ((self == NULL) || (data_buf == NULL) || (consumed_bytes == NULL))
   {
-    const uint8_t *pResult;
-    const uint8_t *p_end = data_buf + data_len;
-    assert(consumed_bytes != 0);
-    uint32_t msgSize = 0u;
-    *consumed_bytes = 0;
-    if (msg_size_hint != NULL)
-    {
-      *msg_size_hint = 0u;
-    }
-    pResult = numheader_decode32(data_buf, p_end, &msgSize);
-    if ((pResult > data_buf))
-    {
-      const uint8_t *pNext = pResult;
-      if (pNext + msgSize <= p_end)
-      {
-        json_server_connection_process_message(self, pNext, pNext + msgSize);
-        pNext += msgSize;
-        *consumed_bytes = (uint32_t)(pNext - data_buf);
-      }
-      else if (msg_size_hint != NULL)
-      {
-        *msg_size_hint = (uint32_t)((pResult - data_buf) + msgSize);
-      }
-    }
+    return MSOCKET_INVALID_ARGUMENT_ERROR;
+  }
+  *consumed_bytes = 0u;
+  if (msg_size_hint != NULL)
+  {
+    *msg_size_hint = 0u;
+  }
+  if (data_len == 0u)
+  {
     return MSOCKET_NO_ERROR;
   }
-  return MSOCKET_INVALID_ARGUMENT_ERROR;
+
+  const uint8_t *data_end = data_buf + data_len;
+  const uint8_t *line_end = bstr_find_line_feed(data_buf, data_end);
+  if (line_end < data_end)
+  {
+    const uint8_t *p_begin = NULL;
+    const uint8_t *p_end = NULL;
+    bstr_strip(data_buf, line_end, &p_begin, &p_end);
+    if (p_end > p_begin)
+    {
+      json_server_connection_process_message(self, p_begin, p_end);
+    }
+    *consumed_bytes = (uint32_t)((line_end + 1) - data_buf);
+    return MSOCKET_NO_ERROR;
+  }
+
+  return MSOCKET_NO_ERROR;
 }
 
 static void json_server_connection_process_message(

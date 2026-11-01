@@ -164,17 +164,18 @@ Control symbol visibility in `libapx_core` shared library builds and enable Wind
   * Uncomment `target_compile_options(apx_core PRIVATE -fvisibility=hidden)` in `CMakeLists.txt` for ELF/Linux builds.
   * Enable Windows DLL builds (`BUILD_SHARED_LIBS=ON`) once MSVC export definitions are in place.
 
-## 10. Support Newline-Delimited JSON (NDJSON) in `apx-node` JSON Message Server
+## 10. Switch `apx-node` and `apx-control` to Newline-Delimited JSON (NDJSON) (Completed)
 
-Currently, `app/apx_node/src/json_server_connection.c` expects every message to be framed using a binary `numheader32` length prefix. This prevents generic tools (such as `nc`, `socat`, or standard shell pipelines) from sending raw JSON directly (e.g. `echo '{"VehicleSpeed": 72.5}' | nc -U /tmp/apx_node.socket` fails because `{` / `0x7B` is interpreted as a binary length byte).
+Previously, `app/apx_node/src/json_server_connection.c` and `app/apx_control/src/message_client_connection.c` framed JSON messages using a binary `numheader32` length prefix ("length-prefixed JSON"). This prevented generic tools (such as `nc`, `socat`, or standard shell pipelines) from sending raw JSON directly (e.g., `echo '{"VehicleSpeed": 72.5}' | nc -U /tmp/apx_node.socket` failed because `{` was interpreted as a binary length header).
 
-* **Auto-Detection / Multi-Framing Support:**
-  * In `json_server_connection_data()`: Inspect the initial byte of the incoming buffer.
-  * If the first byte is `{` or whitespace (`0x20`, `\t`, `\r`, `\n`), parse the stream using newline delimitation (`\n` / `\r\n`) or balanced-brace boundaries.
-  * If the first byte is a binary `numheader` byte, preserve the existing `numheader_decode32()` framing for backward compatibility with `apx_control`.
-* **Testing & Tooling:**
+* [x] **Retire Length-Prefixed (`numheader32`) JSON in `apx-node` JSON Message Server:**
+  * Remove `numheader` binary framing completely from `json_server_connection.c`.
+  * Support pure Newline-Delimited JSON (NDJSON): ingest stream by scanning for `\n` line delimiters, stripping trailing `\r` (`\r\n`), and parsing each line with `dtl_json_load_bstr()`.
+* [x] **Update `apx-control` to NDJSON:**
+  * Update `message_client_prepare_message()` to send raw JSON terminated with `\n` without binary length headers.
+* [x] **Testing & Tooling:**
   * Enable direct shell integration and piping from `nc -U`, `socat`, and standard POSIX utilities without needing helper wrappers.
-  * Add pytest integration test verifying NDJSON updates sent via raw socket.
+  * Add pytest integration tests verifying NDJSON updates via raw socket streaming and `apx-control`.
 
 ## 11. Modernize TextLog Extension & Logging Infrastructure (Completed)
 
