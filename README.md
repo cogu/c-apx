@@ -161,6 +161,10 @@ cmake --build --preset msvc-debug
 # Release build
 cmake --preset msvc-release
 cmake --build --preset msvc-release
+
+# Static analysis
+cmake --preset msvc-analyze
+cmake --build --preset msvc-analyze
 ```
 
 ### Manual CMake Workflow with Linux and GCC

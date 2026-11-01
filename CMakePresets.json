@@ -102,6 +102,14 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "UNIT_TEST": true
       }
+    },
+    {
+      "name": "msvc-analyze",
+      "displayName": "MSVC Static Analysis",
+      "inherits": "msvc-debug",
+      "cacheVariables": {
+        "ENABLE_MSVC_ANALYZE": true
+      }
     }
   ],
   "buildPresets": [
@@ -149,6 +157,10 @@
       "targets": [
         "apx_unit"
       ]
+    },
+    {
+      "name": "msvc-analyze",
+      "configurePreset": "msvc-analyze"
     }
   ],
   "testPresets": [
