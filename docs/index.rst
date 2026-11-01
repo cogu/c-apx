@@ -113,6 +113,9 @@ Applications
    * - :doc:`apps/apx_mon`
      - ``apx-mon``
      - Interactive diagnostic utility for inspecting server state, routes, and signal streams.
+   * - :doc:`apps/apx_log`
+     - ``apx-log``
+     - Event stream recording and inspection utility (``.apxlog`` container format).
    * - :doc:`apps/apx_sign`
      - ``apx-sign``
      - Cryptographic signing tool (ECDSA NIST P-256) for APX definition files.

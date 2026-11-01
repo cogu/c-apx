@@ -73,6 +73,8 @@ CuSuite *testsuite_apx_monitor_extension(void);
 CuSuite *testsuite_apx_diag_client_notification(void);
 CuSuite *testsuite_apx_diag_client_file(void);
 CuSuite *testsuite_server_cfg(void);
+CuSuite *testsuite_log_file(void);
+CuSuite *testsuite_log_event(void);
 
 void RunAllTests(void)
 {
@@ -137,6 +139,8 @@ void RunAllTests(void)
   CuSuiteAddSuite(suite, testsuite_apx_diag_client_notification());
   CuSuiteAddSuite(suite, testsuite_apx_diag_client_file());
   CuSuiteAddSuite(suite, testsuite_server_cfg());
+  CuSuiteAddSuite(suite, testsuite_log_file());
+  CuSuiteAddSuite(suite, testsuite_log_event());
 
    // Run Tests
   CuSuiteRun(suite);

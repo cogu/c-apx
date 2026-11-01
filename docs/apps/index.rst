@@ -10,6 +10,7 @@ Applications
    apx_node
    apx_control
    apx_mon
+   apx_log
    apx_sign
    apx_perf_test
 
@@ -35,6 +36,9 @@ Overview of Applications
    * - :doc:`apx_mon`
      - ``apx-mon``
      - Interactive diagnostic utility for inspecting server state, connected clients, signal routes, and live port streaming over the monitor extension.
+   * - :doc:`apx_log`
+     - ``apx-log``
+     - Event stream recording and inspection utility. Records server events into ``.apxlog`` container files, inspects metadata, and prints formatted event streams in text or NDJSON.
    * - :doc:`apx_sign`
      - ``apx-sign``
      - Cryptographic signing tool implementing RMFP/1.1 file signing and verification using ECDSA NIST P-256 (secp256r1) and SHA-256 with PEM key management.

@@ -405,6 +405,7 @@ if(NOT UNIT_TEST)
     add_subdirectory(app/apx_perf_test)
     add_subdirectory(app/apx_sign)
     add_subdirectory(app/apx_mon)
+    add_subdirectory(app/apx_log)
 endif()
 if(APX_BUILD_SERVER)
     add_subdirectory(app/apx_server)
@@ -441,6 +442,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             app/apx_mon/src/apx_diag_client_file.c
             app/apx_mon/test/testsuite_diag_client_file.c
             app/apx_mon/test/testsuite_diag_client_notification.c
+            app/apx_log/src/apx_log_file.c
+            app/apx_log/src/apx_log_event.c
+            app/apx_log/test/testsuite_log_file.c
+            app/apx_log/test/testsuite_log_event.c
             app/apx_server/src/server_cfg.c
             ${GENERATED_EXTENSIONS_CFG}
             app/apx_server/test/testsuite_server_cfg.c
@@ -456,6 +461,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
             "${PROJECT_BINARY_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/apx_core/test"
             "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_mon/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_log/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/app/apx_server/include"
         )
         target_compile_definitions(apx_unit PRIVATE UNIT_TEST)

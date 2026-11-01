@@ -236,6 +236,9 @@ def _find_binary(env_var: str, app_name: str) -> str:
     if app_name in ("apxmon", "apx_mon", "apx-mon"):
         dir_names.extend(["apx_mon", "apxmon", "apx-mon"])
         names_to_try.extend(["apx-mon", "apxmon", "apx_mon"])
+    if app_name in ("apxlog", "apx_log", "apx-log"):
+        dir_names.extend(["apx_log", "apxlog", "apx-log"])
+        names_to_try.extend(["apx-log", "apxlog", "apx_log"])
 
     candidate_paths = []
 
@@ -310,6 +313,12 @@ def apx_mon_bin() -> str:
 def apxmon_bin(apx_mon_bin: str) -> str:
     """Backward compatibility alias for apx_mon_bin."""
     return apx_mon_bin
+
+
+@pytest.fixture(scope="session")
+def apx_log_bin() -> str:
+    """Finds the apx-log executable from environment or build directories."""
+    return _find_binary("APX_LOG_BIN", "apx-log")
 
 
 @pytest.fixture
