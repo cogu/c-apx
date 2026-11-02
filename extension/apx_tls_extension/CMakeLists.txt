@@ -30,6 +30,7 @@ if(APX_SERVER_ENABLE_TLS_EXTENSION)
         HEADER "apx/extension/tls_server_extension.h"
         REGISTER_FN "apx_tls_server_extension_register"
         CONFIG_KEYS_FN "apx_tls_server_extension_config_keys"
+        CHECK_CONFIG_FN "apx_tls_server_extension_check_config"
     )
 endif()
 

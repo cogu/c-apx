@@ -25,5 +25,6 @@
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_server_text_log_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
 const char *const *apx_server_text_log_extension_config_keys(void);
+void apx_server_text_log_extension_check_config(dtl_hv_t *cfg, apx_config_warning_cb cb, void *arg);
 
 #endif // APX_SERVER_TEXT_LOG_EXTENSION_H

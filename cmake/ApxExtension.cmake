@@ -15,7 +15,7 @@ define_property(GLOBAL PROPERTY APX_SERVER_REGISTERED_ENTRIES
 
 function(apx_register_server_extension)
     set(options)
-    set(oneValueArgs TARGET NAME HEADER REGISTER_FN CONFIG_KEYS_FN)
+    set(oneValueArgs TARGET NAME HEADER REGISTER_FN CONFIG_KEYS_FN CHECK_CONFIG_FN)
     set(multiValueArgs)
     cmake_parse_arguments(EXT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -27,9 +27,13 @@ function(apx_register_server_extension)
         set(EXT_CONFIG_KEYS_FN "NULL")
     endif()
 
+    if(NOT EXT_CHECK_CONFIG_FN)
+        set(EXT_CHECK_CONFIG_FN "NULL")
+    endif()
+
     set_property(GLOBAL APPEND PROPERTY APX_SERVER_REGISTERED_TARGETS "${EXT_TARGET}")
     set_property(GLOBAL APPEND PROPERTY APX_SERVER_REGISTERED_INCLUDES "#include \"${EXT_HEADER}\"")
-    set_property(GLOBAL APPEND PROPERTY APX_SERVER_REGISTERED_ENTRIES "   {\"${EXT_NAME}\", ${EXT_REGISTER_FN}, ${EXT_CONFIG_KEYS_FN}},")
+    set_property(GLOBAL APPEND PROPERTY APX_SERVER_REGISTERED_ENTRIES "   {\"${EXT_NAME}\", ${EXT_REGISTER_FN}, ${EXT_CONFIG_KEYS_FN}, ${EXT_CHECK_CONFIG_FN}},")
 endfunction()
 
 function(apx_generate_server_extension_registry OUTPUT_FILE)

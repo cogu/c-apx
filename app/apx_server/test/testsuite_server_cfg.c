@@ -66,6 +66,9 @@ static void test_check_config_nested_unknown_key(CuTest *tc);
 static void test_check_config_recognized_keys_and_aliases(CuTest *tc);
 static void test_check_config_omitted_keys_no_warnings(CuTest *tc);
 static void test_check_config_unsupported_underscore_key_warns(CuTest *tc);
+static void test_check_config_socket_extension_missing_transports_warns(CuTest *tc);
+static void test_check_config_monitor_extension_missing_endpoints_warns(CuTest *tc);
+static void test_check_config_tls_extension_missing_keys_warns(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -96,6 +99,9 @@ CuSuite *testsuite_server_cfg(void)
   SUITE_ADD_TEST(suite, test_check_config_recognized_keys_and_aliases);
   SUITE_ADD_TEST(suite, test_check_config_omitted_keys_no_warnings);
   SUITE_ADD_TEST(suite, test_check_config_unsupported_underscore_key_warns);
+  SUITE_ADD_TEST(suite, test_check_config_socket_extension_missing_transports_warns);
+  SUITE_ADD_TEST(suite, test_check_config_monitor_extension_missing_endpoints_warns);
+  SUITE_ADD_TEST(suite, test_check_config_tls_extension_missing_keys_warns);
   return suite;
 }
 
@@ -603,7 +609,10 @@ static void test_check_config_nested_unknown_key(CuTest *tc)
                         "        }\n"
                         "    },\n"
                         "    \"monitor-extension\": {\n"
+                        "        \"tcp-port\": 5080,\n"
                         "        \"tls\": {\n"
+                        "            \"server-cert\": \"cert.pem\",\n"
+                        "            \"server-key\": \"key.pem\",\n"
                         "            \"bad-tls-key\": \"foo\"\n"
                         "        }\n"
                         "    }\n"
@@ -704,7 +713,7 @@ static void test_check_config_omitted_keys_no_warnings(CuTest *tc)
   test_warning_collector_init(&collector);
 
   const char *filepath = "test_cfg_omitted_keys.json";
-  write_test_file(filepath, "{\"socket-server-extension\": {\"enabled\": true}}");
+  write_test_file(filepath, "{\"socket-server-extension\": {\"enabled\": true, \"unix-file\": \"/tmp/apx.socket\"}}");
 
   dtl_hv_t *cfg = NULL;
   apx_error_t result = apx_server_load_config(filepath, &cfg);
@@ -732,9 +741,85 @@ static void test_check_config_unsupported_underscore_key_warns(CuTest *tc)
   CuAssertPtrNotNull(tc, cfg);
 
   apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
-  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertIntEquals(tc, 2, collector.count); // 1 unknown key ("unix_file"), 1 missing transport
   CuAssertTrue(tc,
     test_warning_collector_has(&collector, "Warning: Unknown configuration key 'socket-server-extension.unix_file'"));
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: 'socket-server-extension' is enabled, but no listening transports are configured (expected at least "
+      "one of: 'unix-file', 'tcp-port', 'vsock-port', or 'systemd')"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_socket_extension_missing_transports_warns(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_sock_missing_transport.json";
+  write_test_file(filepath, "{\"socket-server-extension\": {\"enabled\": true}}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: 'socket-server-extension' is enabled, but no listening transports are configured (expected at least "
+      "one of: 'unix-file', 'tcp-port', 'vsock-port', or 'systemd')"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_monitor_extension_missing_endpoints_warns(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_mon_missing_endpoint.json";
+  write_test_file(filepath, "{\"monitor-extension\": {\"enabled\": true}}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: 'monitor-extension' is enabled, but no listening endpoints are configured (expected 'socket-file' or "
+      "'tcp-port')"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_tls_extension_missing_keys_warns(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_tls_missing_keys.json";
+  write_test_file(filepath, "{\"tls-server-extension\": {\"enabled\": true}}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: 'tls-server-extension' is enabled, but missing required configuration (requires 'tcp-port', "
+      "'server-cert', and 'server-key')"));
 
   dtl_dec_ref(cfg);
   remove(filepath);

@@ -195,6 +195,10 @@ void apx_server_check_config_unknown_keys_cb(dtl_hv_t const *config, apx_config_
         {
           const char *const *allowed_keys = (entry->config_keys_fn != NULL) ? entry->config_keys_fn() : NULL;
           check_hash_keys((dtl_hv_t *)top_val, top_key, "", allowed_keys, cb, arg);
+          if (entry->check_config_fn != NULL)
+          {
+            entry->check_config_fn((dtl_hv_t *)top_val, cb, arg);
+          }
         }
       }
       else

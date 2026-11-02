@@ -34,6 +34,7 @@ if(APX_SERVER_ENABLE_MONITOR_EXTENSION)
         HEADER "apx/extension/monitor_extension.h"
         REGISTER_FN "apx_monitor_extension_register"
         CONFIG_KEYS_FN "apx_monitor_extension_config_keys"
+        CHECK_CONFIG_FN "apx_monitor_extension_check_config"
     )
 endif()
 

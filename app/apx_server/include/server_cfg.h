@@ -53,14 +53,6 @@ struct apx_server_tag;
 apx_error_t apx_server_configure(struct apx_server_tag *server, dtl_hv_t const *config);
 
 /**
- * Callback function type for reporting configuration warnings.
- *
- * \param arg User context pointer.
- * \param warning Null-terminated warning string.
- */
-typedef void (*apx_config_warning_cb)(void *arg, const char *warning);
-
-/**
  * Checks server configuration for unknown sections and keys, invoking a callback for each warning.
  *
  * \param config Loaded server configuration hash.

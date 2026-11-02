@@ -71,6 +71,64 @@ apx_error_t apx_socket_server_extension_register(struct apx_server_tag *apx_serv
 
 const char *const *apx_socket_server_extension_config_keys(void) { return m_config_keys; }
 
+void apx_socket_server_extension_check_config(dtl_hv_t *cfg, apx_config_warning_cb cb, void *arg)
+{
+  if (cfg == NULL || cb == NULL)
+  {
+    return;
+  }
+  bool is_enabled = true;
+  dtl_sv_t *enabled_sv = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "enabled");
+  if (enabled_sv != NULL)
+  {
+    bool ok = false;
+    is_enabled = dtl_sv_to_bool(enabled_sv, &ok);
+    if (!ok)
+    {
+      is_enabled = true;
+    }
+  }
+  if (!is_enabled)
+  {
+    return;
+  }
+
+  bool has_unix = (dtl_hv_get_cstr(cfg, "unix-file") != NULL);
+  bool has_tcp = (dtl_hv_get_cstr(cfg, "tcp-port") != NULL || dtl_hv_get_cstr(cfg, "port") != NULL);
+  bool has_vsock = (dtl_hv_get_cstr(cfg, "vsock-port") != NULL);
+
+  bool has_systemd = false;
+  dtl_sv_t *sv_systemd = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "unix-systemd");
+  if (sv_systemd == NULL)
+  {
+    sv_systemd = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "systemd");
+  }
+  if (sv_systemd != NULL)
+  {
+    if (dtl_sv_type(sv_systemd) == DTL_SV_STR)
+    {
+      bool ok = false;
+      const char *mode = dtl_sv_to_cstr(sv_systemd, &ok);
+      if (ok && mode != NULL && (strcmp(mode, "false") != 0) && (strcmp(mode, "0") != 0))
+      {
+        has_systemd = true;
+      }
+    }
+    else
+    {
+      bool ok = false;
+      has_systemd = dtl_sv_to_bool(sv_systemd, &ok);
+    }
+  }
+
+  if (!has_unix && !has_tcp && !has_vsock && !has_systemd)
+  {
+    cb(arg,
+      "Warning: 'socket-server-extension' is enabled, but no listening transports are configured (expected at least "
+      "one of: 'unix-file', 'tcp-port', 'vsock-port', or 'systemd')");
+  }
+}
+
 #ifdef UNIT_TEST
 void apx_socket_server_extension_accept_testsocket(testsocket_t *sock)
 {

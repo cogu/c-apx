@@ -45,6 +45,52 @@ apx_error_t apx_monitor_extension_register(struct apx_server_tag *apx_server, dt
 
 const char *const *apx_monitor_extension_config_keys(void) { return m_config_keys; }
 
+void apx_monitor_extension_check_config(dtl_hv_t *cfg, apx_config_warning_cb cb, void *arg)
+{
+  if (cfg == NULL || cb == NULL)
+  {
+    return;
+  }
+  bool is_enabled = true;
+  dtl_sv_t *enabled_sv = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "enabled");
+  if (enabled_sv != NULL)
+  {
+    bool ok = false;
+    is_enabled = dtl_sv_to_bool(enabled_sv, &ok);
+    if (!ok)
+    {
+      is_enabled = true;
+    }
+  }
+  if (!is_enabled)
+  {
+    return;
+  }
+
+  bool has_unix = (dtl_hv_get_cstr(cfg, "socket-file") != NULL || dtl_hv_get_cstr(cfg, "unix-file") != NULL);
+  bool has_tcp = (dtl_hv_get_cstr(cfg, "tcp-port") != NULL || dtl_hv_get_cstr(cfg, "port") != NULL);
+
+  if (!has_unix && !has_tcp)
+  {
+    cb(arg,
+      "Warning: 'monitor-extension' is enabled, but no listening endpoints are configured (expected 'socket-file' or "
+      "'tcp-port')");
+  }
+
+  dtl_dv_t *tls_dv = dtl_hv_get_cstr(cfg, "tls");
+  if (tls_dv != NULL && dtl_dv_type(tls_dv) == DTL_DV_HASH)
+  {
+    dtl_hv_t *tls_hv = (dtl_hv_t *)tls_dv;
+    bool has_cert = (dtl_hv_get_cstr(tls_hv, "server-cert") != NULL || dtl_hv_get_cstr(tls_hv, "certificate") != NULL);
+    bool has_key = (dtl_hv_get_cstr(tls_hv, "server-key") != NULL || dtl_hv_get_cstr(tls_hv, "key") != NULL);
+    if (!has_cert || !has_key)
+    {
+      cb(arg,
+        "Warning: 'monitor-extension' tls configuration is incomplete (requires both 'server-cert' and 'server-key')");
+    }
+  }
+}
+
 #ifdef UNIT_TEST
 void apx_monitor_extension_accept_testsocket(struct testsocket_tag *sock)
 {

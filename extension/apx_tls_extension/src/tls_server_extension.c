@@ -54,6 +54,40 @@ apx_error_t apx_tls_server_extension_register(struct apx_server_tag *apx_server,
 
 const char *const *apx_tls_server_extension_config_keys(void) { return m_config_keys; }
 
+void apx_tls_server_extension_check_config(dtl_hv_t *cfg, apx_config_warning_cb cb, void *arg)
+{
+  if (cfg == NULL || cb == NULL)
+  {
+    return;
+  }
+  bool is_enabled = true;
+  dtl_sv_t *enabled_sv = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "enabled");
+  if (enabled_sv != NULL)
+  {
+    bool ok = false;
+    is_enabled = dtl_sv_to_bool(enabled_sv, &ok);
+    if (!ok)
+    {
+      is_enabled = true;
+    }
+  }
+  if (!is_enabled)
+  {
+    return;
+  }
+
+  bool has_port = (dtl_hv_get_cstr(cfg, "tcp-port") != NULL || dtl_hv_get_cstr(cfg, "port") != NULL);
+  bool has_cert = (dtl_hv_get_cstr(cfg, "server-cert") != NULL || dtl_hv_get_cstr(cfg, "certificate") != NULL);
+  bool has_key = (dtl_hv_get_cstr(cfg, "server-key") != NULL || dtl_hv_get_cstr(cfg, "key") != NULL);
+
+  if (!has_port || !has_cert || !has_key)
+  {
+    cb(arg,
+      "Warning: 'tls-server-extension' is enabled, but missing required configuration (requires 'tcp-port', "
+      "'server-cert', and 'server-key')");
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/error.h"
+#include "apx/types.h"
 #include "dtl_type.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -30,6 +31,7 @@ struct testsocket_tag;
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_monitor_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
 const char *const *apx_monitor_extension_config_keys(void);
+void apx_monitor_extension_check_config(dtl_hv_t *cfg, apx_config_warning_cb cb, void *arg);
 
 #ifdef UNIT_TEST
 void apx_monitor_extension_accept_testsocket(struct testsocket_tag *sock);

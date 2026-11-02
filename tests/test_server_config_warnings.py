@@ -219,3 +219,52 @@ def test_server_unsupported_underscore_key_emits_warning(tmp_path, apx_server_bi
     stderr_text = err.decode("utf-8", errors="replace")
     assert "Warning: Unknown configuration key 'socket-server-extension.unix_file'" in stderr_text
 
+
+def test_server_missing_minimum_extension_config_warns_and_continues(tmp_path, apx_server_bin: str):
+    """Verify that enabled extensions with missing minimum configuration warn and continue."""
+    config_file = str(tmp_path / "server_empty_ext.json")
+
+    config_data = {
+        "socket-server-extension": {
+            "enabled": True
+        },
+        "monitor-extension": {
+            "enabled": True
+        }
+    }
+
+    with open(config_file, "w", encoding="utf-8") as f:
+        json.dump(config_data, f)
+
+    r_fd, w_fd = os.pipe()
+    os.set_inheritable(w_fd, True)
+
+    cmd = [
+        apx_server_bin,
+        "--ready-fd", str(w_fd),
+        config_file
+    ]
+
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        pass_fds=(w_fd,),
+        preexec_fn=_set_pdeathsig
+    )
+    os.close(w_fd)
+
+    rlist, _, _ = select.select([r_fd], [], [], 3.0)
+    assert rlist, "Server should signal readiness despite minimum configuration warnings"
+    os.read(r_fd, 1)
+    os.close(r_fd)
+
+    proc.terminate()
+    out, err = proc.communicate(timeout=3.0)
+    assert proc.returncode == 0
+
+    stderr_text = err.decode("utf-8", errors="replace")
+    assert "Warning: 'socket-server-extension' is enabled, but no listening transports are configured" in stderr_text
+    assert "Warning: 'monitor-extension' is enabled, but no listening endpoints are configured" in stderr_text
+
+

@@ -280,6 +280,7 @@ When a remote node publishes its `.apx` definition file with a valid SHA-256 dig
 Prevent misspelled or unrecognized JSON configuration keys from being silently ignored.
 
 * Warn about unknown top-level configuration section names and unknown keys within recognized server and extension sections, including nested configuration objects.
+* Warn when an enabled extension has missing minimum configuration (e.g., `socket-server-extension` enabled with no listening transports, or `monitor-extension` enabled with no endpoints).
 * Identify the unrecognized section or key and its configuration path in each warning (e.g., `textlog-extension.use-timestmp`).
 * Make warnings visible during startup without depending on the text logging extension being enabled.
 * Warn and continue: unknown keys remain ignored, and existing startup and default-value behavior is unchanged.

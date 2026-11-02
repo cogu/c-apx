@@ -51,6 +51,63 @@ apx_error_t apx_server_text_log_extension_register(struct apx_server_tag *apx_se
 
 const char *const *apx_server_text_log_extension_config_keys(void) { return m_config_keys; }
 
+void apx_server_text_log_extension_check_config(dtl_hv_t *cfg, apx_config_warning_cb cb, void *arg)
+{
+  if (cfg == NULL || cb == NULL)
+  {
+    return;
+  }
+  bool is_enabled = true;
+  dtl_sv_t *enabled_sv = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "enabled");
+  if (enabled_sv != NULL)
+  {
+    bool ok = false;
+    is_enabled = dtl_sv_to_bool(enabled_sv, &ok);
+    if (!ok)
+    {
+      is_enabled = true;
+    }
+  }
+  if (!is_enabled)
+  {
+    return;
+  }
+
+  dtl_sv_t *sv_file = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file-enabled");
+  if (sv_file == NULL)
+  {
+    sv_file = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "file_enabled");
+  }
+  dtl_sv_t *sv_syslog = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "syslog-enabled");
+  if (sv_syslog == NULL)
+  {
+    sv_syslog = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "syslog_enabled");
+  }
+
+  bool file_off = false;
+  if (sv_file != NULL)
+  {
+    bool ok = false;
+    if (!dtl_sv_to_bool(sv_file, &ok) && ok)
+    {
+      file_off = true;
+    }
+  }
+  bool syslog_off = false;
+  if (sv_syslog != NULL)
+  {
+    bool ok = false;
+    if (!dtl_sv_to_bool(sv_syslog, &ok) && ok)
+    {
+      syslog_off = true;
+    }
+  }
+  if (file_off && syslog_off)
+  {
+    cb(arg, "Warning: 'textlog-extension' is enabled, but both 'file-enabled' and 'syslog-enabled' are disabled");
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////

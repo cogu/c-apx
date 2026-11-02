@@ -27,5 +27,6 @@
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_tls_server_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
 const char *const *apx_tls_server_extension_config_keys(void);
+void apx_tls_server_extension_check_config(dtl_hv_t *cfg, apx_config_warning_cb cb, void *arg);
 
 #endif // APX_TLS_SERVER_EXTENSION_H

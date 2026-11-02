@@ -27,6 +27,7 @@ struct adt_str_tag;
 
 typedef void(apx_void_ptr_func_t)(void *arg);
 typedef struct adt_str_tag *(apx_to_string_func_t)(void *arg);
+typedef void (*apx_config_warning_cb)(void *arg, const char *warning);
 
 typedef int32_t apx_offset_t;
 typedef uint32_t apx_size_t; // use uint16_t  to send up to 64KB, use uint32_t for 4GB.
