@@ -48,7 +48,7 @@ Integrators can develop proprietary or custom extensions in separate source repo
 
 ### Step 1: Implement the Extension C Registration Interface
 
-Each extension provides an initialization function matching the standard signature:
+Each extension provides an initialization function, and can optionally provide callbacks for configuration key validation and minimum configuration verification:
 
 ```c
 /* my_sec_extension.h */
@@ -56,9 +56,17 @@ Each extension provides an initialization function matching the standard signatu
 #define MY_SEC_EXTENSION_H
 
 #include "apx/server_extension.h"
+#include "apx/types.h"
 #include "dtl_type.h"
 
+/* Mandatory registration function */
 apx_error_t my_sec_extension_register(struct apx_server_tag *server, dtl_dv_t *config);
+
+/* Optional: list of supported configuration keys for unrecognized key detection */
+const char *const *my_sec_extension_config_keys(void);
+
+/* Optional: minimum configuration validation check */
+void my_sec_extension_check_config(dtl_hv_t *config, apx_config_warning_cb cb, void *arg);
 
 #endif // MY_SEC_EXTENSION_H
 ```
@@ -67,6 +75,12 @@ apx_error_t my_sec_extension_register(struct apx_server_tag *server, dtl_dv_t *c
 /* my_sec_extension.c */
 #include "my_sec_extension.h"
 #include "apx/server.h"
+
+static const char *const m_config_keys[] = {
+   "enabled",
+   "auth-level",
+   NULL
+};
 
 static apx_error_t my_sec_init(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
@@ -81,8 +95,26 @@ static void my_sec_shutdown(void)
 
 apx_error_t my_sec_extension_register(struct apx_server_tag *server, dtl_dv_t *config)
 {
-   apx_serverExtensionHandler_t handler = {my_sec_init, my_sec_shutdown};
+   apx_server_extension_handler_t handler = {my_sec_init, my_sec_shutdown};
    return apx_server_add_extension(server, "SECURITY", &handler, config);
+}
+
+const char *const *my_sec_extension_config_keys(void)
+{
+   return m_config_keys;
+}
+
+void my_sec_extension_check_config(dtl_hv_t *config, apx_config_warning_cb cb, void *arg)
+{
+   if (config == NULL || cb == NULL)
+   {
+      return;
+   }
+   /* Verify that minimum required configuration is present when enabled */
+   if (dtl_hv_get_cstr(config, "auth-level") == NULL)
+   {
+      cb(arg, "Warning: 'security-extension' is enabled, but 'auth-level' is not configured");
+   }
 }
 ```
 
@@ -106,12 +138,25 @@ target_link_libraries(my_sec_extension PRIVATE
 
 # Register with apx_server (NAME dictates the config key: "<NAME>-extension")
 apx_register_server_extension(
-    TARGET      my_sec_extension
-    NAME        "security"
-    HEADER      "my_sec_extension.h"
-    REGISTER_FN "my_sec_extension_register"
+    TARGET          my_sec_extension
+    NAME            "security"
+    HEADER          "my_sec_extension.h"
+    REGISTER_FN     "my_sec_extension_register"
+    CONFIG_KEYS_FN  "my_sec_extension_config_keys"
+    CHECK_CONFIG_FN "my_sec_extension_check_config"
 )
 ```
+
+#### Parameters for `apx_register_server_extension`
+
+| Parameter | Required | Description |
+|---|---|---|
+| `TARGET` | Yes | CMake library target name (e.g. `my_sec_extension`). |
+| `NAME` | Yes | Extension name (dictates configuration section name `"<NAME>-extension"`). |
+| `HEADER` | Yes | Header file path to `#include` in the generated `extensions_cfg.c`. |
+| `REGISTER_FN` | Yes | C registration function name (`apx_error_t (*)(struct apx_server_tag *, dtl_dv_t *)`). |
+| `CONFIG_KEYS_FN` | No | C function returning a `NULL`-terminated array of supported JSON keys (`const char *const *(*)(void)`). Used by `apx_server` to detect and warn about unrecognized keys. Defaults to `NULL`. |
+| `CHECK_CONFIG_FN` | No | C function for pre-flight minimum configuration checks (`void (*)(dtl_hv_t *, apx_config_warning_cb, void *)`). Invoked during startup to emit warnings if mandatory options are missing. Defaults to `NULL`. |
 
 ---
 
@@ -144,10 +189,8 @@ Configuration for the APX server daemon and all extensions is centralized in a s
   },
   "socket-server-extension": {
     "enabled": true,
-    "unix": {
-      "tag": "UNIX",
-      "path": "/tmp/apx.socket"
-    }
+    "unix-file": "/tmp/apx.socket",
+    "unix-tag": "UNIX"
   },
   "security-extension": {
     "enabled": true,
@@ -163,7 +206,12 @@ ExecStart=/usr/bin/apx_server /etc/apx/server.json
 ```
 *(or specify `/etc/apx/` directly, where `apx_server` will automatically resolve `server.json`)*
 
-Each extension entry in the registry (registered with `NAME "<NAME>"`) receives only its isolated sub-tree under `"<NAME>-extension"`. Furthermore, the server daemon automatically checks the optional `"enabled"` boolean attribute for each extension: if set to `false`, the extension is skipped and never initialized.
+Each extension entry in the registry (registered with `NAME "<NAME>"`) receives only its isolated sub-tree under `"<NAME>-extension"`.
+
+During server startup, configuration is validated:
+- **Enabled toggle**: The server daemon checks the optional `"enabled"` boolean attribute for each extension. If explicitly set to `false`, the extension is skipped and never initialized.
+- **Unrecognized key detection**: When an extension specifies `CONFIG_KEYS_FN`, all keys in `"<NAME>-extension"` are checked against the returned supported key list. Any unrecognized keys or typos emit a descriptive warning on `stderr`.
+- **Minimum configuration verification**: When an extension is enabled and specifies `CHECK_CONFIG_FN`, the server executes this validator during pre-flight checks. Missing mandatory settings emit a descriptive warning on `stderr` while allowing server startup to continue.
 
 ---
 

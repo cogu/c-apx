@@ -1,7 +1,8 @@
 Server Programming & Event Listeners
 ======================================
 
-This guide explains how to embed and program the APX server daemon in C using ``apx_server_t``, register server-level and connection-level event listeners, and author custom server extensions.
+This guide explains how to embed and program the APX server daemon in C using ``apx_server_t``,
+register server-level and connection-level event listeners, and author custom server extensions.
 
 Server Lifecycle & Embedding
 ----------------------------
@@ -29,7 +30,8 @@ The APX server can be embedded directly into custom C applications, test suites,
 Server Event Listeners
 ----------------------
 
-The server notifies registered listeners of global lifecycle events and internal diagnostic messages through ``apx_server_event_listener_t``:
+The server notifies registered listeners of global lifecycle events and internal diagnostic messages through
+``apx_server_event_listener_t``:
 
 .. list-table::
    :header-rows: 1
@@ -46,7 +48,8 @@ The server notifies registered listeners of global lifecycle events and internal
      - Invoked when an established client connection terminates or encounters a fatal transport error.
    * - ``server_write_log``
      - ``void (*)(void *arg, apx_log_level_t level, const char *label, const char *msg)``
-     - Invoked when the server daemon emits an internal log entry (routing errors, port mismatches, security rejections).
+     - Invoked when the server daemon emits an internal log entry
+       (routing errors, port mismatches, security rejections).
 
 Registering Server Listeners
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,7 +87,8 @@ Registering Server Listeners
 Connection & File Event Listeners
 ---------------------------------
 
-To observe virtual file publications (such as node definitions or memory-mapped signal files) on individual client connections, use ``apx_server_connection_event_listener_t``:
+To observe virtual file publications (such as node definitions or memory-mapped signal files) on individual
+client connections, use ``apx_server_connection_event_listener_t``:
 
 .. list-table::
    :header-rows: 1
@@ -106,17 +110,22 @@ To observe virtual file publications (such as node definitions or memory-mapped 
 Developing Custom Server Extensions
 -----------------------------------
 
-Custom server extensions allow third parties to integrate bespoke transports (such as CAN, shared memory, or IPC mechanisms) and logging targets without modifying upstream APX core code.
+Custom server extensions allow third parties to integrate bespoke transports (such as CAN, shared memory,
+or IPC mechanisms) and logging targets without modifying upstream APX core code.
 
 1. Implement Lifecycle Handlers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Every extension implements an initialization function and a shutdown function:
+Every extension implements an initialization function and a shutdown function, and may optionally provide callbacks
+for supported configuration keys and minimum configuration validation:
 
 .. code-block:: c
 
    #include "apx/server.h"
    #include "apx/server_extension.h"
+   #include "apx/types.h"
+
+   static const char *const m_config_keys[] = {"enabled", "my-param", NULL};
 
    static apx_error_t my_extension_init(struct apx_server_tag *server, dtl_dv_t *config)
    {
@@ -136,6 +145,20 @@ Every extension implements an initialization function and a shutdown function:
        return apx_server_add_extension(server, "MY_EXTENSION", &handler, config);
    }
 
+   const char *const *my_extension_config_keys(void)
+   {
+       return m_config_keys;
+   }
+
+   void my_extension_check_config(dtl_hv_t *config, apx_config_warning_cb cb, void *arg)
+   {
+       if (config == NULL || cb == NULL)
+       {
+           return;
+       }
+       // Validate minimum configuration settings when enabled...
+   }
+
 2. CMake Integration
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -144,12 +167,16 @@ Register the extension using CMake's build hook:
 .. code-block:: cmake
 
    apx_register_server_extension(
-       TARGET my_extension
-       NAME "my-extension"
-       HEADER "my_extension.h"
-       REGISTER_FN "my_extension_register"
+       TARGET          my_extension
+       NAME            "my-extension"
+       HEADER          "my_extension.h"
+       REGISTER_FN     "my_extension_register"
+       CONFIG_KEYS_FN  "my_extension_config_keys"
+       CHECK_CONFIG_FN "my_extension_check_config"
    )
 
-This automatically generates the static registry entry in ``extensions_cfg.c``, linking the extension directly into the ``apx-server`` binary.
+This automatically generates the static registry entry in ``extensions_cfg.c``, linking the extension directly into
+the ``apx-server`` binary.
 
-For complete out-of-tree extension guides and BitBake integration examples, see the [APX CMake Integration Guide](https://github.com/cogu/c-apx/blob/master/cmake/README.md) (`cmake/README.md`).
+For complete out-of-tree extension guides and BitBake integration examples, see the
+`APX CMake Integration Guide <https://github.com/cogu/c-apx/blob/master/cmake/README.md>`_ (``cmake/README.md``).
