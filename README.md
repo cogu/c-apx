@@ -76,10 +76,13 @@ Extension Type: `Sink`
 
 ##### Monitor Extension
 
-An unfinished extension that has the ambition of streaming real-time APX event data to remote loggers.
-It currently does nothing.
+Exposes real-time event streaming and interactive diagnostic endpoints for `apx-mon` and `apx-log` over TCP, UNIX domain sockets, or TLS.
 
-Extension Type: `Sink`
+Default settings:
+
+- Listening port: `5080`
+
+Extension Type: `Source`
 
 #### Features not yet started
 
@@ -108,11 +111,13 @@ Dynamic clients are best used on Windows and Linux systems.
 ### Build Targets and Modes
 
 - **Applications**: Standard builds compile the core library (`apx_core`), enabled extensions, and the executable applications in `app/`:
-  - `apx-server`: The APX server daemon.
-  - `apx-node`: APX node application.
-  - `apx-control`: APX control application.
-  - `apx-perf-test`: Dedicated APX performance test.
-  - `apx-sign`: Utility for signing APX nodes using ECDSA.
+  - [`apx-server`](https://c-apx.readthedocs.io/en/latest/apps/apx_server.html): The APX server daemon.
+  - [`apx-node`](https://c-apx.readthedocs.io/en/latest/apps/apx_node.html): APX node application.
+  - [`apx-control`](https://c-apx.readthedocs.io/en/latest/apps/apx_control.html): APX control application.
+  - [`apx-mon`](https://c-apx.readthedocs.io/en/latest/apps/apx_mon.html): Interactive diagnostic and monitoring client.
+  - [`apx-log`](https://c-apx.readthedocs.io/en/latest/apps/apx_log.html): Event stream recording and inspection utility.
+  - [`apx-perf-test`](https://c-apx.readthedocs.io/en/latest/apps/apx_perf_test.html): Dedicated APX performance test.
+  - [`apx-sign`](https://c-apx.readthedocs.io/en/latest/apps/apx_sign.html): Utility for signing APX nodes using ECDSA.
 
   Applications can be built in either `Debug` or `Release` configuration.
 
