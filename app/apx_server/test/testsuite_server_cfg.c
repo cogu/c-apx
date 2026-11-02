@@ -57,6 +57,15 @@ static void test_register_extensions_omitted_keys_disabled(CuTest *tc);
 static void test_configure_server_null_arguments(CuTest *tc);
 static void test_configure_server_security_require_signed_nodes(CuTest *tc);
 static void test_configure_server_security_trusted_keys(CuTest *tc);
+static void test_check_config_null_or_empty(CuTest *tc);
+static void test_check_config_unknown_section(CuTest *tc);
+static void test_check_config_unknown_top_level_key(CuTest *tc);
+static void test_check_config_unknown_key_in_extension(CuTest *tc);
+static void test_check_config_unknown_key_in_server(CuTest *tc);
+static void test_check_config_nested_unknown_key(CuTest *tc);
+static void test_check_config_recognized_keys_and_aliases(CuTest *tc);
+static void test_check_config_omitted_keys_no_warnings(CuTest *tc);
+static void test_check_config_unsupported_underscore_key_warns(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -78,6 +87,15 @@ CuSuite *testsuite_server_cfg(void)
   SUITE_ADD_TEST(suite, test_configure_server_null_arguments);
   SUITE_ADD_TEST(suite, test_configure_server_security_require_signed_nodes);
   SUITE_ADD_TEST(suite, test_configure_server_security_trusted_keys);
+  SUITE_ADD_TEST(suite, test_check_config_null_or_empty);
+  SUITE_ADD_TEST(suite, test_check_config_unknown_section);
+  SUITE_ADD_TEST(suite, test_check_config_unknown_top_level_key);
+  SUITE_ADD_TEST(suite, test_check_config_unknown_key_in_extension);
+  SUITE_ADD_TEST(suite, test_check_config_unknown_key_in_server);
+  SUITE_ADD_TEST(suite, test_check_config_nested_unknown_key);
+  SUITE_ADD_TEST(suite, test_check_config_recognized_keys_and_aliases);
+  SUITE_ADD_TEST(suite, test_check_config_omitted_keys_no_warnings);
+  SUITE_ADD_TEST(suite, test_check_config_unsupported_underscore_key_warns);
   return suite;
 }
 
@@ -427,4 +445,297 @@ static void test_configure_server_security_trusted_keys(CuTest *tc)
   remove(key_file);
   free(priv_pem);
   free(pub_pem);
+}
+
+#define MAX_TEST_WARNINGS 16
+
+typedef struct test_warning_collector_tag
+{
+  int count;
+  char messages[MAX_TEST_WARNINGS][256];
+} test_warning_collector_t;
+
+static void test_warning_collector_init(test_warning_collector_t *collector)
+{
+  collector->count = 0;
+  for (int i = 0; i < MAX_TEST_WARNINGS; ++i)
+  {
+    collector->messages[i][0] = '\0';
+  }
+}
+
+static void test_warning_cb(void *arg, const char *warning)
+{
+  test_warning_collector_t *collector = (test_warning_collector_t *)arg;
+  if (collector->count < MAX_TEST_WARNINGS)
+  {
+    strncpy(collector->messages[collector->count], warning, 255);
+    collector->messages[collector->count][255] = '\0';
+    collector->count++;
+  }
+}
+
+static bool test_warning_collector_has(const test_warning_collector_t *collector, const char *expected)
+{
+  for (int i = 0; i < collector->count; ++i)
+  {
+    if (strcmp(collector->messages[i], expected) == 0)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+static void test_check_config_null_or_empty(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  // NULL config
+  apx_server_check_config_unknown_keys_cb(NULL, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 0, collector.count);
+
+  // Empty config
+  dtl_hv_t *cfg = dtl_hv_new();
+  CuAssertPtrNotNull(tc, cfg);
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 0, collector.count);
+  dtl_dec_ref(cfg);
+}
+
+static void test_check_config_unknown_section(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_unknown_sec.json";
+  write_test_file(filepath, "{\"unknown-section\": {\"enabled\": true}}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc, test_warning_collector_has(&collector, "Warning: Unknown configuration section 'unknown-section'"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_unknown_top_level_key(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_unknown_top_key.json";
+  write_test_file(filepath, "{\"unknown-key\": 42}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'unknown-key'"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_unknown_key_in_extension(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_unknown_ext_key.json";
+  write_test_file(filepath, "{\"textlog-extension\": {\"use-timestmp\": true}}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(
+    tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'textlog-extension.use-timestmp'"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_unknown_key_in_server(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_unknown_srv_key.json";
+  write_test_file(filepath, "{\"apx-server\": {\"invalid-setting\": 123}}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(
+    tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'apx-server.invalid-setting'"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_nested_unknown_key(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_nested_unknown.json";
+  const char *content = "{\n"
+                        "    \"apx-server\": {\n"
+                        "        \"security\": {\n"
+                        "            \"bad-sec-key\": true\n"
+                        "        }\n"
+                        "    },\n"
+                        "    \"monitor-extension\": {\n"
+                        "        \"tls\": {\n"
+                        "            \"bad-tls-key\": \"foo\"\n"
+                        "        }\n"
+                        "    }\n"
+                        "}\n";
+  write_test_file(filepath, content);
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 2, collector.count);
+  CuAssertTrue(
+    tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'apx-server.security.bad-sec-key'"));
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector, "Warning: Unknown configuration key 'monitor-extension.tls.bad-tls-key'"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_recognized_keys_and_aliases(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_recognized_aliases.json";
+  const char *content = "{\n"
+                        "    \"apx-server\": {\n"
+                        "        \"security\": {\n"
+                        "            \"require_signed_nodes\": true,\n"
+                        "            \"trusted_keys\": [\"key1.pem\"]\n"
+                        "        },\n"
+                        "        \"max-num-events\": 200,\n"
+                        "        \"apx-cache-enabled\": false,\n"
+                        "        \"apx-cache-path\": \"/tmp\"\n"
+                        "    },\n"
+                        "    \"socket-server-extension\": {\n"
+                        "        \"enabled\": true,\n"
+                        "        \"port\": 5000,\n"
+                        "        \"systemd\": \"auto\",\n"
+                        "        \"unix-file\": \"/tmp/apx.socket\",\n"
+                        "        \"tag\": \"test2\",\n"
+                        "        \"allowed-groups\": [\"wheel\"],\n"
+                        "        \"vsock-port\": 1234,\n"
+                        "        \"vsock-cid\": 3,\n"
+                        "        \"vsock-tag\": \"vtag\"\n"
+                        "    },\n"
+                        "    \"textlog-extension\": {\n"
+                        "        \"enabled\": true,\n"
+                        "        \"log_level\": \"DEBUG\",\n"
+                        "        \"use_timestamp\": true,\n"
+                        "        \"file_enabled\": true,\n"
+                        "        \"file_path\": \"/tmp/test.log\",\n"
+                        "        \"syslog_enabled\": false,\n"
+                        "        \"syslog_label\": \"apx\"\n"
+                        "    },\n"
+                        "    \"monitor-extension\": {\n"
+                        "        \"enabled\": true,\n"
+                        "        \"unix-file\": \"/tmp/mon.socket\",\n"
+                        "        \"port\": 5080,\n"
+                        "        \"bind-address\": \"127.0.0.1\",\n"
+                        "        \"tls\": {\n"
+                        "            \"certificate\": \"cert.pem\",\n"
+                        "            \"key\": \"key.pem\",\n"
+                        "            \"ca-cert\": \"ca.pem\",\n"
+                        "            \"require-client-cert\": false\n"
+                        "        }\n"
+                        "    },\n"
+                        "    \"tls-server-extension\": {\n"
+                        "        \"enabled\": true,\n"
+                        "        \"port\": 5020,\n"
+                        "        \"certificate\": \"cert.pem\",\n"
+                        "        \"key\": \"key.pem\",\n"
+                        "        \"ca-cert\": \"ca.pem\",\n"
+                        "        \"require-client-cert\": true,\n"
+                        "        \"tag\": \"TLS\"\n"
+                        "    }\n"
+                        "}\n";
+  write_test_file(filepath, content);
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 0, collector.count);
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_omitted_keys_no_warnings(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_omitted_keys.json";
+  write_test_file(filepath, "{\"socket-server-extension\": {\"enabled\": true}}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 0, collector.count);
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_unsupported_underscore_key_warns(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_underscore_key.json";
+  write_test_file(filepath, "{\"socket-server-extension\": {\"unix_file\": \"/tmp/apx.socket\"}}");
+
+  dtl_hv_t *cfg = NULL;
+  apx_error_t result = apx_server_load_config(filepath, &cfg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, result);
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector, "Warning: Unknown configuration key 'socket-server-extension.unix_file'"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
 }

@@ -29,6 +29,7 @@ if(APX_SERVER_ENABLE_TEXT_LOG_EXTENSION)
         NAME "textlog"
         HEADER "apx/extension/server_text_log_extension.h"
         REGISTER_FN "apx_server_text_log_extension_register"
+        CONFIG_KEYS_FN "apx_server_text_log_extension_config_keys"
     )
 endif()
 

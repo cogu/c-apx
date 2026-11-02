@@ -26,5 +26,6 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_tls_server_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
+const char *const *apx_tls_server_extension_config_keys(void);
 
 #endif // APX_TLS_SERVER_EXTENSION_H

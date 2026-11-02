@@ -23,6 +23,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+static const char *const m_config_keys[] = {"enabled", "file-enabled", "file_enabled", "file-path", "file_path",
+  "log-level", "log_level", "use-timestamp", "use_timestamp", "syslog-enabled", "syslog_enabled", "syslog-label",
+  "syslog_label", NULL};
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -45,6 +48,8 @@ apx_error_t apx_server_text_log_extension_register(struct apx_server_tag *apx_se
   apx_server_extension_handler_t handler = {apx_server_text_log_extension_init, apx_server_text_log_extension_shutdown};
   return apx_server_add_extension(apx_server, "TEXTLOG", &handler, config);
 }
+
+const char *const *apx_server_text_log_extension_config_keys(void) { return m_config_keys; }
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

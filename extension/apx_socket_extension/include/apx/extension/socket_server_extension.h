@@ -30,6 +30,7 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_socket_server_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
+const char *const *apx_socket_server_extension_config_keys(void);
 
 #ifdef UNIT_TEST
 void apx_socket_server_extension_accept_testsocket(testsocket_t *sock);

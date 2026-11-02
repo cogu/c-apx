@@ -24,5 +24,6 @@
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_server_text_log_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
+const char *const *apx_server_text_log_extension_config_keys(void);
 
 #endif // APX_SERVER_TEXT_LOG_EXTENSION_H

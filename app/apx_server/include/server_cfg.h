@@ -52,4 +52,28 @@ struct apx_server_tag;
  */
 apx_error_t apx_server_configure(struct apx_server_tag *server, dtl_hv_t const *config);
 
+/**
+ * Callback function type for reporting configuration warnings.
+ *
+ * \param arg User context pointer.
+ * \param warning Null-terminated warning string.
+ */
+typedef void (*apx_config_warning_cb)(void *arg, const char *warning);
+
+/**
+ * Checks server configuration for unknown sections and keys, invoking a callback for each warning.
+ *
+ * \param config Loaded server configuration hash.
+ * \param cb Callback function to invoke for each warning.
+ * \param arg User context pointer passed to cb.
+ */
+void apx_server_check_config_unknown_keys_cb(dtl_hv_t const *config, apx_config_warning_cb cb, void *arg);
+
+/**
+ * Checks server configuration for unknown sections and keys, emitting warnings to stderr.
+ *
+ * \param config Loaded server configuration hash.
+ */
+void apx_server_check_config_unknown_keys(dtl_hv_t const *config);
+
 #endif // APX_SERVER_CFG_H

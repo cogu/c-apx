@@ -21,11 +21,13 @@
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 typedef apx_error_t (*apx_extension_register_fn)(struct apx_server_tag *apx_server, dtl_dv_t *config);
+typedef const char *const *(*apx_extension_config_keys_fn)(void);
 
 typedef struct apx_server_extension_entry_tag
 {
   const char *name;
   apx_extension_register_fn register_fn;
+  apx_extension_config_keys_fn config_keys_fn;
 } apx_server_extension_entry_t;
 
 //////////////////////////////////////////////////////////////////////////////

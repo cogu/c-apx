@@ -196,6 +196,11 @@ int main(int argc, char **argv)
     dtl_hv_set_cstr(config, "socket-server-extension", socket_dv, false);
   }
 
+  if (config != NULL)
+  {
+    apx_server_check_config_unknown_keys(config);
+  }
+
 #ifndef _WIN32
   signal_handler_setup();
 #endif

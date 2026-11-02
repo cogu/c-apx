@@ -37,6 +37,9 @@
 #define SYSTEMD_MODE_ON 1
 #define SYSTEMD_MODE_AUTO 2
 
+static const char *const m_config_keys[] = {"enabled", "unix-file", "unix-tag", "unix-systemd", "systemd",
+  "allowed-groups", "tcp-port", "port", "tcp-tag", "tag", "vsock-port", "vsock-cid", "vsock-tag", NULL};
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -65,6 +68,8 @@ apx_error_t apx_socket_server_extension_register(struct apx_server_tag *apx_serv
   apx_server_extension_handler_t handler = {apx_socket_server_extension_init, apx_socket_server_extension_shutdown};
   return apx_server_add_extension(apx_server, "SOCKET", &handler, config);
 }
+
+const char *const *apx_socket_server_extension_config_keys(void) { return m_config_keys; }
 
 #ifdef UNIT_TEST
 void apx_socket_server_extension_accept_testsocket(testsocket_t *sock)
@@ -139,6 +144,10 @@ static apx_error_t apx_socket_server_extension_configure(apx_socket_server_t *se
 static apx_error_t configure_tcp(apx_socket_server_t *server, dtl_hv_t *cfg)
 {
   dtl_sv_t *sv_tcp_port = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "tcp-port");
+  if (sv_tcp_port == NULL)
+  {
+    sv_tcp_port = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "port");
+  }
   if (sv_tcp_port != NULL)
   {
     bool conversion_ok;
@@ -147,6 +156,10 @@ static apx_error_t configure_tcp(apx_socket_server_t *server, dtl_hv_t *cfg)
     {
       const char *tag = "";
       dtl_sv_t *sv_tcp_tag = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "tcp-tag");
+      if (sv_tcp_tag == NULL)
+      {
+        sv_tcp_tag = (dtl_sv_t *)dtl_hv_get_cstr(cfg, "tag");
+      }
       if (sv_tcp_tag != NULL)
       {
         tag = dtl_sv_to_cstr(sv_tcp_tag, &conversion_ok);

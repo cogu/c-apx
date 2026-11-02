@@ -275,7 +275,7 @@ When a remote node publishes its `.apx` definition file with a valid SHA-256 dig
 * **Resilient Fallback**: Corrupted or version-mismatched binary cache files transparently fall back to Level 1 or wire download without failing node connection.
 * **Pre-Warming**: Offline tools or OTA post-install scripts can pre-populate `.apxc` cache files during vehicle software installation.
 
-## 15. Unknown Configuration Key Warnings
+## 15. Unknown Configuration Key Warnings (Completed)
 
 Prevent misspelled or unrecognized JSON configuration keys from being silently ignored.
 

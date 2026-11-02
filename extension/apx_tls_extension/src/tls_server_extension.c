@@ -27,6 +27,9 @@
 #define TCP_USER_PORT_BEGIN 1024
 #define TCP_USER_PORT_END 65535
 
+static const char *const m_config_keys[] = {"enabled", "tcp-port", "port", "server-cert", "certificate", "server-key",
+  "key", "ca-cert", "require-client-cert", "tag", "tcp-tag", NULL};
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -48,6 +51,8 @@ apx_error_t apx_tls_server_extension_register(struct apx_server_tag *apx_server,
   apx_server_extension_handler_t handler = {apx_tls_server_extension_init, apx_tls_server_extension_shutdown};
   return apx_server_add_extension(apx_server, "TLS", &handler, config);
 }
+
+const char *const *apx_tls_server_extension_config_keys(void) { return m_config_keys; }
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS

@@ -19,6 +19,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+static const char *const m_config_keys[] = {"enabled", "socket-file", "unix-file", "tcp-port", "port", "bind-address",
+  "tls", "tls.server-cert", "tls.certificate", "tls.server-key", "tls.key", "tls.ca-cert", "tls.require-client-cert",
+  NULL};
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -39,6 +42,8 @@ apx_error_t apx_monitor_extension_register(struct apx_server_tag *apx_server, dt
   apx_server_extension_handler_t handler = {init, shutdown};
   return apx_server_add_extension(apx_server, "MONITOR", &handler, config);
 }
+
+const char *const *apx_monitor_extension_config_keys(void) { return m_config_keys; }
 
 #ifdef UNIT_TEST
 void apx_monitor_extension_accept_testsocket(struct testsocket_tag *sock)

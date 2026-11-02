@@ -29,6 +29,7 @@ struct testsocket_tag;
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_monitor_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config);
+const char *const *apx_monitor_extension_config_keys(void);
 
 #ifdef UNIT_TEST
 void apx_monitor_extension_accept_testsocket(struct testsocket_tag *sock);
