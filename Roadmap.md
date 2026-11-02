@@ -1,11 +1,12 @@
 # c-apx Roadmap
 
 > [!NOTE]
-> Detailed design specifications for diagnostics, event streaming, replay, and transport security are maintained under [`design/`](design/):
+> Detailed design specifications for diagnostics, event streaming, replay, transport security, and routing policies are maintained under [`design/`](design/):
 > * [diagnostics_and_logging_architecture.md](design/diagnostics_and_logging_architecture.md): Overall architecture and RemoteFile Stream File model.
 > * [securing_monitor_extension.md](design/securing_monitor_extension.md): Dedicated diagnostic transport (port 5080) and mTLS security.
 > * [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md): `server.log` wire framing, `.apxlog` format, and `apx-log` CLI tool.
 > * [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md): Diagnostic query-response protocol and `apx-mon` CLI tool.
+> * [multiple_providers_policy_spec.md](design/multiple_providers_policy_spec.md): Multiple port providers arbitration policy (`"first"` vs. `"last"`), provider state machine, and observability.
 
 ---
 
@@ -217,19 +218,30 @@ To eliminate heap allocation and deallocation overhead for high-frequency signal
   * When publishing port changes (`node_instance.c:2100` / `//TODO: use small object allocator later on`), check if payload size `<= APX_SMALL_DATA_SIZE`.
   * If small, copy directly into stack buffer and route via `apx_file_manager_send_local_small_data()`, avoiding heap allocation entirely.
 
-## 13. Support Multiple Providers per Require Port
+## 13. Support Multiple Providers per Require Port (`multiple-provider-policy`)
 
-In `apx_node_instance_handle_require_ports_disconnected` (`apx_core/src/node_instance.c`), the connector change table supports disconnect transitions where `entry->count == -1` (single provider disconnection). When `entry->count < -1`, the function currently returns `APX_NOT_IMPLEMENTED_ERROR`.
-
-In `apx_port_connector_change_entry_t` (`apx_core/include/apx/port_connector_change_entry.h`), `union portref_union_tag` already provides an `adt_ary_t *array` when `count < -1` or `count > 1`, designed to hold multiple provider references.
-
-* **Multi-Provider Disconnect Handling (`node_instance.c`):**
-  * When `entry->count < -1`, iterate over all disconnected provide ports stored in `entry->data.array` using `apx_port_connector_change_entry_get(entry, i)`.
-  * For each provide port, acquire `apx_node_instance_lock_port_connector_table(provide_node_instance)`, invoke `remove_provide_port_connector()`, compute the updated provide port count, and unlock.
-  * Send provide port count data notifications for all affected provide node instances.
-  * Send require port count update for the require port.
+* Detailed architecture, arbitration state machine, and observability specifications defined in [multiple_providers_policy_spec.md](design/multiple_providers_policy_spec.md).
+* **Configurable Provider Arbitration Policy (`server.json` / `server_cfg.c` / `server.c`):**
+  * Support `"multiple-provider-policy": "first" | "last"` (with alias `"multiple_provider_policy"`, default: `"first"`) in the `"apx-server"` section of `server.json`.
+  * `"first"` policy (Production default): The oldest connected provider (`adt_list_first(&entry->provide_ports)`) wins and retains ownership. Newer providers attach to `entry->provide_ports` as shadowed without disturbing active routing. If the active provider disconnects, the next oldest provider in the list becomes active.
+  * `"last"` policy (`v0.2.8` / Debug override mode): The newest connected provider (`adt_list_last(&entry->provide_ports)`) immediately takes over from the previous active provider (which becomes shadowed). If the active provider disconnects, the preceding provider at the tail of `entry->provide_ports` becomes active.
+* **Single Active Provider Invariant & Provider Queue (`port_signature_map.c` / `port_signature_map_entry.c`):**
+  * Maintain all connected providers for a port signature in chronological order in `entry->provide_ports` (`adt_list_t`), with `entry->preferred_provider` tracking the single active winner.
+  * Ensure only `entry->preferred_provider` holds require port references in its `node_instance->connector_table` so shadowed providers never contend with the active provider on `.out` writes.
+  * Fix `notify_provide_ports_about_require_port_change()` so newly connecting/disconnecting require ports only bind to `entry->preferred_provider` rather than all `entry->provide_ports`.
+* **Two-Phase Lock-Free Takeover & Disconnect Switch (`server.c` / `server_connection.c` / `node_instance.c`):**
+  * On `"last"` policy takeover in `apx_server_insert_node_instance()`: disconnect the replaced `old_preferred` provider (`ProvidePortCount = 0`), connect `new_preferred`, and route its current `.out` value to all require ports outside `server->global_lock`.
+  * On active provider disconnect in `detach_all_nodes()`: detach all nodes belonging to the closing connection first, select the next surviving provider (`new_preferred`) according to the active policy, and route `new_preferred`'s current `.out` value to surviving require ports outside `server->global_lock`.
+  * Complete the `entry->count < -1` loop in `apx_node_instance_handle_require_ports_disconnected()` (`node_instance.c`).
+* **Observability (`apx_text_log_extension`, `apx-log`, `apx-mon`):**
+  * Emit a server event (`provider_changed`) whenever a port's active provider changes due to takeover or disconnect.
+  * `apx_text_log_extension`: Log active provider changes at `INFO` level matching `apx-mon` formatting (`[INFO ] [PORT] Provider changed: 1:NodeA/Port -> 4:NodeB/Port`).
+  * `apx-log` / `.apxlog`: Emit `APX_LOG_EVENT_PROVIDER_CHANGE` (`0x0050`) into `server.log` and format in `apx-log print` (text and `--json`). Do not increment the `.apxlog` / `server.log` format minor version (`v1.0` remains unchanged).
+  * `apx-mon`:
+    * Display `(shadowed)` in the `REQUIRER_NODE` column of `apx-mon routing --unconnected` and `apx-mon routing --all` for shadowed providers (`reason = 2: SHADOWED`).
+    * Add `apx-mon routing --multi-provider` (`APX_DIAG_CMD_LIST_MULTI_PROVIDERS`) to report all port signatures with multiple providers (`num_providers > 1`), showing each provider and its status (`ACTIVE` vs. `(shadowed)`).
 * **Testing:**
-  * Add unit and integration tests verifying multi-provider connect and simultaneous disconnect transitions.
+  * Add unit and integration tests verifying multi-provider connect, takeover, shadowed disconnect, active disconnect transitions (e.g. `[1, 4, 5, 7]`), and `apx-mon routing --multi-provider` under both `"first"` and `"last"` policies.
 
 ## 14. Node Definition Cache (Text & Binary Form)
 
