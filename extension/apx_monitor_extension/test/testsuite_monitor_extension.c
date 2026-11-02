@@ -660,7 +660,8 @@ static void test_diag_dispatcher_get_node_definition(CuTest *tc)
   req[4] = 6; // opcode = 0x0006
   req[8] = (uint8_t)(tlen & 0xFF);
   req[9] = (uint8_t)((tlen >> 8) & 0xFF);
-  memcpy(req + 10, target, tlen);
+  // String16 wire payloads are length-prefixed and have no NUL terminator.
+  memcpy(req + 10, target, tlen); // NOLINT(bugprone-not-null-terminated-result)
 
   apx_diag_dispatcher_on_request_written(dispatcher, 0u, req, req_size);
   free(req);
