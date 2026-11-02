@@ -6,6 +6,7 @@
 > * [securing_monitor_extension.md](design/securing_monitor_extension.md): Dedicated diagnostic transport (port 5080) and mTLS security.
 > * [event_streaming_and_apxlog_spec.md](design/event_streaming_and_apxlog_spec.md): `server.log` wire framing, `.apxlog` format, and `apx-log` CLI tool.
 > * [apxmon_diagnostics_spec.md](design/apxmon_diagnostics_spec.md): Diagnostic query-response protocol and `apx-mon` CLI tool.
+> * [small_data_and_allocator_spec.md](design/small_data_and_allocator_spec.md): Inline small data pipeline (`APX_SMALL_DATA_SIZE`), small object allocator (`soa`), and event queue configuration.
 > * [multiple_providers_policy_spec.md](design/multiple_providers_policy_spec.md): Multiple port providers arbitration policy (`"first"` vs. `"last"`), provider state machine, and observability.
 
 ---
@@ -196,27 +197,32 @@ The `c-apx` codebase contains numerous compile-time `#if APX_DEBUG_ENABLE` check
 * [x] **Complete Syslog Integration (`syslog-enabled`):**
   * Wire up `syslog-enabled` and `syslog-label` in `server_text_log_extension.c` and `text_log_base.c` using POSIX `syslog(priority, ...)`, mapping `apx_log_level_t` directly to syslog priorities (`LOG_CRIT`, `LOG_ERR`, `LOG_WARNING`, `LOG_INFO`, `LOG_DEBUG`).
 
-## 12. Small Data Support in Command Pipeline
+## 12. Small Data Support in Command Pipeline & Retiring `apx_allocator_t`
 
-In `apx_command_t` (`apx_core/include/apx/command.h`), the union `msgData3_tag` includes an inline buffer `uint8_t data[APX_SMALL_DATA_SIZE]` (where `APX_SMALL_DATA_SIZE` is 8 bytes, defined in `cfg.h`). This is designed to optimize transmission of small port/signal data (scalar numeric types, booleans, and small byte arrays) without requiring dynamic heap allocation.
+* Detailed historical analysis and 3-tier architecture defined in [small_data_and_allocator_spec.md](design/small_data_and_allocator_spec.md).
 
-Currently, all local data transmission via `APX_CMD_SEND_LOCAL_DATA` treats `data3.ptr` as a heap-allocated pointer:
-* Callers in `apx_nodeInstance_t` dynamically allocate memory before calling `apx_file_manager_send_local_data()`.
-* `run_send_local_data()` and `cleanup_cmd_queue()` unconditionally call `free(data)` / `free(cmd.data3.ptr)`.
+In `apx_command_t` (`apx_core/include/apx/command.h`), the union `msgData3_tag` overlays `void *ptr` with an inline buffer `uint8_t data[APX_SMALL_DATA_SIZE]` (`8` bytes). Currently, all local data transmission via `APX_CMD_SEND_LOCAL_DATA` treats `data3.ptr` as a heap-allocated pointer (`malloc` / `free`), while `apx_connection_base_t` spawns an unused `apx_allocator_t` wrapper and background thread on every connection.
 
-To eliminate heap allocation and deallocation overhead for high-frequency signal updates:
+To eliminate heap allocation overhead and per-connection garbage-collector threads, retire `allocator.c` (`apx_allocator_t`) and maintain `soa_t` directly inside `apx_file_manager_worker_t` (protected by `self->queue_lock`) with a 3-tier allocation pipeline:
 
-* **Command Type Distinction:**
-  * Add a dedicated command opcode (e.g. `APX_CMD_SEND_LOCAL_SMALL_DATA`) or a discriminator flag to `apx_command_t`.
-* **Worker Queue Handling (`file_manager_worker.c`):**
-  * Implement `apx_file_manager_worker_prepare_send_local_small_data(self, address, data, size)` using `apx_build_command_with_data()`.
-  * In `process_single_command()`: dispatch `APX_CMD_SEND_LOCAL_SMALL_DATA` to transmit without freeing `data3`.
-  * In `cleanup_cmd_queue()`: bypass `free()` for small data commands.
-* **File Manager API (`file_manager.c`):**
-  * Add `apx_file_manager_send_local_small_data(self, address, const uint8_t* data, apx_size_t size)`.
-* **Node Instance Integration (`node_instance.c`):**
-  * When publishing port changes (`node_instance.c:2100` / `//TODO: use small object allocator later on`), check if payload size `<= APX_SMALL_DATA_SIZE`.
-  * If small, copy directly into stack buffer and route via `apx_file_manager_send_local_small_data()`, avoiding heap allocation entirely.
+1. **Tier 1 — Inline Small Data (`1 .. 8` bytes, `size <= APX_SMALL_DATA_SIZE`):**
+   * Enqueued as `APX_CMD_SEND_LOCAL_SMALL_DATA` with payload bytes embedded directly in `cmd.data3.data[0..7]` (zero allocations, zero frees).
+2. **Tier 2 — Small Data via SOA (`9 .. 32` bytes, `APX_SMALL_DATA_SIZE < size <= SOA_SMALL_OBJECT_MAX_SIZE`):**
+   * Enqueued as `APX_CMD_SEND_LOCAL_SOA_DATA` with `cmd.data3.ptr` allocated from `worker->soa` (`soa_alloc()`) and freed via `soa_free()` under `self->queue_lock`.
+3. **Tier 3 — Normal / Large Data (`> 32` bytes, `size > SOA_SMALL_OBJECT_MAX_SIZE`):**
+   * Enqueued as `APX_CMD_SEND_LOCAL_DATA` with `cmd.data3.ptr` allocated on the heap via `malloc()` and freed via `free()`.
+
+* **Retire `apx_allocator_t` (`allocator.c`, `allocator.h`, `testsuite_allocator.c`):**
+  * Remove `allocator.c`, `allocator.h`, and `testsuite_allocator.c` from `apx_core`.
+  * Remove `apx_allocator_t allocator` from `apx_connection_base_t` and remove the `allocator` parameter from `apx_file_manager_create()` and `apx_file_manager_shared_create()`.
+* **Command Definition, Documentation & Builder Fix (`command.h`, `command.c`):**
+  * Add `APX_CMD_SEND_LOCAL_SMALL_DATA` and `APX_CMD_SEND_LOCAL_SOA_DATA` to `apx_cmd_type_t`.
+  * Add a `"Command field usage and ownership"` comment block to `command.h` (matching the `"Event field usage and ownership"` documentation in `event.h`) documenting `data1`, `data2`, `data3`, and ownership semantics for every `APX_CMD_*`.
+  * Fix `apx_build_command_with_data()` in `command.c` to copy `d2` (`size`) bytes (`d2 <= APX_SMALL_DATA_SIZE`) rather than unconditionally reading `APX_SMALL_DATA_SIZE` bytes from `d3`.
+* **File Manager Worker & 3-Tier Dispatch (`file_manager_worker.c`, `file_manager.c`, `node_instance.c`):**
+  * Embed `soa_t soa;` in `apx_file_manager_worker_t` (`soa_init` on create, `soa_destroy` on destroy).
+  * Implement `apx_file_manager_worker_prepare_send_local_small_data()` and `apx_file_manager_worker_prepare_send_local_soa_data()`, and handle both in `process_single_command()` and `cleanup_cmd_queue()`.
+  * Add `apx_file_manager_write_local_data(self, address, const uint8_t *data, apx_size_t size)` in `file_manager.c` to automatically select Tier 1 (`<= 8` B), Tier 2 (`9..32` B), or Tier 3 (`> 32` B), and call it from `remote_route_data_to_file()` in `node_instance.c`.
 
 ## 13. Support Multiple Providers per Require Port (`multiple-provider-policy`)
 
@@ -329,6 +335,19 @@ To reduce wire transfer latency for signed APX nodes by >80% during startup phas
   * Compute SHA-256 of verified text and query Level 2 binary cache (`.apxc` from Item 14) to skip IDL parsing and VM bytecode compilation entirely.
 * **Backward Compatibility Fallback:**
   * If a legacy server returns `RMF_CMD_NACK_MSG` on opcode 24, the client falls back to uncompressed `RMF_CMD_PUBLISH_SIGNED_FILE_MSG` (opcode 23).
+
+## 17. Retire Unused `"max-num-events"` Configuration & `APX_MAX_NUM_EVENTS`
+
+The JSON configuration setting `"max-num-events"` and the compile-time macro `APX_MAX_NUM_EVENTS` (`apx_core/include/apx/cfg.h:49`) are unused leftovers from an early `v0.3.x` refactoring (`commit 1c8b833`, Sep 2019) when `apx_server_t` briefly accepted a `maxNumEvents` cap for a server-level ringbuffer.
+
+* **Core Header Cleanup (`apx_core/include/apx/cfg.h`):**
+  * Remove unused `#define APX_MAX_NUM_EVENTS 1000`.
+* **Server Configuration & Tests (`app/apx_server`, `tests/`):**
+  * Remove `"max-num-events"` from `KNOWN_SERVER_KEYS` in `app/apx_server/src/server_cfg.c`.
+  * Remove `"max-num-events"` assertions and test fixtures from `app/apx_server/test/testsuite_server_cfg.c` and `tests/test_server_config_warnings.py`.
+* **Example Configurations & Documentation (`example/`, `docs/`, `cmake/`, `design/`):**
+  * Remove `"max-num-events": 200` from `example/config/server.json`, `example/monitor/config/server.json`, `example/secure/config/signed_server.json`, `example/secure/config/signed_tls_server.json`, and `example/systemd/server.json`.
+  * Remove `"max-num-events"` from `docs/apps/apx_server.rst`, `cmake/README.md`, and `design/multiple_providers_policy_spec.md`.
 
 ---
 
