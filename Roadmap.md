@@ -275,21 +275,20 @@ When a remote node publishes its `.apx` definition file with a valid SHA-256 dig
 * **Resilient Fallback**: Corrupted or version-mismatched binary cache files transparently fall back to Level 1 or wire download without failing node connection.
 * **Pre-Warming**: Offline tools or OTA post-install scripts can pre-populate `.apxc` cache files during vehicle software installation.
 
-## 15. Configuration Validation & Unknown Key Diagnostics
+## 15. Unknown Configuration Key Warnings
 
-Currently in `server_cfg.c` and extension initialization routines (e.g. `server_text_log_extension.c`, `socket_server_extension.c`), configuration parameters are looked up on demand via `dtl_hv_get_cstr(cfg, "key")`. If a user misspells a configuration key (e.g. `"use-time-stamp"`, `"log_lvl"`, or `"prot"` instead of `"tcp-port"`), the key is silently ignored, and the system falls back to default values without any warning or operator feedback.
+Prevent misspelled or unrecognized JSON configuration keys from being silently ignored.
 
-To improve usability and prevent silent configuration errors:
+* Warn about unknown top-level configuration section names and unknown keys within recognized server and extension sections, including nested configuration objects.
+* Identify the unrecognized section or key and its configuration path in each warning (e.g., `textlog-extension.use-timestmp`).
+* Make warnings visible during startup without depending on the text logging extension being enabled.
+* Warn and continue: unknown keys remain ignored, and existing startup and default-value behavior is unchanged.
+* Recognize existing supported aliases and registered extension section names. Omitted optional settings continue to use their defaults without warnings.
+* Emit unknown-configuration warnings directly to stderr, independently of extension initialization, logging destinations, and log-level filtering.
 
-* **Unknown Key Detection & Warning:**
-  * Implement an allowlist or schema validation helper for dynamic type hashes (e.g. `cutil` / `dtl` hash inspection or a schema checker function `apx_config_validate_keys()`).
-  * Iterate over all keys present in the loaded JSON object/hash:
-    * Emit a warning (via standard error or `apx_server_log_write()` at `APX_LOG_LEVEL_WARNING`) for any unrecognized key in `server.json` top-level sections (e.g. `apx-server`, `socket-server-extension`, `textlog-extension`, etc.).
-    * Emit section-level warnings for unrecognized keys within each extension's configuration block.
-* **Typo Distance Suggestion (Optional Enhancement):**
-  * Use Levenshtein distance to suggest intended keys for minor typos (e.g., *"Unknown key 'use-timestmp'; did you mean 'use-timestamp'?"*).
-* **Strict Validation Option:**
-  * Provide a `--strict-config` CLI flag or `"strict-config": true` option to reject unknown keys and abort server startup with `APX_INVALID_ARGUMENT_ERROR`, preventing unintended fallback behavior in automated deployment or test environments.
+**Out of scope:** Typo suggestions, Levenshtein distance, strict mode, new CLI/configuration options, and a general schema or value/type-validation framework.
+
+**Acceptance criteria:** Tests cover warnings for unknown sections and keys, continued startup after these warnings, and no unknown-key warnings for recognized keys, supported aliases, or omitted optional settings.
 
 ## 16. Compressed Transfer for Signed APX Definitions (RMFP 1.1)
 
@@ -335,6 +334,5 @@ To reduce wire transfer latency for signed APX nodes by >80% during startup phas
     * `--rate <float>`: Time scaling (e.g. `1.0` real-time, `2.0` 2x speed, `0.5` half speed).
     * `--loop`: Loop playback indefinitely.
     * `--exclude-node <name>` / `--include-nodes <names>`: Node filtering to simulate surrounding vehicle bus nodes while running real ECU node under test.
-
 
 
