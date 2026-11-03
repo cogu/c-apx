@@ -1,5 +1,5 @@
 """
-Tests for APX server unknown configuration key warnings (Roadmap Item 15).
+Tests for APX server unknown configuration key warnings (Backlog Item 15).
 """
 
 import json

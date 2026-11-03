@@ -1,6 +1,6 @@
 """
 Integration tests verifying NDJSON streaming support in apx-node's JSON message server and apx-control.
-Verifies Roadmap Item 10: Exclusive Newline-Delimited JSON (NDJSON) framing.
+Verifies Backlog Item 10: Exclusive Newline-Delimited JSON (NDJSON) framing.
 """
 
 import socket

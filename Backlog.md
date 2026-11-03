@@ -1,4 +1,4 @@
-# c-apx Roadmap
+# c-apx Backlog
 
 > [!NOTE]
 > Detailed design specifications for diagnostics, event streaming, replay, transport security, and routing policies are maintained under [`design/`](design/):
@@ -20,7 +20,7 @@ These are the items left to implement for c-apx v0.4.0.
 * [x] **Completed**: All inline TODO comments across the repository have been investigated and resolved:
   * Implemented missing functionality (e.g. `apx_vm_deserializer_unpack_char8`, file manager error handling/cleanup, socket accept cleanup).
   * Removed obsolete, stale, and duplicate comments.
-  * Extracted major architectural features into dedicated items in this roadmap (Items 8, 12, 13, 14).
+  * Extracted major architectural features into dedicated items in this backlog (Items 8, 12, 13, 14).
 
 ## 2. Event Streaming Protocol & .apxlog Binary Container (apx-log) (Completed)
 

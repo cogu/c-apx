@@ -2,7 +2,7 @@
 
 ## 1. Overview and Problem Statement
 
-The APX system requires runtime introspection, diagnostics, and recording capabilities for both local debugging and remote vehicular telemetry. Previously, roadmap items 2 through 6 conflated three distinct use cases under a single prototype implementation (`apx_info` and an early `apx_monitor_extension`):
+The APX system requires runtime introspection, diagnostics, and recording capabilities for both local debugging and remote vehicular telemetry. Previously, backlog items 2 through 6 conflated three distinct use cases under a single prototype implementation (`apx_info` and an early `apx_monitor_extension`):
 
 1. **Offline Event Logging (Recording)**: High-throughput, passive streaming of server events and signal modifications to a persistent binary file (`.apxlog`).
 2. **Log Playback (Replay & Simulation)**: Active injection of recorded event sequences back into an APX server to simulate surrounding nodes while testing or debugging a single node under test.

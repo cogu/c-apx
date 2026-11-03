@@ -1,7 +1,7 @@
 # Design Proposal: 3-Tier Data Command Pipeline & Retiring `apx_allocator_t`
 
 * **Status**: Proposed
-* **Target Release**: `c-apx` v0.4.0 (Roadmap Item 12)
+* **Target Release**: `c-apx` v0.4.0 (Backlog Item 12)
 * **Affected Components**: `apx_core` (`cfg.h`, `command.h`, `command.c`, `file_manager.h`, `file_manager.c`, `file_manager_shared.h`, `file_manager_shared.c`, `file_manager_worker.h`, `file_manager_worker.c`, `node_instance.c`, `connection_base.h`, `connection_base.c`; retire `allocator.h`, `allocator.c`, `testsuite_allocator.c`)
 
 ---
