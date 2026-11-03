@@ -185,7 +185,7 @@ Configuration for the APX server daemon and all extensions is centralized in a s
 ```json
 {
   "apx-server": {
-    "max-num-events": 200
+    "multiple-provider-policy": "first"
   },
   "socket-server-extension": {
     "enabled": true,

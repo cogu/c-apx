@@ -340,6 +340,8 @@ To reduce wire transfer latency for signed APX nodes by >80% during startup phas
 
 ## 17. Retire Unused `"max-num-events"` Configuration & `APX_MAX_NUM_EVENTS`
 
+* **Status**: Completed
+
 The JSON configuration setting `"max-num-events"` and the compile-time macro `APX_MAX_NUM_EVENTS` (`apx_core/include/apx/cfg.h:49`) are unused leftovers from an early `v0.3.x` refactoring (`commit 1c8b833`, Sep 2019) when `apx_server_t` briefly accepted a `maxNumEvents` cap for a server-level ringbuffer.
 
 * **Core Header Cleanup (`apx_core/include/apx/cfg.h`):**

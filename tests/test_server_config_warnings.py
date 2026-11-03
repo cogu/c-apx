@@ -133,7 +133,7 @@ def test_server_recognized_keys_and_aliases_no_warnings(tmp_path, apx_server_bin
                 "require_signed_nodes": False,
                 "trusted_keys": []
             },
-            "max-num-events": 200,
+            "multiple-provider-policy": "first",
             "apx-cache-enabled": False
         },
         "socket-server-extension": {
@@ -266,5 +266,34 @@ def test_server_missing_minimum_extension_config_warns_and_continues(tmp_path, a
     stderr_text = err.decode("utf-8", errors="replace")
     assert "Warning: 'socket-server-extension' is enabled, but no listening transports are configured" in stderr_text
     assert "Warning: 'monitor-extension' is enabled, but no listening endpoints are configured" in stderr_text
+
+
+def test_server_retired_max_num_events_warns(tmp_path, apx_server_bin: str):
+    """Verify that the retired 'max-num-events' configuration key emits an unknown key warning."""
+    config_file = str(tmp_path / "server_retired_events.json")
+
+    config_data = {
+        "apx-server": {
+            "max-num-events": 200
+        }
+    }
+
+    with open(config_file, "w", encoding="utf-8") as f:
+        json.dump(config_data, f)
+
+    proc = subprocess.Popen(
+        [apx_server_bin, config_file],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        preexec_fn=_set_pdeathsig
+    )
+    import time
+    time.sleep(0.5)
+    proc.terminate()
+    out, err = proc.communicate(timeout=3.0)
+
+    stderr_text = err.decode("utf-8", errors="replace")
+    assert "Warning: Unknown configuration key 'apx-server.max-num-events'" in stderr_text
+
 
 

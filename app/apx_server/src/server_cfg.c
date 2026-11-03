@@ -31,7 +31,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static const char *const m_apx_server_keys[] = {"security", "security.require-signed-nodes",
   "security.require_signed_nodes", "security.trusted-keys", "security.trusted_keys", "require-signed-nodes",
-  "require_signed_nodes", "trusted-keys", "trusted_keys", "max-num-events", "apx-cache-enabled", "apx-cache-path",
+  "require_signed_nodes", "trusted-keys", "trusted_keys", "apx-cache-enabled", "apx-cache-path",
   "multiple-provider-policy", "multiple_provider_policy", NULL};
 
 static const char *const m_security_keys[] = {

@@ -2,7 +2,6 @@
     "apx-server": {
         "apx-cache-enabled": false,
         "apx-cache-path": "",
-        "max-num-events": 200,
         "multiple-provider-policy": "first"
     },
     "socket-server-extension": {

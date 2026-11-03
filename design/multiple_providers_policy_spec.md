@@ -37,8 +37,7 @@ The `apx-server` section of `server.json` accepts a `"multiple-provider-policy"`
     "apx-server": {
         "multiple-provider-policy": "first",
         "apx-cache-enabled": false,
-        "apx-cache-path": "",
-        "max-num-events": 200
+        "apx-cache-path": ""
     }
 }
 ```

@@ -71,6 +71,7 @@ static void test_check_config_monitor_extension_missing_endpoints_warns(CuTest *
 static void test_check_config_tls_extension_missing_keys_warns(CuTest *tc);
 static void test_configure_server_multiple_provider_policy(CuTest *tc);
 static void test_check_config_invalid_multiple_provider_policy_warns(CuTest *tc);
+static void test_check_config_retired_max_num_events_warns(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -106,6 +107,7 @@ CuSuite *testsuite_server_cfg(void)
   SUITE_ADD_TEST(suite, test_check_config_tls_extension_missing_keys_warns);
   SUITE_ADD_TEST(suite, test_configure_server_multiple_provider_policy);
   SUITE_ADD_TEST(suite, test_check_config_invalid_multiple_provider_policy_warns);
+  SUITE_ADD_TEST(suite, test_check_config_retired_max_num_events_warns);
   return suite;
 }
 
@@ -148,7 +150,7 @@ static void test_load_config_from_file_valid(CuTest *tc)
   const char *filepath = "test_single_server.json";
   const char *content = "{\n"
                         "    \"apx-server\": {\n"
-                        "        \"max-num-events\": 200\n"
+                        "        \"multiple-provider-policy\": \"first\"\n"
                         "    },\n"
                         "    \"socket-server-extension\": {\n"
                         "        \"enabled\": true,\n"
@@ -168,10 +170,10 @@ static void test_load_config_from_file_valid(CuTest *tc)
   dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
   CuAssertPtrNotNull(tc, server_node);
   CuAssertIntEquals(tc, DTL_DV_HASH, dtl_dv_type(server_node));
-  dtl_sv_t *sv = (dtl_sv_t *)dtl_hv_get_cstr((dtl_hv_t *)server_node, "max-num-events");
+  dtl_sv_t *sv = (dtl_sv_t *)dtl_hv_get_cstr((dtl_hv_t *)server_node, "multiple-provider-policy");
   CuAssertPtrNotNull(tc, sv);
   bool ok = false;
-  CuAssertIntEquals(tc, 200, dtl_sv_to_i32(sv, &ok));
+  CuAssertStrEquals(tc, "first", dtl_sv_to_cstr(sv, &ok));
   CuAssertTrue(tc, ok);
 
   dtl_dv_t *ext_node = dtl_hv_get_cstr(cfg, "socket-server-extension");
@@ -191,7 +193,7 @@ static void test_load_config_from_dir_valid(CuTest *tc)
   snprintf(filepath, sizeof(filepath), "%s/server.json", dirname);
   const char *content = "{\n"
                         "    \"apx-server\": {\n"
-                        "        \"max-num-events\": 200\n"
+                        "        \"multiple-provider-policy\": \"first\"\n"
                         "    },\n"
                         "    \"socket-server-extension\": {\n"
                         "        \"enabled\": true\n"
@@ -206,10 +208,10 @@ static void test_load_config_from_dir_valid(CuTest *tc)
 
   dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
   CuAssertPtrNotNull(tc, server_node);
-  dtl_sv_t *sv = (dtl_sv_t *)dtl_hv_get_cstr((dtl_hv_t *)server_node, "max-num-events");
+  dtl_sv_t *sv = (dtl_sv_t *)dtl_hv_get_cstr((dtl_hv_t *)server_node, "multiple-provider-policy");
   CuAssertPtrNotNull(tc, sv);
   bool ok = false;
-  CuAssertIntEquals(tc, 200, dtl_sv_to_i32(sv, &ok));
+  CuAssertStrEquals(tc, "first", dtl_sv_to_cstr(sv, &ok));
   CuAssertTrue(tc, ok);
 
   dtl_dec_ref(cfg);
@@ -227,7 +229,7 @@ static void test_load_config_from_dir_fallback(CuTest *tc)
   snprintf(filepath, sizeof(filepath), "%s/apx_server.json", dirname);
   const char *content = "{\n"
                         "    \"apx-server\": {\n"
-                        "        \"max-num-events\": 300\n"
+                        "        \"multiple-provider-policy\": \"last\"\n"
                         "    }\n"
                         "}\n";
   write_test_file(filepath, content);
@@ -239,10 +241,10 @@ static void test_load_config_from_dir_fallback(CuTest *tc)
 
   dtl_dv_t *server_node = dtl_hv_get_cstr(cfg, "apx-server");
   CuAssertPtrNotNull(tc, server_node);
-  dtl_sv_t *sv = (dtl_sv_t *)dtl_hv_get_cstr((dtl_hv_t *)server_node, "max-num-events");
+  dtl_sv_t *sv = (dtl_sv_t *)dtl_hv_get_cstr((dtl_hv_t *)server_node, "multiple-provider-policy");
   CuAssertPtrNotNull(tc, sv);
   bool ok = false;
-  CuAssertIntEquals(tc, 300, dtl_sv_to_i32(sv, &ok));
+  CuAssertStrEquals(tc, "last", dtl_sv_to_cstr(sv, &ok));
   CuAssertTrue(tc, ok);
 
   dtl_dec_ref(cfg);
@@ -312,7 +314,7 @@ static void test_register_extensions_with_single_config(CuTest *tc)
   const char *filepath = "test_ext_dispatch.json";
   const char *content = "{\n"
                         "    \"apx-server\": {\n"
-                        "        \"max-num-events\": 200\n"
+                        "        \"multiple-provider-policy\": \"first\"\n"
                         "    },\n"
                         "    \"socket-server-extension\": {\n"
                         "        \"enabled\": true\n"
@@ -349,7 +351,7 @@ static void test_register_extensions_omitted_keys_disabled(CuTest *tc)
   const char *filepath = "test_ext_omitted.json";
   const char *content = "{\n"
                         "    \"apx-server\": {\n"
-                        "        \"max-num-events\": 200\n"
+                        "        \"multiple-provider-policy\": \"first\"\n"
                         "    }\n"
                         "}\n";
   write_test_file(filepath, content);
@@ -651,7 +653,7 @@ static void test_check_config_recognized_keys_and_aliases(CuTest *tc)
                         "            \"require_signed_nodes\": true,\n"
                         "            \"trusted_keys\": [\"key1.pem\"]\n"
                         "        },\n"
-                        "        \"max-num-events\": 200,\n"
+                        "        \"multiple-provider-policy\": \"first\",\n"
                         "        \"apx-cache-enabled\": false,\n"
                         "        \"apx-cache-path\": \"/tmp\"\n"
                         "    },\n"
@@ -891,6 +893,27 @@ static void test_check_config_invalid_multiple_provider_policy_warns(CuTest *tc)
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
   CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_FIRST, (int)apx_server_get_multiple_provider_policy(&server));
   apx_server_destroy(&server);
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_retired_max_num_events_warns(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_retired_max_num_events.json";
+  write_test_file(filepath, "{\"apx-server\": {\"max-num-events\": 200}}");
+
+  dtl_hv_t *cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(
+    tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'apx-server.max-num-events'"));
 
   dtl_dec_ref(cfg);
   remove(filepath);

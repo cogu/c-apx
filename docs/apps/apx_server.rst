@@ -59,7 +59,6 @@ Server configuration files are formatted as JSON objects. The core server option
          ]
        },
        "multiple-provider-policy": "first",
-       "max-num-events": 200,
        "apx-cache-enabled": false,
        "apx-cache-path": ""
      }
@@ -88,10 +87,6 @@ Configuration Parameters
      - String
      - ``"first"``
      - Arbitration policy when multiple connected nodes provide a port with the same signature: ``"first"`` (the oldest connected provider remains active and newer providers are shadowed until the active provider disconnects) or ``"last"`` (the newest connected provider immediately takes over from the previous active provider). Also accepts key name ``multiple_provider_policy``.
-   * - ``max-num-events``
-     - Integer
-     - ``200``
-     - Capacity of internal event queue for routing operations.
    * - ``apx-cache-enabled``
      - Boolean
      - ``false``

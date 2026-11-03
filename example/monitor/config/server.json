@@ -1,8 +1,7 @@
 {
     "apx-server": {
         "apx-cache-enabled": false,
-        "apx-cache-path": "",
-        "max-num-events": 200
+        "apx-cache-path": ""
     },
     "socket-server-extension": {
         "enabled": true,
