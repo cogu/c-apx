@@ -18,7 +18,7 @@
 #endif
 
 #ifndef APX_MAX_PSG_LEN
-# define APX_MAX_PSG_LEN 1024
+# define APX_MAX_PSG_LEN 2048
 #endif
 
 #ifndef APX_MAX_FILE_SIZE

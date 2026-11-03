@@ -12,6 +12,8 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "CuTest.h"
+#include "adt_str.h"
+#include "apx/cfg.h"
 #include "apx/signature_parser.h"
 #include <assert.h>
 #include <stdio.h>
@@ -60,6 +62,7 @@ static void test_signature_parser_type_reference_by_name(CuTest *tc);
 static void test_signature_parser_type_reference_by_id_inside_record(CuTest *tc);
 static void test_signature_parser_type_reference_by_name_inside_record(CuTest *tc);
 static void test_signature_parser_type_dynamic_array_of_record(CuTest *tc);
+static void test_signature_parser_signature_too_long(CuTest *tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -110,6 +113,7 @@ CuSuite *testsuite_apx_signature_parser(void)
   SUITE_ADD_TEST(suite, test_signature_parser_type_reference_by_id_inside_record);
   SUITE_ADD_TEST(suite, test_signature_parser_type_reference_by_name_inside_record);
   SUITE_ADD_TEST(suite, test_signature_parser_type_dynamic_array_of_record);
+  SUITE_ADD_TEST(suite, test_signature_parser_signature_too_long);
 
   return suite;
 }
@@ -805,4 +809,31 @@ static void test_signature_parser_type_dynamic_array_of_record(CuTest *tc)
 
   apx_signature_parser_destroy(&parser);
   apx_data_element_delete(data_element);
+}
+
+static void test_signature_parser_signature_too_long(CuTest *tc)
+{
+  adt_str_t *str = adt_str_new();
+  adt_str_push(str, '{');
+  int i = 0;
+  while (adt_str_length(str) < (APX_MAX_PSG_LEN + 1))
+  {
+    char field[32];
+    snprintf(field, sizeof(field), "\"f%d\"C", i++);
+    adt_str_append_cstr(str, field);
+  }
+  adt_str_push(str, '}');
+  CuAssertTrue(tc, adt_str_length(str) > APX_MAX_PSG_LEN);
+
+  const uint8_t *begin = (const uint8_t *)adt_str_cstr(str);
+  const uint8_t *end = begin + adt_str_length(str);
+
+  apx_signature_parser_t parser;
+  apx_signature_parser_create(&parser);
+  const uint8_t *result = apx_signature_parser_parse_data_signature(&parser, begin, end);
+  CuAssertPtrEquals(tc, NULL, (void *)result);
+  CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_signature_parser_get_last_error(&parser, NULL));
+
+  apx_signature_parser_destroy(&parser);
+  adt_str_delete(str);
 }

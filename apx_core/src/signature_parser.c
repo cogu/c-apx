@@ -13,6 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/signature_parser.h"
 #include "adt_str.h"
+#include "apx/cfg.h"
 #include "apx/parser_base.h"
 #include "bstr.h"
 #include <assert.h>
@@ -119,11 +120,17 @@ uint8_t const *apx_signature_parser_parse_data_signature(
 {
   if ((self != NULL) && (begin != NULL) && (end != NULL) && (begin <= end))
   {
+    if ((size_t)(end - begin) > APX_MAX_PSG_LEN)
+    {
+      apx_signature_parser_set_error(self, APX_LENGTH_ERROR, begin);
+      return NULL;
+    }
     apx_signature_parser_reset(self);
     self->state = apx_signature_parser_state_new(false);
     if (self->state == NULL)
     {
       apx_signature_parser_set_error(self, APX_MEM_ERROR, begin);
+      return NULL;
     }
     return apx_signature_parser_parse_data_element(self, begin, end);
   }

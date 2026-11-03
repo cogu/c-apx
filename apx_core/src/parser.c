@@ -12,6 +12,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/parser.h"
+#include "apx/cfg.h"
 #include "apx/parser_base.h"
 #include "bstr.h"
 #include <assert.h>
@@ -270,6 +271,10 @@ static apx_error_t state_make_require_port(apx_parse_state_t *self, uint8_t cons
 static apx_error_t state_parse_data_signature(
   apx_parse_state_t *self, apx_signature_parser_t *parser, uint8_t const *begin, uint8_t const *end)
 {
+  if ((size_t)(end - begin) > APX_MAX_PSG_LEN)
+  {
+    return APX_LENGTH_ERROR;
+  }
   uint8_t const *result = apx_signature_parser_parse_data_signature(parser, begin, end);
   if (result > begin)
   {
@@ -573,7 +578,7 @@ static apx_error_t parser_accept_type_declaration(apx_parser_t *self, uint8_t co
           if (rc != APX_NO_ERROR)
           {
             apx_data_type_delete(self->state.data_type);
-            return apx_signature_parser_get_last_error(&self->signature_parser, NULL);
+            return rc;
           }
           apx_data_signature_set_element(&self->state.data_type->data_signature, self->state.data_element);
           self->state.data_element = NULL;
@@ -590,7 +595,7 @@ static apx_error_t parser_accept_type_declaration(apx_parser_t *self, uint8_t co
             if (rc != APX_NO_ERROR)
             {
               apx_data_type_delete(self->state.data_type);
-              return apx_signature_parser_get_last_error(&self->signature_parser, NULL);
+              return rc;
             }
           }
           else
@@ -607,7 +612,7 @@ static apx_error_t parser_accept_type_declaration(apx_parser_t *self, uint8_t co
           if (rc != APX_NO_ERROR)
           {
             apx_data_type_delete(self->state.data_type);
-            return apx_signature_parser_get_last_error(&self->signature_parser, NULL);
+            return rc;
           }
           apx_data_signature_set_element(&self->state.data_type->data_signature, self->state.data_element);
           self->state.data_element = NULL;

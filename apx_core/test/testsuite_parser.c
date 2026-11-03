@@ -12,6 +12,8 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "CuTest.h"
+#include "adt_str.h"
+#include "apx/cfg.h"
 #include "apx/computation.h"
 #include "apx/error.h"
 #include "apx/parser.h"
@@ -63,7 +65,8 @@ static void test_parse_with_trailing_empty_lines(CuTest *tc);
 static void test_parse_with_blank_lines_and_comments(CuTest *tc);
 static void test_parse_error_line_number_with_blank_lines(CuTest *tc);
 static void test_parse_comment_with_hash_in_quotes(CuTest *tc);
-
+static void test_parse_port_signature_too_long(CuTest *tc);
+static void test_parse_type_signature_too_long(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -110,6 +113,8 @@ CuSuite *testsuite_apx_parser(void)
   SUITE_ADD_TEST(suite, test_parse_with_blank_lines_and_comments);
   SUITE_ADD_TEST(suite, test_parse_error_line_number_with_blank_lines);
   SUITE_ADD_TEST(suite, test_parse_comment_with_hash_in_quotes);
+  SUITE_ADD_TEST(suite, test_parse_port_signature_too_long);
+  SUITE_ADD_TEST(suite, test_parse_type_signature_too_long);
 
   return suite;
 }
@@ -1138,4 +1143,56 @@ static void test_parse_comment_with_hash_in_quotes(CuTest *tc)
   apx_node_delete(node);
   apx_parser_destroy(&parser);
   apx_istream_destroy(&stream);
+}
+
+static void test_parse_port_signature_too_long(CuTest *tc)
+{
+  adt_str_t *str = adt_str_new();
+  adt_str_append_cstr(str, "APX/1.3\nN\"TestNode\"\nP\"TestPort\"{");
+  int i = 0;
+  while (adt_str_length(str) < (APX_MAX_PSG_LEN + 50))
+  {
+    char field[32];
+    snprintf(field, sizeof(field), "\"f%d\"C", i++);
+    adt_str_append_cstr(str, field);
+  }
+  adt_str_append_cstr(str, "}\n");
+
+  apx_parser_t parser;
+  apx_istream_t stream;
+
+  apx_istream_create(&stream);
+  apx_parser_create(&parser, &stream);
+  CuAssertUIntEquals(tc, APX_LENGTH_ERROR, apx_parser_parse_cstr(&parser, adt_str_cstr(str)));
+  CuAssertIntEquals(tc, 3, apx_parser_get_error_line(&parser));
+
+  apx_parser_destroy(&parser);
+  apx_istream_destroy(&stream);
+  adt_str_delete(str);
+}
+
+static void test_parse_type_signature_too_long(CuTest *tc)
+{
+  adt_str_t *str = adt_str_new();
+  adt_str_append_cstr(str, "APX/1.3\nN\"TestNode\"\nT\"TestType\"{");
+  int i = 0;
+  while (adt_str_length(str) < (APX_MAX_PSG_LEN + 50))
+  {
+    char field[32];
+    snprintf(field, sizeof(field), "\"f%d\"C", i++);
+    adt_str_append_cstr(str, field);
+  }
+  adt_str_append_cstr(str, "}\n");
+
+  apx_parser_t parser;
+  apx_istream_t stream;
+
+  apx_istream_create(&stream);
+  apx_parser_create(&parser, &stream);
+  CuAssertUIntEquals(tc, APX_LENGTH_ERROR, apx_parser_parse_cstr(&parser, adt_str_cstr(str)));
+  CuAssertIntEquals(tc, 3, apx_parser_get_error_line(&parser));
+
+  apx_parser_destroy(&parser);
+  apx_istream_destroy(&stream);
+  adt_str_delete(str);
 }
