@@ -378,6 +378,35 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
     * Exceeding `APX_MAX_PSG_LEN`.
     * Malformed attribute syntax and stray characters.
 
+## 19. Handshake & Greeting Timeout (Slowloris / Handshake Starvation Protection)
+
+* **Background & Motivation:**
+  * When a client connects via TCP, UNIX domain socket, or VSOCK, `apx_server_accept_connection()` immediately accepts the connection and attaches it to `connection_manager->active_connections`, consuming 1 slot toward `max-concurrent-connections`.
+  * The connection enters `APX_CONNECTION_STATE_CONNECTING` awaiting the RemoteFile greeting header (`RMF_GREETING_1_1_START` / `RMF_GREETING_1_0_START`).
+  * If an unauthenticated or malicious client connects and remains completely silent (or sends incomplete bytes), the server never times out the connection.
+  * Spawning `max-concurrent-connections` (default: 256) silent dummy connections exhausts all available connection slots, causing legitimate APX client nodes to be rejected indefinitely with `"Concurrent connection limit exceeded"`. Even if cryptographic signature verification (`require-signed-nodes`) is enabled, it is never reached because authentication requires the greeting header and definition transmission.
+
+* **Connection Timestamp & State Tracking (`server_connection`):**
+  * Record `uint64_t connect_monotonic_time_ms` (or `connect_monotonic_time_ns`) on `apx_server_connection_t` upon creation using `cutil_get_monotonic_time_ms()` / `apx_get_monotonic_time_ns()`.
+  * Track whether the handshake has been completed (`APX_CONNECTION_STATE_ACCEPTED`).
+
+* **Background Timeout Audit in Connection Manager (`connection_manager.c`):**
+  * Enhance `cleanup_task` in `apx_connection_manager_t` to audit `active_connections` during its periodic cycle.
+  * For any connection in `active_connections` whose state is not `APX_CONNECTION_STATE_ACCEPTED` and whose elapsed time exceeds `handshake_timeout_ms`:
+    * Log a warning (`"[SERVER] Handshake timeout: closing inactive connection %u"`).
+    * Forcibly close the transport socket (`apx_connection_base_close(&conn->base)`).
+    * Detach the connection and move it to `inactive_connections` for cleanup, immediately freeing the connection slot for legitimate nodes.
+
+* **Server JSON Configuration (`server.json` / `server_cfg.c`):**
+  * Support `"handshake-timeout-ms"` (with alias `"handshake_timeout_ms"`, default: `3000` ms; `0` to disable) under the `"apx-server"` section of `server.json`.
+  * Validate that the value is a positive integer (or `0`); emit a warning on invalid input and default to `3000`.
+  * Expose getter/setter on `apx_server_t`: `apx_server_set_handshake_timeout_ms()` / `apx_server_get_handshake_timeout_ms()`.
+
+* **Test Coverage:**
+  * Unit tests in `testsuite_server.c` / `testsuite_connection_manager.c` verifying that connections that do not send a greeting header within the configured timeout are evicted and their slots reclaimed.
+  * Unit tests in `testsuite_server_cfg.c` for parsing `"handshake-timeout-ms"` and invalid-value warnings.
+  * Integration tests in `tests/test_server_lifecycle.py` simulating silent/unresponsive clients and verifying that legitimate clients can connect after timeouts expire.
+
 ---
 
 # Release v0.8.0 (Future Phase)
