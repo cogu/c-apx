@@ -353,6 +353,31 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
   * Remove `"max-num-events": 200` from `example/config/server.json`, `example/monitor/config/server.json`, `example/secure/config/signed_server.json`, `example/secure/config/signed_tls_server.json`, and `example/systemd/server.json`.
   * Remove `"max-num-events"` from `docs/apps/apx_server.rst`, `cmake/README.md`, and `design/multiple_providers_policy_spec.md`.
 
+## 18. Improved Parser Error Diagnostics (Column & Character Offsets)
+
+* **Background & Motivation:**
+  * When parsing APX definitions (`.apx`), syntax errors in port declarations, type declarations, attributes, or data signatures currently only report the line number (`apx_parser_get_error_line()`).
+  * In complex nested record signatures or large definitions, developers must manually hunt through long lines to find syntax errors (e.g., missing closing braces, invalid type codes, stray characters).
+  * `apx_signature_parser_t` already records the exact failure pointer (`error_pos`) internally via `apx_signature_parser_set_error()`, but `apx_parser_t` currently passes `NULL` and does not compute or expose column/byte offsets.
+
+* **Parser State & API Enhancements (`apx_parser`):**
+  * Add `int32_t error_column` (1-based column offset) and `int32_t error_offset` (byte offset) to `apx_parser_t`.
+  * Add accessor: `int32_t apx_parser_get_error_column(const apx_parser_t *self);`.
+  * Update `state_parse_data_signature()` in `parser.c` to pass `&error_pos` into `apx_signature_parser_get_last_error(parser, &error_pos)` and compute column offset relative to `line_begin`.
+  * Update `attribute_parser` and `parser_base` to record error positions for attribute syntax errors, stray characters, and unmatched delimiters.
+
+* **Diagnostic Formatting & Server Logging:**
+  * Implement compiler-style diagnostic formatting:
+    `"<file>:<line>:<col>: error: <description>\n    <line_text>\n    ^\n"`
+  * Integrate into `apx_server` connection admission logging when rejecting invalid node definitions, making misconfigured client definitions immediately identifiable in logs.
+
+* **Test Coverage (`testsuite_parser.c`):**
+  * Unit tests verifying exact line and column numbers for:
+    * Unmatched bracket/brace inside complex record signatures.
+    * Invalid type specifier characters.
+    * Exceeding `APX_MAX_PSG_LEN`.
+    * Malformed attribute syntax and stray characters.
+
 ---
 
 # Release v0.8.0 (Future Phase)
