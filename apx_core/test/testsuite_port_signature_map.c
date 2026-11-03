@@ -37,6 +37,10 @@ static const char *m_node_text3 = "APX/1.2\n"
                                   "N\"Provider1\"\n"
                                   "P\"VehicleSpeed\"S:=65535\n";
 
+static const char *m_node_text4 = "APX/1.2\n"
+                                  "N\"Provider2\"\n"
+                                  "P\"VehicleSpeed\"S:=65535\n";
+
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -47,6 +51,8 @@ static void test_connecting_require_port_when_provide_port_is_available(CuTest *
 static void test_disconnecting_require_port_when_connected_to_provide_port(CuTest *tc);
 static void test_disconnecting_provide_port_when_connected_to_require_port(CuTest *tc);
 static void test_disconnecting_provide_port_when_not_connected_to_anything(CuTest *tc);
+static void test_multiple_providers_policy_first(CuTest *tc);
+static void test_multiple_providers_policy_last(CuTest *tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -66,6 +72,8 @@ CuSuite *testsuite_apx_port_signature_map(void)
   SUITE_ADD_TEST(suite, test_disconnecting_require_port_when_connected_to_provide_port);
   SUITE_ADD_TEST(suite, test_disconnecting_provide_port_when_connected_to_require_port);
   SUITE_ADD_TEST(suite, test_disconnecting_provide_port_when_not_connected_to_anything);
+  SUITE_ADD_TEST(suite, test_multiple_providers_policy_first);
+  SUITE_ADD_TEST(suite, test_multiple_providers_policy_last);
 
 
   return suite;
@@ -448,4 +456,166 @@ static void test_disconnecting_provide_port_when_not_connected_to_anything(CuTes
 
   apx_port_signature_map_delete(map);
   apx_node_manager_delete(nodeManager);
+}
+
+static void test_multiple_providers_policy_first(CuTest *tc)
+{
+  apx_node_manager_t *node_manager = apx_node_manager_new(APX_SERVER_MODE);
+  CuAssertPtrNotNull(tc, node_manager);
+  apx_port_signature_map_t *map = apx_port_signature_map_new();
+  CuAssertPtrNotNull(tc, map);
+  CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_FIRST, (int)apx_port_signature_map_get_policy(map));
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(node_manager, m_node_text3));
+  apx_node_instance_t *provider1 = apx_node_manager_get_last_attached(node_manager);
+  CuAssertPtrNotNull(tc, provider1);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(node_manager, m_node_text4));
+  apx_node_instance_t *provider2 = apx_node_manager_get_last_attached(node_manager);
+  CuAssertPtrNotNull(tc, provider2);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(node_manager, m_node_text1));
+  apx_node_instance_t *requester1 = apx_node_manager_get_last_attached(node_manager);
+  CuAssertPtrNotNull(tc, requester1);
+
+  // Connect Provider1, then Provider2, then Requester1
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_port_signature_map_connect_provide_ports(map, provider1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_port_signature_map_connect_provide_ports(map, provider2));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_port_signature_map_connect_require_ports(map, requester1));
+
+  apx_port_signature_map_entry_t *map_entry = apx_port_signature_map_find(map, "\"VehicleSpeed\"S");
+  CuAssertPtrNotNull(tc, map_entry);
+  CuAssertIntEquals(tc, 2, apx_port_signature_map_entry_get_num_providers(map_entry));
+  CuAssertIntEquals(tc, 1, apx_port_signature_map_entry_get_num_requesters(map_entry));
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider1, 0),
+    apx_port_signature_map_entry_get_preferred_provider(map_entry));
+
+  // Verify Requester1 connects ONLY to Provider1 (not Provider2)
+  apx_port_connector_change_table_t *req_changes =
+    apx_node_instance_get_require_port_connector_changes(requester1, false);
+  CuAssertPtrNotNull(tc, req_changes);
+  apx_port_connector_change_entry_t *entry = apx_port_connector_change_table_get_entry(req_changes, 0);
+  CuAssertPtrNotNull(tc, entry);
+  CuAssertIntEquals(tc, 1, entry->count);
+  CuAssertIntEquals(tc, 1, (int)apx_port_connector_change_entry_get_connection_count(entry));
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider1, 0), entry->data.port_instance);
+
+  apx_port_connector_change_table_t *prov1_changes =
+    apx_node_instance_get_provide_port_connector_changes(provider1, false);
+  CuAssertPtrNotNull(tc, prov1_changes);
+  entry = apx_port_connector_change_table_get_entry(prov1_changes, 0);
+  CuAssertPtrNotNull(tc, entry);
+  CuAssertIntEquals(tc, 1, entry->count);
+  CuAssertPtrEquals(tc, apx_node_instance_get_require_port(requester1, 0), entry->data.port_instance);
+
+  // Shadowed Provider2 must have NO connector changes
+  CuAssertPtrEquals(tc, NULL, apx_node_instance_get_provide_port_connector_changes(provider2, false));
+  CuAssertIntEquals(tc, 0, adt_ary_length(apx_port_signature_map_get_provider_changes(map)));
+
+  apx_node_instance_clear_require_port_connector_changes(requester1, true);
+  apx_node_instance_clear_provide_port_connector_changes(provider1, true);
+
+  // Now disconnect active Provider1 -> Provider2 should become preferred
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_port_signature_map_disconnect_provide_ports(map, provider1));
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider2, 0),
+    apx_port_signature_map_entry_get_preferred_provider(map_entry));
+
+  adt_ary_t *prov_changes_list = apx_port_signature_map_get_provider_changes(map);
+  CuAssertIntEquals(tc, 1, adt_ary_length(prov_changes_list));
+  apx_provider_change_t *pchange = (apx_provider_change_t *)adt_ary_value(prov_changes_list, 0);
+  CuAssertPtrNotNull(tc, pchange);
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider1, 0), pchange->old_provider);
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider2, 0), pchange->new_provider);
+  CuAssertIntEquals(tc, (int)APX_PROVIDER_CHANGE_DISCONNECT, (int)pchange->reason);
+
+  // Provider2 should receive connection change for Requester1
+  apx_port_connector_change_table_t *prov2_changes =
+    apx_node_instance_get_provide_port_connector_changes(provider2, false);
+  CuAssertPtrNotNull(tc, prov2_changes);
+  entry = apx_port_connector_change_table_get_entry(prov2_changes, 0);
+  CuAssertPtrNotNull(tc, entry);
+  CuAssertIntEquals(tc, 1, entry->count);
+  CuAssertIntEquals(tc, 1, (int)apx_port_connector_change_entry_get_connection_count(entry));
+  CuAssertPtrEquals(tc, apx_node_instance_get_require_port(requester1, 0), entry->data.port_instance);
+
+  apx_port_signature_map_delete(map);
+  apx_node_manager_delete(node_manager);
+}
+
+static void test_multiple_providers_policy_last(CuTest *tc)
+{
+  apx_node_manager_t *node_manager = apx_node_manager_new(APX_SERVER_MODE);
+  CuAssertPtrNotNull(tc, node_manager);
+  apx_port_signature_map_t *map = apx_port_signature_map_new();
+  CuAssertPtrNotNull(tc, map);
+  apx_port_signature_map_set_policy(map, APX_MULTIPLE_PROVIDER_POLICY_LAST);
+  CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_LAST, (int)apx_port_signature_map_get_policy(map));
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(node_manager, m_node_text3));
+  apx_node_instance_t *provider1 = apx_node_manager_get_last_attached(node_manager);
+  CuAssertPtrNotNull(tc, provider1);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(node_manager, m_node_text4));
+  apx_node_instance_t *provider2 = apx_node_manager_get_last_attached(node_manager);
+  CuAssertPtrNotNull(tc, provider2);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(node_manager, m_node_text1));
+  apx_node_instance_t *requester1 = apx_node_manager_get_last_attached(node_manager);
+  CuAssertPtrNotNull(tc, requester1);
+
+  // Connect Provider1 and Requester1
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_port_signature_map_connect_provide_ports(map, provider1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_port_signature_map_connect_require_ports(map, requester1));
+  apx_node_instance_clear_provide_port_connector_changes(provider1, true);
+  apx_node_instance_clear_require_port_connector_changes(requester1, true);
+
+  // Now connect Provider2 under "last" policy -> Provider2 takes over from Provider1
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_port_signature_map_connect_provide_ports(map, provider2));
+
+  apx_port_signature_map_entry_t *map_entry = apx_port_signature_map_find(map, "\"VehicleSpeed\"S");
+  CuAssertPtrNotNull(tc, map_entry);
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider2, 0),
+    apx_port_signature_map_entry_get_preferred_provider(map_entry));
+
+  // Verify TAKEOVER provider change recorded
+  adt_ary_t *prov_changes_list = apx_port_signature_map_get_provider_changes(map);
+  CuAssertIntEquals(tc, 1, adt_ary_length(prov_changes_list));
+  apx_provider_change_t *pchange = (apx_provider_change_t *)adt_ary_value(prov_changes_list, 0);
+  CuAssertPtrNotNull(tc, pchange);
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider1, 0), pchange->old_provider);
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider2, 0), pchange->new_provider);
+  CuAssertIntEquals(tc, (int)APX_PROVIDER_CHANGE_TAKEOVER, (int)pchange->reason);
+
+  // Verify Provider1 received disconnect change (-1), Provider2 received connect change (+1)
+  apx_port_connector_change_table_t *prov1_changes =
+    apx_node_instance_get_provide_port_connector_changes(provider1, false);
+  CuAssertPtrNotNull(tc, prov1_changes);
+  apx_port_connector_change_entry_t *entry = apx_port_connector_change_table_get_entry(prov1_changes, 0);
+  CuAssertIntEquals(tc, -1, entry->count);
+  CuAssertIntEquals(tc, 0, (int)apx_port_connector_change_entry_get_connection_count(entry));
+
+  apx_port_connector_change_table_t *prov2_changes =
+    apx_node_instance_get_provide_port_connector_changes(provider2, false);
+  CuAssertPtrNotNull(tc, prov2_changes);
+  entry = apx_port_connector_change_table_get_entry(prov2_changes, 0);
+  CuAssertIntEquals(tc, 1, entry->count);
+  CuAssertIntEquals(tc, 1, (int)apx_port_connector_change_entry_get_connection_count(entry));
+
+  apx_node_instance_clear_provide_port_connector_changes(provider1, true);
+  apx_node_instance_clear_provide_port_connector_changes(provider2, true);
+  apx_node_instance_clear_require_port_connector_changes(requester1, true);
+  apx_port_signature_map_clear_provider_changes(map);
+
+  // Disconnect Provider2 -> Provider1 should become preferred again
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_port_signature_map_disconnect_provide_ports(map, provider2));
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider1, 0),
+    apx_port_signature_map_entry_get_preferred_provider(map_entry));
+  CuAssertIntEquals(tc, 1, adt_ary_length(prov_changes_list));
+  pchange = (apx_provider_change_t *)adt_ary_value(prov_changes_list, 0);
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider2, 0), pchange->old_provider);
+  CuAssertPtrEquals(tc, apx_node_instance_get_provide_port(provider1, 0), pchange->new_provider);
+  CuAssertIntEquals(tc, (int)APX_PROVIDER_CHANGE_DISCONNECT, (int)pchange->reason);
+
+  apx_port_signature_map_delete(map);
+  apx_node_manager_delete(node_manager);
 }

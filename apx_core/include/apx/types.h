@@ -242,6 +242,14 @@ typedef uint8_t apx_port_connector_event_t;
 #define APX_PORT_CONNECTED_EVENT ((apx_port_connector_event_t)0u)
 #define APX_PORT_DISCONNECTED_EVENT ((apx_port_connector_event_t)1u)
 
+typedef uint8_t apx_multiple_provider_policy_t;
+#define APX_MULTIPLE_PROVIDER_POLICY_FIRST ((apx_multiple_provider_policy_t)0u)
+#define APX_MULTIPLE_PROVIDER_POLICY_LAST ((apx_multiple_provider_policy_t)1u)
+
+typedef uint8_t apx_provider_change_reason_t;
+#define APX_PROVIDER_CHANGE_DISCONNECT ((apx_provider_change_reason_t)0u)
+#define APX_PROVIDER_CHANGE_TAKEOVER ((apx_provider_change_reason_t)1u)
+
 typedef uint8_t apx_connection_state_t;
 #define APX_CONNECTION_STATE_CREATED ((apx_connection_state_t)0u)
 #define APX_CONNECTION_STATE_CONNECTING ((apx_connection_state_t)1u)

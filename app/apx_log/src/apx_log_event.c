@@ -136,6 +136,8 @@ const char *apx_log_event_type_str(uint16_t event_type)
     return "FILE_CLOSE";
   case APX_LOG_EVENT_FILE_WRITE:
     return "FILE_WRITE";
+  case APX_LOG_EVENT_PROVIDER_CHANGE:
+    return "PROVIDER_CHANGE";
   case APX_LOG_EVENT_EVENTS_DROPPED:
     return "EVENTS_DROPPED";
   case APX_LOG_EVENT_STREAM_END:
@@ -274,6 +276,34 @@ void apx_log_event_print_text(const apx_log_event_t *self, FILE *out)
       format_hex(hex_buf, sizeof(hex_buf), self->payload + 4, data_len, 16u);
       fprintf(out, " conn=%u file_id=%u offset=%u size=%u [%s]", self->connection_id, self->object_id, offset, data_len,
         hex_buf);
+    }
+    break;
+
+  case APX_LOG_EVENT_PROVIDER_CHANGE:
+    if (self->payload_size >= 12u)
+    {
+      uint32_t old_conn_id = unpack_le_u32(self->payload + 0);
+      uint32_t offset = 12u;
+      uint32_t consumed = 0;
+      char *old_node = decode_string16(self->payload + offset, self->payload_size - offset, &consumed);
+      offset += consumed;
+      char *new_node = decode_string16(self->payload + offset, self->payload_size - offset, &consumed);
+      offset += consumed;
+      char *port_name = decode_string16(self->payload + offset, self->payload_size - offset, &consumed);
+      fprintf(out, " %u:%s/%s -> %u:%s/%s", old_conn_id, old_node ? old_node : "", port_name ? port_name : "",
+        self->connection_id, new_node ? new_node : "", port_name ? port_name : "");
+      if (old_node != NULL)
+      {
+        free(old_node);
+      }
+      if (new_node != NULL)
+      {
+        free(new_node);
+      }
+      if (port_name != NULL)
+      {
+        free(port_name);
+      }
     }
     break;
 
@@ -446,6 +476,44 @@ void apx_log_event_print_json(const apx_log_event_t *self, FILE *out)
         hex[(size_t)data_len * 2u] = '\0';
         dtl_hv_set_cstr(hv, "data_hex", (dtl_dv_t *)dtl_sv_make_cstr(hex), false);
         free(hex);
+      }
+    }
+    break;
+
+  case APX_LOG_EVENT_PROVIDER_CHANGE:
+    if (self->payload_size >= 12u)
+    {
+      uint32_t old_conn_id = unpack_le_u32(self->payload + 0);
+      uint32_t old_port_id = unpack_le_u32(self->payload + 4);
+      uint8_t reason = self->payload[8];
+      uint8_t policy = self->payload[9];
+      uint32_t offset = 12u;
+      uint32_t consumed = 0;
+      char *old_node = decode_string16(self->payload + offset, self->payload_size - offset, &consumed);
+      offset += consumed;
+      char *new_node = decode_string16(self->payload + offset, self->payload_size - offset, &consumed);
+      offset += consumed;
+      char *port_name = decode_string16(self->payload + offset, self->payload_size - offset, &consumed);
+      dtl_hv_set_cstr(hv, "old_connection_id", (dtl_dv_t *)dtl_sv_make_u32(old_conn_id), false);
+      dtl_hv_set_cstr(hv, "old_port_id", (dtl_dv_t *)dtl_sv_make_u32(old_port_id), false);
+      dtl_hv_set_cstr(hv, "new_connection_id", (dtl_dv_t *)dtl_sv_make_u32(self->connection_id), false);
+      dtl_hv_set_cstr(hv, "new_port_id", (dtl_dv_t *)dtl_sv_make_u32(self->object_id), false);
+      dtl_hv_set_cstr(hv, "reason", (dtl_dv_t *)dtl_sv_make_cstr(reason == 1u ? "TAKEOVER" : "DISCONNECT"), false);
+      dtl_hv_set_cstr(hv, "policy", (dtl_dv_t *)dtl_sv_make_cstr(policy == 1u ? "LAST" : "FIRST"), false);
+      dtl_hv_set_cstr(hv, "old_node_name", (dtl_dv_t *)dtl_sv_make_cstr(old_node ? old_node : ""), false);
+      dtl_hv_set_cstr(hv, "new_node_name", (dtl_dv_t *)dtl_sv_make_cstr(new_node ? new_node : ""), false);
+      dtl_hv_set_cstr(hv, "port_name", (dtl_dv_t *)dtl_sv_make_cstr(port_name ? port_name : ""), false);
+      if (old_node != NULL)
+      {
+        free(old_node);
+      }
+      if (new_node != NULL)
+      {
+        free(new_node);
+      }
+      if (port_name != NULL)
+      {
+        free(port_name);
       }
     }
     break;

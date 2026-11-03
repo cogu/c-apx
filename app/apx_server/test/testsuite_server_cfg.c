@@ -69,6 +69,8 @@ static void test_check_config_unsupported_underscore_key_warns(CuTest *tc);
 static void test_check_config_socket_extension_missing_transports_warns(CuTest *tc);
 static void test_check_config_monitor_extension_missing_endpoints_warns(CuTest *tc);
 static void test_check_config_tls_extension_missing_keys_warns(CuTest *tc);
+static void test_configure_server_multiple_provider_policy(CuTest *tc);
+static void test_check_config_invalid_multiple_provider_policy_warns(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -102,6 +104,8 @@ CuSuite *testsuite_server_cfg(void)
   SUITE_ADD_TEST(suite, test_check_config_socket_extension_missing_transports_warns);
   SUITE_ADD_TEST(suite, test_check_config_monitor_extension_missing_endpoints_warns);
   SUITE_ADD_TEST(suite, test_check_config_tls_extension_missing_keys_warns);
+  SUITE_ADD_TEST(suite, test_configure_server_multiple_provider_policy);
+  SUITE_ADD_TEST(suite, test_check_config_invalid_multiple_provider_policy_warns);
   return suite;
 }
 
@@ -820,6 +824,73 @@ static void test_check_config_tls_extension_missing_keys_warns(CuTest *tc)
     test_warning_collector_has(&collector,
       "Warning: 'tls-server-extension' is enabled, but missing required configuration (requires 'tcp-port', "
       "'server-cert', and 'server-key')"));
+
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_configure_server_multiple_provider_policy(CuTest *tc)
+{
+  const char *filepath = "test_server_cfg_policy.json";
+  const char *content_last = "{\n"
+                             "    \"apx-server\": {\n"
+                             "        \"multiple-provider-policy\": \"last\"\n"
+                             "    }\n"
+                             "}\n";
+  write_test_file(filepath, content_last);
+
+  dtl_hv_t *cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_t server;
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_FIRST, (int)apx_server_get_multiple_provider_policy(&server));
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_LAST, (int)apx_server_get_multiple_provider_policy(&server));
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+
+  // Test underscore alias "multiple_provider_policy" and "first"
+  const char *content_alias = "{\n"
+                              "    \"apx-server\": {\n"
+                              "        \"multiple_provider_policy\": \"last\"\n"
+                              "    }\n"
+                              "}\n";
+  write_test_file(filepath, content_alias);
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_LAST, (int)apx_server_get_multiple_provider_policy(&server));
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_invalid_multiple_provider_policy_warns(CuTest *tc)
+{
+  test_warning_collector_t collector;
+  test_warning_collector_init(&collector);
+
+  const char *filepath = "test_cfg_invalid_policy.json";
+  write_test_file(filepath, "{\"apx-server\": {\"multiple-provider-policy\": \"random\"}}");
+
+  dtl_hv_t *cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value 'random' for 'apx-server.multiple-provider-policy' (expected 'first' or 'last'); "
+      "defaulting to 'first'"));
+
+  apx_server_t server;
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_FIRST, (int)apx_server_get_multiple_provider_policy(&server));
+  apx_server_destroy(&server);
 
   dtl_dec_ref(cfg);
   remove(filepath);

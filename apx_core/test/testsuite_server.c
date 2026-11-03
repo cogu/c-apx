@@ -51,6 +51,8 @@ static void test_server_require_signed_nodes_accepts_valid_signed_node(CuTest *t
 static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest *tc);
 static void test_server_rejects_signed_file_cmd_under_rmfp_1_0(CuTest *tc);
 static void test_server_log_write_varargs(CuTest *tc);
+static void test_multiple_providers_policy_first_apx13(CuTest *tc);
+static void test_multiple_providers_policy_last_apx13(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -80,6 +82,11 @@ static const char *m_provider13_definition = "APX/1.3\n"
                                              "P\"VehicleSpeed\"S:=65535\n"
                                              "\n";
 
+static const char *m_provider13b_definition = "APX/1.3\n"
+                                              "N\"Provider13B\"\n"
+                                              "P\"VehicleSpeed\"S:=65535\n"
+                                              "\n";
+
 static const char *m_requester13_definition = "APX/1.3\n"
                                               "N\"Requester13\"\n"
                                               "R\"VehicleSpeed\"S:=65535\n"
@@ -108,6 +115,8 @@ CuSuite *testsuite_apx_server(void)
   SUITE_ADD_TEST(suite, test_server_require_signed_nodes_rejects_tampered_signature);
   SUITE_ADD_TEST(suite, test_server_rejects_signed_file_cmd_under_rmfp_1_0);
   SUITE_ADD_TEST(suite, test_server_log_write_varargs);
+  SUITE_ADD_TEST(suite, test_multiple_providers_policy_first_apx13);
+  SUITE_ADD_TEST(suite, test_multiple_providers_policy_last_apx13);
 
   return suite;
 }
@@ -1258,5 +1267,342 @@ static void test_server_log_write_varargs(CuTest *tc)
   CuAssertStrEquals(tc, "Node 'TestNode' rejected: error code 42", spy.msg);
 
   apx_server_unregister_event_listener(server, handle);
+  apx_server_delete(server);
+}
+
+typedef struct provider_change_spy_tag
+{
+  uint32_t old_conn_id;
+  char old_node[64];
+  char old_port[64];
+  uint32_t new_conn_id;
+  char new_node[64];
+  char new_port[64];
+  apx_provider_change_reason_t reason;
+  int call_count;
+} provider_change_spy_t;
+
+static void spy_on_provider_changed(void *arg, uint32_t old_conn_id, apx_port_instance_t *old_provider,
+  uint32_t new_conn_id, apx_port_instance_t *new_provider, apx_provider_change_reason_t reason)
+{
+  provider_change_spy_t *spy = (provider_change_spy_t *)arg;
+  if (spy != NULL)
+  {
+    spy->old_conn_id = old_conn_id;
+    spy->new_conn_id = new_conn_id;
+    spy->reason = reason;
+    spy->old_node[0] = '\0';
+    spy->old_port[0] = '\0';
+    spy->new_node[0] = '\0';
+    spy->new_port[0] = '\0';
+    if (old_provider != NULL)
+    {
+      apx_node_instance_t *node = apx_port_instance_parent(old_provider);
+      if (node != NULL && apx_node_instance_get_name(node) != NULL)
+      {
+        strncpy(spy->old_node, apx_node_instance_get_name(node), sizeof(spy->old_node) - 1);
+      }
+      if (apx_port_instance_name(old_provider) != NULL)
+      {
+        strncpy(spy->old_port, apx_port_instance_name(old_provider), sizeof(spy->old_port) - 1);
+      }
+    }
+    if (new_provider != NULL)
+    {
+      apx_node_instance_t *node = apx_port_instance_parent(new_provider);
+      if (node != NULL && apx_node_instance_get_name(node) != NULL)
+      {
+        strncpy(spy->new_node, apx_node_instance_get_name(node), sizeof(spy->new_node) - 1);
+      }
+      if (apx_port_instance_name(new_provider) != NULL)
+      {
+        strncpy(spy->new_port, apx_port_instance_name(new_provider), sizeof(spy->new_port) - 1);
+      }
+    }
+    spy->call_count++;
+  }
+}
+
+static apx_server_test_connection_t *setup_apx13_provider_conn(apx_server_t *server, CuTest *tc, const char *node_name,
+  const char *def_text, const uint8_t *initial_data, apx_size_t data_size, apx_node_instance_t **out_node_instance)
+{
+  char out_file_name[64];
+  char apx_file_name[64];
+  char cout_file_name[64];
+  snprintf(out_file_name, sizeof(out_file_name), "%s.out", node_name);
+  snprintf(apx_file_name, sizeof(apx_file_name), "%s.apx", node_name);
+  snprintf(cout_file_name, sizeof(cout_file_name), "%s.cout", node_name);
+  apx_size_t const def_size = (apx_size_t)strlen(def_text);
+
+  apx_server_test_connection_t *conn = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn);
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(conn));
+  apx_server_test_connection_run(conn);
+  apx_server_test_connection_clear_log(conn);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_publish_remote_file(conn, APX_PORT_DATA_ADDRESS_START, out_file_name, data_size));
+  apx_server_test_connection_run(conn);
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_publish_remote_file(conn, APX_DEFINITION_ADDRESS_START, apx_file_name, def_size));
+  apx_server_test_connection_run(conn);
+  apx_server_test_connection_clear_log(conn);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_write_remote_data(
+      conn, APX_DEFINITION_ADDRESS_START, (const uint8_t *)def_text, def_size));
+  apx_server_test_connection_run(conn);
+  apx_server_test_connection_clear_log(conn);
+
+  apx_node_manager_t *nm = apx_server_test_connection_get_node_manager(conn);
+  CuAssertPtrNotNull(tc, nm);
+  apx_node_instance_t *ni = apx_node_manager_find(nm, node_name);
+  CuAssertPtrNotNull(tc, ni);
+  if (out_node_instance != NULL)
+  {
+    *out_node_instance = ni;
+  }
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(conn, cout_file_name));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_write_remote_data(conn, APX_PORT_DATA_ADDRESS_START, initial_data, data_size));
+  apx_server_test_connection_run(conn);
+  apx_server_test_connection_clear_log(conn);
+  return conn;
+}
+
+static apx_server_test_connection_t *setup_apx13_requester_conn(apx_server_t *server, CuTest *tc, const char *node_name,
+  const char *def_text, apx_node_instance_t **out_node_instance)
+{
+  char apx_file_name[64];
+  char cin_file_name[64];
+  char in_file_name[64];
+  snprintf(apx_file_name, sizeof(apx_file_name), "%s.apx", node_name);
+  snprintf(cin_file_name, sizeof(cin_file_name), "%s.cin", node_name);
+  snprintf(in_file_name, sizeof(in_file_name), "%s.in", node_name);
+  apx_size_t const def_size = (apx_size_t)strlen(def_text);
+
+  apx_server_test_connection_t *conn = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, conn);
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn);
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(conn));
+  apx_server_test_connection_run(conn);
+  apx_server_test_connection_clear_log(conn);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_publish_remote_file(conn, APX_DEFINITION_ADDRESS_START, apx_file_name, def_size));
+  apx_server_test_connection_run(conn);
+  apx_server_test_connection_clear_log(conn);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_write_remote_data(
+      conn, APX_DEFINITION_ADDRESS_START, (const uint8_t *)def_text, def_size));
+  apx_server_test_connection_run(conn);
+  apx_server_test_connection_clear_log(conn);
+
+  apx_node_manager_t *nm = apx_server_test_connection_get_node_manager(conn);
+  CuAssertPtrNotNull(tc, nm);
+  apx_node_instance_t *ni = apx_node_manager_find(nm, node_name);
+  CuAssertPtrNotNull(tc, ni);
+  if (out_node_instance != NULL)
+  {
+    *out_node_instance = ni;
+  }
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(conn, cin_file_name));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_request_open_local_file(conn, in_file_name));
+  apx_server_test_connection_run(conn);
+  return conn;
+}
+
+static void test_multiple_providers_policy_first_apx13(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+  CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_FIRST, (int)apx_server_get_multiple_provider_policy(server));
+
+  provider_change_spy_t spy;
+  memset(&spy, 0, sizeof(spy));
+  apx_server_event_listener_t listener;
+  memset(&listener, 0, sizeof(listener));
+  listener.arg = &spy;
+  listener.provider_changed = spy_on_provider_changed;
+  void *listener_handle = apx_server_register_event_listener(server, &listener);
+  CuAssertPtrNotNull(tc, listener_handle);
+
+  uint8_t const data_a[UINT16_SIZE] = {0x34u, 0x12u};
+  uint8_t const data_b[UINT16_SIZE] = {0x78u, 0x56u};
+  apx_node_instance_t *prov_a_ni = NULL;
+  apx_node_instance_t *prov_b_ni = NULL;
+  apx_node_instance_t *req_ni = NULL;
+
+  apx_server_test_connection_t *conn_a =
+    setup_apx13_provider_conn(server, tc, "Provider13", m_provider13_definition, data_a, UINT16_SIZE, &prov_a_ni);
+  apx_server_test_connection_t *conn_b =
+    setup_apx13_provider_conn(server, tc, "Provider13B", m_provider13b_definition, data_b, UINT16_SIZE, &prov_b_ni);
+  apx_server_test_connection_t *conn_req =
+    setup_apx13_requester_conn(server, tc, "Requester13", m_requester13_definition, &req_ni);
+
+  apx_server_test_connection_run(conn_a);
+  apx_server_test_connection_run(conn_b);
+  apx_server_test_connection_run(conn_req);
+  apx_server_run(server);
+
+  apx_node_data_t *prov_a_data = apx_node_instance_get_node_data(prov_a_ni);
+  apx_node_data_t *prov_b_data = apx_node_instance_get_node_data(prov_b_ni);
+  apx_node_data_t *req_data = apx_node_instance_get_node_data(req_ni);
+
+  // Under "first" policy: Provider13 is active (cout=1), Provider13B is shadowed (cout=0), Requester13 cin=1
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_provide_port_connection_count(prov_a_data, 0));
+  CuAssertUIntEquals(tc, 0u, apx_node_data_get_provide_port_connection_count(prov_b_data, 0));
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_require_port_connection_count(req_data, 0));
+  CuAssertIntEquals(tc, 0, spy.call_count);
+
+  // Requester13 should have Provider13's data (0x1234)
+  uint8_t *snapshot = apx_node_data_take_require_port_data_snapshot(req_data);
+  CuAssertPtrNotNull(tc, snapshot);
+  CuAssertUIntEquals(tc, 0x34u, snapshot[0]);
+  CuAssertUIntEquals(tc, 0x12u, snapshot[1]);
+  free(snapshot);
+
+  // Shadowed Provider13B writes new data (0x9988) -> stored in Provider13B.node_data, NOT routed to Requester13
+  uint8_t const data_b2[UINT16_SIZE] = {0x88u, 0x99u};
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_write_remote_data(conn_b, APX_PORT_DATA_ADDRESS_START, data_b2, UINT16_SIZE));
+  apx_server_test_connection_run(conn_b);
+  apx_server_test_connection_run(conn_req);
+  snapshot = apx_node_data_take_require_port_data_snapshot(req_data);
+  CuAssertPtrNotNull(tc, snapshot);
+  CuAssertUIntEquals(tc, 0x34u, snapshot[0]);
+  CuAssertUIntEquals(tc, 0x12u, snapshot[1]);
+  free(snapshot);
+
+  // Now disconnect active Provider13 -> Provider13B takes over seamlessly!
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_detach_connection(server, (apx_server_connection_t *)conn_a));
+  apx_server_test_connection_run(conn_b);
+  apx_server_test_connection_run(conn_req);
+  apx_server_run(server);
+
+  CuAssertIntEquals(tc, 1, spy.call_count);
+  CuAssertStrEquals(tc, "Provider13", spy.old_node);
+  CuAssertStrEquals(tc, "VehicleSpeed", spy.old_port);
+  CuAssertStrEquals(tc, "Provider13B", spy.new_node);
+  CuAssertStrEquals(tc, "VehicleSpeed", spy.new_port);
+  CuAssertIntEquals(tc, (int)APX_PROVIDER_CHANGE_DISCONNECT, (int)spy.reason);
+
+  // Provider13B cout is now 1, Requester13 cin remains 1, and Requester13 has Provider13B's latest data (0x9988)
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_provide_port_connection_count(prov_b_data, 0));
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_require_port_connection_count(req_data, 0));
+  snapshot = apx_node_data_take_require_port_data_snapshot(req_data);
+  CuAssertPtrNotNull(tc, snapshot);
+  CuAssertUIntEquals(tc, 0x88u, snapshot[0]);
+  CuAssertUIntEquals(tc, 0x99u, snapshot[1]);
+  free(snapshot);
+
+  apx_server_unregister_event_listener(server, listener_handle);
+  apx_server_detach_connection(server, (apx_server_connection_t *)conn_b);
+  apx_server_detach_connection(server, (apx_server_connection_t *)conn_req);
+  apx_server_delete(server);
+}
+
+static void test_multiple_providers_policy_last_apx13(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+  apx_server_set_multiple_provider_policy(server, APX_MULTIPLE_PROVIDER_POLICY_LAST);
+  CuAssertIntEquals(tc, (int)APX_MULTIPLE_PROVIDER_POLICY_LAST, (int)apx_server_get_multiple_provider_policy(server));
+
+  provider_change_spy_t spy;
+  memset(&spy, 0, sizeof(spy));
+  apx_server_event_listener_t listener;
+  memset(&listener, 0, sizeof(listener));
+  listener.arg = &spy;
+  listener.provider_changed = spy_on_provider_changed;
+  void *listener_handle = apx_server_register_event_listener(server, &listener);
+  CuAssertPtrNotNull(tc, listener_handle);
+
+  uint8_t const data_a[UINT16_SIZE] = {0x34u, 0x12u};
+  uint8_t const data_b[UINT16_SIZE] = {0x78u, 0x56u};
+  apx_node_instance_t *prov_a_ni = NULL;
+  apx_node_instance_t *prov_b_ni = NULL;
+  apx_node_instance_t *req_ni = NULL;
+
+  // Connect Provider13 and Requester13 first
+  apx_server_test_connection_t *conn_a =
+    setup_apx13_provider_conn(server, tc, "Provider13", m_provider13_definition, data_a, UINT16_SIZE, &prov_a_ni);
+  apx_server_test_connection_t *conn_req =
+    setup_apx13_requester_conn(server, tc, "Requester13", m_requester13_definition, &req_ni);
+
+  apx_server_test_connection_run(conn_a);
+  apx_server_test_connection_run(conn_req);
+  apx_server_run(server);
+
+  apx_node_data_t *prov_a_data = apx_node_instance_get_node_data(prov_a_ni);
+  apx_node_data_t *req_data = apx_node_instance_get_node_data(req_ni);
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_provide_port_connection_count(prov_a_data, 0));
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_require_port_connection_count(req_data, 0));
+
+  // Now connect Provider13B under "last" policy -> Provider13B takes over immediately!
+  apx_server_test_connection_t *conn_b =
+    setup_apx13_provider_conn(server, tc, "Provider13B", m_provider13b_definition, data_b, UINT16_SIZE, &prov_b_ni);
+  apx_server_test_connection_run(conn_a);
+  apx_server_test_connection_run(conn_b);
+  apx_server_test_connection_run(conn_req);
+  apx_server_run(server);
+
+  apx_node_data_t *prov_b_data = apx_node_instance_get_node_data(prov_b_ni);
+
+  // Provider13 cout dropped to 0, Provider13B cout is 1, Requester13 cin stays 1!
+  CuAssertUIntEquals(tc, 0u, apx_node_data_get_provide_port_connection_count(prov_a_data, 0));
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_provide_port_connection_count(prov_b_data, 0));
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_require_port_connection_count(req_data, 0));
+
+  CuAssertIntEquals(tc, 1, spy.call_count);
+  CuAssertStrEquals(tc, "Provider13", spy.old_node);
+  CuAssertStrEquals(tc, "Provider13B", spy.new_node);
+  CuAssertIntEquals(tc, (int)APX_PROVIDER_CHANGE_TAKEOVER, (int)spy.reason);
+
+  // Requester13 now has Provider13B's data (0x5678)
+  uint8_t *snapshot = apx_node_data_take_require_port_data_snapshot(req_data);
+  CuAssertPtrNotNull(tc, snapshot);
+  CuAssertUIntEquals(tc, 0x78u, snapshot[0]);
+  CuAssertUIntEquals(tc, 0x56u, snapshot[1]);
+  free(snapshot);
+
+  // Demoted Provider13 writes new data (0x2211) -> not routed while shadowed
+  uint8_t const data_a2[UINT16_SIZE] = {0x11u, 0x22u};
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_write_remote_data(conn_a, APX_PORT_DATA_ADDRESS_START, data_a2, UINT16_SIZE));
+  apx_server_test_connection_run(conn_a);
+  apx_server_test_connection_run(conn_req);
+  snapshot = apx_node_data_take_require_port_data_snapshot(req_data);
+  CuAssertPtrNotNull(tc, snapshot);
+  CuAssertUIntEquals(tc, 0x78u, snapshot[0]);
+  CuAssertUIntEquals(tc, 0x56u, snapshot[1]);
+  free(snapshot);
+
+  // Disconnect Provider13B -> Provider13 resumes as preferred provider!
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_detach_connection(server, (apx_server_connection_t *)conn_b));
+  apx_server_test_connection_run(conn_a);
+  apx_server_test_connection_run(conn_req);
+  apx_server_run(server);
+
+  CuAssertIntEquals(tc, 2, spy.call_count);
+  CuAssertStrEquals(tc, "Provider13B", spy.old_node);
+  CuAssertStrEquals(tc, "Provider13", spy.new_node);
+  CuAssertIntEquals(tc, (int)APX_PROVIDER_CHANGE_DISCONNECT, (int)spy.reason);
+
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_provide_port_connection_count(prov_a_data, 0));
+  CuAssertUIntEquals(tc, 1u, apx_node_data_get_require_port_connection_count(req_data, 0));
+  snapshot = apx_node_data_take_require_port_data_snapshot(req_data);
+  CuAssertPtrNotNull(tc, snapshot);
+  CuAssertUIntEquals(tc, 0x11u, snapshot[0]);
+  CuAssertUIntEquals(tc, 0x22u, snapshot[1]);
+  free(snapshot);
+
+  apx_server_unregister_event_listener(server, listener_handle);
+  apx_server_detach_connection(server, (apx_server_connection_t *)conn_a);
+  apx_server_detach_connection(server, (apx_server_connection_t *)conn_req);
   apx_server_delete(server);
 }

@@ -561,6 +561,18 @@ static void test_diag_dispatcher_list_commands(CuTest *tc)
                          "R\"VehicleSpeed\"S:=0\n";
   apx_node_manager_t *node_mgr = apx_server_connection_get_node_manager((apx_server_connection_t *)conn_op);
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(node_mgr, node_def));
+  apx_node_instance_t *ni1 = apx_node_manager_get_last_attached(node_mgr);
+  CuAssertPtrNotNull(tc, ni1);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_connect_node_instance_provide_ports(server, ni1));
+
+  // Attach a second provider for WheelSpeed so it has multiple providers
+  const char *node_def2 = "APX/1.3\n"
+                          "N\"TestNode2\"\n"
+                          "P\"WheelSpeed\"S:=0\n";
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(node_mgr, node_def2));
+  apx_node_instance_t *ni2 = apx_node_manager_get_last_attached(node_mgr);
+  CuAssertPtrNotNull(tc, ni2);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_connect_node_instance_provide_ports(server, ni2));
 
   // Monitor client
   apx_server_test_connection_t *conn_mon = apx_server_test_connection_new();
@@ -612,6 +624,14 @@ static void test_diag_dispatcher_list_commands(CuTest *tc)
   req_unconn[4] = 5; // opcode = 0x0005 (LIST_UNCONNECTED_PORTS)
   req_unconn[20] = 10;
   apx_diag_dispatcher_on_request_written(dispatcher, 0u, req_unconn, sizeof(req_unconn));
+
+  // 5. LIST_MULTI_PROVIDERS
+  uint8_t req_multi[24];
+  memset(req_multi, 0, sizeof(req_multi));
+  req_multi[0] = 5;
+  req_multi[4] = 8; // opcode = 0x0008 (LIST_MULTI_PROVIDERS)
+  req_multi[20] = 10;
+  apx_diag_dispatcher_on_request_written(dispatcher, 0u, req_multi, sizeof(req_multi));
 
   apx_server_monitor_delete(monitor);
   apx_server_delete(server);

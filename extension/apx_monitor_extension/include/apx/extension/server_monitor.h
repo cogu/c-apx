@@ -115,6 +115,8 @@ void apx_server_monitor_on_file_closed(
   void *arg, struct apx_connection_base_tag *connection, const struct rmf_file_info_tag *file_info);
 void apx_server_monitor_on_file_written(void *arg, struct apx_connection_base_tag *connection,
   struct apx_file_tag *file, uint32_t offset, const uint8_t *data, apx_size_t size);
+void apx_server_monitor_on_provider_changed(void *arg, uint32_t old_conn_id, struct apx_port_instance_tag *old_provider,
+  uint32_t new_conn_id, struct apx_port_instance_tag *new_provider, apx_provider_change_reason_t reason);
 
 #ifdef UNIT_TEST
 void apx_server_monitor_accept_testsocket(apx_server_monitor_t *self, testsocket_t *sock);

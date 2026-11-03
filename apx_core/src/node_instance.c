@@ -15,6 +15,7 @@
 #include "apx/connection_base.h"
 #include "apx/file_manager.h"
 #include "apx/node_manager.h"
+#include "apx/port_connector_change_ref.h"
 #include "apx/server.h"
 #include "apx/util.h"
 #include "sha256.h"
@@ -1044,44 +1045,79 @@ apx_error_t apx_node_instance_handle_require_ports_disconnected(
       assert(require_port != NULL);
       assert(entry != NULL);
       assert(entry->count <= 0);
-      if (entry->count == -1)
+      if (entry->count < 0)
       {
-        apx_error_t result;
-        apx_port_id_t provide_port_id;
-        apx_node_instance_t *provide_node_instance;
-        apx_port_instance_t *provide_port = entry->data.port_instance;
-        assert(provide_port != NULL);
-        provide_node_instance = provide_port->parent;
-        assert(provide_node_instance != 0);
-        provide_port_id = apx_port_instance_port_id(provide_port);
-        apx_node_instance_lock_port_connector_table(provide_node_instance);
-        result = remove_provide_port_connector(provide_node_instance, provide_port_id, require_port);
-        apx_port_count_t new_provide_count = 0u;
-        if (provide_node_instance->connector_table != NULL)
+        int32_t const num_disconnected = -entry->count;
+        for (int32_t i = 0; i < num_disconnected; i++)
         {
-          int32_t const length =
-            apx_port_connector_list_length(&provide_node_instance->connector_table[provide_port_id]);
-          new_provide_count = apx_cap_port_count(length);
-        }
-        apx_node_instance_unlock_port_connector_table(provide_node_instance);
-        if (result != APX_NO_ERROR)
-        {
-          return result;
+          apx_error_t result;
+          apx_port_id_t provide_port_id;
+          apx_node_instance_t *provide_node_instance;
+          apx_port_instance_t *provide_port = apx_port_connector_change_entry_get(entry, i);
+          assert(provide_port != NULL);
+          provide_node_instance = provide_port->parent;
+          assert(provide_node_instance != NULL);
+          provide_port_id = apx_port_instance_port_id(provide_port);
+          apx_node_instance_lock_port_connector_table(provide_node_instance);
+          result = remove_provide_port_connector(provide_node_instance, provide_port_id, require_port);
+          apx_port_count_t new_provide_count = 0u;
+          if (provide_node_instance->connector_table != NULL)
+          {
+            int32_t const length =
+              apx_port_connector_list_length(&provide_node_instance->connector_table[provide_port_id]);
+            new_provide_count = apx_cap_port_count(length);
+          }
+          apx_node_instance_unlock_port_connector_table(provide_node_instance);
+          if (result != APX_NO_ERROR)
+          {
+            return result;
+          }
+          apx_node_instance_send_provide_port_count_data(provide_node_instance, provide_port_id, new_provide_count);
         }
         apx_port_count_t new_require_count = apx_port_connector_change_entry_get_connection_count(entry);
         apx_node_instance_send_require_port_count_data(self, require_port_id, new_require_count);
-        apx_node_instance_send_provide_port_count_data(provide_node_instance, provide_port_id, new_provide_count);
-      }
-      else if (entry->count < -1)
-      {
-            // Simultaneous multi-provider disconnect is deferred (see roadmap Item 12)
-        return APX_NOT_IMPLEMENTED_ERROR;
       }
       else
       {
         assert(entry->count == 0);
       }
     }
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_instance_handle_provide_ports_disconnected(
+  apx_node_instance_t *self, apx_port_connector_change_table_t *connector_changes)
+{
+  if ((self != NULL) && (connector_changes != NULL))
+  {
+    apx_size_t const num_provide_ports = apx_node_instance_get_num_provide_ports(self);
+    apx_node_instance_lock_port_connector_table(self);
+    for (apx_port_id_t provide_port_id = 0u; provide_port_id < num_provide_ports; provide_port_id++)
+    {
+      apx_port_connector_change_entry_t *entry =
+        apx_port_connector_change_table_get_entry(connector_changes, provide_port_id);
+      assert(entry != NULL);
+      if (entry->count < 0)
+      {
+        int32_t const num_disconnected = -entry->count;
+        for (int32_t i = 0; i < num_disconnected; i++)
+        {
+          apx_port_instance_t *require_port = apx_port_connector_change_entry_get(entry, i);
+          assert(require_port != NULL);
+          apx_error_t result = remove_provide_port_connector(self, provide_port_id, require_port);
+          if (result != APX_NO_ERROR)
+          {
+            apx_node_instance_unlock_port_connector_table(self);
+            return result;
+          }
+        }
+        apx_port_count_t const new_provide_count = apx_port_connector_change_entry_get_connection_count(entry);
+        apx_node_instance_send_provide_port_count_data(self, provide_port_id, new_provide_count);
+      }
+    }
+    apx_node_instance_unlock_port_connector_table(self);
     return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -1648,6 +1684,10 @@ static apx_error_t process_remote_write_provide_port_data(
       if (self->server != NULL)
       {
         apx_port_connector_change_table_t *provide_port_changes = NULL;
+        adt_ary_t replaced_provider_changes;
+        adt_ary_t provider_change_events;
+        adt_ary_create(&replaced_provider_changes, apx_port_connector_change_ref_vdelete);
+        adt_ary_create(&provider_change_events, apx_provider_change_vdelete);
         apx_server_take_global_lock(self->server);
         retval = apx_server_connect_node_instance_provide_ports(self->server, self);
         if (retval == APX_NO_ERROR)
@@ -1657,16 +1697,65 @@ static apx_error_t process_remote_write_provide_port_data(
           {
             apx_node_instance_clear_provide_port_connector_changes(self, false);
           }
+          adt_ary_t *modified_nodes = apx_server_get_modified_node_instance(self->server);
+          if (modified_nodes != NULL)
+          {
+            int32_t const num_modified = adt_ary_length(modified_nodes);
+            for (int32_t i = 0; i < num_modified; i++)
+            {
+              apx_node_instance_t *modified_node = (apx_node_instance_t *)adt_ary_value(modified_nodes, i);
+              if ((modified_node != NULL) && (modified_node != self))
+              {
+                apx_port_connector_change_table_t *old_prov_changes =
+                  apx_node_instance_get_provide_port_connector_changes(modified_node, false);
+                if (old_prov_changes != NULL)
+                {
+                  apx_port_connector_change_ref_t *ref =
+                    apx_port_connector_change_ref_new(modified_node, old_prov_changes);
+                  if (ref != NULL)
+                  {
+                    if (adt_ary_push(&replaced_provider_changes, ref) == ADT_NO_ERROR)
+                    {
+                      apx_node_instance_clear_provide_port_connector_changes(modified_node, false);
+                    }
+                    else
+                    {
+                      apx_port_connector_change_ref_delete(ref);
+                    }
+                  }
+                }
+              }
+            }
+          }
+          apx_server_take_provider_changes(self->server, &provider_change_events);
         }
         apx_server_clear_port_connector_changes(self->server);
         apx_server_release_global_lock(self->server);
 
         apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
-        if ((retval == APX_NO_ERROR) && (provide_port_changes != NULL))
+        if (retval == APX_NO_ERROR)
         {
-          retval = apx_server_process_provide_port_connector_changes(self->server, self, provide_port_changes);
-          apx_port_connector_change_table_delete(provide_port_changes);
+          int32_t const num_replaced = adt_ary_length(&replaced_provider_changes);
+          for (int32_t i = 0; i < num_replaced; i++)
+          {
+            apx_port_connector_change_ref_t *ref =
+              (apx_port_connector_change_ref_t *)adt_ary_value(&replaced_provider_changes, i);
+            if ((ref != NULL) && (ref->node_instance != NULL) && (ref->connector_changes != NULL))
+            {
+              apx_node_instance_handle_provide_ports_disconnected(ref->node_instance, ref->connector_changes);
+              apx_server_trigger_provide_ports_disconnected_event(
+                self->server, ref->node_instance, ref->connector_changes);
+            }
+          }
+          if (provide_port_changes != NULL)
+          {
+            retval = apx_server_process_provide_port_connector_changes(self->server, self, provide_port_changes);
+            apx_port_connector_change_table_delete(provide_port_changes);
+          }
+          apx_server_process_provider_changes(self->server, &provider_change_events);
         }
+        adt_ary_destroy(&replaced_provider_changes);
+        adt_ary_destroy(&provider_change_events);
       }
       else
       {

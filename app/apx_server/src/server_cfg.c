@@ -32,7 +32,7 @@
 static const char *const m_apx_server_keys[] = {"security", "security.require-signed-nodes",
   "security.require_signed_nodes", "security.trusted-keys", "security.trusted_keys", "require-signed-nodes",
   "require_signed_nodes", "trusted-keys", "trusted_keys", "max-num-events", "apx-cache-enabled", "apx-cache-path",
-  NULL};
+  "multiple-provider-policy", "multiple_provider_policy", NULL};
 
 static const char *const m_security_keys[] = {
   "require-signed-nodes", "require_signed_nodes", "trusted-keys", "trusted_keys", NULL};
@@ -49,6 +49,7 @@ static const apx_server_extension_entry_t *find_registered_extension_entry(const
 static void emit_warning(apx_config_warning_cb cb, void *arg, const char *format, ...);
 static void check_hash_keys(dtl_hv_t *hv, const char *section_name, const char *prefix, const char *const *allowed_keys,
   apx_config_warning_cb cb, void *arg);
+static void check_apx_server_config(dtl_hv_t *server_hv, apx_config_warning_cb cb, void *arg);
 static void default_warning_cb(void *arg, const char *warning);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -139,6 +140,25 @@ apx_error_t apx_server_configure(struct apx_server_tag *server, dtl_hv_t const *
         apx_server_set_require_signed_nodes(srv, val);
       }
     }
+    dtl_dv_t *policy_dv = dtl_hv_get_cstr(server_hv, "multiple-provider-policy");
+    if (policy_dv == NULL)
+    {
+      policy_dv = dtl_hv_get_cstr(server_hv, "multiple_provider_policy");
+    }
+    if (policy_dv != NULL)
+    {
+      apx_multiple_provider_policy_t policy = APX_MULTIPLE_PROVIDER_POLICY_FIRST;
+      if (dtl_dv_type(policy_dv) == DTL_DV_SCALAR && dtl_sv_type((dtl_sv_t *)policy_dv) == DTL_SV_STR)
+      {
+        bool ok = false;
+        const char *val = dtl_sv_to_cstr((dtl_sv_t *)policy_dv, &ok);
+        if (ok && val != NULL && strcmp(val, "last") == 0)
+        {
+          policy = APX_MULTIPLE_PROVIDER_POLICY_LAST;
+        }
+      }
+      apx_server_set_multiple_provider_policy(srv, policy);
+    }
   }
 
   dtl_dv_t *top_sec_dv = dtl_hv_get_cstr((dtl_hv_t *)config, "security");
@@ -177,6 +197,7 @@ void apx_server_check_config_unknown_keys_cb(dtl_hv_t const *config, apx_config_
       if (dtl_dv_type(top_val) == DTL_DV_HASH)
       {
         check_hash_keys((dtl_hv_t *)top_val, top_key, "", m_apx_server_keys, cb, arg);
+        check_apx_server_config((dtl_hv_t *)top_val, cb, arg);
       }
     }
     else if (strcmp(top_key, "security") == 0)
@@ -447,6 +468,38 @@ static void check_hash_keys(dtl_hv_t *hv, const char *section_name, const char *
           emit_warning(cb, arg, "Warning: Unknown configuration key '%s.%s'", section_name, rel_path);
         }
       }
+    }
+  }
+}
+
+static void check_apx_server_config(dtl_hv_t *server_hv, apx_config_warning_cb cb, void *arg)
+{
+  dtl_dv_t *policy_dv = dtl_hv_get_cstr(server_hv, "multiple-provider-policy");
+  if (policy_dv == NULL)
+  {
+    policy_dv = dtl_hv_get_cstr(server_hv, "multiple_provider_policy");
+  }
+  if (policy_dv != NULL)
+  {
+    if (dtl_dv_type(policy_dv) == DTL_DV_SCALAR)
+    {
+      dtl_sv_t *sv = (dtl_sv_t *)policy_dv;
+      bool ok = false;
+      const char *val = dtl_sv_to_cstr(sv, &ok);
+      if (dtl_sv_type(sv) != DTL_SV_STR || !ok || val == NULL ||
+        (strcmp(val, "first") != 0 && strcmp(val, "last") != 0))
+      {
+        emit_warning(cb, arg,
+          "Warning: Invalid value '%s' for 'apx-server.multiple-provider-policy' (expected 'first' or 'last'); "
+          "defaulting to 'first'",
+          (val != NULL) ? val : "");
+      }
+    }
+    else
+    {
+      emit_warning(cb, arg,
+        "Warning: Invalid value '<non-scalar>' for 'apx-server.multiple-provider-policy' (expected 'first' or 'last'); "
+        "defaulting to 'first'");
     }
   }
 }

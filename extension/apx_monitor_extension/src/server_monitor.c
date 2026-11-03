@@ -18,8 +18,10 @@
 #include "apx/extension/log_streamer.h"
 #include "apx/extension/monitor_session.h"
 #include "apx/file_manager.h"
+#include "apx/node_instance.h"
 #include "apx/node_manager.h"
 #include "apx/numheader.h"
+#include "apx/port_instance.h"
 #include "apx/remotefile.h"
 #include "apx/server.h"
 #include "apx/server_connection.h"
@@ -878,6 +880,42 @@ void apx_server_monitor_on_file_written(
   }
 }
 
+void apx_server_monitor_on_provider_changed(void *arg, uint32_t old_conn_id, apx_port_instance_t *old_provider,
+  uint32_t new_conn_id, apx_port_instance_t *new_provider, apx_provider_change_reason_t reason)
+{
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  if ((self != NULL) && (old_provider != NULL) && (new_provider != NULL) && server_monitor_has_active_log_streams(self))
+  {
+    apx_node_instance_t *old_node = apx_port_instance_parent(old_provider);
+    apx_node_instance_t *new_node = apx_port_instance_parent(new_provider);
+    uint32_t old_port_id = (uint32_t)apx_port_instance_port_id(old_provider);
+    uint32_t new_port_id = (uint32_t)apx_port_instance_port_id(new_provider);
+    char const *old_node_name = (old_node != NULL) ? apx_node_instance_get_name(old_node) : "";
+    char const *new_node_name = (new_node != NULL) ? apx_node_instance_get_name(new_node) : "";
+    char const *port_name = apx_port_instance_name(new_provider);
+    if (port_name == NULL)
+    {
+      port_name = "";
+    }
+    uint8_t policy = (self->server != NULL) ? (uint8_t)apx_server_get_multiple_provider_policy(self->server) : 0u;
+
+    MUTEX_LOCK(self->lock);
+    adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+    while (iter != NULL)
+    {
+      apx_monitor_session_t *session = (apx_monitor_session_t *)iter->pItem;
+      apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer(session);
+      if (apx_log_streamer_is_active(streamer))
+      {
+        apx_log_streamer_enqueue_provider_change(streamer, old_conn_id, old_port_id, old_node_name, new_conn_id,
+          new_port_id, new_node_name, port_name, (uint8_t)reason, policy);
+      }
+      iter = adt_list_iter_next(iter);
+    }
+    MUTEX_UNLOCK(self->lock);
+  }
+}
+
 #ifdef UNIT_TEST
 void apx_server_monitor_accept_testsocket(apx_server_monitor_t *self, testsocket_t *sock)
 {
@@ -926,6 +964,7 @@ static void register_server_listener(apx_server_monitor_t *self)
   listener.arg = self;
   listener.new_connection = apx_server_monitor_on_new_connection;
   listener.connection_closed = apx_server_monitor_on_connection_closed;
+  listener.provider_changed = apx_server_monitor_on_provider_changed;
   self->server_listener_handle = apx_server_register_event_listener(self->server, &listener);
 }
 

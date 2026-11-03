@@ -706,6 +706,77 @@ apx_error_t apx_diag_client_list_unconnected_ports(apx_diag_client_t *self, adt_
   return APX_NO_ERROR;
 }
 
+apx_error_t apx_diag_client_list_multi_providers(apx_diag_client_t *self, adt_ary_t *out_list, uint32_t timeout_ms)
+{
+  if (self == NULL || out_list == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  adt_ary_create(out_list, apx_diag_client_multi_provider_item_vdelete);
+
+  uint64_t snapshot_id = 0ULL;
+  uint32_t cursor = 0u;
+
+  for (;;)
+  {
+    uint8_t req_payload[16];
+    pack_le_u64(req_payload + 0, snapshot_id);
+    pack_le_u32(req_payload + 8, cursor);
+    pack_le_u16(req_payload + 12, 0u);
+    pack_le_u16(req_payload + 14, 0u);
+
+    uint32_t status = 0u;
+    uint8_t *resp = NULL;
+    uint32_t resp_len = 0u;
+
+    apx_error_t err = apx_diag_client_send_request(
+      self, APX_DIAG_CMD_LIST_MULTI_PROVIDERS, 0u, req_payload, 16u, &status, &resp, &resp_len, timeout_ms);
+    if (err != APX_NO_ERROR)
+    {
+      return err;
+    }
+    if (status != 0u || resp == NULL || resp_len < 16u)
+    {
+      if (resp != NULL)
+        free(resp);
+      return (status != 0u) ? (apx_error_t)status : APX_INVALID_MSG_ERROR;
+    }
+
+    snapshot_id = unpack_le_u64(resp + 0);
+    uint32_t const next_cursor = unpack_le_u32(resp + 8);
+    uint16_t const count = unpack_le_u16(resp + 12);
+
+    uint32_t off = 16u;
+    for (uint16_t i = 0; i < count && off + 12u <= resp_len; ++i)
+    {
+      apx_diag_client_multi_provider_item_t *item =
+        (apx_diag_client_multi_provider_item_t *)malloc(sizeof(apx_diag_client_multi_provider_item_t));
+      if (item != NULL)
+      {
+        item->node_id = unpack_le_u32(resp + off + 0);
+        item->port_id = unpack_le_u32(resp + off + 4);
+        item->status = resp[off + 8];
+        off += 12u;
+
+        uint32_t consumed = 0u;
+        item->port_name = decode_string16(resp + off, resp_len - off, &consumed);
+        off += consumed;
+
+        adt_ary_push(out_list, item);
+      }
+    }
+    free(resp);
+
+    if (next_cursor == APX_DIAG_CURSOR_END || count == 0u)
+    {
+      break;
+    }
+    cursor = next_cursor;
+  }
+
+  return APX_NO_ERROR;
+}
+
 apx_error_t apx_diag_client_get_node_definition(
   apx_diag_client_t *self, const char *node_name, char **out_def_text, uint32_t timeout_ms)
 {
@@ -1188,6 +1259,21 @@ void apx_diag_client_unconnected_port_item_delete(apx_diag_client_unconnected_po
 void apx_diag_client_unconnected_port_item_vdelete(void *arg)
 {
   apx_diag_client_unconnected_port_item_delete((apx_diag_client_unconnected_port_item_t *)arg);
+}
+
+void apx_diag_client_multi_provider_item_delete(apx_diag_client_multi_provider_item_t *self)
+{
+  if (self != NULL)
+  {
+    if (self->port_name != NULL)
+      free(self->port_name);
+    free(self);
+  }
+}
+
+void apx_diag_client_multi_provider_item_vdelete(void *arg)
+{
+  apx_diag_client_multi_provider_item_delete((apx_diag_client_multi_provider_item_t *)arg);
 }
 
 void apx_diag_client_resolution_delete(apx_diag_client_resolution_t *self)

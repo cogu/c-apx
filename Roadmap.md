@@ -226,6 +226,8 @@ To eliminate heap allocation overhead and per-connection garbage-collector threa
 
 ## 13. Support Multiple Providers per Require Port (`multiple-provider-policy`)
 
+**Status**: Completed
+
 * Detailed architecture, arbitration state machine, and observability specifications defined in [multiple_providers_policy_spec.md](design/multiple_providers_policy_spec.md).
 * **Configurable Provider Arbitration Policy (`server.json` / `server_cfg.c` / `server.c`):**
   * Support `"multiple-provider-policy": "first" | "last"` (with alias `"multiple_provider_policy"`, default: `"first"`) in the `"apx-server"` section of `server.json`.

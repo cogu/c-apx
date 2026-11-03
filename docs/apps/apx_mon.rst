@@ -153,13 +153,26 @@ When invoked with ``--unconnected``, the command reveals ports that are not curr
    ----------------------------------------------------------------------
    BatteryVoltage           1:EngineController   -
    AmbientAirTemp           -                    0:Dashboard
+   VehicleSpeed             4:BackupController   (shadowed)
+
+When multiple nodes provide the same port signature, only one provider is actively routed according to the server's ``multiple-provider-policy`` (``"first"`` or ``"last"``). Non-active standby providers are displayed with ``(shadowed)`` in the ``REQUIRER_NODE`` column of ``--unconnected`` and ``--all`` (and ``"reason": "SHADOWED"`` in ``--json`` mode).
+
+When invoked with ``--multi-provider``, the command lists all ports that currently have two or more connected providers in chronological registration order:
+
+.. code-block:: text
+
+   PORT_NAME                PROVIDER_NODE        STATUS
+   ----------------------------------------------------------------------
+   VehicleSpeed             1:EngineController   ACTIVE
+   VehicleSpeed             4:BackupController   (shadowed)
 
 Options:
 
 * ``--all``: Lists active routes and unconnected ports together in the three-column table.
-* ``--unconnected``: Lists all unconnected ports (missing providers or consumers).
+* ``--unconnected``: Lists all unconnected ports (missing providers, missing consumers, or shadowed providers).
 * ``--no-provider``: Lists require-ports waiting for a provider in a two-column table (``PORT_NAME``, ``NODE``).
 * ``--no-requester`` (or ``--no-consumer``): Lists provide-ports waiting for a consumer in a two-column table (``PORT_NAME``, ``NODE``).
+* ``--multi-provider``: Lists ports with multiple providers and indicates which provider is ``ACTIVE`` vs. ``(shadowed)``.
 * ``--strip-id``: Omits the connection ID prefix from the node columns in tabular reports, displaying only the node name.
 
 In ``--json`` mode, returns a JSON representation of the routes or unconnected ports.

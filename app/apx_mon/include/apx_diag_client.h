@@ -33,6 +33,7 @@
 #define APX_DIAG_CMD_LIST_UNCONNECTED_PORTS ((uint16_t)0x0005u)
 #define APX_DIAG_CMD_GET_NODE_DEFINITION ((uint16_t)0x0006u)
 #define APX_DIAG_CMD_SNAPSHOT_NODE_DATA ((uint16_t)0x0007u)
+#define APX_DIAG_CMD_LIST_MULTI_PROVIDERS ((uint16_t)0x0008u)
 #define APX_DIAG_CMD_SUBSCRIBE_PORTS ((uint16_t)0x0010u)
 #define APX_DIAG_CMD_UNSUBSCRIBE ((uint16_t)0x0011u)
 
@@ -93,9 +94,18 @@ typedef struct apx_diag_client_unconnected_port_item_tag
   uint32_t node_id;
   uint32_t port_id;
   uint8_t direction; // 0 = require, 1 = provide
-  uint8_t reason;    // 0 = no provider, 1 = no consumer
+  uint8_t reason;    // 0 = no provider, 1 = no consumer, 2 = shadowed
   char *port_name;
 } apx_diag_client_unconnected_port_item_t;
+
+// Multi-provider item
+typedef struct apx_diag_client_multi_provider_item_tag
+{
+  uint32_t node_id;
+  uint32_t port_id;
+  uint8_t status; // 0 = SHADOWED, 1 = ACTIVE
+  char *port_name;
+} apx_diag_client_multi_provider_item_t;
 
 // Resolution item for subscriptions
 typedef struct apx_diag_client_resolution_tag
@@ -174,6 +184,7 @@ apx_error_t apx_diag_client_list_connections(apx_diag_client_t *self, adt_ary_t 
 apx_error_t apx_diag_client_list_nodes(apx_diag_client_t *self, adt_ary_t *out_list, uint32_t timeout_ms);
 apx_error_t apx_diag_client_list_routes(apx_diag_client_t *self, adt_ary_t *out_list, uint32_t timeout_ms);
 apx_error_t apx_diag_client_list_unconnected_ports(apx_diag_client_t *self, adt_ary_t *out_list, uint32_t timeout_ms);
+apx_error_t apx_diag_client_list_multi_providers(apx_diag_client_t *self, adt_ary_t *out_list, uint32_t timeout_ms);
 apx_error_t apx_diag_client_get_node_definition(
   apx_diag_client_t *self, const char *node_name, char **out_def_text, uint32_t timeout_ms);
 // Successful results are owned by the caller; absent directions return NULL.
@@ -195,6 +206,8 @@ void apx_diag_client_route_item_delete(apx_diag_client_route_item_t *self);
 void apx_diag_client_route_item_vdelete(void *arg);
 void apx_diag_client_unconnected_port_item_delete(apx_diag_client_unconnected_port_item_t *self);
 void apx_diag_client_unconnected_port_item_vdelete(void *arg);
+void apx_diag_client_multi_provider_item_delete(apx_diag_client_multi_provider_item_t *self);
+void apx_diag_client_multi_provider_item_vdelete(void *arg);
 void apx_diag_client_resolution_delete(apx_diag_client_resolution_t *self);
 void apx_diag_client_resolution_vdelete(void *arg);
 

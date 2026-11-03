@@ -44,6 +44,9 @@ typedef void(apx_ports_connected_event_func_t)(void *arg, struct apx_node_instan
   struct apx_port_connector_change_table_tag const *connector_changes);
 typedef void(apx_ports_disconnected_event_func_t)(void *arg, struct apx_node_instance_tag *node_instance,
   struct apx_port_connector_change_table_tag const *connector_changes);
+typedef void(apx_port_provider_change_event_func_t)(void *arg, uint32_t old_conn_id,
+  struct apx_port_instance_tag *old_provider, uint32_t new_conn_id, struct apx_port_instance_tag *new_provider,
+  apx_provider_change_reason_t reason);
 
 // Connection typedefs
 typedef void(apx_protocol_header_accepted_func_t)(void *arg, struct apx_connection_base_tag *connection);
@@ -73,6 +76,7 @@ typedef struct apx_server_event_listener_tag
   apx_ports_connected_event_func_t *provide_ports_connected;
   apx_ports_disconnected_event_func_t *require_ports_disconnected;
   apx_ports_disconnected_event_func_t *provide_ports_disconnected;
+  apx_port_provider_change_event_func_t *provider_changed;
 } apx_server_event_listener_t;
 
 typedef struct apx_server_connection_event_listener_tag

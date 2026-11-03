@@ -58,6 +58,7 @@ Server configuration files are formatted as JSON objects. The core server option
            "/etc/apx/certs/trusted_node_pubkey.pem"
          ]
        },
+       "multiple-provider-policy": "first",
        "max-num-events": 200,
        "apx-cache-enabled": false,
        "apx-cache-path": ""
@@ -69,25 +70,35 @@ Configuration Parameters
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 15 60
+   :widths: 25 15 15 45
 
-   * - Key
+   * - Parameter
      - Type
+     - Default
      - Description
    * - ``security.require-signed-nodes``
      - Boolean
-     - When set to ``true``, client nodes connecting to the server must supply a valid cryptographic signature accompanying their APX definition (RMFP/1.1). Unsigned nodes or nodes signed with keys not in ``trusted-keys`` are rejected. Defaults to ``false``. Also accepts key name ``require_signed_nodes``.
+     - ``false``
+     - When set to ``true``, client nodes connecting to the server must supply a valid cryptographic signature accompanying their APX definition (RMFP/1.1). Unsigned nodes or nodes signed with keys not in ``trusted-keys`` are rejected. Also accepts key name ``require_signed_nodes``.
    * - ``security.trusted-keys``
      - Array | String
+     - ``[]``
      - List of file paths to trusted public key PEM files (or inline PEM strings). Signatures presented by client nodes are verified against these keys. Also accepts key name ``trusted_keys``.
+   * - ``multiple-provider-policy``
+     - String
+     - ``"first"``
+     - Arbitration policy when multiple connected nodes provide a port with the same signature: ``"first"`` (the oldest connected provider remains active and newer providers are shadowed until the active provider disconnects) or ``"last"`` (the newest connected provider immediately takes over from the previous active provider). Also accepts key name ``multiple_provider_policy``.
    * - ``max-num-events``
      - Integer
+     - ``200``
      - Capacity of internal event queue for routing operations.
    * - ``apx-cache-enabled``
      - Boolean
+     - ``false``
      - *(Placeholder / Not yet implemented)* Reserved for enabling/disabling node parse tree caching.
    * - ``apx-cache-path``
      - String
+     - ``""``
      - *(Placeholder / Not yet implemented)* Reserved for filesystem directory path used for node caching.
 
 Extension Configuration Sections

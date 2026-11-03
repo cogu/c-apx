@@ -35,6 +35,7 @@
 #define APX_LOG_EVENT_FILE_OPEN 0x0032u
 #define APX_LOG_EVENT_FILE_CLOSE 0x0033u
 #define APX_LOG_EVENT_FILE_WRITE 0x0034u
+#define APX_LOG_EVENT_PROVIDER_CHANGE 0x0050u
 #define APX_LOG_EVENT_EVENTS_DROPPED 0x00FEu
 #define APX_LOG_EVENT_STREAM_END 0x00FFu
 
@@ -119,6 +120,9 @@ apx_error_t apx_log_streamer_enqueue_file_open(apx_log_streamer_t *self, uint32_
 apx_error_t apx_log_streamer_enqueue_file_close(apx_log_streamer_t *self, uint32_t connection_id, uint32_t address);
 apx_error_t apx_log_streamer_enqueue_file_write(apx_log_streamer_t *self, uint32_t connection_id, uint32_t address,
   uint32_t offset, const uint8_t *data, uint32_t size);
+apx_error_t apx_log_streamer_enqueue_provider_change(apx_log_streamer_t *self, uint32_t old_conn_id,
+  uint32_t old_port_id, const char *old_node_name, uint32_t new_conn_id, uint32_t new_port_id,
+  const char *new_node_name, const char *port_name, uint8_t reason, uint8_t policy);
 
 // Drain queue into server.log
 void apx_log_streamer_drain(apx_log_streamer_t *self);

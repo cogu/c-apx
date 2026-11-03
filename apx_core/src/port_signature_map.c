@@ -41,6 +41,10 @@ static apx_error_t apx_port_signature_map_disconnect_provide_ports_internal(
 static apx_error_t apx_port_signature_map_remove(
   apx_port_signature_map_t *self, const char *port_signature, apx_port_instance_t *port_instance);
 static void apx_port_signature_map_delete_entry(apx_port_signature_map_t *self, const char *port_signature);
+static apx_port_instance_t *select_next_preferred_provider(
+  apx_port_signature_map_t const *self, apx_port_signature_map_entry_t *entry);
+static apx_error_t record_provider_change(apx_port_signature_map_t *self, apx_port_instance_t *old_provider,
+  apx_port_instance_t *new_provider, apx_provider_change_reason_t reason);
 
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL VARIABLES
@@ -49,15 +53,88 @@ static void apx_port_signature_map_delete_entry(apx_port_signature_map_t *self, 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+apx_provider_change_t *apx_provider_change_new(
+  apx_port_instance_t *old_provider, apx_port_instance_t *new_provider, apx_provider_change_reason_t reason)
+{
+  apx_provider_change_t *self = (apx_provider_change_t *)malloc(sizeof(apx_provider_change_t));
+  if (self != NULL)
+  {
+    self->old_provider = old_provider;
+    self->new_provider = new_provider;
+    self->reason = reason;
+  }
+  return self;
+}
+
+void apx_provider_change_delete(apx_provider_change_t *self)
+{
+  if (self != NULL)
+  {
+    free(self);
+  }
+}
+
+void apx_provider_change_vdelete(void *arg) { apx_provider_change_delete((apx_provider_change_t *)arg); }
+
 void apx_port_signature_map_create(apx_port_signature_map_t *self)
 {
   if (self != NULL)
   {
     adt_hash_create(&self->internal_map, apx_port_signature_map_entry_vdelete);
+    adt_ary_create(&self->provider_changes, NULL);
+    self->policy = APX_MULTIPLE_PROVIDER_POLICY_FIRST;
   }
 }
 
-void apx_port_signature_map_destroy(apx_port_signature_map_t *self) { adt_hash_destroy(&self->internal_map); }
+void apx_port_signature_map_destroy(apx_port_signature_map_t *self)
+{
+  if (self != NULL)
+  {
+    adt_hash_destroy(&self->internal_map);
+    apx_port_signature_map_clear_provider_changes(self);
+    adt_ary_destroy(&self->provider_changes);
+  }
+}
+
+void apx_port_signature_map_set_policy(apx_port_signature_map_t *self, apx_multiple_provider_policy_t policy)
+{
+  if (self != NULL)
+  {
+    self->policy = policy;
+  }
+}
+
+apx_multiple_provider_policy_t apx_port_signature_map_get_policy(apx_port_signature_map_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->policy;
+  }
+  return APX_MULTIPLE_PROVIDER_POLICY_FIRST;
+}
+
+adt_ary_t *apx_port_signature_map_get_provider_changes(apx_port_signature_map_t *self)
+{
+  if (self != NULL)
+  {
+    return &self->provider_changes;
+  }
+  return NULL;
+}
+
+void apx_port_signature_map_clear_provider_changes(apx_port_signature_map_t *self)
+{
+  if (self != NULL)
+  {
+    int32_t const len = adt_ary_length(&self->provider_changes);
+    for (int32_t i = 0; i < len; i++)
+    {
+      apx_provider_change_t *change = (apx_provider_change_t *)adt_ary_value(&self->provider_changes, i);
+      apx_provider_change_delete(change);
+    }
+    adt_ary_clear(&self->provider_changes);
+  }
+}
 
 apx_port_signature_map_entry_t *apx_port_signature_map_find(apx_port_signature_map_t *self, const char *port_signature)
 {
@@ -211,14 +288,40 @@ static apx_error_t apx_port_signature_map_insert(
   assert(entry != NULL);
   if (apx_port_instance_port_type(port_instance) == APX_PROVIDE_PORT)
   {
-    apx_port_signature_map_entry_attach_provide_port(entry, port_instance, true);
-    apx_port_signature_map_entry_notify_require_ports_about_provide_port_change(
-      entry, port_instance, APX_PORT_CONNECTED_EVENT);
+    apx_port_instance_t *old_preferred = apx_port_signature_map_entry_get_preferred_provider(entry);
+    if (old_preferred == NULL)
+    {
+      apx_port_signature_map_entry_attach_provide_port(entry, port_instance, true);
+      return apx_port_signature_map_entry_notify_require_ports_about_provide_port_change(
+        entry, port_instance, APX_PORT_CONNECTED_EVENT);
+    }
+    else if (self->policy == APX_MULTIPLE_PROVIDER_POLICY_LAST)
+    {
+      apx_error_t rc;
+      apx_port_signature_map_entry_attach_provide_port(entry, port_instance, true);
+      rc = record_provider_change(self, old_preferred, port_instance, APX_PROVIDER_CHANGE_TAKEOVER);
+      if (rc != APX_NO_ERROR)
+      {
+        return rc;
+      }
+      rc = apx_port_signature_map_entry_notify_provide_port_about_all_require_ports(
+        entry, old_preferred, APX_PORT_DISCONNECTED_EVENT);
+      if (rc != APX_NO_ERROR)
+      {
+        return rc;
+      }
+      return apx_port_signature_map_entry_notify_require_ports_about_provide_port_change(
+        entry, port_instance, APX_PORT_CONNECTED_EVENT);
+    }
+    else
+    {
+      apx_port_signature_map_entry_attach_provide_port(entry, port_instance, false);
+    }
   }
   else
   {
     apx_port_signature_map_entry_attach_require_port(entry, port_instance);
-    apx_port_signature_map_entry_notify_provide_ports_about_require_port_change(
+    return apx_port_signature_map_entry_notify_provide_ports_about_require_port_change(
       entry, port_instance, APX_PORT_CONNECTED_EVENT);
   }
   return APX_NO_ERROR;
@@ -300,9 +403,27 @@ static apx_error_t apx_port_signature_map_remove(
   {
     if (apx_port_instance_port_type(port_instance) == APX_PROVIDE_PORT)
     {
+      bool const was_preferred = (apx_port_signature_map_entry_get_preferred_provider(entry) == port_instance);
       apx_port_signature_map_entry_detach_provide_port(entry, port_instance);
-      retval = apx_port_signature_map_entry_notify_require_ports_about_provide_port_change(
-        entry, port_instance, APX_PORT_DISCONNECTED_EVENT);
+      if (was_preferred)
+      {
+        apx_port_instance_t *new_preferred = select_next_preferred_provider(self, entry);
+        apx_port_signature_map_entry_set_preferred_provider(entry, new_preferred);
+        if (new_preferred != NULL)
+        {
+          retval = record_provider_change(self, port_instance, new_preferred, APX_PROVIDER_CHANGE_DISCONNECT);
+        }
+        if (retval == APX_NO_ERROR)
+        {
+          retval = apx_port_signature_map_entry_notify_require_ports_about_provide_port_change(
+            entry, port_instance, APX_PORT_DISCONNECTED_EVENT);
+        }
+        if ((retval == APX_NO_ERROR) && (new_preferred != NULL))
+        {
+          retval = apx_port_signature_map_entry_notify_provide_port_about_all_require_ports(
+            entry, new_preferred, APX_PORT_CONNECTED_EVENT);
+        }
+      }
     }
     else
     {
@@ -329,4 +450,56 @@ static void apx_port_signature_map_delete_entry(apx_port_signature_map_t *self, 
       apx_port_signature_map_entry_delete(entry);
     }
   }
+}
+
+static apx_port_instance_t *select_next_preferred_provider(
+  apx_port_signature_map_t const *self, apx_port_signature_map_entry_t *entry)
+{
+  if ((self == NULL) || (entry == NULL))
+  {
+    return NULL;
+  }
+  if (self->policy == APX_MULTIPLE_PROVIDER_POLICY_LAST)
+  {
+    adt_list_elem_t *iter = adt_list_iter_last(&entry->provide_ports);
+    while (iter != NULL)
+    {
+      apx_port_instance_t *candidate = (apx_port_instance_t *)iter->pItem;
+      if ((candidate != NULL) && !apx_node_instance_is_closing(apx_port_instance_parent(candidate)))
+      {
+        return candidate;
+      }
+      iter = adt_list_iter_prev(iter);
+    }
+  }
+  else
+  {
+    adt_list_elem_t *iter = adt_list_iter_first(&entry->provide_ports);
+    while (iter != NULL)
+    {
+      apx_port_instance_t *candidate = (apx_port_instance_t *)iter->pItem;
+      if ((candidate != NULL) && !apx_node_instance_is_closing(apx_port_instance_parent(candidate)))
+      {
+        return candidate;
+      }
+      iter = adt_list_iter_next(iter);
+    }
+  }
+  return NULL;
+}
+
+static apx_error_t record_provider_change(apx_port_signature_map_t *self, apx_port_instance_t *old_provider,
+  apx_port_instance_t *new_provider, apx_provider_change_reason_t reason)
+{
+  apx_provider_change_t *change = apx_provider_change_new(old_provider, new_provider, reason);
+  if (change == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
+  if (adt_ary_push(&self->provider_changes, change) != ADT_NO_ERROR)
+  {
+    apx_provider_change_delete(change);
+    return APX_MEM_ERROR;
+  }
+  return APX_NO_ERROR;
 }

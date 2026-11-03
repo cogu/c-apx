@@ -59,6 +59,8 @@ static void apx_server_text_log_require_ports_connected(
   void *arg, apx_node_instance_t *node_instance, apx_port_connector_change_table_t const *connector_changes);
 static void apx_server_text_log_require_ports_disconnected(
   void *arg, apx_node_instance_t *node_instance, apx_port_connector_change_table_t const *connector_changes);
+static void apx_server_text_log_provider_changed(void *arg, uint32_t old_conn_id, apx_port_instance_t *old_provider,
+  uint32_t new_conn_id, apx_port_instance_t *new_provider, apx_provider_change_reason_t reason);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -240,6 +242,7 @@ static void register_server_listener(apx_server_text_log_t *self)
   eventListener.provide_ports_connected = apx_server_text_log_provide_ports_connected;
   eventListener.require_ports_disconnected = apx_server_text_log_require_ports_disconnected;
   eventListener.provide_ports_disconnected = apx_server_text_log_provide_ports_disconnected;
+  eventListener.provider_changed = apx_server_text_log_provider_changed;
   self->server_listener_handle = apx_server_register_event_listener(self->server, &eventListener);
 }
 
@@ -459,5 +462,26 @@ static void apx_server_text_log_require_ports_disconnected(
         }
       }
     }
+  }
+}
+
+static void apx_server_text_log_provider_changed(void *arg, uint32_t old_conn_id, apx_port_instance_t *old_provider,
+  uint32_t new_conn_id, apx_port_instance_t *new_provider, apx_provider_change_reason_t reason)
+{
+  (void)reason;
+  apx_server_text_log_t *self = (apx_server_text_log_t *)arg;
+  if ((self != NULL) && (old_provider != NULL) && (new_provider != NULL))
+  {
+    apx_node_instance_t *old_node = apx_port_instance_parent(old_provider);
+    apx_node_instance_t *new_node = apx_port_instance_parent(new_provider);
+    char const *old_node_name = (old_node != NULL) ? apx_node_instance_get_name(old_node) : "<unknown>";
+    char const *new_node_name = (new_node != NULL) ? apx_node_instance_get_name(new_node) : "<unknown>";
+    char const *port_name = apx_port_instance_name(new_provider);
+    if (port_name == NULL)
+    {
+      port_name = "<unknown>";
+    }
+    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_INFO, "PORT", "Provider changed: %u:%s/%s -> %u:%s/%s",
+      old_conn_id, old_node_name, port_name, new_conn_id, new_node_name, port_name);
   }
 }

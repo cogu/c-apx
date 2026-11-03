@@ -127,6 +127,13 @@ void apx_server_trigger_require_ports_disconnected_event(
   apx_server_t *self, apx_node_instance_t *node_instance, apx_port_connector_change_table_t const *connector_changes);
 void apx_server_trigger_provide_ports_disconnected_event(
   apx_server_t *self, apx_node_instance_t *node_instance, apx_port_connector_change_table_t const *connector_changes);
+void apx_server_trigger_provider_changed_event(apx_server_t *self, uint32_t old_conn_id,
+  struct apx_port_instance_tag *old_provider, uint32_t new_conn_id, struct apx_port_instance_tag *new_provider,
+  apx_provider_change_reason_t reason);
+void apx_server_take_provider_changes(apx_server_t *self, adt_ary_t *out_changes);
+void apx_server_process_provider_changes(apx_server_t *self, adt_ary_t *provider_changes);
+void apx_server_set_multiple_provider_policy(apx_server_t *self, apx_multiple_provider_policy_t policy);
+apx_multiple_provider_policy_t apx_server_get_multiple_provider_policy(apx_server_t const *self);
 apx_error_t apx_server_insert_modified_node_instance(apx_server_t *self, apx_node_instance_t *node_instance);
 adt_ary_t *apx_server_get_modified_node_instance(const apx_server_t *self);
 void apx_server_clear_port_connector_changes(apx_server_t *self);

@@ -176,6 +176,8 @@ void apx_node_instance_clear_require_port_connector_changes(apx_node_instance_t 
 void apx_node_instance_clear_provide_port_connector_changes(apx_node_instance_t *self, bool release_memory);
 apx_error_t apx_node_instance_handle_require_ports_disconnected(
   apx_node_instance_t *self, apx_port_connector_change_table_t *connector_changes);
+apx_error_t apx_node_instance_handle_provide_ports_disconnected(
+  apx_node_instance_t *self, apx_port_connector_change_table_t *connector_changes);
 
 // Data Routing API
 apx_error_t apx_node_instance_handle_require_port_connected_to_provide_port(

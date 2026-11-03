@@ -411,6 +411,38 @@ apx_error_t apx_log_streamer_enqueue_file_write(apx_log_streamer_t *self, uint32
   return APX_NO_ERROR;
 }
 
+apx_error_t apx_log_streamer_enqueue_provider_change(apx_log_streamer_t *self, uint32_t old_conn_id,
+  uint32_t old_port_id, const char *old_node_name, uint32_t new_conn_id, uint32_t new_port_id,
+  const char *new_node_name, const char *port_name, uint8_t reason, uint8_t policy)
+{
+  if (self == NULL || !self->is_active)
+  {
+    return APX_NO_ERROR;
+  }
+  uint32_t old_node_len = old_node_name != NULL ? (uint32_t)strlen(old_node_name) : 0u;
+  uint32_t new_node_len = new_node_name != NULL ? (uint32_t)strlen(new_node_name) : 0u;
+  uint32_t port_len = port_name != NULL ? (uint32_t)strlen(port_name) : 0u;
+  uint32_t payload_size = 12u + 2u + old_node_len + 2u + new_node_len + 2u + port_len;
+
+  uint8_t *payload = (uint8_t *)malloc(payload_size);
+  if (payload == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
+  pack_le_u32(payload + 0, old_conn_id);
+  pack_le_u32(payload + 4, old_port_id);
+  payload[8] = reason;
+  payload[9] = policy;
+  pack_le_u16(payload + 10, 0u); // reserved
+  uint32_t offset = 12u;
+  offset += encode_string16(payload + offset, old_node_name);
+  offset += encode_string16(payload + offset, new_node_name);
+  encode_string16(payload + offset, port_name);
+
+  enqueue_event_entry(self, APX_LOG_EVENT_PROVIDER_CHANGE, 0u, new_conn_id, new_port_id, payload, payload_size);
+  return APX_NO_ERROR;
+}
+
 void apx_log_streamer_drain(apx_log_streamer_t *self)
 {
   if (self == NULL || !self->is_active || self->session == NULL)

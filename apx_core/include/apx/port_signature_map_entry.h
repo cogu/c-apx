@@ -64,5 +64,7 @@ apx_error_t apx_port_signature_map_entry_notify_require_ports_about_provide_port
   apx_port_signature_map_entry_t *self, apx_port_instance_t *provide_port, apx_port_connector_event_t event_type);
 apx_error_t apx_port_signature_map_entry_notify_provide_ports_about_require_port_change(
   apx_port_signature_map_entry_t *self, apx_port_instance_t *require_port, apx_port_connector_event_t event_type);
+apx_error_t apx_port_signature_map_entry_notify_provide_port_about_all_require_ports(
+  apx_port_signature_map_entry_t *self, apx_port_instance_t *provide_port, apx_port_connector_event_t event_type);
 
 #endif // APX_ROUTING_TABLE_ENTRY_H

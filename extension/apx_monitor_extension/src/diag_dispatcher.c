@@ -77,6 +77,14 @@ typedef struct apx_diag_unconnected_port_item_tag
   char *port_name;
 } apx_diag_unconnected_port_item_t;
 
+typedef struct apx_diag_multi_provider_item_tag
+{
+  uint32_t node_id;
+  uint32_t port_id;
+  uint8_t status;
+  char *port_name;
+} apx_diag_multi_provider_item_t;
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
@@ -122,6 +130,8 @@ static void handle_list_nodes(
 static void handle_list_routes(
   apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size);
 static void handle_list_unconnected_ports(
+  apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size);
+static void handle_list_multi_providers(
   apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size);
 static void handle_get_node_definition(
   apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size);
@@ -247,6 +257,9 @@ void apx_diag_dispatcher_on_request_written(
     break;
   case APX_DIAG_CMD_SNAPSHOT_NODE_DATA:
     handle_node_files(self, request_id, opcode, flags, payload, payload_size);
+    break;
+  case APX_DIAG_CMD_LIST_MULTI_PROVIDERS:
+    handle_list_multi_providers(self, request_id, flags, payload, payload_size);
     break;
   case APX_DIAG_CMD_SUBSCRIBE_PORTS:
     handle_subscribe_ports(self, request_id, flags, payload, payload_size);
@@ -625,6 +638,15 @@ static void free_item_by_opcode(uint16_t opcode, void *item)
       free(ui->port_name);
     }
     free(ui);
+    break;
+  }
+  case APX_DIAG_CMD_LIST_MULTI_PROVIDERS: {
+    apx_diag_multi_provider_item_t *mi = (apx_diag_multi_provider_item_t *)item;
+    if (mi->port_name != NULL)
+    {
+      free(mi->port_name);
+    }
+    free(mi);
     break;
   }
   default:
@@ -1436,8 +1458,9 @@ static void handle_list_unconnected_ports(
               }
             }
           }
-          // 2. Provide ports without consumers (direction = 1, reason = 1)
-          else if (num_prov > 0 && num_req == 0)
+          // 2. Provide ports without consumers (direction = 1, reason = 1) or shadowed providers (direction = 1, reason
+          // = 2)
+          else if (num_prov > 0)
           {
             adt_list_elem_t *piter = adt_list_iter_first(&entry->provide_ports);
             while (piter != NULL)
@@ -1446,21 +1469,25 @@ static void handle_list_unconnected_ports(
               piter = adt_list_iter_next(piter);
               if (prov != NULL)
               {
-                apx_node_instance_t *pnode = apx_port_instance_parent(prov);
-                const char *pname = pnode != NULL ? apx_node_instance_get_name(pnode) : "";
-                uint32_t pnode_id =
-                  apx_server_monitor_get_or_create_node_id(monitor, apx_node_instance_get_connection_id(pnode), pname);
-
-                apx_diag_unconnected_port_item_t *item =
-                  (apx_diag_unconnected_port_item_t *)malloc(sizeof(apx_diag_unconnected_port_item_t));
-                if (item != NULL)
+                bool is_shadowed = (prov != entry->preferred_provider);
+                if (is_shadowed || num_req == 0)
                 {
-                  item->node_id = pnode_id;
-                  item->port_id = prov->port_id;
-                  item->direction = 1u; // provide
-                  item->reason = 1u;    // no consumer
-                  item->port_name = prov->name != NULL ? STRDUP(prov->name) : STRDUP("");
-                  adt_ary_push(&snapshot->items, item);
+                  apx_node_instance_t *pnode = apx_port_instance_parent(prov);
+                  const char *pname = pnode != NULL ? apx_node_instance_get_name(pnode) : "";
+                  uint32_t pnode_id = apx_server_monitor_get_or_create_node_id(
+                    monitor, apx_node_instance_get_connection_id(pnode), pname);
+
+                  apx_diag_unconnected_port_item_t *item =
+                    (apx_diag_unconnected_port_item_t *)malloc(sizeof(apx_diag_unconnected_port_item_t));
+                  if (item != NULL)
+                  {
+                    item->node_id = pnode_id;
+                    item->port_id = prov->port_id;
+                    item->direction = 1u; // provide
+                    item->reason = is_shadowed ? 2u : 1u; // 2 = shadowed, 1 = no consumer
+                    item->port_name = prov->name != NULL ? STRDUP(prov->name) : STRDUP("");
+                    adt_ary_push(&snapshot->items, item);
+                  }
                 }
               }
             }
@@ -1556,6 +1583,166 @@ static void handle_list_unconnected_ports(
   MUTEX_UNLOCK(self->lock);
 
   send_response(self, request_id, APX_DIAG_CMD_LIST_UNCONNECTED_PORTS, 0u, (uint32_t)APX_NO_ERROR, resp, payload_len);
+  free(resp);
+}
+
+static void handle_list_multi_providers(
+  apx_diag_dispatcher_t *self, uint32_t request_id, uint16_t flags, const uint8_t *payload, uint32_t payload_size)
+{
+  (void)flags;
+  if (payload_size < 16u)
+  {
+    send_response(self, request_id, APX_DIAG_CMD_LIST_MULTI_PROVIDERS, 0u, (uint32_t)APX_INVALID_MSG_ERROR, NULL, 0u);
+    return;
+  }
+
+  uint64_t snapshot_id = unpack_le_u64(payload + 0);
+  uint32_t const cursor = unpack_le_u32(payload + 8);
+  uint16_t const max_items = unpack_le_u16(payload + 12);
+
+  apx_diag_snapshot_t *snapshot = NULL;
+  MUTEX_LOCK(self->lock);
+  if (snapshot_id == 0ULL)
+  {
+    apx_server_monitor_t *monitor = apx_monitor_session_get_server_monitor(self->session);
+    if (monitor == NULL || monitor->server == NULL)
+    {
+      MUTEX_UNLOCK(self->lock);
+      send_response(
+        self, request_id, APX_DIAG_CMD_LIST_MULTI_PROVIDERS, 0u, (uint32_t)APX_INVALID_STATE_ERROR, NULL, 0u);
+      return;
+    }
+    apx_server_t *server = monitor->server;
+
+    snapshot = apx_diag_snapshot_new(++self->next_snapshot_id, APX_DIAG_CMD_LIST_MULTI_PROVIDERS);
+    if (snapshot != NULL)
+    {
+      MUTEX_LOCK(server->global_lock);
+      adt_hash_t *map = &server->port_signature_map.internal_map;
+      adt_hash_iter_init(map);
+      const char *key = NULL;
+      void **pval = NULL;
+      while ((pval = adt_hash_iter_next(map, &key)) != NULL)
+      {
+        apx_port_signature_map_entry_t *entry = (apx_port_signature_map_entry_t *)*pval;
+        if (entry != NULL && apx_port_signature_map_entry_get_num_providers(entry) > 1)
+        {
+          adt_list_elem_t *piter = adt_list_iter_first(&entry->provide_ports);
+          while (piter != NULL)
+          {
+            apx_port_instance_t *prov = (apx_port_instance_t *)piter->pItem;
+            piter = adt_list_iter_next(piter);
+            if (prov != NULL)
+            {
+              apx_node_instance_t *pnode = apx_port_instance_parent(prov);
+              const char *pname = pnode != NULL ? apx_node_instance_get_name(pnode) : "";
+              uint32_t pnode_id =
+                apx_server_monitor_get_or_create_node_id(monitor, apx_node_instance_get_connection_id(pnode), pname);
+
+              apx_diag_multi_provider_item_t *item =
+                (apx_diag_multi_provider_item_t *)malloc(sizeof(apx_diag_multi_provider_item_t));
+              if (item != NULL)
+              {
+                item->node_id = pnode_id;
+                item->port_id = prov->port_id;
+                item->status = (prov == entry->preferred_provider) ? 1u : 0u;
+                item->port_name = prov->name != NULL ? STRDUP(prov->name) : STRDUP("");
+                adt_ary_push(&snapshot->items, item);
+              }
+            }
+          }
+        }
+      }
+      MUTEX_UNLOCK(server->global_lock);
+      adt_ary_push(&self->snapshots, snapshot);
+      snapshot_id = snapshot->snapshot_id;
+    }
+  }
+  else
+  {
+    int32_t const num_snaps = adt_ary_length(&self->snapshots);
+    for (int32_t i = 0; i < num_snaps; ++i)
+    {
+      apx_diag_snapshot_t *s = (apx_diag_snapshot_t *)adt_ary_value(&self->snapshots, i);
+      if (s != NULL && s->snapshot_id == snapshot_id && s->opcode == APX_DIAG_CMD_LIST_MULTI_PROVIDERS)
+      {
+        snapshot = s;
+        break;
+      }
+    }
+  }
+
+  if (snapshot == NULL)
+  {
+    MUTEX_UNLOCK(self->lock);
+    send_response(self, request_id, APX_DIAG_CMD_LIST_MULTI_PROVIDERS, 0u, (uint32_t)APX_NOT_FOUND_ERROR, NULL, 0u);
+    return;
+  }
+
+  uint32_t const total_items = (uint32_t)adt_ary_length(&snapshot->items);
+  uint32_t count = 0u;
+  uint32_t next_cursor = APX_DIAG_CURSOR_END;
+
+  if (cursor < total_items)
+  {
+    uint32_t const remaining = total_items - cursor;
+    count = (max_items > 0u && max_items < remaining) ? (uint32_t)max_items : remaining;
+    if (cursor + count < total_items)
+    {
+      next_cursor = cursor + count;
+    }
+  }
+
+  uint32_t payload_len = 16u;
+  for (uint32_t i = 0; i < count; ++i)
+  {
+    apx_diag_multi_provider_item_t const *item =
+      (apx_diag_multi_provider_item_t const *)adt_ary_value(&snapshot->items, (int32_t)(cursor + i));
+    if (item != NULL)
+    {
+      payload_len += 4u + 4u + 1u + 3u + 2u + (uint32_t)strlen(item->port_name);
+    }
+  }
+
+  uint8_t *resp = (uint8_t *)malloc(payload_len);
+  if (resp == NULL)
+  {
+    MUTEX_UNLOCK(self->lock);
+    send_response(self, request_id, APX_DIAG_CMD_LIST_MULTI_PROVIDERS, 0u, (uint32_t)APX_MEM_ERROR, NULL, 0u);
+    return;
+  }
+
+  pack_le_u64(resp + 0, snapshot_id);
+  pack_le_u32(resp + 8, next_cursor);
+  pack_le_u16(resp + 12, (uint16_t)count);
+  pack_le_u16(resp + 14, 0u);
+
+  uint32_t off = 16u;
+  for (uint32_t i = 0; i < count; ++i)
+  {
+    apx_diag_multi_provider_item_t const *item =
+      (apx_diag_multi_provider_item_t const *)adt_ary_value(&snapshot->items, (int32_t)(cursor + i));
+    if (item != NULL)
+    {
+      uint32_t const name_len = (uint32_t)strlen(item->port_name);
+      uint32_t const item_len = 12u + 2u + name_len;
+      if (item_len >= 14u && payload_len >= off && (payload_len - off) >= item_len)
+      {
+        pack_le_u32(resp + off + 0, item->node_id);
+        pack_le_u32(resp + off + 4, item->port_id);
+        resp[off + 8] = item->status;
+        resp[off + 9] = 0u;
+        resp[off + 10] = 0u;
+        resp[off + 11] = 0u;
+        off += 12u;
+        off += encode_string16(resp + off, item->port_name);
+      }
+    }
+  }
+
+  MUTEX_UNLOCK(self->lock);
+
+  send_response(self, request_id, APX_DIAG_CMD_LIST_MULTI_PROVIDERS, 0u, (uint32_t)APX_NO_ERROR, resp, payload_len);
   free(resp);
 }
 

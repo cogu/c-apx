@@ -76,6 +76,7 @@ static void test_log_event_type_str(CuTest *tc)
   CuAssertStrEquals(tc, "FILE_OPEN", apx_log_event_type_str(APX_LOG_EVENT_FILE_OPEN));
   CuAssertStrEquals(tc, "FILE_CLOSE", apx_log_event_type_str(APX_LOG_EVENT_FILE_CLOSE));
   CuAssertStrEquals(tc, "FILE_WRITE", apx_log_event_type_str(APX_LOG_EVENT_FILE_WRITE));
+  CuAssertStrEquals(tc, "PROVIDER_CHANGE", apx_log_event_type_str(APX_LOG_EVENT_PROVIDER_CHANGE));
   CuAssertStrEquals(tc, "EVENTS_DROPPED", apx_log_event_type_str(APX_LOG_EVENT_EVENTS_DROPPED));
   CuAssertStrEquals(tc, "STREAM_END", apx_log_event_type_str(APX_LOG_EVENT_STREAM_END));
   CuAssertStrEquals(tc, "UNKNOWN", apx_log_event_type_str(0x1234u));
@@ -98,6 +99,30 @@ static void test_log_event_formatters(CuTest *tc)
   // Test text print to a temporary file
   FILE *f = tmpfile();
   CuAssertPtrNotNull(tc, f);
+  apx_log_event_print_text(&event, f);
+  apx_log_event_print_json(&event, f);
+
+  // Also test PROVIDER_CHANGE event formatting
+  uint8_t pbuf[APX_LOG_EVENT_HEADER_SIZE + 32u];
+  memset(pbuf, 0, sizeof(pbuf));
+  pack_le_u16(pbuf + 0, APX_LOG_EVENT_PROVIDER_CHANGE);
+  pack_le_u16(pbuf + 2, 0u);
+  pack_le_u64(pbuf + 4, 11ULL);
+  pack_le_u64(pbuf + 12, 600000000ULL);
+  pack_le_u32(pbuf + 20, 2u); // new_connection_id
+  pack_le_u32(pbuf + 24, 0u); // new_port_index
+  uint8_t *pl = pbuf + APX_LOG_EVENT_HEADER_SIZE;
+  pack_le_u32(pl + 0, 1u); // old_connection_id
+  pack_le_u32(pl + 4, 0u); // old_port_index
+  pl[8] = 1u;              // reason = TAKEOVER
+  pl[9] = 0u;
+  pack_le_u16(pl + 10, 2u);
+  memcpy(pl + 12, "N1", 2);
+  pack_le_u16(pl + 14, 2u);
+  memcpy(pl + 16, "N2", 2);
+  pack_le_u16(pl + 18, 2u);
+  memcpy(pl + 20, "P1", 2);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_event_parse(&event, pbuf, APX_LOG_EVENT_HEADER_SIZE + 22u));
   apx_log_event_print_text(&event, f);
   apx_log_event_print_json(&event, f);
   fclose(f);

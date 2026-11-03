@@ -629,7 +629,72 @@ void apx_server_clear_port_connector_changes(apx_server_t *self)
     {
       adt_ary_clear(&self->modified_nodes);
     }
+    apx_port_signature_map_clear_provider_changes(&self->port_signature_map);
   }
+}
+
+void apx_server_take_provider_changes(apx_server_t *self, adt_ary_t *out_changes)
+{
+  if ((self != NULL) && (out_changes != NULL))
+  {
+    adt_ary_t *src = apx_port_signature_map_get_provider_changes(&self->port_signature_map);
+    if (src != NULL)
+    {
+      int32_t const len = adt_ary_length(src);
+      for (int32_t i = 0; i < len; i++)
+      {
+        apx_provider_change_t *change = (apx_provider_change_t *)adt_ary_value(src, i);
+        if (change != NULL)
+        {
+          if (adt_ary_push(out_changes, change) != ADT_NO_ERROR)
+          {
+            apx_provider_change_delete(change);
+          }
+        }
+      }
+      adt_ary_clear(src);
+    }
+  }
+}
+
+void apx_server_process_provider_changes(apx_server_t *self, adt_ary_t *provider_changes)
+{
+  if ((self != NULL) && (provider_changes != NULL))
+  {
+    int32_t const len = adt_ary_length(provider_changes);
+    for (int32_t i = 0; i < len; i++)
+    {
+      apx_provider_change_t *change = (apx_provider_change_t *)adt_ary_value(provider_changes, i);
+      if ((change != NULL) && (change->old_provider != NULL) && (change->new_provider != NULL))
+      {
+        uint32_t const old_conn_id =
+          apx_node_instance_get_connection_id(apx_port_instance_parent(change->old_provider));
+        uint32_t const new_conn_id =
+          apx_node_instance_get_connection_id(apx_port_instance_parent(change->new_provider));
+        apx_server_trigger_provider_changed_event(
+          self, old_conn_id, change->old_provider, new_conn_id, change->new_provider, change->reason);
+      }
+    }
+  }
+}
+
+void apx_server_set_multiple_provider_policy(apx_server_t *self, apx_multiple_provider_policy_t policy)
+{
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->global_lock);
+    apx_port_signature_map_set_policy(&self->port_signature_map, policy);
+    MUTEX_UNLOCK(self->global_lock);
+  }
+}
+
+apx_multiple_provider_policy_t apx_server_get_multiple_provider_policy(apx_server_t const *self)
+{
+  if (self != NULL)
+  {
+    return apx_port_signature_map_get_policy(&self->port_signature_map);
+  }
+  return APX_MULTIPLE_PROVIDER_POLICY_FIRST;
 }
 
 void apx_server_vdestroy_event(void *arg, apx_event_t *event)
@@ -924,6 +989,49 @@ void apx_server_trigger_provide_ports_disconnected_event(
     apx_ports_disconnected_event_func_t *callback = (apx_ports_disconnected_event_func_t *)adt_ary_value(&callbacks, i);
     assert(callback != NULL);
     callback(arg, node_instance, connector_changes);
+  }
+  adt_ary_destroy(&args);
+  adt_ary_destroy(&callbacks);
+}
+
+void apx_server_trigger_provider_changed_event(apx_server_t *self, uint32_t old_conn_id,
+  apx_port_instance_t *old_provider, uint32_t new_conn_id, apx_port_instance_t *new_provider,
+  apx_provider_change_reason_t reason)
+{
+  adt_ary_t args;
+  adt_ary_t callbacks;
+  int32_t length = 0;
+  int32_t i = 0;
+
+  assert(self != NULL);
+  assert(old_provider != NULL);
+  assert(new_provider != NULL);
+
+  adt_ary_create(&args, NULL);
+  adt_ary_create(&callbacks, NULL);
+
+  MUTEX_LOCK(self->event_listener_lock);
+  adt_list_elem_t *iter = adt_list_iter_first(&self->server_event_listeners);
+  while (iter != NULL)
+  {
+    apx_server_event_listener_t *listener = (apx_server_event_listener_t *)iter->pItem;
+    if ((listener != NULL) && (listener->provider_changed != NULL))
+    {
+      adt_ary_push(&args, (void *)listener->arg);
+      adt_ary_push(&callbacks, (void *)listener->provider_changed);
+      length++;
+    }
+    iter = adt_list_iter_next(iter);
+  }
+  MUTEX_UNLOCK(self->event_listener_lock);
+
+  for (i = 0; i < length; i++)
+  {
+    void *arg = adt_ary_value(&args, i);
+    apx_port_provider_change_event_func_t *callback =
+      (apx_port_provider_change_event_func_t *)adt_ary_value(&callbacks, i);
+    assert(callback != NULL);
+    callback(arg, old_conn_id, old_provider, new_conn_id, new_provider, reason);
   }
   adt_ary_destroy(&args);
   adt_ary_destroy(&callbacks);

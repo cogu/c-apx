@@ -540,7 +540,8 @@ typedef enum routing_mode_tag
   ROUTING_MODE_UNCONNECTED,
   ROUTING_MODE_ALL,
   ROUTING_MODE_NO_PROVIDER,
-  ROUTING_MODE_NO_CONSUMER
+  ROUTING_MODE_NO_CONSUMER,
+  ROUTING_MODE_MULTI_PROVIDER
 } routing_mode_t;
 
 typedef struct routing_row_tag
@@ -577,7 +578,8 @@ static dtl_hv_t *make_unconnected_port_json(apx_diag_client_unconnected_port_ite
   dtl_hv_set_cstr(hv, "node_id", (dtl_dv_t *)dtl_sv_make_u32(item->node_id), false);
   dtl_hv_set_cstr(hv, "port_id", (dtl_dv_t *)dtl_sv_make_u32(item->port_id), false);
   dtl_hv_set_cstr(hv, "direction", (dtl_dv_t *)dtl_sv_make_cstr(item->direction == 0 ? "REQUIRE" : "PROVIDE"), false);
-  dtl_hv_set_cstr(hv, "reason", (dtl_dv_t *)dtl_sv_make_cstr(item->reason == 0 ? "NO_PROVIDER" : "NO_CONSUMER"), false);
+  const char *reason_str = (item->reason == 0) ? "NO_PROVIDER" : ((item->reason == 2) ? "SHADOWED" : "NO_CONSUMER");
+  dtl_hv_set_cstr(hv, "reason", (dtl_dv_t *)dtl_sv_make_cstr(reason_str), false);
   dtl_hv_set_cstr(hv, "port_name", (dtl_dv_t *)dtl_sv_make_cstr(item->port_name ? item->port_name : ""), false);
   return hv;
 }
@@ -595,6 +597,118 @@ static dtl_hv_t *make_route_json(apx_diag_client_route_item_t const *item)
 
 static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool strip_id)
 {
+  if (mode == ROUTING_MODE_MULTI_PROVIDER)
+  {
+    adt_ary_t multi_prov;
+    apx_error_t err = apx_diag_client_list_multi_providers(client, &multi_prov, 5000u);
+    if (err != APX_NO_ERROR)
+    {
+      fprintf(stderr, "Error: Failed to list multi-providers (error=%d)\n", err);
+      return 1;
+    }
+
+    int32_t const m_len = adt_ary_length(&multi_prov);
+    if (m_json_output)
+    {
+      dtl_av_t *av = dtl_av_new();
+      for (int32_t i = 0; i < m_len; ++i)
+      {
+        apx_diag_client_multi_provider_item_t *item =
+          (apx_diag_client_multi_provider_item_t *)adt_ary_value(&multi_prov, i);
+        if (item != NULL)
+        {
+          dtl_hv_t *hv = dtl_hv_new();
+          dtl_hv_set_cstr(hv, "port_name", (dtl_dv_t *)dtl_sv_make_cstr(item->port_name ? item->port_name : ""), false);
+          dtl_hv_set_cstr(hv, "node_id", (dtl_dv_t *)dtl_sv_make_u32(item->node_id), false);
+          dtl_hv_set_cstr(hv, "port_id", (dtl_dv_t *)dtl_sv_make_u32(item->port_id), false);
+          dtl_hv_set_cstr(
+            hv, "status", (dtl_dv_t *)dtl_sv_make_cstr(item->status == 1u ? "ACTIVE" : "SHADOWED"), false);
+          dtl_av_push(av, (dtl_dv_t *)hv, false);
+        }
+      }
+      dtl_json_dump((dtl_dv_t *)av, stdout, 2, false);
+      printf("\n");
+      dtl_av_delete(av);
+      adt_ary_destroy(&multi_prov);
+      return 0;
+    }
+
+    adt_ary_t nodes;
+    err = apx_diag_client_list_nodes(client, &nodes, 5000u);
+    if (err != APX_NO_ERROR)
+    {
+      fprintf(stderr, "Error: Failed to list nodes (error=%d)\n", err);
+      adt_ary_destroy(&multi_prov);
+      return 1;
+    }
+
+    int port_width = 24;
+    int provider_width = 20;
+    for (int32_t i = 0; i < m_len; ++i)
+    {
+      apx_diag_client_multi_provider_item_t *item =
+        (apx_diag_client_multi_provider_item_t *)adt_ary_value(&multi_prov, i);
+      if (item != NULL)
+      {
+        apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
+        if (node == NULL)
+        {
+          fprintf(stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n",
+            item->node_id);
+          adt_ary_destroy(&nodes);
+          adt_ary_destroy(&multi_prov);
+          return 1;
+        }
+        int const pw = item->port_name ? (int)strlen(item->port_name) : 0;
+        char nbuf[128];
+        if (strip_id)
+        {
+          snprintf(nbuf, sizeof(nbuf), "%s", node->node_name);
+        }
+        else
+        {
+          snprintf(nbuf, sizeof(nbuf), "%u:%s", node->connection_id, node->node_name);
+        }
+        int const prw = (int)strlen(nbuf);
+        if (pw > port_width)
+        {
+          port_width = pw;
+        }
+        if (prw > provider_width)
+        {
+          provider_width = prw;
+        }
+      }
+    }
+
+    printf("%-*s %-*s %s\n", port_width, "PORT_NAME", provider_width, "PROVIDER_NODE", "STATUS");
+    printf("----------------------------------------------------------------------\n");
+    for (int32_t i = 0; i < m_len; ++i)
+    {
+      apx_diag_client_multi_provider_item_t *item =
+        (apx_diag_client_multi_provider_item_t *)adt_ary_value(&multi_prov, i);
+      if (item != NULL)
+      {
+        apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
+        char nbuf[128];
+        if (strip_id)
+        {
+          snprintf(nbuf, sizeof(nbuf), "%s", node->node_name);
+        }
+        else
+        {
+          snprintf(nbuf, sizeof(nbuf), "%u:%s", node->connection_id, node->node_name);
+        }
+        printf("%-*s %-*s %s\n", port_width, item->port_name ? item->port_name : "", provider_width, nbuf,
+          item->status == 1u ? "ACTIVE" : "(shadowed)");
+      }
+    }
+
+    adt_ary_destroy(&nodes);
+    adt_ary_destroy(&multi_prov);
+    return 0;
+  }
+
   adt_ary_t routes;
   adt_ary_t unconn;
   bool has_routes = false;
@@ -690,7 +804,7 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
           {
             continue;
           }
-          if (mode == ROUTING_MODE_NO_CONSUMER && item->direction != 1)
+          if (mode == ROUTING_MODE_NO_CONSUMER && (item->direction != 1 || item->reason != 1))
           {
             continue;
           }
@@ -743,7 +857,7 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
         {
           continue;
         }
-        if (mode == ROUTING_MODE_NO_CONSUMER && item->direction != 1)
+        if (mode == ROUTING_MODE_NO_CONSUMER && (item->direction != 1 || item->reason != 1))
         {
           continue;
         }
@@ -776,7 +890,7 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
         {
           continue;
         }
-        if (mode == ROUTING_MODE_NO_CONSUMER && item->direction != 1)
+        if (mode == ROUTING_MODE_NO_CONSUMER && (item->direction != 1 || item->reason != 1))
         {
           continue;
         }
@@ -887,10 +1001,10 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
         if (row != NULL)
         {
           row->port_name = STRDUP(item->port_name ? item->port_name : "");
-          if (item->direction == 1) // PROVIDE -> no consumer
+          if (item->direction == 1) // PROVIDE -> no consumer or shadowed
           {
             row->provider_node = STRDUP(nbuf);
-            row->requirer_node = STRDUP("-");
+            row->requirer_node = STRDUP(item->reason == 2 ? "(shadowed)" : "-");
           }
           else // REQUIRE -> no provider
           {
@@ -1475,6 +1589,10 @@ int main(int argc, char **argv)
       else if (strcmp(argv[i], "--no-requester") == 0 || strcmp(argv[i], "--no-consumer") == 0)
       {
         mode = ROUTING_MODE_NO_CONSUMER;
+      }
+      else if (strcmp(argv[i], "--multi-provider") == 0)
+      {
+        mode = ROUTING_MODE_MULTI_PROVIDER;
       }
       else if (strcmp(argv[i], "--strip-id") == 0)
       {
