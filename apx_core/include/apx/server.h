@@ -66,6 +66,7 @@ typedef struct apx_server_tag
   uint64_t start_unix_ns;
   uint64_t start_monotonic_ns;
   int32_t num_log_listeners;
+  uint32_t max_concurrent_connections;
   bool require_signed_nodes; // If true, server rejects unsigned APX nodes
   adt_ary_t trusted_public_keys; // Array of adt_str_t* (PEM strings or raw public keys)
 #ifdef _WIN32
@@ -134,6 +135,8 @@ void apx_server_take_provider_changes(apx_server_t *self, adt_ary_t *out_changes
 void apx_server_process_provider_changes(apx_server_t *self, adt_ary_t *provider_changes);
 void apx_server_set_multiple_provider_policy(apx_server_t *self, apx_multiple_provider_policy_t policy);
 apx_multiple_provider_policy_t apx_server_get_multiple_provider_policy(apx_server_t const *self);
+void apx_server_set_max_concurrent_connections(apx_server_t *self, uint32_t max_connections);
+uint32_t apx_server_get_max_concurrent_connections(apx_server_t const *self);
 apx_error_t apx_server_insert_modified_node_instance(apx_server_t *self, apx_node_instance_t *node_instance);
 adt_ary_t *apx_server_get_modified_node_instance(const apx_server_t *self);
 void apx_server_clear_port_connector_changes(apx_server_t *self);

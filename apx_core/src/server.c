@@ -82,6 +82,7 @@ void apx_server_create(apx_server_t *self)
     self->start_unix_ns = 0u;
     self->start_monotonic_ns = 0u;
     self->num_log_listeners = 0;
+    self->max_concurrent_connections = APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS;
     self->require_signed_nodes = false;
     adt_ary_create(&self->trusted_public_keys, adt_str_vdelete);
 #ifdef _WIN32
@@ -697,6 +698,27 @@ apx_multiple_provider_policy_t apx_server_get_multiple_provider_policy(apx_serve
   return APX_MULTIPLE_PROVIDER_POLICY_FIRST;
 }
 
+void apx_server_set_max_concurrent_connections(apx_server_t *self, uint32_t max_connections)
+{
+  if (self != NULL)
+  {
+    if (max_connections > APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT)
+    {
+      max_connections = APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT;
+    }
+    self->max_concurrent_connections = max_connections;
+  }
+}
+
+uint32_t apx_server_get_max_concurrent_connections(apx_server_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->max_concurrent_connections;
+  }
+  return 0u;
+}
+
 void apx_server_vdestroy_event(void *arg, apx_event_t *event)
 {
   apx_server_t *self = (apx_server_t *)arg;
@@ -740,7 +762,7 @@ apx_port_signature_map_t *apx_server_get_port_signature_map(apx_server_t const *
 
 static void apx_server_attach_and_start_connection(apx_server_t *self, apx_server_connection_t *new_connection)
 {
-  if (apx_connection_manager_get_num_connections(&self->connection_manager) < APX_SERVER_MAX_CONCURRENT_CONNECTIONS)
+  if (apx_connection_manager_get_num_connections(&self->connection_manager) < self->max_concurrent_connections)
   {
     apx_connection_manager_attach(&self->connection_manager, new_connection);
     apx_server_connection_set_server(new_connection, self);

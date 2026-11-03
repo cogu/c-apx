@@ -32,7 +32,8 @@
 static const char *const m_apx_server_keys[] = {"security", "security.require-signed-nodes",
   "security.require_signed_nodes", "security.trusted-keys", "security.trusted_keys", "require-signed-nodes",
   "require_signed_nodes", "trusted-keys", "trusted_keys", "apx-cache-enabled", "apx-cache-path",
-  "multiple-provider-policy", "multiple_provider_policy", NULL};
+  "multiple-provider-policy", "multiple_provider_policy", "max-concurrent-connections", "max_concurrent_connections",
+  NULL};
 
 static const char *const m_security_keys[] = {
   "require-signed-nodes", "require_signed_nodes", "trusted-keys", "trusted_keys", NULL};
@@ -158,6 +159,25 @@ apx_error_t apx_server_configure(struct apx_server_tag *server, dtl_hv_t const *
         }
       }
       apx_server_set_multiple_provider_policy(srv, policy);
+    }
+    dtl_dv_t *max_conn_dv = dtl_hv_get_cstr(server_hv, "max-concurrent-connections");
+    if (max_conn_dv == NULL)
+    {
+      max_conn_dv = dtl_hv_get_cstr(server_hv, "max_concurrent_connections");
+    }
+    if (max_conn_dv != NULL && dtl_dv_type(max_conn_dv) == DTL_DV_SCALAR)
+    {
+      dtl_sv_t *sv = (dtl_sv_t *)max_conn_dv;
+      dtl_sv_type_id sv_type = dtl_sv_type(sv);
+      if (sv_type == DTL_SV_I32 || sv_type == DTL_SV_U32 || sv_type == DTL_SV_I64 || sv_type == DTL_SV_U64)
+      {
+        bool ok = false;
+        int64_t val = dtl_sv_to_i64(sv, &ok);
+        if (ok && val > 0 && val <= (int64_t)APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT)
+        {
+          apx_server_set_max_concurrent_connections(srv, (uint32_t)val);
+        }
+      }
     }
   }
 
@@ -500,6 +520,41 @@ static void check_apx_server_config(dtl_hv_t *server_hv, apx_config_warning_cb c
       emit_warning(cb, arg,
         "Warning: Invalid value '<non-scalar>' for 'apx-server.multiple-provider-policy' (expected 'first' or 'last'); "
         "defaulting to 'first'");
+    }
+  }
+  dtl_dv_t *max_conn_dv = dtl_hv_get_cstr(server_hv, "max-concurrent-connections");
+  if (max_conn_dv == NULL)
+  {
+    max_conn_dv = dtl_hv_get_cstr(server_hv, "max_concurrent_connections");
+  }
+  if (max_conn_dv != NULL)
+  {
+    if (dtl_dv_type(max_conn_dv) == DTL_DV_SCALAR)
+    {
+      dtl_sv_t *sv = (dtl_sv_t *)max_conn_dv;
+      dtl_sv_type_id sv_type = dtl_sv_type(sv);
+      bool is_int = (sv_type == DTL_SV_I32 || sv_type == DTL_SV_U32 || sv_type == DTL_SV_I64 || sv_type == DTL_SV_U64);
+      bool ok = false;
+      int64_t val = dtl_sv_to_i64(sv, &ok);
+      if (!is_int || !ok || val <= 0 || val > (int64_t)APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT)
+      {
+        const char *val_str = dtl_sv_to_cstr(sv, &ok);
+        emit_warning(cb, arg,
+          "Warning: Invalid value '%s' for 'apx-server.max-concurrent-connections' (expected integer between 1 and "
+          "%u); "
+          "defaulting to %u",
+          (val_str != NULL) ? val_str : "", (unsigned int)APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT,
+          (unsigned int)APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS);
+      }
+    }
+    else
+    {
+      emit_warning(cb, arg,
+        "Warning: Invalid value '<non-scalar>' for 'apx-server.max-concurrent-connections' (expected integer between 1 "
+        "and %u); "
+        "defaulting to %u",
+        (unsigned int)APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT,
+        (unsigned int)APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS);
     }
   }
 }

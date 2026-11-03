@@ -36,7 +36,13 @@
 # define APX_PORT_COUNT_MAX UINT16_MAX // This define must match limit of selected data type APX_PORT_COUNT_TYPE
 #endif
 
-#define APX_SERVER_MAX_CONCURRENT_CONNECTIONS 4000 // maximum number of connections the server will accept
+#ifndef APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS
+# define APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS 256u // Default maximum concurrent server connections
+#endif
+#ifndef APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT
+# define APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT 65535u // Upper limit for concurrent server connections
+#endif
+#define APX_SERVER_MAX_CONCURRENT_CONNECTIONS APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS
 
 #define APX_SMALL_DATA_SIZE 8u
 

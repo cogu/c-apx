@@ -1,7 +1,9 @@
 apx-server
 ==========
 
-The ``apx-server`` daemon is the central routing broker in an APX network. It accepts client node connections over multiple transport mechanisms, validates node definitions and cryptographic signatures, matches provide-ports with require-ports, and routes signal updates between nodes.
+The ``apx-server`` daemon is the central routing broker in an APX network. It accepts client node connections
+over multiple transport mechanisms, validates node definitions and cryptographic signatures, matches provide-ports
+with require-ports, and routes signal updates between nodes.
 
 Synopsis
 --------
@@ -27,9 +29,14 @@ Command-Line Options
    * - ``--version``
      - Display version information and exit.
    * - ``-r <fd>``, ``--ready-fd <fd>``
-     - Readiness notification file descriptor. When provided, the server writes a single newline character (``\n``) to this file descriptor once all extensions are loaded and listener sockets are actively accepting connections, then closes the descriptor. This allows parent processes (such as test runners, systemd wrappers, and process supervisors) to synchronize deterministically without arbitrary sleep polling.
+     - Readiness notification file descriptor. When provided, the server writes a single newline character
+       (``\n``) to this file descriptor once all extensions are loaded and listener sockets are actively accepting
+       connections, then closes the descriptor. This allows parent processes (such as test runners, systemd
+       wrappers, and process supervisors) to synchronize deterministically without arbitrary sleep polling.
    * - ``-s <json>``, ``--socket-config <json>``
-     - Inline JSON string providing configuration for the ``socket-server-extension``. When passed, it configures or overrides the socket server listener without modifying configuration files on disk. Must be a valid JSON object.
+     - Inline JSON string providing configuration for the ``socket-server-extension``. When passed, it configures
+       or overrides the socket server listener without modifying configuration files on disk. Must be a valid
+       JSON object.
    * - ``<config_file | config_dir>``
      - Optional path to a JSON configuration file or a directory containing a configuration file.
 
@@ -38,15 +45,19 @@ Configuration Resolution
 
 When launched with a positional path argument:
 
-1. **Directory Path**: If the argument points to a directory, ``apx-server`` searches for ``server.json``. If ``server.json`` is not found, it falls back to ``apx_server.json``.
+1. **Directory Path**: If the argument points to a directory, ``apx-server`` searches for ``server.json``. If
+   ``server.json`` is not found, it falls back to ``apx_server.json``.
 2. **File Path**: If the argument points directly to a file, the file is loaded and parsed as JSON.
-3. **CLI Socket Override**: If ``-s`` / ``--socket-config`` is provided alongside a file or directory configuration, the parsed inline socket configuration replaces any ``"socket-server-extension"`` entry from the configuration file.
-4. **No Config Argument**: If no path is provided and ``--socket-config`` is supplied, a blank server configuration is created and populated exclusively with the socket settings.
+3. **CLI Socket Override**: If ``-s`` / ``--socket-config`` is provided alongside a file or directory configuration,
+   the parsed inline socket configuration replaces any ``"socket-server-extension"`` entry from the configuration file.
+4. **No Config Argument**: If no path is provided and ``--socket-config`` is supplied, a blank server configuration is
+   created and populated exclusively with the socket settings.
 
 Server Core Configuration Schema
 --------------------------------
 
-Server configuration files are formatted as JSON objects. The core server options are specified under the ``"apx-server"`` key:
+Server configuration files are formatted as JSON objects. The core server options are specified under the
+``"apx-server"`` key:
 
 .. code-block:: json
 
@@ -59,6 +70,7 @@ Server configuration files are formatted as JSON objects. The core server option
          ]
        },
        "multiple-provider-policy": "first",
+       "max-concurrent-connections": 256,
        "apx-cache-enabled": false,
        "apx-cache-path": ""
      }
@@ -78,15 +90,27 @@ Configuration Parameters
    * - ``security.require-signed-nodes``
      - Boolean
      - ``false``
-     - When set to ``true``, client nodes connecting to the server must supply a valid cryptographic signature accompanying their APX definition (RMFP/1.1). Unsigned nodes or nodes signed with keys not in ``trusted-keys`` are rejected. Also accepts key name ``require_signed_nodes``.
+     - When set to ``true``, client nodes connecting to the server must supply a valid cryptographic signature
+       accompanying their APX definition (RMFP/1.1). Unsigned nodes or nodes signed with keys not in
+       ``trusted-keys`` are rejected. Also accepts key name ``require_signed_nodes``.
    * - ``security.trusted-keys``
      - Array | String
      - ``[]``
-     - List of file paths to trusted public key PEM files (or inline PEM strings). Signatures presented by client nodes are verified against these keys. Also accepts key name ``trusted_keys``.
+     - List of file paths to trusted public key PEM files (or inline PEM strings). Signatures presented by client
+       nodes are verified against these keys. Also accepts key name ``trusted_keys``.
    * - ``multiple-provider-policy``
      - String
      - ``"first"``
-     - Arbitration policy when multiple connected nodes provide a port with the same signature: ``"first"`` (the oldest connected provider remains active and newer providers are shadowed until the active provider disconnects) or ``"last"`` (the newest connected provider immediately takes over from the previous active provider). Also accepts key name ``multiple_provider_policy``.
+     - Arbitration policy when multiple connected nodes provide a port with the same signature: ``"first"``
+       (the oldest connected provider remains active and newer providers are shadowed until the active provider
+       disconnects) or ``"last"`` (the newest connected provider immediately takes over from the previous active
+       provider). Also accepts key name ``multiple_provider_policy``.
+   * - ``max-concurrent-connections``
+     - Integer
+     - ``256``
+     - Maximum number of concurrent client connections accepted by the server (valid range: 1 to 65535). If this
+       limit is reached, additional incoming connections are rejected until an active connection disconnects.
+       Also accepts key name ``max_concurrent_connections``.
    * - ``apx-cache-enabled``
      - Boolean
      - ``false``
@@ -101,8 +125,10 @@ Extension Configuration Sections
 
 Additional top-level keys in the configuration file configure registered server extensions:
 
-* ``"socket-server-extension"``: Configures UNIX domain socket, TCP/IP, and Linux VSOCK endpoints, systemd socket activation, and UNIX group whitelisting. See :doc:`../extensions/socket_server`.
-* ``"tls-server-extension"``: Configures encrypted TLS listeners and Mutual TLS (mTLS) client verification. See :doc:`../extensions/tls_server`.
+* ``"socket-server-extension"``: Configures UNIX domain socket, TCP/IP, and Linux VSOCK endpoints, systemd socket
+  activation, and UNIX group whitelisting. See :doc:`../extensions/socket_server`.
+* ``"tls-server-extension"``: Configures encrypted TLS listeners and Mutual TLS (mTLS) client verification.
+  See :doc:`../extensions/tls_server`.
 * ``"textlog-extension"``: Configures server event text logging to stdout or file. See :doc:`../extensions/text_log`.
 * ``"monitor-extension"``: Configures runtime server monitoring. See :doc:`../extensions/monitor`.
 
@@ -112,8 +138,10 @@ Daemon Lifecycle & Signal Handling
 Signals
 ~~~~~~~
 
-* **``SIGTERM`` / ``SIGINT``**: Initiates graceful shutdown. The server terminates worker threads, detaches connected clients, stops all server extensions, unlinks UNIX domain socket files, and frees all allocated memory.
-* **``SIGPIPE``**: Automatically ignored by the server to ensure client disconnects or write failures on closed sockets never terminate the daemon.
+* **``SIGTERM`` / ``SIGINT``**: Initiates graceful shutdown. The server terminates worker threads, detaches
+  connected clients, stops all server extensions, unlinks UNIX domain socket files, and frees all allocated memory.
+* **``SIGPIPE``**: Automatically ignored by the server to ensure client disconnects or write failures on closed
+  sockets never terminate the daemon.
 
 Readiness Notification (``--ready-fd``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -139,7 +167,8 @@ When spawning ``apx-server`` as a child process or under service managers, use `
 Systemd Integration
 -------------------
 
-``apx-server`` supports socket activation under systemd. In this mode, systemd binds `/run/apx/apx.socket` and passes the pre-bound file descriptor (descriptor 3, ``SD_LISTEN_FDS_START``) upon launch:
+``apx-server`` supports socket activation under systemd. In this mode, systemd binds `/run/apx/apx.socket` and
+passes the pre-bound file descriptor (descriptor 3, ``SD_LISTEN_FDS_START``) upon launch:
 
 .. code-block:: ini
 

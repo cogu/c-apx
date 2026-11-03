@@ -134,6 +134,7 @@ def test_server_recognized_keys_and_aliases_no_warnings(tmp_path, apx_server_bin
                 "trusted_keys": []
             },
             "multiple-provider-policy": "first",
+            "max-concurrent-connections": 128,
             "apx-cache-enabled": False
         },
         "socket-server-extension": {
@@ -294,6 +295,35 @@ def test_server_retired_max_num_events_warns(tmp_path, apx_server_bin: str):
 
     stderr_text = err.decode("utf-8", errors="replace")
     assert "Warning: Unknown configuration key 'apx-server.max-num-events'" in stderr_text
+
+
+def test_server_invalid_max_concurrent_connections_warns(tmp_path, apx_server_bin: str):
+    """Verify that invalid max-concurrent-connections emits a warning and server continues."""
+    config_file = str(tmp_path / "server_invalid_conn.json")
+
+    config_data = {
+        "apx-server": {
+            "max-concurrent-connections": -5
+        }
+    }
+
+    with open(config_file, "w", encoding="utf-8") as f:
+        json.dump(config_data, f)
+
+    proc = subprocess.Popen(
+        [apx_server_bin, config_file],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        preexec_fn=_set_pdeathsig
+    )
+    import time
+    time.sleep(0.5)
+    proc.terminate()
+    out, err = proc.communicate(timeout=3.0)
+
+    stderr_text = err.decode("utf-8", errors="replace")
+    assert "Warning: Invalid value '-5' for 'apx-server.max-concurrent-connections' (expected integer between 1 and 65535); defaulting to 256" in stderr_text
+
 
 
 

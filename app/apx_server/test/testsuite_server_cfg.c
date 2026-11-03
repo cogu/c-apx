@@ -72,6 +72,8 @@ static void test_check_config_tls_extension_missing_keys_warns(CuTest *tc);
 static void test_configure_server_multiple_provider_policy(CuTest *tc);
 static void test_check_config_invalid_multiple_provider_policy_warns(CuTest *tc);
 static void test_check_config_retired_max_num_events_warns(CuTest *tc);
+static void test_configure_server_max_concurrent_connections(CuTest *tc);
+static void test_check_config_invalid_max_concurrent_connections_warns(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -108,6 +110,8 @@ CuSuite *testsuite_server_cfg(void)
   SUITE_ADD_TEST(suite, test_configure_server_multiple_provider_policy);
   SUITE_ADD_TEST(suite, test_check_config_invalid_multiple_provider_policy_warns);
   SUITE_ADD_TEST(suite, test_check_config_retired_max_num_events_warns);
+  SUITE_ADD_TEST(suite, test_configure_server_max_concurrent_connections);
+  SUITE_ADD_TEST(suite, test_check_config_invalid_max_concurrent_connections_warns);
   return suite;
 }
 
@@ -916,5 +920,149 @@ static void test_check_config_retired_max_num_events_warns(CuTest *tc)
     tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'apx-server.max-num-events'"));
 
   dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_configure_server_max_concurrent_connections(CuTest *tc)
+{
+  const char *filepath = "test_server_cfg_max_conn.json";
+  const char *content_hyphen = "{\n"
+                               "    \"apx-server\": {\n"
+                               "        \"max-concurrent-connections\": 100\n"
+                               "    }\n"
+                               "}\n";
+  write_test_file(filepath, content_hyphen);
+
+  dtl_hv_t *cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  CuAssertPtrNotNull(tc, cfg);
+  apx_server_t server;
+  apx_server_create(&server);
+  CuAssertUIntEquals(
+    tc, APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS, apx_server_get_max_concurrent_connections(&server));
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertUIntEquals(tc, 100u, apx_server_get_max_concurrent_connections(&server));
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+
+  // Test underscore alias "max_concurrent_connections"
+  const char *content_alias = "{\n"
+                              "    \"apx-server\": {\n"
+                              "        \"max_concurrent_connections\": 50\n"
+                              "    }\n"
+                              "}\n";
+  write_test_file(filepath, content_alias);
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertUIntEquals(tc, 50u, apx_server_get_max_concurrent_connections(&server));
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+
+  // Test maximum valid limit (65535)
+  const char *content_max = "{\n"
+                            "    \"apx-server\": {\n"
+                            "        \"max-concurrent-connections\": 65535\n"
+                            "    }\n"
+                            "}\n";
+  write_test_file(filepath, content_max);
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertUIntEquals(tc, 65535u, apx_server_get_max_concurrent_connections(&server));
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+  remove(filepath);
+}
+
+static void test_check_config_invalid_max_concurrent_connections_warns(CuTest *tc)
+{
+  test_warning_collector_t collector;
+
+  // Negative integer
+  test_warning_collector_init(&collector);
+  const char *filepath = "test_cfg_invalid_max_conn.json";
+  write_test_file(filepath, "{\"apx-server\": {\"max-concurrent-connections\": -1}}");
+
+  dtl_hv_t *cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  CuAssertPtrNotNull(tc, cfg);
+
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value '-1' for 'apx-server.max-concurrent-connections' (expected integer between 1 and 65535); "
+      "defaulting to 256"));
+
+  apx_server_t server;
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertUIntEquals(tc, 256u, apx_server_get_max_concurrent_connections(&server));
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+
+  // Zero
+  test_warning_collector_init(&collector);
+  write_test_file(filepath, "{\"apx-server\": {\"max-concurrent-connections\": 0}}");
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value '0' for 'apx-server.max-concurrent-connections' (expected integer between 1 and 65535); "
+      "defaulting to 256"));
+  dtl_dec_ref(cfg);
+
+  // Exceeding upper limit (e.g. 100000)
+  test_warning_collector_init(&collector);
+  write_test_file(filepath, "{\"apx-server\": {\"max-concurrent-connections\": 100000}}");
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value '100000' for 'apx-server.max-concurrent-connections' (expected integer between 1 and "
+      "65535); "
+      "defaulting to 256"));
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertUIntEquals(tc, 256u, apx_server_get_max_concurrent_connections(&server));
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+
+  // String
+  test_warning_collector_init(&collector);
+  write_test_file(filepath, "{\"apx-server\": {\"max-concurrent-connections\": \"abc\"}}");
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value 'abc' for 'apx-server.max-concurrent-connections' (expected integer between 1 and "
+      "65535); "
+      "defaulting to 256"));
+  dtl_dec_ref(cfg);
+
+  // Non-scalar (empty object)
+  test_warning_collector_init(&collector);
+  write_test_file(filepath, "{\"apx-server\": {\"max-concurrent-connections\": {}}}");
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value '<non-scalar>' for 'apx-server.max-concurrent-connections' (expected integer between 1 "
+      "and 65535); "
+      "defaulting to 256"));
+  dtl_dec_ref(cfg);
+
   remove(filepath);
 }

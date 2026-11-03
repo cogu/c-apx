@@ -53,6 +53,7 @@ static void test_server_rejects_signed_file_cmd_under_rmfp_1_0(CuTest *tc);
 static void test_server_log_write_varargs(CuTest *tc);
 static void test_multiple_providers_policy_first_apx13(CuTest *tc);
 static void test_multiple_providers_policy_last_apx13(CuTest *tc);
+static void test_server_max_concurrent_connections(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -117,6 +118,7 @@ CuSuite *testsuite_apx_server(void)
   SUITE_ADD_TEST(suite, test_server_log_write_varargs);
   SUITE_ADD_TEST(suite, test_multiple_providers_policy_first_apx13);
   SUITE_ADD_TEST(suite, test_multiple_providers_policy_last_apx13);
+  SUITE_ADD_TEST(suite, test_server_max_concurrent_connections);
 
   return suite;
 }
@@ -1604,5 +1606,46 @@ static void test_multiple_providers_policy_last_apx13(CuTest *tc)
   apx_server_unregister_event_listener(server, listener_handle);
   apx_server_detach_connection(server, (apx_server_connection_t *)conn_a);
   apx_server_detach_connection(server, (apx_server_connection_t *)conn_req);
+  apx_server_delete(server);
+}
+
+static void test_server_max_concurrent_connections(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+  CuAssertUIntEquals(
+    tc, APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS, apx_server_get_max_concurrent_connections(server));
+
+  apx_server_set_max_concurrent_connections(server, 2u);
+  CuAssertUIntEquals(tc, 2u, apx_server_get_max_concurrent_connections(server));
+
+  // Exceeding upper limit clamps to APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT
+  apx_server_set_max_concurrent_connections(server, 100000u);
+  CuAssertUIntEquals(
+    tc, APX_SERVER_MAX_CONCURRENT_CONNECTIONS_LIMIT, apx_server_get_max_concurrent_connections(server));
+
+  apx_server_set_max_concurrent_connections(server, 2u);
+
+  apx_server_test_connection_t *conn1 = apx_server_test_connection_new();
+  apx_server_test_connection_t *conn2 = apx_server_test_connection_new();
+  apx_server_test_connection_t *conn3 = apx_server_test_connection_new();
+
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn1);
+  CuAssertUIntEquals(tc, 1u, apx_connection_manager_get_num_connections(&server->connection_manager));
+
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn2);
+  CuAssertUIntEquals(tc, 2u, apx_connection_manager_get_num_connections(&server->connection_manager));
+
+  // Third connection exceeds max_concurrent_connections (2) and should not be attached
+  apx_server_accept_connection(server, (apx_server_connection_t *)conn3);
+  CuAssertUIntEquals(tc, 2u, apx_connection_manager_get_num_connections(&server->connection_manager));
+
+  // conn3 was rejected and not attached, so delete it
+  apx_server_test_connection_delete(conn3);
+
+  // Detach accepted connections
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_detach_connection(server, (apx_server_connection_t *)conn1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_detach_connection(server, (apx_server_connection_t *)conn2));
+
   apx_server_delete(server);
 }

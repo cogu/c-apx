@@ -144,6 +144,7 @@ void apx_connection_manager_attach(apx_connection_manager_t *self, apx_server_co
     SPINLOCK_ENTER(self->lock);
     connection_id = apx_connection_manager_generate_connection_id(self);
     adt_list_insert_unique(&self->active_connections, connection);
+    self->num_connections++;
     SPINLOCK_LEAVE(self->lock);
     apx_server_connection_set_connection_id(connection, connection_id);
     apx_server_connection_connected_notification(connection);
@@ -165,6 +166,10 @@ void apx_connection_manager_detach(apx_connection_manager_t *self, apx_server_co
     {
       adt_list_erase(&self->active_connections, iter);
       adt_list_insert(&self->inactive_connections, connection);
+      if (self->num_connections > 0u)
+      {
+        self->num_connections--;
+      }
     }
     SPINLOCK_LEAVE(self->lock);
   }
@@ -186,9 +191,13 @@ uint32_t apx_connection_manager_get_num_connections(apx_connection_manager_t *se
 {
   if (self != NULL)
   {
-    return self->num_connections;
+    uint32_t retval;
+    SPINLOCK_ENTER(self->lock);
+    retval = self->num_connections;
+    SPINLOCK_LEAVE(self->lock);
+    return retval;
   }
-  return 0;
+  return 0u;
 }
 
 
@@ -236,8 +245,8 @@ void apx_connection_manager_run(apx_connection_manager_t *self)
 
 /**
  * Generates a unique connection ID by comparing ID candidates against its internal set data structure
- * This function assumes that APX_SERVER_MAX_CONCURRENT_CONNECTIONS is much less than 2^32-1 and that the caller has
- * previously checked that self->numConnections < APX_SERVER_MAX_CONCURRENT_CONNECTIONS
+ * This function assumes that max_concurrent_connections is much less than 2^32-1 and that the caller has
+ * previously checked that self->numConnections < max_concurrent_connections
  */
 static uint32_t apx_connection_manager_generate_connection_id(apx_connection_manager_t *self)
 {
