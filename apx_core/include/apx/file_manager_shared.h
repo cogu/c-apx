@@ -14,7 +14,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
-#include "apx/allocator.h"
 #include "apx/connection_interface.h"
 #include "apx/file_map.h"
 #ifdef _WIN32
@@ -40,7 +39,6 @@ typedef struct apx_file_manager_shared_tag
   apx_connection_type_t connection_type;
   bool is_connected;
   apx_connection_interface_t parent_connection;
-  apx_allocator_t *allocator;
   MUTEX_T lock;
 } apx_file_manager_shared_t;
 
@@ -50,7 +48,7 @@ typedef struct apx_file_manager_shared_tag
 //////////////////////////////////////////////////////////////////////////////
 
 void apx_file_manager_shared_create(
-  apx_file_manager_shared_t *self, apx_connection_interface_t const *parent_connection, apx_allocator_t *allocator);
+  apx_file_manager_shared_t *self, apx_connection_interface_t const *parent_connection);
 void apx_file_manager_shared_destroy(apx_file_manager_shared_t *self);
 void apx_file_manager_shared_start(apx_file_manager_shared_t *self);
 apx_file_t *apx_file_manager_shared_create_local_file(
@@ -70,7 +68,6 @@ void apx_file_manager_shared_connected(apx_file_manager_shared_t *self);
 void apx_file_manager_shared_disconnected(apx_file_manager_shared_t *self);
 bool apx_file_manager_shared_is_connected(apx_file_manager_shared_t *self);
 apx_connection_interface_t const *apx_file_manager_shared_connection(apx_file_manager_shared_t const *self);
-apx_allocator_t *apx_file_manager_shared_allocator(apx_file_manager_shared_t const *self);
 
 
 #endif // APX_FILE_MANAGER_SHARED_H

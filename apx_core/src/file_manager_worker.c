@@ -32,7 +32,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-static void cleanup_cmd_queue(adt_rbfh_t *queue);
+static void cleanup_cmd_queue(apx_file_manager_worker_t *self);
 static bool process_single_command(apx_file_manager_worker_t *self, apx_command_t const *cmd);
 static apx_error_t run_send_acknowledge(apx_file_manager_worker_t *self);
 static apx_error_t run_send_error_code(apx_file_manager_worker_t *self, uint32_t error_code, char const *name);
@@ -40,6 +40,8 @@ static apx_error_t run_publish_local_file(apx_file_manager_worker_t *self, rmf_f
 static apx_error_t run_revoke_local_file(apx_file_manager_worker_t *self, uint32_t address);
 static apx_error_t run_send_local_const_data(
   apx_file_manager_worker_t *self, uint32_t address, uint8_t const *data, uint32_t size);
+static apx_error_t run_send_local_soa_data(
+  apx_file_manager_worker_t *self, uint32_t address, uint8_t *data, uint32_t size);
 static apx_error_t run_send_local_data(apx_file_manager_worker_t *self, uint32_t address, uint8_t *data, uint32_t size);
 static apx_error_t run_open_remote_file(apx_file_manager_worker_t *self, uint32_t address);
 static apx_error_t run_close_remote_file(apx_file_manager_worker_t *self, uint32_t address);
@@ -82,6 +84,7 @@ apx_error_t apx_file_manager_worker_create(
     self->mode = mode;
     self->shared = shared;
     self->worker_thread_valid = false;
+    soa_init(&self->soa);
     MUTEX_INIT(self->mutex);
     (void)SPINLOCK_INIT(self->queue_lock);
     SEMAPHORE_CREATE(self->semaphore);
@@ -106,11 +109,12 @@ void apx_file_manager_worker_destroy(apx_file_manager_worker_t *self)
       stop_worker_thread(self);
 #endif
     }
+    cleanup_cmd_queue(self);
+    adt_rbfh_destroy(&self->queue);
+    soa_destroy(&self->soa);
     MUTEX_DESTROY(self->mutex);
     SPINLOCK_DESTROY(self->queue_lock);
     SEMAPHORE_DESTROY(self->semaphore);
-    cleanup_cmd_queue(&self->queue);
-    adt_rbfh_destroy(&self->queue);
   }
 }
 
@@ -284,6 +288,62 @@ apx_error_t apx_file_manager_worker_prepare_send_local_const_data(
     SPINLOCK_LEAVE(self->queue_lock);
 #ifndef UNIT_TEST
     SEMAPHORE_POST(self->semaphore);
+#endif
+    return apx_file_manager_worker_process_ringbuffer_error(rc);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_worker_prepare_send_local_small_data(
+  apx_file_manager_worker_t *self, uint32_t address, uint8_t const *data, uint32_t size)
+{
+  if ((self != NULL) && (data != NULL) && (size > 0u) && (size <= APX_SMALL_DATA_SIZE))
+  {
+    adt_buf_err_t rc;
+    apx_command_t cmd;
+    apx_build_command_with_data(&cmd, APX_CMD_SEND_LOCAL_SMALL_DATA, address, size, data, NULL);
+    SPINLOCK_ENTER(self->queue_lock);
+    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+    SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+    if (rc == BUF_E_OK)
+    {
+      SEMAPHORE_POST(self->semaphore);
+    }
+#endif
+    return apx_file_manager_worker_process_ringbuffer_error(rc);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_worker_prepare_send_local_soa_data(
+  apx_file_manager_worker_t *self, uint32_t address, uint8_t const *data, uint32_t size)
+{
+  if ((self != NULL) && (data != NULL) && (size > 0u) && (size <= SOA_SMALL_OBJECT_MAX_SIZE))
+  {
+    adt_buf_err_t rc;
+    apx_command_t cmd;
+    uint8_t *soa_buf = NULL;
+    SPINLOCK_ENTER(self->queue_lock);
+    soa_buf = (uint8_t *)soa_alloc(&self->soa, (size_t)size);
+    if (soa_buf == NULL)
+    {
+      SPINLOCK_LEAVE(self->queue_lock);
+      return APX_MEM_ERROR;
+    }
+    memcpy(soa_buf, data, (size_t)size);
+    apx_build_command_with_ptr(&cmd, APX_CMD_SEND_LOCAL_SOA_DATA, address, size, soa_buf, NULL);
+    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+    if (rc != BUF_E_OK)
+    {
+      soa_free(&self->soa, soa_buf, (size_t)size);
+    }
+    SPINLOCK_LEAVE(self->queue_lock);
+#ifndef UNIT_TEST
+    if (rc == BUF_E_OK)
+    {
+      SEMAPHORE_POST(self->semaphore);
+    }
 #endif
     return apx_file_manager_worker_process_ringbuffer_error(rc);
   }
@@ -499,16 +559,23 @@ apx_error_t apx_file_manager_worker_prepare_drain_stream_data(apx_file_manager_w
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-static void cleanup_cmd_queue(adt_rbfh_t *queue)
+static void cleanup_cmd_queue(apx_file_manager_worker_t *self)
 {
-  assert(queue != NULL);
-  while (adt_rbfh_length(queue) > 0)
+  assert(self != NULL);
+  while (adt_rbfh_length(&self->queue) > 0)
   {
     apx_command_t cmd;
-    adt_rbfh_remove(queue, (uint8_t *)&cmd);
+    adt_rbfh_remove(&self->queue, (uint8_t *)&cmd);
     if (cmd.cmd_type == APX_CMD_PUBLISH_LOCAL_FILE)
     {
       rmf_file_info_delete((rmf_file_info_t *)cmd.data3.ptr);
+    }
+    else if (cmd.cmd_type == APX_CMD_SEND_LOCAL_SOA_DATA)
+    {
+      if (cmd.data3.ptr != NULL)
+      {
+        soa_free(&self->soa, cmd.data3.ptr, (size_t)cmd.data2);
+      }
     }
     else if (cmd.cmd_type == APX_CMD_SEND_LOCAL_DATA || cmd.cmd_type == APX_CMD_CREATE_CONNECTION ||
       cmd.cmd_type == APX_CMD_SEND_ERROR_CODE)
@@ -550,6 +617,12 @@ static bool process_single_command(apx_file_manager_worker_t *self, apx_command_
     break;
   case APX_CMD_SEND_LOCAL_CONST_DATA:
     result = run_send_local_const_data(self, cmd->data1, (uint8_t const *)cmd->data3.ptr, cmd->data2);
+    break;
+  case APX_CMD_SEND_LOCAL_SMALL_DATA:
+    result = run_send_local_const_data(self, cmd->data1, &cmd->data3.data[0], cmd->data2);
+    break;
+  case APX_CMD_SEND_LOCAL_SOA_DATA:
+    result = run_send_local_soa_data(self, cmd->data1, (uint8_t *)cmd->data3.ptr, cmd->data2);
     break;
   case APX_CMD_SEND_LOCAL_DATA:
     result = run_send_local_data(self, cmd->data1, (uint8_t *)cmd->data3.ptr, cmd->data2);
@@ -727,6 +800,19 @@ static apx_error_t run_send_local_const_data(
   else
   {
     retval = APX_NOT_CONNECTED_ERROR;
+  }
+  return retval;
+}
+
+static apx_error_t run_send_local_soa_data(
+  apx_file_manager_worker_t *self, uint32_t address, uint8_t *data, uint32_t size)
+{
+  apx_error_t retval = run_send_local_const_data(self, address, data, size);
+  if (data != NULL)
+  {
+    SPINLOCK_ENTER(self->queue_lock);
+    soa_free(&self->soa, data, (size_t)size);
+    SPINLOCK_LEAVE(self->queue_lock);
   }
   return retval;
 }

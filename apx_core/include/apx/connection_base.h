@@ -29,7 +29,6 @@
 #include "apx/node_manager.h"
 #include "apx/types.h"
 // #include "apx/event_loop.h"
-#include "apx/allocator.h"
 #include "apx/connection_interface.h"
 #include "osmacro.h"
 
@@ -67,7 +66,6 @@ typedef struct apx_connection_base_tag
 {
   apx_file_manager_t file_manager;
   apx_node_manager_t *node_manager;
-  apx_allocator_t allocator;
   apx_connection_base_vtable_t vtable;
   apx_connection_interface_t connection_interface;
   uint32_t total_bytes_received;
@@ -111,9 +109,6 @@ void apx_connection_base_set_num_header_size(apx_connection_base_t *self, apx_si
 apx_size_t apx_connection_base_get_num_header_size(apx_connection_base_t const *self);
 void apx_connection_base_set_rmf_proto_id(apx_connection_base_t *self, rmf_version_id_t version_id);
 rmf_version_id_t apx_connection_base_get_rmf_proto_id(apx_connection_base_t const *self);
-
-// uint8_t *apx_connection_base_alloc(apx_connection_base_t *self, size_t size);
-// void apx_connection_base_free(apx_connection_base_t *self, uint8_t *ptr, size_t size);
 
 
 // Virtual function call-points

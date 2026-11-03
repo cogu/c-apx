@@ -80,7 +80,6 @@ find_package(Threads REQUIRED)
 ### apx unit tests
 
 set (APX_COMMON_TEST_SUITE
-    apx_core/test/testsuite_allocator.c
     apx_core/test/testsuite_attribute_parser.c
     apx_core/test/testsuite_byte_port_map.c
     apx_core/test/testsuite_client_socket_connection.c
@@ -121,7 +120,6 @@ set (APX_COMMON_TEST_SUITE
 # apx_core library
 
 set (APX_COMMON_HEADERS
-    apx_core/include/apx/allocator.h
     apx_core/include/apx/attribute_parser.h
     apx_core/include/apx/byte_port_map.h
     apx_core/include/apx/cfg.h
@@ -192,7 +190,6 @@ set (APX_COMMON_HEADERS
 )
 
 set (APX_COMMON_SOURCES
-    apx_core/src/allocator.c
     apx_core/src/attribute_parser.c
     apx_core/src/byte_port_map.c
     apx_core/src/compiler.c

@@ -197,11 +197,11 @@ The `c-apx` codebase contains numerous compile-time `#if APX_DEBUG_ENABLE` check
 * [x] **Complete Syslog Integration (`syslog-enabled`):**
   * Wire up `syslog-enabled` and `syslog-label` in `server_text_log_extension.c` and `text_log_base.c` using POSIX `syslog(priority, ...)`, mapping `apx_log_level_t` directly to syslog priorities (`LOG_CRIT`, `LOG_ERR`, `LOG_WARNING`, `LOG_INFO`, `LOG_DEBUG`).
 
-## 12. Small Data Support in Command Pipeline & Retiring `apx_allocator_t`
+## 12. Small Data Support in Command Pipeline & Retiring `apx_allocator_t` (Completed)
 
 * Detailed historical analysis and 3-tier architecture defined in [small_data_and_allocator_spec.md](design/small_data_and_allocator_spec.md).
 
-In `apx_command_t` (`apx_core/include/apx/command.h`), the union `msgData3_tag` overlays `void *ptr` with an inline buffer `uint8_t data[APX_SMALL_DATA_SIZE]` (`8` bytes). Currently, all local data transmission via `APX_CMD_SEND_LOCAL_DATA` treats `data3.ptr` as a heap-allocated pointer (`malloc` / `free`), while `apx_connection_base_t` spawns an unused `apx_allocator_t` wrapper and background thread on every connection.
+In `apx_command_t` (`apx_core/include/apx/command.h`), the `data3` union overlays `void *ptr` with an inline buffer `uint8_t data[APX_SMALL_DATA_SIZE]` (`8` bytes). Currently, all local data transmission via `APX_CMD_SEND_LOCAL_DATA` treats `data3.ptr` as a heap-allocated pointer (`malloc` / `free`), while `apx_connection_base_t` spawns an unused `apx_allocator_t` wrapper and background thread on every connection.
 
 To eliminate heap allocation overhead and per-connection garbage-collector threads, retire `allocator.c` (`apx_allocator_t`) and maintain `soa_t` directly inside `apx_file_manager_worker_t` (protected by `self->queue_lock`) with a 3-tier allocation pipeline:
 
@@ -212,14 +212,14 @@ To eliminate heap allocation overhead and per-connection garbage-collector threa
 3. **Tier 3 — Normal / Large Data (`> 32` bytes, `size > SOA_SMALL_OBJECT_MAX_SIZE`):**
    * Enqueued as `APX_CMD_SEND_LOCAL_DATA` with `cmd.data3.ptr` allocated on the heap via `malloc()` and freed via `free()`.
 
-* **Retire `apx_allocator_t` (`allocator.c`, `allocator.h`, `testsuite_allocator.c`):**
+* [x] **Retire `apx_allocator_t` (`allocator.c`, `allocator.h`, `testsuite_allocator.c`):**
   * Remove `allocator.c`, `allocator.h`, and `testsuite_allocator.c` from `apx_core`.
   * Remove `apx_allocator_t allocator` from `apx_connection_base_t` and remove the `allocator` parameter from `apx_file_manager_create()` and `apx_file_manager_shared_create()`.
-* **Command Definition, Documentation & Builder Fix (`command.h`, `command.c`):**
+* [x] **Command Definition, Documentation & Builder Fix (`command.h`, `command.c`):**
   * Add `APX_CMD_SEND_LOCAL_SMALL_DATA` and `APX_CMD_SEND_LOCAL_SOA_DATA` to `apx_cmd_type_t`.
   * Add a `"Command field usage and ownership"` comment block to `command.h` (matching the `"Event field usage and ownership"` documentation in `event.h`) documenting `data1`, `data2`, `data3`, and ownership semantics for every `APX_CMD_*`.
   * Fix `apx_build_command_with_data()` in `command.c` to copy `d2` (`size`) bytes (`d2 <= APX_SMALL_DATA_SIZE`) rather than unconditionally reading `APX_SMALL_DATA_SIZE` bytes from `d3`.
-* **File Manager Worker & 3-Tier Dispatch (`file_manager_worker.c`, `file_manager.c`, `node_instance.c`):**
+* [x] **File Manager Worker & 3-Tier Dispatch (`file_manager_worker.c`, `file_manager.c`, `node_instance.c`):**
   * Embed `soa_t soa;` in `apx_file_manager_worker_t` (`soa_init` on create, `soa_destroy` on destroy).
   * Implement `apx_file_manager_worker_prepare_send_local_small_data()` and `apx_file_manager_worker_prepare_send_local_soa_data()`, and handle both in `process_single_command()` and `cleanup_cmd_queue()`.
   * Add `apx_file_manager_write_local_data(self, address, const uint8_t *data, apx_size_t size)` in `file_manager.c` to automatically select Tier 1 (`<= 8` B), Tier 2 (`9..32` B), or Tier 3 (`> 32` B), and call it from `remote_route_data_to_file()` in `node_instance.c`.

@@ -44,8 +44,8 @@ typedef struct apx_file_manager_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
-apx_error_t apx_file_manager_create(apx_file_manager_t *self, uint8_t mode,
-  apx_connection_interface_t const *parent_connection, apx_allocator_t *allocator);
+apx_error_t apx_file_manager_create(
+  apx_file_manager_t *self, uint8_t mode, apx_connection_interface_t const *parent_connection);
 void apx_file_manager_destroy(apx_file_manager_t *self);
 apx_error_t apx_file_manager_start(apx_file_manager_t *self);
 void apx_file_manager_stop(apx_file_manager_t *self);
@@ -59,6 +59,10 @@ apx_file_t *apx_file_manager_find_local_file_by_name(apx_file_manager_t *self, c
 apx_file_t *apx_file_manager_find_remote_file_by_name(apx_file_manager_t *self, char const *name);
 apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t const *msg_data, apx_size_t msg_len);
 apx_error_t apx_file_manager_send_local_const_data(
+  apx_file_manager_t *self, uint32_t address, uint8_t const *data, apx_size_t size);
+apx_error_t apx_file_manager_send_local_small_data(
+  apx_file_manager_t *self, uint32_t address, uint8_t const *data, apx_size_t size);
+apx_error_t apx_file_manager_write_local_data(
   apx_file_manager_t *self, uint32_t address, uint8_t const *data, apx_size_t size);
 apx_error_t apx_file_manager_send_local_data(apx_file_manager_t *self, uint32_t address, uint8_t *data,
   apx_size_t size); // file_manager takes ownership of data when called

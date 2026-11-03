@@ -44,6 +44,7 @@ static apx_error_t process_stream_open_response(apx_file_manager_t *self, uint8_
 static apx_error_t process_stream_window_update(apx_file_manager_t *self, uint8_t const *data, apx_size_t size);
 static apx_error_t process_stream_abort(apx_file_manager_t *self, uint8_t const *data, apx_size_t size);
 static void abort_stream_with_error(apx_file_manager_t *self, apx_file_t *file, apx_error_t status);
+static apx_error_t validate_local_file_write(apx_file_manager_t *self, uint32_t address, apx_size_t size);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -53,8 +54,8 @@ static void abort_stream_with_error(apx_file_manager_t *self, apx_file_t *file, 
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
 
-apx_error_t apx_file_manager_create(apx_file_manager_t *self, uint8_t mode,
-  apx_connection_interface_t const *parent_connection, apx_allocator_t *allocator)
+apx_error_t apx_file_manager_create(
+  apx_file_manager_t *self, uint8_t mode, apx_connection_interface_t const *parent_connection)
 {
   if (self != NULL)
   {
@@ -66,7 +67,7 @@ apx_error_t apx_file_manager_create(apx_file_manager_t *self, uint8_t mode,
       result = apx_file_manager_worker_create(&self->worker, &self->shared, mode);
       if (result == APX_NO_ERROR)
       {
-        apx_file_manager_shared_create(&self->shared, parent_connection, allocator);
+        apx_file_manager_shared_create(&self->shared, parent_connection);
       }
       else
       {
@@ -316,31 +317,61 @@ apx_error_t apx_file_manager_send_local_const_data(
 {
   if (self != NULL && data != NULL)
   {
-    apx_file_t *file = apx_file_manager_shared_find_file_by_address(&self->shared, address);
-    if (file == NULL)
+    apx_error_t const retval = validate_local_file_write(self, address, size);
+    if (retval != APX_NO_ERROR)
     {
-      return APX_FILE_NOT_FOUND_ERROR;
-    }
-    if (!apx_file_is_open(file))
-    {
-      return APX_FILE_NOT_OPEN_ERROR;
-    }
-    if (apx_file_is_stream(file))
-    {
-      if (address != apx_file_get_address_without_flags(file))
-      {
-        return APX_INVALID_ADDRESS_ERROR;
-      }
-      if (size == 0u)
-      {
-        return APX_VALUE_LENGTH_ERROR;
-      }
-      if (size > apx_file_get_stream_block_size(file))
-      {
-        return APX_FILE_TOO_LARGE_ERROR;
-      }
+      return retval;
     }
     return apx_file_manager_worker_prepare_send_local_const_data(&self->worker, address, data, (uint32_t)size);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_send_local_small_data(
+  apx_file_manager_t *self, uint32_t address, uint8_t const *data, apx_size_t size)
+{
+  if ((self != NULL) && (data != NULL) && (size > 0u) && (size <= APX_SMALL_DATA_SIZE))
+  {
+    apx_error_t const retval = validate_local_file_write(self, address, size);
+    if (retval != APX_NO_ERROR)
+    {
+      return retval;
+    }
+    return apx_file_manager_worker_prepare_send_local_small_data(&self->worker, address, data, (uint32_t)size);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_file_manager_write_local_data(
+  apx_file_manager_t *self, uint32_t address, uint8_t const *data, apx_size_t size)
+{
+  if ((self != NULL) && (data != NULL) && (size > 0u))
+  {
+    apx_error_t retval = validate_local_file_write(self, address, size);
+    if (retval != APX_NO_ERROR)
+    {
+      return retval;
+    }
+    if (size <= APX_SMALL_DATA_SIZE)
+    {
+      return apx_file_manager_worker_prepare_send_local_small_data(&self->worker, address, data, (uint32_t)size);
+    }
+    if (size <= SOA_SMALL_OBJECT_MAX_SIZE)
+    {
+      return apx_file_manager_worker_prepare_send_local_soa_data(&self->worker, address, data, (uint32_t)size);
+    }
+    uint8_t *copied_data = (uint8_t *)malloc(size);
+    if (copied_data == NULL)
+    {
+      return APX_MEM_ERROR;
+    }
+    memcpy(copied_data, data, size);
+    retval = apx_file_manager_worker_prepare_send_local_data(&self->worker, address, copied_data, (uint32_t)size);
+    if (retval != APX_NO_ERROR)
+    {
+      free(copied_data);
+    }
+    return retval;
   }
   return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -349,36 +380,13 @@ apx_error_t apx_file_manager_send_local_data(apx_file_manager_t *self, uint32_t 
 {
   if (self != NULL && data != NULL)
   {
-    apx_file_t *file = apx_file_manager_shared_find_file_by_address(&self->shared, address);
-    if (file == NULL)
+    apx_error_t retval = validate_local_file_write(self, address, size);
+    if (retval != APX_NO_ERROR)
     {
       free(data);
-      return APX_FILE_NOT_FOUND_ERROR;
+      return retval;
     }
-    if (!apx_file_is_open(file))
-    {
-      free(data);
-      return APX_FILE_NOT_OPEN_ERROR;
-    }
-    if (apx_file_is_stream(file))
-    {
-      if (address != apx_file_get_address_without_flags(file))
-      {
-        free(data);
-        return APX_INVALID_ADDRESS_ERROR;
-      }
-      if (size == 0u)
-      {
-        free(data);
-        return APX_VALUE_LENGTH_ERROR;
-      }
-      if (size > apx_file_get_stream_block_size(file))
-      {
-        free(data);
-        return APX_FILE_TOO_LARGE_ERROR;
-      }
-    }
-    apx_error_t retval = apx_file_manager_worker_prepare_send_local_data(&self->worker, address, data, (uint32_t)size);
+    retval = apx_file_manager_worker_prepare_send_local_data(&self->worker, address, data, (uint32_t)size);
     if (retval != APX_NO_ERROR)
     {
       free(data);
@@ -1112,4 +1120,33 @@ static void abort_stream_with_error(apx_file_manager_t *self, apx_file_t *file, 
     };
     (void)apx_file_manager_worker_prepare_send_stream_abort(&self->worker, &abort_cmd);
   }
+}
+
+static apx_error_t validate_local_file_write(apx_file_manager_t *self, uint32_t address, apx_size_t size)
+{
+  apx_file_t *file = apx_file_manager_shared_find_file_by_address(&self->shared, address);
+  if (file == NULL)
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  if (!apx_file_is_open(file))
+  {
+    return APX_FILE_NOT_OPEN_ERROR;
+  }
+  if (apx_file_is_stream(file))
+  {
+    if (address != apx_file_get_address_without_flags(file))
+    {
+      return APX_INVALID_ADDRESS_ERROR;
+    }
+    if (size == 0u)
+    {
+      return APX_VALUE_LENGTH_ERROR;
+    }
+    if (size > apx_file_get_stream_block_size(file))
+    {
+      return APX_FILE_TOO_LARGE_ERROR;
+    }
+  }
+  return APX_NO_ERROR;
 }

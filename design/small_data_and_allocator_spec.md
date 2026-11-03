@@ -20,7 +20,7 @@ typedef struct apx_command_tag
   apx_cmd_type_t cmd_type;
   uint32_t data1;
   uint32_t data2;
-  union msgData3_tag
+  union
   {
     void *ptr;
     uint8_t data[APX_SMALL_DATA_SIZE];

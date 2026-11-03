@@ -21,6 +21,7 @@
 #include "apx/file_info.h"
 #include "apx/file_manager_defs.h"
 #include "apx/file_manager_shared.h"
+#include "soa.h"
 #ifndef ADT_RBFS_ENABLE
 # define ADT_RBFS_ENABLE 1
 #endif
@@ -41,7 +42,8 @@ typedef struct apx_file_manager_worker_tag
   SPINLOCK_T queue_lock; // used exclusively by workerThread command queue
   THREAD_T worker_thread; // local transmit thread
   SEMAPHORE_T semaphore; // queue semaphore
-  adt_rbfh_t queue; // pending actions
+  adt_rbfh_t queue; // pending commands
+  soa_t soa; // small object allocator for 9..32 byte payloads (protected by queue_lock)
   bool worker_thread_valid; // is worker_thread handle valid (required to support both Windows and Linux)
   apx_mode_t mode; // server or client mode?
 #ifdef _WIN32
@@ -75,6 +77,10 @@ apx_error_t apx_file_manager_worker_prepare_publish_local_file(
   apx_file_manager_worker_t *self, rmf_file_info_t *file_info); // ownership is taken of the file_info object
 apx_error_t apx_file_manager_worker_prepare_revoke_local_file(apx_file_manager_worker_t *self, uint32_t address);
 apx_error_t apx_file_manager_worker_prepare_send_local_const_data(
+  apx_file_manager_worker_t *self, uint32_t address, uint8_t const *data, uint32_t size);
+apx_error_t apx_file_manager_worker_prepare_send_local_small_data(
+  apx_file_manager_worker_t *self, uint32_t address, uint8_t const *data, uint32_t size);
+apx_error_t apx_file_manager_worker_prepare_send_local_soa_data(
   apx_file_manager_worker_t *self, uint32_t address, uint8_t const *data, uint32_t size);
 apx_error_t apx_file_manager_worker_prepare_send_local_data(
   apx_file_manager_worker_t *self, uint32_t address, uint8_t *data, uint32_t size);

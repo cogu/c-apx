@@ -76,6 +76,8 @@ static void test_stream_window_one(CuTest *tc);
 static void test_stream_window_batching_and_validation(CuTest *tc);
 static void test_stream_isolation_and_control_progress(CuTest *tc);
 static void test_stream_close_abort_revoke_and_disconnect(CuTest *tc);
+static void test_small_soa_and_large_data_pipeline(CuTest *tc);
+static void test_command_queue_cleanup_on_destroy(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -92,6 +94,8 @@ CuSuite *testsuite_apx_file_manager(void)
   SUITE_ADD_TEST(suite, test_stream_window_batching_and_validation);
   SUITE_ADD_TEST(suite, test_stream_isolation_and_control_progress);
   SUITE_ADD_TEST(suite, test_stream_close_abort_revoke_and_disconnect);
+  SUITE_ADD_TEST(suite, test_small_soa_and_large_data_pipeline);
+  SUITE_ADD_TEST(suite, test_command_queue_cleanup_on_destroy);
 
   return suite;
 }
@@ -122,7 +126,7 @@ static void mock_endpoint_create(mock_endpoint_t *self, uint8_t mode, int32_t ma
   iface.get_connection_type = on_mock_get_connection_type;
   iface.nack_notification = on_mock_nack_notification;
 
-  apx_error_t rc = apx_file_manager_create(&self->file_manager, mode, &iface, NULL);
+  apx_error_t rc = apx_file_manager_create(&self->file_manager, mode, &iface);
   assert(rc == APX_NO_ERROR);
   (void)rc;
 }
@@ -876,6 +880,138 @@ static void test_stream_close_abort_revoke_and_disconnect(CuTest *tc)
   CuAssertIntEquals(tc, APX_STREAM_STATE_REVOKED, apx_file_get_stream_state(pub_file));
   mock_endpoint_deliver_all(&pub, &sub);
   CuAssertIntEquals(tc, APX_STREAM_STATE_REVOKED, apx_file_get_stream_state(sub_file));
+
+  mock_endpoint_destroy(&sub);
+  mock_endpoint_destroy(&pub);
+}
+
+static void test_small_soa_and_large_data_pipeline(CuTest *tc)
+{
+  // 1. Verify apx_build_command_with_data only copies d2 bytes (no out-of-bounds read on 1- or 2-byte stack buffers)
+  uint8_t const one_byte = 0x7Au;
+  uint8_t const two_bytes[2] = {0x12u, 0x34u};
+  apx_command_t cmd;
+  memset(&cmd, 0, sizeof(cmd));
+  apx_build_command_with_data(&cmd, APX_CMD_SEND_LOCAL_SMALL_DATA, 0x100u, 1u, &one_byte, NULL);
+  CuAssertUIntEquals(tc, APX_CMD_SEND_LOCAL_SMALL_DATA, cmd.cmd_type);
+  CuAssertUIntEquals(tc, 1u, cmd.data2);
+  CuAssertUIntEquals(tc, 0x7Au, cmd.data3.data[0]);
+
+  apx_build_command_with_data(&cmd, APX_CMD_SEND_LOCAL_SMALL_DATA, 0x100u, 2u, two_bytes, NULL);
+  CuAssertUIntEquals(tc, 2u, cmd.data2);
+  CuAssertUIntEquals(tc, 0x12u, cmd.data3.data[0]);
+  CuAssertUIntEquals(tc, 0x34u, cmd.data3.data[1]);
+
+  // 2. Set up fixed local/remote file and verify all 3 tiers (Inline 1..8 B, SOA 9..32 B, Heap > 32 B)
+  mock_endpoint_t pub;
+  mock_endpoint_t sub;
+  mock_endpoint_create(&pub, APX_CLIENT_MODE, 4096);
+  mock_endpoint_create(&sub, APX_SERVER_MODE, 4096);
+
+  rmf_file_info_t *info = rmf_file_info_make_fixed("Node.out", 256u, 0x00001000u);
+  CuAssertPtrNotNull(tc, info);
+  apx_file_t *pub_file = apx_file_manager_create_local_file(&pub.file_manager, info);
+  CuAssertPtrNotNull(tc, pub_file);
+  attach_file_handlers(pub_file, &pub);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_publish_local_file(&pub.file_manager, info));
+  rmf_file_info_delete(info);
+  mock_endpoint_deliver_all(&pub, &sub);
+
+  apx_file_t *sub_file = apx_file_manager_find_remote_file_by_name(&sub.file_manager, "Node.out");
+  CuAssertPtrNotNull(tc, sub_file);
+  attach_file_handlers(sub_file, &sub);
+  apx_file_open(sub_file);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_send_open_file_request(&sub.file_manager, 0x00001000u));
+  mock_endpoint_deliver_all(&sub, &pub);
+
+  // Tier 1: Inline Small Data (1..8 bytes) via apx_file_manager_send_local_small_data &
+  // apx_file_manager_write_local_data
+  uint8_t const small_2b[2] = {0xAAu, 0xBBu};
+  uint8_t const small_8b[8] = {1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u};
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_send_local_small_data(&pub.file_manager, 0x00001000u, small_2b, 2u));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_write_local_data(&pub.file_manager, 0x00001004u, small_8b, sizeof(small_8b)));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR,
+    apx_file_manager_send_local_small_data(&pub.file_manager, 0x00001000u, small_8b, 9u));
+
+  // Tier 2: Small Data via SOA (9..32 bytes)
+  uint8_t soa_20b[20];
+  uint8_t soa_32b[32];
+  for (size_t i = 0; i < sizeof(soa_20b); i++)
+  {
+    soa_20b[i] = (uint8_t)(0x10u + i);
+  }
+  for (size_t i = 0; i < sizeof(soa_32b); i++)
+  {
+    soa_32b[i] = (uint8_t)(0x40u + i);
+  }
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_write_local_data(&pub.file_manager, 0x00001010u, soa_20b, sizeof(soa_20b)));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_write_local_data(&pub.file_manager, 0x00001030u, soa_32b, sizeof(soa_32b)));
+
+  // Tier 3: Normal / Large Data via Heap (> 32 bytes)
+  uint8_t large_64b[64];
+  for (size_t i = 0; i < sizeof(large_64b); i++)
+  {
+    large_64b[i] = (uint8_t)(0x80u + i);
+  }
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_write_local_data(&pub.file_manager, 0x00001060u, large_64b, sizeof(large_64b)));
+
+  mock_endpoint_deliver_all(&pub, &sub);
+  CuAssertIntEquals(tc, 5, adt_ary_length(&sub.rx_blocks));
+
+  adt_bytearray_t const *rx0 = (adt_bytearray_t const *)adt_ary_value(&sub.rx_blocks, 0);
+  adt_bytearray_t const *rx1 = (adt_bytearray_t const *)adt_ary_value(&sub.rx_blocks, 1);
+  adt_bytearray_t const *rx2 = (adt_bytearray_t const *)adt_ary_value(&sub.rx_blocks, 2);
+  adt_bytearray_t const *rx3 = (adt_bytearray_t const *)adt_ary_value(&sub.rx_blocks, 3);
+  adt_bytearray_t const *rx4 = (adt_bytearray_t const *)adt_ary_value(&sub.rx_blocks, 4);
+
+  CuAssertUIntEquals(tc, 2u, adt_bytearray_length(rx0));
+  CuAssertIntEquals(tc, 0, memcmp(adt_bytearray_const_data(rx0), small_2b, sizeof(small_2b)));
+  CuAssertUIntEquals(tc, 8u, adt_bytearray_length(rx1));
+  CuAssertIntEquals(tc, 0, memcmp(adt_bytearray_const_data(rx1), small_8b, sizeof(small_8b)));
+  CuAssertUIntEquals(tc, 20u, adt_bytearray_length(rx2));
+  CuAssertIntEquals(tc, 0, memcmp(adt_bytearray_const_data(rx2), soa_20b, sizeof(soa_20b)));
+  CuAssertUIntEquals(tc, 32u, adt_bytearray_length(rx3));
+  CuAssertIntEquals(tc, 0, memcmp(adt_bytearray_const_data(rx3), soa_32b, sizeof(soa_32b)));
+  CuAssertUIntEquals(tc, 64u, adt_bytearray_length(rx4));
+  CuAssertIntEquals(tc, 0, memcmp(adt_bytearray_const_data(rx4), large_64b, sizeof(large_64b)));
+
+  mock_endpoint_destroy(&sub);
+  mock_endpoint_destroy(&pub);
+}
+
+static void test_command_queue_cleanup_on_destroy(CuTest *tc)
+{
+  mock_endpoint_t pub;
+  mock_endpoint_t sub;
+  mock_endpoint_create(&pub, APX_CLIENT_MODE, 4096);
+  mock_endpoint_create(&sub, APX_SERVER_MODE, 4096);
+
+  rmf_file_info_t *info = rmf_file_info_make_fixed("Node.out", 256u, 0x00001000u);
+  apx_file_t *pub_file = apx_file_manager_create_local_file(&pub.file_manager, info);
+  CuAssertPtrNotNull(tc, pub_file);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_publish_local_file(&pub.file_manager, info));
+  rmf_file_info_delete(info);
+  mock_endpoint_deliver_all(&pub, &sub);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_send_open_file_request(&sub.file_manager, 0x00001000u));
+  mock_endpoint_deliver_all(&sub, &pub);
+
+  // Enqueue commands across all 3 tiers WITHOUT running the worker, then destroy -> cleanup_cmd_queue must free all
+  uint8_t const small_buf[4] = {1u, 2u, 3u, 4u};
+  uint8_t const soa_buf[16] = {0};
+  uint8_t const large_buf[64] = {0};
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_write_local_data(&pub.file_manager, 0x00001000u, small_buf, sizeof(small_buf)));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_write_local_data(&pub.file_manager, 0x00001010u, soa_buf, sizeof(soa_buf)));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_file_manager_write_local_data(&pub.file_manager, 0x00001020u, large_buf, sizeof(large_buf)));
+  CuAssertUIntEquals(tc, 3u, apx_file_manager_get_num_pending_worker_commands(&pub.file_manager));
 
   mock_endpoint_destroy(&sub);
   mock_endpoint_destroy(&pub);

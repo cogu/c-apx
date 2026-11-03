@@ -26,7 +26,6 @@ CuSuite *testsuite_crypto(void);
 
 
 /** APX Common **/
-CuSuite *testsuite_apx_allocator(void);
 CuSuite *testsuite_apx_attributes_parser(void);
 CuSuite *testsuite_apx_computation(void);
 CuSuite *testsuite_apx_data_element(void);
@@ -92,7 +91,6 @@ void RunAllTests(void)
 
 // APX Common
 
-  CuSuiteAddSuite(suite, testsuite_apx_allocator());
   CuSuiteAddSuite(suite, testsuite_apx_attributes_parser());
   CuSuiteAddSuite(suite, testsuite_apx_data_element());
   CuSuiteAddSuite(suite, testsuite_apx_signature_parser());

@@ -2189,19 +2189,8 @@ static apx_error_t remote_route_data_to_file(apx_file_t *file, uint32_t offset, 
   }
   if (retval == APX_NO_ERROR)
   {
-    uint8_t *allocated_buffer;
-    uint32_t address = apx_file_get_address_without_flags(file) + offset;
-      // Planned: small data pipeline optimization (see roadmap Item 11)
-    allocated_buffer = (uint8_t *)malloc(size);
-    if (allocated_buffer == NULL)
-    {
-      retval = APX_MEM_ERROR;
-    }
-    else
-    {
-      memcpy(allocated_buffer, data, size);
-      retval = apx_file_manager_send_local_data(file_manager, address, allocated_buffer, size);
-    }
+    uint32_t const address = apx_file_get_address_without_flags(file) + offset;
+    retval = apx_file_manager_write_local_data(file_manager, address, data, size);
   }
   return retval;
 }

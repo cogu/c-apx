@@ -109,18 +109,7 @@ apx_error_t apx_connection_base_create(apx_connection_base_t *self, apx_mode_t m
     self->mode = mode;
     self->connection_type = APX_CONNECTION_TYPE_DEFAULT;
     self->rmf_version_id = RMF_PROTOCOL_VERSION_ID_1_1;
-    rc = apx_allocator_create(&self->allocator, APX_MAX_NUM_MESSAGES);
-    if (rc != APX_NO_ERROR)
-    {
-      return rc;
-    }
-    rc = apx_file_manager_create(&self->file_manager, mode, &self->connection_interface, &self->allocator);
-    if (rc != APX_NO_ERROR)
-    {
-      apx_allocator_destroy(&self->allocator);
-      return rc;
-    }
-    apx_allocator_start(&self->allocator);
+    rc = apx_file_manager_create(&self->file_manager, mode, &self->connection_interface);
     return rc;
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -131,8 +120,6 @@ void apx_connection_base_destroy(apx_connection_base_t *self)
   if (self != NULL)
   {
     apx_file_manager_destroy(&self->file_manager);
-    apx_allocator_stop(&self->allocator);
-    apx_allocator_destroy(&self->allocator);
   }
 }
 

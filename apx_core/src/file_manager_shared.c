@@ -38,14 +38,13 @@ static void set_connection(apx_file_manager_shared_t *self, apx_connection_inter
 //////////////////////////////////////////////////////////////////////////////
 
 void apx_file_manager_shared_create(
-  apx_file_manager_shared_t *self, apx_connection_interface_t const *parent_connection, apx_allocator_t *allocator)
+  apx_file_manager_shared_t *self, apx_connection_interface_t const *parent_connection)
 {
   if (self != NULL)
   {
     set_connection(self, parent_connection);
     self->connection_id = APX_INVALID_CONNECTION_ID;
     self->is_connected = false;
-    self->allocator = allocator;
     apx_file_map_create(&self->local_file_map, false);
     apx_file_map_create(&self->remote_file_map, true);
     MUTEX_INIT(self->lock);
@@ -302,15 +301,6 @@ apx_connection_interface_t const *apx_file_manager_shared_connection(apx_file_ma
   if (self != NULL)
   {
     return &self->parent_connection;
-  }
-  return NULL;
-}
-
-apx_allocator_t *apx_file_manager_shared_allocator(apx_file_manager_shared_t const *self)
-{
-  if (self != NULL)
-  {
-    return self->allocator;
   }
   return NULL;
 }

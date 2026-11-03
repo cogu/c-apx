@@ -42,12 +42,15 @@ void apx_build_command_with_ptr(
 void apx_build_command_with_data(
   apx_command_t *self, apx_cmd_type_t cmd_type, uint32_t d1, uint32_t d2, uint8_t const *d3, void *d4)
 {
-  if (self != NULL)
+  if ((self != NULL) && (d2 <= APX_SMALL_DATA_SIZE))
   {
     self->cmd_type = cmd_type;
     self->data1 = d1;
     self->data2 = d2;
-    memcpy(&self->data3.data[0], d3, APX_SMALL_DATA_SIZE);
+    if ((d3 != NULL) && (d2 > 0u))
+    {
+      memcpy(&self->data3.data[0], d3, (size_t)d2);
+    }
     self->data4 = d4;
   }
 }

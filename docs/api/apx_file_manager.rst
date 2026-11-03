@@ -43,3 +43,6 @@ File Operations
 .. doxygenfunction:: apx_file_manager_find_local_file_by_name
 .. doxygenfunction:: apx_file_manager_find_remote_file_by_name
 .. doxygenfunction:: apx_file_manager_send_local_const_data
+.. doxygenfunction:: apx_file_manager_send_local_small_data
+.. doxygenfunction:: apx_file_manager_write_local_data
+.. doxygenfunction:: apx_file_manager_send_local_data
