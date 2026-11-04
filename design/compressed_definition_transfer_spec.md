@@ -2,8 +2,9 @@
 
 * **Status**: Proposed; no compressed-transfer implementation is implied.
 * **Backlog**: [Item 16](../Backlog.md#16-compressed-transfer-of-apx-node-definitions-signed-and-unsigned).
+* **Depends on**: [Item 20: Compression Backend and CMake Integration](../Backlog.md#20-compression-backend-and-cmake-integration).
 * **Affected Components**: RemoteFile publication and reception, server node loading, dynamic clients, and future py-apx/APX-ES integration.
-* **Protocol**: [RemoteFile v1.1 compressed definition transfer](../../apx/specifications/protocols/remotefile1_1.md#compressed-definition-transfer-unreleased).
+* **Protocol**: [RemoteFile v1.1 compressed definition transfer](../../apx/specifications/protocols/remotefile1_1.md#compressed-definition-transfer).
 
 ## 1. Motivation and Scope
 
@@ -24,7 +25,7 @@ This proposal does not implement the APX-ES runtime rewrite, modify py-apx, comp
 | Generated representation | Explicit generation-time choice: uncompressed text or compressed binary data |
 | Legacy compatibility | Uncompressed unsigned generation retains RMFP 1.0 file publication |
 | Runtime fallback | Not required; no probing, timeout-based downgrade, or dual representation in generated firmware |
-| C codec library | Deferred; the protocol does not mandate zlib or miniz |
+| C codec backend | Build-time zlib/miniz selection provided by item 20; the protocol is backend-independent |
 | Cache dependency | None; optional integration uses the uncompressed definition |
 
 "Uncompressed" describes plain APX text. It must not be confused with *raw DEFLATE*, which is a compressed stream without the zlib wrapper.
@@ -146,13 +147,15 @@ Compression works with caching disabled or absent. If item 14 is implemented:
 
 Review receiver, file-manager, node-loading, monitoring, and definition-inspection surfaces together. Preserve encoded transfer sizes where they describe RemoteFile address space, and distinguish decoded sizes where they describe the logical definition. Do not expand observer wire formats or add compression statistics unless needed to preserve existing behavior.
 
-## 7. C Library Evaluation (Deferred)
+## 7. Compression Backend Dependency (Item 20)
 
-Linux production builds with GCC and Clang drive the evaluation. Existing Windows/MSVC support is not removed by this proposal, but a presumed need for a single-file Windows dependency is not a reason to prescribe miniz.
+[Item 20](../Backlog.md#20-compression-backend-and-cmake-integration) owns the internal C codec API, backend implementation, dependency acquisition, CMake configuration, and codec-level tests. It supports both compression for dynamic C clients and bounded decompression for receivers, selecting exactly one backend at build time.
 
-Compare supported zlib and miniz versions for strict format handling, bounded decoding, error reporting, memory use, performance, maintenance/security updates, build integration, and license obligations. Both have permissive licenses; zlib's license is not an inherent obstacle to proprietary or commercial use. Authoritative licenses: [zlib](https://www.zlib.net/zlib_license.html) and [miniz](https://github.com/richgel999/miniz/blob/master/LICENSE).
+The agreed defaults are zlib on Linux and miniz on Windows, with explicit CMake overrides. zlib uses package discovery; miniz may use an installed package or a pinned FetchContent archive, with offline/local-source support. No new Git submodule, mandatory vcpkg setup, runtime backend selector, or general-purpose compression framework is required. Detailed build requirements and acceptance criteria belong to item 20.
 
-Select one implementation during implementation planning. This proposal does not require multiple backends, a runtime library selector, or a new abstraction layer. Embedded nodes that only serve precompressed data need neither library.
+Item 16 consumes that API without including vendor headers or scattering backend conditionals through the RemoteFile code. Dynamic clients retain their original logical definition and prepare a separate compressed transfer representation once before publication, rather than compressing individual fragments. Generated APX-ES nodes that only serve precompressed data need neither runtime library; py-apx and other-language clients use their own compatible codecs.
+
+Both C libraries have permissive licenses. Authoritative licenses: [zlib](https://www.zlib.net/zlib_license.html) and [miniz](https://github.com/richgel999/miniz/blob/master/LICENSE).
 
 ## 8. Performance Evidence and Goals
 
@@ -175,6 +178,7 @@ Benchmark definition payload bytes, publication/framing overhead, constrained-li
 * Exercise all four signed/unsigned and compressed/uncompressed combinations, with signed-node policy enabled and disabled; preserve existing uncompressed behavior.
 * Verify generated binary-array lengths, embedded zero bytes, exact reconstructed definition bytes, and unchanged generated signal serialization. Test the unsigned uncompressed generation path against v0.2.8, including its legacy greeting and publication.
 * Publish valid compressed definitions with caching disabled. Check node/port metadata, initial values, and routed signals against the equivalent uncompressed case.
+* Run transfer integration tests with each backend supplied by item 20; codec/build infrastructure tests remain owned by item 20.
 * Add small public test definitions and interoperability vectors. Verify Python-produced zlib streams using the selected C decoder and C-produced streams using Python; include another runtime such as Node.js where available. Do not require byte-identical compressor output.
 * Fragment payloads at arbitrary transport boundaries, including inside zlib headers/trailers. Test reopen, revoke, timeout, and disconnect during reception/decompression, with no leaks or stale state.
 * Reject unknown encodings, raw DEFLATE/gzip mislabeled as zlib, preset dictionaries, corrupt checksums, truncation, trailing/concatenated data, invalid lengths, address overflow, resource-limit violations, and output exceeding the advertised bound.

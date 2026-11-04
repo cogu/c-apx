@@ -315,18 +315,20 @@ Prevent misspelled or unrecognized JSON configuration keys from being silently i
 
 **Status:** Proposed. Reduce definition-transfer bytes and startup latency, including across bandwidth-constrained embedded links, without coupling compression to authentication or a particular implementation library.
 
-Detailed requirements, protocol rationale, compatibility rules, and acceptance tests are in the [compressed definition transfer design proposal](design/compressed_definition_transfer_spec.md). Wire layouts are specified in [RemoteFile v1.1](../apx/specifications/protocols/remotefile1_1.md#compressed-definition-transfer-unreleased).
+**Depends on:** [Item 20: Compression Backend and CMake Integration](#20-compression-backend-and-cmake-integration).
+
+Detailed requirements, protocol rationale, compatibility rules, and acceptance tests are in the [compressed definition transfer design proposal](design/compressed_definition_transfer_spec.md). Wire layouts are specified in [RemoteFile v1.1](../apx/specifications/protocols/remotefile1_1.md#compressed-definition-transfer).
 
 * Support unsigned and signed definitions using zlib-wrapped DEFLATE (RFC 1950 / RFC 1951). Preserve every RMFP 1.0 opcode and the legacy unsigned/uncompressed publication at ID 3.
 * Clean up the RemoteFile implementation layer to match the revised RMFP 1.1 allocation: keep header acceptance at 20, group signed/compressed publication at 21-23, and move stream control to 24-27. Remove obsolete `RMF_CMD_CONNECTION_CREATE`, `RMF_CMD_CONNECTION_REVOKE`, `RMF_CMD_PUBLISH_REMOTE_FILE_MSG`, and `RMF_CMD_PUBLISH_SIGNED_REMOTE_FILE_MSG` definitions and unused helpers/tests. Align encoders/decoders, dispatch, and wire-format fixtures; retain independent application event IDs unchanged.
 * Enable py-apx to select uncompressed text or a precompressed binary array at code-generation time. The user selects a representation compatible with the target server; compressed-only embedded clients need no runtime codec or automatic fallback. Uncompressed, unsigned generation retains RMFP 1.0 publication for v0.2.8 servers.
 * Support runtime compression in dynamic clients and interoperable implementations in other languages, using standard runtime APIs where available.
 * Bound and validate decompression before parsing; verify signatures and optional digests over the exact uncompressed definition bytes. With item 14's optional cache, either unsigned publication may skip transfer on an advertised SHA-256 cache hit; either signed publication must transfer and verify before reusing compiled content. Compression itself does not require caching.
-* Defer the C codec library choice. Linux production requirements drive evaluation; the wire format must not depend on zlib, miniz, or any other particular library.
+* Use item 20's internal compression/decompression API without library-specific calls in the RemoteFile layer. Dynamic C clients compress definitions before publication; receivers use bounded decompression. The wire format remains independent of the selected backend.
 
 **Acceptance criteria:** Tests cover opcode cleanup and renumbering with unique RMFP 1.1 IDs and unchanged RMFP 1.0 IDs, signed/unsigned and compressed/uncompressed operation, legacy generation, cache transfer-bypass rules when caching is available, cross-implementation round trips, fragmented transfers, malformed input, resource limits, cleanup, and unchanged signature policy. Benchmark payload bytes and end-to-end startup separately; do not promise a universal compression ratio or decompression time.
 
-**Out of scope:** Automatic legacy fallback/capability negotiation, a complete APX-ES runtime rewrite, signal-data compression, and implementation of the node-definition cache.
+**Out of scope:** Backend implementation and CMake dependency setup (item 20), automatic legacy fallback/capability negotiation, a complete APX-ES runtime rewrite, signal-data compression, and implementation of the node-definition cache.
 
 ## 17. Retire Unused `"max-num-events"` Configuration & `APX_MAX_NUM_EVENTS`
 
@@ -396,6 +398,21 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
   * Unit tests in `testsuite_server.c` / `testsuite_connection_manager.c` verifying that connections that do not send a greeting header within the configured timeout are evicted and their slots reclaimed.
   * Unit tests in `testsuite_server_cfg.c` for parsing `"handshake-timeout-ms"` and invalid-value warnings.
   * Integration tests in `tests/test_server_lifecycle.py` simulating silent/unresponsive clients and verifying that legitimate clients can connect after timeouts expire.
+
+## 20. Compression Backend and CMake Integration
+
+**Status:** Proposed. Provide the codec and build infrastructure required by [item 16](#16-compressed-transfer-of-apx-node-definitions-signed-and-unsigned), independently of RemoteFile, signing, or caching.
+
+* **Internal API:** Support both compression and bounded decompression of one zlib-wrapped DEFLATE stream (RFC 1950 / RFC 1951), without preset dictionaries. Dynamic C clients need compression; servers receiving definitions need decompression. Define explicit buffer ownership, output sizes, and repository-standard error reporting. Keep library-specific includes, calls, and preprocessor selection inside the compression module.
+* **Backend Selection:** Add one CMake cache string, `APX_COMPRESSION_BACKEND`, accepting `zlib` or `miniz`. Default to zlib for Linux targets and miniz for Windows targets, with explicit overrides on either platform. Compile and link exactly one backend; reject invalid selections or unavailable dependencies rather than silently switching libraries. Keep backend compile definitions target-private.
+* **Dependency Acquisition:** Use `find_package(ZLIB REQUIRED)` and `ZLIB::ZLIB` for zlib. Prefer an installed miniz CMake package; otherwise use `FetchContent` with a pinned upstream `richgel999/miniz` release archive and verified SHA-256. Build with the selected toolchain and disable unrelated dependency examples/tests. Do not introduce a Git submodule or require vcpkg.
+* **Offline and Reproducible Builds:** Support installed packages and CMake's `FETCHCONTENT_SOURCE_DIR_MINIZ` override without network access. Document how to disable automatic fetching and fail clearly when dependencies are unavailable. Keep downloads in the build tree and report the selected backend/version during configuration.
+* **Consistent Codec Behavior:** Enforce output limits during decompression, exact input consumption, complete stream termination, valid zlib headers/checksums, and rejection of preset dictionaries, trailing/concatenated data, raw DEFLATE, and gzip. Handle allocation failures and malformed input explicitly, release all resources, and support concurrent independent calls without shared mutable codec state.
+* **Documentation and Tests:** Document backend selection, platform defaults, dependency/version/license handling, and offline setup. Exercise the same codec tests under both backends, including binary data with embedded zero bytes, empty input, insufficient output space, malformed/truncated streams, allocation/error cleanup, cross-backend interoperability, and Python zlib interoperability. Add focused build/test configurations covering both choices and run the existing ASan/UBSan and mandatory TSan checks for the implementation.
+
+**Acceptance criteria:** Linux can build and pass the codec tests with either backend; Windows defaults to miniz and supports explicit selection of zlib when supplied. Available local dependencies require no download. Both backends produce interoperable streams and equivalent validation/error behavior, without requiring identical compressed bytes.
+
+**Out of scope:** RemoteFile publication and opcode changes, transfer/signature/cache integration (item 16), runtime backend switching, a general-purpose compression framework, and changes to py-apx or APX-ES. Precompressed APX-ES nodes need no runtime codec; other-language clients use their own compatible implementations.
 
 ---
 
