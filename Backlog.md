@@ -389,6 +389,13 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
     * Forcibly close the transport socket (`apx_connection_base_close(&conn->base)`).
     * Detach the connection and move it to `inactive_connections` for cleanup, immediately freeing the connection slot for legitimate nodes.
 
+* **Safe Connection Teardown & Event Synchronization (`connection_manager.c`):**
+  * In `apx_connection_manager_cleanup_task_main()`, flush pending server events via `apx_server_flush_events(server)`
+    prior to invoking `apx_connection_base_delete(&serverConnection->base)`.
+  * Guarantees that any in-flight events referencing the connection (e.g. `APX_EVENT_PROTOCOL_HEADER_ACCEPTED` or
+    `APX_EVENT_REMOTE_FILE_PUBLISHED`) are fully processed by the event loop thread before the connection memory and
+    its internal mutexes are destroyed, preventing data races during rapid client disconnects.
+
 * **Server JSON Configuration (`server.json` / `server_cfg.c`):**
   * Support `"handshake-timeout-ms"` (with alias `"handshake_timeout_ms"`, default: `3000` ms; `0` to disable) under the `"apx-server"` section of `server.json`.
   * Validate that the value is a positive integer (or `0`); emit a warning on invalid input and default to `3000`.
