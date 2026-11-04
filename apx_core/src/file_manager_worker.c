@@ -46,8 +46,6 @@ static apx_error_t run_send_local_data(apx_file_manager_worker_t *self, uint32_t
 static apx_error_t run_open_remote_file(apx_file_manager_worker_t *self, uint32_t address);
 static apx_error_t run_close_remote_file(apx_file_manager_worker_t *self, uint32_t address);
 static apx_error_t run_send_header_accepted(apx_file_manager_worker_t *self, uint32_t connection_id);
-static apx_error_t run_send_create_connection(
-  apx_file_manager_worker_t *self, uint32_t connection_id, apx_connection_state_t connection_state, char const *tag);
 static apx_error_t run_send_stream_open(apx_file_manager_worker_t *self, rmf_stream_open_cmd_t const *cmd);
 static apx_error_t run_send_stream_open_rsp(apx_file_manager_worker_t *self, rmf_stream_open_rsp_cmd_t const *cmd);
 static apx_error_t run_send_stream_window_update(
@@ -423,34 +421,6 @@ apx_error_t apx_file_manager_worker_prepare_revoke_local_file(apx_file_manager_w
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_file_manager_worker_prepare_send_connection_create(apx_file_manager_worker_t *self,
-  apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const *tag)
-{
-  if (self != NULL)
-  {
-    adt_buf_err_t rc;
-    apx_command_t cmd = {APX_CMD_CREATE_CONNECTION, 0, 0, {0}, 0};
-    cmd.data1 = connection_id;
-    cmd.data2 = connection_state;
-    if (tag != NULL)
-    {
-      cmd.data3.ptr = STRDUP(tag);
-      if (cmd.data3.ptr == NULL)
-      {
-        return APX_MEM_ERROR;
-      }
-    }
-    SPINLOCK_ENTER(self->queue_lock);
-    rc = adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
-    SPINLOCK_LEAVE(self->queue_lock);
-#ifndef UNIT_TEST
-    SEMAPHORE_POST(self->semaphore);
-#endif
-    return apx_file_manager_worker_process_ringbuffer_error(rc);
-  }
-  return APX_INVALID_ARGUMENT_ERROR;
-}
-
 apx_error_t apx_file_manager_worker_prepare_send_stream_open(
   apx_file_manager_worker_t *self, rmf_stream_open_cmd_t const *cmd_in)
 {
@@ -577,8 +547,7 @@ static void cleanup_cmd_queue(apx_file_manager_worker_t *self)
         soa_free(&self->soa, cmd.data3.ptr, (size_t)cmd.data2);
       }
     }
-    else if (cmd.cmd_type == APX_CMD_SEND_LOCAL_DATA || cmd.cmd_type == APX_CMD_CREATE_CONNECTION ||
-      cmd.cmd_type == APX_CMD_SEND_ERROR_CODE)
+    else if (cmd.cmd_type == APX_CMD_SEND_LOCAL_DATA || cmd.cmd_type == APX_CMD_SEND_ERROR_CODE)
     {
       free(cmd.data3.ptr);
     }
@@ -629,14 +598,6 @@ static bool process_single_command(apx_file_manager_worker_t *self, apx_command_
     break;
   case APX_CMD_SEND_HEADER_ACCEPTED:
     result = run_send_header_accepted(self, cmd->data1);
-    break;
-  case APX_CMD_CREATE_CONNECTION:
-    result =
-      run_send_create_connection(self, cmd->data1, (apx_connection_state_t)cmd->data2, (char const *)cmd->data3.ptr);
-    if (cmd->data3.ptr != NULL)
-    {
-      free(cmd->data3.ptr);
-    }
     break;
   case APX_CMD_SEND_STREAM_OPEN: {
     rmf_stream_open_cmd_t stream_open_cmd;
@@ -907,34 +868,6 @@ static apx_error_t run_send_header_accepted(apx_file_manager_worker_t *self, uin
   uint8_t buffer[RMF_CMD_TYPE_SIZE + UINT32_SIZE];
   apx_size_t const encoded_size = rmf_encode_header_accepted(buffer, (apx_size_t)sizeof(buffer), connection_id);
   apx_error_t retval = APX_NO_ERROR;
-  if (encoded_size == 0u)
-  {
-    retval = APX_BUFFER_BOUNDARY_ERROR;
-  }
-  else
-  {
-    apx_connection_interface_t const *connection = apx_file_manager_shared_connection(self->shared);
-    if (connection != NULL)
-    {
-      int32_t bytes_available = 0;
-      retval = connection->transmit_data_message(
-        connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
-    }
-    else
-    {
-      retval = APX_NOT_CONNECTED_ERROR;
-    }
-  }
-  return retval;
-}
-
-static apx_error_t run_send_create_connection(
-  apx_file_manager_worker_t *self, uint32_t connection_id, apx_connection_state_t connection_state, char const *tag)
-{
-  apx_error_t retval = APX_NO_ERROR;
-  uint8_t buffer[RMF_CMD_TYPE_SIZE + UINT32_SIZE + UINT8_SIZE + APX_MAX_TAG_STR_SIZE + 1];
-  apx_size_t const encoded_size =
-    rmf_encode_connection_create(buffer, (apx_size_t)sizeof(buffer), connection_id, (uint8_t)connection_state, tag);
   if (encoded_size == 0u)
   {
     retval = APX_BUFFER_BOUNDARY_ERROR;

@@ -531,16 +531,6 @@ apx_error_t apx_file_manager_send_error_code(apx_file_manager_t *self, apx_error
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-apx_error_t apx_file_manager_send_connection_create(
-  apx_file_manager_t *self, apx_connection_id_t connection_id, apx_connection_state_t connection_state, char const *tag)
-{
-  if (self != NULL)
-  {
-    return apx_file_manager_worker_prepare_send_connection_create(&self->worker, connection_id, connection_state, tag);
-  }
-  return APX_INVALID_ARGUMENT_ERROR;
-}
-
 uint16_t apx_file_manager_get_num_pending_worker_commands(apx_file_manager_t *self)
 {
   if (self != NULL)

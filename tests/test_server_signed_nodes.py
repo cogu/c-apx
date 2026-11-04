@@ -212,7 +212,7 @@ def test_server_signed_node_full_handshake(tmp_path: Path, apx_server_bin: str):
         # Publish signed file command:
         # 4-byte cmd area addr: 0x80000000 | 0x3FFFFC00 = 0xBFFFFC00
         cmd_addr = (0x80000000 | 0x3FFFFC00).to_bytes(4, "big")
-        cmd_opcode = (23).to_bytes(4, "little")  # RMF_CMD_PUBLISH_SIGNED_FILE_MSG
+        cmd_opcode = (21).to_bytes(4, "little")  # RMF_CMD_PUBLISH_SIGNED_FILE_MSG
         file_addr = (0x04000000).to_bytes(4, "little")
         file_size = len(apx_def).to_bytes(4, "little")
         file_type = (0).to_bytes(2, "little")

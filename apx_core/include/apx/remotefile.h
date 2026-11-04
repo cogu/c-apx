@@ -86,15 +86,12 @@ typedef uint8_t rmf_signature_type_t;
 // RMFP 1.1 commands
 #define RMF_CMD_NACK_MSG ((uint32_t)1u)
 #define RMF_CMD_ACCEPT_HEADER ((uint32_t)20u)
-#define RMF_CMD_CONNECTION_CREATE ((uint32_t)21u)
-#define RMF_CMD_CONNECTION_REVOKE ((uint32_t)22u)
-#define RMF_CMD_PUBLISH_SIGNED_FILE_MSG ((uint32_t)23u)
-#define RMF_CMD_PUBLISH_REMOTE_FILE_MSG ((uint32_t)24u)
-#define RMF_CMD_PUBLISH_SIGNED_REMOTE_FILE_MSG ((uint32_t)25u)
-#define RMF_CMD_STREAM_OPEN_MSG ((uint32_t)25u)
-#define RMF_CMD_STREAM_OPEN_RSP_MSG ((uint32_t)26u)
-#define RMF_CMD_STREAM_WINDOW_UPDATE_MSG ((uint32_t)27u)
-#define RMF_CMD_STREAM_ABORT_MSG ((uint32_t)28u)
+#define RMF_CMD_PUBLISH_SIGNED_FILE_MSG ((uint32_t)21u)
+// IDs 22-23 reserved for publish commands (RMF_CMD_PUBLISH_COMPRESSED_FILE, RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE)
+#define RMF_CMD_STREAM_OPEN_MSG ((uint32_t)24u)
+#define RMF_CMD_STREAM_OPEN_RSP_MSG ((uint32_t)25u)
+#define RMF_CMD_STREAM_WINDOW_UPDATE_MSG ((uint32_t)26u)
+#define RMF_CMD_STREAM_ABORT_MSG ((uint32_t)27u)
 
 #define RMF_FILE_OPEN_CMD_SIZE UINT32_SIZE
 #define RMF_FILE_CLOSE_CMD_SIZE UINT32_SIZE
@@ -179,10 +176,6 @@ apx_size_t rmf_decode_cmd_type(uint8_t const *begin, uint8_t const *end, uint32_
 apx_size_t rmf_decode_nack_cmd(uint8_t const *begin, uint8_t const *end, uint32_t *error_code, char const **name);
 apx_size_t rmf_encode_header_accepted(uint8_t *buf, apx_size_t buf_size, uint32_t connection_id);
 apx_size_t rmf_decode_header_accepted(uint8_t const *begin, uint8_t const *end, uint32_t *connection_id);
-apx_size_t rmf_encode_connection_create(
-  uint8_t *buf, apx_size_t buf_size, uint32_t connection_id, uint8_t connection_state, char const *tag);
-apx_size_t rmf_decode_connection_create(
-  uint8_t const *begin, uint8_t const *end, uint32_t *connection_id, uint8_t *connection_state, char **tag);
 apx_size_t rmf_encode_publish_file_cmd(uint8_t *buf, apx_size_t buf_size, struct rmf_file_info_tag const *file);
 apx_size_t rmf_decode_publish_file_cmd(uint8_t const *buf, apx_size_t buf_size, struct rmf_file_info_tag *file_info);
 apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t *buf, apx_size_t buf_size, struct rmf_file_info_tag const *file);

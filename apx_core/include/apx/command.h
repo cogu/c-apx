@@ -34,7 +34,6 @@ typedef uint8_t apx_cmd_type_t;
 #define APX_CMD_SEND_LOCAL_SOA_DATA ((apx_cmd_type_t)9u)
 #define APX_CMD_SEND_LOCAL_DATA ((apx_cmd_type_t)10u)
 #define APX_CMD_SEND_HEADER_ACCEPTED ((apx_cmd_type_t)11u)
-#define APX_CMD_CREATE_CONNECTION ((apx_cmd_type_t)12u)
 #define APX_CMD_SEND_STREAM_OPEN ((apx_cmd_type_t)13u)
 #define APX_CMD_SEND_STREAM_OPEN_RSP ((apx_cmd_type_t)14u)
 #define APX_CMD_SEND_STREAM_WINDOW_UPDATE ((apx_cmd_type_t)15u)
@@ -85,11 +84,6 @@ typedef uint8_t apx_cmd_type_t;
  *
  * APX_CMD_SEND_HEADER_ACCEPTED:
  *   - data1: Connection ID (uint32_t)
- *
- * APX_CMD_CREATE_CONNECTION:
- *   - data1: Connection ID (apx_connection_id_t)
- *   - data2: Connection state (apx_connection_state_t)
- *   - data3.ptr: Optional connection tag (char *, strong reference: allocated via STRDUP, freed with free)
  *
  * APX_CMD_SEND_STREAM_OPEN:
  *   - data1: Stream start address (uint32_t)

@@ -74,8 +74,6 @@ apx_error_t apx_file_manager_abort_stream(apx_file_manager_t *self, uint32_t add
 apx_error_t apx_file_manager_consume_stream_blocks(apx_file_manager_t *self, uint32_t address, uint32_t count);
 apx_error_t apx_file_manager_send_error_code(apx_file_manager_t *self, apx_error_t error_code, char const *name);
 uint16_t apx_file_manager_get_num_pending_worker_commands(apx_file_manager_t *self);
-apx_error_t apx_file_manager_send_connection_create(apx_file_manager_t *self, apx_connection_id_t connection_id,
-  apx_connection_state_t connection_state, char const *tag);
 #ifdef UNIT_TEST
 bool apx_file_manager_run(apx_file_manager_t *self);
 #endif
