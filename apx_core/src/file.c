@@ -397,6 +397,33 @@ bool apx_file_is_signed(const apx_file_t *self)
   return false;
 }
 
+bool apx_file_is_compressed(const apx_file_t *self)
+{
+  if (self != NULL)
+  {
+    return rmf_file_info_is_compressed(&self->file_info);
+  }
+  return false;
+}
+
+uint32_t apx_file_get_uncompressed_size(const apx_file_t *self)
+{
+  if (self != NULL)
+  {
+    return rmf_file_info_uncompressed_size(&self->file_info);
+  }
+  return 0u;
+}
+
+rmf_compression_type_t apx_file_get_compression_type(const apx_file_t *self)
+{
+  if (self != NULL)
+  {
+    return rmf_file_info_compression_type(&self->file_info);
+  }
+  return RMF_COMPRESSION_TYPE_NONE;
+}
+
 rmf_file_info_t *apx_file_clone_file_info(const apx_file_t *self)
 {
   if (self != NULL)

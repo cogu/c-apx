@@ -45,6 +45,16 @@ void apx_file_manager_shared_create(
     set_connection(self, parent_connection);
     self->connection_id = APX_INVALID_CONNECTION_ID;
     self->is_connected = false;
+    self->remote_file_version_id = RMF_PROTOCOL_VERSION_ID_1_0;
+    self->connection_type = APX_CONNECTION_TYPE_DEFAULT;
+    if ((parent_connection != NULL) && (parent_connection->get_remotefile_protocol_version_id != NULL))
+    {
+      self->remote_file_version_id = parent_connection->get_remotefile_protocol_version_id(parent_connection->arg);
+    }
+    if ((parent_connection != NULL) && (parent_connection->get_connection_type != NULL))
+    {
+      self->connection_type = parent_connection->get_connection_type(parent_connection->arg);
+    }
     apx_file_map_create(&self->local_file_map, false);
     apx_file_map_create(&self->remote_file_map, true);
     MUTEX_INIT(self->lock);

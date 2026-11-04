@@ -78,6 +78,36 @@ rmf_file_info_t *rmf_file_info_make_fixed_with_signature(
   return self;
 }
 
+rmf_file_info_t *rmf_file_info_make_compressed(char const *name, uint32_t compressed_size, uint32_t uncompressed_size,
+  uint32_t address, rmf_digest_type_t digest_type, uint8_t const *digest_data)
+{
+  rmf_file_info_t *self =
+    rmf_file_info_new(address, compressed_size, name, RMF_FILE_TYPE_FIXED, digest_type, digest_data);
+  if (self != NULL)
+  {
+    rmf_file_info_set_compression(self, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, uncompressed_size);
+  }
+  return self;
+}
+
+rmf_file_info_t *rmf_file_info_make_signed_compressed(char const *name, uint32_t compressed_size,
+  uint32_t uncompressed_size, uint32_t address, rmf_signature_type_t signature_type, uint8_t const *signature_data)
+{
+  rmf_file_info_t *self =
+    rmf_file_info_new(address, compressed_size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+  if (self != NULL)
+  {
+    apx_error_t rc = rmf_file_info_set_signature(self, signature_type, signature_data);
+    if (rc != APX_NO_ERROR)
+    {
+      rmf_file_info_delete(self);
+      return NULL;
+    }
+    rmf_file_info_set_compression(self, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, uncompressed_size);
+  }
+  return self;
+}
+
 apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32_t size, const char *name,
   rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t *digest_data)
 {
@@ -86,10 +116,12 @@ apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32
     adt_error_t result;
     self->address = address;
     self->size = size;
+    self->uncompressed_size = 0u;
     self->rmf_file_type = file_type;
     self->digest_type = digest_type;
     self->signature_type = RMF_SIGNATURE_TYPE_NONE;
     memset(&self->signature_data[0], 0, sizeof(self->signature_data));
+    self->compression_type = RMF_COMPRESSION_TYPE_NONE;
     adt_str_create(&self->name);
     if (name != NULL)
     {
@@ -111,10 +143,12 @@ apx_error_t rmf_file_info_create_copy(rmf_file_info_t *self, rmf_file_info_t con
     adt_error_t result;
     self->address = other->address;
     self->size = other->size;
+    self->uncompressed_size = other->uncompressed_size;
     self->rmf_file_type = other->rmf_file_type;
     self->digest_type = other->digest_type;
     self->signature_type = other->signature_type;
     memcpy(&self->signature_data[0], &other->signature_data[0], sizeof(self->signature_data));
+    self->compression_type = other->compression_type;
     adt_str_create(&self->name);
     result = adt_str_set(&self->name, &other->name);
     if (result != ADT_NO_ERROR)
@@ -242,6 +276,43 @@ bool rmf_file_info_is_signed(rmf_file_info_t const *self)
   return false;
 }
 
+bool rmf_file_info_is_compressed(rmf_file_info_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->compression_type != RMF_COMPRESSION_TYPE_NONE;
+  }
+  return false;
+}
+
+uint32_t rmf_file_info_uncompressed_size(rmf_file_info_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->uncompressed_size;
+  }
+  return 0u;
+}
+
+rmf_compression_type_t rmf_file_info_compression_type(rmf_file_info_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->compression_type;
+  }
+  return RMF_COMPRESSION_TYPE_NONE;
+}
+
+void rmf_file_info_set_compression(
+  rmf_file_info_t *self, rmf_compression_type_t compression_type, uint32_t uncompressed_size)
+{
+  if (self != NULL)
+  {
+    self->compression_type = compression_type;
+    self->uncompressed_size = uncompressed_size;
+  }
+}
+
 apx_error_t rmf_file_info_assign(rmf_file_info_t *self, const rmf_file_info_t *other)
 {
   if ((self != NULL) && (other != NULL))
@@ -249,10 +320,12 @@ apx_error_t rmf_file_info_assign(rmf_file_info_t *self, const rmf_file_info_t *o
     adt_error_t result;
     self->address = other->address;
     self->size = other->size;
+    self->uncompressed_size = other->uncompressed_size;
     self->rmf_file_type = other->rmf_file_type;
     self->digest_type = other->digest_type;
     self->signature_type = other->signature_type;
     memcpy(&self->signature_data[0], &other->signature_data[0], sizeof(self->signature_data));
+    self->compression_type = other->compression_type;
     result = adt_str_set(&self->name, &other->name);
     if (result != ADT_NO_ERROR)
     {

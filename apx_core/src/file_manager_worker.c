@@ -696,9 +696,42 @@ static apx_error_t run_send_error_code(apx_file_manager_worker_t *self, uint32_t
 
 static apx_error_t run_publish_local_file(apx_file_manager_worker_t *self, rmf_file_info_t *file_info)
 {
-  uint8_t buffer[RMF_SIGNED_FILE_INFO_HEADER_SIZE + RMF_FILE_NAME_MAX_SIZE + 1]; // add 1 byte for null-terminator
-  apx_size_t encoded_size;
-  if (rmf_file_info_is_signed(file_info))
+  uint8_t buffer[RMF_CMD_AREA_SIZE];
+  apx_size_t encoded_size = 0u;
+  if (rmf_file_info_is_compressed(file_info))
+  {
+    if (rmf_file_info_is_signed(file_info))
+    {
+      rmf_publish_signed_compressed_file_cmd_t cmd = {
+        .start_address = rmf_file_info_address_without_flags(file_info),
+        .uncompressed_size = rmf_file_info_uncompressed_size(file_info),
+        .compressed_size = rmf_file_info_size(file_info),
+        .file_type = rmf_file_info_rmf_file_type(file_info),
+        .compression_type = rmf_file_info_compression_type(file_info),
+        .signature_type = rmf_file_info_signature_type(file_info),
+        .reserved = 0u,
+        .name = rmf_file_info_name(file_info),
+      };
+      memcpy(cmd.signature_data, rmf_file_info_signature_data(file_info), RMF_SIGNATURE_SIZE_ECDSA_P256);
+      encoded_size = rmf_encode_publish_signed_compressed_file_cmd(buffer, (apx_size_t)sizeof(buffer), &cmd);
+    }
+    else
+    {
+      rmf_publish_compressed_file_cmd_t cmd = {
+        .start_address = rmf_file_info_address_without_flags(file_info),
+        .uncompressed_size = rmf_file_info_uncompressed_size(file_info),
+        .compressed_size = rmf_file_info_size(file_info),
+        .file_type = rmf_file_info_rmf_file_type(file_info),
+        .compression_type = rmf_file_info_compression_type(file_info),
+        .digest_type = rmf_file_info_digest_type(file_info),
+        .reserved = 0u,
+        .name = rmf_file_info_name(file_info),
+      };
+      memcpy(cmd.digest_data, rmf_file_info_digest_data(file_info), RMF_SHA256_SIZE);
+      encoded_size = rmf_encode_publish_compressed_file_cmd(buffer, (apx_size_t)sizeof(buffer), &cmd);
+    }
+  }
+  else if (rmf_file_info_is_signed(file_info))
   {
     encoded_size = rmf_encode_publish_signed_file_cmd(buffer, (apx_size_t)sizeof(buffer), file_info);
   }

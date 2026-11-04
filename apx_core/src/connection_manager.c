@@ -314,6 +314,10 @@ static void apx_connection_manager_cleanup_task_main(apx_connection_manager_t *s
       }
       apx_connection_base_stop(&serverConnection->base);
       apx_connection_base_close(&serverConnection->base);
+      if (server != NULL)
+      {
+        apx_server_flush_events(server);
+      }
       apx_connection_base_delete(&serverConnection->base);
       if (server != NULL)
       {

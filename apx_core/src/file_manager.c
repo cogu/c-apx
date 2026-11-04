@@ -111,13 +111,13 @@ void apx_file_manager_connected(apx_file_manager_t *self)
 {
   if (self != NULL)
   {
+    apx_file_manager_shared_connected(&self->shared);
     if (self->mode == APX_CLIENT_MODE)
     {
       publish_local_files(self);
     }
     else
     {
-      apx_file_manager_shared_connected(&self->shared);
       rmf_version_id_t const version_id = apx_file_manager_shared_get_remotefile_version_id(&self->shared);
       if (version_id == RMF_PROTOCOL_VERSION_ID_1_1)
       {
@@ -662,6 +662,66 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
         retval = APX_INVALID_MSG_ERROR;
       }
       rmf_file_info_delete(file_info);
+    }
+    break;
+  case RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG:
+    if (apx_file_manager_shared_get_remotefile_version_id(&self->shared) < RMF_PROTOCOL_VERSION_ID_1_1)
+    {
+      retval = APX_UNSUPPORTED_ERROR;
+      break;
+    }
+    {
+      rmf_publish_compressed_file_cmd_t cmd;
+      memset(&cmd, 0, sizeof(cmd));
+      decoded_size = rmf_decode_publish_compressed_file_cmd(data, data + size, &cmd);
+      if (decoded_size > 0u)
+      {
+        file_info = rmf_file_info_make_compressed(
+          cmd.name, cmd.compressed_size, cmd.uncompressed_size, cmd.start_address, cmd.digest_type, cmd.digest_data);
+        if (file_info == NULL)
+        {
+          retval = APX_MEM_ERROR;
+        }
+        else
+        {
+          retval = process_remote_file_published(self, file_info);
+          rmf_file_info_delete(file_info);
+        }
+      }
+      else
+      {
+        retval = APX_INVALID_MSG_ERROR;
+      }
+    }
+    break;
+  case RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG:
+    if (apx_file_manager_shared_get_remotefile_version_id(&self->shared) < RMF_PROTOCOL_VERSION_ID_1_1)
+    {
+      retval = APX_UNSUPPORTED_ERROR;
+      break;
+    }
+    {
+      rmf_publish_signed_compressed_file_cmd_t cmd;
+      memset(&cmd, 0, sizeof(cmd));
+      decoded_size = rmf_decode_publish_signed_compressed_file_cmd(data, data + size, &cmd);
+      if (decoded_size > 0u)
+      {
+        file_info = rmf_file_info_make_signed_compressed(cmd.name, cmd.compressed_size, cmd.uncompressed_size,
+          cmd.start_address, cmd.signature_type, cmd.signature_data);
+        if (file_info == NULL)
+        {
+          retval = APX_MEM_ERROR;
+        }
+        else
+        {
+          retval = process_remote_file_published(self, file_info);
+          rmf_file_info_delete(file_info);
+        }
+      }
+      else
+      {
+        retval = APX_INVALID_MSG_ERROR;
+      }
     }
     break;
   case RMF_CMD_REVOKE_FILE_MSG:

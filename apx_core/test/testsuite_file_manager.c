@@ -78,6 +78,7 @@ static void test_stream_isolation_and_control_progress(CuTest *tc);
 static void test_stream_close_abort_revoke_and_disconnect(CuTest *tc);
 static void test_small_soa_and_large_data_pipeline(CuTest *tc);
 static void test_command_queue_cleanup_on_destroy(CuTest *tc);
+static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -96,6 +97,7 @@ CuSuite *testsuite_apx_file_manager(void)
   SUITE_ADD_TEST(suite, test_stream_close_abort_revoke_and_disconnect);
   SUITE_ADD_TEST(suite, test_small_soa_and_large_data_pipeline);
   SUITE_ADD_TEST(suite, test_command_queue_cleanup_on_destroy);
+  SUITE_ADD_TEST(suite, test_file_manager_publish_and_receive_compressed_files);
 
   return suite;
 }
@@ -1012,6 +1014,72 @@ static void test_command_queue_cleanup_on_destroy(CuTest *tc)
   CuAssertIntEquals(
     tc, APX_NO_ERROR, apx_file_manager_write_local_data(&pub.file_manager, 0x00001020u, large_buf, sizeof(large_buf)));
   CuAssertUIntEquals(tc, 3u, apx_file_manager_get_num_pending_worker_commands(&pub.file_manager));
+
+  mock_endpoint_destroy(&sub);
+  mock_endpoint_destroy(&pub);
+}
+
+static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc)
+{
+  mock_endpoint_t pub;
+  mock_endpoint_t sub;
+  mock_endpoint_create(&pub, APX_CLIENT_MODE, 4096);
+  mock_endpoint_create(&sub, APX_SERVER_MODE, 4096);
+
+  uint8_t dummy_digest[RMF_SHA256_SIZE];
+  for (size_t i = 0; i < sizeof(dummy_digest); i++)
+  {
+    dummy_digest[i] = (uint8_t)(0xA0u + i);
+  }
+
+  uint8_t dummy_signature[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  for (size_t i = 0; i < sizeof(dummy_signature); i++)
+  {
+    dummy_signature[i] = (uint8_t)(0x10u + i);
+  }
+
+  // 1. Publish and receive unsigned compressed file
+  rmf_file_info_t *info1 =
+    rmf_file_info_make_compressed("CompressedNode.apx", 120u, 450u, 0x00000000u, RMF_DIGEST_TYPE_SHA256, dummy_digest);
+  CuAssertPtrNotNull(tc, info1);
+  apx_file_t *pub_file1 = apx_file_manager_create_local_file(&pub.file_manager, info1);
+  CuAssertPtrNotNull(tc, pub_file1);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_publish_local_file(&pub.file_manager, info1));
+  rmf_file_info_delete(info1);
+
+  // 2. Publish and receive signed compressed file
+  rmf_file_info_t *info2 = rmf_file_info_make_signed_compressed(
+    "SignedCompressedNode.apx", 200u, 800u, 0x00001000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_signature);
+  CuAssertPtrNotNull(tc, info2);
+  apx_file_t *pub_file2 = apx_file_manager_create_local_file(&pub.file_manager, info2);
+  CuAssertPtrNotNull(tc, pub_file2);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_publish_local_file(&pub.file_manager, info2));
+  rmf_file_info_delete(info2);
+
+  mock_endpoint_deliver_all(&pub, &sub);
+
+  // Verify unsigned compressed file on subscriber
+  apx_file_t *sub_file1 = apx_file_manager_find_remote_file_by_name(&sub.file_manager, "CompressedNode.apx");
+  CuAssertPtrNotNull(tc, sub_file1);
+  CuAssertTrue(tc, apx_file_is_compressed(sub_file1));
+  CuAssertFalse(tc, apx_file_is_signed(sub_file1));
+  CuAssertUIntEquals(tc, 120u, apx_file_get_size(sub_file1));
+  CuAssertUIntEquals(tc, 450u, apx_file_get_uncompressed_size(sub_file1));
+  CuAssertIntEquals(tc, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, apx_file_get_compression_type(sub_file1));
+  CuAssertIntEquals(tc, RMF_DIGEST_TYPE_SHA256, apx_file_get_digest_type(sub_file1));
+  CuAssertIntEquals(tc, 0, memcmp(apx_file_get_digest_data(sub_file1), dummy_digest, RMF_SHA256_SIZE));
+
+  // Verify signed compressed file on subscriber
+  apx_file_t *sub_file2 = apx_file_manager_find_remote_file_by_name(&sub.file_manager, "SignedCompressedNode.apx");
+  CuAssertPtrNotNull(tc, sub_file2);
+  CuAssertTrue(tc, apx_file_is_compressed(sub_file2));
+  CuAssertTrue(tc, apx_file_is_signed(sub_file2));
+  CuAssertUIntEquals(tc, 200u, apx_file_get_size(sub_file2));
+  CuAssertUIntEquals(tc, 800u, apx_file_get_uncompressed_size(sub_file2));
+  CuAssertIntEquals(tc, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, apx_file_get_compression_type(sub_file2));
+  CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, apx_file_get_signature_type(sub_file2));
+  CuAssertIntEquals(
+    tc, 0, memcmp(apx_file_get_signature_data(sub_file2), dummy_signature, RMF_SIGNATURE_SIZE_ECDSA_P256));
 
   mock_endpoint_destroy(&sub);
   mock_endpoint_destroy(&pub);
