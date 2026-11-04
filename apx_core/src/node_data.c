@@ -210,6 +210,44 @@ apx_error_t apx_node_data_create_definition_data(apx_node_data_t *self, uint8_t 
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_node_data_replace_definition_data(apx_node_data_t *self, uint8_t const *data, apx_size_t size)
+{
+  if (self != NULL)
+  {
+    if (self->is_weak_ref)
+    {
+      return APX_UNSUPPORTED_ERROR;
+    }
+    if (size > 0u)
+    {
+      MUTEX_LOCK(self->lock);
+      if (self->definition_data != NULL)
+      {
+        free(self->definition_data);
+      }
+      self->definition_data = (uint8_t *)malloc(size);
+      if (self->definition_data == NULL)
+      {
+        self->definition_data_size = 0u;
+        MUTEX_UNLOCK(self->lock);
+        return APX_MEM_ERROR;
+      }
+      self->definition_data_size = size;
+      if (data != NULL)
+      {
+        memcpy(self->definition_data, data, size);
+      }
+      else
+      {
+        memset(self->definition_data, 0, size);
+      }
+      MUTEX_UNLOCK(self->lock);
+      return APX_NO_ERROR;
+    }
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
 apx_error_t apx_node_data_create_provide_port_data(
   apx_node_data_t *self, apx_size_t num_ports, uint8_t const *init_data, apx_size_t data_size)
 {

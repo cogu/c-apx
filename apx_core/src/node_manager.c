@@ -12,7 +12,9 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/node_manager.h"
+#include "apx/compress.h"
 #include "apx/connection_base.h"
+#include "apx/crypto.h"
 #include "apx/server.h"
 #include "apx/vm.h"
 #include <assert.h>
@@ -164,10 +166,112 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
     {
       return APX_MEM_ERROR;
     }
+    apx_file_t *def_file = apx_node_instance_get_definition_file(node_instance);
+    if ((def_file != NULL) && apx_file_is_compressed(def_file))
+    {
+      uint32_t const uncompressed_size = apx_file_get_uncompressed_size(def_file);
+      if ((uncompressed_size == 0u) || (uncompressed_size > APX_MAX_FILE_SIZE))
+      {
+        char const *name = apx_node_instance_get_name(node_instance);
+        apx_server_t *server = apx_node_instance_get_server(node_instance);
+        if (server != NULL)
+        {
+          apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: invalid uncompressed size %u",
+            (name != NULL) ? name : "<unknown>", uncompressed_size);
+        }
+        free(definition_data);
+        if (self->parent_connection != NULL)
+        {
+          apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
+          if (file_manager != NULL)
+          {
+            apx_file_manager_send_error_code(file_manager, APX_PARSE_ERROR, name);
+          }
+        }
+        if (name != NULL)
+        {
+          adt_hash_remove(&self->instance_map, name);
+          apx_node_instance_delete(node_instance);
+        }
+        return APX_PARSE_ERROR;
+      }
+      uint8_t *uncompressed_data = (uint8_t *)malloc((size_t)uncompressed_size + 1u);
+      if (uncompressed_data == NULL)
+      {
+        free(definition_data);
+        return APX_MEM_ERROR;
+      }
+      size_t dst_len = (size_t)uncompressed_size;
+      apx_error_t const dec_res =
+        apx_decompress(uncompressed_data, &dst_len, definition_data, definition_size, (size_t)uncompressed_size);
+      free(definition_data);
+      if ((dec_res != APX_NO_ERROR) || (dst_len != (size_t)uncompressed_size))
+      {
+        free(uncompressed_data);
+        char const *name = apx_node_instance_get_name(node_instance);
+        apx_server_t *server = apx_node_instance_get_server(node_instance);
+        if (server != NULL)
+        {
+          apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: decompression failed (%s)",
+            (name != NULL) ? name : "<unknown>", apx_strerror(dec_res != APX_NO_ERROR ? dec_res : APX_PARSE_ERROR));
+        }
+        if (self->parent_connection != NULL)
+        {
+          apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
+          if (file_manager != NULL)
+          {
+            apx_file_manager_send_error_code(file_manager, APX_PARSE_ERROR, name);
+          }
+        }
+        if (name != NULL)
+        {
+          adt_hash_remove(&self->instance_map, name);
+          apx_node_instance_delete(node_instance);
+        }
+        return (dec_res != APX_NO_ERROR) ? dec_res : APX_PARSE_ERROR;
+      }
+      uncompressed_data[uncompressed_size] = '\0';
+      definition_data = uncompressed_data;
+      definition_size = (size_t)uncompressed_size;
+      (void)apx_node_data_replace_definition_data(node_data, definition_data, (apx_size_t)definition_size);
+    }
+    if (def_file != NULL)
+    {
+      rmf_digest_type_t const digest_type = apx_file_get_digest_type(def_file);
+      if (digest_type == RMF_DIGEST_TYPE_SHA256)
+      {
+        uint8_t hash[RMF_SHA256_SIZE];
+        apx_error_t const hash_res = apx_crypto_sha256(definition_data, definition_size, hash);
+        if ((hash_res != APX_NO_ERROR) || (memcmp(hash, apx_file_get_digest_data(def_file), RMF_SHA256_SIZE) != 0))
+        {
+          char const *name = apx_node_instance_get_name(node_instance);
+          apx_server_t *server = apx_node_instance_get_server(node_instance);
+          if (server != NULL)
+          {
+            apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: digest verification failed",
+              (name != NULL) ? name : "<unknown>");
+          }
+          free(definition_data);
+          if (self->parent_connection != NULL)
+          {
+            apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
+            if (file_manager != NULL)
+            {
+              apx_file_manager_send_error_code(file_manager, APX_PARSE_ERROR, name);
+            }
+          }
+          if (name != NULL)
+          {
+            adt_hash_remove(&self->instance_map, name);
+            apx_node_instance_delete(node_instance);
+          }
+          return APX_PARSE_ERROR;
+        }
+      }
+    }
     apx_server_t *server = apx_node_instance_get_server(node_instance);
     if (server != NULL)
     {
-      apx_file_t *def_file = apx_node_instance_get_definition_file(node_instance);
       rmf_signature_type_t sig_type =
         (def_file != NULL) ? apx_file_get_signature_type(def_file) : RMF_SIGNATURE_TYPE_NONE;
       uint8_t const *sig_data = (def_file != NULL) ? apx_file_get_signature_data(def_file) : NULL;

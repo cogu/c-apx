@@ -87,6 +87,7 @@ apx_size_t apx_node_data_require_port_data_size(apx_node_data_t const *self);
 apx_size_t apx_node_data_num_provide_ports(apx_node_data_t const *self);
 apx_size_t apx_node_data_num_require_ports(apx_node_data_t const *self);
 apx_error_t apx_node_data_create_definition_data(apx_node_data_t *self, uint8_t const *init_data, apx_size_t data_size);
+apx_error_t apx_node_data_replace_definition_data(apx_node_data_t *self, uint8_t const *data, apx_size_t size);
 apx_error_t apx_node_data_create_provide_port_data(
   apx_node_data_t *self, apx_size_t num_ports, uint8_t const *init_data, apx_size_t data_size);
 apx_error_t apx_node_data_create_require_port_data(

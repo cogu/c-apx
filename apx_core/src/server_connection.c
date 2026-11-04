@@ -645,6 +645,22 @@ static apx_error_t create_new_node_instance(
   assert((self != NULL) && (node_manager != NULL) && (definition_file != NULL));
   bool file_open_request = false;
   rmf_file_info_t const *file_info = apx_file_get_file_info(definition_file);
+  if ((self->parent != NULL) && apx_server_get_require_signed_nodes(self->parent))
+  {
+    if (!apx_file_is_signed(definition_file))
+    {
+      char *node_name = rmf_file_info_base_name(file_info);
+      apx_server_log(self->parent, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: signature required but file is unsigned",
+        (node_name != NULL) ? node_name : "<unknown>");
+      apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(&self->base);
+      if (file_manager != NULL)
+      {
+        apx_file_manager_send_error_code(file_manager, APX_SIGNATURE_MISSING_ERROR, node_name);
+      }
+      free(node_name);
+      return APX_NO_ERROR;
+    }
+  }
   retval = apx_node_manager_init_node_from_file_info(node_manager, file_info, &file_open_request);
   if (retval == APX_NO_ERROR)
   {

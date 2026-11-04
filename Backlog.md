@@ -313,7 +313,7 @@ Prevent misspelled or unrecognized JSON configuration keys from being silently i
 
 ## 16. Compressed Transfer of APX Node Definitions (Signed and Unsigned)
 
-**Status:** Proposed. Reduce definition-transfer bytes and startup latency, including across bandwidth-constrained embedded links, without coupling compression to authentication or a particular implementation library.
+**Status:** Completed. Reduce definition-transfer bytes and startup latency, including across bandwidth-constrained embedded links, without coupling compression to authentication or a particular implementation library.
 
 **Depends on:** [Item 20: Compression Backend and CMake Integration](#20-compression-backend-and-cmake-integration).
 
