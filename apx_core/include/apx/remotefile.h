@@ -40,6 +40,10 @@ typedef uint8_t rmf_signature_type_t;
 #define RMF_SIGNATURE_TYPE_NONE ((rmf_signature_type_t)0u)
 #define RMF_SIGNATURE_TYPE_ECDSA_P256 ((rmf_signature_type_t)1u)
 
+typedef uint8_t rmf_compression_type_t;
+#define RMF_COMPRESSION_TYPE_NONE ((rmf_compression_type_t)0u)
+#define RMF_COMPRESSION_TYPE_ZLIB_DEFLATE ((rmf_compression_type_t)1u)
+
 #define RMF_SIGNATURE_SIZE_ECDSA_P256 64u
 #define RMF_MAX_SIGNATURE_SIZE 64u
 
@@ -71,6 +75,10 @@ typedef uint8_t rmf_signature_type_t;
 #define RMF_MAX_FILE_NAME_SIZE 255u
 #define RMF_FILE_INFO_HEADER_SIZE 48u
 #define RMF_SIGNED_FILE_INFO_HEADER_SIZE 80u
+#define RMF_PUBLISH_COMPRESSED_FILE_HEADER_SIZE 56u
+#define RMF_PUBLISH_SIGNED_COMPRESSED_FILE_HEADER_SIZE 88u
+#define RMF_COMPRESSED_FILE_NAME_MAX_LEN 967u
+#define RMF_SIGNED_COMPRESSED_FILE_NAME_MAX_LEN 935u
 #define RMF_EXTENDED_FILE_INFO_HEADER_SIZE 53u
 #define RMF_SIGNED_EXTENDED_FILE_INFO_HEADER_SIZE 85u
 #define RMF_FILE_NAME_MAX_SIZE RMF_MAX_FILE_NAME_SIZE
@@ -87,7 +95,8 @@ typedef uint8_t rmf_signature_type_t;
 #define RMF_CMD_NACK_MSG ((uint32_t)1u)
 #define RMF_CMD_ACCEPT_HEADER ((uint32_t)20u)
 #define RMF_CMD_PUBLISH_SIGNED_FILE_MSG ((uint32_t)21u)
-// IDs 22-23 reserved for publish commands (RMF_CMD_PUBLISH_COMPRESSED_FILE, RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE)
+#define RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG ((uint32_t)22u)
+#define RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG ((uint32_t)23u)
 #define RMF_CMD_STREAM_OPEN_MSG ((uint32_t)24u)
 #define RMF_CMD_STREAM_OPEN_RSP_MSG ((uint32_t)25u)
 #define RMF_CMD_STREAM_WINDOW_UPDATE_MSG ((uint32_t)26u)
@@ -133,6 +142,32 @@ typedef struct rmf_stream_abort_cmd_tag
   uint32_t status;
 } rmf_stream_abort_cmd_t;
 
+typedef struct rmf_publish_compressed_file_cmd_tag
+{
+  uint32_t start_address;
+  uint32_t uncompressed_size;
+  uint32_t compressed_size;
+  rmf_file_type_t file_type;
+  rmf_compression_type_t compression_type;
+  rmf_digest_type_t digest_type;
+  uint16_t reserved;
+  uint8_t digest_data[RMF_SHA256_SIZE];
+  char const *name;
+} rmf_publish_compressed_file_cmd_t;
+
+typedef struct rmf_publish_signed_compressed_file_cmd_tag
+{
+  uint32_t start_address;
+  uint32_t uncompressed_size;
+  uint32_t compressed_size;
+  rmf_file_type_t file_type;
+  rmf_compression_type_t compression_type;
+  rmf_signature_type_t signature_type;
+  uint16_t reserved;
+  uint8_t signature_data[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  char const *name;
+} rmf_publish_signed_compressed_file_cmd_t;
+
 
 #define RMF_U16_FILE_TYPE_FIXED ((uint16_t)0u)
 #define RMF_U16_FILE_TYPE_DYNAMIC8 ((uint16_t)1u)
@@ -145,6 +180,8 @@ typedef struct rmf_stream_abort_cmd_tag
 #define RMF_U16_DIGEST_TYPE_SHA256 ((uint16_t)2u)
 #define RMF_U16_SIGNATURE_TYPE_NONE ((uint16_t)0u)
 #define RMF_U16_SIGNATURE_TYPE_ECDSA_P256 ((uint16_t)1u)
+#define RMF_U16_COMPRESSION_TYPE_NONE ((uint16_t)0u)
+#define RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE ((uint16_t)1u)
 
 #define RMF_NUMHEADER_SIZE_16 UINT16_SIZE
 #define RMF_NUMHEADER_SIZE_32 UINT32_SIZE
@@ -191,9 +228,18 @@ apx_size_t rmf_decode_stream_window_update_cmd(
   uint8_t const *begin, uint8_t const *end, rmf_stream_window_update_cmd_t *cmd);
 apx_size_t rmf_encode_stream_abort_cmd(uint8_t *buf, apx_size_t buf_size, rmf_stream_abort_cmd_t const *cmd);
 apx_size_t rmf_decode_stream_abort_cmd(uint8_t const *begin, uint8_t const *end, rmf_stream_abort_cmd_t *cmd);
+apx_size_t rmf_encode_publish_compressed_file_cmd(
+  uint8_t *buf, apx_size_t buf_size, rmf_publish_compressed_file_cmd_t const *cmd);
+apx_size_t rmf_decode_publish_compressed_file_cmd(
+  uint8_t const *begin, uint8_t const *end, rmf_publish_compressed_file_cmd_t *cmd);
+apx_size_t rmf_encode_publish_signed_compressed_file_cmd(
+  uint8_t *buf, apx_size_t buf_size, rmf_publish_signed_compressed_file_cmd_t const *cmd);
+apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
+  uint8_t const *begin, uint8_t const *end, rmf_publish_signed_compressed_file_cmd_t *cmd);
 bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t *file_type);
 bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t *digest_type);
 bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t *signature_type);
+bool rmf_value_to_compression_type(uint16_t value, rmf_compression_type_t *compression_type);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES

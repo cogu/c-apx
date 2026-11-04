@@ -45,6 +45,9 @@ static void test_stream_open_cmd_encode_decode(CuTest *tc);
 static void test_stream_open_rsp_cmd_encode_decode(CuTest *tc);
 static void test_stream_window_update_cmd_encode_decode(CuTest *tc);
 static void test_stream_abort_cmd_encode_decode(CuTest *tc);
+static void test_compression_type_conversion(CuTest *tc);
+static void test_publish_compressed_file_cmd_encode_decode(CuTest *tc);
+static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -78,6 +81,9 @@ CuSuite *testsuite_remotefile(void)
   SUITE_ADD_TEST(suite, test_stream_open_rsp_cmd_encode_decode);
   SUITE_ADD_TEST(suite, test_stream_window_update_cmd_encode_decode);
   SUITE_ADD_TEST(suite, test_stream_abort_cmd_encode_decode);
+  SUITE_ADD_TEST(suite, test_compression_type_conversion);
+  SUITE_ADD_TEST(suite, test_publish_compressed_file_cmd_encode_decode);
+  SUITE_ADD_TEST(suite, test_publish_signed_compressed_file_cmd_encode_decode);
 
   return suite;
 }
@@ -443,4 +449,329 @@ static void test_stream_abort_cmd_encode_decode(CuTest *tc)
   CuAssertUIntEquals(tc, RMF_STREAM_ABORT_CMD_SIZE, rmf_decode_stream_abort_cmd(buf, buf + sizeof(buf), &out_cmd));
   CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
   CuAssertUIntEquals(tc, in_cmd.status, out_cmd.status);
+}
+
+static void test_compression_type_conversion(CuTest *tc)
+{
+  rmf_compression_type_t compression_type = RMF_COMPRESSION_TYPE_NONE;
+  CuAssertFalse(tc, rmf_value_to_compression_type(RMF_U16_COMPRESSION_TYPE_NONE, NULL));
+  CuAssertTrue(tc, rmf_value_to_compression_type(RMF_U16_COMPRESSION_TYPE_NONE, &compression_type));
+  CuAssertUIntEquals(tc, RMF_COMPRESSION_TYPE_NONE, compression_type);
+
+  CuAssertTrue(tc, rmf_value_to_compression_type(RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, &compression_type));
+  CuAssertUIntEquals(tc, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, compression_type);
+
+  CuAssertFalse(tc, rmf_value_to_compression_type(2u, &compression_type));
+  CuAssertFalse(tc, rmf_value_to_compression_type(0xFFFFu, &compression_type));
+}
+
+static void test_publish_compressed_file_cmd_encode_decode(CuTest *tc)
+{
+  uint8_t buf[RMF_CMD_AREA_SIZE];
+  uint8_t dummy_digest[RMF_SHA256_SIZE];
+  for (uint32_t i = 0u; i < RMF_SHA256_SIZE; ++i)
+  {
+    dummy_digest[i] = (uint8_t)(i + 1u);
+  }
+
+  rmf_publish_compressed_file_cmd_t in_cmd = {
+    .start_address = 0x10000000u,
+    .uncompressed_size = 5000u,
+    .compressed_size = 650u,
+    .file_type = RMF_FILE_TYPE_FIXED,
+    .compression_type = RMF_COMPRESSION_TYPE_ZLIB_DEFLATE,
+    .digest_type = RMF_DIGEST_TYPE_SHA256,
+    .reserved = 0u,
+    .name = "TestNode.apx",
+  };
+  memcpy(in_cmd.digest_data, dummy_digest, RMF_SHA256_SIZE);
+
+  // Normal encode with SHA-256
+  apx_size_t const expected_size = RMF_PUBLISH_COMPRESSED_FILE_HEADER_SIZE + strlen("TestNode.apx") + 1u;
+  apx_size_t encoded_size = rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
+  CuAssertUIntEquals(tc, expected_size, encoded_size);
+
+  // Verify wire layout
+  CuAssertUIntEquals(tc, RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG, unpackLE(buf, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 0x10000000u, unpackLE(buf + 4, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 5000u, unpackLE(buf + 8, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 650u, unpackLE(buf + 12, UINT32_SIZE));
+  CuAssertUIntEquals(tc, RMF_U16_FILE_TYPE_FIXED, unpackLE(buf + 16, UINT16_SIZE));
+  CuAssertUIntEquals(tc, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, unpackLE(buf + 18, UINT16_SIZE));
+  CuAssertUIntEquals(tc, RMF_U16_DIGEST_TYPE_SHA256, unpackLE(buf + 20, UINT16_SIZE));
+  CuAssertUIntEquals(tc, 0u, unpackLE(buf + 22, UINT16_SIZE));
+  CuAssertIntEquals(tc, 0, memcmp(buf + 24, dummy_digest, RMF_SHA256_SIZE));
+  CuAssertStrEquals(tc, "TestNode.apx", (char const *)(buf + 56));
+
+  // Normal decode with SHA-256
+  rmf_publish_compressed_file_cmd_t out_cmd;
+  memset(&out_cmd, 0, sizeof(out_cmd));
+  apx_size_t decoded_size = rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd);
+  CuAssertUIntEquals(tc, encoded_size, decoded_size);
+  CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
+  CuAssertUIntEquals(tc, in_cmd.uncompressed_size, out_cmd.uncompressed_size);
+  CuAssertUIntEquals(tc, in_cmd.compressed_size, out_cmd.compressed_size);
+  CuAssertUIntEquals(tc, in_cmd.file_type, out_cmd.file_type);
+  CuAssertUIntEquals(tc, in_cmd.compression_type, out_cmd.compression_type);
+  CuAssertUIntEquals(tc, in_cmd.digest_type, out_cmd.digest_type);
+  CuAssertUIntEquals(tc, 0u, out_cmd.reserved);
+  CuAssertIntEquals(tc, 0, memcmp(out_cmd.digest_data, dummy_digest, RMF_SHA256_SIZE));
+  CuAssertStrEquals(tc, "TestNode.apx", out_cmd.name);
+
+  // Normal encode/decode with DIGEST_TYPE_NONE
+  in_cmd.digest_type = RMF_DIGEST_TYPE_NONE;
+  encoded_size = rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
+  CuAssertUIntEquals(tc, expected_size, encoded_size);
+  CuAssertUIntEquals(tc, RMF_U16_DIGEST_TYPE_NONE, unpackLE(buf + 20, UINT16_SIZE));
+  uint8_t zero_digest[RMF_SHA256_SIZE] = {0};
+  CuAssertIntEquals(tc, 0, memcmp(buf + 24, zero_digest, RMF_SHA256_SIZE));
+
+  memset(&out_cmd, 0, sizeof(out_cmd));
+  decoded_size = rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd);
+  CuAssertUIntEquals(tc, encoded_size, decoded_size);
+  CuAssertUIntEquals(tc, RMF_DIGEST_TYPE_NONE, out_cmd.digest_type);
+  CuAssertIntEquals(tc, 0, memcmp(out_cmd.digest_data, zero_digest, RMF_SHA256_SIZE));
+
+  // Reset in_cmd
+  in_cmd.digest_type = RMF_DIGEST_TYPE_SHA256;
+
+  // Encode validation errors
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(NULL, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, expected_size - 1u, &in_cmd));
+
+  rmf_publish_compressed_file_cmd_t bad_cmd = in_cmd;
+  bad_cmd.name = NULL;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+  bad_cmd.name = "";
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.uncompressed_size = 0u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+  bad_cmd.uncompressed_size = RMF_CMD_AREA_START_ADDRESS + 1u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.compressed_size = 0u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+  bad_cmd.compressed_size = RMF_CMD_AREA_START_ADDRESS + 1u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.start_address = RMF_CMD_AREA_START_ADDRESS;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+  bad_cmd.start_address = RMF_CMD_AREA_START_ADDRESS - 100u;
+  bad_cmd.compressed_size = 101u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.file_type = RMF_FILE_TYPE_STREAM;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.compression_type = RMF_COMPRESSION_TYPE_NONE;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.digest_type = RMF_DIGEST_TYPE_SHA1;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  // Decode validation errors
+  encoded_size = rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
+  CuAssertTrue(tc, encoded_size > 0u);
+
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(NULL, buf + encoded_size, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, NULL, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size - 1u, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + 10u, &out_cmd));
+
+  // Corrupted opcode
+  packLE(buf, RMF_CMD_PUBLISH_SIGNED_FILE_MSG, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf, RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG, UINT32_SIZE);
+
+  // Non-zero reserved field
+  packLE(buf + 22, 1u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 22, 0u, UINT16_SIZE);
+
+  // Invalid uncompressed_size = 0
+  packLE(buf + 8, 0u, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 8, in_cmd.uncompressed_size, UINT32_SIZE);
+
+  // Invalid compressed_size = 0
+  packLE(buf + 12, 0u, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 12, in_cmd.compressed_size, UINT32_SIZE);
+
+  // Invalid file_type
+  packLE(buf + 16, RMF_U16_FILE_TYPE_DYNAMIC8, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 16, RMF_U16_FILE_TYPE_FIXED, UINT16_SIZE);
+
+  // Invalid compression_type
+  packLE(buf + 18, 0u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 18, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, UINT16_SIZE);
+
+  // Invalid digest_type (SHA1 = 1)
+  packLE(buf + 20, 1u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 20, RMF_U16_DIGEST_TYPE_SHA256, UINT16_SIZE);
+
+  // Empty name (null terminator at offset 56)
+  uint8_t save_char = buf[56];
+  buf[56] = 0u;
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  buf[56] = save_char;
+}
+
+static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc)
+{
+  uint8_t buf[RMF_CMD_AREA_SIZE];
+  uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  for (uint32_t i = 0u; i < RMF_SIGNATURE_SIZE_ECDSA_P256; ++i)
+  {
+    dummy_sig[i] = (uint8_t)(0xC0u + (i & 0x0Fu));
+  }
+
+  rmf_publish_signed_compressed_file_cmd_t in_cmd = {
+    .start_address = 0x04000000u,
+    .uncompressed_size = 12000u,
+    .compressed_size = 1800u,
+    .file_type = RMF_FILE_TYPE_FIXED,
+    .compression_type = RMF_COMPRESSION_TYPE_ZLIB_DEFLATE,
+    .signature_type = RMF_SIGNATURE_TYPE_ECDSA_P256,
+    .reserved = 0u,
+    .name = "SecureNode.apx",
+  };
+  memcpy(in_cmd.signature_data, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256);
+
+  // Normal encode
+  apx_size_t const expected_size = RMF_PUBLISH_SIGNED_COMPRESSED_FILE_HEADER_SIZE + strlen("SecureNode.apx") + 1u;
+  apx_size_t encoded_size = rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
+  CuAssertUIntEquals(tc, expected_size, encoded_size);
+
+  // Verify wire layout
+  CuAssertUIntEquals(tc, RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG, unpackLE(buf, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 0x04000000u, unpackLE(buf + 4, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 12000u, unpackLE(buf + 8, UINT32_SIZE));
+  CuAssertUIntEquals(tc, 1800u, unpackLE(buf + 12, UINT32_SIZE));
+  CuAssertUIntEquals(tc, RMF_U16_FILE_TYPE_FIXED, unpackLE(buf + 16, UINT16_SIZE));
+  CuAssertUIntEquals(tc, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, unpackLE(buf + 18, UINT16_SIZE));
+  CuAssertUIntEquals(tc, RMF_U16_SIGNATURE_TYPE_ECDSA_P256, unpackLE(buf + 20, UINT16_SIZE));
+  CuAssertUIntEquals(tc, 0u, unpackLE(buf + 22, UINT16_SIZE));
+  CuAssertIntEquals(tc, 0, memcmp(buf + 24, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256));
+  CuAssertStrEquals(tc, "SecureNode.apx", (char const *)(buf + 88));
+
+  // Normal decode
+  rmf_publish_signed_compressed_file_cmd_t out_cmd;
+  memset(&out_cmd, 0, sizeof(out_cmd));
+  apx_size_t decoded_size = rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd);
+  CuAssertUIntEquals(tc, encoded_size, decoded_size);
+  CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
+  CuAssertUIntEquals(tc, in_cmd.uncompressed_size, out_cmd.uncompressed_size);
+  CuAssertUIntEquals(tc, in_cmd.compressed_size, out_cmd.compressed_size);
+  CuAssertUIntEquals(tc, in_cmd.file_type, out_cmd.file_type);
+  CuAssertUIntEquals(tc, in_cmd.compression_type, out_cmd.compression_type);
+  CuAssertUIntEquals(tc, in_cmd.signature_type, out_cmd.signature_type);
+  CuAssertUIntEquals(tc, 0u, out_cmd.reserved);
+  CuAssertIntEquals(tc, 0, memcmp(out_cmd.signature_data, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256));
+  CuAssertStrEquals(tc, "SecureNode.apx", out_cmd.name);
+
+  // Encode validation errors
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(NULL, sizeof(buf), &in_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, expected_size - 1u, &in_cmd));
+
+  rmf_publish_signed_compressed_file_cmd_t bad_cmd = in_cmd;
+  bad_cmd.name = NULL;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+  bad_cmd.name = "";
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.uncompressed_size = 0u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+  bad_cmd.uncompressed_size = RMF_CMD_AREA_START_ADDRESS + 1u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.compressed_size = 0u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+  bad_cmd.compressed_size = RMF_CMD_AREA_START_ADDRESS + 1u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.start_address = RMF_CMD_AREA_START_ADDRESS;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+  bad_cmd.start_address = RMF_CMD_AREA_START_ADDRESS - 100u;
+  bad_cmd.compressed_size = 101u;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.file_type = RMF_FILE_TYPE_DYNAMIC16;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.compression_type = RMF_COMPRESSION_TYPE_NONE;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  bad_cmd = in_cmd;
+  bad_cmd.signature_type = RMF_SIGNATURE_TYPE_NONE;
+  CuAssertUIntEquals(tc, 0u, rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &bad_cmd));
+
+  // Decode validation errors
+  encoded_size = rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
+  CuAssertTrue(tc, encoded_size > 0u);
+
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(NULL, buf + encoded_size, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, NULL, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, NULL));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size - 1u, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + 20u, &out_cmd));
+
+  // Corrupted opcode
+  packLE(buf, RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf, RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG, UINT32_SIZE);
+
+  // Non-zero reserved field
+  packLE(buf + 22, 1u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 22, 0u, UINT16_SIZE);
+
+  // Invalid uncompressed_size = 0
+  packLE(buf + 8, 0u, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 8, in_cmd.uncompressed_size, UINT32_SIZE);
+
+  // Invalid compressed_size = 0
+  packLE(buf + 12, 0u, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 12, in_cmd.compressed_size, UINT32_SIZE);
+
+  // Invalid file_type
+  packLE(buf + 16, RMF_U16_FILE_TYPE_STREAM, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 16, RMF_U16_FILE_TYPE_FIXED, UINT16_SIZE);
+
+  // Invalid compression_type
+  packLE(buf + 18, 0u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 18, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, UINT16_SIZE);
+
+  // Invalid signature_type
+  packLE(buf + 20, 0u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  packLE(buf + 20, RMF_U16_SIGNATURE_TYPE_ECDSA_P256, UINT16_SIZE);
+
+  // Empty name (null terminator at offset 88)
+  uint8_t save_char = buf[88];
+  buf[88] = 0u;
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  buf[88] = save_char;
 }
