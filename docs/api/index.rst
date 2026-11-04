@@ -14,6 +14,7 @@ The APX C library provides a modular API for embedding APX communication, virtua
    apx_compiler
    apx_types
    apx_error
+   apx_compress
 
 Module Overview
 ---------------
@@ -49,3 +50,6 @@ Module Overview
    * - :doc:`apx_error`
      - ``apx/error.h``
      - Standardized error codes and diagnostic error string translation.
+   * - :doc:`apx_compress`
+     - ``apx/compress.h``
+     - Compression and bounded decompression codec (zlib and miniz backends).

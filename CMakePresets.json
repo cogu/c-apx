@@ -42,6 +42,22 @@
       }
     },
     {
+      "name": "clang-test-miniz",
+      "displayName": "Clang 21 Unit Tests (miniz)",
+      "inherits": "clang-test",
+      "cacheVariables": {
+        "APX_COMPRESSION_BACKEND": "miniz"
+      }
+    },
+    {
+      "name": "clang-debug-miniz",
+      "displayName": "Clang 21 Debug (Apps, miniz)",
+      "inherits": "clang-debug",
+      "cacheVariables": {
+        "APX_COMPRESSION_BACKEND": "miniz"
+      }
+    },
+    {
       "name": "clang-asan",
       "displayName": "Clang 21 Address and Undefined Behavior Sanitizers",
       "inherits": "clang-debug",
@@ -129,6 +145,17 @@
       ]
     },
     {
+      "name": "clang-test-miniz",
+      "configurePreset": "clang-test-miniz",
+      "targets": [
+        "apx_unit"
+      ]
+    },
+    {
+      "name": "clang-debug-miniz",
+      "configurePreset": "clang-debug-miniz"
+    },
+    {
       "name": "clang-asan",
       "configurePreset": "clang-asan"
     },
@@ -174,6 +201,20 @@
     {
       "name": "clang-test",
       "configurePreset": "clang-test",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-test-miniz",
+      "configurePreset": "clang-test-miniz",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-debug-miniz",
+      "configurePreset": "clang-debug-miniz",
       "output": {
         "outputOnFailure": true
       }

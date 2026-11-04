@@ -105,6 +105,9 @@ typedef int32_t apx_error_t;
 #define APX_TIMEOUT_ERROR 81
 #define APX_AMBIGUOUS_NODE_ERROR 82
 #define APX_FILE_WRITE_ERROR 83
+#define APX_COMPRESSION_ERROR 84
+#define APX_DECOMPRESSION_ERROR 85
+#define APX_CHECKSUM_ERROR 86
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL FUNCTION PROTOTYPES

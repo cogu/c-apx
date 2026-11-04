@@ -264,6 +264,12 @@ const char *apx_strerror(apx_error_t error_code)
     return "Multiple nodes have that name";
   case APX_FILE_WRITE_ERROR:
     return "File write failed";
+  case APX_COMPRESSION_ERROR:
+    return "Compression error";
+  case APX_DECOMPRESSION_ERROR:
+    return "Decompression error";
+  case APX_CHECKSUM_ERROR:
+    return "Checksum error";
   default:
     return "Unknown error";
   }

@@ -43,6 +43,18 @@ set(APX_SERVER_EXTENSION_DIRS "" CACHE STRING "Semicolon-separated list of out-o
 set(APX_SANITIZERS "" CACHE STRING "Comma-separated sanitizers to enable (for example: address,undefined or thread)")
 set_property(CACHE APX_SANITIZERS PROPERTY STRINGS "" "address" "address,undefined" "thread")
 
+if(WIN32)
+    set(APX_COMPRESSION_BACKEND_DEFAULT "miniz")
+else()
+    set(APX_COMPRESSION_BACKEND_DEFAULT "zlib")
+endif()
+set(APX_COMPRESSION_BACKEND "${APX_COMPRESSION_BACKEND_DEFAULT}" CACHE STRING "Compression backend for APX definitions (zlib or miniz)")
+set_property(CACHE APX_COMPRESSION_BACKEND PROPERTY STRINGS "zlib" "miniz")
+
+if(NOT APX_COMPRESSION_BACKEND STREQUAL "zlib" AND NOT APX_COMPRESSION_BACKEND STREQUAL "miniz")
+    message(FATAL_ERROR "Invalid APX_COMPRESSION_BACKEND '${APX_COMPRESSION_BACKEND}'. Must be 'zlib' or 'miniz'.")
+endif()
+
 if(APX_SANITIZERS)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
         add_compile_options(-fsanitize=${APX_SANITIZERS} -fno-omit-frame-pointer)
@@ -88,6 +100,7 @@ set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_client.c
     apx_core/test/testsuite_compiler_pack.c
     apx_core/test/testsuite_compiler_unpack.c
+    apx_core/test/testsuite_compress.c
     apx_core/test/testsuite_computation.c
     apx_core/test/testsuite_crypto.c
     apx_core/test/testsuite_data_element.c
@@ -128,6 +141,7 @@ set (APX_COMMON_HEADERS
     apx_core/include/apx/client_test_connection.h
     apx_core/include/apx/client.h
     apx_core/include/apx/command.h
+    apx_core/include/apx/compress.h
     apx_core/include/apx/compiler.h
     apx_core/include/apx/crypto.h
     apx_core/include/apx/computation.h
@@ -192,12 +206,12 @@ set (APX_COMMON_HEADERS
 set (APX_COMMON_SOURCES
     apx_core/src/attribute_parser.c
     apx_core/src/byte_port_map.c
-    apx_core/src/compiler.c
     apx_core/src/client_connection.c
     apx_core/src/client_test_connection.c
     apx_core/src/client.c
     apx_core/src/command.c
     apx_core/src/compiler.c
+    apx_core/src/compress.c
     apx_core/src/crypto.c
     apx_core/src/computation.c
     apx_core/src/connection_base.c
@@ -348,6 +362,49 @@ else()
 endif()
 if(WIN32)
     target_link_libraries(apx_core PUBLIC ws2_32)
+endif()
+
+if(APX_COMPRESSION_BACKEND STREQUAL "zlib")
+    find_package(ZLIB REQUIRED)
+    target_link_libraries(apx_core PRIVATE ZLIB::ZLIB)
+    target_compile_definitions(apx_core PRIVATE APX_COMPRESSION_BACKEND_ZLIB)
+    message(STATUS "APX Compression backend: zlib (${ZLIB_VERSION_STRING})")
+elseif(APX_COMPRESSION_BACKEND STREQUAL "miniz")
+    find_package(miniz CONFIG QUIET)
+    if(NOT TARGET miniz::miniz AND NOT TARGET miniz)
+        include(FetchContent)
+        set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+        set(BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
+        set(INSTALL_PROJECT OFF CACHE BOOL "" FORCE)
+        set(AMALGAMATE_SOURCES OFF CACHE BOOL "" FORCE)
+        FetchContent_Declare(
+            miniz
+            URL https://github.com/richgel999/miniz/archive/refs/tags/3.0.2.tar.gz
+            URL_HASH SHA256=c4b4c25a4eb81883448ff8924e6dba95c800094a198dc9ce66a292ac2ef8e018
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        set(_SAVED_C_CLANG_TIDY "${CMAKE_C_CLANG_TIDY}")
+        set(_SAVED_CXX_CLANG_TIDY "${CMAKE_CXX_CLANG_TIDY}")
+        set(CMAKE_C_CLANG_TIDY "")
+        set(CMAKE_CXX_CLANG_TIDY "")
+        FetchContent_MakeAvailable(miniz)
+        set(CMAKE_C_CLANG_TIDY "${_SAVED_C_CLANG_TIDY}")
+        set(CMAKE_CXX_CLANG_TIDY "${_SAVED_CXX_CLANG_TIDY}")
+    endif()
+    if(TARGET miniz::miniz)
+        target_link_libraries(apx_core PRIVATE miniz::miniz)
+    elseif(TARGET miniz)
+        target_link_libraries(apx_core PRIVATE miniz)
+    else()
+        message(FATAL_ERROR "Could not find or build miniz library")
+    endif()
+    if(TARGET miniz)
+        if(NOT MSVC)
+            target_compile_options(miniz PRIVATE -w)
+        endif()
+    endif()
+    target_compile_definitions(apx_core PRIVATE APX_COMPRESSION_BACKEND_MINIZ)
+    message(STATUS "APX Compression backend: miniz")
 endif()
 
 target_include_directories(apx_core PUBLIC

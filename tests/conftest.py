@@ -245,7 +245,7 @@ def _find_binary(env_var: str, app_name: str) -> str:
     # If APX_BUILD_DIR is set, prioritize searching in that specific build directory
     build_dir_env = os.environ.get("APX_BUILD_DIR")
     if build_dir_env:
-        base = Path(build_dir_env) / "app"
+        base = Path(build_dir_env).resolve() / "app"
         for d in dir_names:
             for n in names_to_try:
                 candidate_paths.append(base / d / n)

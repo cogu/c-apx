@@ -401,7 +401,7 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
 
 ## 20. Compression Backend and CMake Integration
 
-**Status:** Proposed. Provide the codec and build infrastructure required by [item 16](#16-compressed-transfer-of-apx-node-definitions-signed-and-unsigned), independently of RemoteFile, signing, or caching.
+**Status:** Completed. Provide the codec and build infrastructure required by [item 16](#16-compressed-transfer-of-apx-node-definitions-signed-and-unsigned), independently of RemoteFile, signing, or caching.
 
 * **Internal API:** Support both compression and bounded decompression of one zlib-wrapped DEFLATE stream (RFC 1950 / RFC 1951), without preset dictionaries. Dynamic C clients need compression; servers receiving definitions need decompression. Define explicit buffer ownership, output sizes, and repository-standard error reporting. Keep library-specific includes, calls, and preprocessor selection inside the compression module.
 * **Backend Selection:** Add one CMake cache string, `APX_COMPRESSION_BACKEND`, accepting `zlib` or `miniz`. Default to zlib for Linux targets and miniz for Windows targets, with explicit overrides on either platform. Compile and link exactly one backend; reject invalid selections or unavailable dependencies rather than silently switching libraries. Keep backend compile definitions target-private.

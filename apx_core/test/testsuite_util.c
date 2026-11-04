@@ -60,6 +60,9 @@ static void test_apx_strerror(CuTest *tc)
   CuAssertStrEquals(tc, "Invalid argument", apx_strerror(APX_INVALID_ARGUMENT_ERROR));
   CuAssertStrEquals(tc, "Out of memory", apx_strerror(APX_MEM_ERROR));
   CuAssertStrEquals(tc, "Not a directory", apx_strerror(APX_NOT_A_DIRECTORY_ERROR));
+  CuAssertStrEquals(tc, "Compression error", apx_strerror(APX_COMPRESSION_ERROR));
+  CuAssertStrEquals(tc, "Decompression error", apx_strerror(APX_DECOMPRESSION_ERROR));
+  CuAssertStrEquals(tc, "Checksum error", apx_strerror(APX_CHECKSUM_ERROR));
   CuAssertStrEquals(tc, "Unknown error", apx_strerror(9999));
 }
 

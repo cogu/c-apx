@@ -23,6 +23,7 @@
 CuSuite *testsuite_remotefile(void);
 CuSuite *testsuite_file_info(void);
 CuSuite *testsuite_crypto(void);
+CuSuite *testsuite_apx_compress(void);
 
 
 /** APX Common **/
@@ -84,6 +85,7 @@ void RunAllTests(void)
   CuSuiteAddSuite(suite, testsuite_remotefile());
   CuSuiteAddSuite(suite, testsuite_file_info());
   CuSuiteAddSuite(suite, testsuite_crypto());
+  CuSuiteAddSuite(suite, testsuite_apx_compress());
 
 // Util
   CuSuiteAddSuite(suite, testsuite_apx_util());
