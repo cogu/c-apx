@@ -12,7 +12,7 @@ import subprocess
 project = 'c-apx'
 copyright = '2026, Conny Gustafsson'
 author = 'Conny Gustafsson'
-release = '0.3.17'
+release = '0.3.18'
 
 # -- General configuration ---------------------------------------------------
 
