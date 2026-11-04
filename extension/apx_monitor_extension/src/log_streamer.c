@@ -431,8 +431,7 @@ apx_error_t apx_log_streamer_enqueue_provider_change(apx_log_streamer_t *self, u
   }
   pack_le_u32(payload + 0, old_conn_id);
   pack_le_u32(payload + 4, old_port_id);
-  payload[8] = reason;
-  payload[9] = policy;
+  pack_le_u16(payload + 8, (uint16_t)(((uint16_t)reason) | (((uint16_t)policy) << 8u)));
   pack_le_u16(payload + 10, 0u); // reserved
   uint32_t offset = 12u;
   offset += encode_string16(payload + offset, old_node_name);

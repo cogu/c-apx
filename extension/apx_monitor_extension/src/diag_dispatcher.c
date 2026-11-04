@@ -1730,10 +1730,7 @@ static void handle_list_multi_providers(
       {
         pack_le_u32(resp + off + 0, item->node_id);
         pack_le_u32(resp + off + 4, item->port_id);
-        resp[off + 8] = item->status;
-        resp[off + 9] = 0u;
-        resp[off + 10] = 0u;
-        resp[off + 11] = 0u;
+        pack_le_u32(resp + off + 8, (uint32_t)item->status);
         off += 12u;
         off += encode_string16(resp + off, item->port_name);
       }
