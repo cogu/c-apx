@@ -421,6 +421,32 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
 
 **Out of scope:** RemoteFile publication and opcode changes, transfer/signature/cache integration (item 16), runtime backend switching, a general-purpose compression framework, and changes to py-apx or APX-ES. Precompressed APX-ES nodes need no runtime codec; other-language clients use their own compatible implementations.
 
+## 21. Retire Legacy `cutil` SHA-256 in Favor of Mbed TLS (`apx_crypto_sha256`)
+
+* **Status:** Proposed. Eliminate redundant SHA-256 implementations and unify cryptographic hashing across `c-apx`.
+
+* **Background & Motivation:**
+  * Historically, a public-domain implementation of SHA-256 was bundled into the `cutil` submodule (`cutil/include/sha256.h`, `cutil/src/sha256.c`).
+  * With the integration of Mbed TLS for node authentication, TLS transports, and digital signatures, `apx_core` introduced `apx_crypto_sha256()` in [`apx_core/src/crypto.c`](apx_core/src/crypto.c), which calls `mbedtls_sha256()`.
+  * Currently, the codebase has mixed usage:
+    * [`apx_core/src/node_instance.c`](apx_core/src/node_instance.c) and several connection test suites (`testsuite_client_socket_connection.c`, `testsuite_client_test_connection.c`, etc.) still `#include "sha256.h"` and invoke `sha256_calc()`.
+    * [`apx_core/src/node_manager.c`](apx_core/src/node_manager.c), [`apx_core/src/crypto.c`](apx_core/src/crypto.c), and [`app/apx_sign`](app/apx_sign) use `apx_crypto_sha256()` / Mbed TLS.
+  * Maintaining two independent SHA-256 implementations causes binary bloat, inconsistent APIs, and confusion regarding which hashing function should be used for file digests, caching, and cryptographic verification.
+
+* **Core Tasks (`apx_core`):**
+  * Replace all occurrences of `#include "sha256.h"` and `sha256_calc(...)` in [`apx_core/src/node_instance.c`](apx_core/src/node_instance.c) with `#include "apx/crypto.h"` and `apx_crypto_sha256(...)`.
+  * Update C unit test suites in `apx_core/test/` (`testsuite_client_socket_connection.c`, `testsuite_client_socket_monitor_connection.c`, `testsuite_client_test_connection.c`, `testsuite_server_connection.c`) to use `apx_crypto_sha256()`.
+  * If multi-chunk/streaming hashing is required for large file streams in future items, expose streaming wrapper functions in `apx/crypto.h` (`apx_crypto_sha256_init`, `apx_crypto_sha256_update`, `apx_crypto_sha256_finish`) wrapping `mbedtls_sha256_starts`, `mbedtls_sha256_update`, `mbedtls_sha256_finish`.
+
+* **Submodule & Build Cleanup (`cutil`):**
+  * Remove `sha256.h` dependency from `c-apx` include search paths if feasible.
+  * In the `cutil` upstream repository, deprecate/retire `sha256.c` and `sha256.h` once no consumers remain.
+
+* **Acceptance criteria:**
+  * Zero references to `sha256.h` or `sha256_calc()` in `c-apx` source and test files.
+  * All definition hashing, signature verification, and test fixtures consistently use `apx_crypto_sha256()`.
+  * All unit and integration test suites pass with zero memory leaks and zero warnings under ASan and TSan.
+
 ---
 
 # Release v0.8.0 (Future Phase)
