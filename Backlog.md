@@ -311,32 +311,22 @@ Prevent misspelled or unrecognized JSON configuration keys from being silently i
 
 **Acceptance criteria:** Tests cover warnings for unknown sections and keys, continued startup after these warnings, and no unknown-key warnings for recognized keys, supported aliases, or omitted optional settings.
 
-## 16. Compressed Transfer for Signed APX Definitions (RMFP 1.1)
+## 16. Compressed Transfer of APX Node Definitions (Signed and Unsigned)
 
-To reduce wire transfer latency for signed APX nodes by >80% during startup phase while maintaining strict cryptographic verification:
+**Status:** Proposed. Reduce definition-transfer bytes and startup latency, including across bandwidth-constrained embedded links, without coupling compression to authentication or a particular implementation library.
 
-* **Protocol Extension (`RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG` / Opcode `24u`):**
-  * Define opcode `24u` in `apx_core/include/apx/remotefile.h` with an 88-byte fixed header:
-    * `cmd_type` (`uint32_t`, 24u)
-    * `address` (`uint32_t`, base memory address)
-    * `uncompressed_size` (`uint32_t`, decompressed size of `.apx` text)
-    * `compressed_size` (`uint32_t`, total bytes streamed across the wire)
-    * `file_type` (`uint16_t`, `RMF_U16_FILE_TYPE_FIXED`)
-    * `compression_type` (`uint16_t`, `1u` = Deflate)
-    * `sig_type` (`uint16_t`, `1u` = ECDSA-P256)
-    * `reserved` (`uint16_t`, 0u for 32/64-bit alignment)
-    * `signature_data` (`uint8_t[64]`, ECDSA-P256 signature of uncompressed text)
-    * `name` (`char[]`, null-terminated file name)
-  * Implement encoder and decoder functions in `remotefile.c` / `remotefile.h`.
-* **In-Memory Decompression with `miniz`:**
-  * Integrate single-file, zero-dependency C99 Deflate library (`miniz`).
-  * In `apx_file_manager_receiver_t`, buffer the incoming `compressed_size` bytes.
-  * Upon transfer completion, decompress in-memory into an `uncompressed_size` buffer (~0.3 ms for 140 KB definitions).
-* **Cryptographic Verification & Cache Integration:**
-  * Cryptographically verify the uncompressed buffer against `signature_data` via `apx_server_verify_node_signature()`.
-  * Compute SHA-256 of verified text and query Level 2 binary cache (`.apxc` from Item 14) to skip IDL parsing and VM bytecode compilation entirely.
-* **Backward Compatibility Fallback:**
-  * If a legacy server returns `RMF_CMD_NACK_MSG` on opcode 24, the client falls back to uncompressed `RMF_CMD_PUBLISH_SIGNED_FILE_MSG` (opcode 23).
+Detailed requirements, protocol rationale, compatibility rules, and acceptance tests are in the [compressed definition transfer design proposal](design/compressed_definition_transfer_spec.md). Wire layouts are specified in [RemoteFile v1.1](../apx/specifications/protocols/remotefile1_1.md#compressed-definition-transfer-unreleased).
+
+* Support unsigned and signed definitions using zlib-wrapped DEFLATE (RFC 1950 / RFC 1951). Preserve every RMFP 1.0 opcode and the legacy unsigned/uncompressed publication at ID 3.
+* Clean up the RemoteFile implementation layer to match the revised RMFP 1.1 allocation: keep header acceptance at 20, group signed/compressed publication at 21-23, and move stream control to 24-27. Remove obsolete `RMF_CMD_CONNECTION_CREATE`, `RMF_CMD_CONNECTION_REVOKE`, `RMF_CMD_PUBLISH_REMOTE_FILE_MSG`, and `RMF_CMD_PUBLISH_SIGNED_REMOTE_FILE_MSG` definitions and unused helpers/tests. Align encoders/decoders, dispatch, and wire-format fixtures; retain independent application event IDs unchanged.
+* Enable py-apx to select uncompressed text or a precompressed binary array at code-generation time. The user selects a representation compatible with the target server; compressed-only embedded clients need no runtime codec or automatic fallback. Uncompressed, unsigned generation retains RMFP 1.0 publication for v0.2.8 servers.
+* Support runtime compression in dynamic clients and interoperable implementations in other languages, using standard runtime APIs where available.
+* Bound and validate decompression before parsing; verify signatures and optional digests over the exact uncompressed definition bytes. With item 14's optional cache, either unsigned publication may skip transfer on an advertised SHA-256 cache hit; either signed publication must transfer and verify before reusing compiled content. Compression itself does not require caching.
+* Defer the C codec library choice. Linux production requirements drive evaluation; the wire format must not depend on zlib, miniz, or any other particular library.
+
+**Acceptance criteria:** Tests cover opcode cleanup and renumbering with unique RMFP 1.1 IDs and unchanged RMFP 1.0 IDs, signed/unsigned and compressed/uncompressed operation, legacy generation, cache transfer-bypass rules when caching is available, cross-implementation round trips, fragmented transfers, malformed input, resource limits, cleanup, and unchanged signature policy. Benchmark payload bytes and end-to-end startup separately; do not promise a universal compression ratio or decompression time.
+
+**Out of scope:** Automatic legacy fallback/capability negotiation, a complete APX-ES runtime rewrite, signal-data compression, and implementation of the node-definition cache.
 
 ## 17. Retire Unused `"max-num-events"` Configuration & `APX_MAX_NUM_EVENTS`
 
@@ -424,5 +414,3 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
     * `--rate <float>`: Time scaling (e.g. `1.0` real-time, `2.0` 2x speed, `0.5` half speed).
     * `--loop`: Loop playback indefinitely.
     * `--exclude-node <name>` / `--include-nodes <names>`: Node filtering to simulate surrounding vehicle bus nodes while running real ECU node under test.
-
-
