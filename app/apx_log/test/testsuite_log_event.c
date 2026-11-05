@@ -142,14 +142,15 @@ static void test_definition_rejection_format(CuTest *tc)
   pack_le_u32(payload + 16u, APX_CHECKSUM_ERROR);
   pack_le_u32(payload + 20u, APX_PARSE_ERROR);
   pack_le_u16(payload + 24u, 8u);
-  memcpy(payload + 26u, "Node.apx", 8u);
+  uint8_t const name[8] = {'N', 'o', 'd', 'e', '.', 'a', 'p', 'x'};
+  memcpy(payload + 26u, name, sizeof(name));
   apx_log_event_t event;
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_event_parse(&event, buf, sizeof(buf)));
   FILE *out = tmpfile();
   CuAssertPtrNotNull(tc, out);
   apx_log_event_print_text(&event, out);
   apx_log_event_print_json(&event, out);
-  rewind(out);
+  CuAssertIntEquals(tc, 0, fseek(out, 0, SEEK_SET));
   char output[2048];
   size_t const length = fread(output, 1u, sizeof(output) - 1u, out);
   output[length] = '\0';
