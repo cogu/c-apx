@@ -68,6 +68,13 @@ Features
 .. toctree::
    :maxdepth: 2
    :hidden:
+   :caption: Design
+
+   design/index
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
    :caption: C API Reference
 
    api/index
@@ -145,6 +152,18 @@ Server Extensions
    * - :doc:`extensions/monitor`
      - ``monitor-extension``
      - Runtime server monitoring and connection tracking.
+
+Design
+======
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Page
+     - Description
+   * - :doc:`design/apx_server`
+     - Server definition admission, data ownership, resource limits, and monitoring/logging internals.
 
 C API Modules
 =============

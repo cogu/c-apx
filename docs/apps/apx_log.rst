@@ -95,7 +95,7 @@ Inspects and displays header metadata and summary statistics for a ``.apxlog`` c
 Output includes format version, finalized status, capture start/end timestamps (ISO 8601 UTC and unix nanoseconds), total duration, record count, and file size on disk.
 
 Definition Content and Rejections
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Live and snapshot ``.apx`` file events contain validated, uncompressed APX
 text and its logical size, regardless of transfer encoding. ``apx-log`` does
