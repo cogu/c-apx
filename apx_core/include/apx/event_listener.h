@@ -49,6 +49,24 @@ typedef void(apx_port_provider_change_event_func_t)(void *arg, uint32_t old_conn
   apx_provider_change_reason_t reason);
 
 // Connection typedefs
+typedef enum apx_definition_failure_stage_tag
+{
+  APX_DEFINITION_STAGE_ADMISSION = 1,
+  APX_DEFINITION_STAGE_TRANSFER,
+  APX_DEFINITION_STAGE_DECOMPRESSION,
+  APX_DEFINITION_STAGE_DIGEST,
+  APX_DEFINITION_STAGE_SIGNATURE,
+  APX_DEFINITION_STAGE_PARSING,
+  APX_DEFINITION_STAGE_COMPILATION,
+  APX_DEFINITION_STAGE_ALLOCATION
+} apx_definition_failure_stage_t;
+
+typedef void(apx_definition_rejected_event_func_t)(void *arg, struct apx_connection_base_tag *connection,
+  struct rmf_file_info_tag const *file_info, apx_definition_failure_stage_t stage, apx_error_t error_code,
+  apx_error_t response_code);
+typedef void(apx_definition_validated_event_func_t)(
+  void *arg, struct apx_connection_base_tag *connection, struct apx_node_instance_tag *node);
+
 typedef void(apx_protocol_header_accepted_func_t)(void *arg, struct apx_connection_base_tag *connection);
 typedef void(apx_port_data_write_func_t)(
   void *arg, struct apx_port_instance_tag *port_instance, uint8_t const *data, apx_size_t size);
@@ -88,12 +106,15 @@ typedef struct apx_server_connection_event_listener_tag
   apx_file_event_func_t *file_opened;
   apx_file_event_func_t *file_closed;
   apx_file_write_event_func_t *file_written;
+  apx_definition_rejected_event_func_t *definition_rejected;
+  apx_definition_validated_event_func_t *definition_validated;
 } apx_server_connection_event_listener_t;
 
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+char const *apx_definition_failure_stage_str(apx_definition_failure_stage_t stage);
 apx_client_event_listener_t *apx_client_event_listener_clone(apx_client_event_listener_t *other);
 void apx_client_event_listener_delete(apx_client_event_listener_t *self);
 void apx_client_event_listener_vdelete(void *arg);

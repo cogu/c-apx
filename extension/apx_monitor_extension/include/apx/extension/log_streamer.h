@@ -30,6 +30,7 @@
 #define APX_LOG_EVENT_CONNECTION_CLOSE 0x0011u
 #define APX_LOG_EVENT_NODE_ATTACH 0x0020u
 #define APX_LOG_EVENT_NODE_DETACH 0x0021u
+#define APX_LOG_EVENT_NODE_DEFINITION_REJECTED 0x0022u
 #define APX_LOG_EVENT_FILE_PUBLISH 0x0030u
 #define APX_LOG_EVENT_FILE_REVOKE 0x0031u
 #define APX_LOG_EVENT_FILE_OPEN 0x0032u
@@ -113,6 +114,9 @@ apx_error_t apx_log_streamer_enqueue_connection_close(
 apx_error_t apx_log_streamer_enqueue_node_attach(
   apx_log_streamer_t *self, uint32_t connection_id, uint32_t node_id, const char *node_name);
 apx_error_t apx_log_streamer_enqueue_node_detach(apx_log_streamer_t *self, uint32_t connection_id, uint32_t node_id);
+apx_error_t apx_log_streamer_enqueue_definition_rejected(apx_log_streamer_t *self, uint32_t connection_id,
+  struct rmf_file_info_tag const *file_info, uint16_t stage, apx_error_t error_code, apx_error_t response_code);
+bool apx_log_streamer_has_file(apx_log_streamer_t *self, uint32_t connection_id, uint32_t address);
 apx_error_t apx_log_streamer_enqueue_file_publish(
   apx_log_streamer_t *self, uint32_t connection_id, const struct rmf_file_info_tag *file_info);
 apx_error_t apx_log_streamer_enqueue_file_revoke(apx_log_streamer_t *self, uint32_t connection_id, uint32_t address);

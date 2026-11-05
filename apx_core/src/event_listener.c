@@ -33,6 +33,30 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+char const *apx_definition_failure_stage_str(apx_definition_failure_stage_t stage)
+{
+  switch (stage)
+  {
+  case APX_DEFINITION_STAGE_ADMISSION:
+    return "admission";
+  case APX_DEFINITION_STAGE_TRANSFER:
+    return "transfer";
+  case APX_DEFINITION_STAGE_DECOMPRESSION:
+    return "decompression";
+  case APX_DEFINITION_STAGE_DIGEST:
+    return "digest";
+  case APX_DEFINITION_STAGE_SIGNATURE:
+    return "signature";
+  case APX_DEFINITION_STAGE_PARSING:
+    return "parsing";
+  case APX_DEFINITION_STAGE_COMPILATION:
+    return "compilation";
+  case APX_DEFINITION_STAGE_ALLOCATION:
+    return "allocation";
+  default:
+    return "unknown";
+  }
+}
 
 apx_client_event_listener_t *apx_client_event_listener_clone(apx_client_event_listener_t *other)
 {

@@ -65,6 +65,8 @@ void apx_server_connection_vnode_created_notification(void *arg, apx_node_instan
 void apx_server_connection_set_connection_id(apx_server_connection_t *self, uint32_t connection_id);
 uint32_t apx_server_connection_get_connection_id(apx_server_connection_t *self);
 void apx_server_connection_set_server(apx_server_connection_t *self, struct apx_server_tag *server);
+void apx_server_connection_definition_rejected(apx_server_connection_t *self, rmf_file_info_t const *file_info,
+  apx_definition_failure_stage_t stage, apx_error_t error_code, apx_error_t response_code);
 struct apx_server_tag *apx_server_connection_get_server(apx_server_connection_t *self);
 void *apx_server_connection_register_event_listener(
   apx_server_connection_t *self, apx_server_connection_event_listener_t *event_listener);

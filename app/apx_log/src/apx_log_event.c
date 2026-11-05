@@ -9,6 +9,7 @@
  * See LICENSE in project root for full license terms.
  ******************************************************************************/
 #include "apx_log_event.h"
+#include "apx/event_listener.h"
 #include "dtl_json.h"
 #include "dtl_type.h"
 #include <inttypes.h>
@@ -86,6 +87,18 @@ static void format_hex(char *dst, size_t dst_size, const uint8_t *data, uint32_t
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+static char const *transfer_encoding_name(uint16_t compression_type)
+{
+  switch (compression_type)
+  {
+  case 0u:
+    return "uncompressed";
+  case 1u:
+    return "zlib-deflate";
+  default:
+    return "unknown";
+  }
+}
 
 apx_error_t apx_log_event_parse(apx_log_event_t *self, const uint8_t *buf, uint32_t size)
 {
@@ -106,6 +119,17 @@ apx_error_t apx_log_event_parse(apx_log_event_t *self, const uint8_t *buf, uint3
   self->object_id = unpack_le_u32(buf + 24);
   self->payload_size = size - APX_LOG_EVENT_HEADER_SIZE;
   self->payload = (self->payload_size > 0u) ? (buf + APX_LOG_EVENT_HEADER_SIZE) : NULL;
+  if (self->event_type == APX_LOG_EVENT_NODE_DEFINITION_REJECTED)
+  {
+    if (self->payload_size < 26u)
+    {
+      return APX_LENGTH_ERROR;
+    }
+    if (unpack_le_u16(self->payload + 24u) != self->payload_size - 26u)
+    {
+      return APX_VALUE_LENGTH_ERROR;
+    }
+  }
 
   return APX_NO_ERROR;
 }
@@ -126,6 +150,8 @@ const char *apx_log_event_type_str(uint16_t event_type)
     return "NODE_ATTACH";
   case APX_LOG_EVENT_NODE_DETACH:
     return "NODE_DETACH";
+  case APX_LOG_EVENT_NODE_DEFINITION_REJECTED:
+    return "NODE_DEFINITION_REJECTED";
   case APX_LOG_EVENT_FILE_PUBLISH:
     return "FILE_PUBLISH";
   case APX_LOG_EVENT_FILE_REVOKE:
@@ -242,6 +268,21 @@ void apx_log_event_print_text(const apx_log_event_t *self, FILE *out)
 
   case APX_LOG_EVENT_NODE_DETACH:
     fprintf(out, " conn=%u node_id=%u", self->connection_id, self->object_id);
+    break;
+
+  case APX_LOG_EVENT_NODE_DEFINITION_REJECTED:
+    if (self->payload_size >= 26u)
+    {
+      uint32_t consumed = 0u;
+      char *name = decode_string16(self->payload + 24u, self->payload_size - 24u, &consumed);
+      fprintf(out, " conn=%u file=\"%s\" encoding=%s encoded_size=%u definition_size=%u stage=%s error=%d (%s) nack=%d",
+        self->connection_id, name != NULL ? name : "", transfer_encoding_name(unpack_le_u16(self->payload + 12u)),
+        unpack_le_u32(self->payload + 4u), unpack_le_u32(self->payload + 8u),
+        apx_definition_failure_stage_str((apx_definition_failure_stage_t)unpack_le_u16(self->payload + 14u)),
+        (int32_t)unpack_le_u32(self->payload + 16u), apx_strerror((apx_error_t)unpack_le_u32(self->payload + 16u)),
+        (int32_t)unpack_le_u32(self->payload + 20u));
+      free(name);
+    }
     break;
 
   case APX_LOG_EVENT_FILE_PUBLISH:
@@ -363,10 +404,7 @@ void apx_log_event_print_json(const apx_log_event_t *self, FILE *out)
     dtl_hv_set_cstr(hv, "flags", (dtl_dv_t *)flags_av, false);
   }
 
-  if (self->connection_id != 0u)
-  {
-    dtl_hv_set_cstr(hv, "connection_id", (dtl_dv_t *)dtl_sv_make_u32(self->connection_id), false);
-  }
+  dtl_hv_set_cstr(hv, "connection_id", (dtl_dv_t *)dtl_sv_make_u32(self->connection_id), false);
   if (self->object_id != 0u)
   {
     dtl_hv_set_cstr(hv, "object_id", (dtl_dv_t *)dtl_sv_make_u32(self->object_id), false);
@@ -440,6 +478,29 @@ void apx_log_event_print_json(const apx_log_event_t *self, FILE *out)
       {
         free(name);
       }
+    }
+    break;
+
+  case APX_LOG_EVENT_NODE_DEFINITION_REJECTED:
+    if (self->payload_size >= 26u)
+    {
+      uint32_t consumed = 0u;
+      char *name = decode_string16(self->payload + 24u, self->payload_size - 24u, &consumed);
+      dtl_hv_set_cstr(hv, "file_name", (dtl_dv_t *)dtl_sv_make_cstr(name != NULL ? name : ""), false);
+      free(name);
+      dtl_hv_set_cstr(hv, "remote_address", (dtl_dv_t *)dtl_sv_make_u32(unpack_le_u32(self->payload)), false);
+      dtl_hv_set_cstr(hv, "encoded_size", (dtl_dv_t *)dtl_sv_make_u32(unpack_le_u32(self->payload + 4u)), false);
+      dtl_hv_set_cstr(hv, "definition_size", (dtl_dv_t *)dtl_sv_make_u32(unpack_le_u32(self->payload + 8u)), false);
+      dtl_hv_set_cstr(hv, "transfer_encoding",
+        (dtl_dv_t *)dtl_sv_make_cstr(transfer_encoding_name(unpack_le_u16(self->payload + 12u))), false);
+      dtl_hv_set_cstr(hv, "failure_stage",
+        (dtl_dv_t *)dtl_sv_make_cstr(
+          apx_definition_failure_stage_str((apx_definition_failure_stage_t)unpack_le_u16(self->payload + 14u))),
+        false);
+      dtl_hv_set_cstr(
+        hv, "error_code", (dtl_dv_t *)dtl_sv_make_i32((int32_t)unpack_le_u32(self->payload + 16u)), false);
+      dtl_hv_set_cstr(
+        hv, "response_code", (dtl_dv_t *)dtl_sv_make_i32((int32_t)unpack_le_u32(self->payload + 20u)), false);
     }
     break;
 

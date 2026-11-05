@@ -151,6 +151,10 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
 {
   if (self != NULL && (node_instance != NULL))
   {
+    apx_file_t *def_file = apx_node_instance_get_definition_file(node_instance);
+    apx_definition_failure_stage_t stage = APX_DEFINITION_STAGE_ALLOCATION;
+    apx_error_t result = APX_NO_ERROR;
+    apx_error_t response_code = APX_NO_ERROR;
     apx_node_data_t *node_data = apx_node_instance_get_node_data(node_instance);
     if (node_data == NULL)
     {
@@ -164,76 +168,38 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
     uint8_t *definition_data = apx_node_data_take_definition_data_snapshot(node_data);
     if (definition_data == NULL)
     {
-      return APX_MEM_ERROR;
+      result = APX_MEM_ERROR;
+      goto rejected;
     }
-    apx_file_t *def_file = apx_node_instance_get_definition_file(node_instance);
     if ((def_file != NULL) && apx_file_is_compressed(def_file))
     {
       uint32_t const uncompressed_size = apx_file_get_uncompressed_size(def_file);
       if ((uncompressed_size == 0u) || (uncompressed_size > APX_MAX_FILE_SIZE))
       {
-        char const *name = apx_node_instance_get_name(node_instance);
-        apx_server_t *server = apx_node_instance_get_server(node_instance);
-        if (server != NULL)
-        {
-          apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: invalid uncompressed size %u",
-            (name != NULL) ? name : "<unknown>", uncompressed_size);
-        }
-        free(definition_data);
-        if (self->parent_connection != NULL)
-        {
-          apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
-          if (file_manager != NULL)
-          {
-            apx_file_manager_send_error_code(file_manager, APX_PARSE_ERROR, name);
-          }
-        }
-        if (name != NULL)
-        {
-          adt_hash_remove(&self->instance_map, name);
-          apx_node_instance_delete(node_instance);
-        }
-        return APX_PARSE_ERROR;
+        stage = APX_DEFINITION_STAGE_ADMISSION;
+        result = APX_FILE_TOO_LARGE_ERROR;
+        goto rejected;
       }
       uint8_t *uncompressed_data = (uint8_t *)malloc((size_t)uncompressed_size + 1u);
       if (uncompressed_data == NULL)
       {
-        free(definition_data);
-        return APX_MEM_ERROR;
+        result = APX_MEM_ERROR;
+        goto rejected;
       }
       size_t dst_len = (size_t)uncompressed_size;
       apx_error_t const dec_res =
         apx_decompress(uncompressed_data, &dst_len, definition_data, definition_size, (size_t)uncompressed_size);
       free(definition_data);
+      definition_data = uncompressed_data;
       if ((dec_res != APX_NO_ERROR) || (dst_len != (size_t)uncompressed_size))
       {
-        free(uncompressed_data);
-        char const *name = apx_node_instance_get_name(node_instance);
-        apx_server_t *server = apx_node_instance_get_server(node_instance);
-        if (server != NULL)
-        {
-          apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: decompression failed (%s)",
-            (name != NULL) ? name : "<unknown>", apx_strerror(dec_res != APX_NO_ERROR ? dec_res : APX_PARSE_ERROR));
-        }
-        if (self->parent_connection != NULL)
-        {
-          apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
-          if (file_manager != NULL)
-          {
-            apx_file_manager_send_error_code(file_manager, APX_PARSE_ERROR, name);
-          }
-        }
-        if (name != NULL)
-        {
-          adt_hash_remove(&self->instance_map, name);
-          apx_node_instance_delete(node_instance);
-        }
-        return (dec_res != APX_NO_ERROR) ? dec_res : APX_PARSE_ERROR;
+        stage = dec_res == APX_MEM_ERROR ? APX_DEFINITION_STAGE_ALLOCATION : APX_DEFINITION_STAGE_DECOMPRESSION;
+        result = (dec_res != APX_NO_ERROR) ? dec_res : APX_LENGTH_ERROR;
+        response_code = dec_res == APX_MEM_ERROR ? APX_MEM_ERROR : APX_PARSE_ERROR;
+        goto rejected;
       }
       uncompressed_data[uncompressed_size] = '\0';
-      definition_data = uncompressed_data;
       definition_size = (size_t)uncompressed_size;
-      (void)apx_node_data_replace_definition_data(node_data, definition_data, (apx_size_t)definition_size);
     }
     if (def_file != NULL)
     {
@@ -244,28 +210,10 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
         apx_error_t const hash_res = apx_crypto_sha256(definition_data, definition_size, hash);
         if ((hash_res != APX_NO_ERROR) || (memcmp(hash, apx_file_get_digest_data(def_file), RMF_SHA256_SIZE) != 0))
         {
-          char const *name = apx_node_instance_get_name(node_instance);
-          apx_server_t *server = apx_node_instance_get_server(node_instance);
-          if (server != NULL)
-          {
-            apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: digest verification failed",
-              (name != NULL) ? name : "<unknown>");
-          }
-          free(definition_data);
-          if (self->parent_connection != NULL)
-          {
-            apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
-            if (file_manager != NULL)
-            {
-              apx_file_manager_send_error_code(file_manager, APX_PARSE_ERROR, name);
-            }
-          }
-          if (name != NULL)
-          {
-            adt_hash_remove(&self->instance_map, name);
-            apx_node_instance_delete(node_instance);
-          }
-          return APX_PARSE_ERROR;
+          stage = APX_DEFINITION_STAGE_DIGEST;
+          result = (hash_res != APX_NO_ERROR) ? hash_res : APX_CHECKSUM_ERROR;
+          response_code = APX_PARSE_ERROR;
+          goto rejected;
         }
       }
     }
@@ -281,37 +229,59 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
         apx_server_verify_node_signature(server, sig_type, sig_data, sig_len, definition_data, definition_size);
       if (verify_result != APX_NO_ERROR)
       {
-        char const *name = apx_node_instance_get_name(node_instance);
-        apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: signature verification failed (%s)",
-          (name != NULL) ? name : "<unknown>", apx_strerror(verify_result));
-
-        free(definition_data);
-        if (self->parent_connection != NULL)
-        {
-          apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
-          if (file_manager != NULL)
-          {
-            apx_file_manager_send_error_code(file_manager, verify_result, name);
-          }
-        }
-        if (name != NULL)
-        {
-          adt_hash_remove(&self->instance_map, name);
-          apx_node_instance_delete(node_instance);
-        }
-        return verify_result;
+        stage = APX_DEFINITION_STAGE_SIGNATURE;
+        result = verify_result;
+        goto rejected;
       }
     }
-    apx_error_t result = apx_parser_parse_bstr(&self->parser, definition_data, definition_data + definition_size);
+    stage = APX_DEFINITION_STAGE_PARSING;
+    apx_istream_reset(&self->stream);
+    result = apx_parser_parse_bstr(&self->parser, definition_data, definition_data + definition_size);
+    apx_istream_reset(&self->stream);
+    adt_bytearray_destroy(&self->stream.buf);
+    adt_bytearray_create(&self->stream.buf);
     apx_node_t *node = NULL;
-    free(definition_data);
     if (result == APX_NO_ERROR)
     {
       node = apx_parser_take_last_node(&self->parser);
       assert(node != NULL);
-      result = build_node_instance(self, node_instance, node);
+      if ((def_file != NULL) && apx_file_is_compressed(def_file))
+      {
+        stage = APX_DEFINITION_STAGE_ALLOCATION;
+        result = apx_node_data_replace_definition_data(node_data, definition_data, (apx_size_t)definition_size);
+      }
+      if (result == APX_NO_ERROR)
+      {
+        stage = APX_DEFINITION_STAGE_COMPILATION;
+        result = build_node_instance(self, node_instance, node);
+      }
       apx_node_delete(node);
     }
+    if (result != APX_NO_ERROR)
+    {
+      goto rejected;
+    }
+    if (self->parent_connection != NULL)
+    {
+      result = apx_node_instance_attach_to_file_manager(
+        node_instance, apx_connection_base_get_file_manager(self->parent_connection));
+      if (result != APX_NO_ERROR)
+      {
+        stage = APX_DEFINITION_STAGE_COMPILATION;
+        goto rejected;
+      }
+    }
+    free(definition_data);
+    if (self->parent_connection != NULL)
+    {
+      apx_file_manager_receiver_reset(&self->parent_connection->file_manager.receiver);
+    }
+    if (server != NULL && node_instance->definition_memory_reservation != 0u)
+    {
+      apx_server_release_definition_memory(server, node_instance->definition_memory_reservation);
+      node_instance->definition_memory_reservation = 0u;
+    }
+    apx_node_instance_set_definition_data_state(node_instance, APX_DATA_STATE_SYNCHRONIZED);
     if (result == APX_NO_ERROR)
     {
       if (server != NULL)
@@ -329,31 +299,103 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
         }
       }
     }
-    else
+    return result;
+
+rejected:
+    free(definition_data);
+    if (response_code == APX_NO_ERROR)
     {
-      char const *name = apx_node_instance_get_name(node_instance);
-      if (server != NULL)
-      {
-        apx_server_log(server, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: parse failed (%s)",
-          (name != NULL) ? name : "<unknown>", apx_strerror(result));
-      }
-      if (self->parent_connection != NULL)
-      {
-        apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
-        if (file_manager != NULL)
-        {
-          apx_file_manager_send_error_code(file_manager, result, name);
-        }
-      }
-      if (name != NULL)
-      {
-        adt_hash_remove(&self->instance_map, name);
-        apx_node_instance_delete(node_instance);
-      }
+      response_code = result;
+    }
+    if (def_file != NULL)
+    {
+      return apx_node_manager_reject_definition(self, def_file, stage, result, response_code);
     }
     return result;
   }
   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_manager_reject_definition(apx_node_manager_t *self, apx_file_t *file,
+  apx_definition_failure_stage_t stage, apx_error_t error_code, apx_error_t response_code)
+{
+  assert(self != NULL && file != NULL);
+  rmf_file_info_t const *file_info = apx_file_get_file_info(file);
+  char name[RMF_MAX_FILE_NAME_SIZE + 1u];
+  rmf_file_info_copy_base_name(file_info, name, sizeof(name));
+  apx_file_close(file);
+  apx_file_set_notification_handler(file, NULL);
+  if (self->parent_connection != NULL)
+  {
+    apx_file_manager_receiver_reset(&self->parent_connection->file_manager.receiver);
+  }
+  if (self->parent_connection != NULL && self->mode == APX_SERVER_MODE)
+  {
+    apx_server_connection_definition_rejected(
+      (apx_server_connection_t *)self->parent_connection, file_info, stage, error_code, response_code);
+  }
+  if (self->parent_connection != NULL)
+  {
+    apx_error_t const send_error = apx_file_manager_send_error_code(
+      apx_connection_base_get_file_manager(self->parent_connection), response_code, name[0] != '\0' ? name : NULL);
+    if (send_error != APX_NO_ERROR && self->mode == APX_SERVER_MODE)
+    {
+      apx_server_t *server = ((apx_server_connection_t *)self->parent_connection)->parent;
+      if (server != NULL)
+      {
+        apx_server_log(
+          server, APX_LOG_LEVEL_ERROR, "Failed to send definition rejection: %s", apx_strerror(send_error));
+      }
+    }
+  }
+  if (name[0] != '\0')
+  {
+    apx_node_instance_t *node = apx_node_manager_find(self, name);
+    if (node != NULL && apx_node_instance_get_definition_file(node) == file)
+    {
+      apx_server_t *server = apx_node_instance_get_server(node);
+      if (server != NULL)
+      {
+        apx_server_take_global_lock(server);
+      }
+      adt_hash_remove(&self->instance_map, name);
+      if (self->last_attached == node)
+      {
+        self->last_attached = NULL;
+      }
+      if (server != NULL)
+      {
+        apx_server_release_global_lock(server);
+      }
+      if (self->parent_connection != NULL)
+      {
+        apx_file_manager_shared_t *shared = &self->parent_connection->file_manager.shared;
+        MUTEX_LOCK(shared->lock);
+        adt_list_t const *lists[] = {
+          apx_file_map_get_list(&shared->local_file_map), apx_file_map_get_list(&shared->remote_file_map)};
+        for (size_t i = 0u; i < 2u; ++i)
+        {
+          adt_list_elem_t *iter = adt_list_iter_first(lists[i]);
+          while (iter != NULL)
+          {
+            apx_file_t *attached_file = (apx_file_t *)iter->pItem;
+            MUTEX_LOCK(attached_file->lock);
+            bool const owned = attached_file->notification_handler.arg == node;
+            MUTEX_UNLOCK(attached_file->lock);
+            if (owned)
+            {
+              apx_file_close(attached_file);
+              apx_file_set_notification_handler(attached_file, NULL);
+            }
+            iter = adt_list_iter_next(iter);
+          }
+        }
+        MUTEX_UNLOCK(shared->lock);
+      }
+      apx_node_instance_delete(node);
+    }
+  }
+  return error_code;
 }
 
 // Common API
@@ -429,18 +471,7 @@ apx_error_t apx_node_manager_on_definition_data_written(
     if ((offset == 0u) && (size == apx_node_data_definition_data_size(node_data)))
     {
       retval = apx_node_manager_build_node_from_data(self, node_instance);
-      if (retval == APX_NO_ERROR)
-      {
-        if (self->parent_connection != NULL)
-        {
-          apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(self->parent_connection);
-          if (file_manager != NULL)
-          {
-            apx_node_instance_attach_to_file_manager(node_instance, file_manager);
-          }
-        }
-      }
-      else if (self->mode == APX_SERVER_MODE)
+      if (retval != APX_NO_ERROR && self->mode == APX_SERVER_MODE)
       {
         retval = APX_NO_ERROR;
       }
@@ -494,6 +525,10 @@ static apx_error_t create_node_instance(
   }
   apx_error_t result = APX_NO_ERROR;
   apx_node_instance_t *node_instance = apx_node_instance_new(self->mode, apx_node_get_name(node));
+  if (node_instance == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
   result = apx_node_instance_init_node_data(node_instance, definition_data, definition_size);
   if (result == APX_NO_ERROR)
   {
@@ -501,6 +536,14 @@ static apx_error_t create_node_instance(
   }
   if (result == APX_NO_ERROR)
   {
+    if (self->mode == APX_SERVER_MODE)
+    {
+      apx_node_instance_set_definition_data_state(node_instance, APX_DATA_STATE_SYNCHRONIZED);
+      if (self->parent_connection != NULL)
+      {
+        apx_node_instance_set_server(node_instance, ((apx_server_connection_t *)self->parent_connection)->parent);
+      }
+    }
     attach_node(self, node_instance);
   }
   else
@@ -543,9 +586,18 @@ static void attach_node(apx_node_manager_t *self, apx_node_instance_t *node_inst
   assert(self != NULL);
   if (node_instance != NULL)
   {
+    apx_server_t *server = apx_node_instance_get_server(node_instance);
+    if (server != NULL)
+    {
+      apx_server_take_global_lock(server);
+    }
     adt_hash_set(&self->instance_map, apx_node_instance_get_name(node_instance), (void *)node_instance);
     apx_node_instance_set_parent(node_instance, self);
     self->last_attached = node_instance;
+    if (server != NULL)
+    {
+      apx_server_release_global_lock(server);
+    }
     if (self->parent_connection != NULL)
     {
       apx_connection_base_node_created_notification(self->parent_connection, node_instance);
@@ -983,6 +1035,22 @@ static apx_error_t init_node_instance_from_file_info(
   assert(file_info != NULL);
   assert(file_open_request != NULL);
   apx_error_t result = APX_NO_ERROR;
+  uint32_t const encoded_size = rmf_file_info_size(file_info);
+  uint32_t const logical_size =
+    rmf_file_info_is_compressed(file_info) ? rmf_file_info_uncompressed_size(file_info) : encoded_size;
+  if (encoded_size == 0u || logical_size == 0u)
+  {
+    return APX_LENGTH_ERROR;
+  }
+  if (encoded_size > APX_MAX_FILE_SIZE || logical_size > APX_MAX_FILE_SIZE)
+  {
+    return APX_FILE_TOO_LARGE_ERROR;
+  }
+  apx_server_t *server = (self->parent_connection != NULL && self->mode == APX_SERVER_MODE) ?
+    ((apx_server_connection_t *)self->parent_connection)->parent :
+    NULL;
+  uint64_t const reservation =
+    4u * (uint64_t)encoded_size + 3u * (uint64_t)logical_size + APX_DEFINITION_CODEC_MEMORY_ALLOWANCE + 1u;
   size_t name_size;
   char *base_name = rmf_file_info_base_name(file_info);
   if (base_name == NULL)
@@ -1000,7 +1068,27 @@ static apx_error_t init_node_instance_from_file_info(
   }
   else
   {
+    if (server != NULL)
+    {
+      result = apx_server_reserve_definition_memory(server, reservation);
+      if (result != APX_NO_ERROR)
+      {
+        free(base_name);
+        return result;
+      }
+    }
     apx_node_instance_t *node_instance = apx_node_instance_new(self->mode, base_name);
+    if (node_instance == NULL)
+    {
+      if (server != NULL)
+      {
+        apx_server_release_definition_memory(server, reservation);
+      }
+      free(base_name);
+      return APX_MEM_ERROR;
+    }
+    node_instance->server = server;
+    node_instance->definition_memory_reservation = (server != NULL) ? reservation : 0u;
     if (result == APX_NO_ERROR)
     {
       apx_size_t definition_size = (apx_size_t)rmf_file_info_size(file_info);

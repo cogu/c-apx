@@ -213,6 +213,11 @@ void apx_node_instance_destroy(apx_node_instance_t *self)
       apx_byte_port_map_delete(self->provide_byte_port_map);
     if (self->require_byte_port_map != NULL)
       apx_byte_port_map_delete(self->require_byte_port_map);
+    if (self->server != NULL && self->definition_memory_reservation != 0u)
+    {
+      apx_server_release_definition_memory(self->server, self->definition_memory_reservation);
+      self->definition_memory_reservation = 0u;
+    }
   }
 }
 
@@ -744,7 +749,11 @@ apx_data_state_t apx_node_instance_get_definition_data_state(apx_node_instance_t
 {
   if (self != NULL)
   {
-    return self->definition_data_state;
+    apx_node_instance_t *mutable_self = (apx_node_instance_t *)self;
+    MUTEX_LOCK(mutable_self->lock);
+    apx_data_state_t const state = self->definition_data_state;
+    MUTEX_UNLOCK(mutable_self->lock);
+    return state;
   }
   return APX_DATA_STATE_DISCONNECTED;
 }
@@ -771,7 +780,9 @@ void apx_node_instance_set_definition_data_state(apx_node_instance_t *self, apx_
 {
   if (self != NULL)
   {
+    MUTEX_LOCK(self->lock);
     self->definition_data_state = state;
+    MUTEX_UNLOCK(self->lock);
   }
 }
 
@@ -957,8 +968,13 @@ apx_error_t apx_node_instance_vfile_open_notify(void *arg, apx_file_t *file)
 
 apx_error_t apx_node_instance_vfile_close_notify(void *arg, apx_file_t *file)
 {
-  (void)arg;
-  (void)file;
+  apx_node_instance_t *self = (apx_node_instance_t *)arg;
+  if (file == self->definition_file && apx_node_instance_get_definition_data_state(self) != APX_DATA_STATE_SYNCHRONIZED)
+  {
+    apx_node_manager_reject_definition(
+      self->parent, file, APX_DEFINITION_STAGE_TRANSFER, APX_DATA_NOT_COMPLETE_ERROR, APX_DATA_NOT_COMPLETE_ERROR);
+    return APX_NO_ERROR;
+  }
   return APX_NOT_IMPLEMENTED_ERROR;
 }
 
@@ -1616,10 +1632,6 @@ static apx_error_t file_write_notify(
 static apx_error_t process_remote_write_definition_data(
   apx_node_instance_t *self, uint32_t offset, const uint8_t *data, apx_size_t size)
 {
-  if (self->definition_data_state == APX_DATA_STATE_WAITING_FOR_FILE_DATA)
-  {
-    self->definition_data_state = APX_DATA_STATE_SYNCHRONIZED;
-  }
   apx_error_t retval = apx_node_data_write_definition_data(self->node_data, offset, data, size);
   if (retval == APX_NO_ERROR)
   {
@@ -1947,28 +1959,25 @@ static apx_error_t search_for_remote_provide_port_data_file(apx_node_instance_t 
 {
   apx_error_t retval = APX_NO_ERROR;
   adt_str_t *str = adt_str_new_cstr(apx_node_instance_get_name(self));
-  if (str != NULL)
+  if (str == NULL)
   {
-    adt_error_t rc = adt_str_append_cstr(str, APX_PROVIDE_PORT_DATA_EXT);
-    if (rc != ADT_NO_ERROR)
+    return APX_MEM_ERROR;
+  }
+  adt_error_t rc = adt_str_append_cstr(str, APX_PROVIDE_PORT_DATA_EXT);
+  if (rc != ADT_NO_ERROR)
+  {
+    retval = convert_from_adt_to_apx_error(rc);
+  }
+  else
+  {
+    apx_file_t *file = apx_file_manager_find_remote_file_by_name(file_manager, adt_str_cstr(str));
+    if (file != NULL)
     {
-      retval = convert_from_adt_to_apx_error(rc);
-    }
-    else
-    {
-      apx_file_t *file = apx_file_manager_find_remote_file_by_name(file_manager, adt_str_cstr(str));
-      adt_str_delete(str);
-      if (file != NULL)
-      {
-        set_file_notification_handler(self, file);
-        retval = request_remote_provide_port_data(self, file);
-      }
+      set_file_notification_handler(self, file);
+      retval = request_remote_provide_port_data(self, file);
     }
   }
-  if (retval != APX_NO_ERROR)
-  {
-    apx_file_manager_send_error_code(file_manager, retval, apx_node_instance_get_name(self));
-  }
+  adt_str_delete(str);
   return retval;
 }
 

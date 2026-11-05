@@ -94,6 +94,21 @@ Inspects and displays header metadata and summary statistics for a ``.apxlog`` c
 
 Output includes format version, finalized status, capture start/end timestamps (ISO 8601 UTC and unix nanoseconds), total duration, record count, and file size on disk.
 
+Definition Content and Rejections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Live and snapshot ``.apx`` file events contain validated, uncompressed APX
+text and its logical size, regardless of transfer encoding. ``apx-log`` does
+not decompress node transfers or compress the ``.apxlog`` container.
+
+``NODE_DEFINITION_REJECTED`` records the sending connection, announced file
+name, transfer encoding and sizes, failure stage, specific detected error,
+and intended client NACK code. ``print`` displays these fields as text;
+``print --json`` exposes ``transfer_encoding``, ``failure_stage``,
+``error_code``, and ``response_code``. Connection ID zero is valid and is
+included in JSON output. The response code does not prove NACK delivery.
+Rejected payload bytes are not recorded as normal definition-file data.
+
 print
 ~~~~~
 
@@ -186,4 +201,3 @@ Emit event stream as NDJSON lines:
    {"event":"FILE_PUBLISH","seq":2,"timestamp_ns":1350000,"flags":["SNAPSHOT"],"connection_id":1,"file_address":0,"file_size":4,"file_name":"EngineNode.out"}
    {"event":"SNAPSHOT_END","seq":3,"timestamp_ns":2000000}
    {"event":"FILE_WRITE","seq":4,"timestamp_ns":150000000,"connection_id":1,"file_id":0,"offset":0,"size":4,"data_hex":"01 00 00 00"}
-

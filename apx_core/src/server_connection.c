@@ -37,6 +37,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+static apx_error_t on_definition_transfer_error(void *arg, apx_file_t *file, apx_error_t error_code);
+static apx_server_connection_event_listener_t *copy_definition_listeners(apx_server_connection_t *self, size_t *count);
 static apx_error_t remote_file_published_notification(apx_server_connection_t *self, apx_file_t *file);
 static apx_error_t remote_file_open_notification(apx_server_connection_t *self, apx_file_t *file);
 static apx_error_t remote_file_close_notification(apx_server_connection_t *self, apx_file_t *file);
@@ -94,6 +96,7 @@ apx_error_t apx_server_connection_create(apx_server_connection_t *self,
     connection_interface->remote_file_open_notification = apx_server_connection_vremote_file_open_notification;
     connection_interface->remote_file_close_notification = apx_server_connection_vremote_file_close_notification;
     connection_interface->remote_file_write_notification = apx_server_connection_vremote_file_write_notification;
+    connection_interface->remote_file_error_notification = on_definition_transfer_error;
     connection_interface->nack_notification = NULL;
     adt_list_create(&self->event_listeners, apx_connection_event_listener_vdelete);
     error_code = apx_connection_base_create(&self->base, APX_SERVER_MODE, base_connection_vtable, connection_interface);
@@ -649,19 +652,18 @@ static apx_error_t create_new_node_instance(
   {
     if (!apx_file_is_signed(definition_file))
     {
-      char *node_name = rmf_file_info_base_name(file_info);
-      apx_server_log(self->parent, APX_LOG_LEVEL_WARNING, "Node '%s' rejected: signature required but file is unsigned",
-        (node_name != NULL) ? node_name : "<unknown>");
-      apx_file_manager_t *file_manager = apx_connection_base_get_file_manager(&self->base);
-      if (file_manager != NULL)
-      {
-        apx_file_manager_send_error_code(file_manager, APX_SIGNATURE_MISSING_ERROR, node_name);
-      }
-      free(node_name);
+      apx_node_manager_reject_definition(node_manager, definition_file, APX_DEFINITION_STAGE_ADMISSION,
+        APX_SIGNATURE_MISSING_ERROR, APX_SIGNATURE_MISSING_ERROR);
       return APX_NO_ERROR;
     }
   }
   retval = apx_node_manager_init_node_from_file_info(node_manager, file_info, &file_open_request);
+  if (retval != APX_NO_ERROR)
+  {
+    apx_node_manager_reject_definition(node_manager, definition_file,
+      retval == APX_MEM_ERROR ? APX_DEFINITION_STAGE_ALLOCATION : APX_DEFINITION_STAGE_ADMISSION, retval, retval);
+    return APX_NO_ERROR;
+  }
   if (retval == APX_NO_ERROR)
   {
     apx_node_instance_t *node_instance = apx_node_manager_get_last_attached(node_manager);
@@ -677,8 +679,15 @@ static apx_error_t create_new_node_instance(
         apx_file_open(definition_file);
         emit_file_opened_event(self, definition_file);
         apx_node_instance_set_definition_data_state(node_instance, APX_DATA_STATE_WAITING_FOR_FILE_DATA);
-        return apx_file_manager_send_open_file_request(
-          file_manager, apx_file_get_address_without_flags(definition_file));
+        retval =
+          apx_file_manager_send_open_file_request(file_manager, apx_file_get_address_without_flags(definition_file));
+        if (retval != APX_NO_ERROR)
+        {
+          apx_node_manager_reject_definition(
+            node_manager, definition_file, APX_DEFINITION_STAGE_TRANSFER, retval, retval);
+          return APX_NO_ERROR;
+        }
+        return retval;
       }
     }
     else
@@ -716,6 +725,34 @@ static apx_error_t remote_file_write_notification(
   if ((self != NULL) && (file != NULL))
   {
     apx_error_t rc = apx_file_write_notify(file, offset, data, (uint32_t)size);
+    if (apx_file_get_apx_file_type(file) == APX_DEFINITION_FILE_TYPE)
+    {
+      if (rc == APX_NO_ERROR && apx_file_is_open(file))
+      {
+        char name[RMF_MAX_FILE_NAME_SIZE + 1u];
+        rmf_file_info_copy_base_name(&file->file_info, name, sizeof(name));
+        apx_node_instance_t *node = apx_node_manager_find(self->base.node_manager, name);
+        if (node != NULL && apx_node_instance_get_definition_data_state(node) == APX_DATA_STATE_SYNCHRONIZED)
+        {
+          size_t count;
+          apx_server_connection_event_listener_t *listeners = copy_definition_listeners(self, &count);
+          for (size_t i = 0u; i < count; ++i)
+          {
+            if (listeners[i].definition_validated != NULL)
+            {
+              listeners[i].definition_validated(listeners[i].arg, &self->base, node);
+            }
+          }
+          free(listeners);
+          if (apx_file_is_compressed(file))
+          {
+            apx_file_close(file);
+            apx_file_set_notification_handler(file, NULL);
+          }
+        }
+      }
+      return rc;
+    }
     adt_ary_t args;
     adt_ary_t callbacks;
     int32_t length = 0;
@@ -748,6 +785,59 @@ static apx_error_t remote_file_write_notification(
     return rc;
   }
   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_server_connection_event_listener_t *copy_definition_listeners(apx_server_connection_t *self, size_t *count)
+{
+  *count = 0u;
+  MUTEX_LOCK(self->event_listener_lock);
+  size_t const length = (size_t)adt_list_length(&self->event_listeners);
+  apx_server_connection_event_listener_t *listeners =
+    length != 0u ? (apx_server_connection_event_listener_t *)malloc(length * sizeof(*listeners)) : NULL;
+  if (listeners != NULL)
+  {
+    adt_list_elem_t *iter = adt_list_iter_first(&self->event_listeners);
+    while (iter != NULL)
+    {
+      listeners[(*count)++] = *(apx_server_connection_event_listener_t *)iter->pItem;
+      iter = adt_list_iter_next(iter);
+    }
+  }
+  MUTEX_UNLOCK(self->event_listener_lock);
+  if (length != 0u && listeners == NULL && self->parent != NULL)
+  {
+    apx_server_log(self->parent, APX_LOG_LEVEL_ERROR, "Failed to snapshot definition event listeners");
+  }
+  return listeners;
+}
+
+void apx_server_connection_definition_rejected(apx_server_connection_t *self, rmf_file_info_t const *file_info,
+  apx_definition_failure_stage_t stage, apx_error_t error_code, apx_error_t response_code)
+{
+  if (self->parent != NULL)
+  {
+    apx_server_log(self->parent, APX_LOG_LEVEL_WARNING, "[%u] Definition '%s' rejected: %s failed (%s)",
+      self->base.connection_id, rmf_file_info_name(file_info), apx_definition_failure_stage_str(stage),
+      apx_strerror(error_code));
+  }
+  size_t count;
+  apx_server_connection_event_listener_t *listeners = copy_definition_listeners(self, &count);
+  for (size_t i = 0u; i < count; ++i)
+  {
+    if (listeners[i].definition_rejected != NULL)
+    {
+      listeners[i].definition_rejected(listeners[i].arg, &self->base, file_info, stage, error_code, response_code);
+    }
+  }
+  free(listeners);
+}
+
+static apx_error_t on_definition_transfer_error(void *arg, apx_file_t *file, apx_error_t error_code)
+{
+  apx_server_connection_t *self = (apx_server_connection_t *)arg;
+  apx_node_manager_reject_definition(
+    self->base.node_manager, file, APX_DEFINITION_STAGE_TRANSFER, error_code, error_code);
+  return APX_NO_ERROR;
 }
 
 static uint8_t const *parse_message(apx_server_connection_t *self, uint8_t const *begin, uint8_t const *end,

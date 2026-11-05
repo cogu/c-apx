@@ -1,6 +1,6 @@
 # Design Proposal: Compressed APX Definition Transfer
 
-* **Status**: Proposed; no compressed-transfer implementation is implied.
+* **Status**: Implementation in progress; receiver validation and logical-definition/failure logging are implemented. Ecosystem integration and remaining acceptance evidence are tracked in item 16.
 * **Backlog**: [Item 16](../Backlog.md#16-compressed-transfer-of-apx-node-definitions-signed-and-unsigned).
 * **Depends on**: [Item 20: Compression Backend and CMake Integration](../Backlog.md#20-compression-backend-and-cmake-integration).
 * **Affected Components**: RemoteFile publication and reception, server node loading, dynamic clients, and future py-apx/APX-ES integration.
@@ -128,6 +128,19 @@ Dynamic clients may compress definition bytes once before publication using thei
 
 The implementation must define maximum compressed and uncompressed bytes per definition and an aggregate budget for in-flight transfers. Admission control applies to both compressed input and decoded output; advertised sizes are not permission to allocate arbitrary memory. Size calculations, including any extra terminator, must be overflow-safe. Concrete limits and their configuration mechanism remain implementation decisions.
 
+The C receiver applies `APX_MAX_FILE_SIZE` (16 MiB by default) to both encoded
+and logical sizes before opening or allocating a definition. The server-wide
+temporary-buffer budget is `APX_MAX_DEFINITION_TRANSFER_MEMORY` (128 MiB).
+Both are overrideable compile-time limits in `apx_core/include/apx/cfg.h`.
+Admission reserves `4 * encoded_size + 3 * logical_size + 1` bytes plus
+`APX_DEFINITION_CODEC_MEMORY_ALLOWANCE` (256 KiB), conservatively accounting
+for receiver/parser growth, transfer/snapshot buffers, decoded-buffer replacement,
+and codec workspace. Excess concurrent reservations receive `APX_BUSY_ERROR`;
+there is no waiting queue. Release receiver buffers and reservations on
+completion, rejection, revocation, or connection teardown; do not retain the
+parser's grown definition buffer after parsing. The budget does
+not cap compiled nodes, signal buffers, or logging queues.
+
 Do not mandate buffering the entire input plus output: bounded incremental decoding or bounded whole-buffer decoding is acceptable. Choose after measuring peak memory, complexity, and CPU cost. Either approach must release buffers, decoder state, and reservations on rejection, allocation failure, timeout, revoke, reopen, or disconnect. Keep decoded data untrusted until applicable integrity checks succeed.
 
 Report unsupported features, malformed streams, length/digest mismatches, and signature failures explicitly using existing APX errors, NACK where the connection is usable, and normal diagnostics. Never retry malformed or unauthenticated content as an alternative encoding. Follow existing concurrency rules, including invoking user callbacks only after releasing internal locks.
@@ -146,6 +159,15 @@ Compression works with caching disabled or absent. If item 14 is implemented:
 * Cache failures retain the established parsing/compilation path for validated text. Compression errors do not become cache fallback successes.
 
 Review receiver, file-manager, node-loading, monitoring, and definition-inspection surfaces together. Preserve encoded transfer sizes where they describe RemoteFile address space, and distinguish decoded sizes where they describe the logical definition. Do not expand observer wire formats or add compression statistics unless needed to preserve existing behavior.
+
+The [event-stream contract](event_streaming_and_apxlog_spec.md#67-file_publish)
+normalizes successful definition-file events to validated logical text and
+sizes, for both live capture and snapshots. Failed attempts emit
+`NODE_DEFINITION_REJECTED` with transfer encoding, advertised sizes, failure
+stage, detected error, and intended NACK code. This metadata is sufficient
+to distinguish decompression failures from plain-definition failures without
+requiring monitor/log consumers to decompress transport data. Definition
+inspection must not return incomplete or unverified transfer buffers.
 
 ## 7. Compression Backend Dependency (Item 20)
 

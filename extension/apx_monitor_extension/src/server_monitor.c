@@ -704,6 +704,10 @@ void apx_server_monitor_on_file_published(
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
   if ((self != NULL) && (connection != NULL) && (file_info != NULL))
   {
+    if (rmf_file_info_name_ends_with(file_info, ".apx"))
+    {
+      return;
+    }
     uint32_t conn_id = connection->connection_id;
     const char *fname = rmf_file_info_name(file_info);
     MUTEX_LOCK(self->lock);
@@ -761,6 +765,10 @@ void apx_server_monitor_on_file_revoked(
 void apx_server_monitor_on_file_opened(
   void *arg, apx_connection_base_t *connection, const struct rmf_file_info_tag *file_info)
 {
+  if (rmf_file_info_name_ends_with(file_info, ".apx"))
+  {
+    return;
+  }
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
   if ((self != NULL) && (connection != NULL) && (file_info != NULL) && server_monitor_has_active_log_streams(self))
   {
@@ -810,6 +818,10 @@ void apx_server_monitor_on_file_written(
   apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
   if ((self != NULL) && (connection != NULL) && (file != NULL))
   {
+    if (apx_file_get_apx_file_type(file) == APX_DEFINITION_FILE_TYPE)
+    {
+      return;
+    }
     if (server_monitor_has_active_log_streams(self))
     {
       uint32_t conn_id = connection->connection_id;
@@ -977,6 +989,73 @@ static void unregister_server_listener(apx_server_monitor_t *self)
   }
 }
 
+static void on_definition_rejected(void *arg, apx_connection_base_t *connection, rmf_file_info_t const *file_info,
+  apx_definition_failure_stage_t stage, apx_error_t error_code, apx_error_t response_code)
+{
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  apx_error_t result = APX_NO_ERROR;
+  MUTEX_LOCK(self->lock);
+  adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+  while (iter != NULL)
+  {
+    apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer((apx_monitor_session_t *)iter->pItem);
+    if (apx_log_streamer_is_active(streamer))
+    {
+      apx_error_t const error = apx_log_streamer_enqueue_definition_rejected(
+        streamer, connection->connection_id, file_info, (uint16_t)stage, error_code, response_code);
+      if (error != APX_NO_ERROR)
+      {
+        result = error;
+      }
+    }
+    iter = adt_list_iter_next(iter);
+  }
+  MUTEX_UNLOCK(self->lock);
+  if (result != APX_NO_ERROR)
+  {
+    apx_server_log(
+      self->server, APX_LOG_LEVEL_ERROR, "Failed to enqueue definition rejection: %s", apx_strerror(result));
+  }
+}
+
+static void on_definition_validated(void *arg, apx_connection_base_t *connection, apx_node_instance_t *node)
+{
+  apx_server_monitor_t *self = (apx_server_monitor_t *)arg;
+  apx_file_t *file = apx_node_instance_get_definition_file(node);
+  rmf_file_info_t logical_info = *apx_file_get_file_info(file);
+  logical_info.size = apx_node_instance_get_definition_size(node);
+  logical_info.uncompressed_size = 0u;
+  logical_info.compression_type = RMF_COMPRESSION_TYPE_NONE;
+  uint8_t const *data = apx_node_instance_get_definition_data(node);
+  apx_error_t result = APX_NO_ERROR;
+  MUTEX_LOCK(self->lock);
+  adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);
+  while (iter != NULL)
+  {
+    apx_log_streamer_t *streamer = apx_monitor_session_get_log_streamer((apx_monitor_session_t *)iter->pItem);
+    if (apx_log_streamer_is_active(streamer) &&
+      !apx_log_streamer_has_file(streamer, connection->connection_id, logical_info.address))
+    {
+      result = apx_log_streamer_enqueue_file_publish(streamer, connection->connection_id, &logical_info);
+      if (result == APX_NO_ERROR)
+      {
+        result = apx_log_streamer_enqueue_file_open(streamer, connection->connection_id, logical_info.address);
+      }
+      if (result == APX_NO_ERROR)
+      {
+        result = apx_log_streamer_enqueue_file_write(
+          streamer, connection->connection_id, logical_info.address, 0u, data, logical_info.size);
+      }
+    }
+    iter = adt_list_iter_next(iter);
+  }
+  MUTEX_UNLOCK(self->lock);
+  if (result != APX_NO_ERROR)
+  {
+    apx_server_log(self->server, APX_LOG_LEVEL_ERROR, "Failed to enqueue logical definition: %s", apx_strerror(result));
+  }
+}
+
 static void register_connection_listener(apx_server_monitor_t *self, apx_server_connection_t *connection)
 {
   apx_server_connection_event_listener_t listener;
@@ -988,6 +1067,8 @@ static void register_connection_listener(apx_server_monitor_t *self, apx_server_
   listener.file_opened = apx_server_monitor_on_file_opened;
   listener.file_closed = apx_server_monitor_on_file_closed;
   listener.file_written = apx_server_monitor_on_file_written;
+  listener.definition_rejected = on_definition_rejected;
+  listener.definition_validated = on_definition_validated;
   apx_server_connection_register_event_listener(connection, &listener);
 }
 

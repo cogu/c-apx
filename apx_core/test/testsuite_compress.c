@@ -453,7 +453,7 @@ static void test_decompress_corrupted_adler32(CuTest *tc)
   uint8_t dst[128];
   size_t dst_len = sizeof(dst);
   err = apx_decompress(dst, &dst_len, comp_buf, comp_len, 0);
-  CuAssertTrue(tc, (err == APX_CHECKSUM_ERROR) || (err == APX_DECOMPRESSION_ERROR));
+  CuAssertIntEquals(tc, APX_CHECKSUM_ERROR, err);
 }
 
 static void test_decompress_golden_vector(CuTest *tc)

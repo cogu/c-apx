@@ -1841,9 +1841,13 @@ static void handle_node_files(apx_diag_dispatcher_t *self, uint32_t request_id, 
     {
       if (opcode == APX_DIAG_CMD_GET_NODE_DEFINITION)
       {
+        if (apx_node_instance_get_definition_data_state(node) != APX_DATA_STATE_SYNCHRONIZED)
+        {
+          result = APX_NOT_FOUND_ERROR;
+        }
         uint8_t const *definition = apx_node_instance_get_definition_data(node);
         out_size = apx_node_instance_get_definition_size(node);
-        if (definition == NULL || out_size == 0u)
+        if (result != APX_NO_ERROR || definition == NULL || out_size == 0u)
         {
           result = APX_NOT_FOUND_ERROR;
         }

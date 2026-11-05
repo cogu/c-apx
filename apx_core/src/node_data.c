@@ -220,27 +220,23 @@ apx_error_t apx_node_data_replace_definition_data(apx_node_data_t *self, uint8_t
     }
     if (size > 0u)
     {
-      MUTEX_LOCK(self->lock);
-      if (self->definition_data != NULL)
+      uint8_t *replacement = (uint8_t *)malloc(size);
+      if (replacement == NULL)
       {
-        free(self->definition_data);
-      }
-      self->definition_data = (uint8_t *)malloc(size);
-      if (self->definition_data == NULL)
-      {
-        self->definition_data_size = 0u;
-        MUTEX_UNLOCK(self->lock);
         return APX_MEM_ERROR;
       }
-      self->definition_data_size = size;
+      MUTEX_LOCK(self->lock);
       if (data != NULL)
       {
-        memcpy(self->definition_data, data, size);
+        memcpy(replacement, data, size);
       }
       else
       {
-        memset(self->definition_data, 0, size);
+        memset(replacement, 0, size);
       }
+      free(self->definition_data);
+      self->definition_data = replacement;
+      self->definition_data_size = size;
       MUTEX_UNLOCK(self->lock);
       return APX_NO_ERROR;
     }

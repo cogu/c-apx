@@ -54,6 +54,7 @@ static void test_server_log_write_varargs(CuTest *tc);
 static void test_multiple_providers_policy_first_apx13(CuTest *tc);
 static void test_multiple_providers_policy_last_apx13(CuTest *tc);
 static void test_server_max_concurrent_connections(CuTest *tc);
+static void test_definition_memory_budget(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -119,6 +120,7 @@ CuSuite *testsuite_apx_server(void)
   SUITE_ADD_TEST(suite, test_multiple_providers_policy_first_apx13);
   SUITE_ADD_TEST(suite, test_multiple_providers_policy_last_apx13);
   SUITE_ADD_TEST(suite, test_server_max_concurrent_connections);
+  SUITE_ADD_TEST(suite, test_definition_memory_budget);
 
   return suite;
 }
@@ -131,6 +133,20 @@ static void test_create_destroy(CuTest *tc)
   apx_server_t *server;
   server = apx_server_new();
   CuAssertPtrNotNull(tc, server);
+  apx_server_delete(server);
+}
+
+static void test_definition_memory_budget(CuTest *tc)
+{
+  apx_server_t *server = apx_server_new();
+  CuAssertIntEquals(tc, APX_BUSY_ERROR,
+    apx_server_reserve_definition_memory(server, (uint64_t)APX_MAX_DEFINITION_TRANSFER_MEMORY + 1u));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_reserve_definition_memory(server, APX_MAX_DEFINITION_TRANSFER_MEMORY));
+  CuAssertIntEquals(tc, APX_BUSY_ERROR, apx_server_reserve_definition_memory(server, 1u));
+  apx_server_release_definition_memory(server, APX_MAX_DEFINITION_TRANSFER_MEMORY);
+  CuAssertTrue(tc, server->definition_transfer_memory == 0u);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_reserve_definition_memory(server, 1u));
+  apx_server_release_definition_memory(server, 1u);
   apx_server_delete(server);
 }
 

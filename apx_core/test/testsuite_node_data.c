@@ -29,6 +29,7 @@
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_create_empty_node_data(CuTest *tc);
+static void test_replace_definition_data(CuTest *tc);
 static void test_write_provide_port_data_uint8(CuTest *tc);
 static void test_write_provide_port_data_uint16(CuTest *tc);
 static void test_write_require_port_data_uint8(CuTest *tc);
@@ -50,6 +51,7 @@ CuSuite *testsuite_apx_node_data(void)
   CuSuite *suite = CuSuiteNew();
 
   SUITE_ADD_TEST(suite, test_create_empty_node_data);
+  SUITE_ADD_TEST(suite, test_replace_definition_data);
   SUITE_ADD_TEST(suite, test_write_provide_port_data_uint8);
   SUITE_ADD_TEST(suite, test_write_provide_port_data_uint16);
   SUITE_ADD_TEST(suite, test_write_require_port_data_uint8);
@@ -73,6 +75,23 @@ static void test_create_empty_node_data(CuTest *tc)
   CuAssertUIntEquals(tc, 0u, apx_node_data_provide_port_data_size(node_data));
   CuAssertUIntEquals(tc, 0u, apx_node_data_require_port_data_size(node_data));
   apx_node_data_delete(node_data);
+}
+
+static void test_replace_definition_data(CuTest *tc)
+{
+  apx_node_data_t *data = apx_node_data_new();
+  uint8_t const original[] = {1u, 2u, 3u};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_create_definition_data(data, original, sizeof(original)));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_node_data_replace_definition_data(data, data->definition_data, sizeof(original)));
+  CuAssertTrue(tc, memcmp(data->definition_data, original, sizeof(original)) == 0);
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_node_data_replace_definition_data(data, NULL, 0u));
+  CuAssertUIntEquals(tc, sizeof(original), apx_node_data_definition_data_size(data));
+  CuAssertTrue(tc, memcmp(data->definition_data, original, sizeof(original)) == 0);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_data_replace_definition_data(data, NULL, 5u));
+  uint8_t const zeroes[5] = {0u};
+  CuAssertTrue(tc, memcmp(data->definition_data, zeroes, sizeof(zeroes)) == 0);
+  apx_node_data_delete(data);
 }
 
 static void test_write_provide_port_data_uint8(CuTest *tc)

@@ -14,6 +14,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/compress.h"
 #include <limits.h>
+#include <stdlib.h>
 #include <string.h>
 
 #if defined(APX_COMPRESSION_BACKEND_ZLIB)
@@ -163,6 +164,43 @@ apx_error_t apx_decompress(uint8_t *dst, size_t *dst_len, const uint8_t *src, si
   }
 
   uint8_t dummy_out = 0;
+#if defined(APX_COMPRESSION_BACKEND_MINIZ)
+  // The zlib-compatible miniz API discards the precise checksum failure status.
+  tinfl_decompressor *decoder = (tinfl_decompressor *)malloc(sizeof(*decoder));
+  if (decoder == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
+  tinfl_init(decoder);
+  size_t input_size = src_len;
+  size_t output_size = limit;
+  uint8_t *output = limit > 0u ? dst : &dummy_out;
+  tinfl_status const status = tinfl_decompress(decoder, src, &input_size, output, output, &output_size,
+    TINFL_FLAG_PARSE_ZLIB_HEADER | TINFL_FLAG_USING_NON_WRAPPING_OUTPUT_BUF);
+  free(decoder);
+  switch (status)
+  {
+  case TINFL_STATUS_DONE:
+    if (input_size != src_len)
+    {
+      return APX_UNEXPECTED_DATA_ERROR;
+    }
+    *dst_len = output_size;
+    return APX_NO_ERROR;
+  case TINFL_STATUS_ADLER32_MISMATCH:
+    return APX_CHECKSUM_ERROR;
+  case TINFL_STATUS_NEEDS_MORE_INPUT:
+  case TINFL_STATUS_FAILED_CANNOT_MAKE_PROGRESS:
+    return APX_UNEXPECTED_END_ERROR;
+  case TINFL_STATUS_HAS_MORE_OUTPUT:
+    return max_output_size > 0u && limit == max_output_size && limit < capacity ? APX_LENGTH_ERROR :
+                                                                                  APX_BUFFER_FULL_ERROR;
+  case TINFL_STATUS_BAD_PARAM:
+    return APX_INTERNAL_ERROR;
+  default:
+    return APX_DECOMPRESSION_ERROR;
+  }
+#else
   z_stream strm;
   memset(&strm, 0, sizeof(strm));
 
@@ -230,4 +268,5 @@ apx_error_t apx_decompress(uint8_t *dst, size_t *dst_len, const uint8_t *src, si
   }
 
   return APX_DECOMPRESSION_ERROR;
+#endif
 }

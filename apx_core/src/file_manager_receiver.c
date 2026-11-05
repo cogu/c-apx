@@ -70,7 +70,8 @@ void apx_file_manager_receiver_reset(apx_file_manager_receiver_t *self)
   {
     self->start_address = RMF_INVALID_ADDRESS;
     self->max_write_size = APX_MAX_FILE_SIZE;
-    adt_bytearray_clear(&self->buffer);
+    adt_bytearray_destroy(&self->buffer);
+    adt_bytearray_create(&self->buffer);
   }
 }
 

@@ -313,7 +313,7 @@ Prevent misspelled or unrecognized JSON configuration keys from being silently i
 
 ## 16. Compressed Transfer of APX Node Definitions (Signed and Unsigned)
 
-**Status:** Completed. Reduce definition-transfer bytes and startup latency, including across bandwidth-constrained embedded links, without coupling compression to authentication or a particular implementation library.
+**Status:** In progress. Receiver safety, bounded admission, transfer validation, and normalized definition/failure logging are implemented. Remaining ecosystem integration, cross-implementation and benchmark acceptance evidence must be completed before closing this item.
 
 **Depends on:** [Item 20: Compression Backend and CMake Integration](#20-compression-backend-and-cmake-integration).
 
@@ -325,6 +325,7 @@ Detailed requirements, protocol rationale, compatibility rules, and acceptance t
 * Support runtime compression in dynamic clients and interoperable implementations in other languages, using standard runtime APIs where available.
 * Bound and validate decompression before parsing; verify signatures and optional digests over the exact uncompressed definition bytes. With item 14's optional cache, either unsigned publication may skip transfer on an advertised SHA-256 cache hit; either signed publication must transfer and verify before reusing compiled content. Compression itself does not require caching.
 * Use item 20's internal compression/decompression API without library-specific calls in the RemoteFile layer. Dynamic C clients compress definitions before publication; receivers use bounded decompression. The wire format remains independent of the selected backend.
+* Normalize successful monitor/log definition events to validated uncompressed text and logical sizes, consistently in live capture and snapshots. Emit `NODE_DEFINITION_REJECTED` for failed plain or compressed attempts, preserving connection identity, encoding, advertised sizes, failure stage, detected error, and intended NACK code. Keep real RemoteFile address ranges and sizes encoded. See the [event-stream contract](design/event_streaming_and_apxlog_spec.md#661-node_definition_rejected).
 
 **Acceptance criteria:** Tests cover opcode cleanup and renumbering with unique RMFP 1.1 IDs and unchanged RMFP 1.0 IDs, signed/unsigned and compressed/uncompressed operation, legacy generation, cache transfer-bypass rules when caching is available, cross-implementation round trips, fragmented transfers, malformed input, resource limits, cleanup, and unchanged signature policy. Benchmark payload bytes and end-to-end startup separately; do not promise a universal compression ratio or decompression time.
 
@@ -420,6 +421,9 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
 **Acceptance criteria:** Linux can build and pass the codec tests with either backend; Windows defaults to miniz and supports explicit selection of zlib when supplied. Available local dependencies require no download. Both backends produce interoperable streams and equivalent validation/error behavior, without requiring identical compressed bytes.
 
 **Out of scope:** RemoteFile publication and opcode changes, transfer/signature/cache integration (item 16), runtime backend switching, a general-purpose compression framework, and changes to py-apx or APX-ES. Precompressed APX-ES nodes need no runtime codec; other-language clients use their own compatible implementations.
+
+The backend does not imply compression of `server.log` or `.apxlog` containers.
+Logical-definition capture and structured rejection events are owned by item 16.
 
 ## 21. Retire Legacy `cutil` SHA-256 in Favor of Mbed TLS (`apx_crypto_sha256`)
 

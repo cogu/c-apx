@@ -132,6 +132,26 @@ Additional top-level keys in the configuration file configure registered server 
 * ``"textlog-extension"``: Configures server event text logging to stdout or file. See :doc:`../extensions/text_log`.
 * ``"monitor-extension"``: Configures runtime server monitoring. See :doc:`../extensions/monitor`.
 
+Definition Transfer Limits
+--------------------------
+
+Compile-time limits in ``apx_core/include/apx/cfg.h`` bound definition
+admission before requesting or allocating transfer data:
+
+* ``APX_MAX_FILE_SIZE``: maximum encoded and decoded size, each 16 MiB by default.
+* ``APX_MAX_DEFINITION_TRANSFER_MEMORY``: server-wide temporary-buffer budget,
+  128 MiB by default.
+* ``APX_DEFINITION_CODEC_MEMORY_ALLOWANCE``: conservative workspace allowance
+  per admitted transfer, 256 KiB by default.
+
+The budget reserves four encoded-buffer sizes, three logical-buffer sizes,
+the terminator, and codec workspace. Exhaustion rejects a publication with
+``APX_BUSY_ERROR``; excessive individual sizes use ``APX_FILE_TOO_LARGE_ERROR``.
+Reservations are released after completion, rejection, revocation, or
+connection teardown. Receiver/parser growth buffers are included and released.
+Persistent node/signal storage and log queues are not
+included in this budget. These are build-time overrides, not JSON settings.
+
 Daemon Lifecycle & Signal Handling
 ----------------------------------
 

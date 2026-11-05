@@ -342,9 +342,56 @@ apx_error_t apx_log_streamer_enqueue_file_publish(
   return APX_NO_ERROR;
 }
 
+bool apx_log_streamer_has_file(apx_log_streamer_t *self, uint32_t connection_id, uint32_t address)
+{
+  bool found = false;
+  MUTEX_LOCK(self->lock);
+  for (int32_t i = 0; i < adt_ary_length(&self->file_entries); ++i)
+  {
+    apx_log_file_entry_t const *entry = (apx_log_file_entry_t const *)adt_ary_value(&self->file_entries, i);
+    if (entry != NULL && entry->connection_id == connection_id && entry->address == address)
+    {
+      found = true;
+      break;
+    }
+  }
+  MUTEX_UNLOCK(self->lock);
+  return found;
+}
+
+apx_error_t apx_log_streamer_enqueue_definition_rejected(apx_log_streamer_t *self, uint32_t connection_id,
+  rmf_file_info_t const *file_info, uint16_t stage, apx_error_t error_code, apx_error_t response_code)
+{
+  if (self == NULL || !self->is_active)
+  {
+    return APX_NO_ERROR;
+  }
+  char const *name = rmf_file_info_name(file_info);
+  uint32_t const payload_size = 26u + (uint32_t)strlen(name);
+  uint8_t *payload = (uint8_t *)malloc(payload_size);
+  if (payload == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
+  pack_le_u32(payload, rmf_file_info_address_without_flags(file_info));
+  pack_le_u32(payload + 4u, file_info->size);
+  pack_le_u32(payload + 8u, rmf_file_info_is_compressed(file_info) ? file_info->uncompressed_size : file_info->size);
+  pack_le_u16(payload + 12u, (uint16_t)file_info->compression_type);
+  pack_le_u16(payload + 14u, stage);
+  pack_le_u32(payload + 16u, (uint32_t)error_code);
+  pack_le_u32(payload + 20u, (uint32_t)response_code);
+  encode_string16(payload + 24u, name);
+  enqueue_event_entry(self, APX_LOG_EVENT_NODE_DEFINITION_REJECTED, 0u, connection_id, 0u, payload, payload_size);
+  return APX_NO_ERROR;
+}
+
 apx_error_t apx_log_streamer_enqueue_file_revoke(apx_log_streamer_t *self, uint32_t connection_id, uint32_t address)
 {
   if (self == NULL || !self->is_active)
+  {
+    return APX_NO_ERROR;
+  }
+  if (!apx_log_streamer_has_file(self, connection_id, address))
   {
     return APX_NO_ERROR;
   }
@@ -368,6 +415,10 @@ apx_error_t apx_log_streamer_enqueue_file_open(apx_log_streamer_t *self, uint32_
 apx_error_t apx_log_streamer_enqueue_file_close(apx_log_streamer_t *self, uint32_t connection_id, uint32_t address)
 {
   if (self == NULL || !self->is_active)
+  {
+    return APX_NO_ERROR;
+  }
+  if (!apx_log_streamer_has_file(self, connection_id, address))
   {
     return APX_NO_ERROR;
   }
@@ -827,6 +878,8 @@ static void generate_snapshot(apx_log_streamer_t *self)
     return;
   }
   apx_server_t *server = monitor->server;
+  bool snapshot_allocation_failed = false;
+  apx_server_take_global_lock(server);
 
   // Iterate over active connections in the server
   adt_list_t const *connections = &server->connection_manager.active_connections;
@@ -877,7 +930,7 @@ static void generate_snapshot(apx_log_streamer_t *self)
         for (int32_t n = 0; n < num_nodes; ++n)
         {
           apx_node_instance_t *node = (apx_node_instance_t *)adt_ary_value(nodes, n);
-          if (node != NULL)
+          if (node != NULL && apx_node_instance_get_definition_data_state(node) == APX_DATA_STATE_SYNCHRONIZED)
           {
             uint32_t node_id = ++self->next_node_id;
             const char *node_name = apx_node_instance_get_name(node);
@@ -907,6 +960,9 @@ static void generate_snapshot(apx_log_streamer_t *self)
     apx_file_manager_t *fm = apx_connection_base_get_file_manager(&conn->base);
     if (fm != NULL)
     {
+      adt_ary_t files;
+      adt_ary_create(&files, NULL);
+      MUTEX_LOCK(fm->shared.lock);
       adt_list_t const *file_lists[] = {
         apx_file_map_get_list(&fm->shared.local_file_map),
         apx_file_map_get_list(&fm->shared.remote_file_map),
@@ -920,76 +976,132 @@ static void generate_snapshot(apx_log_streamer_t *self)
         adt_list_elem_t *fiter = adt_list_iter_first(file_lists[fl]);
         while (fiter != NULL)
         {
-          apx_file_t *file = (apx_file_t *)fiter->pItem;
+          if (adt_ary_push(&files, fiter->pItem) != ADT_NO_ERROR)
+          {
+            snapshot_allocation_failed = true;
+          }
           fiter = adt_list_iter_next(fiter);
-          if (file == NULL)
+        }
+      }
+      MUTEX_UNLOCK(fm->shared.lock);
+      for (int32_t f = 0; f < adt_ary_length(&files); ++f)
+      {
+        apx_file_t *file = (apx_file_t *)adt_ary_value(&files, f);
+        if (file == NULL)
+        {
+          continue;
+        }
+        uint32_t logged_size = file->file_info.size;
+        if (apx_file_get_apx_file_type(file) == APX_DEFINITION_FILE_TYPE)
+        {
+          char name[RMF_MAX_FILE_NAME_SIZE + 1u];
+          rmf_file_info_copy_base_name(&file->file_info, name, sizeof(name));
+          apx_node_instance_t *node = node_mgr != NULL ? apx_node_manager_find(node_mgr, name) : NULL;
+          if (node == NULL || apx_node_instance_get_definition_data_state(node) != APX_DATA_STATE_SYNCHRONIZED)
           {
             continue;
           }
-          uint32_t file_id = find_or_register_file_id(self, conn_id, file->file_info.address);
-          const char *fname = rmf_file_info_name(&file->file_info);
-          uint32_t fname_len = fname != NULL ? (uint32_t)strlen(fname) : 0u;
-          uint32_t pub_payload_size = 4u + 4u + 2u + 2u + 32u + 2u + fname_len;
-          uint8_t *pub_payload = (uint8_t *)malloc(pub_payload_size);
-          if (pub_payload != NULL)
-          {
-            pack_le_u32(pub_payload + 0, file->file_info.address);
-            pack_le_u32(pub_payload + 4, file->file_info.size);
-            pack_le_u16(pub_payload + 8, (uint16_t)file->file_info.rmf_file_type);
-            pack_le_u16(pub_payload + 10, (uint16_t)file->file_info.digest_type);
-            memcpy(pub_payload + 12, file->file_info.digest_data, 32);
-            encode_string16(pub_payload + 44, fname);
+          logged_size = apx_node_instance_get_definition_size(node);
+        }
+        uint32_t file_id = find_or_register_file_id(self, conn_id, file->file_info.address);
+        const char *fname = rmf_file_info_name(&file->file_info);
+        uint32_t fname_len = fname != NULL ? (uint32_t)strlen(fname) : 0u;
+        uint32_t pub_payload_size = 4u + 4u + 2u + 2u + 32u + 2u + fname_len;
+        uint8_t *pub_payload = (uint8_t *)malloc(pub_payload_size);
+        if (pub_payload != NULL)
+        {
+          pack_le_u32(pub_payload + 0, file->file_info.address);
+          pack_le_u32(pub_payload + 4, logged_size);
+          pack_le_u16(pub_payload + 8, (uint16_t)file->file_info.rmf_file_type);
+          pack_le_u16(pub_payload + 10, (uint16_t)file->file_info.digest_type);
+          memcpy(pub_payload + 12, file->file_info.digest_data, 32);
+          encode_string16(pub_payload + 44, fname);
 
-            uint64_t seq;
-            MUTEX_LOCK(self->lock);
-            seq = ++self->sequence;
-            MUTEX_UNLOCK(self->lock);
-            uint64_t now_ns = apx_get_monotonic_time_ns();
-            uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
-            emit_event_direct(self, APX_LOG_EVENT_FILE_PUBLISH, APX_LOG_FLAG_SNAPSHOT, seq, rel_ns, conn_id, file_id,
-              pub_payload, pub_payload_size);
-            free(pub_payload);
-          }
+          uint64_t seq;
+          MUTEX_LOCK(self->lock);
+          seq = ++self->sequence;
+          MUTEX_UNLOCK(self->lock);
+          uint64_t now_ns = apx_get_monotonic_time_ns();
+          uint64_t rel_ns = now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
+          emit_event_direct(self, APX_LOG_EVENT_FILE_PUBLISH, APX_LOG_FLAG_SNAPSHOT, seq, rel_ns, conn_id, file_id,
+            pub_payload, pub_payload_size);
+          free(pub_payload);
+        }
 
           // Initial values: definition text or provide port data
-          if (fname != NULL && node_mgr != NULL)
+        if (fname != NULL && node_mgr != NULL)
+        {
+          adt_ary_t *nodes = apx_node_manager_get_nodes(node_mgr);
+          if (nodes != NULL)
           {
-            adt_ary_t *nodes = apx_node_manager_get_nodes(node_mgr);
-            if (nodes != NULL)
+            int32_t num_nodes = adt_ary_length(nodes);
+            for (int32_t n = 0; n < num_nodes; ++n)
             {
-              int32_t num_nodes = adt_ary_length(nodes);
-              for (int32_t n = 0; n < num_nodes; ++n)
+              apx_node_instance_t *node = (apx_node_instance_t *)adt_ary_value(nodes, n);
+              if (node == NULL || apx_node_instance_get_definition_data_state(node) != APX_DATA_STATE_SYNCHRONIZED)
               {
-                apx_node_instance_t *node = (apx_node_instance_t *)adt_ary_value(nodes, n);
-                if (node == NULL)
-                {
-                  continue;
-                }
-                const char *nname = apx_node_instance_get_name(node);
-                if (nname == NULL)
-                {
-                  continue;
-                }
-                size_t nname_len = strlen(nname);
+                continue;
+              }
+              const char *nname = apx_node_instance_get_name(node);
+              if (nname == NULL)
+              {
+                continue;
+              }
+              size_t nname_len = strlen(nname);
 
                 // Check if file is node definition (.apx)
-                if ((strncmp(fname, nname, nname_len) == 0) && (strcmp(fname + nname_len, ".apx") == 0))
+              if ((strncmp(fname, nname, nname_len) == 0) && (strcmp(fname + nname_len, ".apx") == 0))
+              {
+                uint8_t const *def_data = apx_node_instance_get_definition_data(node);
+                apx_size_t def_size = apx_node_instance_get_definition_size(node);
+                if (def_data != NULL && def_size > 0u)
                 {
-                  uint8_t const *def_data = apx_node_instance_get_definition_data(node);
-                  apx_size_t def_size = apx_node_instance_get_definition_size(node);
-                  if (def_data != NULL && def_size > 0u)
+                  uint32_t rem = (uint32_t)def_size;
+                  uint32_t cur_off = 0u;
+                  while (rem > 0u)
                   {
-                    uint32_t rem = (uint32_t)def_size;
-                    uint32_t cur_off = 0u;
-                    while (rem > 0u)
+                    uint32_t csize = rem > CHUNK_MAX_SIZE ? CHUNK_MAX_SIZE : rem;
+                    uint32_t write_payload_size = 4u + csize;
+                    uint8_t *write_payload = (uint8_t *)malloc(write_payload_size);
+                    if (write_payload != NULL)
                     {
-                      uint32_t csize = rem > CHUNK_MAX_SIZE ? CHUNK_MAX_SIZE : rem;
-                      uint32_t write_payload_size = 4u + csize;
+                      pack_le_u32(write_payload + 0, cur_off);
+                      memcpy(write_payload + 4, def_data + cur_off, csize);
+                      uint64_t seq;
+                      MUTEX_LOCK(self->lock);
+                      seq = ++self->sequence;
+                      MUTEX_UNLOCK(self->lock);
+                      uint64_t now_ns = apx_get_monotonic_time_ns();
+                      uint64_t rel_ns =
+                        now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
+                      emit_event_direct(self, APX_LOG_EVENT_FILE_WRITE,
+                        APX_LOG_FLAG_SNAPSHOT | APX_LOG_FLAG_INITIAL_VALUE, seq, rel_ns, conn_id, file_id,
+                        write_payload, write_payload_size);
+                      free(write_payload);
+                    }
+                    cur_off += csize;
+                    rem -= csize;
+                  }
+                }
+              }
+                // Check if file is provide port data (.out)
+              else if ((strncmp(fname, nname, nname_len) == 0) && (strcmp(fname + nname_len, ".out") == 0))
+              {
+                apx_node_data_t *nd = apx_node_instance_get_node_data(node);
+                if (nd != NULL)
+                {
+                  apx_size_t snap_size = apx_node_data_provide_port_data_size(nd);
+                  if (snap_size > 0u)
+                  {
+                    uint8_t *snap = apx_node_data_take_provide_port_data_snapshot(nd);
+                    if (snap != NULL)
+                    {
+                      uint32_t write_payload_size = 4u + (uint32_t)snap_size;
                       uint8_t *write_payload = (uint8_t *)malloc(write_payload_size);
                       if (write_payload != NULL)
                       {
-                        pack_le_u32(write_payload + 0, cur_off);
-                        memcpy(write_payload + 4, def_data + cur_off, csize);
+                        pack_le_u32(write_payload + 0, 0u);
+                        memcpy(write_payload + 4, snap, snap_size);
                         uint64_t seq;
                         MUTEX_LOCK(self->lock);
                         seq = ++self->sequence;
@@ -1002,52 +1114,22 @@ static void generate_snapshot(apx_log_streamer_t *self)
                           write_payload, write_payload_size);
                         free(write_payload);
                       }
-                      cur_off += csize;
-                      rem -= csize;
-                    }
-                  }
-                }
-                // Check if file is provide port data (.out)
-                else if ((strncmp(fname, nname, nname_len) == 0) && (strcmp(fname + nname_len, ".out") == 0))
-                {
-                  apx_node_data_t *nd = apx_node_instance_get_node_data(node);
-                  if (nd != NULL)
-                  {
-                    apx_size_t snap_size = apx_node_data_provide_port_data_size(nd);
-                    if (snap_size > 0u)
-                    {
-                      uint8_t *snap = apx_node_data_take_provide_port_data_snapshot(nd);
-                      if (snap != NULL)
-                      {
-                        uint32_t write_payload_size = 4u + (uint32_t)snap_size;
-                        uint8_t *write_payload = (uint8_t *)malloc(write_payload_size);
-                        if (write_payload != NULL)
-                        {
-                          pack_le_u32(write_payload + 0, 0u);
-                          memcpy(write_payload + 4, snap, snap_size);
-                          uint64_t seq;
-                          MUTEX_LOCK(self->lock);
-                          seq = ++self->sequence;
-                          MUTEX_UNLOCK(self->lock);
-                          uint64_t now_ns = apx_get_monotonic_time_ns();
-                          uint64_t rel_ns =
-                            now_ns >= self->monotonic_origin_ns ? (now_ns - self->monotonic_origin_ns) : 0ULL;
-                          emit_event_direct(self, APX_LOG_EVENT_FILE_WRITE,
-                            APX_LOG_FLAG_SNAPSHOT | APX_LOG_FLAG_INITIAL_VALUE, seq, rel_ns, conn_id, file_id,
-                            write_payload, write_payload_size);
-                          free(write_payload);
-                        }
-                        free(snap);
-                      }
+                      free(snap);
                     }
                   }
                 }
               }
             }
-            adt_ary_delete(nodes);
           }
+          adt_ary_delete(nodes);
         }
       }
+      adt_ary_destroy(&files);
     }
+  }
+  apx_server_release_global_lock(server);
+  if (snapshot_allocation_failed)
+  {
+    apx_server_log(server, APX_LOG_LEVEL_ERROR, "Failed to snapshot definition file references");
   }
 }

@@ -53,6 +53,7 @@ typedef struct apx_connection_interface_tag
   apx_error_t (*remote_file_write_notification)(
     void *arg, apx_file_t *file, uint32_t offset, uint8_t const *data, apx_size_t size);
   apx_error_t (*nack_notification)(void *arg, apx_error_t error_code, char const *name);
+  apx_error_t (*remote_file_error_notification)(void *arg, apx_file_t *file, apx_error_t error_code);
 } apx_connection_interface_t;
 
 //////////////////////////////////////////////////////////////////////////////

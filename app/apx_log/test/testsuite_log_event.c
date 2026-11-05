@@ -71,6 +71,7 @@ static void test_log_event_type_str(CuTest *tc)
   CuAssertStrEquals(tc, "CONNECTION_CLOSE", apx_log_event_type_str(APX_LOG_EVENT_CONNECTION_CLOSE));
   CuAssertStrEquals(tc, "NODE_ATTACH", apx_log_event_type_str(APX_LOG_EVENT_NODE_ATTACH));
   CuAssertStrEquals(tc, "NODE_DETACH", apx_log_event_type_str(APX_LOG_EVENT_NODE_DETACH));
+  CuAssertStrEquals(tc, "NODE_DEFINITION_REJECTED", apx_log_event_type_str(APX_LOG_EVENT_NODE_DEFINITION_REJECTED));
   CuAssertStrEquals(tc, "FILE_PUBLISH", apx_log_event_type_str(APX_LOG_EVENT_FILE_PUBLISH));
   CuAssertStrEquals(tc, "FILE_REVOKE", apx_log_event_type_str(APX_LOG_EVENT_FILE_REVOKE));
   CuAssertStrEquals(tc, "FILE_OPEN", apx_log_event_type_str(APX_LOG_EVENT_FILE_OPEN));
@@ -128,11 +129,46 @@ static void test_log_event_formatters(CuTest *tc)
   fclose(f);
 }
 
+static void test_definition_rejection_format(CuTest *tc)
+{
+  uint8_t buf[APX_LOG_EVENT_HEADER_SIZE + 26u + 8u] = {0u};
+  pack_le_u16(buf, APX_LOG_EVENT_NODE_DEFINITION_REJECTED);
+  uint8_t *payload = buf + APX_LOG_EVENT_HEADER_SIZE;
+  pack_le_u32(payload, 0x02000000u);
+  pack_le_u32(payload + 4u, 100u);
+  pack_le_u32(payload + 8u, 500u);
+  pack_le_u16(payload + 12u, 1u);
+  pack_le_u16(payload + 14u, 3u);
+  pack_le_u32(payload + 16u, APX_CHECKSUM_ERROR);
+  pack_le_u32(payload + 20u, APX_PARSE_ERROR);
+  pack_le_u16(payload + 24u, 8u);
+  memcpy(payload + 26u, "Node.apx", 8u);
+  apx_log_event_t event;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_log_event_parse(&event, buf, sizeof(buf)));
+  FILE *out = tmpfile();
+  CuAssertPtrNotNull(tc, out);
+  apx_log_event_print_text(&event, out);
+  apx_log_event_print_json(&event, out);
+  rewind(out);
+  char output[2048];
+  size_t const length = fread(output, 1u, sizeof(output) - 1u, out);
+  output[length] = '\0';
+  CuAssertTrue(tc, strstr(output, "encoding=zlib-deflate") != NULL);
+  CuAssertTrue(tc, strstr(output, "stage=decompression") != NULL);
+  CuAssertTrue(tc, strstr(output, "\"connection_id\"") != NULL);
+  CuAssertTrue(tc, strstr(output, "\"error_code\"") != NULL);
+  CuAssertTrue(tc, strstr(output, "\"response_code\"") != NULL);
+  fclose(out);
+  CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_log_event_parse(&event, buf, APX_LOG_EVENT_HEADER_SIZE + 25u));
+  CuAssertIntEquals(tc, APX_VALUE_LENGTH_ERROR, apx_log_event_parse(&event, buf, sizeof(buf) - 1u));
+}
+
 CuSuite *testsuite_log_event(void)
 {
   CuSuite *suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_log_event_parse_header);
   SUITE_ADD_TEST(suite, test_log_event_type_str);
   SUITE_ADD_TEST(suite, test_log_event_formatters);
+  SUITE_ADD_TEST(suite, test_definition_rejection_format);
   return suite;
 }

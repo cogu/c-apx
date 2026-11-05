@@ -152,6 +152,7 @@ have equal timestamps.
 | `0x0011` | `CONNECTION_CLOSE` | Connection | `0` |
 | `0x0020` | `NODE_ATTACH` | Owning connection | Node ID |
 | `0x0021` | `NODE_DETACH` | Owning connection | Node ID |
+| `0x0022` | `NODE_DEFINITION_REJECTED` | Sending connection | `0` |
 | `0x0030` | `FILE_PUBLISH` | Owning connection | File ID |
 | `0x0031` | `FILE_REVOKE` | Owning connection | File ID |
 | `0x0032` | `FILE_OPEN` | Owning connection | File ID |
@@ -221,6 +222,40 @@ Payload:
 
 Payload: empty.
 
+### 6.6.1 `NODE_DEFINITION_REJECTED`
+
+One live event records a failed definition-loading attempt, for either plain
+or compressed transfer. It does not allocate a node or file ID and does not
+include rejected, compressed, or partially decoded definition bytes.
+
+| Offset | Field | Type | Description |
+|:---:|:---|:---:|:---|
+| 0 | `remote_address` | `U32` | Announced RemoteFile address, without flags |
+| 4 | `encoded_size` | `U32` | Advertised transfer size |
+| 8 | `definition_size` | `U32` | Advertised logical size; equal to encoded size for plain transfer |
+| 12 | `compression_type` | `U16` | `0`: uncompressed; `1`: zlib-wrapped DEFLATE |
+| 14 | `failure_stage` | `U16` | Stage listed below |
+| 16 | `error_code` | `I32` | Specific APX error detected by the server |
+| 20 | `response_code` | `I32` | Intended client NACK error code |
+| 24 | `file_name` | `String16` | Announced definition-file name; not an authenticated client identity |
+
+Stages are `1` admission, `2` transfer, `3` decompression, `4` digest
+verification, `5` signature verification, `6` parsing, `7` compilation/node
+attachment, and `8` allocation.
+
+The event records detection, not successful NACK delivery. For example, a
+checksum failure can have `error_code = APX_CHECKSUM_ERROR` while retaining
+`response_code = APX_PARSE_ERROR` for client compatibility. Emit the event
+even if queuing or transmitting the NACK fails, and report transmission
+failure through normal diagnostics. Failure metadata must be captured before
+destroying the rejected node. Server resource failures must not be interpreted
+as evidence of a malicious client.
+
+Rejection events are not included in snapshots. Malformed publications that
+cannot be decoded into definition metadata retain ordinary protocol-error
+handling. This additive event uses the existing unknown-event skip rule;
+the stream and container remain version 1.0.
+
 ### 6.7 `FILE_PUBLISH`
 
 Payload:
@@ -228,7 +263,7 @@ Payload:
 | Field | Type | Description |
 |:---|:---:|:---|
 | `remote_address` | `U32` | Address in the owning connection's RemoteFile map |
-| `file_size` | `U32` | Published RemoteFile size |
+| `file_size` | `U32` | Published size, or validated logical size for a node definition |
 | `file_type` | `U16` | RemoteFile file type |
 | `digest_type` | `U16` | RemoteFile digest type |
 | `digest_data` | `U8[32]` | Digest, zero-padded as in `RMF_CMD_FILE_INFO` |
@@ -237,6 +272,18 @@ Payload:
 The event intentionally mirrors stable fields from `RMF_CMD_FILE_INFO`, but
 uses a stream-local `file_id` so later records do not depend on a reusable
 address.
+
+For operational `.apx` definitions, live events are deferred until
+decompression, applicable digest/signature verification, parsing, compilation,
+and attachment succeed. Emit `FILE_PUBLISH`, then `FILE_OPEN`, then logical
+`FILE_WRITE` events. Snapshots likewise include only validated definitions,
+with the same logical size and bytes. No codec is required in a log consumer.
+Rejected definitions never create normal definition-file records.
+
+The recorded address identifies the source file; adding its logical size
+does not reconstruct the compressed transport address range. The actual
+RemoteFile metadata and transfer bounds remain unchanged. Non-definition
+file events retain their existing transport semantics.
 
 ### 6.8 `FILE_REVOKE`, `FILE_OPEN`, and `FILE_CLOSE`
 
@@ -261,6 +308,10 @@ Definition text is not a special event. A snapshot is self-contained because
 the `.apx` file is represented by `FILE_PUBLISH` followed by one or more
 `FILE_WRITE` events containing its bytes. The same rule applies to `.in`,
 `.out`, `.cin`, and `.cout` files.
+
+For `.apx`, these bytes are always the validated, uncompressed APX text, in
+both live events and snapshots. They are not observations of compressed
+transport fragments.
 
 ### 6.10 `EVENTS_DROPPED`
 

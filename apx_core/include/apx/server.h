@@ -63,6 +63,8 @@ typedef struct apx_server_tag
                        // 3. Controlling access to the global port_signature_map.
   MUTEX_T event_listener_lock;
   MUTEX_T time_lock;
+  MUTEX_T definition_memory_lock;
+  uint64_t definition_transfer_memory;
   uint64_t start_unix_ns;
   uint64_t start_monotonic_ns;
   int32_t num_log_listeners;
@@ -137,6 +139,8 @@ void apx_server_set_multiple_provider_policy(apx_server_t *self, apx_multiple_pr
 apx_multiple_provider_policy_t apx_server_get_multiple_provider_policy(apx_server_t const *self);
 void apx_server_set_max_concurrent_connections(apx_server_t *self, uint32_t max_connections);
 uint32_t apx_server_get_max_concurrent_connections(apx_server_t const *self);
+apx_error_t apx_server_reserve_definition_memory(apx_server_t *self, uint64_t size);
+void apx_server_release_definition_memory(apx_server_t *self, uint64_t size);
 apx_error_t apx_server_insert_modified_node_instance(apx_server_t *self, apx_node_instance_t *node_instance);
 adt_ary_t *apx_server_get_modified_node_instance(const apx_server_t *self);
 void apx_server_clear_port_connector_changes(apx_server_t *self);

@@ -45,6 +45,7 @@ static apx_error_t process_stream_window_update(apx_file_manager_t *self, uint8_
 static apx_error_t process_stream_abort(apx_file_manager_t *self, uint8_t const *data, apx_size_t size);
 static void abort_stream_with_error(apx_file_manager_t *self, apx_file_t *file, apx_error_t status);
 static apx_error_t validate_local_file_write(apx_file_manager_t *self, uint32_t address, apx_size_t size);
+static apx_error_t reject_definition_transfer(apx_file_manager_t *self, apx_file_t *file, apx_error_t error_code);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -237,6 +238,59 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
       apx_size_t const payload_len = msg_len - header_size;
       uint32_t const active_address = apx_file_manager_receiver_active_address(&self->receiver);
       apx_file_t *active_stream_file = NULL;
+      apx_file_t *definition_file = NULL;
+      uint32_t const lookup_address = active_address != RMF_INVALID_ADDRESS ? active_address : address;
+      if (lookup_address < RMF_CMD_AREA_START_ADDRESS)
+      {
+        apx_file_t *file =
+          apx_file_manager_shared_find_file_by_address(&self->shared, lookup_address | RMF_REMOTE_ADDRESS_BIT);
+        if (file != NULL && apx_file_get_apx_file_type(file) == APX_DEFINITION_FILE_TYPE &&
+          apx_file_is_compressed(file))
+        {
+          definition_file = file;
+          if (active_address != RMF_INVALID_ADDRESS && address == RMF_CMD_AREA_START_ADDRESS && !more_bit &&
+            payload_len == RMF_CMD_TYPE_SIZE + RMF_FILE_OPEN_CMD_SIZE &&
+            unpackLE(msg_data + header_size, UINT32_SIZE) == RMF_CMD_REVOKE_FILE_MSG &&
+            unpackLE(msg_data + header_size + UINT32_SIZE, UINT32_SIZE) == apx_file_get_address_without_flags(file))
+          {
+            apx_file_manager_receiver_reset(&self->receiver);
+            return process_command_message(self, msg_data + header_size, payload_len);
+          }
+          if (!apx_file_is_open(file))
+          {
+            return APX_NO_ERROR;
+          }
+          uint32_t const start = apx_file_get_address_without_flags(file);
+          uint64_t const received =
+            active_address == RMF_INVALID_ADDRESS ? 0u : adt_bytearray_length(&self->receiver.buffer);
+          uint64_t const end = received + payload_len;
+          apx_error_t fragment_error = APX_NO_ERROR;
+          if (payload_len == 0u)
+          {
+            fragment_error = APX_VALUE_LENGTH_ERROR;
+          }
+          else if (address != (uint64_t)start + received)
+          {
+            fragment_error = APX_INVALID_ADDRESS_ERROR;
+          }
+          else if (end > apx_file_get_size(file))
+          {
+            fragment_error = APX_FILE_TOO_LARGE_ERROR;
+          }
+          else if ((!more_bit && end != apx_file_get_size(file)) || (more_bit && end == apx_file_get_size(file)))
+          {
+            fragment_error = APX_DATA_NOT_COMPLETE_ERROR;
+          }
+          if (fragment_error != APX_NO_ERROR)
+          {
+            return reject_definition_transfer(self, file, fragment_error);
+          }
+          if (active_address == RMF_INVALID_ADDRESS)
+          {
+            apx_file_manager_receiver_set_max_write_size(&self->receiver, apx_file_get_size(file));
+          }
+        }
+      }
 
       if (active_address == RMF_INVALID_ADDRESS)
       {
@@ -266,7 +320,8 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
           }
           else
           {
-            apx_file_manager_receiver_set_max_write_size(&self->receiver, APX_MAX_FILE_SIZE);
+            apx_file_manager_receiver_set_max_write_size(
+              &self->receiver, definition_file != NULL ? apx_file_get_size(definition_file) : APX_MAX_FILE_SIZE);
           }
         }
         else
@@ -288,6 +343,10 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
         &self->receiver, &result, address, msg_data + header_size, payload_len, more_bit);
       if (error_code != APX_NO_ERROR)
       {
+        if (definition_file != NULL)
+        {
+          return reject_definition_transfer(self, definition_file, error_code);
+        }
         if (active_stream_file != NULL)
         {
           abort_stream_with_error(self, active_stream_file, error_code);
@@ -310,6 +369,18 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
     return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t reject_definition_transfer(apx_file_manager_t *self, apx_file_t *file, apx_error_t error_code)
+{
+  apx_file_manager_receiver_reset(&self->receiver);
+  apx_connection_interface_t const *connection = apx_file_manager_shared_connection(&self->shared);
+  if (connection != NULL && connection->remote_file_error_notification != NULL)
+  {
+    return connection->remote_file_error_notification(connection->arg, file, error_code);
+  }
+  apx_file_close(file);
+  return error_code;
 }
 
 apx_error_t apx_file_manager_send_local_const_data(

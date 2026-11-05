@@ -3,6 +3,12 @@ Server Monitor Extension
 
 The ``monitor-extension`` provides dedicated diagnostic, introspection, and live streaming capabilities within the APX server daemon. It powers the :doc:`../apps/apx_mon` CLI tool by exposing an interactive diagnostic endpoint and event notification stream over RemoteFile v1.1 stream files (``FileStream``).
 
+Definition inspection returns validated logical APX text, never an incomplete
+or unverified compressed transfer buffer. Live and snapshot ``server.log``
+definition events use the same uncompressed bytes and logical sizes.
+``NODE_DEFINITION_REJECTED`` provides encoding and failure metadata without
+requiring logging-side decompression; see :doc:`../apps/apx_log`.
+
 Configuration Key
 -----------------
 

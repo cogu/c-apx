@@ -24,3 +24,7 @@ Decompression
 ~~~~~~~~~~~~~
 
 .. doxygenfunction:: apx_decompress
+
+Both backends report an Adler-32 mismatch as ``APX_CHECKSUM_ERROR``.
+Malformed DEFLATE data, incomplete streams, trailing bytes, and output-limit
+failures remain distinct errors. No failed stream is retried as another encoding.

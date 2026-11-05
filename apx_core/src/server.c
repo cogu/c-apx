@@ -79,6 +79,8 @@ void apx_server_create(apx_server_t *self)
     MUTEX_INIT(self->global_lock);
     MUTEX_INIT(self->event_listener_lock);
     MUTEX_INIT(self->time_lock);
+    MUTEX_INIT(self->definition_memory_lock);
+    self->definition_transfer_memory = 0u;
     self->start_unix_ns = 0u;
     self->start_monotonic_ns = 0u;
     self->num_log_listeners = 0;
@@ -113,6 +115,7 @@ void apx_server_destroy(apx_server_t *self)
     MUTEX_DESTROY(self->global_lock);
     MUTEX_DESTROY(self->event_listener_lock);
     MUTEX_DESTROY(self->time_lock);
+    MUTEX_DESTROY(self->definition_memory_lock);
   }
 }
 
@@ -124,6 +127,31 @@ apx_server_t *apx_server_new(void)
     apx_server_create(self);
   }
   return self;
+}
+
+apx_error_t apx_server_reserve_definition_memory(apx_server_t *self, uint64_t size)
+{
+  apx_error_t result = APX_NO_ERROR;
+  MUTEX_LOCK(self->definition_memory_lock);
+  if (size > APX_MAX_DEFINITION_TRANSFER_MEMORY ||
+    self->definition_transfer_memory > APX_MAX_DEFINITION_TRANSFER_MEMORY - size)
+  {
+    result = APX_BUSY_ERROR;
+  }
+  else
+  {
+    self->definition_transfer_memory += size;
+  }
+  MUTEX_UNLOCK(self->definition_memory_lock);
+  return result;
+}
+
+void apx_server_release_definition_memory(apx_server_t *self, uint64_t size)
+{
+  MUTEX_LOCK(self->definition_memory_lock);
+  assert(self->definition_transfer_memory >= size);
+  self->definition_transfer_memory -= size;
+  MUTEX_UNLOCK(self->definition_memory_lock);
 }
 
 void apx_server_delete(apx_server_t *self)
