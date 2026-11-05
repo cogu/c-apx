@@ -449,6 +449,16 @@ The JSON configuration setting `"max-num-events"` and the compile-time macro `AP
 
 ---
 
+## 22. Investigate Unicode (Non-ASCII) Characters in APX Definitions
+
+* **Status:** Proposed investigation; no current parser vulnerability has been established.
+* Check how the APX definition parser handles Unicode encoded as UTF-8 in node, port, and type names, quoted strings, and other definition fields. Compare accepted and rejected input with the normative APX IDL specifications before deciding on the intended behavior.
+* Test non-ASCII characters at the beginning and within lines, malformed UTF-8, and multibyte sequences split across input chunks.
+* Verify that unsupported or malformed input produces an explicit parsing error without assertion failures, infinite loops, or loss of server availability, and that incomplete input is buffered safely.
+* Add regression coverage and document the supported encoding and any field-specific restrictions.
+
+---
+
 # Release v0.8.0 (Future Phase)
 
 ## 1. Event Stream Playback Engine (`apx-log replay`)
