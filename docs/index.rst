@@ -163,7 +163,9 @@ Design
    * - Page
      - Description
    * - :doc:`design/apx_server`
-     - Server definition admission, data ownership, resource limits, and monitoring/logging internals.
+     - Server definition admission, data ownership, resource limits, and receiver cleanup.
+   * - :doc:`design/logging`
+     - Event streaming, recording containers, and successful/rejected definition logging.
 
 C API Modules
 =============

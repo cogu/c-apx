@@ -100,42 +100,12 @@ build-time overrides, not JSON settings.
 Monitoring and Logging
 ----------------------
 
-Successful Definitions
-~~~~~~~~~~~~~~~~~~~~~~
-
-Definition inspection returns validated logical text. Live and snapshot
-``server.log`` definition-file events likewise contain the same uncompressed
-bytes and logical size, regardless of transfer encoding.
-
-Live definition events are deferred until loading succeeds, then emitted as
-``FILE_PUBLISH``, ``FILE_OPEN``, and ``FILE_WRITE``. Snapshots include only
-validated definitions. The logged source address identifies the RemoteFile,
-but adding the logged logical size does not reconstruct a compressed
-transport address range. Actual RemoteFile metadata remains unchanged.
-Non-definition file events retain their existing transport semantics.
-
-Neither the monitor logging path nor ``apx-log`` needs to decompress
-definition transfers.
-
-Rejected Definitions
-~~~~~~~~~~~~~~~~~~~~
-
-``NODE_DEFINITION_REJECTED`` records a failed loading attempt for either
-plain or compressed transfer. It preserves the sending connection ID,
-announced file name, encoding, advertised sizes, failure stage, specific
-detected error, and intended client NACK code. Announced names are not
-authenticated client identities.
-
-Detection and client response codes can differ: an Adler-32 failure is
-``APX_CHECKSUM_ERROR`` while the NACK remains ``APX_PARSE_ERROR`` for
-compatibility. Failure notification uses metadata that remains available
-before node destruction, and is emitted even if the NACK cannot be queued or
-delivered. It does not claim that the client received the response.
-
-Rejected bytes are not emitted as normal definition-file data. Rejection
-events describe live history and are not reproduced in snapshots. Ordinary
-text logging also reports rejection and NACK-queuing failures.
+The receiver exposes only validated logical definitions to inspection and
+normal definition-file logging. Successful loading triggers a validated-node
+notification; failure triggers ``NODE_DEFINITION_REJECTED`` using metadata
+that remains available before deleting the incomplete node.
 
 Connection event listeners are copied while holding the listener mutex and
 invoked after releasing it. User callbacks must not run while an internal
-mutex is held. For recording and inspecting events, see :doc:`../apps/apx_log`.
+mutex is held. Stream, container, and definition-event semantics are described
+in :doc:`logging`; command-line usage is covered by :doc:`../apps/apx_log`.

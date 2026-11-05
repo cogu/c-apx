@@ -3,26 +3,13 @@ apx-log
 
 ``apx-log`` is a command-line utility for recording, inspecting, and viewing APX event streams. It connects to the server's :doc:`../extensions/monitor` endpoint, records server lifecycle and signal events directly into standard ``.apxlog`` binary container files, inspects container metadata, and prints formatted event records to the console in human-readable text or newline-delimited JSON (NDJSON).
 
-Architecture & How It Works
----------------------------
+Recording Overview
+------------------
 
-``apx-log`` interfaces with the APX server daemon through the monitor extension:
-
-1. **Diagnostic Connection**:
-   ``apx-log`` connects to the dedicated diagnostic listener hosted by ``monitor-extension`` (UNIX domain socket ``/tmp/apx.socket`` or TCP endpoint, with optional TLS / mTLS).
-
-2. **Stream Subscription (``server.log``)**:
-   The monitor extension publishes the virtual file ``server.log`` as a RemoteFile v1.1 Stream File (``FileStream``). When ``apx-log record`` opens this stream, the server initiates an active streaming session:
-   * **Stream Initializer**: Emits ``STREAM_BEGIN`` containing format version, monotonic clock identifier, capture start timestamp, and server version.
-   * **State Snapshot**: Captures active connections, registered nodes, published files, and initial signal values, followed by ``SNAPSHOT_END``.
-   * **Live Event Stream**: Transmits client connections/disconnections, node registrations, file operations, and port updates in real time.
-   * **Stream Terminator**: Emits ``STREAM_END`` upon session closure.
-
-3. **Binary Container Format (``.apxlog``)**:
-   Recorded files use a standard 64-byte container header followed by NumHeader32-framed records:
-   * **Header (64 bytes)**: Magic identifier ``\0APXLOG\n``, format version ``1.0``, flags (indicating finalized status), capture start timestamp (UTC nanoseconds), capture end timestamp, and total record count.
-   * **Framed Records**: Each event payload delivered over ``server.log`` is preceded by a canonical NumHeader32 length prefix (1 byte for sizes up to 127 bytes, 4 bytes otherwise).
-   * **Safe Finalization**: Upon receiving ``SIGINT`` (Ctrl+C), ``SIGTERM``, or server disconnection, ``apx-log`` seeks to offset 0, updates the capture end timestamp and record count, sets the finalized flag bit, and closes the file.
+A recording starts with a snapshot of current server state, followed by live
+events. Stop recording with Ctrl+C to finalize the capture, then use ``info``
+for a summary or ``print`` to inspect its events. For implementation and file
+format details, see :doc:`../design/logging`.
 
 Synopsis
 --------
@@ -93,21 +80,6 @@ Inspects and displays header metadata and summary statistics for a ``.apxlog`` c
      - Emit container metadata in structured JSON format.
 
 Output includes format version, finalized status, capture start/end timestamps (ISO 8601 UTC and unix nanoseconds), total duration, record count, and file size on disk.
-
-Definition Content and Rejections
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Live and snapshot ``.apx`` file events contain validated, uncompressed APX
-text and its logical size, regardless of transfer encoding. ``apx-log`` does
-not decompress node transfers or compress the ``.apxlog`` container.
-
-``NODE_DEFINITION_REJECTED`` records the sending connection, announced file
-name, transfer encoding and sizes, failure stage, specific detected error,
-and intended client NACK code. ``print`` displays these fields as text;
-``print --json`` exposes ``transfer_encoding``, ``failure_stage``,
-``error_code``, and ``response_code``. Connection ID zero is valid and is
-included in JSON output. The response code does not prove NACK delivery.
-Rejected payload bytes are not recorded as normal definition-file data.
 
 print
 ~~~~~
@@ -201,3 +173,32 @@ Emit event stream as NDJSON lines:
    {"event":"FILE_PUBLISH","seq":2,"timestamp_ns":1350000,"flags":["SNAPSHOT"],"connection_id":1,"file_address":0,"file_size":4,"file_name":"EngineNode.out"}
    {"event":"SNAPSHOT_END","seq":3,"timestamp_ns":2000000}
    {"event":"FILE_WRITE","seq":4,"timestamp_ns":150000000,"connection_id":1,"file_id":0,"offset":0,"size":4,"data_hex":"01 00 00 00"}
+
+Error Handling
+--------------
+
+Command Failures
+~~~~~~~~~~~~~~~~
+
+Errors opening files or connecting to the diagnostic endpoint are reported
+on stderr and return a non-zero exit status. Use ``apx-log info`` to inspect
+whether a capture was finalized; ``unfinalized / crashed`` means recording
+did not complete normal finalization.
+
+Rejected Node Definitions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A server-side node rejection is a recorded event, not necessarily a failure
+of the recording command. Use ``apx-log print`` to inspect
+``NODE_DEFINITION_REJECTED`` entries, or ``print --json`` for the
+``connection_id``, ``file_name``, ``transfer_encoding``, ``failure_stage``,
+``error_code``, and ``response_code`` fields.
+
+The failure stage distinguishes decompression errors from later signature or
+parsing failures. ``response_code`` is the intended client NACK code; it does
+not prove that the client received that response. Finalized captures can
+contain rejection events, and rejections that occurred before recording
+started are not included in the initial snapshot.
+
+For event-generation and definition-content semantics, see
+:doc:`../design/logging`.
