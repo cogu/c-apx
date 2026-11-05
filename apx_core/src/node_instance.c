@@ -209,6 +209,7 @@ void apx_node_instance_destroy(apx_node_instance_t *self)
       free(self->provide_port_init_data);
     if (self->node_data != NULL)
       apx_node_data_delete(self->node_data);
+    free(self->compressed_definition_data);
     if (self->provide_byte_port_map != NULL)
       apx_byte_port_map_delete(self->provide_byte_port_map);
     if (self->require_byte_port_map != NULL)
@@ -1404,7 +1405,9 @@ static apx_error_t create_definition_file_info(apx_node_instance_t *self, rmf_fi
   assert(self->node_data != NULL);
   char file_name[RMF_MAX_FILE_NAME_SIZE + 1];
   uint8_t digest_data[RMF_SHA256_SIZE];
-  uint32_t file_size = (uint32_t)apx_node_data_definition_data_size(self->node_data);
+  uint32_t file_size = self->compressed_definition_data != NULL ?
+    (uint32_t)self->compressed_definition_size :
+    (uint32_t)apx_node_data_definition_data_size(self->node_data);
   strcpy(file_name, self->name);
   strcat(file_name, ".apx");
 
@@ -1415,6 +1418,11 @@ static apx_error_t create_definition_file_info(apx_node_instance_t *self, rmf_fi
   if (result == APX_NO_ERROR && self->signature_type != RMF_SIGNATURE_TYPE_NONE)
   {
     result = rmf_file_info_set_signature(file_info, self->signature_type, self->signature_data);
+  }
+  if (result == APX_NO_ERROR && self->compressed_definition_data != NULL)
+  {
+    rmf_file_info_set_compression(
+      file_info, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, apx_node_instance_get_definition_size(self));
   }
   return result;
 }
@@ -1520,6 +1528,11 @@ static apx_error_t send_definition_data_to_file_manager(
 {
   uint8_t const *definition_data = apx_node_data_get_definition_data(self->node_data);
   apx_size_t const definition_size = apx_node_data_definition_data_size(self->node_data);
+  if (self->compressed_definition_data != NULL)
+  {
+    return apx_file_manager_send_local_const_data(
+      file_manager, address, self->compressed_definition_data, self->compressed_definition_size);
+  }
   return apx_file_manager_send_local_const_data(file_manager, address, definition_data, definition_size);
 }
 

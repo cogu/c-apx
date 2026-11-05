@@ -1,9 +1,9 @@
 # Design Proposal: Compressed APX Definition Transfer
 
-* **Status**: Implementation in progress; receiver validation and logical-definition/failure logging are implemented. Ecosystem integration and remaining acceptance evidence are tracked in item 16.
+* **Status**: Implemented for item 16's current C scope: explicit client/CLI sender selection, receiver validation, and logical-definition/failure logging are implemented and verified. Deferred ecosystem work remains outside item 16.
 * **Backlog**: [Item 16](../Backlog.md#16-compressed-transfer-of-apx-node-definitions-signed-and-unsigned).
 * **Depends on**: [Item 20: Compression Backend and CMake Integration](../Backlog.md#20-compression-backend-and-cmake-integration).
-* **Affected Components**: RemoteFile publication and reception, server node loading, dynamic clients, and future py-apx/APX-ES integration.
+* **Affected Components**: RemoteFile publication and reception, server node loading, the dynamic C client, and `apx-node`. py-apx/APX-ES ecosystem integration is future work outside item 16.
 * **Protocol**: [RemoteFile v1.1 compressed definition transfer](../../apx/specifications/protocols/remotefile1_1.md#compressed-definition-transfer).
 
 ## 1. Motivation and Scope
@@ -14,7 +14,16 @@ The generator should optionally compress the definition once, on the development
 
 The same transfer format should serve dynamic clients, including future implementations in other languages. Compression and signing are independent: both unsigned and signed definitions can be compressed. Existing uncompressed transfer remains supported.
 
-This proposal does not implement the APX-ES runtime rewrite, modify py-apx, compress signal files, or implement the cache from [item 14](../Backlog.md#14-node-definition-cache-text--binary-form).
+The current scope is c-apx definition transfer, including an explicit C client
+API setting and `apx-node --compressed`, with uncompressed transfer as the
+default. py-apx and APX-ES will be developed together for the c-apx v0.6.0
+ecosystem; generator, other-language client, gateway, broader interoperability,
+and benchmark work are not item 16 completion criteria. The generation
+discussion below records future ecosystem intent, not current deliverables.
+
+Only APX definition files are compressed. Signal data, initial values, and
+port-count data remain unchanged and uncompressed. This proposal does not
+implement the cache from [item 14](../Backlog.md#14-node-definition-cache-text--binary-form).
 
 ## 2. Decisions
 
@@ -23,6 +32,7 @@ This proposal does not implement the APX-ES runtime rewrite, modify py-apx, comp
 | Algorithm and wrapper | One zlib stream (RFC 1950) containing DEFLATE (RFC 1951), without a preset dictionary |
 | Authentication | Optional at the feature level; separate unsigned and signed publication commands preserve existing policy |
 | Generated representation | Explicit generation-time choice: uncompressed text or compressed binary data |
+| Dynamic C client selection | Explicit client API setting and `apx-node --compressed`; default uncompressed, with no size heuristics |
 | Legacy compatibility | Uncompressed unsigned generation retains RMFP 1.0 file publication |
 | Runtime fallback | Not required; no probing, timeout-based downgrade, or dual representation in generated firmware |
 | C codec backend | Build-time zlib/miniz selection provided by item 20; the protocol is backend-independent |
@@ -82,9 +92,12 @@ After decoding, the logical definition contains `UncompressedSize` bytes of APX 
 
 The gateway may change framing between transport links, but it must preserve the publication metadata and encoded payload. Supporting that behavior in a particular gateway is an integration requirement, not an assumed property of existing gateway software.
 
-## 4. Code Generation and Compatibility
+## 4. Representation Selection and Compatibility
 
-### 4.1 Generation Contract
+### 4.1 Future Generation Contract
+
+This subsection describes future py-apx/APX-ES ecosystem work for v0.6.0,
+outside the current item 16 implementation and acceptance scope.
 
 py-apx should expose an explicit generation-time choice, defaulting to the existing uncompressed representation for compatibility:
 
@@ -112,9 +125,30 @@ A compressed-only generated node connected to an incompatible server is a deploy
 
 Do not silently remove signing to reach an older server. Unsigned legacy generation is a deliberate user/deployment choice, not a cryptographic downgrade path.
 
-### 4.3 Dynamic Clients
+### 4.3 Dynamic C Clients
 
-Dynamic clients may compress definition bytes once before publication using their native runtime APIs. They may retain uncompressed publication when it is preferable, including small definitions for which the complete transfer would not become smaller. Compressor level, selection API, and client defaults are implementation decisions, not protocol requirements. Runtime capability negotiation is outside this item.
+The C client must expose explicit definition-compression selection, and `apx-node`
+must expose it through `--compressed`. Default publication remains uncompressed.
+The CLI flag takes no argument and uses `APX_COMPRESSION_DEFAULT_LEVEL`
+(`-1`, currently level 6 in both backends). The client API
+`apx_client_set_definition_compression(client, enabled, level)` accepts `-1`
+or any level from 0 through 9. Level 0 is zlib stored-block transfer, not plain
+text. Disabling compression is a separate explicit choice. Settings apply to
+subsequently built nodes without changing existing definitions.
+
+When selected, compress the definition once before publication even if the
+encoded representation is larger; do not substitute a size heuristic or
+automatic fallback for the application's choice.
+
+Retain the logical definition separately from the immutable encoded transfer
+buffer and its size. Parsing, inspection, digest calculation, and signing use
+the original logical bytes. Only publication metadata and definition-file
+transfer use the compressed representation. Signal data, initial values, and
+port-count files are not compressed. Runtime capability negotiation and
+automatic legacy fallback remain outside this item.
+
+A future `--compression-level=<level>` CLI option can expose fine-tuning
+without changing the C API; it is not part of the current CLI.
 
 ## 5. Receiver Pipeline, Integrity, and Limits
 
@@ -192,20 +226,35 @@ A local experiment on three existing generated definition strings, using zlib le
 
 These are illustrative payload measurements, not public interoperability fixtures, universal ratio guarantees, or startup benchmarks. In particular, the largest sample does not exceed an 80% reduction. The original source definitions need not have the same byte layout as the generated strings.
 
-Benchmark definition payload bytes, publication/framing overhead, constrained-link transfer time, decompression CPU/peak memory, and end-to-end node readiness separately. Compare against identical uncompressed definitions and server settings, with cache disabled for transfer measurements. Report cache-enabled startup separately if available. Do not retain the old unmeasured "~0.3 ms for 140 KB" claim or require a universal ">80% latency" improvement.
+Future performance work may benchmark definition payload bytes, publication/framing overhead, constrained-link transfer time, decompression CPU/peak memory, and end-to-end node readiness separately. Compare against identical uncompressed definitions and server settings, with cache disabled for transfer measurements. Report cache-enabled startup separately if available. These measurements are not item 16 acceptance criteria. Do not retain the old unmeasured "~0.3 ms for 140 KB" claim or require a universal ">80% latency" improvement.
 
 ## 9. Acceptance Tests and Delivery Boundaries
 
+### 9.1 Current C Implementation
+
+Receiver validation, logging, the explicit C client setting, and
+`apx-node --compressed` are implemented and verified. Sender/CLI regressions
+cover all supported API levels, publication metadata and payloads, and signed
+or unsigned definitions with both backends.
+
 * Encode/decode both compressed command layouts, integer byte order, allowed field values, maximum file names, and address/size boundaries. Assert header acceptance at 20, publication at 3 and 21-23, and stream control at 24-27, with unique IDs. Preserve every RMFP 1.0 assignment and remove obsolete command helpers/tests without changing independent application event IDs.
 * Exercise all four signed/unsigned and compressed/uncompressed combinations, with signed-node policy enabled and disabled; preserve existing uncompressed behavior.
-* Verify generated binary-array lengths, embedded zero bytes, exact reconstructed definition bytes, and unchanged generated signal serialization. Test the unsigned uncompressed generation path against v0.2.8, including its legacy greeting and publication.
-* Publish valid compressed definitions with caching disabled. Check node/port metadata, initial values, and routed signals against the equivalent uncompressed case.
+* Test explicit C API and CLI selection, the default uncompressed path, separate logical/encoded buffers, exact reconstructed definition bytes, and signing/digest calculation over logical text. Selected compression must not be automatically disabled for small definitions.
 * Run transfer integration tests with each backend supplied by item 20; codec/build infrastructure tests remain owned by item 20.
-* Add small public test definitions and interoperability vectors. Verify Python-produced zlib streams using the selected C decoder and C-produced streams using Python; include another runtime such as Node.js where available. Do not require byte-identical compressor output.
-* Fragment payloads at arbitrary transport boundaries, including inside zlib headers/trailers. Test reopen, revoke, timeout, and disconnect during reception/decompression, with no leaks or stale state.
+* Fragment definition payloads, including inside zlib headers/trailers. Preserve the implemented rejection, revocation, disconnect, and resource-reservation cleanup behavior.
 * Reject unknown encodings, raw DEFLATE/gzip mislabeled as zlib, preset dictionaries, corrupt checksums, truncation, trailing/concatenated data, invalid lengths, address overflow, resource-limit violations, and output exceeding the advertised bound.
 * Reject digest mismatches, missing signatures under signed-node policy, and invalid signatures. No rejected node becomes routable and no failure triggers a silent format or authentication downgrade.
-* If caching exists, verify identical logical cache identity across transfer encodings and compression levels. For both unsigned forms, test advertised-digest text and compiled hits with no `FILE_OPEN` or transfer/decoder allocations, plus misses and absent digests. For both signed forms, require transfer and successful verification before a compiled hit bypasses parsing/compilation. Test incompatible or corrupt cache entries and signed-node policy before unsigned lookup.
-* Measure concurrent large definitions against the aggregate memory budget. Run the normal unit/integration, ASan/UBSan, and mandatory TSan checks when C implementation changes are made.
+* Preserve the validated logical-definition logging contract and structured rejection metadata. Run the normal unit/integration, ASan/UBSan, and mandatory TSan checks when C implementation changes are made.
 
-Coordinate delivery across the protocol specification, c-apx receiver/client support, py-apx generator support, APX-ES publication metadata, and the affected gateway. A server-only implementation does not itself make compressed generated firmware or legacy gateways compatible.
+### 9.2 Deferred Ecosystem and Acceptance Work
+
+py-apx/APX-ES generator integration, generated binary-array and legacy v0.2.8
+compatibility checks, gateway adaptation, other-language clients, broader
+cross-implementation vectors, additional reopen/timeout scenarios, and startup
+or payload benchmarks are separate work, not blockers for completing item 16.
+The py-apx/APX-ES ecosystem work is planned for c-apx v0.6.0.
+
+Cache-dependent acceptance remains conditional on implementing item 14; the
+cache itself is not part of this item. Signal data and initial-value
+compression are not planned in either the current item or these deferred
+definition-transfer activities.

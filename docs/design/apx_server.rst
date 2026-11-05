@@ -22,6 +22,13 @@ completion refer to encoded bytes, not the advertised uncompressed size.
 The ``apx_node_data_t`` definition buffer initially holds received transfer
 data and is replaced with logical text during validated node loading.
 
+On the sending client, node data retains logical text unchanged. A selected
+compressed definition has a separate immutable buffer owned by the client
+node and prepared before publication. Transfer uses that buffer's encoded
+size, while hashing and signing still use logical text. The buffer remains
+available for subsequent file opens and is released when the client node is
+destroyed. Client-side selection is described in :doc:`../guides/c_client`.
+
 Consumers must not inspect an incomplete or unverified definition buffer.
 A successfully loaded node reaches ``APX_DATA_STATE_SYNCHRONIZED`` only after
 validation, compilation, and file-manager attachment succeed. Any local

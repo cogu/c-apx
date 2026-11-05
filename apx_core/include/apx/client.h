@@ -78,6 +78,13 @@ void apx_client_delete(apx_client_t *self);
 void apx_client_vdelete(void *arg);
 void apx_client_set_rmf_proto_id(apx_client_t *self, rmf_version_id_t version_id);
 rmf_version_id_t apx_client_get_rmf_proto_id(apx_client_t const *self);
+/**
+ * Selects definition compression for subsequently built nodes; existing nodes are unchanged.
+ * Level is 0-9 or APX_COMPRESSION_DEFAULT_LEVEL (-1). Level 0 still uses zlib framing.
+ * Compression is disabled by default and requires RMFP 1.1 when enabled.
+ * Returns APX_INVALID_ARGUMENT_ERROR for an invalid level and APX_UNSUPPORTED_ERROR for RMFP 1.0.
+ */
+apx_error_t apx_client_set_definition_compression(apx_client_t *self, bool enabled, int level);
 
 #ifdef UNIT_TEST
 apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_tag *socket_object);

@@ -14,9 +14,13 @@
 #include "CuTest.h"
 #include "apx/client.h"
 #include "apx/client_internal.h"
+#include "apx/compress.h"
+#include "apx/crypto.h"
+#include "apx/file_manager.h"
 #include "apx/util.h"
 #include "client_event_listener_spy.h"
 #include "pack.h"
+#include "testsocket.h"
 #include <string.h>
 #ifdef MEM_LEAK_CHECK
 # include "CMemLeak.h"
@@ -112,6 +116,10 @@ static const char *m_apx_definition12 = "APX/1.2\n"
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_apx_client_create(CuTest *tc);
+static void test_definition_compression_selection(CuTest *tc);
+static void test_definition_compression_levels(CuTest *tc);
+static void test_definition_compression_legacy_protocol(CuTest *tc);
+static rmf_version_id_t on_protocol_version_requested(void *arg);
 static void test_apx_client_build_node_from_string1(CuTest *tc);
 static void test_apx_client_build_node_from_string2(CuTest *tc);
 static void test_apx_client_port_instance_without_defining_node_name1(CuTest *tc);
@@ -139,6 +147,9 @@ CuSuite *testsuite_apx_client(void)
   CuSuite *suite = CuSuiteNew();
 
   SUITE_ADD_TEST(suite, test_apx_client_create);
+  SUITE_ADD_TEST(suite, test_definition_compression_selection);
+  SUITE_ADD_TEST(suite, test_definition_compression_levels);
+  SUITE_ADD_TEST(suite, test_definition_compression_legacy_protocol);
   SUITE_ADD_TEST(suite, test_apx_client_build_node_from_string1);
   SUITE_ADD_TEST(suite, test_apx_client_build_node_from_string2);
   SUITE_ADD_TEST(suite, test_apx_client_port_instance_without_defining_node_name1);
@@ -163,6 +174,107 @@ static void test_apx_client_create(CuTest *tc)
 {
   apx_client_t *client = apx_client_new();
   CuAssertPtrNotNull(tc, client);
+  apx_client_delete(client);
+}
+
+static void test_definition_compression_selection(CuTest *tc)
+{
+  apx_client_t *client = apx_client_new();
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition1));
+  apx_node_instance_t *plain = apx_client_get_last_attached_node(client);
+  CuAssertPtrEquals(tc, NULL, plain->compressed_definition_data);
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_client_set_definition_compression(NULL, true, -1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_set_definition_compression(client, true, 0));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition2));
+  apx_node_instance_t *compressed = apx_client_get_last_attached_node(client);
+  CuAssertPtrNotNull(tc, compressed->compressed_definition_data);
+  CuAssertTrue(tc, compressed->compressed_definition_size > strlen(m_apx_definition2));
+  CuAssertPtrEquals(tc, NULL, plain->compressed_definition_data);
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_client_set_definition_compression(client, false, -2));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_client_set_definition_compression(client, false, 10));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition3));
+  CuAssertPtrNotNull(tc, apx_client_get_last_attached_node(client)->compressed_definition_data);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_set_definition_compression(client, false, -1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition4));
+  CuAssertPtrEquals(tc, NULL, apx_client_get_last_attached_node(client)->compressed_definition_data);
+  CuAssertPtrNotNull(tc, compressed->compressed_definition_data);
+  apx_client_delete(client);
+}
+
+static rmf_version_id_t on_protocol_version_requested(void *arg)
+{
+  (void)arg;
+  return RMF_PROTOCOL_VERSION_ID_1_1;
+}
+
+static void test_definition_compression_levels(CuTest *tc)
+{
+  for (int level = APX_COMPRESSION_DEFAULT_LEVEL; level <= 9; ++level)
+  {
+    for (int signed_node = 0; signed_node <= 1; ++signed_node)
+    {
+      apx_client_t *client = apx_client_new();
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_set_definition_compression(client, true, level));
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition1));
+      apx_node_instance_t *node = apx_client_get_last_attached_node(client);
+      size_t const logical_size = strlen(m_apx_definition1);
+      CuAssertUIntEquals(tc, logical_size, apx_node_instance_get_definition_size(node));
+      CuAssertTrue(tc, memcmp(apx_node_instance_get_definition_data(node), m_apx_definition1, logical_size) == 0);
+      uint8_t decoded[1024];
+      size_t decoded_size = sizeof(decoded);
+      CuAssertIntEquals(tc, APX_NO_ERROR,
+        apx_decompress(
+          decoded, &decoded_size, node->compressed_definition_data, node->compressed_definition_size, logical_size));
+      CuAssertUIntEquals(tc, logical_size, decoded_size);
+      CuAssertTrue(tc, memcmp(decoded, m_apx_definition1, logical_size) == 0);
+      uint8_t signature[RMF_SIGNATURE_SIZE_ECDSA_P256];
+      memset(signature, 0x5a, sizeof(signature));
+      if (signed_node)
+      {
+        CuAssertIntEquals(
+          tc, APX_NO_ERROR, apx_node_instance_set_signature(node, RMF_SIGNATURE_TYPE_ECDSA_P256, signature));
+      }
+      apx_connection_interface_t connection_interface;
+      memset(&connection_interface, 0, sizeof(connection_interface));
+      connection_interface.get_remotefile_protocol_version_id = on_protocol_version_requested;
+      apx_file_manager_t file_manager;
+      CuAssertIntEquals(
+        tc, APX_NO_ERROR, apx_file_manager_create(&file_manager, APX_CLIENT_MODE, &connection_interface));
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_attach_to_file_manager(node, &file_manager));
+      apx_file_t *file = apx_file_manager_find_local_file_by_name(&file_manager, "TestNode1.apx");
+      CuAssertPtrNotNull(tc, file);
+      CuAssertTrue(tc, apx_file_is_compressed(file));
+      CuAssertUIntEquals(tc, node->compressed_definition_size, apx_file_get_size(file));
+      CuAssertUIntEquals(tc, logical_size, apx_file_get_uncompressed_size(file));
+      uint8_t digest[RMF_SHA256_SIZE];
+      CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)m_apx_definition1, logical_size, digest));
+      CuAssertTrue(tc, memcmp(digest, apx_file_get_digest_data(file), sizeof(digest)) == 0);
+      CuAssertIntEquals(tc, signed_node != 0, apx_file_is_signed(file));
+      if (signed_node)
+      {
+        CuAssertTrue(tc, memcmp(signature, apx_file_get_signature_data(file), sizeof(signature)) == 0);
+      }
+      apx_file_manager_destroy(&file_manager);
+      apx_client_delete(client);
+    }
+  }
+}
+
+static void test_definition_compression_legacy_protocol(CuTest *tc)
+{
+  apx_client_t *client = apx_client_new();
+  apx_client_set_rmf_proto_id(client, RMF_PROTOCOL_VERSION_ID_1_0);
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, apx_client_set_definition_compression(client, true, -1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition1));
+  apx_client_set_rmf_proto_id(client, RMF_PROTOCOL_VERSION_ID_1_1);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_set_definition_compression(client, true, -1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition2));
+  apx_client_set_rmf_proto_id(client, RMF_PROTOCOL_VERSION_ID_1_0);
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, apx_client_build_node(client, m_apx_definition3));
+  testsocket_t *socket = testsocket_new();
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, apx_client_connect_testsocket(client, socket));
+  CuAssertPtrEquals(tc, NULL, apx_client_get_connection(client));
+  testsocket_delete(socket);
   apx_client_delete(client);
 }
 

@@ -118,6 +118,46 @@ Compile an APX IDL specification into the client runtime:
        return 1;
    }
 
+Optional Definition Compression
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Definition transfer is uncompressed by default. To enable it, configure the
+client before building the affected nodes:
+
+.. code-block:: c
+
+   #include "apx/compress.h"
+
+   apx_error_t rc = apx_client_set_definition_compression(
+       client, true, APX_COMPRESSION_DEFAULT_LEVEL);
+   if (rc != APX_NO_ERROR)
+   {
+       fprintf(stderr, "Cannot configure definition compression: error %d\n", (int)rc);
+       apx_client_delete(client);
+       return 1;
+   }
+   rc = apx_client_build_node(client, node_def);
+   if (rc != APX_NO_ERROR)
+   {
+       fprintf(stderr, "Cannot build compressed node definition: error %d\n", (int)rc);
+       apx_client_delete(client);
+       return 1;
+   }
+
+The level can be ``APX_COMPRESSION_DEFAULT_LEVEL`` (``-1``, currently selecting
+level 6 in both backends) or any integer from 0 through 9. Level 0 produces a
+zlib stream with stored blocks; it does not select plain transfer. Pass
+``false`` as the enabled argument to select plain transfer for subsequent
+nodes. Invalid levels return ``APX_INVALID_ARGUMENT_ERROR``.
+
+The setting affects only nodes built after the call, not existing nodes.
+The client retains logical text for inspection, hashing, and signing, and
+prepares immutable compressed bytes once per selected definition. It does
+not choose a representation based on size. Signal and initial-value data are
+not compressed. Compressed definitions require RMFP 1.1; configuring or
+connecting them with RMFP 1.0 returns ``APX_UNSUPPORTED_ERROR`` rather than
+silently switching representation or protocol version.
+
 4. Connecting to the Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -39,6 +39,7 @@ Connection Management
 Node & Manager Access
 ~~~~~~~~~~~~~~~~~~~~~
 
+.. doxygenfunction:: apx_client_set_definition_compression
 .. doxygenfunction:: apx_client_build_node
 .. doxygenfunction:: apx_client_get_last_attached_node
 .. doxygenfunction:: apx_client_get_file_manager

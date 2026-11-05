@@ -331,8 +331,9 @@ def test_apx_sign_cli(tmp_path: Path, apx_sign_bin: str):
     assert "verification failed" in res.stderr.lower()
 
 
+@pytest.mark.parametrize("compressed", [False, True])
 def test_apx_node_auto_signature_and_no_signature_flag(
-    tmp_path: Path, apx_server_bin: str, apx_node_bin: str, apx_sign_bin: str
+    tmp_path: Path, apx_server_bin: str, apx_node_bin: str, apx_sign_bin: str, compressed: bool
 ):
     """
     Test apx-node automatic companion signature loading and --no-signature flag:
@@ -398,6 +399,8 @@ def test_apx_node_auto_signature_and_no_signature_flag(
     try:
         # TEST 1: Launch apx-node WITHOUT --no-signature (auto-detects .sig)
         node_cmd = [apx_node_bin, "-c", socket_path, "--no-bind", str(apx_file)]
+        if compressed:
+            node_cmd.insert(1, "--compressed")
         if stdbuf_bin:
             node_cmd = [stdbuf_bin, "-oL", *node_cmd]
         node_proc = subprocess.Popen(
@@ -414,9 +417,12 @@ def test_apx_node_auto_signature_and_no_signature_flag(
         stdout1, _ = node_proc.communicate(timeout=2.0)
         assert "Found signature:" in stdout1
         assert "connected to APX server" in stdout1
+        assert "Server error" not in stdout1
 
         # TEST 2: Launch apx-node WITH --no-signature
         node_cmd2 = [apx_node_bin, "-c", socket_path, "--no-bind", "--no-signature", str(apx_file)]
+        if compressed:
+            node_cmd2.insert(1, "--compressed")
         if stdbuf_bin:
             node_cmd2 = [stdbuf_bin, "-oL", *node_cmd2]
         node_proc2 = subprocess.Popen(
@@ -438,5 +444,4 @@ def test_apx_node_auto_signature_and_no_signature_flag(
         server.stop(timeout=2.0)
         assert server.process.returncode == 0
         assert "Connection closed" in server.stdout
-
-
+        assert "Created node SensorNode" in server.stdout

@@ -69,6 +69,8 @@ void apx_node_manager_create(apx_node_manager_t *self, apx_mode_t mode)
   if ((self != NULL) && ((mode == APX_CLIENT_MODE) || (mode == APX_SERVER_MODE)))
   {
     self->mode = mode;
+    self->definition_compression_enabled = false;
+    self->definition_compression_level = APX_COMPRESSION_DEFAULT_LEVEL;
     self->last_attached = NULL;
     self->parent_connection = NULL;
     apx_compiler_create(&self->compiler);
@@ -117,6 +119,10 @@ apx_error_t apx_node_manager_build_node(apx_node_manager_t *self, char const *de
   if ((self != NULL) && (definition_text != NULL))
   {
     size_t definition_size = strlen(definition_text);
+    if (definition_size > UINT32_MAX)
+    {
+      return APX_LENGTH_ERROR;
+    }
     apx_error_t result = apx_parser_parse_cstr(&self->parser, definition_text);
     apx_node_t *node = NULL;
     if (result != APX_NO_ERROR)
@@ -530,6 +536,53 @@ static apx_error_t create_node_instance(
     return APX_MEM_ERROR;
   }
   result = apx_node_instance_init_node_data(node_instance, definition_data, definition_size);
+  if (result == APX_NO_ERROR && self->mode == APX_CLIENT_MODE)
+  {
+    MUTEX_LOCK(self->lock);
+    bool const enabled = self->definition_compression_enabled;
+    int const level = self->definition_compression_level;
+    MUTEX_UNLOCK(self->lock);
+    if (enabled)
+    {
+      if (definition_size > APX_MAX_FILE_SIZE)
+      {
+        result = APX_FILE_TOO_LARGE_ERROR;
+      }
+      else
+      {
+        size_t size = apx_compress_bound(definition_size);
+        if (size == 0u)
+        {
+          result = APX_LENGTH_ERROR;
+        }
+        else
+        {
+          uint8_t *data = (uint8_t *)malloc(size);
+          if (data == NULL)
+          {
+            result = APX_MEM_ERROR;
+          }
+          else
+          {
+            result = apx_compress_level(data, &size, definition_data, definition_size, level);
+            if (result == APX_NO_ERROR && size > APX_MAX_FILE_SIZE)
+            {
+              result = APX_FILE_TOO_LARGE_ERROR;
+            }
+            if (result == APX_NO_ERROR)
+            {
+              node_instance->compressed_definition_data = data;
+              node_instance->compressed_definition_size = (apx_size_t)size;
+            }
+            else
+            {
+              free(data);
+            }
+          }
+        }
+      }
+    }
+  }
   if (result == APX_NO_ERROR)
   {
     result = build_node_instance(self, node_instance, node);

@@ -14,6 +14,7 @@
 #include "apx/client.h"
 #include "apx/client_connection.h"
 #include "apx/client_internal.h"
+#include "apx/compress.h"
 #include "apx/file_manager.h"
 #include "apx/node_instance.h"
 #include "apx/node_manager.h"
@@ -56,6 +57,7 @@ static void apx_client_trigger_error_event_on_listeners(
 static void apx_client_trigger_port_write_event_on_listeners(apx_client_t *self, apx_client_connection_t *connection,
   apx_port_instance_t *port_instance, uint8_t const *data, apx_size_t size);
 static void apx_client_attach_local_nodes_to_connection(apx_client_t *self);
+static apx_error_t validate_definition_protocol(apx_client_t *self);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -81,6 +83,12 @@ apx_error_t apx_client_create(apx_client_t *self)
     self->connection = (apx_client_connection_t *)NULL;
     self->vm = (apx_vm_t *)NULL;
     self->node_manager = apx_node_manager_new(APX_CLIENT_MODE);
+    if (self->node_manager == NULL)
+    {
+      adt_list_delete(self->event_listeners);
+      self->event_listeners = NULL;
+      return APX_MEM_ERROR;
+    }
     self->is_connected = false;
     self->rmf_version_id = RMF_PROTOCOL_VERSION_ID_1_1;
     MUTEX_INIT(self->lock);
@@ -150,6 +158,11 @@ apx_error_t apx_client_connect_testsocket(apx_client_t *self, struct testsocket_
 {
   if (self != NULL)
   {
+    apx_error_t const protocol_error = validate_definition_protocol(self);
+    if (protocol_error != APX_NO_ERROR)
+    {
+      return protocol_error;
+    }
     apx_client_socket_connection_t *socketConnection =
       apx_client_socket_connection_new(socket_object, APX_CONNECTION_TYPE_DEFAULT);
     if (socketConnection)
@@ -178,6 +191,11 @@ apx_error_t apx_client_connect_tcp(apx_client_t *self, const char *address, uint
 {
   if (self != NULL)
   {
+    apx_error_t const protocol_error = validate_definition_protocol(self);
+    if (protocol_error != APX_NO_ERROR)
+    {
+      return protocol_error;
+    }
     apx_client_socket_connection_t *socketConnection =
       apx_client_socket_connection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
     if (socketConnection != NULL)
@@ -206,6 +224,11 @@ apx_error_t apx_client_connect_tls(
 {
   if (self != NULL)
   {
+    apx_error_t const protocol_error = validate_definition_protocol(self);
+    if (protocol_error != APX_NO_ERROR)
+    {
+      return protocol_error;
+    }
     apx_client_socket_connection_t *socketConnection =
       apx_client_socket_connection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
     if (socketConnection != NULL)
@@ -234,6 +257,11 @@ apx_error_t apx_client_connect_unix(apx_client_t *self, const char *socket_path)
 {
   if (self != NULL)
   {
+    apx_error_t const protocol_error = validate_definition_protocol(self);
+    if (protocol_error != APX_NO_ERROR)
+    {
+      return protocol_error;
+    }
     apx_client_socket_connection_t *socketConnection =
       apx_client_socket_connection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
     if (socketConnection != NULL)
@@ -261,6 +289,11 @@ apx_error_t apx_client_connect_vsock(apx_client_t *self, uint32_t cid, uint32_t 
 {
   if (self != NULL && port != 0u)
   {
+    apx_error_t const protocol_error = validate_definition_protocol(self);
+    if (protocol_error != APX_NO_ERROR)
+    {
+      return protocol_error;
+    }
     apx_client_socket_connection_t *socketConnection =
       apx_client_socket_connection_new(NULL, APX_CONNECTION_TYPE_DEFAULT);
     if (socketConnection != NULL)
@@ -396,6 +429,31 @@ rmf_version_id_t apx_client_get_rmf_proto_id(apx_client_t const *self)
   return RMF_PROTOCOL_VERSION_ID_1_0;
 }
 
+apx_error_t DLL_PUBLIC apx_client_set_definition_compression(apx_client_t *self, bool enabled, int level)
+{
+  if (self == NULL || (level != APX_COMPRESSION_DEFAULT_LEVEL && (level < 0 || level > 9)))
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  MUTEX_LOCK(self->lock);
+  if (self->node_manager == NULL)
+  {
+    MUTEX_UNLOCK(self->lock);
+    return APX_INVALID_STATE_ERROR;
+  }
+  if (enabled && self->rmf_version_id < RMF_PROTOCOL_VERSION_ID_1_1)
+  {
+    MUTEX_UNLOCK(self->lock);
+    return APX_UNSUPPORTED_ERROR;
+  }
+  MUTEX_LOCK(self->node_manager->lock);
+  self->node_manager->definition_compression_enabled = enabled;
+  self->node_manager->definition_compression_level = level;
+  MUTEX_UNLOCK(self->node_manager->lock);
+  MUTEX_UNLOCK(self->lock);
+  return APX_NO_ERROR;
+}
+
 apx_client_connection_t *apx_client_get_connection(apx_client_t *self)
 {
   if (self != NULL)
@@ -409,6 +467,16 @@ apx_error_t apx_client_build_node(apx_client_t *self, const char *definition_tex
 {
   if (self != NULL && definition_text != NULL)
   {
+    MUTEX_LOCK(self->lock);
+    MUTEX_LOCK(self->node_manager->lock);
+    bool const unsupported =
+      self->node_manager->definition_compression_enabled && self->rmf_version_id < RMF_PROTOCOL_VERSION_ID_1_1;
+    MUTEX_UNLOCK(self->node_manager->lock);
+    MUTEX_UNLOCK(self->lock);
+    if (unsupported)
+    {
+      return APX_UNSUPPORTED_ERROR;
+    }
     return apx_node_manager_build_node(self->node_manager, definition_text);
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -902,6 +970,32 @@ static void apx_client_trigger_port_write_event_on_listeners(apx_client_t *self,
   adt_ary_destroy(&callbacks);
 }
 
+
+static apx_error_t validate_definition_protocol(apx_client_t *self)
+{
+  MUTEX_LOCK(self->lock);
+  bool const legacy = self->rmf_version_id < RMF_PROTOCOL_VERSION_ID_1_1;
+  MUTEX_UNLOCK(self->lock);
+  if (!legacy)
+  {
+    return APX_NO_ERROR;
+  }
+  adt_ary_t nodes;
+  adt_ary_create(&nodes, NULL);
+  int32_t const count = apx_node_manager_values(self->node_manager, &nodes);
+  apx_error_t result = count < 0 ? APX_MEM_ERROR : APX_NO_ERROR;
+  for (int32_t i = 0; i < count; ++i)
+  {
+    apx_node_instance_t const *node = (apx_node_instance_t const *)adt_ary_value(&nodes, i);
+    if (node->compressed_definition_data != NULL)
+    {
+      result = APX_UNSUPPORTED_ERROR;
+      break;
+    }
+  }
+  adt_ary_destroy(&nodes);
+  return result;
+}
 
 static void apx_client_attach_local_nodes_to_connection(apx_client_t *self)
 {

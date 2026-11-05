@@ -470,16 +470,14 @@ static void test_decompress_golden_vector(CuTest *tc)
 
 static void test_compress_levels(CuTest *tc)
 {
-  const char *msg = "Testing compression levels 0, 1, 6, 9 to verify interoperability";
+  const char *msg = "Testing all supported compression levels";
   size_t msg_len = strlen(msg);
-  int levels[] = {0, 1, 6, 9};
-
-  for (size_t i = 0; i < sizeof(levels) / sizeof(levels[0]); i++)
+  for (int level = APX_COMPRESSION_DEFAULT_LEVEL; level <= 9; ++level)
   {
     uint8_t comp[256];
     size_t comp_len = sizeof(comp);
 
-    apx_error_t err = apx_compress_level(comp, &comp_len, (const uint8_t *)msg, msg_len, levels[i]);
+    apx_error_t err = apx_compress_level(comp, &comp_len, (const uint8_t *)msg, msg_len, level);
     CuAssertIntEquals(tc, APX_NO_ERROR, err);
 
     uint8_t decomp[256];

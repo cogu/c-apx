@@ -62,6 +62,8 @@ typedef struct apx_node_instance_tag
   uint8_t *require_port_init_data; // Calculated init data for requirePorts
   uint8_t *provide_port_init_data; // Calculated init data for providePorts
   apx_node_data_t *node_data; // All dynamic data in a node, things that change during runtime (strong reference)
+  uint8_t *compressed_definition_data;
+  apx_size_t compressed_definition_size;
   apx_port_connector_list_t
     *connector_table; // Array of apx_port_connector_list_t; Length of array: info->numProvidePorts. Created using a
  // single malloc. Only used in server mode.

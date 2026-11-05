@@ -66,8 +66,11 @@ def read_msg(sock: socket.socket, timeout: float = 3.0) -> bytes:
         return b""
     c = first_byte[0]
     if c & 0x80:
-        rem_header = sock.recv(3)
-        assert len(rem_header) == 3
+        rem_header = b""
+        while len(rem_header) < 3:
+            chunk = sock.recv(3 - len(rem_header))
+            assert chunk, "Connection closed during NumHeader32 header"
+            rem_header += chunk
         msg_len = int.from_bytes(first_byte + rem_header, "big") & 0x7FFFFFFF
     else:
         msg_len = c
@@ -585,4 +588,3 @@ def test_server_rejects_digest_mismatch(tmp_path: Path, apx_server_bin: str):
     finally:
         server.stop(timeout=2.0)
         assert server.process.returncode == 0
-

@@ -13,7 +13,7 @@ Synopsis
 
    apx-node [-b | --bind <bind_path>] [-p | --bind-port <port>] [--no-bind]
             [-c | --connect <connect_path>] [-r | --connect-port <port>]
-            [--no-signature]
+            [--no-signature] [--compressed]
             [--tls] [--ca-cert <path>] [--client-cert <path>] [--client-key <path>]
             [--vsock <cid>:<port>]
             [--version] [--help]
@@ -54,7 +54,12 @@ Command-Line Options
    * - ``--client-key <path>``
      - Path to client private key PEM file for Mutual TLS (mTLS) authentication.
    * - ``--no-signature``
-     - Bypass automatic discovery of companion signature files and force connecting as an unsigned node (RMFP/1.0).
+     - Bypass automatic discovery of companion signature files and publish the node unsigned.
+   * - ``--compressed``
+     - Transfer the APX definition using zlib-wrapped DEFLATE at the backend's default level
+       (currently 6). Takes no argument. Without this option, definitions are sent as plain text.
+       Works with signed or unsigned definitions and requires a compression-capable server.
+       Signal data and initial values remain uncompressed; there is no automatic fallback.
    * - ``--vsock <cid>:<port>``
      - Connect to ``apx-server`` using Linux VSOCK (AF_VSOCK) transport. The ``<cid>`` parameter can be a numeric
        Context ID or alias: ``host`` (2), ``local`` (1), ``hypervisor`` (0), or ``any`` (0xFFFFFFFF).
@@ -103,6 +108,21 @@ in version 1.1 mode, and authenticates the definition file to the server.
 
 Usage Examples
 --------------
+
+Compressed Definition Transfer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Select definition compression explicitly:
+
+.. code-block:: bash
+
+   apx-node --compressed -c /tmp/apx.socket EngineNode.apx
+
+Companion signatures are discovered as usual and authenticate the original
+definition text. Add ``--no-signature`` to publish unsigned. Compression is
+honored even when the encoded definition is larger than its plain-text form.
+There is currently no command-line compression-level option; applications
+using the C client API can select a level explicitly.
 
 Standard Local Run
 ~~~~~~~~~~~~~~~~~~

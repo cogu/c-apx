@@ -21,6 +21,7 @@
 # include <unistd.h>
 #endif
 #include "adt_str.h"
+#include "apx/compress.h"
 #include "apx_connection.h"
 #include "argparse.h"
 #include "msocket.h"
@@ -87,6 +88,7 @@ static const char *m_connect_address_default = "/tmp/apx.socket";
 #endif
 static bool m_no_bind = false;
 static bool m_no_signature = false;
+static bool m_compressed = false;
 static bool m_display_help = false;
 static bool m_display_version = false;
 static bool m_use_tls = false;
@@ -181,6 +183,17 @@ int main(int argc, char **argv)
         goto SHUTDOWN;
       }
       m_apx_definition_str = read_definition_file(&m_definition_file);
+      if (m_compressed)
+      {
+        apx_error_t const compression_error =
+          apx_client_set_definition_compression(m_apx_connection->client, true, APX_COMPRESSION_DEFAULT_LEVEL);
+        if (compression_error != APX_NO_ERROR)
+        {
+          fprintf(stderr, "Error: Cannot enable definition compression: %s\n", apx_strerror(compression_error));
+          retval = 1;
+          goto SHUTDOWN;
+        }
+      }
       if (m_apx_definition_str != NULL)
       {
         uint8_t signature_data[RMF_SIGNATURE_SIZE_ECDSA_P256];
@@ -248,7 +261,8 @@ int main(int argc, char **argv)
             printf("Failed\n");
             fprintf(stderr, "Error: attach node failed with error code %d\n", (int)rc);
           }
-          return 1;
+          retval = 1;
+          goto SHUTDOWN;
         }
         else
         {
@@ -359,6 +373,10 @@ void vfree(void *arg) { free(arg); }
 //////////////////////////////////////////////////////////////////////////////
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value)
 {
+  if (long_name != NULL && strcmp(long_name, "compressed") == 0 && value != NULL)
+  {
+    return ARGPARSE_VALUE_ERROR;
+  }
   if (value == NULL)
   {
     if (short_name != NULL)
@@ -404,6 +422,10 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
       else if ((strcmp(long_name, "no-signature") == 0))
       {
         m_no_signature = true;
+      }
+      else if (strcmp(long_name, "compressed") == 0)
+      {
+        m_compressed = true;
       }
       else if ((strcmp(long_name, "tls") == 0))
       {
@@ -591,6 +613,10 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
         }
         m_use_vsock = true;
       }
+      else
+      {
+        return ARGPARSE_NAME_ERROR;
+      }
     }
     else
     {
@@ -629,7 +655,7 @@ static void print_usage(const char *arg0)
 {
   printf("%s [-b --bind bind_path] [-p --bind-port port] [--no-bind] "
          "[-c --connect connect_path] [-r --connect-port connect_port] "
-         "[--no-signature] "
+         "[--no-signature] [--compressed] "
          "[--tls] [--ca-cert ca_path] [--client-cert cert_path] [--client-key key_path] "
          "[--vsock <cid>:<port>] "
          "[--version] "
