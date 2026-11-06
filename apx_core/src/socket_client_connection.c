@@ -13,6 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <assert.h>
 #include <malloc.h>
+#include <stdio.h>
 #include <string.h>
 #ifdef _MSC_VER
 # ifndef WIN32_LEAN_AND_MEAN
