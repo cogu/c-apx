@@ -128,8 +128,8 @@ void apx_connection_manager_stop(apx_connection_manager_t *self)
       apx_server_connection_t *conn = (apx_server_connection_t *)adt_ary_value(&connections, i);
       if (conn != NULL)
       {
-        apx_connection_base_close(&conn->base);
         apx_connection_base_stop(&conn->base);
+        apx_connection_base_close(&conn->base);
       }
     }
     adt_ary_destroy(&connections);

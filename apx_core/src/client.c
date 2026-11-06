@@ -324,8 +324,8 @@ void apx_client_disconnect(apx_client_t *self)
 {
   if ((self != NULL) && (self->connection != NULL))
   {
-    apx_connection_base_close(&self->connection->base);
     apx_connection_base_stop(&self->connection->base);
+    apx_connection_base_close(&self->connection->base);
     MUTEX_LOCK(self->lock);
     self->is_connected = false;
     MUTEX_UNLOCK(self->lock);

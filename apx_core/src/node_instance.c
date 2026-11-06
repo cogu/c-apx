@@ -2349,7 +2349,7 @@ apx_error_t apx_node_instance_send_provide_port_count_data(
 {
   if (self != NULL)
   {
-    if (self->is_closing)
+    if (apx_node_instance_is_closing(self))
     {
       return APX_NO_ERROR;
     }
@@ -2381,7 +2381,7 @@ apx_error_t apx_node_instance_send_require_port_count_data(
 {
   if (self != NULL)
   {
-    if (self->is_closing)
+    if (apx_node_instance_is_closing(self))
     {
       return APX_NO_ERROR;
     }
@@ -2446,7 +2446,7 @@ void apx_node_instance_set_closing(apx_node_instance_t *self, bool is_closing)
 {
   if (self != NULL)
   {
-    self->is_closing = is_closing;
+    ATOMIC_STORE_8(&self->is_closing, is_closing);
   }
 }
 
@@ -2454,7 +2454,7 @@ bool apx_node_instance_is_closing(const apx_node_instance_t *self)
 {
   if (self != NULL)
   {
-    return self->is_closing;
+    return (bool)ATOMIC_LOAD_8(&self->is_closing);
   }
   return false;
 }

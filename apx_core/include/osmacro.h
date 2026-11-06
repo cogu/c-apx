@@ -17,6 +17,9 @@
 # endif
 # include <Windows.h>
 # include <process.h>
+# ifdef _MSC_VER
+#  include <intrin.h>
+# endif
 #else
 # include <errno.h>
 # include <pthread.h>
@@ -187,6 +190,18 @@
 # define SPINLOCK_ENTER(spin) pthread_spin_lock(&spin)
 # define SPINLOCK_LEAVE(spin) pthread_spin_unlock(&spin)
 # define SPINLOCK_DESTROY(spin) pthread_spin_destroy(&spin);
+#endif
+
+/* ATOMIC OPERATIONS (8-BIT) */
+#if defined(__GNUC__) || defined(__clang__)
+# define ATOMIC_STORE_8(ptr, val) __atomic_store_n((ptr), (val), __ATOMIC_RELEASE)
+# define ATOMIC_LOAD_8(ptr) __atomic_load_n((ptr), __ATOMIC_ACQUIRE)
+#elif defined(_MSC_VER)
+# define ATOMIC_STORE_8(ptr, val) ((void)_InterlockedExchange8((volatile char *)(ptr), (char)(val)))
+# define ATOMIC_LOAD_8(ptr) (_InterlockedOr8((volatile char *)(ptr), 0))
+#else
+# define ATOMIC_STORE_8(ptr, val) ((void)(*(ptr) = (val)))
+# define ATOMIC_LOAD_8(ptr) (*(ptr))
 #endif
 
 /* SLEEP */
