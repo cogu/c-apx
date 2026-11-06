@@ -797,9 +797,12 @@ static apx_server_connection_event_listener_t *copy_definition_listeners(apx_ser
   if (listeners != NULL)
   {
     adt_list_elem_t *iter = adt_list_iter_first(&self->event_listeners);
-    while (iter != NULL)
+    while ((iter != NULL) && (*count < length))
     {
-      listeners[(*count)++] = *(apx_server_connection_event_listener_t *)iter->pItem;
+      if (iter->pItem != NULL)
+      {
+        listeners[(*count)++] = *(apx_server_connection_event_listener_t *)iter->pItem;
+      }
       iter = adt_list_iter_next(iter);
     }
   }
