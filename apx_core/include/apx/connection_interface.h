@@ -14,6 +14,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "adt_bytearray.h"
 #include "apx/error.h"
 #include "apx/file.h"
 #include "apx/remotefile.h"
@@ -33,8 +34,8 @@ typedef struct apx_connection_interface_tag
    // Transmit methods
   int32_t (*transmit_max_buffer_size)(void *arg); // Returns largest possible buffer size the transmitter can provide
   int32_t (*transmit_current_bytes_avaiable)(void *arg); // Returns avaiable bytes in current buffer
-  void (*transmit_begin)(void *arg); // Locks transmit resource
-  void (*transmit_end)(void *arg); // Unlocks transmit resource
+  void (*transmit_begin)(void *arg); // Locks transmit resource and begins a message batch
+  void (*transmit_end)(void *arg); // Flushes the message batch and unlocks transmit resource
   apx_connection_transmit_data_message_func
     *transmit_data_message; // Message that is written into the remotefile address space
   apx_connection_transmit_direct_message_func
@@ -59,5 +60,12 @@ typedef struct apx_connection_interface_tag
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+
+// Appends a complete framed message. APX_BUFFER_FULL_ERROR requests a flush and retry.
+// On failure, buffered bytes and bytes_available remain unchanged.
+apx_error_t apx_connection_buffer_append_data_message(adt_bytearray_t *buffer, apx_size_t max_buffer_size,
+  uint32_t write_address, bool more_bit, uint8_t const *data, int32_t size, int32_t *bytes_available);
+apx_error_t apx_connection_buffer_append_direct_message(
+  adt_bytearray_t *buffer, apx_size_t max_buffer_size, uint8_t const *data, int32_t size, int32_t *bytes_available);
 
 #endif // APX_CONNECTION_INTERFACE_H

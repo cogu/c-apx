@@ -215,6 +215,7 @@ set (APX_COMMON_SOURCES
     apx_core/src/crypto.c
     apx_core/src/computation.c
     apx_core/src/connection_base.c
+    apx_core/src/connection_interface.c
     apx_core/src/connection_manager.c
     apx_core/src/data_element.c
     apx_core/src/data_signature.c

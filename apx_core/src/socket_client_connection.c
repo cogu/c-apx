@@ -109,7 +109,6 @@ apx_error_t apx_client_socket_connection_create(
     apx_connection_interface_t connection_interface;
     MUTEX_INIT(self->lock);
     self->default_buffer_size = SEND_BUFFER_GROW_SIZE;
-    self->pending_bytes = 0u;
     apx_connection_base_vtable_create(&base_connection_vtable, apx_client_socket_connection_vdestroy,
       apx_client_socket_connection_vstart, apx_client_socket_connection_vclose);
     create_connection_interface_vtable(self, &connection_interface);
@@ -120,6 +119,7 @@ apx_error_t apx_client_socket_connection_create(
     }
     apx_client_connection_set_connection_type(&self->base, connection_type);
     adt_bytearray_create(&self->send_buffer);
+    adt_bytearray_set_growth_size(&self->send_buffer, self->default_buffer_size);
     register_msocket_handler(self, socket_object);
     apx_connection_base_start(&self->base.base);
     return APX_NO_ERROR;
@@ -503,7 +503,7 @@ static int32_t apx_client_socket_connection_transmit_current_bytes_avaiable(apx_
 {
   if (self != NULL)
   {
-    return (int32_t)(adt_bytearray_length(&self->send_buffer) - self->pending_bytes);
+    return (int32_t)(self->default_buffer_size - adt_bytearray_length(&self->send_buffer));
   }
   return -1;
 }
@@ -513,12 +513,7 @@ static void apx_client_socket_connection_transmit_begin(apx_client_socket_connec
   if (self != NULL)
   {
     MUTEX_LOCK(self->lock);
-    if (adt_bytearray_length(&self->send_buffer) < self->default_buffer_size)
-    {
-      adt_bytearray_resize(&self->send_buffer, self->default_buffer_size);
-    }
-    self->pending_bytes = 0u;
-    assert((adt_bytearray_length(&self->send_buffer) >= self->default_buffer_size));
+    assert(adt_bytearray_length(&self->send_buffer) == 0u);
   }
 }
 
@@ -526,10 +521,7 @@ static void apx_client_socket_connection_transmit_end(apx_client_socket_connecti
 {
   if (self != NULL)
   {
-    if (self->pending_bytes > 0u)
-    {
-      send_packet(self);
-    }
+    send_packet(self);
     MUTEX_UNLOCK(self->lock);
   }
 }
@@ -539,31 +531,15 @@ static apx_error_t apx_client_socket_connection_transmit_data_message(apx_client
 {
   if (self != NULL)
   {
-    uint8_t header[NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE];
-    apx_size_t const address_size = rmf_needed_encoding_size(write_address);
-    apx_size_t const payload_size = address_size + msg_size;
-    if (payload_size > self->default_buffer_size)
-    {
-      return APX_MSG_TOO_LARGE_ERROR;
-    }
-    apx_size_t const header1_size = numheader_encode32(header, sizeof(header), payload_size);
-    assert(header1_size > 0);
-    apx_size_t const header2_size =
-      rmf_address_encode(header + header1_size, sizeof(header) - header1_size, write_address, more_bit);
-    assert(header2_size == address_size);
-    apx_size_t const bytes_to_send = header1_size + header2_size + msg_size;
-    apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes;
-    if (bytes_to_send > buffer_available)
+    apx_error_t result = apx_connection_buffer_append_data_message(
+      &self->send_buffer, self->default_buffer_size, write_address, more_bit, msg_data, msg_size, bytes_available);
+    if (result == APX_BUFFER_FULL_ERROR)
     {
       send_packet(self);
-      assert(self->pending_bytes == 0u);
+      result = apx_connection_buffer_append_data_message(
+        &self->send_buffer, self->default_buffer_size, write_address, more_bit, msg_data, msg_size, bytes_available);
     }
-    memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, header, header1_size + header2_size);
-    self->pending_bytes += (header1_size + header2_size);
-    memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, msg_data, msg_size);
-    self->pending_bytes += msg_size;
-    *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes);
-    return APX_NO_ERROR;
+    return result;
   }
   return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -573,35 +549,30 @@ static apx_error_t apx_client_socket_connection_transmit_direct_message(
 {
   if (self != NULL)
   {
-    uint8_t header[NUMHEADER32_LONG_SIZE];
-    if (msg_size > ((int32_t)self->default_buffer_size))
-    {
-      return APX_MSG_TOO_LARGE_ERROR;
-    }
-    apx_size_t const header_size = numheader_encode32(header, sizeof(header), msg_size);
-    apx_size_t const bytes_to_send = header_size + msg_size;
-    apx_size_t const buffer_available = ((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes;
-    if (bytes_to_send > buffer_available)
+    apx_error_t result = apx_connection_buffer_append_direct_message(
+      &self->send_buffer, self->default_buffer_size, msg_data, msg_size, bytes_available);
+    if (result == APX_BUFFER_FULL_ERROR)
     {
       send_packet(self);
-      assert(self->pending_bytes == 0u);
+      result = apx_connection_buffer_append_direct_message(
+        &self->send_buffer, self->default_buffer_size, msg_data, msg_size, bytes_available);
     }
-    memcpy(adt_bytearray_data(&self->send_buffer), header, header_size);
-    self->pending_bytes += header_size;
-    memcpy(adt_bytearray_data(&self->send_buffer) + self->pending_bytes, msg_data, msg_size);
-    self->pending_bytes += msg_size;
-    *bytes_available = (int32_t)(((apx_size_t)adt_bytearray_length(&self->send_buffer)) - self->pending_bytes);
-    return APX_NO_ERROR;
+    return result;
   }
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
 static void send_packet(apx_client_socket_connection_t *self)
 {
-  if ((self->socket_object != NULL) && (self->pending_bytes > 0u))
+  apx_size_t const data_size = adt_bytearray_length(&self->send_buffer);
+  if ((self->socket_object != NULL) && (data_size > 0u))
   {
     uint8_t const *data = adt_bytearray_const_data(&self->send_buffer);
-    SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
-    self->pending_bytes = 0u;
+    msocket_error_t const result = SOCKET_SEND(self->socket_object, data, data_size);
+    if (result != MSOCKET_NO_ERROR)
+    {
+      fprintf(stderr, "[SOCKET-CLIENT-CONNECTION] socket send failed with %d\n", (int)result);
+    }
+    adt_bytearray_clear(&self->send_buffer);
   }
 }

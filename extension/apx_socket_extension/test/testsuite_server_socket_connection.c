@@ -26,12 +26,14 @@
 #include "apx/numheader.h"
 #include "apx/server.h"
 #include "apx/server_connection.h"
+#include "apx/socket_client_connection.h"
 #include "osmacro.h"
 #include "pack.h"
 #include "testsocket_spy.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 #ifdef MEM_LEAK_CHECK
 # include "CMemLeak.h"
 #endif
@@ -55,6 +57,9 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void test_connection_create(CuTest *tc);
+static void test_socket_transmit_buffer(CuTest *tc);
+static void verify_transmit_buffer(
+  CuTest *tc, apx_connection_interface_t const *connection, adt_bytearray_t *send_buffer, adt_bytearray_t *wire);
 static void test_each_connection_get_unique_id(CuTest *tc);
 static void test_server_sends_acknowledge_after_accepting_header(CuTest *tc);
 static void test_server_opens_definition_file_after_publication(CuTest *tc);
@@ -88,6 +93,7 @@ CuSuite *testsuite_apx_socket_server_connection(void)
 {
   CuSuite *suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_connection_create);
+  SUITE_ADD_TEST(suite, test_socket_transmit_buffer);
   SUITE_ADD_TEST(suite, test_each_connection_get_unique_id);
   SUITE_ADD_TEST(suite, test_server_sends_acknowledge_after_accepting_header);
   SUITE_ADD_TEST(suite, test_server_opens_definition_file_after_publication);
@@ -108,6 +114,172 @@ static void test_connection_create(CuTest *tc)
   CuAssertUIntEquals(tc, APX_INVALID_CONNECTION_ID, conn.base.base.connection_id);
   CuAssertPtrEquals(tc, sock1, conn.socket_object);
   apx_socket_server_connection_destroy(&conn);
+}
+
+static void test_socket_transmit_buffer(CuTest *tc)
+{
+  apx_socket_server_connection_t server;
+  testsocket_t *server_socket = testsocket_new();
+  CuAssertPtrNotNull(tc, server_socket);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_socket_server_connection_create(&server, server_socket));
+  verify_transmit_buffer(
+    tc, apx_connection_base_get_connection(&server.base.base), &server.send_buffer, &server_socket->pending_client);
+  apx_socket_server_connection_destroy(&server);
+
+  apx_client_socket_connection_t client;
+  testsocket_t *client_socket = testsocket_new();
+  CuAssertPtrNotNull(tc, client_socket);
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_client_socket_connection_create(&client, client_socket, APX_CONNECTION_TYPE_MONITOR));
+  verify_transmit_buffer(
+    tc, apx_connection_base_get_connection(&client.base.base), &client.send_buffer, &client_socket->pending_server);
+  apx_client_socket_connection_destroy(&client);
+}
+
+static void verify_transmit_buffer(
+  CuTest *tc, apx_connection_interface_t const *connection, adt_bytearray_t *send_buffer, adt_bytearray_t *wire)
+{
+  CuAssertPtrNotNull(tc, connection);
+  int32_t const max_size = connection->transmit_max_buffer_size(connection->arg);
+  CuAssertIntEquals(tc, 4096, max_size);
+  uint8_t const small_data[] = {0xAA, 0xBB};
+  uint8_t const expected_small[] = {4, 0x10, 0x00, 0xAA, 0xBB, 2, 0xAA, 0xBB, 6, 0xC8, 0x00, 0x00, 0x00, 0xAA, 0xBB};
+  int32_t available = -1;
+  connection->transmit_begin(connection->arg);
+  CuAssertUIntEquals(tc, 0u, adt_bytearray_length(send_buffer));
+  CuAssertIntEquals(tc, max_size, connection->transmit_current_bytes_avaiable(connection->arg));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    connection->transmit_data_message(connection->arg, 0x1000u, false, small_data, sizeof(small_data), &available));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, connection->transmit_direct_message(connection->arg, small_data, sizeof(small_data), &available));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    connection->transmit_data_message(connection->arg, 0x08000000u, true, small_data, sizeof(small_data), &available));
+  CuAssertUIntEquals(tc, sizeof(expected_small), adt_bytearray_length(send_buffer));
+  CuAssertIntEquals(tc, max_size - (int32_t)sizeof(expected_small), available);
+  CuAssertIntEquals(tc, 0, memcmp(expected_small, adt_bytearray_const_data(send_buffer), sizeof(expected_small)));
+  CuAssertUIntEquals(tc, 0u, adt_bytearray_length(wire));
+  connection->transmit_end(connection->arg);
+  CuAssertUIntEquals(tc, 0u, adt_bytearray_length(send_buffer));
+  CuAssertUIntEquals(tc, sizeof(expected_small), adt_bytearray_length(wire));
+  CuAssertIntEquals(tc, 0, memcmp(expected_small, adt_bytearray_const_data(wire), sizeof(expected_small)));
+  connection->transmit_begin(connection->arg);
+  connection->transmit_end(connection->arg);
+  CuAssertUIntEquals(tc, sizeof(expected_small), adt_bytearray_length(wire));
+
+  for (uint32_t direct = 0u; direct < 2u; ++direct)
+  {
+    uint8_t data[64];
+    uint8_t expected[150u * (NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE + sizeof(data))];
+    uint32_t expected_size = 0u;
+    uint32_t buffered_size = 0u;
+    uint32_t flushed_size = 0u;
+    uint32_t flush_count = 0u;
+    adt_bytearray_clear(wire);
+    connection->transmit_begin(connection->arg);
+    for (uint32_t i = 0u; i < 150u; ++i)
+    {
+      memset(data, (int)i, sizeof(data));
+      uint8_t header[NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE];
+      uint32_t const address = 0x08000000u + i * sizeof(data);
+      uint32_t const address_size = direct ? 0u : RMF_HIGH_ADDR_SIZE;
+      uint32_t header_size = (uint32_t)numheader_encode32(header, sizeof(header), sizeof(data) + address_size);
+      if (!direct)
+      {
+        header_size += rmf_address_encode(header + header_size, sizeof(header) - header_size, address, i != 149u);
+      }
+      uint32_t const frame_size = header_size + sizeof(data);
+      if (frame_size > (uint32_t)max_size - buffered_size)
+      {
+        flushed_size += buffered_size;
+        buffered_size = 0u;
+        ++flush_count;
+      }
+      apx_error_t const result = direct ?
+        connection->transmit_direct_message(connection->arg, data, sizeof(data), &available) :
+        connection->transmit_data_message(connection->arg, address, i != 149u, data, sizeof(data), &available);
+      CuAssertIntEquals(tc, APX_NO_ERROR, result);
+      buffered_size += frame_size;
+      CuAssertUIntEquals(tc, buffered_size, adt_bytearray_length(send_buffer));
+      CuAssertUIntEquals(tc, flushed_size, adt_bytearray_length(wire));
+      CuAssertUIntEquals(tc, (uint32_t)max_size, send_buffer->u32AllocLen);
+      CuAssertIntEquals(tc, max_size - (int32_t)buffered_size, available);
+      CuAssertIntEquals(tc, available, connection->transmit_current_bytes_avaiable(connection->arg));
+      memcpy(expected + expected_size, header, header_size);
+      expected_size += header_size;
+      memcpy(expected + expected_size, data, sizeof(data));
+      expected_size += sizeof(data);
+    }
+    CuAssertTrue(tc, flush_count >= 2u);
+    connection->transmit_end(connection->arg);
+    CuAssertUIntEquals(tc, 0u, adt_bytearray_length(send_buffer));
+    CuAssertUIntEquals(tc, expected_size, adt_bytearray_length(wire));
+    CuAssertIntEquals(tc, 0, memcmp(expected, adt_bytearray_const_data(wire), expected_size));
+  }
+
+  for (uint32_t kind = 0u; kind < 3u; ++kind)
+  {
+    uint8_t data[4096];
+    memset(data, 0x5A, sizeof(data));
+    bool const direct = kind == 2u;
+    uint32_t const address = kind == 0u ? 0x1000u : 0x08000000u;
+    uint32_t const address_size = direct ? 0u : rmf_needed_encoding_size(address);
+    int32_t const data_size = max_size - (int32_t)(NUMHEADER32_LONG_SIZE + address_size);
+    adt_bytearray_clear(wire);
+    connection->transmit_begin(connection->arg);
+    apx_error_t result = direct ?
+      connection->transmit_direct_message(connection->arg, data, data_size, &available) :
+      connection->transmit_data_message(connection->arg, address, false, data, data_size, &available);
+    CuAssertIntEquals(tc, APX_NO_ERROR, result);
+    CuAssertIntEquals(tc, 0, available);
+    CuAssertUIntEquals(tc, (uint32_t)max_size, adt_bytearray_length(send_buffer));
+    CuAssertUIntEquals(tc, 0u, adt_bytearray_length(wire));
+
+    available = -17;
+    result = direct ?
+      connection->transmit_direct_message(connection->arg, data, data_size + 1, &available) :
+      connection->transmit_data_message(connection->arg, address, false, data, data_size + 1, &available);
+    CuAssertIntEquals(tc, APX_MSG_TOO_LARGE_ERROR, result);
+    CuAssertIntEquals(
+      tc, APX_MSG_TOO_LARGE_ERROR, connection->transmit_direct_message(connection->arg, data, max_size, &available));
+    CuAssertIntEquals(
+      tc, APX_INVALID_ARGUMENT_ERROR, connection->transmit_direct_message(connection->arg, NULL, 1, &available));
+    CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR,
+      connection->transmit_data_message(connection->arg, address, false, data, -1, &available));
+    CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR,
+      connection->transmit_data_message(connection->arg, UINT32_MAX, false, data, 1, &available));
+    CuAssertIntEquals(
+      tc, APX_INVALID_ARGUMENT_ERROR, connection->transmit_direct_message(connection->arg, data, 1, NULL));
+    CuAssertIntEquals(tc, -17, available);
+    CuAssertUIntEquals(tc, (uint32_t)max_size, adt_bytearray_length(send_buffer));
+    CuAssertUIntEquals(tc, 0u, adt_bytearray_length(wire));
+
+    CuAssertIntEquals(tc, APX_NO_ERROR, connection->transmit_direct_message(connection->arg, NULL, 0, &available));
+    CuAssertUIntEquals(tc, (uint32_t)max_size, adt_bytearray_length(wire));
+    CuAssertUIntEquals(tc, 1u, adt_bytearray_length(send_buffer));
+    CuAssertIntEquals(tc, max_size - 1, available);
+    connection->transmit_end(connection->arg);
+    CuAssertUIntEquals(tc, (uint32_t)max_size + 1u, adt_bytearray_length(wire));
+    uint8_t header[NUMHEADER32_LONG_SIZE + RMF_HIGH_ADDR_SIZE];
+    uint32_t header_size = (uint32_t)numheader_encode32(header, sizeof(header), (uint32_t)data_size + address_size);
+    if (!direct)
+    {
+      header_size += rmf_address_encode(header + header_size, sizeof(header) - header_size, address, false);
+    }
+    uint8_t const *actual = adt_bytearray_const_data(wire);
+    CuAssertIntEquals(tc, 0, memcmp(header, actual, header_size));
+    CuAssertIntEquals(tc, 0, memcmp(data, actual + header_size, (size_t)data_size));
+    CuAssertIntEquals(tc, 0, actual[max_size]);
+  }
+
+  adt_bytearray_clear(wire);
+  uint8_t const expected_empty[] = {0, 2, 0x10, 0x00};
+  connection->transmit_begin(connection->arg);
+  CuAssertIntEquals(tc, APX_NO_ERROR, connection->transmit_direct_message(connection->arg, NULL, 0, &available));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, connection->transmit_data_message(connection->arg, 0x1000u, false, NULL, 0, &available));
+  connection->transmit_end(connection->arg);
+  CuAssertUIntEquals(tc, sizeof(expected_empty), adt_bytearray_length(wire));
+  CuAssertIntEquals(tc, 0, memcmp(expected_empty, adt_bytearray_const_data(wire), sizeof(expected_empty)));
 }
 
 static void test_each_connection_get_unique_id(CuTest *tc)

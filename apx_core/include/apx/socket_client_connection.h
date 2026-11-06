@@ -33,7 +33,6 @@ typedef struct apx_client_socket_connection_tag
   apx_client_connection_t base;
   adt_bytearray_t send_buffer;
   apx_size_t default_buffer_size;
-  apx_size_t pending_bytes;
   SOCKET_TYPE *socket_object;
   MUTEX_T lock;
 } apx_client_socket_connection_t;

@@ -29,7 +29,6 @@ typedef struct apx_tls_server_connection_tag
   apx_node_manager_t node_manager;
   adt_bytearray_t send_buffer;
   apx_size_t default_buffer_size;
-  apx_size_t pending_bytes;
   struct msocket_tag *socket_object;
   MUTEX_T lock;
 } apx_tls_server_connection_t;
