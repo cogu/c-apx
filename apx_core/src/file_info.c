@@ -131,6 +131,10 @@ apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32
         return convert_from_adt_to_apx_error(result);
       }
     }
+    // Ensure the internal buffer is null-terminated once during creation/assignment
+    // so that concurrent readers calling rmf_file_info_name() can safely access
+    // adt_str_data() without mutating the string or triggering data races.
+    (void)adt_str_cstr(&self->name);
     return rmf_file_info_set_digest_data(self, digest_type, digest_data);
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -155,6 +159,10 @@ apx_error_t rmf_file_info_create_copy(rmf_file_info_t *self, rmf_file_info_t con
     {
       return convert_from_adt_to_apx_error(result);
     }
+    // Ensure the internal buffer is null-terminated once during creation/assignment
+    // so that concurrent readers calling rmf_file_info_name() can safely access
+    // adt_str_data() without mutating the string or triggering data races.
+    (void)adt_str_cstr(&self->name);
     return rmf_file_info_set_digest_data(self, other->digest_type, &other->digest_data[0]);
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -199,7 +207,7 @@ const char *rmf_file_info_name(rmf_file_info_t const *self)
 {
   if (self != NULL)
   {
-    return adt_str_cstr((adt_str_t *)&self->name);
+    return (const char *)adt_str_data(&self->name);
   }
   return NULL;
 }
@@ -331,6 +339,10 @@ apx_error_t rmf_file_info_assign(rmf_file_info_t *self, const rmf_file_info_t *o
     {
       return convert_from_adt_to_apx_error(result);
     }
+    // Ensure the internal buffer is null-terminated once during creation/assignment
+    // so that concurrent readers calling rmf_file_info_name() can safely access
+    // adt_str_data() without mutating the string or triggering data races.
+    (void)adt_str_cstr(&self->name);
     return rmf_file_info_set_digest_data(self, other->digest_type, &other->digest_data[0]);
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -378,8 +390,8 @@ bool rmf_file_info_name_ends_with(rmf_file_info_t const *self, const char *suffi
   {
     size_t str_len = adt_str_length(&self->name);
     size_t suffix_len = strlen(suffix);
-    return (str_len >= suffix_len) &&
-      (strcmp(adt_str_cstr((adt_str_t *)&self->name) + (str_len - suffix_len), suffix) == 0);
+    const char *name = rmf_file_info_name(self);
+    return (str_len >= suffix_len) && (name != NULL) && (strcmp(name + (str_len - suffix_len), suffix) == 0);
   }
   return false;
 }
@@ -388,7 +400,7 @@ char *rmf_file_info_base_name(rmf_file_info_t const *self)
 {
   if ((self != NULL))
   {
-    char const *name = adt_str_cstr((adt_str_t *)&self->name);
+    char const *name = rmf_file_info_name(self);
     char *dot = strchr(name, '.');
     if (dot != NULL)
     {
@@ -402,7 +414,7 @@ void rmf_file_info_copy_base_name(rmf_file_info_t const *self, char *dest, uint3
 {
   if ((self != NULL) && (max_dest_len > 1))
   {
-    char const *name = adt_str_cstr((adt_str_t *)&self->name);
+    char const *name = rmf_file_info_name(self);
     char *dot = strchr(name, '.');
     if (dot != NULL)
     {

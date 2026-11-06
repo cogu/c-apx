@@ -888,10 +888,15 @@ def test_apxmon_large_definition(
                 break
             assert time.monotonic() < deadline, (listed.stdout, node.output, node.stderr)
             time.sleep(0.05)
-        result = subprocess.run(
-            [*command, "get-apx", "LargeDefinition"],
-            capture_output=True, text=True, check=True, timeout=10.0,
-        )
+        while True:
+            result = subprocess.run(
+                [*command, "get-apx", "LargeDefinition"],
+                capture_output=True, text=True, timeout=10.0,
+            )
+            if result.returncode == 0:
+                break
+            assert time.monotonic() < deadline, f"get-apx failed: {result.stderr}"
+            time.sleep(0.05)
         assert result.stdout == definition_text
     finally:
         node.stop()

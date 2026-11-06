@@ -290,7 +290,7 @@ static void apx_server_text_log_on_connection_closed(void *arg, apx_server_conne
 
 static void on_protocol_header_accepted(apx_server_text_log_t *self, apx_server_connection_t *connection)
 {
-  apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] Header Accepted",
+  apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] Server accepted header",
     apx_server_connection_get_connection_id(connection));
 }
 
@@ -299,8 +299,9 @@ static void on_file_published(
 {
   if (file_info != NULL)
   {
-    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] New file published: %s",
-      apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info));
+    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] Client publish file: %s (size: %u)",
+      apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info),
+      (unsigned int)rmf_file_info_size(file_info));
   }
 }
 
@@ -309,7 +310,7 @@ static void on_file_revoked(
 {
   if (file_info != NULL)
   {
-    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_INFO, "SERVER", "[%u] File revoked: %s",
+    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_INFO, "SERVER", "[%u] Client revoke file: %s",
       apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info));
   }
 }

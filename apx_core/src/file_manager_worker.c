@@ -752,6 +752,10 @@ static apx_error_t run_publish_local_file(apx_file_manager_worker_t *self, rmf_f
       int32_t bytes_available = 0;
       retval = connection->transmit_data_message(
         connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+      if ((retval == APX_NO_ERROR) && (connection->local_file_published_notification != NULL))
+      {
+        connection->local_file_published_notification(connection->arg, file_info);
+      }
     }
     else
     {
@@ -770,6 +774,12 @@ static apx_error_t run_send_local_const_data(
   if (connection != NULL)
   {
     apx_file_t *file = apx_file_manager_shared_find_file_by_address(self->shared, address);
+    if ((file != NULL) && (connection->local_file_write_notification != NULL))
+    {
+      uint32_t const file_start = apx_file_get_address_without_flags(file);
+      uint32_t const offset = (address >= file_start) ? (address - file_start) : 0u;
+      connection->local_file_write_notification(connection->arg, file, offset, size);
+    }
     if ((file != NULL) && apx_file_is_stream(file))
     {
       if (apx_file_get_stream_state(file) != APX_STREAM_STATE_OPEN)
@@ -835,6 +845,14 @@ static apx_error_t run_open_remote_file(apx_file_manager_worker_t *self, uint32_
       int32_t bytes_available = 0;
       retval = connection->transmit_data_message(
         connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+      if ((retval == APX_NO_ERROR) && (connection->remote_file_open_request_notification != NULL))
+      {
+        apx_file_t *file = apx_file_manager_shared_find_file_by_address(self->shared, address | RMF_REMOTE_ADDRESS_BIT);
+        if (file != NULL)
+        {
+          connection->remote_file_open_request_notification(connection->arg, file);
+        }
+      }
     }
     else
     {
@@ -939,6 +957,15 @@ static apx_error_t run_send_stream_open(apx_file_manager_worker_t *self, rmf_str
       int32_t bytes_available = 0;
       retval = connection->transmit_data_message(
         connection->arg, RMF_CMD_AREA_START_ADDRESS, false, buffer, (int32_t)encoded_size, &bytes_available);
+      if ((retval == APX_NO_ERROR) && (connection->remote_file_open_request_notification != NULL))
+      {
+        apx_file_t *file =
+          apx_file_manager_shared_find_file_by_address(self->shared, cmd->start_address | RMF_REMOTE_ADDRESS_BIT);
+        if (file != NULL)
+        {
+          connection->remote_file_open_request_notification(connection->arg, file);
+        }
+      }
     }
     else
     {
@@ -1048,6 +1075,10 @@ static apx_error_t run_drain_stream_data(apx_file_manager_worker_t *self, uint32
     if (item == NULL)
     {
       break;
+    }
+    if (connection->local_file_write_notification != NULL)
+    {
+      connection->local_file_write_notification(connection->arg, file, 0u, item->size);
     }
     retval = transmit_data_with_fragmentation(connection, start_address, item->data, item->size);
     apx_stream_block_item_delete(item);

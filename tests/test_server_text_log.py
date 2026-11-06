@@ -4,10 +4,12 @@ Integration tests for APX server text log extension configuration and formatting
 
 import json
 import os
+from pathlib import Path
 import re
 import select
 import socket
 import subprocess
+import time
 import pytest
 from conftest import _set_pdeathsig, wait_for_unix_socket
 
@@ -193,4 +195,75 @@ def test_server_text_log_syslog_lifecycle(tmp_path, apx_server_bin: str):
     stdout_bytes, stderr_bytes = proc.communicate(timeout=3.0)
     assert proc.returncode == 0
     assert len(stderr_bytes) == 0, f"Unexpected stderr output: {stderr_bytes.decode('utf-8')}"
+
+
+def test_server_text_log_debug_file_lifecycle(tmp_path: Path, apx_server_bin: str, apx_node_bin: str):
+    """Verify that when configured at DEBUG log level, server logs file publication, open requests, client open, and file writes."""
+    socket_path = str(tmp_path / "apx_test.socket")
+    log_path = str(tmp_path / "server_debug.log")
+    config_path = str(tmp_path / "server.json")
+
+    config = {
+        "socket-server-extension": {
+            "unix-file": socket_path
+        },
+        "textlog-extension": {
+            "enabled": True,
+            "file-enabled": True,
+            "file-path": log_path,
+            "log-level": "DEBUG",
+            "use-timestamp": False
+        }
+    }
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config, f)
+
+    r_fd, w_fd = os.pipe()
+    os.set_inheritable(w_fd, True)
+
+    cmd = [apx_server_bin, "--ready-fd", str(w_fd), config_path]
+    server_proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        pass_fds=(w_fd,),
+        preexec_fn=_set_pdeathsig,
+    )
+    os.close(w_fd)
+
+    rlist, _, _ = select.select([r_fd], [], [], 3.0)
+    assert rlist, "Server did not signal readiness in time"
+    os.read(r_fd, 1)
+    os.close(r_fd)
+
+    wait_for_unix_socket(socket_path, timeout=3.0)
+
+    node_file = Path("example/nodes/unsigned_sender.apx").resolve()
+    node_cmd = [apx_node_bin, "-c", socket_path, "--no-bind", str(node_file)]
+    node_proc = subprocess.Popen(
+        node_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        preexec_fn=_set_pdeathsig,
+    )
+
+    time.sleep(1.0)
+
+    node_proc.terminate()
+    node_proc.wait(timeout=3.0)
+
+    server_proc.terminate()
+    server_proc.wait(timeout=3.0)
+
+    assert os.path.exists(log_path)
+    with open(log_path, "r", encoding="utf-8") as f:
+        log_content = f.read()
+
+    assert "Server publish file:" in log_content
+    assert "(size:" in log_content
+    assert "Server open file:" in log_content
+    assert "Client open file:" in log_content
+    assert "Client write file:" in log_content
+    assert "Server write file:" in log_content
 

@@ -296,12 +296,12 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
         uint32_t const connection_id = apx_node_instance_get_connection_id(node_instance);
         if (connection_id != APX_INVALID_CONNECTION_ID)
         {
-          apx_server_log(
-            server, APX_LOG_LEVEL_INFO, "[%u] Created node %s", connection_id, (name != NULL) ? name : "<unknown>");
+          apx_server_log(server, APX_LOG_LEVEL_INFO, "[%u] Server created node %s", connection_id,
+            (name != NULL) ? name : "<unknown>");
         }
         else
         {
-          apx_server_log(server, APX_LOG_LEVEL_INFO, "Created node %s", (name != NULL) ? name : "<unknown>");
+          apx_server_log(server, APX_LOG_LEVEL_INFO, "Server created node %s", (name != NULL) ? name : "<unknown>");
         }
       }
     }

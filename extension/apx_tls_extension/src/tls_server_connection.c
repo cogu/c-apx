@@ -229,11 +229,6 @@ static msocket_error_t socket_data_notification(void *arg, void *socket, const u
     return MSOCKET_INVALID_ARGUMENT_ERROR;
   }
   int retval = apx_server_connection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
-  if ((retval == 0) && (self->base.parent != NULL) && (consumed_bytes != NULL) && (*consumed_bytes > 0u))
-  {
-    apx_tls_server_log(self->base.parent, APX_LOG_LEVEL_DEBUG, "[%u] Received %d bytes",
-      apx_server_connection_get_connection_id(&self->base), (int)*consumed_bytes);
-  }
   return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
@@ -330,11 +325,6 @@ static void connection_send_packet(apx_tls_server_connection_t *self)
   apx_size_t const data_size = adt_bytearray_length(&self->send_buffer);
   if (data_size > 0u)
   {
-    if (self->base.parent != NULL)
-    {
-      apx_tls_server_log(self->base.parent, APX_LOG_LEVEL_DEBUG, "[%u] Sending %d bytes",
-        apx_server_connection_get_connection_id(&self->base), (int)data_size);
-    }
     msocket_error_t result = msocket_send(self->socket_object, adt_bytearray_const_data(&self->send_buffer), data_size);
     if (result != MSOCKET_NO_ERROR)
     {

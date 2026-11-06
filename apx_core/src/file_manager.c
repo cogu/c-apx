@@ -973,13 +973,12 @@ static apx_error_t process_open_file_request(apx_file_manager_t *self, uint32_t 
     return APX_UNSUPPORTED_ERROR;
   }
   apx_file_open(file);
-  apx_file_open_notify(file);
   apx_connection_interface_t const *connection = apx_file_manager_shared_connection(&self->shared);
   if (connection != NULL && connection->remote_file_open_notification != NULL)
   {
-    return connection->remote_file_open_notification(connection->arg, file);
+    connection->remote_file_open_notification(connection->arg, file);
   }
-  return APX_NO_ERROR;
+  return apx_file_open_notify(file);
 }
 
 static apx_error_t process_close_file_request(apx_file_manager_t *self, uint32_t start_address)
@@ -990,12 +989,12 @@ static apx_error_t process_close_file_request(apx_file_manager_t *self, uint32_t
     return APX_FILE_NOT_FOUND_ERROR;
   }
   apx_file_close(file);
-  (void)apx_file_close_notify(file);
   apx_connection_interface_t const *connection = apx_file_manager_shared_connection(&self->shared);
   if ((connection != NULL) && (connection->remote_file_close_notification != NULL))
   {
-    return connection->remote_file_close_notification(connection->arg, file);
+    connection->remote_file_close_notification(connection->arg, file);
   }
+  (void)apx_file_close_notify(file);
   return APX_NO_ERROR;
 }
 

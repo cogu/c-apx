@@ -444,4 +444,4 @@ def test_apx_node_auto_signature_and_no_signature_flag(
         server.stop(timeout=2.0)
         assert server.process.returncode == 0
         assert "Connection closed" in server.stdout
-        assert "Created node SensorNode" in server.stdout
+        assert "Server created node SensorNode" in server.stdout

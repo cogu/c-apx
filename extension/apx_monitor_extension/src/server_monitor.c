@@ -1236,11 +1236,6 @@ static msocket_error_t socket_data_notification(void *arg, void *socket, const u
     return MSOCKET_INVALID_ARGUMENT_ERROR;
   }
   int retval = apx_server_connection_on_data_received(&self->base, data, num_bytes, consumed_bytes, msg_size_hint);
-  if ((retval == 0) && (self->base.parent != NULL) && (consumed_bytes != NULL) && (*consumed_bytes > 0u))
-  {
-    apx_server_monitor_log(self->base.parent, APX_LOG_LEVEL_DEBUG, "[%u] Received %d bytes",
-      apx_server_connection_get_connection_id(&self->base), (int)*consumed_bytes);
-  }
   return (retval == 0) ? MSOCKET_NO_ERROR : MSOCKET_GENERIC_ERROR;
 }
 
@@ -1361,11 +1356,6 @@ static void connection_send_packet(apx_monitor_server_connection_t *self)
   if ((self->socket_object != NULL) && (self->pending_bytes > 0u))
   {
     uint8_t const *data = adt_bytearray_const_data(&self->send_buffer);
-    if (self->base.parent != NULL)
-    {
-      apx_server_monitor_log(self->base.parent, APX_LOG_LEVEL_DEBUG, "[%u] Sending %d bytes",
-        apx_server_connection_get_connection_id(&self->base), (int)self->pending_bytes);
-    }
     SOCKET_SEND(self->socket_object, data, (uint32_t)self->pending_bytes);
     self->pending_bytes = 0u;
   }

@@ -40,8 +40,12 @@
 static apx_error_t on_definition_transfer_error(void *arg, apx_file_t *file, apx_error_t error_code);
 static apx_server_connection_event_listener_t *copy_definition_listeners(apx_server_connection_t *self, size_t *count);
 static apx_error_t remote_file_published_notification(apx_server_connection_t *self, apx_file_t *file);
+static apx_error_t local_file_published_notification(apx_server_connection_t *self, rmf_file_info_t const *file_info);
+static apx_error_t remote_file_open_request_notification(apx_server_connection_t *self, apx_file_t *file);
 static apx_error_t remote_file_open_notification(apx_server_connection_t *self, apx_file_t *file);
 static apx_error_t remote_file_close_notification(apx_server_connection_t *self, apx_file_t *file);
+static apx_error_t local_file_write_notification(
+  apx_server_connection_t *self, apx_file_t *file, uint32_t offset, uint32_t size);
 static apx_error_t process_new_definition_data_file(apx_server_connection_t *self, apx_file_t *file);
 static apx_error_t process_new_provide_port_data_file(apx_server_connection_t *self, apx_file_t *file);
 static apx_error_t create_new_node_instance(
@@ -93,9 +97,13 @@ apx_error_t apx_server_connection_create(apx_server_connection_t *self,
     base_connection_vtable->node_created_notification = apx_server_connection_vnode_created_notification;
     connection_interface->remote_file_published_notification =
       apx_server_connection_vremote_file_published_notification;
+    connection_interface->local_file_published_notification = apx_server_connection_vlocal_file_published_notification;
+    connection_interface->remote_file_open_request_notification =
+      apx_server_connection_vremote_file_open_request_notification;
     connection_interface->remote_file_open_notification = apx_server_connection_vremote_file_open_notification;
     connection_interface->remote_file_close_notification = apx_server_connection_vremote_file_close_notification;
     connection_interface->remote_file_write_notification = apx_server_connection_vremote_file_write_notification;
+    connection_interface->local_file_write_notification = apx_server_connection_vlocal_file_write_notification;
     connection_interface->remote_file_error_notification = on_definition_transfer_error;
     connection_interface->nack_notification = NULL;
     adt_list_create(&self->event_listeners, apx_connection_event_listener_vdelete);
@@ -402,6 +410,17 @@ apx_error_t apx_server_connection_vremote_file_published_notification(void *arg,
   return remote_file_published_notification((apx_server_connection_t *)arg, file);
 }
 
+apx_error_t apx_server_connection_vlocal_file_published_notification(
+  void *arg, struct rmf_file_info_tag const *file_info)
+{
+  return local_file_published_notification((apx_server_connection_t *)arg, file_info);
+}
+
+apx_error_t apx_server_connection_vremote_file_open_request_notification(void *arg, apx_file_t *file)
+{
+  return remote_file_open_request_notification((apx_server_connection_t *)arg, file);
+}
+
 apx_error_t apx_server_connection_vremote_file_open_notification(void *arg, apx_file_t *file)
 {
   return remote_file_open_notification((apx_server_connection_t *)arg, file);
@@ -416,6 +435,12 @@ apx_error_t apx_server_connection_vremote_file_write_notification(
   void *arg, apx_file_t *file, uint32_t offset, uint8_t const *data, apx_size_t size)
 {
   return remote_file_write_notification((apx_server_connection_t *)arg, file, offset, data, size);
+}
+
+apx_error_t apx_server_connection_vlocal_file_write_notification(
+  void *arg, apx_file_t *file, uint32_t offset, uint32_t size)
+{
+  return local_file_write_notification((apx_server_connection_t *)arg, file, offset, size);
 }
 
 // Internal Event API
@@ -699,11 +724,59 @@ static apx_error_t create_new_node_instance(
 }
 
 
+static apx_error_t local_file_published_notification(apx_server_connection_t *self, rmf_file_info_t const *file_info)
+{
+  if ((self != NULL) && (file_info != NULL))
+  {
+    if (self->parent != NULL)
+    {
+      apx_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "[%u] Server publish file: %s (size: %u)",
+        self->base.connection_id, rmf_file_info_name(file_info), (unsigned int)rmf_file_info_size(file_info));
+    }
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t remote_file_open_request_notification(apx_server_connection_t *self, apx_file_t *file)
+{
+  if ((self != NULL) && (file != NULL))
+  {
+    if (self->parent != NULL)
+    {
+      apx_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "[%u] Server open file: %s (size: %u)",
+        self->base.connection_id, apx_file_get_name(file), (unsigned int)apx_file_get_size(file));
+    }
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
 static apx_error_t remote_file_open_notification(apx_server_connection_t *self, apx_file_t *file)
 {
   if ((self != NULL) && (file != NULL))
   {
+    if (self->parent != NULL)
+    {
+      apx_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "[%u] Client open file: %s (size: %u)",
+        self->base.connection_id, apx_file_get_name(file), (unsigned int)apx_file_get_size(file));
+    }
     emit_file_opened_event(self, file);
+    return APX_NO_ERROR;
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t local_file_write_notification(
+  apx_server_connection_t *self, apx_file_t *file, uint32_t offset, uint32_t size)
+{
+  if ((self != NULL) && (file != NULL))
+  {
+    if (self->parent != NULL)
+    {
+      apx_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "[%u] Server write file: %s (offset: %u, size: %u)",
+        self->base.connection_id, apx_file_get_name(file), (unsigned int)offset, (unsigned int)size);
+    }
     return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -713,6 +786,11 @@ static apx_error_t remote_file_close_notification(apx_server_connection_t *self,
 {
   if ((self != NULL) && (file != NULL))
   {
+    if (self->parent != NULL)
+    {
+      apx_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "[%u] Client close file: %s", self->base.connection_id,
+        apx_file_get_name(file));
+    }
     emit_file_closed_event(self, file);
     return APX_NO_ERROR;
   }
@@ -724,6 +802,11 @@ static apx_error_t remote_file_write_notification(
 {
   if ((self != NULL) && (file != NULL))
   {
+    if (self->parent != NULL)
+    {
+      apx_server_log(self->parent, APX_LOG_LEVEL_DEBUG, "[%u] Client write file: %s (offset: %u, size: %u)",
+        self->base.connection_id, apx_file_get_name(file), (unsigned int)offset, (unsigned int)size);
+    }
     apx_error_t rc = apx_file_write_notify(file, offset, data, (uint32_t)size);
     if (apx_file_get_apx_file_type(file) == APX_DEFINITION_FILE_TYPE)
     {

@@ -67,7 +67,12 @@ apx_error_t apx_client_connection_create(apx_client_connection_t *self,
     base_connection_vtable->require_port_write_notification = apx_client_connection_vrequire_port_write_notification;
     connection_interface->remote_file_published_notification =
       apx_client_connection_vremote_file_published_notification;
+    connection_interface->local_file_published_notification = NULL;
+    connection_interface->remote_file_open_request_notification = NULL;
+    connection_interface->remote_file_open_notification = NULL;
+    connection_interface->remote_file_close_notification = NULL;
     connection_interface->remote_file_write_notification = apx_client_connection_vremote_file_write_notification;
+    connection_interface->local_file_write_notification = NULL;
     connection_interface->nack_notification = apx_client_connection_vnack_notification;
     error_code = apx_connection_base_create(&self->base, APX_CLIENT_MODE, base_connection_vtable, connection_interface);
     self->is_greeting_accepted = false;
