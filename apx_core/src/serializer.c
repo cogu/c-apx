@@ -1352,7 +1352,7 @@ static apx_error_t serializer_prepare_for_array(
       {
         return result;
       }
-         // on success, the value self->state->array_len has been successfully updated.
+      // on success, the value self->state->array_len has been successfully updated.
       if (self->state->array_len > self->state->max_array_len)
       {
         return APX_VALUE_LENGTH_ERROR;
@@ -1391,7 +1391,7 @@ static apx_error_t serializer_pack_value(apx_vm_serializer_t *self)
   {
     if (self->state->dynamic_size_type != APX_SIZE_TYPE_NONE)
     {
-         // This is a zero-length array. Just write the array-size.
+      // This is a zero-length array. Just write the array-size.
       retval = serializer_write_dynamic_value_to_buffer(
         self, self->state->array_len, apx_vm_size_type_to_size(self->state->dynamic_size_type));
     }
@@ -1481,7 +1481,7 @@ static apx_error_t write_dynamic_value_to_buffer(uint8_t *begin, uint8_t *end, u
     }
     break;
   case UINT32_SIZE:
-      // No check needed
+    // No check needed
     break;
   default:
     return APX_INTERNAL_ERROR;
@@ -1551,14 +1551,14 @@ static apx_error_t serializer_pack_record_value(apx_vm_serializer_t *self)
     {
       if (self->state->dynamic_size_type == APX_SIZE_TYPE_NONE)
       {
-            // For non-dynamic arrays the length of the value must match exactly.
+        // For non-dynamic arrays the length of the value must match exactly.
         uint32_t const value_array_length = (uint32_t)dtl_av_length(self->state->value.av);
         if (expected_array_len != value_array_length)
         {
           return APX_VALUE_LENGTH_ERROR;
         }
       }
-         // select the first array value in a new child state.
+      // select the first array value in a new child state.
       assert(self->state->index == 0u);
       dtl_dv_t const *child_value = dtl_av_value(self->state->value.av, (int32_t)self->state->index);
 
@@ -1651,7 +1651,7 @@ static apx_error_t serializer_pack_string(apx_vm_serializer_t *self)
     {
     case APX_TYPE_CODE_CHAR:
     case APX_TYPE_CODE_CHAR8:
-         /// For now, treat char and char8 the same way. In the future we need to separate the two types.
+      // For now, treat char and char8 the same way. In the future we need to separate the two types.
       retval = serializer_pack_char_string(self, value, target_string_size);
       break;
     default:
@@ -1801,6 +1801,9 @@ static apx_error_t serializer_pack_char_string(
   {
     return APX_BUFFER_BOUNDARY_ERROR;
   }
-  memcpy(self->buffer.next, adt_str_data(str), required_string_size);
+  if (required_string_size > 0u)
+  {
+    memcpy(self->buffer.next, adt_str_data(str), required_string_size);
+  }
   return APX_NO_ERROR;
 }
