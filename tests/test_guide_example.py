@@ -55,3 +55,39 @@ def test_getting_started_guide_flow(
     assert listener.wait_for_output('"VehicleSpeed": 100', timeout=3.0), (
         f"Listener did not output '\"VehicleSpeed\": 100'.\nOutput:\n{listener.output}"
     )
+
+
+def test_apx12_listener_receives_updates(
+    apx_server: ApxServerInstance,
+    spawn_apx_node,
+    apx_control: ApxControl,
+    tmp_path: Path,
+):
+    """
+    Verify that an APX/1.2 listener node (which does not have port connection count
+    tracking files) correctly receives and prints port updates when connected.
+    """
+    repo_root = Path(__file__).resolve().parent.parent
+    sender_apx = repo_root / "example" / "nodes" / "unsigned_sender.apx"
+
+    listener_12_apx = tmp_path / "listener_12.apx"
+    listener_12_apx.write_text(
+        'APX/1.2\n'
+        'N"listener_12"\n'
+        'R"VehicleSpeed"S:=65535\n'
+    )
+
+    listener = spawn_apx_node(listener_12_apx, bind=False)
+    assert listener.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+
+    sender = spawn_apx_node(sender_apx, bind=True)
+    assert sender.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+
+    # When sender connects, VehicleSpeed should be received by listener
+    assert listener.wait_for_output('"VehicleSpeed": 65535', timeout=3.0)
+
+    # Send VehicleSpeed 100 via apx_control
+    result = apx_control.set_signal("VehicleSpeed", 100, connect_path=sender.bind_path)
+    assert result.returncode == 0
+
+    assert listener.wait_for_output('"VehicleSpeed": 100', timeout=3.0)
