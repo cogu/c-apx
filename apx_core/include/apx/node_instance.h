@@ -15,6 +15,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "adt_ary.h"
+#include "adt_range_list.h"
 #include "apx/byte_port_map.h"
 #include "apx/computation.h"
 #include "apx/data_element.h"
@@ -92,7 +93,12 @@ typedef struct apx_node_instance_tag
   bool server_files_published;
   bool require_ports_connected;
   uint64_t definition_memory_reservation;
+  uint32_t batch_depth;
+  adt_u32_range_list_t dirty_in;
+  adt_u32_range_list_t dirty_cin;
+  adt_u32_range_list_t dirty_cout;
   MUTEX_T lock;
+  MUTEX_T batch_lock;
 } apx_node_instance_t;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -231,5 +237,9 @@ void apx_node_instance_set_closing(apx_node_instance_t *self, bool is_closing);
 bool apx_node_instance_is_closing(const apx_node_instance_t *self);
 struct apx_connection_base_tag *apx_node_instance_get_connection(apx_node_instance_t const *self);
 uint32_t apx_node_instance_get_connection_id(apx_node_instance_t const *self);
+
+// Batch API
+void apx_node_instance_begin_batch(apx_node_instance_t *self);
+apx_error_t apx_node_instance_end_batch(apx_node_instance_t *self);
 
 #endif // APX_NODE_INSTANCE_H

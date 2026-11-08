@@ -39,6 +39,7 @@ static void test_port_signature_uint8_with_limits(CuTest *tc);
 static void test_port_signature_uint8_array(CuTest *tc);
 static void test_port_signature_dynamic_uint8_array(CuTest *tc);
 static void test_node_instance_port_count_buffers_v12_vs_v13(CuTest *tc);
+static void test_node_instance_batch_lifecycle(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -60,6 +61,7 @@ CuSuite *testsuite_apx_node_manager_server_mode(void)
   SUITE_ADD_TEST(suite, test_port_signature_uint8_array);
   SUITE_ADD_TEST(suite, test_port_signature_dynamic_uint8_array);
   SUITE_ADD_TEST(suite, test_node_instance_port_count_buffers_v12_vs_v13);
+  SUITE_ADD_TEST(suite, test_node_instance_batch_lifecycle);
 
   return suite;
 }
@@ -331,4 +333,40 @@ static void test_node_instance_port_count_buffers_v12_vs_v13(CuTest *tc)
   CuAssertUIntEquals(tc, 1u * sizeof(uint16_t), apx_node_data_require_port_connection_count_data_size(data13));
 
   apx_node_manager_delete(manager);
+}
+
+static void test_node_instance_batch_lifecycle(CuTest *tc)
+{
+  apx_node_instance_t node;
+  apx_node_instance_create(&node, APX_SERVER_MODE, "TestNode");
+  CuAssertUIntEquals(tc, 0u, node.batch_depth);
+  CuAssertTrue(tc, adt_u32_range_list_is_empty(&node.dirty_in));
+  CuAssertTrue(tc, adt_u32_range_list_is_empty(&node.dirty_cin));
+  CuAssertTrue(tc, adt_u32_range_list_is_empty(&node.dirty_cout));
+
+  // begin batch
+  apx_node_instance_begin_batch(&node);
+  CuAssertUIntEquals(tc, 1u, node.batch_depth);
+
+  // nested batch
+  apx_node_instance_begin_batch(&node);
+  CuAssertUIntEquals(tc, 2u, node.batch_depth);
+
+  // end nested batch
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_end_batch(&node));
+  CuAssertUIntEquals(tc, 1u, node.batch_depth);
+
+  // end outer batch
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_end_batch(&node));
+  CuAssertUIntEquals(tc, 0u, node.batch_depth);
+
+  // extra end_batch when 0 depth does nothing and returns APX_NO_ERROR
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_end_batch(&node));
+  CuAssertUIntEquals(tc, 0u, node.batch_depth);
+
+  // NULL checks
+  apx_node_instance_begin_batch(NULL);
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_node_instance_end_batch(NULL));
+
+  apx_node_instance_destroy(&node);
 }

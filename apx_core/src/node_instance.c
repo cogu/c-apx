@@ -33,6 +33,14 @@
 // PRIVATE CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
 #define STACK_DATA_BUF_SIZE 256 // Bytes to allocate on stack before attempting malloc
+#define APX_ROUTING_COALESCE_MAX_GAP 6u
+
+typedef enum apx_batch_file_type_tag
+{
+  APX_BATCH_FILE_REQUIRE_PORT_DATA,
+  APX_BATCH_FILE_REQUIRE_PORT_COUNT,
+  APX_BATCH_FILE_PROVIDE_PORT_COUNT,
+} apx_batch_file_type_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -94,6 +102,8 @@ static apx_error_t trigger_require_port_write_callbacks(
   apx_node_instance_t *self, uint32_t offset, const uint8_t *data, apx_size_t size);
 static apx_error_t publish_server_files(apx_node_instance_t *self, apx_file_manager_t *file_manager);
 static apx_file_manager_t *apx_node_instance_get_file_manager(apx_node_instance_t const *self);
+static apx_error_t flush_dirty_range_list(
+  apx_node_instance_t *self, adt_u32_range_list_t const *range_list, apx_file_t *file, apx_batch_file_type_t file_type);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -139,7 +149,12 @@ void apx_node_instance_create(apx_node_instance_t *self, apx_mode_t mode, char c
     self->is_closing = false;
     self->server_files_published = false;
     self->require_ports_connected = false;
+    self->batch_depth = 0u;
+    adt_u32_range_list_create(&self->dirty_in);
+    adt_u32_range_list_create(&self->dirty_cin);
+    adt_u32_range_list_create(&self->dirty_cout);
     MUTEX_INIT(self->lock);
+    MUTEX_INIT(self->batch_lock);
   }
 }
 
@@ -161,7 +176,11 @@ void apx_node_instance_destroy(apx_node_instance_t *self)
       self->connector_table = NULL;
       MUTEX_UNLOCK(self->lock);
     }
+    adt_u32_range_list_destroy(&self->dirty_in);
+    adt_u32_range_list_destroy(&self->dirty_cin);
+    adt_u32_range_list_destroy(&self->dirty_cout);
     MUTEX_DESTROY(self->lock);
+    MUTEX_DESTROY(self->batch_lock);
     if (self->provide_ports != NULL)
     {
       apx_size_t i;
@@ -1055,9 +1074,11 @@ apx_error_t apx_node_instance_handle_require_ports_disconnected(
 {
   if ((self != NULL) && (connector_changes != NULL))
   {
-    apx_port_id_t require_port_id;
-    apx_size_t num_require_ports = apx_node_instance_get_num_require_ports(self);
-    for (require_port_id = 0; require_port_id < num_require_ports; require_port_id++)
+    apx_size_t const num_require_ports = apx_node_instance_get_num_require_ports(self);
+    adt_ary_t affected_providers;
+    adt_ary_create(&affected_providers, NULL);
+    apx_node_instance_begin_batch(self);
+    for (apx_port_id_t require_port_id = 0; require_port_id < num_require_ports; require_port_id++)
     {
       apx_port_instance_t *require_port;
       apx_port_connector_change_entry_t *entry =
@@ -1078,6 +1099,11 @@ apx_error_t apx_node_instance_handle_require_ports_disconnected(
           assert(provide_port != NULL);
           provide_node_instance = provide_port->parent;
           assert(provide_node_instance != NULL);
+          if (adt_ary_index_of(&affected_providers, (void *)provide_node_instance) < 0)
+          {
+            apx_node_instance_begin_batch(provide_node_instance);
+            adt_ary_push(&affected_providers, (void *)provide_node_instance);
+          }
           provide_port_id = apx_port_instance_port_id(provide_port);
           apx_node_instance_lock_port_connector_table(provide_node_instance);
           result = remove_provide_port_connector(provide_node_instance, provide_port_id, require_port);
@@ -1091,6 +1117,17 @@ apx_error_t apx_node_instance_handle_require_ports_disconnected(
           apx_node_instance_unlock_port_connector_table(provide_node_instance);
           if (result != APX_NO_ERROR)
           {
+            apx_node_instance_end_batch(self);
+            int32_t const num_prov = adt_ary_length(&affected_providers);
+            for (int32_t j = 0; j < num_prov; j++)
+            {
+              apx_node_instance_t *prov = (apx_node_instance_t *)adt_ary_value(&affected_providers, j);
+              if (prov != NULL)
+              {
+                apx_node_instance_end_batch(prov);
+              }
+            }
+            adt_ary_destroy(&affected_providers);
             return result;
           }
           apx_node_instance_send_provide_port_count_data(provide_node_instance, provide_port_id, new_provide_count);
@@ -1103,6 +1140,17 @@ apx_error_t apx_node_instance_handle_require_ports_disconnected(
         assert(entry->count == 0);
       }
     }
+    apx_node_instance_end_batch(self);
+    int32_t const num_prov = adt_ary_length(&affected_providers);
+    for (int32_t i = 0; i < num_prov; i++)
+    {
+      apx_node_instance_t *prov = (apx_node_instance_t *)adt_ary_value(&affected_providers, i);
+      if (prov != NULL)
+      {
+        apx_node_instance_end_batch(prov);
+      }
+    }
+    adt_ary_destroy(&affected_providers);
     return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -1114,6 +1162,7 @@ apx_error_t apx_node_instance_handle_provide_ports_disconnected(
   if ((self != NULL) && (connector_changes != NULL))
   {
     apx_size_t const num_provide_ports = apx_node_instance_get_num_provide_ports(self);
+    apx_node_instance_begin_batch(self);
     apx_node_instance_lock_port_connector_table(self);
     for (apx_port_id_t provide_port_id = 0u; provide_port_id < num_provide_ports; provide_port_id++)
     {
@@ -1131,6 +1180,7 @@ apx_error_t apx_node_instance_handle_provide_ports_disconnected(
           if (result != APX_NO_ERROR)
           {
             apx_node_instance_unlock_port_connector_table(self);
+            apx_node_instance_end_batch(self);
             return result;
           }
         }
@@ -1139,6 +1189,7 @@ apx_error_t apx_node_instance_handle_provide_ports_disconnected(
       }
     }
     apx_node_instance_unlock_port_connector_table(self);
+    apx_node_instance_end_batch(self);
     return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -2391,7 +2442,26 @@ static apx_error_t remote_route_require_port_data(
   apx_error_t retval = apx_node_data_write_require_port_data(self->node_data, offset, data, size);
   if ((retval == APX_NO_ERROR) && (file != NULL) && apx_file_is_open(file))
   {
-    retval = remote_route_data_to_file(file, offset, data, size);
+    MUTEX_LOCK(self->batch_lock);
+    if (self->batch_depth > 0u)
+    {
+      adt_error_t const adt_err =
+        adt_u32_range_list_insert(&self->dirty_in, offset, (uint32_t)size, APX_ROUTING_COALESCE_MAX_GAP);
+      MUTEX_UNLOCK(self->batch_lock);
+      if (adt_err == ADT_MEM_ERROR)
+      {
+        retval = APX_MEM_ERROR;
+      }
+      else if (adt_err != ADT_NO_ERROR)
+      {
+        retval = APX_GENERIC_ERROR;
+      }
+    }
+    else
+    {
+      MUTEX_UNLOCK(self->batch_lock);
+      retval = remote_route_data_to_file(file, offset, data, size);
+    }
   }
   return retval;
 }
@@ -2489,11 +2559,31 @@ apx_error_t apx_node_instance_send_provide_port_count_data(
         apx_file_t *file = self->provide_port_count_file;
         if ((file != NULL) && apx_file_is_open(file))
         {
-          uint8_t count_bytes[sizeof(apx_port_count_t)];
-          uint32_t offset = (uint32_t)port_id * (uint32_t)sizeof(apx_port_count_t);
-          count_bytes[0] = (uint8_t)(count & 0xFFu);
-          count_bytes[1] = (uint8_t)((count >> 8u) & 0xFFu);
-          retval = remote_route_data_to_file(file, offset, count_bytes, sizeof(count_bytes));
+          uint32_t const offset = (uint32_t)port_id * (uint32_t)sizeof(apx_port_count_t);
+          uint32_t const size = (uint32_t)sizeof(apx_port_count_t);
+          MUTEX_LOCK(self->batch_lock);
+          if (self->batch_depth > 0u)
+          {
+            adt_error_t const adt_err =
+              adt_u32_range_list_insert(&self->dirty_cout, offset, size, APX_ROUTING_COALESCE_MAX_GAP);
+            MUTEX_UNLOCK(self->batch_lock);
+            if (adt_err == ADT_MEM_ERROR)
+            {
+              retval = APX_MEM_ERROR;
+            }
+            else if (adt_err != ADT_NO_ERROR)
+            {
+              retval = APX_GENERIC_ERROR;
+            }
+          }
+          else
+          {
+            MUTEX_UNLOCK(self->batch_lock);
+            uint8_t count_bytes[sizeof(apx_port_count_t)];
+            count_bytes[0] = (uint8_t)(count & 0xFFu);
+            count_bytes[1] = (uint8_t)((count >> 8u) & 0xFFu);
+            retval = remote_route_data_to_file(file, offset, count_bytes, sizeof(count_bytes));
+          }
         }
       }
       return retval;
@@ -2521,11 +2611,31 @@ apx_error_t apx_node_instance_send_require_port_count_data(
         apx_file_t *file = self->require_port_count_file;
         if ((file != NULL) && apx_file_is_open(file))
         {
-          uint8_t count_bytes[sizeof(apx_port_count_t)];
-          uint32_t offset = (uint32_t)port_id * (uint32_t)sizeof(apx_port_count_t);
-          count_bytes[0] = (uint8_t)(count & 0xFFu);
-          count_bytes[1] = (uint8_t)((count >> 8u) & 0xFFu);
-          retval = remote_route_data_to_file(file, offset, count_bytes, sizeof(count_bytes));
+          uint32_t const offset = (uint32_t)port_id * (uint32_t)sizeof(apx_port_count_t);
+          uint32_t const size = (uint32_t)sizeof(apx_port_count_t);
+          MUTEX_LOCK(self->batch_lock);
+          if (self->batch_depth > 0u)
+          {
+            adt_error_t const adt_err =
+              adt_u32_range_list_insert(&self->dirty_cin, offset, size, APX_ROUTING_COALESCE_MAX_GAP);
+            MUTEX_UNLOCK(self->batch_lock);
+            if (adt_err == ADT_MEM_ERROR)
+            {
+              retval = APX_MEM_ERROR;
+            }
+            else if (adt_err != ADT_NO_ERROR)
+            {
+              retval = APX_GENERIC_ERROR;
+            }
+          }
+          else
+          {
+            MUTEX_UNLOCK(self->batch_lock);
+            uint8_t count_bytes[sizeof(apx_port_count_t)];
+            count_bytes[0] = (uint8_t)(count & 0xFFu);
+            count_bytes[1] = (uint8_t)((count >> 8u) & 0xFFu);
+            retval = remote_route_data_to_file(file, offset, count_bytes, sizeof(count_bytes));
+          }
         }
       }
       return retval;
@@ -2603,4 +2713,140 @@ uint32_t apx_node_instance_get_connection_id(apx_node_instance_t const *self)
     return apx_connection_base_get_connection_id(connection);
   }
   return APX_INVALID_CONNECTION_ID;
+}
+
+static apx_error_t flush_dirty_range_list(
+  apx_node_instance_t *self, adt_u32_range_list_t const *range_list, apx_file_t *file, apx_batch_file_type_t file_type)
+{
+  if ((self == NULL) || (range_list == NULL) || (file == NULL) || !apx_file_is_open(file) || (self->node_data == NULL))
+  {
+    return APX_NO_ERROR;
+  }
+  uint32_t const num_ranges = adt_u32_range_list_length(range_list);
+  if (num_ranges == 0u)
+  {
+    return APX_NO_ERROR;
+  }
+
+  uint8_t stack_buf[STACK_DATA_BUF_SIZE];
+  apx_error_t retval = APX_NO_ERROR;
+
+  for (uint32_t i = 0u; i < num_ranges; i++)
+  {
+    adt_u32_range_t const *range = adt_u32_range_list_at(range_list, i);
+    if ((range == NULL) || (range->length == 0u))
+    {
+      continue;
+    }
+    uint8_t *buf = stack_buf;
+    if (range->length > (uint32_t)sizeof(stack_buf))
+    {
+      buf = (uint8_t *)malloc(range->length);
+      if (buf == NULL)
+      {
+        return APX_MEM_ERROR;
+      }
+    }
+
+    if (file_type == APX_BATCH_FILE_REQUIRE_PORT_DATA)
+    {
+      retval = apx_node_data_read_require_port_data(self->node_data, range->start, buf, range->length);
+    }
+    else if (file_type == APX_BATCH_FILE_REQUIRE_PORT_COUNT)
+    {
+      retval = apx_node_data_read_require_port_count_data(self->node_data, range->start, buf, range->length);
+    }
+    else if (file_type == APX_BATCH_FILE_PROVIDE_PORT_COUNT)
+    {
+      retval = apx_node_data_read_provide_port_count_data(self->node_data, range->start, buf, range->length);
+    }
+    else
+    {
+      retval = APX_INVALID_ARGUMENT_ERROR;
+    }
+
+    if (retval == APX_NO_ERROR)
+    {
+      retval = remote_route_data_to_file(file, range->start, buf, range->length);
+    }
+
+    if (buf != stack_buf)
+    {
+      free(buf);
+    }
+
+    if (retval != APX_NO_ERROR)
+    {
+      break;
+    }
+  }
+
+  return retval;
+}
+
+void apx_node_instance_begin_batch(apx_node_instance_t *self)
+{
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->batch_lock);
+    self->batch_depth++;
+    MUTEX_UNLOCK(self->batch_lock);
+  }
+}
+
+apx_error_t apx_node_instance_end_batch(apx_node_instance_t *self)
+{
+  if (self == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+
+  adt_u32_range_list_t local_in;
+  adt_u32_range_list_t local_cin;
+  adt_u32_range_list_t local_cout;
+  bool should_flush = false;
+
+  MUTEX_LOCK(self->batch_lock);
+  if (self->batch_depth > 0u)
+  {
+    self->batch_depth--;
+    if (self->batch_depth == 0u)
+    {
+      local_in = self->dirty_in;
+      local_cin = self->dirty_cin;
+      local_cout = self->dirty_cout;
+      adt_u32_range_list_create(&self->dirty_in);
+      adt_u32_range_list_create(&self->dirty_cin);
+      adt_u32_range_list_create(&self->dirty_cout);
+      should_flush = true;
+    }
+  }
+  MUTEX_UNLOCK(self->batch_lock);
+
+  if (!should_flush)
+  {
+    return APX_NO_ERROR;
+  }
+
+  apx_error_t retval = APX_NO_ERROR;
+
+  if (retval == APX_NO_ERROR)
+  {
+    retval = flush_dirty_range_list(self, &local_cin, self->require_port_count_file, APX_BATCH_FILE_REQUIRE_PORT_COUNT);
+  }
+  if (retval == APX_NO_ERROR)
+  {
+    retval =
+      flush_dirty_range_list(self, &local_cout, self->provide_port_count_file, APX_BATCH_FILE_PROVIDE_PORT_COUNT);
+  }
+  if (retval == APX_NO_ERROR)
+  {
+    retval = flush_dirty_range_list(self, &local_in, self->require_port_data_file, APX_BATCH_FILE_REQUIRE_PORT_DATA);
+  }
+
+  adt_u32_range_list_destroy(&local_in);
+  adt_u32_range_list_destroy(&local_cin);
+  adt_u32_range_list_destroy(&local_cout);
+
+  return retval;
 }

@@ -45,6 +45,8 @@ static apx_error_t apx_server_init_extensions(apx_server_t *self);
 static void apx_server_shutdown_extensions(apx_server_t *self);
 static void apx_server_handle_event(void *arg, apx_event_t *event);
 static void apx_server_destroy_event(apx_server_t *self, apx_event_t *event);
+static apx_error_t touch_node_batch(adt_ary_t *affected_nodes, apx_node_instance_t *node);
+static void end_node_batches(adt_ary_t *affected_nodes);
 #ifndef UNIT_TEST
 static apx_error_t apx_server_start_thread(apx_server_t *self);
 static apx_error_t apx_server_stop_thread(apx_server_t *self);
@@ -489,11 +491,18 @@ apx_error_t apx_server_process_require_port_connector_changes(
 {
   if ((self != NULL) && (require_node_instance != NULL) && (connector_changes != NULL))
   {
-    apx_size_t num_require_ports;
-    apx_port_id_t port_id;
-    num_require_ports = apx_node_instance_get_num_require_ports(require_node_instance);
+    adt_ary_t affected_nodes;
+    adt_ary_create(&affected_nodes, NULL);
+    apx_error_t rc = touch_node_batch(&affected_nodes, require_node_instance);
+    if (rc != APX_NO_ERROR)
+    {
+      adt_ary_destroy(&affected_nodes);
+      return rc;
+    }
+
+    apx_size_t const num_require_ports = apx_node_instance_get_num_require_ports(require_node_instance);
     assert(connector_changes->num_ports == num_require_ports);
-    for (port_id = 0u; port_id < num_require_ports; port_id++)
+    for (apx_port_id_t port_id = 0u; port_id < num_require_ports; port_id++)
     {
       apx_port_instance_t *require_port;
       apx_port_connector_change_entry_t *entry;
@@ -504,17 +513,23 @@ apx_error_t apx_server_process_require_port_connector_changes(
       {
         if (entry->count == 1)
         {
-          apx_error_t rc;
           apx_port_instance_t *provide_port = entry->data.port_instance;
           assert(provide_port != NULL);
+          apx_node_instance_t *provide_node_instance = apx_port_instance_parent(provide_port);
+          rc = touch_node_batch(&affected_nodes, provide_node_instance);
+          if (rc != APX_NO_ERROR)
+          {
+            end_node_batches(&affected_nodes);
+            return rc;
+          }
           apx_port_count_t require_count = apx_port_connector_change_entry_get_connection_count(entry);
           apx_node_instance_send_require_port_count_data(require_node_instance, port_id, require_count);
           rc = apx_node_instance_handle_require_port_connected_to_provide_port(require_port, provide_port);
           if (rc != APX_NO_ERROR)
           {
+            end_node_batches(&affected_nodes);
             return rc;
           }
-          apx_node_instance_t *provide_node_instance = apx_port_instance_parent(provide_port);
           apx_port_id_t provide_port_id = apx_port_instance_port_id(provide_port);
           apx_port_connector_list_t *connectors =
             apx_node_instance_get_provide_port_connectors(provide_node_instance, provide_port_id);
@@ -526,11 +541,13 @@ apx_error_t apx_server_process_require_port_connector_changes(
         }
         else
         {
-               // Multiple providers are available. This needs to be handled later
+          // Multiple providers are available. This needs to be handled later
+          end_node_batches(&affected_nodes);
           return APX_NOT_IMPLEMENTED_ERROR;
         }
       }
     }
+    end_node_batches(&affected_nodes);
     apx_server_trigger_require_ports_connected_event(self, require_node_instance, connector_changes);
     return APX_NO_ERROR;
   }
@@ -545,12 +562,19 @@ apx_error_t apx_server_process_provide_port_connector_changes(
 {
   if ((self != NULL) && (provide_node_instance != NULL) && (connector_changes != NULL))
   {
-    apx_size_t num_provide_ports;
-    apx_port_id_t port_id;
-    num_provide_ports = apx_node_instance_get_num_provide_ports(provide_node_instance);
+    adt_ary_t affected_nodes;
+    adt_ary_create(&affected_nodes, NULL);
+    apx_error_t rc = touch_node_batch(&affected_nodes, provide_node_instance);
+    if (rc != APX_NO_ERROR)
+    {
+      adt_ary_destroy(&affected_nodes);
+      return rc;
+    }
+
+    apx_size_t const num_provide_ports = apx_node_instance_get_num_provide_ports(provide_node_instance);
     assert(connector_changes->num_ports == num_provide_ports);
     apx_node_instance_lock_port_connector_table(provide_node_instance);
-    for (port_id = 0u; port_id < num_provide_ports; port_id++)
+    for (apx_port_id_t port_id = 0u; port_id < num_provide_ports; port_id++)
     {
       apx_port_instance_t *provide_port;
       apx_port_connector_change_entry_t *entry;
@@ -562,16 +586,23 @@ apx_error_t apx_server_process_provide_port_connector_changes(
       {
         if (entry->count == 1)
         {
-          apx_error_t rc;
           apx_port_instance_t *require_port = entry->data.port_instance;
           assert(require_port != NULL);
           apx_node_instance_t *require_node_instance = apx_port_instance_parent(require_port);
+          rc = touch_node_batch(&affected_nodes, require_node_instance);
+          if (rc != APX_NO_ERROR)
+          {
+            apx_node_instance_unlock_port_connector_table(provide_node_instance);
+            end_node_batches(&affected_nodes);
+            return rc;
+          }
           apx_port_id_t require_port_id = apx_port_instance_port_id(require_port);
           apx_node_instance_send_require_port_count_data(require_node_instance, require_port_id, 1u);
           rc = apx_node_instance_handle_provide_port_connected_to_require_port(provide_port, require_port);
           if (rc != APX_NO_ERROR)
           {
             apx_node_instance_unlock_port_connector_table(provide_node_instance);
+            end_node_batches(&affected_nodes);
             return rc;
           }
         }
@@ -580,16 +611,23 @@ apx_error_t apx_server_process_provide_port_connector_changes(
           int32_t i;
           for (i = 0; i < entry->count; i++)
           {
-            apx_error_t rc;
             apx_port_instance_t *require_port = adt_ary_value(entry->data.array, i);
             assert(require_port != NULL);
             apx_node_instance_t *require_node_instance = apx_port_instance_parent(require_port);
+            rc = touch_node_batch(&affected_nodes, require_node_instance);
+            if (rc != APX_NO_ERROR)
+            {
+              apx_node_instance_unlock_port_connector_table(provide_node_instance);
+              end_node_batches(&affected_nodes);
+              return rc;
+            }
             apx_port_id_t require_port_id = apx_port_instance_port_id(require_port);
             apx_node_instance_send_require_port_count_data(require_node_instance, require_port_id, 1u);
             rc = apx_node_instance_handle_provide_port_connected_to_require_port(provide_port, require_port);
             if (rc != APX_NO_ERROR)
             {
               apx_node_instance_unlock_port_connector_table(provide_node_instance);
+              end_node_batches(&affected_nodes);
               return rc;
             }
           }
@@ -599,10 +637,47 @@ apx_error_t apx_server_process_provide_port_connector_changes(
       }
     }
     apx_node_instance_unlock_port_connector_table(provide_node_instance);
+    end_node_batches(&affected_nodes);
     apx_server_trigger_provide_ports_connected_event(self, provide_node_instance, connector_changes);
     return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static apx_error_t touch_node_batch(adt_ary_t *affected_nodes, apx_node_instance_t *node)
+{
+  if ((affected_nodes != NULL) && (node != NULL))
+  {
+    int32_t const idx = adt_ary_index_of(affected_nodes, (void *)node);
+    if (idx < 0)
+    {
+      apx_node_instance_begin_batch(node);
+      adt_error_t const result = adt_ary_push(affected_nodes, (void *)node);
+      if (result != ADT_NO_ERROR)
+      {
+        apx_node_instance_end_batch(node);
+        return APX_MEM_ERROR;
+      }
+    }
+  }
+  return APX_NO_ERROR;
+}
+
+static void end_node_batches(adt_ary_t *affected_nodes)
+{
+  if (affected_nodes != NULL)
+  {
+    int32_t const num_nodes = adt_ary_length(affected_nodes);
+    for (int32_t i = 0; i < num_nodes; i++)
+    {
+      apx_node_instance_t *node = (apx_node_instance_t *)adt_ary_value(affected_nodes, i);
+      if (node != NULL)
+      {
+        apx_node_instance_end_batch(node);
+      }
+    }
+    adt_ary_destroy(affected_nodes);
+  }
 }
 
 /**
