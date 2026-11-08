@@ -302,33 +302,23 @@ static void on_file_published(
   {
     bool const is_signed = rmf_file_info_is_signed(file_info);
     bool const is_compressed = rmf_file_info_is_compressed(file_info);
-    char const *cmd_name = "RMF_CMD_PUBLISH_FILE_MSG";
-    if (is_signed && is_compressed)
-    {
-      cmd_name = "RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG";
-    }
-    else if (is_compressed)
-    {
-      cmd_name = "RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG";
-    }
-    else if (is_signed)
-    {
-      cmd_name = "RMF_CMD_PUBLISH_SIGNED_FILE_MSG";
-    }
+    char const *const compressed_str = is_compressed ? "true" : "false";
+    char const *const signed_str = is_signed ? "true" : "false";
 
     if (is_compressed)
     {
       apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER",
-        "[%u] Client publish file: %s (size: %u, uncompressed: %u, cmd: %s)",
+        "[%u] Client publish file: %s (size: %u, uncompressed: %u, compressed: %s, signed: %s)",
         apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info),
         (unsigned int)rmf_file_info_size(file_info), (unsigned int)rmf_file_info_uncompressed_size(file_info),
-        cmd_name);
+        compressed_str, signed_str);
     }
     else
     {
       apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER",
-        "[%u] Client publish file: %s (size: %u, cmd: %s)", apx_server_connection_get_connection_id(connection),
-        rmf_file_info_name(file_info), (unsigned int)rmf_file_info_size(file_info), cmd_name);
+        "[%u] Client publish file: %s (size: %u, compressed: %s, signed: %s)",
+        apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info),
+        (unsigned int)rmf_file_info_size(file_info), compressed_str, signed_str);
     }
   }
 }
