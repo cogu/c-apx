@@ -89,6 +89,8 @@ typedef struct apx_node_instance_tag
   rmf_signature_type_t signature_type;
   uint8_t signature_data[RMF_SIGNATURE_SIZE_ECDSA_P256];
   volatile bool is_closing;
+  bool server_files_published;
+  bool require_ports_connected;
   uint64_t definition_memory_reservation;
   MUTEX_T lock;
 } apx_node_instance_t;

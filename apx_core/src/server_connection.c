@@ -1140,7 +1140,7 @@ static void remove_nodes_from_signature_map(apx_server_connection_t *self, adt_a
     apx_node_instance_t *node_instance = (apx_node_instance_t *)adt_ary_value(node_instance_array, i);
     assert(node_instance != NULL);
     require_port_data_state = apx_node_instance_get_require_port_data_state(node_instance);
-    if (require_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
+    if ((require_port_data_state == APX_DATA_STATE_SYNCHRONIZED) || node_instance->require_ports_connected)
     {
       result = apx_server_disconnect_node_instance_require_ports(self->parent, node_instance);
       if (result != APX_NO_ERROR)
@@ -1226,7 +1226,7 @@ static apx_error_t gather_require_port_connector_changes(
     apx_node_instance_t *node_instance = (apx_node_instance_t *)adt_ary_value(node_instance_array, i);
     assert(node_instance != NULL);
     require_port_data_state = apx_node_instance_get_require_port_data_state(node_instance);
-    if (require_port_data_state == APX_DATA_STATE_SYNCHRONIZED)
+    if ((require_port_data_state == APX_DATA_STATE_SYNCHRONIZED) || node_instance->require_ports_connected)
     {
       apx_port_connector_change_table_t *connector_changes =
         apx_node_instance_get_require_port_connector_changes(node_instance, false);
@@ -1364,7 +1364,8 @@ static apx_error_t process_disconnected_requester_nodes(apx_server_t *server, ad
     apx_port_connector_change_ref_t *ref = (apx_port_connector_change_ref_t *)adt_ary_value(requester_change_array, i);
     require_node_instance = ref->node_instance;
     connector_changes = ref->connector_changes;
-    assert(apx_node_instance_get_require_port_data_state(require_node_instance) == APX_DATA_STATE_SYNCHRONIZED);
+    assert((apx_node_instance_get_require_port_data_state(require_node_instance) == APX_DATA_STATE_SYNCHRONIZED) ||
+      require_node_instance->require_ports_connected);
     assert(connector_changes->num_ports == apx_node_instance_get_num_require_ports(require_node_instance));
     apx_node_instance_handle_require_ports_disconnected(require_node_instance, connector_changes);
     apx_node_instance_set_require_port_data_state(require_node_instance, APX_DATA_STATE_DISCONNECTED);

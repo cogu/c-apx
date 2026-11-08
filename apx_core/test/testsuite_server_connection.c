@@ -861,7 +861,10 @@ static void test_port_count_files_published_for_apx13_node(CuTest *tc)
   CuAssertIntEquals(tc, acknowledge_size, adt_bytearray_length(packet));
   apx_server_test_connection_clear_log(connection);
 
-   // Publish definition file from client
+   // Publish provide port data file and definition file from client
+  uint8_t const provide_port_data[1] = {0u};
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_publish_remote_file(connection, APX_PORT_DATA_ADDRESS_START, "TestNode13.out", 1u));
   CuAssertIntEquals(tc, APX_NO_ERROR,
     apx_server_test_connection_publish_remote_file(
       connection, APX_DEFINITION_ADDRESS_START, "TestNode13.apx", definition_size));
@@ -876,6 +879,17 @@ static void test_port_count_files_published_for_apx13_node(CuTest *tc)
   CuAssertIntEquals(tc, APX_NO_ERROR,
     apx_server_test_connection_write_remote_data(
       connection, APX_DEFINITION_ADDRESS_START, (uint8_t const *)apx_text, definition_size));
+  apx_server_test_connection_run(connection);
+   // Server sends open request for TestNode13.out
+  CuAssertIntEquals(tc, 1u, apx_server_test_connection_log_length(connection));
+  packet = apx_server_test_connection_get_log_packet(connection, 0);
+  CuAssertPtrNotNull(tc, packet);
+  CuAssertIntEquals(tc, open_request_size, adt_bytearray_length(packet));
+  apx_server_test_connection_clear_log(connection);
+
+   // Client writes initial provide port data
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_write_remote_data(connection, APX_PORT_DATA_ADDRESS_START, provide_port_data, 1u));
   apx_server_test_connection_run(connection);
 
    // Verify server announces both .cout and .cin before .in

@@ -72,7 +72,7 @@ static apx_error_t apx_node_instance_attach_to_file_manager_client_mode(
 static apx_error_t apx_node_instance_attach_to_file_manager_server_mode(
   apx_node_instance_t *self, apx_file_manager_t *file_manager);
 static apx_error_t search_for_remote_provide_port_data_file(
-  apx_node_instance_t *self, apx_file_manager_t *file_manager);
+  apx_node_instance_t *self, apx_file_manager_t *file_manager, bool *found);
 static apx_error_t check_and_request_remote_port_count_file(
   apx_node_instance_t *self, apx_file_manager_t *file_manager, const char *ext, apx_file_t **target_file_ptr);
 static apx_error_t request_remote_provide_port_data(apx_node_instance_t *self, apx_file_t *file);
@@ -92,6 +92,8 @@ static apx_error_t remote_route_provide_port_data(
 static apx_error_t remote_route_data_to_file(apx_file_t *file, uint32_t offset, uint8_t const *data, apx_size_t size);
 static apx_error_t trigger_require_port_write_callbacks(
   apx_node_instance_t *self, uint32_t offset, const uint8_t *data, apx_size_t size);
+static apx_error_t publish_server_files(apx_node_instance_t *self, apx_file_manager_t *file_manager);
+static apx_file_manager_t *apx_node_instance_get_file_manager(apx_node_instance_t const *self);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -135,6 +137,8 @@ void apx_node_instance_create(apx_node_instance_t *self, apx_mode_t mode, char c
     self->provide_port_data_file = NULL;
     self->require_port_data_file = NULL;
     self->is_closing = false;
+    self->server_files_published = false;
+    self->require_ports_connected = false;
     MUTEX_INIT(self->lock);
   }
 }
@@ -1498,7 +1502,14 @@ static apx_error_t file_open_notify(apx_node_instance_t *self, apx_file_t *file)
         {
           if (self->server != NULL)
           {
-            retval = connect_require_ports_to_server(self);
+            if (!self->require_ports_connected)
+            {
+              retval = connect_require_ports_to_server(self);
+              if (retval == APX_NO_ERROR)
+              {
+                self->require_ports_connected = true;
+              }
+            }
             if (retval == APX_NO_ERROR)
             {
               apx_node_instance_set_require_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
@@ -1712,83 +1723,102 @@ static apx_error_t process_remote_write_provide_port_data(
     {
       if (self->server != NULL)
       {
-        apx_port_connector_change_table_t *provide_port_changes = NULL;
-        adt_ary_t replaced_provider_changes;
-        adt_ary_t provider_change_events;
-        adt_ary_create(&replaced_provider_changes, apx_port_connector_change_ref_vdelete);
-        adt_ary_create(&provider_change_events, apx_provider_change_vdelete);
-        apx_server_take_global_lock(self->server);
-        retval = apx_server_connect_node_instance_provide_ports(self->server, self);
+        if (apx_node_instance_has_require_port_data(self) && !self->require_ports_connected)
+        {
+          retval = connect_require_ports_to_server(self);
+          if (retval == APX_NO_ERROR)
+          {
+            self->require_ports_connected = true;
+          }
+        }
         if (retval == APX_NO_ERROR)
         {
-          provide_port_changes = apx_node_instance_get_provide_port_connector_changes(self, false);
-          if (provide_port_changes != NULL)
+          apx_port_connector_change_table_t *provide_port_changes = NULL;
+          adt_ary_t replaced_provider_changes;
+          adt_ary_t provider_change_events;
+          adt_ary_create(&replaced_provider_changes, apx_port_connector_change_ref_vdelete);
+          adt_ary_create(&provider_change_events, apx_provider_change_vdelete);
+          apx_server_take_global_lock(self->server);
+          retval = apx_server_connect_node_instance_provide_ports(self->server, self);
+          if (retval == APX_NO_ERROR)
           {
-            apx_node_instance_clear_provide_port_connector_changes(self, false);
-          }
-          adt_ary_t *modified_nodes = apx_server_get_modified_node_instance(self->server);
-          if (modified_nodes != NULL)
-          {
-            int32_t const num_modified = adt_ary_length(modified_nodes);
-            for (int32_t i = 0; i < num_modified; i++)
+            provide_port_changes = apx_node_instance_get_provide_port_connector_changes(self, false);
+            if (provide_port_changes != NULL)
             {
-              apx_node_instance_t *modified_node = (apx_node_instance_t *)adt_ary_value(modified_nodes, i);
-              if ((modified_node != NULL) && (modified_node != self))
+              apx_node_instance_clear_provide_port_connector_changes(self, false);
+            }
+            adt_ary_t *modified_nodes = apx_server_get_modified_node_instance(self->server);
+            if (modified_nodes != NULL)
+            {
+              int32_t const num_modified = adt_ary_length(modified_nodes);
+              for (int32_t i = 0; i < num_modified; i++)
               {
-                apx_port_connector_change_table_t *old_prov_changes =
-                  apx_node_instance_get_provide_port_connector_changes(modified_node, false);
-                if (old_prov_changes != NULL)
+                apx_node_instance_t *modified_node = (apx_node_instance_t *)adt_ary_value(modified_nodes, i);
+                if ((modified_node != NULL) && (modified_node != self))
                 {
-                  apx_port_connector_change_ref_t *ref =
-                    apx_port_connector_change_ref_new(modified_node, old_prov_changes);
-                  if (ref != NULL)
+                  apx_port_connector_change_table_t *old_prov_changes =
+                    apx_node_instance_get_provide_port_connector_changes(modified_node, false);
+                  if (old_prov_changes != NULL)
                   {
-                    if (adt_ary_push(&replaced_provider_changes, ref) == ADT_NO_ERROR)
+                    apx_port_connector_change_ref_t *ref =
+                      apx_port_connector_change_ref_new(modified_node, old_prov_changes);
+                    if (ref != NULL)
                     {
-                      apx_node_instance_clear_provide_port_connector_changes(modified_node, false);
-                    }
-                    else
-                    {
-                      apx_port_connector_change_ref_delete(ref);
+                      if (adt_ary_push(&replaced_provider_changes, ref) == ADT_NO_ERROR)
+                      {
+                        apx_node_instance_clear_provide_port_connector_changes(modified_node, false);
+                      }
+                      else
+                      {
+                        apx_port_connector_change_ref_delete(ref);
+                      }
                     }
                   }
                 }
               }
             }
+            apx_server_take_provider_changes(self->server, &provider_change_events);
           }
-          apx_server_take_provider_changes(self->server, &provider_change_events);
-        }
-        apx_server_clear_port_connector_changes(self->server);
-        apx_server_release_global_lock(self->server);
+          apx_server_clear_port_connector_changes(self->server);
+          apx_server_release_global_lock(self->server);
 
-        apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
-        if (retval == APX_NO_ERROR)
-        {
-          int32_t const num_replaced = adt_ary_length(&replaced_provider_changes);
-          for (int32_t i = 0; i < num_replaced; i++)
+          apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
+          if (retval == APX_NO_ERROR)
           {
-            apx_port_connector_change_ref_t *ref =
-              (apx_port_connector_change_ref_t *)adt_ary_value(&replaced_provider_changes, i);
-            if ((ref != NULL) && (ref->node_instance != NULL) && (ref->connector_changes != NULL))
+            int32_t const num_replaced = adt_ary_length(&replaced_provider_changes);
+            for (int32_t i = 0; i < num_replaced; i++)
             {
-              apx_node_instance_handle_provide_ports_disconnected(ref->node_instance, ref->connector_changes);
-              apx_server_trigger_provide_ports_disconnected_event(
-                self->server, ref->node_instance, ref->connector_changes);
+              apx_port_connector_change_ref_t *ref =
+                (apx_port_connector_change_ref_t *)adt_ary_value(&replaced_provider_changes, i);
+              if ((ref != NULL) && (ref->node_instance != NULL) && (ref->connector_changes != NULL))
+              {
+                apx_node_instance_handle_provide_ports_disconnected(ref->node_instance, ref->connector_changes);
+                apx_server_trigger_provide_ports_disconnected_event(
+                  self->server, ref->node_instance, ref->connector_changes);
+              }
             }
+            if (provide_port_changes != NULL)
+            {
+              retval = apx_server_process_provide_port_connector_changes(self->server, self, provide_port_changes);
+              apx_port_connector_change_table_delete(provide_port_changes);
+            }
+            apx_server_process_provider_changes(self->server, &provider_change_events);
           }
-          if (provide_port_changes != NULL)
-          {
-            retval = apx_server_process_provide_port_connector_changes(self->server, self, provide_port_changes);
-            apx_port_connector_change_table_delete(provide_port_changes);
-          }
-          apx_server_process_provider_changes(self->server, &provider_change_events);
+          adt_ary_destroy(&replaced_provider_changes);
+          adt_ary_destroy(&provider_change_events);
         }
-        adt_ary_destroy(&replaced_provider_changes);
-        adt_ary_destroy(&provider_change_events);
       }
       else
       {
         apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_SYNCHRONIZED);
+      }
+      if (retval == APX_NO_ERROR)
+      {
+        apx_file_manager_t *file_manager = apx_node_instance_get_file_manager(self);
+        if (file_manager != NULL)
+        {
+          retval = publish_server_files(self, file_manager);
+        }
       }
     }
     break;
@@ -1882,6 +1912,80 @@ static apx_error_t apx_node_instance_attach_to_file_manager_client_mode(
   return result;
 }
 
+static apx_file_manager_t *apx_node_instance_get_file_manager(apx_node_instance_t const *self)
+{
+  if (self != NULL)
+  {
+    if (self->provide_port_count_file != NULL)
+    {
+      return apx_file_get_file_manager(self->provide_port_count_file);
+    }
+    if (self->require_port_count_file != NULL)
+    {
+      return apx_file_get_file_manager(self->require_port_count_file);
+    }
+    if (self->require_port_data_file != NULL)
+    {
+      return apx_file_get_file_manager(self->require_port_data_file);
+    }
+    apx_connection_base_t const *connection = apx_node_instance_get_connection(self);
+    if (connection != NULL)
+    {
+      return apx_connection_base_get_file_manager((apx_connection_base_t *)connection);
+    }
+  }
+  return NULL;
+}
+
+static apx_error_t publish_server_files(apx_node_instance_t *self, apx_file_manager_t *file_manager)
+{
+  apx_error_t retval = APX_NO_ERROR;
+  if ((self == NULL) || (file_manager == NULL))
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  if (self->server_files_published)
+  {
+    return APX_NO_ERROR;
+  }
+  self->server_files_published = true;
+
+  if (apx_node_instance_has_provide_port_count_data(self) && (self->provide_port_count_file != NULL))
+  {
+    rmf_file_info_t const *attached_file_info = apx_file_get_file_info(self->provide_port_count_file);
+    assert(
+      (attached_file_info != NULL) && (rmf_file_info_address_without_flags(attached_file_info) != RMF_INVALID_ADDRESS));
+    retval = apx_file_manager_publish_local_file(file_manager, attached_file_info);
+    if (retval != APX_NO_ERROR)
+    {
+      return retval;
+    }
+  }
+  if (apx_node_instance_has_require_port_count_data(self) && (self->require_port_count_file != NULL))
+  {
+    rmf_file_info_t const *attached_file_info = apx_file_get_file_info(self->require_port_count_file);
+    assert(
+      (attached_file_info != NULL) && (rmf_file_info_address_without_flags(attached_file_info) != RMF_INVALID_ADDRESS));
+    retval = apx_file_manager_publish_local_file(file_manager, attached_file_info);
+    if (retval != APX_NO_ERROR)
+    {
+      return retval;
+    }
+  }
+  if (apx_node_instance_has_require_port_data(self) && (self->require_port_data_file != NULL))
+  {
+    rmf_file_info_t const *attached_file_info = apx_file_get_file_info(self->require_port_data_file);
+    assert(
+      (attached_file_info != NULL) && (rmf_file_info_address_without_flags(attached_file_info) != RMF_INVALID_ADDRESS));
+    retval = apx_file_manager_publish_local_file(file_manager, attached_file_info);
+    if (retval != APX_NO_ERROR)
+    {
+      return retval;
+    }
+  }
+  return retval;
+}
+
 static apx_error_t apx_node_instance_attach_to_file_manager_server_mode(
   apx_node_instance_t *self, apx_file_manager_t *file_manager)
 {
@@ -1901,11 +2005,7 @@ static apx_error_t apx_node_instance_attach_to_file_manager_server_mode(
       }
       else
       {
-        rmf_file_info_t const *attached_file_info = apx_file_get_file_info(self->provide_port_count_file);
-        assert((attached_file_info != NULL) &&
-          (rmf_file_info_address_without_flags(attached_file_info) != RMF_INVALID_ADDRESS));
         set_file_notification_handler(self, self->provide_port_count_file);
-        retval = apx_file_manager_publish_local_file(file_manager, attached_file_info);
       }
     }
     else
@@ -1926,11 +2026,7 @@ static apx_error_t apx_node_instance_attach_to_file_manager_server_mode(
       }
       else
       {
-        rmf_file_info_t const *attached_file_info = apx_file_get_file_info(self->require_port_count_file);
-        assert((attached_file_info != NULL) &&
-          (rmf_file_info_address_without_flags(attached_file_info) != RMF_INVALID_ADDRESS));
         set_file_notification_handler(self, self->require_port_count_file);
-        retval = apx_file_manager_publish_local_file(file_manager, attached_file_info);
       }
     }
     else
@@ -1952,11 +2048,7 @@ static apx_error_t apx_node_instance_attach_to_file_manager_server_mode(
       }
       else
       {
-        rmf_file_info_t const *attached_file_info = apx_file_get_file_info(self->require_port_data_file);
-        assert((attached_file_info != NULL) &&
-          (rmf_file_info_address_without_flags(attached_file_info) != RMF_INVALID_ADDRESS));
         set_file_notification_handler(self, self->require_port_data_file);
-        retval = apx_file_manager_publish_local_file(file_manager, attached_file_info);
       }
     }
     else
@@ -1964,17 +2056,44 @@ static apx_error_t apx_node_instance_attach_to_file_manager_server_mode(
       return retval;
     }
   }
-  if ((retval == APX_NO_ERROR) && apx_node_instance_has_provide_port_data(self))
+  if (retval == APX_NO_ERROR)
   {
-    apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION);
-    retval = search_for_remote_provide_port_data_file(self, file_manager);
+    bool waiting_for_provide_file = false;
+    if (apx_node_instance_has_provide_port_data(self))
+    {
+      apx_node_instance_set_provide_port_data_state(self, APX_DATA_STATE_WAITING_FOR_FILE_PUBLICATION);
+      retval = search_for_remote_provide_port_data_file(self, file_manager, &waiting_for_provide_file);
+    }
+    if ((retval == APX_NO_ERROR) && !waiting_for_provide_file)
+    {
+      if (apx_node_instance_has_require_port_data(self))
+      {
+        if (self->server != NULL)
+        {
+          retval = connect_require_ports_to_server(self);
+          if (retval == APX_NO_ERROR)
+          {
+            self->require_ports_connected = true;
+          }
+        }
+      }
+      if (retval == APX_NO_ERROR)
+      {
+        retval = publish_server_files(self, file_manager);
+      }
+    }
   }
   return retval;
 }
 
-static apx_error_t search_for_remote_provide_port_data_file(apx_node_instance_t *self, apx_file_manager_t *file_manager)
+static apx_error_t search_for_remote_provide_port_data_file(
+  apx_node_instance_t *self, apx_file_manager_t *file_manager, bool *found)
 {
   apx_error_t retval = APX_NO_ERROR;
+  if (found != NULL)
+  {
+    *found = false;
+  }
   adt_str_t *str = adt_str_new_cstr(apx_node_instance_get_name(self));
   if (str == NULL)
   {
@@ -1990,6 +2109,10 @@ static apx_error_t search_for_remote_provide_port_data_file(apx_node_instance_t 
     apx_file_t *file = apx_file_manager_find_remote_file_by_name(file_manager, adt_str_cstr(str));
     if (file != NULL)
     {
+      if (found != NULL)
+      {
+        *found = true;
+      }
       set_file_notification_handler(self, file);
       retval = request_remote_provide_port_data(self, file);
     }
@@ -2266,7 +2389,7 @@ static apx_error_t remote_route_require_port_data(
 {
   apx_file_t *file = self->require_port_data_file;
   apx_error_t retval = apx_node_data_write_require_port_data(self->node_data, offset, data, size);
-  if ((retval == APX_NO_ERROR) && (file != NULL))
+  if ((retval == APX_NO_ERROR) && (file != NULL) && apx_file_is_open(file))
   {
     retval = remote_route_data_to_file(file, offset, data, size);
   }
@@ -2278,7 +2401,7 @@ static apx_error_t remote_route_provide_port_data(
 {
   apx_file_t *file = self->provide_port_data_file;
   apx_error_t retval = apx_node_data_write_provide_port_data(self->node_data, offset, data, size);
-  if ((retval == APX_NO_ERROR) && (file != NULL))
+  if ((retval == APX_NO_ERROR) && (file != NULL) && apx_file_is_open(file))
   {
     retval = remote_route_data_to_file(file, offset, data, size);
   }
