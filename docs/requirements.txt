@@ -2,4 +2,5 @@ sphinx
 furo
 sphinx-design
 sphinxcontrib-mermaid
+sphinxcontrib-plantuml
 breathe

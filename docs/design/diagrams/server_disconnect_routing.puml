@@ -1,0 +1,71 @@
+@startuml
+skinparam backgroundColor transparent
+skinparam shadowing false
+skinparam defaultFontName sans-serif
+skinparam sequence {
+    ArrowColor #2C3E50
+    ActorBorderColor #2C3E50
+    LifeLineBorderColor #7F8C8D
+    LifeLineBackgroundColor #ECF0F1
+    ParticipantBorderColor #34495E
+    ParticipantBackgroundColor #E8EFEA
+    ParticipantFontColor #172126
+    BoxBorderColor #BDC3C7
+    BoxBackgroundColor #F8F9FA
+    GroupBorderColor #27AE60
+    GroupHeaderFontColor #1E8449
+}
+
+box "Surviving Session" #F0F4F8
+participant "Client 1\n(Node_B)" as C1
+end box
+
+box "Server Internals" #FFFFFF
+participant "APX Server\n(File Manager & Sessions)" as S
+participant "Routing Engine\n(Signature Map & Connectors)" as R
+end box
+
+box "Departing Session" #F0F4F8
+participant "Client 2\n(Node_A)" as C2
+end box
+
+== 1. Client Disconnect Event ==
+C2 -x S: Socket closed / EOF / Disconnect
+S -> S: apx_server_connection_disconnected_notification()
+
+== 2. Batched Connector Teardown ==
+note over S, R #EAFAF1
+  Server activates routing batch (begin_batch) on all surviving nodes
+  affected by departing node instances.
+end note
+S -> S: apx_node_instance_begin_batch(Node_B)
+S -> R: detach_all_nodes(Node_A)
+activate R
+R -> R: Remove Node_A from signature map
+loop For each disconnected connector between Node_A and Node_B
+    R -> S: Record count decrement in Node_B.dirty_cin (range list)
+    R -> S: Record count decrement in Node_B.dirty_cout (range list)
+    opt Require port has init value
+        R -> S: Record reset in Node_B.dirty_in (range list)
+    end
+end
+deactivate R
+
+== 3. Flushed Coalesced Updates (Dependency Order) ==
+note over S
+  Server calls end_batch(Node_B), flushing range lists in dependency order:
+  .cin -> .cout -> .in
+end note
+group Coalesced Disconnect Flushes to Surviving Client
+    S -> C1: FileWrite: Node_B.cin [Coalesced Range / Bulk Count Update]
+    note left of S #D4EFDF: Decremented require port counts flushed
+    S -> C1: FileWrite: Node_B.cout [Coalesced Range / Bulk Count Update]
+    note left of S #D4EFDF: Decremented provide port counts flushed
+    opt Reset data pending
+        S -> C1: FileWrite: Node_B.in [Coalesced Signal Reset]
+        note left of S #D4EFDF: Default signal values restored
+    end
+end
+
+@enduml
+

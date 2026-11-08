@@ -1,0 +1,96 @@
+@startuml
+skinparam backgroundColor transparent
+skinparam shadowing false
+skinparam defaultFontName sans-serif
+skinparam sequence {
+    ArrowColor #2C3E50
+    ActorBorderColor #2C3E50
+    LifeLineBorderColor #7F8C8D
+    LifeLineBackgroundColor #ECF0F1
+    ParticipantBorderColor #34495E
+    ParticipantBackgroundColor #E8EFEA
+    ParticipantFontColor #172126
+    BoxBorderColor #BDC3C7
+    BoxBackgroundColor #F8F9FA
+    GroupBorderColor #27AE60
+    GroupHeaderFontColor #1E8449
+}
+
+box "Existing Session" #F0F4F8
+participant "Client 1\n(Node_B)" as C1
+end box
+
+box "Server Internals" #FFFFFF
+participant "APX Server\n(File Manager & Sessions)" as S
+participant "Routing Engine\n(Signature Map & Connectors)" as R
+end box
+
+box "Connecting Session" #F0F4F8
+participant "Client 2\n(Node_A)" as C2
+end box
+
+== 1. Transport Connection & Greeting Handshake ==
+C2 -> S: TCP/UNIX connect + RMFP Greeting (NumHeader: 32)
+S -> C2: RMF_CMD_ACK (greeting accepted)
+
+== 2. Definition & Initial Provide Data Ingestion ==
+C2 -> S: FileInfo: Node_A.apx
+C2 -> S: FileInfo: Node_A.out
+S -> C2: OpenFile: Node_A.apx
+C2 -> S: FileWrite: Node_A.apx [IDL text]
+S -> S: Parse AST, compile VM programs, allocate buffers
+S -> C2: OpenFile: Node_A.out
+C2 -> S: FileWrite: Node_A.out [Initial provide-data snapshot]
+
+== 3. In-Memory Pre-Population & Port Matching ==
+note over S, R #EAFAF1
+  **Deferred Publication & Pre-Population:**
+  Server completes port matching and prepopulates in-memory buffers
+  BEFORE announcing any server-owned files to Client 2.
+end note
+S -> R: Bidirectional port matching (Node_A <-> Node_B)
+activate R
+R -> S: Populate in-memory Node_A.in (values copied from Client 1)
+R -> S: Populate in-memory Node_A.cin (require connection counts)
+R -> S: Populate in-memory Node_A.cout (provide connection counts)
+deactivate R
+
+== 4. Orderly Server File Publication (Fully Populated) ==
+note over S
+  Server publishes files in strict dependency order:
+  .cout -> .cin -> .in
+end note
+S -> C2: FileInfo: Node_A.cout (fully pre-calculated)
+S -> C2: FileInfo: Node_A.cin  (fully pre-calculated)
+S -> C2: FileInfo: Node_A.in   (fully pre-calculated with initial values)
+
+== 5. Bulk Snapshot Transfers to Connecting Client ==
+C2 -> S: OpenFile: Node_A.cout
+S -> C2: FileWrite: Node_A.cout [Single Bulk Snapshot]
+note right of S #D4EFDF: 1 bulk transfer for all provide counts
+
+C2 -> S: OpenFile: Node_A.cin
+S -> C2: FileWrite: Node_A.cin [Single Bulk Snapshot]
+note right of S #D4EFDF: 1 bulk transfer for all require counts
+
+C2 -> S: OpenFile: Node_A.in
+S -> C2: FileWrite: Node_A.in [Single Bulk Snapshot]
+note right of S #D4EFDF: 1 bulk transfer for all require data
+
+== 6. Batched & Coalesced Updates to Existing Peer Clients ==
+note over S, C1 #EAFAF1
+  Surviving peer nodes enter a batch (begin_batch).
+  Disjoint range lists coalesce adjacent updates (max_gap <= 6 bytes).
+  Flushed in dependency order (.cin -> .cout -> .in) on end_batch().
+end note
+group Batched Flushes to Peer Client (Dependency Order)
+    S -> C1: FileWrite: Node_B.cin [Coalesced Range / Bulk Count Update]
+    note left of S #D4EFDF: Coalesced require count updates
+    S -> C1: FileWrite: Node_B.cout [Coalesced Range / Bulk Count Update]
+    note left of S #D4EFDF: Coalesced provide count updates
+    S -> C1: FileWrite: Node_B.in [Coalesced Range / Bulk Signal Update]
+    note left of S #D4EFDF: Coalesced signal data updates
+end
+
+@enduml
+

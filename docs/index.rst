@@ -68,7 +68,7 @@ Features
 .. toctree::
    :maxdepth: 2
    :hidden:
-   :caption: Design
+   :caption: Internal Design
 
    design/index
 
@@ -153,8 +153,8 @@ Server Extensions
      - ``monitor-extension``
      - Runtime server monitoring and connection tracking.
 
-Design
-======
+Internal Design
+===============
 
 .. list-table::
    :header-rows: 1
@@ -166,6 +166,8 @@ Design
      - Server definition admission, data ownership, resource limits, and receiver cleanup.
    * - :doc:`design/logging`
      - Event streaming, recording containers, and successful/rejected definition logging.
+   * - :doc:`design/server_file_publication_and_routing`
+     - RemoteFile publication lifecycle, buffer pre-population, and batched routing update coalescing.
 
 C API Modules
 =============

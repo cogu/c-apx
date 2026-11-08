@@ -1,0 +1,22 @@
+/* PlantUML responsive sizing */
+p.plantuml img,
+p.plantuml object {
+    max-width: 100%;
+    height: auto;
+}
+
+/* PlantUML dark theme handling:
+   PlantUML uses transparent SVGs. In dark mode, invert luminance
+   and rotate hues back 180deg to preserve colors on dark backgrounds. */
+[data-theme="dark"] p.plantuml img,
+[data-theme="dark"] p.plantuml object {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+@media (prefers-color-scheme: dark) {
+    body:not([data-theme="light"]) p.plantuml img,
+    body:not([data-theme="light"]) p.plantuml object {
+        filter: invert(1) hue-rotate(180deg);
+    }
+}
+
