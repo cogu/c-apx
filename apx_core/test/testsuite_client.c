@@ -217,7 +217,7 @@ static void test_definition_compression_levels(CuTest *tc)
       CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_set_definition_compression(client, true, level));
       CuAssertIntEquals(tc, APX_NO_ERROR, apx_client_build_node(client, m_apx_definition1));
       apx_node_instance_t *node = apx_client_get_last_attached_node(client);
-      size_t const logical_size = strlen(m_apx_definition1);
+      uint32_t const logical_size = (uint32_t)strlen(m_apx_definition1);
       CuAssertUIntEquals(tc, logical_size, apx_node_instance_get_definition_size(node));
       CuAssertTrue(tc, memcmp(apx_node_instance_get_definition_data(node), m_apx_definition1, logical_size) == 0);
       uint8_t decoded[1024];
@@ -225,7 +225,7 @@ static void test_definition_compression_levels(CuTest *tc)
       CuAssertIntEquals(tc, APX_NO_ERROR,
         apx_decompress(
           decoded, &decoded_size, node->compressed_definition_data, node->compressed_definition_size, logical_size));
-      CuAssertUIntEquals(tc, logical_size, decoded_size);
+      CuAssertUIntEquals(tc, logical_size, (unsigned int)decoded_size);
       CuAssertTrue(tc, memcmp(decoded, m_apx_definition1, logical_size) == 0);
       uint8_t signature[RMF_SIGNATURE_SIZE_ECDSA_P256];
       memset(signature, 0x5a, sizeof(signature));

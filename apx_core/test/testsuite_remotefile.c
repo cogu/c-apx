@@ -487,7 +487,7 @@ static void test_publish_compressed_file_cmd_encode_decode(CuTest *tc)
   memcpy(in_cmd.digest_data, dummy_digest, RMF_SHA256_SIZE);
 
   // Normal encode with SHA-256
-  apx_size_t const expected_size = RMF_PUBLISH_COMPRESSED_FILE_HEADER_SIZE + strlen("TestNode.apx") + 1u;
+  apx_size_t const expected_size = RMF_PUBLISH_COMPRESSED_FILE_HEADER_SIZE + (apx_size_t)strlen("TestNode.apx") + 1u;
   apx_size_t encoded_size = rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
   CuAssertUIntEquals(tc, expected_size, encoded_size);
 
@@ -651,7 +651,7 @@ static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc)
   memcpy(in_cmd.signature_data, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256);
 
   // Normal encode
-  apx_size_t const expected_size = RMF_PUBLISH_SIGNED_COMPRESSED_FILE_HEADER_SIZE + strlen("SecureNode.apx") + 1u;
+  apx_size_t const expected_size = RMF_PUBLISH_SIGNED_COMPRESSED_FILE_HEADER_SIZE + (apx_size_t)strlen("SecureNode.apx") + 1u;
   apx_size_t encoded_size = rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
   CuAssertUIntEquals(tc, expected_size, encoded_size);
 
