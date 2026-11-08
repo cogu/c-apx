@@ -362,7 +362,10 @@ apx_size_t rmf_decode_publish_file_cmd(uint8_t const *buf, apx_size_t buf_size, 
       uint8_t const *result = bstr_find_byte(next, end, 0);
       if ((result > next) && (result <= end))
       {
-        adt_str_set_bstr(&file_info->name, next, result);
+        if (rmf_file_info_set_name_bstr(file_info, next, result) != APX_NO_ERROR)
+        {
+          return 0u;
+        }
       }
       else
       {
@@ -520,7 +523,10 @@ apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const *buf, apx_size_t buf
       uint8_t const *result = bstr_find_byte(next, end, 0);
       if ((result > next) && (result <= end))
       {
-        adt_str_set_bstr(&file_info->name, next, result);
+        if (rmf_file_info_set_name_bstr(file_info, next, result) != APX_NO_ERROR)
+        {
+          return 0u;
+        }
       }
       else
       {

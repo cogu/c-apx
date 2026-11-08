@@ -82,6 +82,9 @@ char *rmf_file_info_base_name(rmf_file_info_t const *self);
 void rmf_file_info_copy_base_name(rmf_file_info_t const *self, char *dest, uint32_t max_dest_len);
 
 bool rmf_file_info_address_in_range(rmf_file_info_t const *self, uint32_t address);
+apx_error_t rmf_file_info_set_name(rmf_file_info_t *self, const char *name);
+apx_error_t rmf_file_info_set_name_bstr(rmf_file_info_t *self, const uint8_t *begin, const uint8_t *end);
+apx_error_t rmf_file_info_set_name_str(rmf_file_info_t *self, const adt_str_t *name);
 apx_error_t rmf_file_info_set_digest_data(
   rmf_file_info_t *self, rmf_digest_type_t digest_type, const uint8_t *digest_data);
 apx_error_t rmf_file_info_set_signature(

@@ -28,6 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+static apx_error_t finalize_name(rmf_file_info_t *self, adt_error_t adt_result);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -113,7 +114,6 @@ apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32
 {
   if (self != NULL)
   {
-    adt_error_t result;
     self->address = address;
     self->size = size;
     self->uncompressed_size = 0u;
@@ -123,18 +123,11 @@ apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32
     memset(&self->signature_data[0], 0, sizeof(self->signature_data));
     self->compression_type = RMF_COMPRESSION_TYPE_NONE;
     adt_str_create(&self->name);
-    if (name != NULL)
+    apx_error_t rc = rmf_file_info_set_name(self, name);
+    if (rc != APX_NO_ERROR)
     {
-      result = adt_str_set_cstr(&self->name, name);
-      if (result != ADT_NO_ERROR)
-      {
-        return convert_from_adt_to_apx_error(result);
-      }
+      return rc;
     }
-    // Ensure the internal buffer is null-terminated once during creation/assignment
-    // so that concurrent readers calling rmf_file_info_name() can safely access
-    // adt_str_data() without mutating the string or triggering data races.
-    (void)adt_str_cstr(&self->name);
     return rmf_file_info_set_digest_data(self, digest_type, digest_data);
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -142,28 +135,10 @@ apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32
 
 apx_error_t rmf_file_info_create_copy(rmf_file_info_t *self, rmf_file_info_t const *other)
 {
-  if (self != NULL)
+  if ((self != NULL) && (other != NULL))
   {
-    adt_error_t result;
-    self->address = other->address;
-    self->size = other->size;
-    self->uncompressed_size = other->uncompressed_size;
-    self->rmf_file_type = other->rmf_file_type;
-    self->digest_type = other->digest_type;
-    self->signature_type = other->signature_type;
-    memcpy(&self->signature_data[0], &other->signature_data[0], sizeof(self->signature_data));
-    self->compression_type = other->compression_type;
     adt_str_create(&self->name);
-    result = adt_str_set(&self->name, &other->name);
-    if (result != ADT_NO_ERROR)
-    {
-      return convert_from_adt_to_apx_error(result);
-    }
-    // Ensure the internal buffer is null-terminated once during creation/assignment
-    // so that concurrent readers calling rmf_file_info_name() can safely access
-    // adt_str_data() without mutating the string or triggering data races.
-    (void)adt_str_cstr(&self->name);
-    return rmf_file_info_set_digest_data(self, other->digest_type, &other->digest_data[0]);
+    return rmf_file_info_assign(self, other);
   }
   return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -325,7 +300,7 @@ apx_error_t rmf_file_info_assign(rmf_file_info_t *self, const rmf_file_info_t *o
 {
   if ((self != NULL) && (other != NULL))
   {
-    adt_error_t result;
+    apx_error_t rc;
     self->address = other->address;
     self->size = other->size;
     self->uncompressed_size = other->uncompressed_size;
@@ -334,15 +309,11 @@ apx_error_t rmf_file_info_assign(rmf_file_info_t *self, const rmf_file_info_t *o
     self->signature_type = other->signature_type;
     memcpy(&self->signature_data[0], &other->signature_data[0], sizeof(self->signature_data));
     self->compression_type = other->compression_type;
-    result = adt_str_set(&self->name, &other->name);
-    if (result != ADT_NO_ERROR)
+    rc = rmf_file_info_set_name_str(self, &other->name);
+    if (rc != APX_NO_ERROR)
     {
-      return convert_from_adt_to_apx_error(result);
+      return rc;
     }
-    // Ensure the internal buffer is null-terminated once during creation/assignment
-    // so that concurrent readers calling rmf_file_info_name() can safely access
-    // adt_str_data() without mutating the string or triggering data races.
-    (void)adt_str_cstr(&self->name);
     return rmf_file_info_set_digest_data(self, other->digest_type, &other->digest_data[0]);
   }
   return APX_INVALID_ARGUMENT_ERROR;
@@ -500,6 +471,49 @@ apx_error_t rmf_file_info_set_signature(
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t rmf_file_info_set_name(rmf_file_info_t *self, const char *name)
+{
+  if (self != NULL)
+  {
+    adt_error_t result = (name != NULL) ? adt_str_set_cstr(&self->name, name) : adt_str_set_cstr(&self->name, "");
+    return finalize_name(self, result);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t rmf_file_info_set_name_bstr(rmf_file_info_t *self, const uint8_t *begin, const uint8_t *end)
+{
+  if ((self != NULL) && (begin != NULL) && (end != NULL) && (end >= begin))
+  {
+    adt_error_t result = adt_str_set_bstr(&self->name, begin, end);
+    return finalize_name(self, result);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t rmf_file_info_set_name_str(rmf_file_info_t *self, const adt_str_t *name)
+{
+  if ((self != NULL) && (name != NULL))
+  {
+    adt_error_t result = adt_str_set(&self->name, name);
+    return finalize_name(self, result);
+  }
+  return APX_INVALID_ARGUMENT_ERROR;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+
+static apx_error_t finalize_name(rmf_file_info_t *self, adt_error_t adt_result)
+{
+  if (adt_result != ADT_NO_ERROR)
+  {
+    return convert_from_adt_to_apx_error(adt_result);
+  }
+  // Ensure the internal buffer is null-terminated once during creation/assignment
+  // so that concurrent readers calling rmf_file_info_name() can safely access
+  // adt_str_data() without mutating the string or triggering data races.
+  (void)adt_str_cstr(&self->name);
+  return APX_NO_ERROR;
+}
