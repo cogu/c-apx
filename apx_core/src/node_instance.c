@@ -13,12 +13,12 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/node_instance.h"
 #include "apx/connection_base.h"
+#include "apx/crypto.h"
 #include "apx/file_manager.h"
 #include "apx/node_manager.h"
 #include "apx/port_connector_change_ref.h"
 #include "apx/server.h"
 #include "apx/util.h"
-#include "sha256.h"
 #include <assert.h>
 #include <malloc.h>
 #include <stdio.h> //DEBUG ONLY
@@ -1411,9 +1411,13 @@ static apx_error_t create_definition_file_info(apx_node_instance_t *self, rmf_fi
   strcpy(file_name, self->name);
   strcat(file_name, ".apx");
 
-  sha256_calc(
-    &digest_data[0], apx_node_instance_get_definition_data(self), (size_t)apx_node_instance_get_definition_size(self));
-  apx_error_t result = rmf_file_info_create(
+  apx_error_t result = apx_crypto_sha256(
+    apx_node_instance_get_definition_data(self), (size_t)apx_node_instance_get_definition_size(self), &digest_data[0]);
+  if (result != APX_NO_ERROR)
+  {
+    return result;
+  }
+  result = rmf_file_info_create(
     file_info, RMF_INVALID_ADDRESS, file_size, file_name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_SHA256, &digest_data[0]);
   if (result == APX_NO_ERROR && self->signature_type != RMF_SIGNATURE_TYPE_NONE)
   {

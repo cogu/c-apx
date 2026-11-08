@@ -16,7 +16,6 @@
 #include "apx/remotefile.h"
 #include "apx/socket_client_connection.h"
 #include "pack.h"
-#include "sha256.h"
 #include "testsocket_spy.h"
 #include <assert.h>
 #include <stddef.h>

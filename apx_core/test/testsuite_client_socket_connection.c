@@ -12,11 +12,11 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "CuTest.h"
+#include "apx/crypto.h"
 #include "apx/file_manager.h"
 #include "apx/remotefile.h"
 #include "apx/socket_client_connection.h"
 #include "pack.h"
-#include "sha256.h"
 #include "testsocket_spy.h"
 #include <assert.h>
 #include <stddef.h>
@@ -207,7 +207,7 @@ static void test_send_file_info_after_acknowledge_from_single_node(CuTest *tc)
   expected[12] = 0x04; // StartAddress[0]
   expected[13] = (uint8_t)strlen(apx_text); // FileSize[0]
   expected[19] = (uint8_t)RMF_DIGEST_TYPE_SHA256;
-  sha256_calc(&expected[21], apx_text, strlen(apx_text));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((const uint8_t *)apx_text, strlen(apx_text), &expected[21]));
   expected[63] = 'a'; // FileName extension
   expected[64] = 'p'; // FileName extension
   expected[65] = 'x'; // FileName extension

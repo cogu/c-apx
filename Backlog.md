@@ -427,7 +427,7 @@ Logical-definition capture and structured rejection events are owned by item 16.
 
 ## 21. Retire Legacy `cutil` SHA-256 in Favor of Mbed TLS (`apx_crypto_sha256`)
 
-* **Status:** Proposed. Eliminate redundant SHA-256 implementations and unify cryptographic hashing across `c-apx`.
+* **Status:** Completed. Eliminated redundant SHA-256 implementations and unified cryptographic hashing across `c-apx`.
 
 * **Background & Motivation:**
   * Historically, a public-domain implementation of SHA-256 was bundled into the `cutil` submodule (`cutil/include/sha256.h`, `cutil/src/sha256.c`).
@@ -444,7 +444,6 @@ Logical-definition capture and structured rejection events are owned by item 16.
 
 * **Submodule & Build Cleanup (`cutil`):**
   * Remove `sha256.h` dependency from `c-apx` include search paths if feasible.
-  * In the `cutil` upstream repository, deprecate/retire `sha256.c` and `sha256.h` once no consumers remain.
 
 * **Acceptance criteria:**
   * Zero references to `sha256.h` or `sha256_calc()` in `c-apx` source and test files.

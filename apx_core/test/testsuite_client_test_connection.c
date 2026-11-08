@@ -12,10 +12,10 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/client_test_connection.h"
+#include "apx/crypto.h"
 #include "apx/numheader.h"
 #include "apx/remotefile.h"
 #include "pack.h"
-#include "sha256.h"
 #include <stdio.h>
 #include <string.h>
 // #include "client_event_listener_spy.h"
@@ -136,7 +136,7 @@ static void test_local_files_are_published_when_greeting_is_accepted(CuTest *tc)
   expected[12] = 0x04; // StartAddress[0]
   expected[13] = (uint8_t)strlen(apx_text); // FileSize[0]
   expected[19] = (uint8_t)RMF_DIGEST_TYPE_SHA256;
-  sha256_calc(&expected[21], apx_text, strlen(apx_text));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((const uint8_t *)apx_text, strlen(apx_text), &expected[21]));
   expected[63] = 'a'; // FileName extension
   expected[64] = 'p'; // FileName extension
   expected[65] = 'x'; // FileName extension
