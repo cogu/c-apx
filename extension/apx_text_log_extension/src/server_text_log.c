@@ -19,6 +19,7 @@
 #include "adt_str.h"
 #include "apx/event_listener.h"
 #include "apx/extension/server_text_log.h"
+#include "apx/file_info.h"
 #include "apx/node_instance.h"
 #include "apx/port_connector_change_table.h"
 #include "apx/port_instance.h"
@@ -299,9 +300,36 @@ static void on_file_published(
 {
   if (file_info != NULL)
   {
-    apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER", "[%u] Client publish file: %s (size: %u)",
-      apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info),
-      (unsigned int)rmf_file_info_size(file_info));
+    bool const is_signed = rmf_file_info_is_signed(file_info);
+    bool const is_compressed = rmf_file_info_is_compressed(file_info);
+    char const *cmd_name = "RMF_CMD_PUBLISH_FILE_MSG";
+    if (is_signed && is_compressed)
+    {
+      cmd_name = "RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG";
+    }
+    else if (is_compressed)
+    {
+      cmd_name = "RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG";
+    }
+    else if (is_signed)
+    {
+      cmd_name = "RMF_CMD_PUBLISH_SIGNED_FILE_MSG";
+    }
+
+    if (is_compressed)
+    {
+      apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER",
+        "[%u] Client publish file: %s (size: %u, uncompressed: %u, cmd: %s)",
+        apx_server_connection_get_connection_id(connection), rmf_file_info_name(file_info),
+        (unsigned int)rmf_file_info_size(file_info), (unsigned int)rmf_file_info_uncompressed_size(file_info),
+        cmd_name);
+    }
+    else
+    {
+      apx_text_log_base_logf(&self->base, APX_LOG_LEVEL_DEBUG, "SERVER",
+        "[%u] Client publish file: %s (size: %u, cmd: %s)", apx_server_connection_get_connection_id(connection),
+        rmf_file_info_name(file_info), (unsigned int)rmf_file_info_size(file_info), cmd_name);
+    }
   }
 }
 
