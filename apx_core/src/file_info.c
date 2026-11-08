@@ -475,7 +475,15 @@ apx_error_t rmf_file_info_set_name(rmf_file_info_t *self, const char *name)
 {
   if (self != NULL)
   {
-    adt_error_t result = (name != NULL) ? adt_str_set_cstr(&self->name, name) : adt_str_set_cstr(&self->name, "");
+    adt_error_t result;
+    if (name != NULL)
+    {
+      result = adt_str_set_cstr(&self->name, name);
+    }
+    else
+    {
+      result = adt_str_set_cstr(&self->name, "");
+    }
     return finalize_name(self, result);
   }
   return APX_INVALID_ARGUMENT_ERROR;
