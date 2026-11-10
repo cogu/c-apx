@@ -51,7 +51,7 @@ flowchart TD
   1. The APX server starts and accepts standard client connections on the operational port (default: TCP `5000`).
   2. A recording client (`apx-log record`) connects to the dedicated diagnostic endpoint (TCP port `5080` with TLS or `/run/apx/apx_monitor.socket`).
   3. **Capability Announcement**: The server publishes `server.log` with file type `FileStream` (`RMF_FILE_TYPE_STREAM`).
-  4. **Intent-Based Subscription**: The recording client sends an `RMF_CMD_OPEN_FILE` command for `server.log`. Until this file is opened, the server generates zero logging overhead.
+  4. **Intent-Based Subscription**: The recording client opens `server.log` using the `RMF_CMD_STREAM_OPEN` / `RMF_CMD_STREAM_OPEN_RSP` handshake. Until this stream is opened, the server generates zero logging overhead.
   5. **Initial State Snapshot**: Once `server.log` is opened, the server immediately pushes initial state records through the `server.log` stream:
      * All connected client IDs, tags, and connection states.
      * All published `.apx` definitions for active nodes.
@@ -145,24 +145,37 @@ To uphold security, quality-of-service, and deterministic execution, diagnostic 
 
 ## 4. RemoteFile Protocol Integration via Stream Files (`RMF_FILE_TYPE_STREAM`)
 
-A core architectural strength of this design is that **zero modifications to the low-level RemoteFile wire protocol or command area are required**.
+A core architectural strength of this design is that application messages use
+the standard RemoteFile v1.1 stream commands, without adding application-specific
+RemoteFile opcodes.
 
 In the RemoteFile specifications (`apx/specifications/protocols/remotefile1_0.md` and `remotefile1_1.md`), virtual files support multiple storage models:
 * `FixedFile` (`0`): Fixed-size memory region (used for signal memory maps and definition files).
 * `DynamicFile` (`1..3`): Dynamically sized buffer with length header.
-* `FileStream` (`5` in RMFP 1.1, `2` in RMFP 1.0): Continuous, FIFO streaming channel.
+* `FileStream` (`5` in RMFP 1.1): A sequence of discrete application blocks.
+  Stream type `2` was reserved in RMFP 1.0 without implemented stream semantics.
 
 ### 4.1. Semantics of `FileStream` in RemoteFile
 1. **Logical Message Limit**: When publishing a stream file, `FileSize`
-   specifies the maximum logical write accepted by that file.
+   specifies the upper bound on one complete logical write. Stream-open
+   negotiation selects `BlockSize <= FileSize`; this limit applies to the
+   combined payload of all fragments, not to each fragment separately.
 2. **Fixed Start Address**: Once the stream file is opened, every logical write
-   starts at `file->address`.
+   starts at `file->address`. Its transport fragments target that address plus
+   the number of preceding payload bytes in the current write. The next
+   logical write restarts at `file->address`.
 3. **Message Preservation**: A completed logical write is delivered as one
    stream message. NumHeader frames each RMFP packet, and the RemoteFile
    `MORE_BIT` reassembles a fragmented logical write before the application is
    notified.
 4. **No Inner Framing**: An application message does not repeat its size.
    Multiple application messages are not packed into one RemoteFile write.
+
+The range `[file->address, file->address + FileSize)` is a reusable address
+reservation for one block, not storage for the stream's entire history.
+Fragment payloads stay inside this range. `WindowBlocks` and the cumulative
+credit counters limit outstanding complete blocks; they do not move the
+stream's addresses or enlarge its reserved range.
 
 ### 4.2. Capability Announcement & Intent-Based Subscription
 
@@ -179,14 +192,17 @@ Instead of hardcoded greeting sub-modes or custom "logging enable" commands, cap
         |                                                                     |
         |--- (Scenario A: Logging Client - apx-log record) -------------------|
         |                                                                     |
-        |---> RMF_CMD_OPEN_FILE (address of "server.log") ------------------->|  (Subscribe to log stream)
+        |---> RMF_CMD_STREAM_OPEN ("server.log") ---------------------------->|  (Request block/window limits)
+        |<--- RMF_CMD_STREAM_OPEN_RSP ----------------------------------------|  (Accept subscription)
         |<=== RMF File Write (chunked event records into "server.log") =======|  (Streaming active)
         |                                                                     |
         |--- (Scenario B: Diagnostic Client - apx-mon) -----------------------|
         |                                                                     |
         |---> RMF_CMD_PUBLISH_FILE ("apx.diag.v1.request", FileStream) ------>|  (Client query channel)
-        |<--- RMF_CMD_OPEN_FILE (address of request file) --------------------|  (Server listens for queries)
-        |---> RMF_CMD_OPEN_FILE (address of response file) ------------------>|  (Client listens for replies)
+        |<--- RMF_CMD_STREAM_OPEN (request file) -----------------------------|  (Server listens for queries)
+        |---> RMF_CMD_STREAM_OPEN_RSP --------------------------------------->|  (Accept request stream)
+        |---> RMF_CMD_STREAM_OPEN (response file) ---------------------------->|  (Client listens for replies)
+        |<--- RMF_CMD_STREAM_OPEN_RSP ----------------------------------------|  (Accept response stream)
         |                                                                     |
         |===> RMF File Write (one request message) ===========================>|  (Send query)
         |<=== RMF File Write (one response message) ===========================|  (Receive reply)

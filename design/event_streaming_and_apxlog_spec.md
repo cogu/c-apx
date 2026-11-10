@@ -22,18 +22,21 @@ The normative lower-layer specifications are:
 
 ## 2. Protocol layering
 
-On a stream transport, one complete event has the following framing:
+On a stream transport, each RemoteFile transport message has the following
+framing:
 
 ```text
 +----------------------+---------------------------------------+
 | NumHeader32          | RemoteFile write                      |
-| RMFP payload length  | AddressHeader + one event payload     |
+| RMFP payload length  | AddressHeader + event bytes/fragment  |
 +----------------------+---------------------------------------+
 ```
 
-The NumHeader32 value already defines the RMFP message boundary. The
-AddressHeader identifies `server.log`. Therefore an event payload MUST NOT
-contain `record_len`, `payload_len`, or another application framing field.
+NumHeader32 defines the boundary of each transport message. One unfragmented
+event fits in one such message; a fragmented event spans several messages and
+ends with `MORE_BIT = 0`. The complete logical write defines the event boundary.
+Therefore an event payload MUST NOT contain `record_len`, `payload_len`, or
+another application framing field.
 
 The following rules are normative:
 
@@ -43,9 +46,18 @@ The following rules are normative:
 4. RMFP MAY fragment one logical write with `MORE_BIT`. The RemoteFile receiver
    reassembles those fragments and delivers the event only after the fragment
    with `MORE_BIT = 0`.
-5. Every write starts at the advertised start address of `server.log`.
-6. The event size is the reassembled RemoteFile data size. The advertised
-   `FileSize` of `server.log` is the maximum accepted event size.
+5. Every logical write starts at the advertised start address of `server.log`.
+   Transport fragments of that event use consecutive addresses:
+   `StartAddress + preceding event payload bytes`. The next event starts again
+   at `StartAddress`; addresses do not accumulate across events.
+6. The event size is the reassembled RemoteFile data size and MUST NOT exceed
+   the negotiated `BlockSize`, which MUST NOT exceed the advertised `FileSize`.
+   These limits apply to the complete event, not to each fragment separately.
+
+The virtual range `[StartAddress, StartAddress + FileSize)` is reused for every
+event. Fragment payloads MUST remain inside that range and MUST NOT extend
+into an adjacent file. The receiver delivers only the complete event, with
+application offset zero.
 
 These rules preserve RemoteFile message boundaries all the way to the event
 decoder. A receiver never scans a byte stream to find an event boundary.
@@ -65,12 +77,14 @@ limit and MUST be at least large enough for the common event header plus one
 byte. A recommended default is 1 MiB.
 
 Publishing the file advertises capability only. The server MUST NOT create a
-snapshot or enable event serialization until the client sends
-`RMF_CMD_FILE_OPEN` for `server.log`.
+snapshot or enable event serialization until the client requests
+`RMF_CMD_STREAM_OPEN` for `server.log` and negotiation succeeds. The server sends
+a successful `RMF_CMD_STREAM_OPEN_RSP` before sending stream data. Ordinary
+`RMF_CMD_FILE_OPEN` does not open a `FileStream`.
 
 ### 3.2 Start and stop
 
-After the open request, the server sends:
+After successful stream-open negotiation, the server sends:
 
 1. one `STREAM_BEGIN` event;
 2. a coherent snapshot, with `SNAPSHOT` set on every snapshot event;
@@ -298,11 +312,17 @@ Payload:
 | `file_offset` | `U32` | Offset from the published file start address |
 | `data` | `Bytes` | Bytes written, extending to the end of the event |
 
-There is no `data_len`; the enclosing RMFP message determines it.
+There is no `data_len`; the reassembled logical RemoteFile write determines it.
 
-If one observed write would exceed the advertised `server.log` `FileSize`, the
-server emits consecutive `FILE_WRITE` events with increasing offsets. Each
-event represents a complete write range and can be replayed independently.
+If one observed write cannot fit in a single event within the negotiated
+`server.log` `BlockSize`, the server emits consecutive `FILE_WRITE` events with
+increasing `file_offset` payload fields. Each event, including its event header
+and offset field, MUST fit within `BlockSize`. Each represents a complete write
+range and can be replayed independently.
+
+`file_offset` identifies bytes in the observed file; it is not the RemoteFile
+address of `server.log`. Every event still begins at the stream's advertised
+start address.
 
 Definition text is not a special event. A snapshot is self-contained because
 the `.apx` file is represented by `FILE_PUBLISH` followed by one or more
@@ -490,7 +510,8 @@ Workflow:
 1. Connect to the server's diagnostic endpoint.
 2. Wait for `server.log` to be published by the server.
 3. Open output `<FILE>` and write the 64-byte file header with `flags = 0` (unfinalized), `capture_start_unix_ns = 0`, and `data_offset = 64`.
-4. Send `RMF_CMD_OPEN_FILE` for `server.log`.
+4. Send `RMF_CMD_STREAM_OPEN` for `server.log` and complete the
+   `RMF_CMD_STREAM_OPEN_RSP` negotiation.
 5. Upon receiving `STREAM_BEGIN`, update `capture_start_unix_ns` in memory.
 6. For each delivered event, write canonical NumHeader32 followed by the raw event payload.
 7. Upon SIGINT (`Ctrl+C`), SIGTERM, or server disconnection, seek to offset 0 and finalize the 64-byte header:
@@ -565,6 +586,10 @@ recorded `.in` values are observational and are not injected as providers.
 Implementations require tests for:
 
 * one event per complete RemoteFile write, including `MORE_BIT` reassembly;
+* consecutive fragment addresses within an event and reset to the stream's
+  start address for the next event;
+* complete-event limits at the negotiated `BlockSize`, including rejection
+  before a fragment could extend into a neighbouring file;
 * rejection of packed, truncated, oversized, and malformed events;
 * snapshot/live handoff while files are changing;
 * queue overflow, sequence gaps, and `EVENTS_DROPPED`;

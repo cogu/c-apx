@@ -39,9 +39,10 @@ The security and listener configuration are specified separately in
 | `apx.diag.v1.response` | Server | Client | `FileStream` (`5`) | Responses |
 | `apx.diag.v1.notify` | Server | Client | `FileStream` (`5`) | Subscription notifications |
 
-`FileSize` is the maximum logical message size accepted on that channel. The
-recommended minimum is 64 KiB. A peer MUST reject a message larger than the
-advertised size.
+`FileSize` is the published upper bound on one complete logical message for
+that channel. The recommended minimum is 64 KiB. Stream-open negotiation may
+select a smaller `BlockSize`; a peer MUST reject a message larger than that
+negotiated limit, even if it is fragmented.
 
 A server supporting another incompatible major version publishes another set
 of versioned files. Minor-compatible additions use new opcodes, flags, or
@@ -58,6 +59,10 @@ After the RMFP 1.1 handshake:
 5. The client may open `apx.diag.v1.notify` before creating a subscription.
 6. Requests may begin after steps 3 and 4 are complete.
 
+Each stream is opened with `RMF_CMD_STREAM_OPEN` and a successful
+`RMF_CMD_STREAM_OPEN_RSP`, negotiating `BlockSize` and `WindowBlocks`. An
+ordinary `RMF_CMD_FILE_OPEN` is not used for these stream channels.
+
 The server MUST NOT send responses until the response file is open. It MUST
 reject subscription requests with `APX_INVALID_STATE_ERROR` unless the
 notification file is open.
@@ -73,7 +78,7 @@ On TCP or a UNIX stream socket:
 ```text
 +----------------------+----------------------------------------------+
 | NumHeader32          | RemoteFile write                             |
-| RMFP payload length  | AddressHeader + one diagnostic message       |
+| RMFP payload length  | AddressHeader + message data or fragment     |
 +----------------------+----------------------------------------------+
 ```
 
@@ -82,7 +87,12 @@ The following rules are normative:
 * one logical write to a diagnostic file contains exactly one message;
 * messages are never concatenated in one write;
 * RMFP `MORE_BIT` fragments are reassembled before diagnostic decoding;
-* every write starts at the advertised stream-file address; and
+* every logical write starts at the advertised stream-file address;
+* transport fragments use that address plus the number of preceding message
+  payload bytes, remaining within the published file range and negotiated
+  `BlockSize`;
+* the next message restarts at the stream-file address, rather than continuing
+  the preceding message's offsets; and
 * the message ends with the logical RemoteFile write.
 
 A decoder therefore receives `(channel, bytes, size)` and never searches for a
@@ -241,8 +251,9 @@ The response begins:
 | `item_count` | `U16` | Items in this response |
 | `reserved` | `U16` | Zero |
 
-The server chooses an actual page size that fits the response file's
-advertised `FileSize`. All pages for one `snapshot_id` describe one immutable
+The server chooses an actual page size, including its message envelope, that
+fits the response stream's negotiated `BlockSize`. All pages for one
+`snapshot_id` describe one immutable
 logical view, even while the live server changes.
 
 Snapshot tokens are scoped to a diagnostic connection. The server may expire
@@ -557,8 +568,8 @@ The server MUST:
 * avoid leaking endpoint or node information in unauthenticated errors;
 * validate every count, length, cursor, ID, and arithmetic operation before
   allocation or access;
-* cap allocations by the channel's advertised `FileSize` and configured
-  resource limits; and
+* cap reassembly allocations by the channel's negotiated `BlockSize` and
+  account for its receive window and configured resource limits; and
 * revoke temporary definition files when their request lifetime ends.
 
 ## 12. Validation requirements
@@ -568,6 +579,8 @@ Implementations require tests for:
 * NumHeader32 plus AddressHeader parsing with one diagnostic message per
   logical RemoteFile write;
 * `MORE_BIT` reassembly before dispatch;
+* fragment bounds within one message and address reset between consecutive
+  messages, including a stream adjacent to another mapped file;
 * truncated headers, invalid UTF-8, impossible counts, trailing bytes, unknown
   flags, duplicate request IDs, and oversized messages;
 * out-of-order response correlation;
