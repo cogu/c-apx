@@ -1502,6 +1502,10 @@ static apx_error_t parse_protocol_header_line(apx_server_connection_t *self, uin
       else
       {
         result = bstr_match_cstr(begin, end, "Message-Size:");
+        if ((result == NULL) || (result == begin))
+        {
+          result = bstr_match_cstr(begin, end, "NumHeader-Format:");
+        }
       }
       if (result > begin)
       {

@@ -43,7 +43,8 @@ static void test_remotefile_protocol_version_is_parsed_from_greeting_header(CuTe
 static void test_message_format_is_parsed_from_greeting_header(CuTest *tc);
 static void test_legacy_greeting_without_headers_is_accepted(CuTest *tc);
 static void test_legacy_num_header_format_is_parsed_from_greeting_header(CuTest *tc);
-static void test_size_header_must_match_protocol_version(CuTest *tc);
+static void test_legacy_greeting_rejects_message_size(CuTest *tc);
+static void test_greeting_rejects_invalid_message_format(CuTest *tc);
 static void test_default_connection_type_is_parsed_from_greeting_header(CuTest *tc);
 static void test_monitor_connection_type_is_parsed_from_greeting_header(CuTest *tc);
 static void test_event_connection_type_is_parsed_from_greeting_header(CuTest *tc);
@@ -76,7 +77,8 @@ CuSuite *testsuite_apx_server_connection(void)
   SUITE_ADD_TEST(suite, test_message_format_is_parsed_from_greeting_header);
   SUITE_ADD_TEST(suite, test_legacy_greeting_without_headers_is_accepted);
   SUITE_ADD_TEST(suite, test_legacy_num_header_format_is_parsed_from_greeting_header);
-  SUITE_ADD_TEST(suite, test_size_header_must_match_protocol_version);
+  SUITE_ADD_TEST(suite, test_legacy_greeting_rejects_message_size);
+  SUITE_ADD_TEST(suite, test_greeting_rejects_invalid_message_format);
   SUITE_ADD_TEST(suite, test_default_connection_type_is_parsed_from_greeting_header);
   SUITE_ADD_TEST(suite, test_monitor_connection_type_is_parsed_from_greeting_header);
   SUITE_ADD_TEST(suite, test_event_connection_type_is_parsed_from_greeting_header);
@@ -660,17 +662,39 @@ static void test_remotefile_protocol_version_is_parsed_from_greeting_header(CuTe
 
 static void test_message_format_is_parsed_from_greeting_header(CuTest *tc)
 {
-  apx_server_test_connection_t *connection;
-  char const *greeting = "RMFP/1.1\n"
-                         "Message-Size: 16\n"
-                         "\n";
-  connection = apx_server_test_connection_new();
-  CuAssertPtrNotNull(tc, connection);
-  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_custom_greeting_header(connection, greeting));
-  apx_server_test_connection_run(connection);
-  CuAssertUIntEquals(tc, UINT16_SIZE, apx_server_test_connection_get_num_header_size(connection));
+  char const *const attributes[] = {"Message-Size", "NumHeader-Format"};
+  unsigned int const sizes[] = {16u, 32u};
+  char const *const separators[] = {"", " "};
+  uint32_t const connection_id = 42u;
 
-  apx_server_test_connection_delete(connection);
+  for (size_t i = 0u; i < sizeof(attributes) / sizeof(attributes[0]); i++)
+  {
+    for (size_t j = 0u; j < sizeof(sizes) / sizeof(sizes[0]); j++)
+    {
+      for (size_t k = 0u; k < sizeof(separators) / sizeof(separators[0]); k++)
+      {
+        char greeting[RMF_GREETING_MAX_LEN];
+        snprintf(greeting, sizeof(greeting), "RMFP/1.1\n%s:%s%u\n\n", attributes[i], separators[k], sizes[j]);
+        apx_server_test_connection_t *connection = apx_server_test_connection_new();
+        CuAssertPtrNotNull(tc, connection);
+        apx_server_test_connection_set_connection_id(connection, connection_id);
+        apx_connection_base_start(&connection->base.base);
+        CuAssertUIntEquals(
+          tc, APX_NO_ERROR, apx_server_test_connection_send_custom_greeting_header(connection, greeting));
+        CuAssertUIntEquals(tc, RMF_PROTOCOL_VERSION_ID_1_1, apx_server_test_connection_get_rmf_proto_id(connection));
+        CuAssertUIntEquals(tc, sizes[j] / 8u, apx_server_test_connection_get_num_header_size(connection));
+        apx_server_test_connection_run(connection);
+        CuAssertIntEquals(tc, 1, apx_server_test_connection_log_length(connection));
+        adt_bytearray_t *packet = apx_server_test_connection_get_log_packet(connection, 0);
+        CuAssertPtrNotNull(tc, packet);
+        CuAssertIntEquals(tc, 13, adt_bytearray_length(packet));
+        uint8_t const *data = adt_bytearray_const_data(packet);
+        CuAssertUIntEquals(tc, RMF_CMD_ACCEPT_HEADER, unpackLE(data + 5u, UINT32_SIZE));
+        CuAssertUIntEquals(tc, connection_id, unpackLE(data + 9u, UINT32_SIZE));
+        apx_server_test_connection_delete(connection);
+      }
+    }
+  }
 }
 
 static void test_legacy_greeting_without_headers_is_accepted(CuTest *tc)
@@ -706,19 +730,33 @@ static void test_legacy_num_header_format_is_parsed_from_greeting_header(CuTest 
   apx_server_test_connection_delete(connection);
 }
 
-static void test_size_header_must_match_protocol_version(CuTest *tc)
+static void test_legacy_greeting_rejects_message_size(CuTest *tc)
 {
   apx_server_test_connection_t *connection = apx_server_test_connection_new();
   CuAssertPtrNotNull(tc, connection);
   CuAssertUIntEquals(tc, APX_PARSE_ERROR,
     apx_server_test_connection_send_custom_greeting_header(connection, "RMFP/1.0\nMessage-Size: 32\n\n"));
   apx_server_test_connection_delete(connection);
+}
 
-  connection = apx_server_test_connection_new();
-  CuAssertPtrNotNull(tc, connection);
-  CuAssertUIntEquals(tc, APX_PARSE_ERROR,
-    apx_server_test_connection_send_custom_greeting_header(connection, "RMFP/1.1\nNumHeader-Format: 32\n\n"));
-  apx_server_test_connection_delete(connection);
+static void test_greeting_rejects_invalid_message_format(CuTest *tc)
+{
+  char const *const attributes[] = {"Message-Size", "NumHeader-Format"};
+  char const *const values[] = {"", "8", "64", "invalid"};
+  for (size_t i = 0u; i < sizeof(attributes) / sizeof(attributes[0]); i++)
+  {
+    for (size_t j = 0u; j < sizeof(values) / sizeof(values[0]); j++)
+    {
+      char greeting[RMF_GREETING_MAX_LEN];
+      snprintf(greeting, sizeof(greeting), "RMFP/1.1\n%s: %s\n\n", attributes[i], values[j]);
+      apx_server_test_connection_t *connection = apx_server_test_connection_new();
+      CuAssertPtrNotNull(tc, connection);
+      CuAssertUIntEquals(
+        tc, APX_PARSE_ERROR, apx_server_test_connection_send_custom_greeting_header(connection, greeting));
+      CuAssertIntEquals(tc, 0, apx_server_test_connection_log_length(connection));
+      apx_server_test_connection_delete(connection);
+    }
+  }
 }
 
 static void test_default_connection_type_is_parsed_from_greeting_header(CuTest *tc)
