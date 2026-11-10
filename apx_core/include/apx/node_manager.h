@@ -50,6 +50,7 @@ typedef struct apx_node_manager_tag
   apx_mode_t mode;
   bool definition_compression_enabled;
   int definition_compression_level;
+  int32_t last_error_line;
   struct apx_connection_base_tag *parent_connection; // Weak reference
   MUTEX_T lock; // locking mechanism
 } apx_node_manager_t;

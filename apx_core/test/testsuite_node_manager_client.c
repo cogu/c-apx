@@ -175,6 +175,7 @@ static void test_node_containing_out_of_range_range_init_value(CuTest *tc)
 
   apx_node_manager_t *manager = apx_node_manager_new(APX_CLIENT_MODE);
   CuAssertIntEquals(tc, APX_VALUE_RANGE_ERROR, apx_node_manager_build_node(manager, apx_text));
+  CuAssertIntEquals(tc, 3, apx_node_manager_get_error_line(manager));
   apx_node_manager_delete(manager);
 }
 
@@ -542,6 +543,7 @@ static void test_provide_port_compilation_failure_first_port(CuTest *tc)
                          "P\"GoodPort2\"S:=0\n";
   apx_node_manager_t *manager = apx_node_manager_new(APX_CLIENT_MODE);
   CuAssertIntEquals(tc, APX_ELEMENT_TYPE_ERROR, apx_node_manager_build_node(manager, apx_text));
+  CuAssertIntEquals(tc, 3, apx_node_manager_get_error_line(manager));
   CuAssertUIntEquals(tc, 0u, apx_node_manager_length(manager));
   apx_node_manager_delete(manager);
 }
@@ -555,6 +557,7 @@ static void test_provide_port_compilation_failure_middle_port(CuTest *tc)
                          "P\"GoodPort2\"S:=0\n";
   apx_node_manager_t *manager = apx_node_manager_new(APX_CLIENT_MODE);
   CuAssertIntEquals(tc, APX_ELEMENT_TYPE_ERROR, apx_node_manager_build_node(manager, apx_text));
+  CuAssertIntEquals(tc, 4, apx_node_manager_get_error_line(manager));
   CuAssertUIntEquals(tc, 0u, apx_node_manager_length(manager));
   apx_node_manager_delete(manager);
 }
@@ -568,6 +571,7 @@ static void test_provide_port_compilation_failure_last_port(CuTest *tc)
                          "P\"BadPort\"u:=1\n";
   apx_node_manager_t *manager = apx_node_manager_new(APX_CLIENT_MODE);
   CuAssertIntEquals(tc, APX_ELEMENT_TYPE_ERROR, apx_node_manager_build_node(manager, apx_text));
+  CuAssertIntEquals(tc, 5, apx_node_manager_get_error_line(manager));
   CuAssertUIntEquals(tc, 0u, apx_node_manager_length(manager));
   apx_node_manager_delete(manager);
 }
@@ -581,6 +585,7 @@ static void test_require_port_compilation_failure_first_port(CuTest *tc)
                          "R\"GoodPort2\"S\n";
   apx_node_manager_t *manager = apx_node_manager_new(APX_CLIENT_MODE);
   CuAssertIntEquals(tc, APX_ELEMENT_TYPE_ERROR, apx_node_manager_build_node(manager, apx_text));
+  CuAssertIntEquals(tc, 3, apx_node_manager_get_error_line(manager));
   CuAssertUIntEquals(tc, 0u, apx_node_manager_length(manager));
   apx_node_manager_delete(manager);
 }
@@ -594,6 +599,7 @@ static void test_require_port_compilation_failure_middle_port(CuTest *tc)
                          "R\"GoodPort2\"S\n";
   apx_node_manager_t *manager = apx_node_manager_new(APX_CLIENT_MODE);
   CuAssertIntEquals(tc, APX_ELEMENT_TYPE_ERROR, apx_node_manager_build_node(manager, apx_text));
+  CuAssertIntEquals(tc, 4, apx_node_manager_get_error_line(manager));
   CuAssertUIntEquals(tc, 0u, apx_node_manager_length(manager));
   apx_node_manager_delete(manager);
 }
@@ -607,6 +613,7 @@ static void test_require_port_compilation_failure_last_port(CuTest *tc)
                          "R\"BadPort\"u\n";
   apx_node_manager_t *manager = apx_node_manager_new(APX_CLIENT_MODE);
   CuAssertIntEquals(tc, APX_ELEMENT_TYPE_ERROR, apx_node_manager_build_node(manager, apx_text));
+  CuAssertIntEquals(tc, 5, apx_node_manager_get_error_line(manager));
   CuAssertUIntEquals(tc, 0u, apx_node_manager_length(manager));
   apx_node_manager_delete(manager);
 }
@@ -622,6 +629,7 @@ static void test_mixed_ports_require_compilation_failure(CuTest *tc)
                          "R\"GoodRequire2\"C\n";
   apx_node_manager_t *manager = apx_node_manager_new(APX_CLIENT_MODE);
   CuAssertIntEquals(tc, APX_ELEMENT_TYPE_ERROR, apx_node_manager_build_node(manager, apx_text));
+  CuAssertIntEquals(tc, 6, apx_node_manager_get_error_line(manager));
   CuAssertUIntEquals(tc, 0u, apx_node_manager_length(manager));
   apx_node_manager_delete(manager);
 }

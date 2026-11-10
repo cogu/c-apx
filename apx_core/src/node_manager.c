@@ -41,15 +41,16 @@ static apx_error_t build_node_instance(
 static void attach_node(apx_node_manager_t *self, apx_node_instance_t *node_instance);
 static apx_error_t create_ports_on_node_instance(apx_node_manager_t *self, apx_node_instance_t *node_instance,
   apx_node_t const *node, apx_size_t *expected_provide_port_data_size, apx_size_t *expected_require_port_data_size);
-static apx_error_t create_init_data_on_node_instance(apx_node_instance_t *node_instance, apx_node_t const *node,
-  apx_size_t expected_provide_port_data_size, size_t expected_require_port_data_size);
+static apx_error_t create_init_data_on_node_instance(apx_node_manager_t *self, apx_node_instance_t *node_instance,
+  apx_node_t const *node, apx_size_t expected_provide_port_data_size, size_t expected_require_port_data_size);
 static apx_error_t create_port_init_data(
   apx_vm_t *vm, apx_port_instance_t *port_instance, dtl_dv_t *value, uint8_t *data, size_t data_size);
 static apx_error_t create_data_element_list_on_node_instance(
-  apx_node_instance_t *node_instance, apx_node_t const *node);
+  apx_node_manager_t *self, apx_node_instance_t *node_instance, apx_node_t const *node);
 static apx_error_t update_data_element_list_on_port(
   adt_ary_t *list, adt_hash_t *map, apx_port_instance_t *port_instance, apx_port_t const *parsed_port);
-static apx_error_t create_computation_list_on_node_instance(apx_node_instance_t *node_instance, apx_node_t const *node);
+static apx_error_t create_computation_list_on_node_instance(
+  apx_node_manager_t *self, apx_node_instance_t *node_instance, apx_node_t const *node);
 static apx_error_t update_computation_list_on_port(
   adt_ary_t *list, adt_hash_t *map, apx_port_instance_t *port_instance, apx_port_t const *parsed_port);
 static apx_error_t create_port_signatures_on_node_instance(apx_node_instance_t *node_instance);
@@ -73,6 +74,7 @@ void apx_node_manager_create(apx_node_manager_t *self, apx_mode_t mode)
     self->definition_compression_level = APX_COMPRESSION_DEFAULT_LEVEL;
     self->last_attached = NULL;
     self->parent_connection = NULL;
+    self->last_error_line = 0;
     apx_compiler_create(&self->compiler);
     apx_istream_create(&self->stream);
     apx_parser_create(&self->parser, &self->stream);
@@ -118,6 +120,7 @@ apx_error_t apx_node_manager_build_node(apx_node_manager_t *self, char const *de
 {
   if ((self != NULL) && (definition_text != NULL))
   {
+    self->last_error_line = 0;
     size_t definition_size = strlen(definition_text);
     if (definition_size > UINT32_MAX)
     {
@@ -127,6 +130,7 @@ apx_error_t apx_node_manager_build_node(apx_node_manager_t *self, char const *de
     apx_node_t *node = NULL;
     if (result != APX_NO_ERROR)
     {
+      self->last_error_line = apx_parser_get_error_line(&self->parser);
       return result;
     }
     node = apx_parser_take_last_node(&self->parser);
@@ -157,6 +161,7 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
 {
   if (self != NULL && (node_instance != NULL))
   {
+    self->last_error_line = 0;
     apx_file_t *def_file = apx_node_instance_get_definition_file(node_instance);
     apx_definition_failure_stage_t stage = APX_DEFINITION_STAGE_ALLOCATION;
     apx_error_t result = APX_NO_ERROR;
@@ -243,6 +248,10 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
     stage = APX_DEFINITION_STAGE_PARSING;
     apx_istream_reset(&self->stream);
     result = apx_parser_parse_bstr(&self->parser, definition_data, definition_data + definition_size);
+    if (result != APX_NO_ERROR)
+    {
+      self->last_error_line = apx_parser_get_error_line(&self->parser);
+    }
     apx_istream_reset(&self->stream);
     adt_bytearray_destroy(&self->stream.buf);
     adt_bytearray_create(&self->stream.buf);
@@ -513,6 +522,10 @@ int32_t apx_node_manager_get_error_line(apx_node_manager_t *self)
 {
   if (self != NULL)
   {
+    if (self->last_error_line > 0)
+    {
+      return self->last_error_line;
+    }
     return apx_parser_get_error_line(&self->parser);
   }
   return -1;
@@ -617,7 +630,7 @@ static apx_error_t build_node_instance(
   if (result == APX_NO_ERROR)
   {
     result = create_init_data_on_node_instance(
-      node_instance, node, expected_provide_port_data_size, expected_require_port_data_size);
+      self, node_instance, node, expected_provide_port_data_size, expected_require_port_data_size);
   }
   if (result == APX_NO_ERROR)
   {
@@ -680,12 +693,14 @@ static apx_error_t create_ports_on_node_instance(apx_node_manager_t *self, apx_n
       pack_program = apx_compiler_compile_port(&self->compiler, port, APX_PACK_PROGRAM, &result);
       if (result != APX_NO_ERROR)
       {
+        self->last_error_line = port->line_number;
         break;
       }
       result = apx_node_instance_create_provide_port(
         node_instance, port_id, port->name, pack_program, data_offset, &data_size);
       if (result != APX_NO_ERROR)
       {
+        self->last_error_line = port->line_number;
         break;
       }
       data_offset += data_size;
@@ -704,11 +719,13 @@ static apx_error_t create_ports_on_node_instance(apx_node_manager_t *self, apx_n
         pack_program = apx_compiler_compile_port(&self->compiler, port, APX_PACK_PROGRAM, &result);
         if (result != APX_NO_ERROR)
         {
+          self->last_error_line = port->line_number;
           break;
         }
         unpack_program = apx_compiler_compile_port(&self->compiler, port, APX_UNPACK_PROGRAM, &result);
         if (result != APX_NO_ERROR)
         {
+          self->last_error_line = port->line_number;
           APX_PROGRAM_DELETE(pack_program);
           break;
         }
@@ -716,6 +733,7 @@ static apx_error_t create_ports_on_node_instance(apx_node_manager_t *self, apx_n
           node_instance, port_id, port->name, pack_program, unpack_program, data_offset, &data_size);
         if (result != APX_NO_ERROR)
         {
+          self->last_error_line = port->line_number;
           break;
         }
         data_offset += data_size;
@@ -725,11 +743,11 @@ static apx_error_t create_ports_on_node_instance(apx_node_manager_t *self, apx_n
   }
   if (result == APX_NO_ERROR)
   {
-    result = create_data_element_list_on_node_instance(node_instance, node);
+    result = create_data_element_list_on_node_instance(self, node_instance, node);
   }
   if (result == APX_NO_ERROR)
   {
-    result = create_computation_list_on_node_instance(node_instance, node);
+    result = create_computation_list_on_node_instance(self, node_instance, node);
   }
   if ((result == APX_NO_ERROR) && (self->mode == APX_SERVER_MODE))
   {
@@ -738,8 +756,8 @@ static apx_error_t create_ports_on_node_instance(apx_node_manager_t *self, apx_n
   return result;
 }
 
-static apx_error_t create_init_data_on_node_instance(apx_node_instance_t *node_instance, apx_node_t const *node,
-  apx_size_t expected_provide_port_data_size, size_t expected_require_port_data_size)
+static apx_error_t create_init_data_on_node_instance(apx_node_manager_t *self, apx_node_instance_t *node_instance,
+  apx_node_t const *node, apx_size_t expected_provide_port_data_size, size_t expected_require_port_data_size)
 {
   apx_size_t provide_port_data_size = 0u;
   apx_size_t require_port_data_size = 0u;
@@ -791,6 +809,10 @@ static apx_error_t create_init_data_on_node_instance(apx_node_instance_t *node_i
           create_port_init_data(&vm, port_instance, proper_init_value, provide_port_data + data_offset, data_size);
         if (retval != APX_NO_ERROR)
         {
+          if (self != NULL)
+          {
+            self->last_error_line = parsed_port->line_number;
+          }
           break;
         }
       }
@@ -817,6 +839,10 @@ static apx_error_t create_init_data_on_node_instance(apx_node_instance_t *node_i
             create_port_init_data(&vm, port_instance, proper_init_value, require_port_data + data_offset, data_size);
           if (retval != APX_NO_ERROR)
           {
+            if (self != NULL)
+            {
+              self->last_error_line = parsed_port->line_number;
+            }
             break;
           }
         }
@@ -846,7 +872,8 @@ static apx_error_t create_port_init_data(
   return apx_vm_pack_value(vm, value);
 }
 
-static apx_error_t create_data_element_list_on_node_instance(apx_node_instance_t *node_instance, apx_node_t const *node)
+static apx_error_t create_data_element_list_on_node_instance(
+  apx_node_manager_t *self, apx_node_instance_t *node_instance, apx_node_t const *node)
 {
   apx_size_t const num_provide_ports = (apx_size_t)apx_node_num_provide_ports(node);
   apx_size_t const num_require_ports = (apx_size_t)apx_node_num_require_ports(node);
@@ -869,6 +896,10 @@ static apx_error_t create_data_element_list_on_node_instance(apx_node_instance_t
     retval = update_data_element_list_on_port(&data_element_list, &data_element_map, port_instance, parsed_port);
     if (retval != APX_NO_ERROR)
     {
+      if (self != NULL)
+      {
+        self->last_error_line = parsed_port->line_number;
+      }
       break;
     }
   }
@@ -886,6 +917,10 @@ static apx_error_t create_data_element_list_on_node_instance(apx_node_instance_t
       retval = update_data_element_list_on_port(&data_element_list, &data_element_map, port_instance, parsed_port);
       if (retval != APX_NO_ERROR)
       {
+        if (self != NULL)
+        {
+          self->last_error_line = parsed_port->line_number;
+        }
         break;
       }
     }
@@ -936,7 +971,8 @@ static apx_error_t update_data_element_list_on_port(
   return APX_NO_ERROR;
 }
 
-static apx_error_t create_computation_list_on_node_instance(apx_node_instance_t *node_instance, apx_node_t const *node)
+static apx_error_t create_computation_list_on_node_instance(
+  apx_node_manager_t *self, apx_node_instance_t *node_instance, apx_node_t const *node)
 {
   apx_size_t const num_provide_ports = (apx_size_t)apx_node_num_provide_ports(node);
   apx_size_t const num_require_ports = (apx_size_t)apx_node_num_require_ports(node);
@@ -959,6 +995,10 @@ static apx_error_t create_computation_list_on_node_instance(apx_node_instance_t 
     retval = update_computation_list_on_port(&computation_lists, &computation_map, port_instance, parsed_port);
     if (retval != APX_NO_ERROR)
     {
+      if (self != NULL)
+      {
+        self->last_error_line = parsed_port->line_number;
+      }
       break;
     }
   }
@@ -976,6 +1016,10 @@ static apx_error_t create_computation_list_on_node_instance(apx_node_instance_t 
       retval = update_computation_list_on_port(&computation_lists, &computation_map, port_instance, parsed_port);
       if (retval != APX_NO_ERROR)
       {
+        if (self != NULL)
+        {
+          self->last_error_line = parsed_port->line_number;
+        }
         break;
       }
     }

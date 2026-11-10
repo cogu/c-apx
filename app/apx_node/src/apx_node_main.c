@@ -22,6 +22,7 @@
 #endif
 #include "adt_str.h"
 #include "apx/compress.h"
+#include "apx/error.h"
 #include "apx_connection.h"
 #include "argparse.h"
 #include "msocket.h"
@@ -250,16 +251,15 @@ int main(int argc, char **argv)
         }
         if (rc != APX_NO_ERROR)
         {
-          if (rc == APX_PARSE_ERROR)
+          int32_t errorLine = apx_connection_get_last_error_line(m_apx_connection);
+          printf("Failed\n");
+          if (errorLine > 0)
           {
-            int32_t errorLine = apx_connection_get_last_error_line(m_apx_connection);
-            printf("Failed\n");
-            fprintf(stderr, "Error: Parse error on line %d\n", (int)errorLine);
+            fprintf(stderr, "Error on line %d: %s (code %d)\n", (int)errorLine, apx_strerror(rc), (int)rc);
           }
           else
           {
-            printf("Failed\n");
-            fprintf(stderr, "Error: attach node failed with error code %d\n", (int)rc);
+            fprintf(stderr, "Error: %s (code %d)\n", apx_strerror(rc), (int)rc);
           }
           retval = 1;
           goto SHUTDOWN;
