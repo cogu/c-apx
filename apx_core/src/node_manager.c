@@ -678,20 +678,17 @@ static apx_error_t create_ports_on_node_instance(apx_node_manager_t *self, apx_n
       apx_size_t data_size = 0u;
       assert(port != NULL);
       pack_program = apx_compiler_compile_port(&self->compiler, port, APX_PACK_PROGRAM, &result);
-      if (result == APX_NO_ERROR)
+      if (result != APX_NO_ERROR)
       {
-        result = apx_node_instance_create_provide_port(
-          node_instance, port_id, port->name, pack_program, data_offset, &data_size);
-        if (result == APX_NO_ERROR)
-        {
-          data_offset += data_size;
-        }
-        else
-        {
-          APX_PROGRAM_DELETE(pack_program);
-          break;
-        }
+        break;
       }
+      result = apx_node_instance_create_provide_port(
+        node_instance, port_id, port->name, pack_program, data_offset, &data_size);
+      if (result != APX_NO_ERROR)
+      {
+        break;
+      }
+      data_offset += data_size;
     }
     *expected_provide_port_data_size = data_offset;
     data_offset = 0u;
@@ -705,25 +702,23 @@ static apx_error_t create_ports_on_node_instance(apx_node_manager_t *self, apx_n
         apx_size_t data_size = 0u;
         assert(port != NULL);
         pack_program = apx_compiler_compile_port(&self->compiler, port, APX_PACK_PROGRAM, &result);
-        if (result == APX_NO_ERROR)
+        if (result != APX_NO_ERROR)
         {
-          unpack_program = apx_compiler_compile_port(&self->compiler, port, APX_UNPACK_PROGRAM, &result);
+          break;
         }
-        if (result == APX_NO_ERROR)
+        unpack_program = apx_compiler_compile_port(&self->compiler, port, APX_UNPACK_PROGRAM, &result);
+        if (result != APX_NO_ERROR)
         {
-          result = apx_node_instance_create_require_port(
-            node_instance, port_id, port->name, pack_program, unpack_program, data_offset, &data_size);
-          if (result == APX_NO_ERROR)
-          {
-            data_offset += data_size;
-          }
-          else
-          {
-            APX_PROGRAM_DELETE(pack_program);
-            APX_PROGRAM_DELETE(unpack_program);
-            break;
-          }
+          APX_PROGRAM_DELETE(pack_program);
+          break;
         }
+        result = apx_node_instance_create_require_port(
+          node_instance, port_id, port->name, pack_program, unpack_program, data_offset, &data_size);
+        if (result != APX_NO_ERROR)
+        {
+          break;
+        }
+        data_offset += data_size;
       }
       *expected_require_port_data_size = data_offset;
     }

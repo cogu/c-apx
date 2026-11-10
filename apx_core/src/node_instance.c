@@ -423,7 +423,7 @@ apx_error_t apx_node_instance_alloc_port_instance_memory(
     self->num_require_ports = num_require_ports;
     if (num_provide_ports > 0u)
     {
-      self->provide_ports = (apx_port_instance_t *)malloc(num_provide_ports * sizeof(apx_port_instance_t));
+      self->provide_ports = (apx_port_instance_t *)calloc(num_provide_ports, sizeof(apx_port_instance_t));
       if (self->provide_ports == NULL)
       {
         MUTEX_UNLOCK(self->lock);
@@ -432,7 +432,7 @@ apx_error_t apx_node_instance_alloc_port_instance_memory(
     }
     if (num_require_ports > 0u)
     {
-      self->require_ports = (apx_port_instance_t *)malloc(num_require_ports * sizeof(apx_port_instance_t));
+      self->require_ports = (apx_port_instance_t *)calloc(num_require_ports, sizeof(apx_port_instance_t));
       if (self->require_ports == NULL)
       {
         MUTEX_UNLOCK(self->lock);
@@ -449,8 +449,22 @@ apx_error_t apx_node_instance_create_provide_port(apx_node_instance_t *self, apx
 {
   if ((self != NULL) && (port_id < (apx_port_id_t)self->num_provide_ports))
   {
-    apx_port_instance_create(&self->provide_ports[port_id], self, APX_PROVIDE_PORT, port_id, name, pack_program, NULL);
-    return apx_port_instance_derive_properties(&self->provide_ports[port_id], data_offset, data_size);
+    apx_error_t result = apx_port_instance_create(
+      &self->provide_ports[port_id], self, APX_PROVIDE_PORT, port_id, name, pack_program, NULL);
+    if (result != APX_NO_ERROR)
+    {
+      apx_port_instance_destroy(&self->provide_ports[port_id]);
+      memset(&self->provide_ports[port_id], 0, sizeof(apx_port_instance_t));
+      return result;
+    }
+    result = apx_port_instance_derive_properties(&self->provide_ports[port_id], data_offset, data_size);
+    if (result != APX_NO_ERROR)
+    {
+      apx_port_instance_destroy(&self->provide_ports[port_id]);
+      memset(&self->provide_ports[port_id], 0, sizeof(apx_port_instance_t));
+      return result;
+    }
+    return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
 }
@@ -460,9 +474,22 @@ apx_error_t apx_node_instance_create_require_port(apx_node_instance_t *self, apx
 {
   if ((self != NULL) && (port_id < (apx_port_id_t)self->num_require_ports))
   {
-    apx_port_instance_create(
+    apx_error_t result = apx_port_instance_create(
       &self->require_ports[port_id], self, APX_REQUIRE_PORT, port_id, name, pack_program, unpack_program);
-    return apx_port_instance_derive_properties(&self->require_ports[port_id], data_offset, data_size);
+    if (result != APX_NO_ERROR)
+    {
+      apx_port_instance_destroy(&self->require_ports[port_id]);
+      memset(&self->require_ports[port_id], 0, sizeof(apx_port_instance_t));
+      return result;
+    }
+    result = apx_port_instance_derive_properties(&self->require_ports[port_id], data_offset, data_size);
+    if (result != APX_NO_ERROR)
+    {
+      apx_port_instance_destroy(&self->require_ports[port_id]);
+      memset(&self->require_ports[port_id], 0, sizeof(apx_port_instance_t));
+      return result;
+    }
+    return APX_NO_ERROR;
   }
   return APX_INVALID_ARGUMENT_ERROR;
 }
