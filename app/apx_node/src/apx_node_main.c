@@ -90,6 +90,7 @@ static const char *m_connect_address_default = "/tmp/apx.socket";
 static bool m_no_bind = false;
 static bool m_no_signature = false;
 static bool m_compressed = false;
+static bool m_check = false;
 static bool m_display_help = false;
 static bool m_display_version = false;
 static bool m_use_tls = false;
@@ -171,15 +172,28 @@ int main(int argc, char **argv)
     }
     else
     {
-      printf("Initializing APX connection...");
+      if (!m_check)
+      {
+        printf("Initializing APX connection...");
+      }
       m_apx_connection = apx_connection_new();
       if (m_apx_connection != NULL)
       {
-        printf("OK\n");
+        if (!m_check)
+        {
+          printf("OK\n");
+        }
       }
       else
       {
-        printf("Failed\n");
+        if (!m_check)
+        {
+          printf("Failed\n");
+        }
+        else
+        {
+          fprintf(stderr, "Error: Failed to initialize APX runtime\n");
+        }
         retval = 1;
         goto SHUTDOWN;
       }
@@ -278,6 +292,10 @@ int main(int argc, char **argv)
             printf("\t%s: Provide-Ports: %d, Require-Ports: %d\n", apx_node_instance_get_name(node_instance),
               (int)num_provide_ports, (int)num_require_ports);
           }
+          if (m_check)
+          {
+            goto SHUTDOWN;
+          }
           if (m_use_vsock)
           {
             printf(
@@ -373,7 +391,8 @@ void vfree(void *arg) { free(arg); }
 //////////////////////////////////////////////////////////////////////////////
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value)
 {
-  if (long_name != NULL && strcmp(long_name, "compressed") == 0 && value != NULL)
+  if (long_name != NULL && ((strcmp(long_name, "compressed") == 0) || (strcmp(long_name, "check") == 0)) &&
+    value != NULL)
   {
     return ARGPARSE_VALUE_ERROR;
   }
@@ -426,6 +445,10 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
       else if (strcmp(long_name, "compressed") == 0)
       {
         m_compressed = true;
+      }
+      else if (strcmp(long_name, "check") == 0)
+      {
+        m_check = true;
       }
       else if ((strcmp(long_name, "tls") == 0))
       {
@@ -655,7 +678,7 @@ static void print_usage(const char *arg0)
 {
   printf("%s [-b --bind bind_path] [-p --bind-port port] [--no-bind] "
          "[-c --connect connect_path] [-r --connect-port connect_port] "
-         "[--no-signature] [--compressed] "
+         "[--no-signature] [--compressed] [--check] "
          "[--tls] [--ca-cert ca_path] [--client-cert cert_path] [--client-key key_path] "
          "[--vsock <cid>:<port>] "
          "[--version] "
@@ -673,10 +696,16 @@ static void application_shutdown(void)
   }
   if (m_apx_connection != NULL)
   {
-    printf("Closing APX connection...");
+    if (!m_check)
+    {
+      printf("Closing APX connection...");
+    }
     apx_connection_disconnect(m_apx_connection);
     apx_connection_delete(m_apx_connection);
-    printf("OK\n");
+    if (!m_check)
+    {
+      printf("OK\n");
+    }
   }
 }
 

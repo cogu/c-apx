@@ -13,7 +13,7 @@ Synopsis
 
    apx-node [-b | --bind <bind_path>] [-p | --bind-port <port>] [--no-bind]
             [-c | --connect <connect_path>] [-r | --connect-port <port>]
-            [--no-signature] [--compressed]
+            [--no-signature] [--compressed] [--check]
             [--tls] [--ca-cert <path>] [--client-cert <path>] [--client-key <path>]
             [--vsock <cid>:<port>]
             [--version] [--help]
@@ -60,6 +60,10 @@ Command-Line Options
        (currently 6). Takes no argument. Without this option, definitions are sent as plain text.
        Works with signed or unsigned definitions and requires a compression-capable server.
        Signal data and initial values remain uncompressed; there is no automatic fallback.
+   * - ``--check``
+     - Parse and compile the APX definition file, report the number of provide and require ports,
+       and exit without connecting to a server or starting the local JSON message server. If an
+       error is detected along the way, report the line number and error details.
    * - ``--vsock <cid>:<port>``
      - Connect to ``apx-server`` using Linux VSOCK (AF_VSOCK) transport. The ``<cid>`` parameter can be a numeric
        Context ID or alias: ``host`` (2), ``local`` (1), ``hypervisor`` (0), or ``any`` (0xFFFFFFFF).
