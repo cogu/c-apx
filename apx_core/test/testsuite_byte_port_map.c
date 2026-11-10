@@ -85,7 +85,7 @@ static void test_byte_port_map_u16_small(CuTest *tc)
 
 static void test_byte_port_map_u16_large_node(CuTest *tc)
 {
-   /* Simulate MainDisplay provide ports: 1223 ports, total size 3638 bytes */
+   /* Simulate large node with 1223 provide ports, total size 3638 bytes */
   const uint32_t num_ports = 1223u;
   apx_port_instance_t *ports = (apx_port_instance_t *)calloc(num_ports, sizeof(apx_port_instance_t));
   CuAssertPtrNotNull(tc, ports);

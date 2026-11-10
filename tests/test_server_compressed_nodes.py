@@ -1,6 +1,5 @@
 """
 End-to-end integration tests for compressed APX definition transfer (RMFP 1.1).
-Covers Backlog Item 16:
 - Unsigned compressed file publication & transfer
 - Signed compressed file publication & transfer with ECDSA-P256
 - Digest verification

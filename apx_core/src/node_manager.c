@@ -1162,7 +1162,7 @@ static apx_error_t init_node_instance_from_file_info(
     }
     if (result == APX_NO_ERROR)
     {
-         // Planned: node cache lookup (see Backlog Item 13)
+         // Planned: node cache lookup (see Backlog)
       *file_open_request = true;
     }
     if (result == APX_NO_ERROR)
