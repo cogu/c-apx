@@ -460,6 +460,24 @@ Logical-definition capture and structured rejection events are owned by item 16.
 * Verify that unsupported or malformed input produces an explicit parsing error without assertion failures, infinite loops, or loss of server availability, and that incomplete input is buffered safely.
 * Add regression coverage and document the supported encoding and any field-specific restrictions.
 
+## 23. Send `APX_FILE_NOT_COMPLETE_ERROR` NACK on Incomplete Initial `.apx` and `.out` Writes
+
+* **Status:** Proposed error-handling improvement; currently an incomplete initial write of `.apx` or `.out` does not NACK the misbehaving client and can leave the connection stalled waiting indefinitely.
+* **Introduce `APX_FILE_NOT_COMPLETE_ERROR` (`87`)**:
+  * Distinguish high-level initial-file-completeness violations from the lower-level `APX_DATA_NOT_COMPLETE_ERROR` (`59`) already used for RMF transfer / diagnostic file completeness checks (`apx_core/src/file_manager.c`, `apx_core/src/node_instance.c`, `app/apx_mon/src/apx_diag_client_file.c`).
+  * `apx_core/include/apx/error.h`: Define `#define APX_FILE_NOT_COMPLETE_ERROR 87` (following `APX_CHECKSUM_ERROR 86`).
+  * `apx_core/src/util.c`: Add a `case APX_FILE_NOT_COMPLETE_ERROR:` branch to `apx_strerror()`.
+  * `apx_core/test/testsuite_util.c`: Add an assertion for `apx_strerror(APX_FILE_NOT_COMPLETE_ERROR)` in `test_apx_strerror()`.
+  * `../apx/specifications/protocols/remotefile1_1.md`: Consider documenting `APX_FILE_NOT_COMPLETE_ERROR` (`87`) in the Common APX Error Codes table.
+* **Handle incomplete initial `.apx` writes in `apx_node_manager_on_definition_data_written()` (`apx_core/src/node_manager.c:475-497`)**:
+  * Return early when `node_data == NULL` before calling `apx_node_data_definition_data_size(node_data)`.
+  * Add an `else` branch for `if ((offset == 0u) && (size == apx_node_data_definition_data_size(node_data)))`: in `APX_SERVER_MODE`, reject the definition with `apx_node_manager_reject_definition(self, apx_node_instance_get_definition_file(node_instance), APX_DEFINITION_STAGE_TRANSFER, APX_FILE_NOT_COMPLETE_ERROR, APX_FILE_NOT_COMPLETE_ERROR)` so the server logs/emits the rejection, transmits `RMF_CMD_NACK_MSG` via `apx_file_manager_send_error_code()`, and cleans up the node and its mapped files (consistent with `on_definition_transfer_error()` in `apx_core/src/server_connection.c:921-927` and `apx_node_instance_vfile_close_notify()` in `apx_core/src/node_instance.c:1024-1034`). Outside server mode, return `APX_FILE_NOT_COMPLETE_ERROR`.
+* **Handle incomplete initial `.out` writes in `process_remote_write_provide_port_data()` (`apx_core/src/node_instance.c:1802-1834`)**:
+  * Separate write-success checking (`if (retval == APX_NO_ERROR)`) from initial-file-completeness checking (`if ((offset == 0u) && (size == apx_node_data_provide_port_data_size(node_data)))`) in `case APX_DATA_STATE_WAITING_FOR_FILE_DATA:`.
+  * In the incomplete-write `else` branch (when `retval == APX_NO_ERROR` but the first write does not cover `[0, provide_port_data_size)`), send a NACK (`RMF_CMD_NACK_MSG`) with `APX_FILE_NOT_COMPLETE_ERROR` via `apx_file_manager_send_error_code()` (identifying the affected node/file), tear down or transition the node/provide-data state cleanly so `server_connection` does not stall waiting forever, and return `APX_FILE_NOT_COMPLETE_ERROR`.
+* **Verification & Tests**:
+  * Update `test_server_files_wait_for_complete_initial_provide_data` in `apx_core/test/testsuite_server_connection.c` (which currently assumes a partial `.out` write keeps state in `APX_DATA_STATE_WAITING_FOR_FILE_DATA` without error/NACK) and add C unit and Python integration tests covering `RMF_CMD_NACK_MSG` (`APX_FILE_NOT_COMPLETE_ERROR`) for both `.apx` and `.out` incomplete initial writes.
+
 ---
 
 # Release v0.8.0 (Future Phase)
