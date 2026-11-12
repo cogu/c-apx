@@ -57,6 +57,26 @@ def encode_numheader32(payload: bytes) -> bytes:
     return (0x80000000 | length).to_bytes(4, "big") + payload
 
 
+def send_initial_provide_data(sock: socket.socket, name: bytes, data: bytes, file_addr: int = 0x00000000) -> None:
+    """Publishes a .out file, waits for the server's open request, and writes initial provide data."""
+    cmd_addr = (0x80000000 | 0x3FFFFC00).to_bytes(4, "big")
+    publish_payload = (
+        cmd_addr
+        + (3).to_bytes(4, "little")  # RMF_CMD_PUBLISH_FILE_MSG
+        + file_addr.to_bytes(4, "little")
+        + len(data).to_bytes(4, "little")
+        + (0).to_bytes(2, "little")  # RMF_FILE_TYPE_FIXED
+        + (0).to_bytes(2, "little")  # RMF_DIGEST_TYPE_NONE
+        + (b"\x00" * 32)
+        + name
+    )
+    sock.sendall(encode_numheader32(publish_payload))
+    out_open_req = read_msg(sock, timeout=2.0)
+    assert len(out_open_req) > 0, f"Server did not open provide data file {name!r}"
+    write_addr = (0x80000000 | file_addr).to_bytes(4, "big")
+    sock.sendall(encode_numheader32(write_addr + data))
+
+
 def read_msg(sock: socket.socket, timeout: float = 3.0) -> bytes:
     """Reads a single NumHeader-32 framed message from the socket."""
     sock.settimeout(timeout)
@@ -183,6 +203,9 @@ def test_server_compressed_node_unsigned_transfer(tmp_path: Path, apx_server_bin
         write_payload = write_addr + compressed_def
         sock.sendall(encode_numheader32(write_payload))
 
+        # Provide initial .out snapshot before expecting server-owned .in publication
+        send_initial_provide_data(sock, b"CompressedNode1.out\x00", b"\x00")
+
         # Server should accept, decompress, parse, and publish .in file
         in_file_info = read_msg(sock, timeout=2.0)
         assert len(in_file_info) > 0, "Server did not publish .in file for compressed node"
@@ -273,6 +296,8 @@ def test_server_compressed_node_signed_transfer(tmp_path: Path, apx_server_bin: 
         write_addr = (0x80000000 | 0x03000000).to_bytes(4, "big")
         write_payload = write_addr + compressed_def
         sock.sendall(encode_numheader32(write_payload))
+
+        send_initial_provide_data(sock, b"SignedCompressedNode.out\x00", b"\x00")
 
         in_file_info = read_msg(sock, timeout=2.0)
         assert len(in_file_info) > 0
