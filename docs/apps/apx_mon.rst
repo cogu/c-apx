@@ -24,6 +24,11 @@ Architecture & How It Works
 4. **Dynamic Node Definition Transfer**:
    When requesting node definitions with ``get-apx``, the server dynamically provisions a temporary APX file (``<NodeName>.apx``) and streams it directly across the RemoteFile channel.
 
+Routing command handlers own the query-result arrays and coordinate fetching,
+sorting, and cleanup. Separate helpers handle JSON serialization, node-label
+formatting, filtering, and table rendering; these helpers borrow query results
+and release only the temporary display data they create.
+
 Synopsis
 --------
 

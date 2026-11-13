@@ -628,471 +628,335 @@ static dtl_hv_t *make_route_json(apx_diag_client_route_item_t const *item)
   return hv;
 }
 
-static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool strip_id)
+static bool unconnected_port_matches_mode(apx_diag_client_unconnected_port_item_t const *item, routing_mode_t mode)
 {
-  if (mode == ROUTING_MODE_MULTI_PROVIDER)
+  if (mode == ROUTING_MODE_NO_PROVIDER)
   {
-    adt_ary_t multi_prov;
-    apx_error_t err = apx_diag_client_list_multi_providers(client, &multi_prov, 5000u);
-    if (err != APX_NO_ERROR)
-    {
-      fprintf(stderr, "Error: Failed to list multi-providers (error=%d)\n", err);
-      return 1;
-    }
+    return item->direction == 0;
+  }
+  if (mode == ROUTING_MODE_NO_CONSUMER)
+  {
+    return item->direction == 1 && item->reason == 1;
+  }
+  return true;
+}
 
-    int32_t const m_len = adt_ary_length(&multi_prov);
-    if (m_json_output)
+static void format_node_label(apx_diag_client_node_item_t const *node, bool strip_id, char *buffer, size_t buffer_size)
+{
+  if (strip_id)
+  {
+    snprintf(buffer, buffer_size, "%s", node->node_name);
+  }
+  else
+  {
+    snprintf(buffer, buffer_size, "%u:%s", node->connection_id, node->node_name);
+  }
+}
+
+static dtl_av_t *make_routes_json(adt_ary_t const *routes)
+{
+  dtl_av_t *av = dtl_av_new();
+  int32_t const len = adt_ary_length(routes);
+  for (int32_t i = 0; i < len; ++i)
+  {
+    apx_diag_client_route_item_t const *item = (apx_diag_client_route_item_t const *)adt_ary_value(routes, i);
+    if (item != NULL)
     {
-      dtl_av_t *av = dtl_av_new();
-      for (int32_t i = 0; i < m_len; ++i)
+      dtl_av_push(av, (dtl_dv_t *)make_route_json(item), false);
+    }
+  }
+  return av;
+}
+
+static dtl_av_t *make_unconnected_ports_json(adt_ary_t const *unconn, routing_mode_t mode)
+{
+  dtl_av_t *av = dtl_av_new();
+  int32_t const len = adt_ary_length(unconn);
+  for (int32_t i = 0; i < len; ++i)
+  {
+    apx_diag_client_unconnected_port_item_t const *item =
+      (apx_diag_client_unconnected_port_item_t const *)adt_ary_value(unconn, i);
+    if (item != NULL && unconnected_port_matches_mode(item, mode))
+    {
+      dtl_av_push(av, (dtl_dv_t *)make_unconnected_port_json(item), false);
+    }
+  }
+  return av;
+}
+
+static void print_routing_json(adt_ary_t const *routes, adt_ary_t const *unconn, routing_mode_t mode)
+{
+  if (mode == ROUTING_MODE_ALL)
+  {
+    dtl_hv_t *top_hv = dtl_hv_new();
+    dtl_hv_set_cstr(top_hv, "routes", (dtl_dv_t *)make_routes_json(routes), false);
+    dtl_hv_set_cstr(top_hv, "unconnected", (dtl_dv_t *)make_unconnected_ports_json(unconn, mode), false);
+    dtl_json_dump((dtl_dv_t *)top_hv, stdout, 2, false);
+    printf("\n");
+    dtl_hv_delete(top_hv);
+  }
+  else
+  {
+    dtl_av_t *av =
+      mode == ROUTING_MODE_CONNECTED ? make_routes_json(routes) : make_unconnected_ports_json(unconn, mode);
+    dtl_json_dump((dtl_dv_t *)av, stdout, 2, false);
+    printf("\n");
+    dtl_av_delete(av);
+  }
+}
+
+static void print_multi_provider_json(adt_ary_t const *multi_prov)
+{
+  dtl_av_t *av = dtl_av_new();
+  int32_t const len = adt_ary_length(multi_prov);
+  for (int32_t i = 0; i < len; ++i)
+  {
+    apx_diag_client_multi_provider_item_t const *item =
+      (apx_diag_client_multi_provider_item_t const *)adt_ary_value(multi_prov, i);
+    if (item != NULL)
+    {
+      dtl_hv_t *hv = dtl_hv_new();
+      dtl_hv_set_cstr(hv, "port_name", (dtl_dv_t *)dtl_sv_make_cstr(item->port_name ? item->port_name : ""), false);
+      dtl_hv_set_cstr(hv, "node_id", (dtl_dv_t *)dtl_sv_make_u32(item->node_id), false);
+      dtl_hv_set_cstr(hv, "port_id", (dtl_dv_t *)dtl_sv_make_u32(item->port_id), false);
+      dtl_hv_set_cstr(hv, "status", (dtl_dv_t *)dtl_sv_make_cstr(item->status == 1u ? "ACTIVE" : "SHADOWED"), false);
+      dtl_av_push(av, (dtl_dv_t *)hv, false);
+    }
+  }
+  dtl_json_dump((dtl_dv_t *)av, stdout, 2, false);
+  printf("\n");
+  dtl_av_delete(av);
+}
+
+static int print_multi_provider_table(adt_ary_t const *multi_prov, adt_ary_t const *nodes, bool strip_id)
+{
+  int port_width = 24;
+  int provider_width = 20;
+  int32_t const len = adt_ary_length(multi_prov);
+  for (int32_t i = 0; i < len; ++i)
+  {
+    apx_diag_client_multi_provider_item_t const *item =
+      (apx_diag_client_multi_provider_item_t const *)adt_ary_value(multi_prov, i);
+    if (item != NULL)
+    {
+      apx_diag_client_node_item_t const *node = find_node(nodes, item->node_id);
+      if (node == NULL)
       {
-        apx_diag_client_multi_provider_item_t *item =
-          (apx_diag_client_multi_provider_item_t *)adt_ary_value(&multi_prov, i);
-        if (item != NULL)
-        {
-          dtl_hv_t *hv = dtl_hv_new();
-          dtl_hv_set_cstr(hv, "port_name", (dtl_dv_t *)dtl_sv_make_cstr(item->port_name ? item->port_name : ""), false);
-          dtl_hv_set_cstr(hv, "node_id", (dtl_dv_t *)dtl_sv_make_u32(item->node_id), false);
-          dtl_hv_set_cstr(hv, "port_id", (dtl_dv_t *)dtl_sv_make_u32(item->port_id), false);
-          dtl_hv_set_cstr(
-            hv, "status", (dtl_dv_t *)dtl_sv_make_cstr(item->status == 1u ? "ACTIVE" : "SHADOWED"), false);
-          dtl_av_push(av, (dtl_dv_t *)hv, false);
-        }
+        fprintf(stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n",
+          item->node_id);
+        return 1;
       }
-      dtl_json_dump((dtl_dv_t *)av, stdout, 2, false);
-      printf("\n");
-      dtl_av_delete(av);
-      adt_ary_destroy(&multi_prov);
-      return 0;
-    }
-
-    adt_ary_t nodes;
-    err = apx_diag_client_list_nodes(client, &nodes, 5000u);
-    if (err != APX_NO_ERROR)
-    {
-      fprintf(stderr, "Error: Failed to list nodes (error=%d)\n", err);
-      adt_ary_destroy(&multi_prov);
-      return 1;
-    }
-
-    int port_width = 24;
-    int provider_width = 20;
-    for (int32_t i = 0; i < m_len; ++i)
-    {
-      apx_diag_client_multi_provider_item_t *item =
-        (apx_diag_client_multi_provider_item_t *)adt_ary_value(&multi_prov, i);
-      if (item != NULL)
+      int const pw = item->port_name ? (int)strlen(item->port_name) : 0;
+      char nbuf[128];
+      format_node_label(node, strip_id, nbuf, sizeof(nbuf));
+      int const prw = (int)strlen(nbuf);
+      if (pw > port_width)
       {
-        apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
-        if (node == NULL)
-        {
-          fprintf(stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n",
-            item->node_id);
-          adt_ary_destroy(&nodes);
-          adt_ary_destroy(&multi_prov);
-          return 1;
-        }
-        int const pw = item->port_name ? (int)strlen(item->port_name) : 0;
-        char nbuf[128];
-        if (strip_id)
-        {
-          snprintf(nbuf, sizeof(nbuf), "%s", node->node_name);
-        }
-        else
-        {
-          snprintf(nbuf, sizeof(nbuf), "%u:%s", node->connection_id, node->node_name);
-        }
-        int const prw = (int)strlen(nbuf);
-        if (pw > port_width)
-        {
-          port_width = pw;
-        }
-        if (prw > provider_width)
-        {
-          provider_width = prw;
-        }
+        port_width = pw;
       }
-    }
-
-    printf("%-*s %-*s %s\n", port_width, "PORT_NAME", provider_width, "PROVIDER_NODE", "STATUS");
-    printf("----------------------------------------------------------------------\n");
-    for (int32_t i = 0; i < m_len; ++i)
-    {
-      apx_diag_client_multi_provider_item_t *item =
-        (apx_diag_client_multi_provider_item_t *)adt_ary_value(&multi_prov, i);
-      if (item != NULL)
+      if (prw > provider_width)
       {
-        apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
-        char nbuf[128];
-        if (strip_id)
-        {
-          snprintf(nbuf, sizeof(nbuf), "%s", node->node_name);
-        }
-        else
-        {
-          snprintf(nbuf, sizeof(nbuf), "%u:%s", node->connection_id, node->node_name);
-        }
-        printf("%-*s %-*s %s\n", port_width, item->port_name ? item->port_name : "", provider_width, nbuf,
-          item->status == 1u ? "ACTIVE" : "(shadowed)");
+        provider_width = prw;
       }
     }
-
-    adt_ary_destroy(&nodes);
-    adt_ary_destroy(&multi_prov);
-    return 0;
   }
 
-  adt_ary_t routes;
-  adt_ary_t unconn;
-  bool has_routes = false;
-  bool has_unconn = false;
-
-  if (mode == ROUTING_MODE_CONNECTED || mode == ROUTING_MODE_ALL)
+  printf("%-*s %-*s %s\n", port_width, "PORT_NAME", provider_width, "PROVIDER_NODE", "STATUS");
+  printf("----------------------------------------------------------------------\n");
+  for (int32_t i = 0; i < len; ++i)
   {
-    apx_error_t err = apx_diag_client_list_routes(client, &routes, 5000u);
-    if (err != APX_NO_ERROR)
+    apx_diag_client_multi_provider_item_t const *item =
+      (apx_diag_client_multi_provider_item_t const *)adt_ary_value(multi_prov, i);
+    if (item != NULL)
     {
-      fprintf(stderr, "Error: Failed to list routes (error=%d)\n", err);
-      return 1;
+      apx_diag_client_node_item_t const *node = find_node(nodes, item->node_id);
+      char nbuf[128];
+      format_node_label(node, strip_id, nbuf, sizeof(nbuf));
+      printf("%-*s %-*s %s\n", port_width, item->port_name ? item->port_name : "", provider_width, nbuf,
+        item->status == 1u ? "ACTIVE" : "(shadowed)");
     }
-    has_routes = true;
   }
+  return 0;
+}
 
-  if (mode != ROUTING_MODE_CONNECTED)
-  {
-    apx_error_t err = apx_diag_client_list_unconnected_ports(client, &unconn, 5000u);
-    if (err != APX_NO_ERROR)
-    {
-      fprintf(stderr, "Error: Failed to list unconnected ports (error=%d)\n", err);
-      if (has_routes)
-      {
-        adt_ary_destroy(&routes);
-      }
-      return 1;
-    }
-    has_unconn = true;
-  }
+static int cmd_routing_multi_provider(apx_diag_client_t *client, bool strip_id)
+{
+  adt_ary_t multi_prov;
+  adt_ary_t nodes;
+  adt_ary_create(&multi_prov, NULL);
+  adt_ary_create(&nodes, NULL);
+  int result = 1;
 
-  adt_error_t sort_err = ADT_NO_ERROR;
-  if (has_routes)
+  apx_error_t err = apx_diag_client_list_multi_providers(client, &multi_prov, 5000u);
+  if (err != APX_NO_ERROR)
   {
-    sort_err = adt_ary_sort(&routes, route_item_port_name_vlt, false);
-  }
-  if (sort_err == ADT_NO_ERROR && has_unconn)
-  {
-    sort_err = adt_ary_sort(&unconn, unconnected_port_item_port_name_vlt, false);
-  }
-  if (sort_err != ADT_NO_ERROR)
-  {
-    fprintf(stderr, "Error: Failed to sort routing output (error=%d)\n", sort_err);
-    if (has_routes)
-    {
-      adt_ary_destroy(&routes);
-    }
-    if (has_unconn)
-    {
-      adt_ary_destroy(&unconn);
-    }
-    return 1;
+    fprintf(stderr, "Error: Failed to list multi-providers (error=%d)\n", err);
+    goto cleanup;
   }
 
   if (m_json_output)
   {
-    if (mode == ROUTING_MODE_ALL)
-    {
-      dtl_hv_t *top_hv = dtl_hv_new();
-      dtl_av_t *r_av = dtl_av_new();
-      int32_t const r_len = adt_ary_length(&routes);
-      for (int32_t i = 0; i < r_len; ++i)
-      {
-        apx_diag_client_route_item_t *item = (apx_diag_client_route_item_t *)adt_ary_value(&routes, i);
-        if (item != NULL)
-        {
-          dtl_av_push(r_av, (dtl_dv_t *)make_route_json(item), false);
-        }
-      }
-      dtl_hv_set_cstr(top_hv, "routes", (dtl_dv_t *)r_av, false);
-
-      dtl_av_t *u_av = dtl_av_new();
-      int32_t const u_len = adt_ary_length(&unconn);
-      for (int32_t i = 0; i < u_len; ++i)
-      {
-        apx_diag_client_unconnected_port_item_t *item =
-          (apx_diag_client_unconnected_port_item_t *)adt_ary_value(&unconn, i);
-        if (item != NULL)
-        {
-          dtl_av_push(u_av, (dtl_dv_t *)make_unconnected_port_json(item), false);
-        }
-      }
-      dtl_hv_set_cstr(top_hv, "unconnected", (dtl_dv_t *)u_av, false);
-
-      dtl_json_dump((dtl_dv_t *)top_hv, stdout, 2, false);
-      printf("\n");
-      dtl_hv_delete(top_hv);
-    }
-    else if (mode == ROUTING_MODE_CONNECTED)
-    {
-      dtl_av_t *av = dtl_av_new();
-      int32_t const len = adt_ary_length(&routes);
-      for (int32_t i = 0; i < len; ++i)
-      {
-        apx_diag_client_route_item_t *item = (apx_diag_client_route_item_t *)adt_ary_value(&routes, i);
-        if (item != NULL)
-        {
-          dtl_av_push(av, (dtl_dv_t *)make_route_json(item), false);
-        }
-      }
-      dtl_json_dump((dtl_dv_t *)av, stdout, 2, false);
-      printf("\n");
-      dtl_av_delete(av);
-    }
-    else
-    {
-      dtl_av_t *av = dtl_av_new();
-      int32_t const len = adt_ary_length(&unconn);
-      for (int32_t i = 0; i < len; ++i)
-      {
-        apx_diag_client_unconnected_port_item_t *item =
-          (apx_diag_client_unconnected_port_item_t *)adt_ary_value(&unconn, i);
-        if (item != NULL)
-        {
-          if (mode == ROUTING_MODE_NO_PROVIDER && item->direction != 0)
-          {
-            continue;
-          }
-          if (mode == ROUTING_MODE_NO_CONSUMER && (item->direction != 1 || item->reason != 1))
-          {
-            continue;
-          }
-          dtl_av_push(av, (dtl_dv_t *)make_unconnected_port_json(item), false);
-        }
-      }
-      dtl_json_dump((dtl_dv_t *)av, stdout, 2, false);
-      printf("\n");
-      dtl_av_delete(av);
-    }
-
-    if (has_routes)
-    {
-      adt_ary_destroy(&routes);
-    }
-    if (has_unconn)
-    {
-      adt_ary_destroy(&unconn);
-    }
-    return 0;
+    print_multi_provider_json(&multi_prov);
+    result = 0;
+    goto cleanup;
   }
 
-  adt_ary_t nodes;
-  apx_error_t err = apx_diag_client_list_nodes(client, &nodes, 5000u);
+  err = apx_diag_client_list_nodes(client, &nodes, 5000u);
   if (err != APX_NO_ERROR)
   {
     fprintf(stderr, "Error: Failed to list nodes (error=%d)\n", err);
-    if (has_routes)
+    goto cleanup;
+  }
+  result = print_multi_provider_table(&multi_prov, &nodes, strip_id);
+
+cleanup:
+  adt_ary_destroy(&nodes);
+  adt_ary_destroy(&multi_prov);
+  return result;
+}
+
+static int print_unconnected_table(adt_ary_t const *unconn, adt_ary_t const *nodes, routing_mode_t mode, bool strip_id)
+{
+  int port_width = 24;
+  int32_t const len = adt_ary_length(unconn);
+  for (int32_t i = 0; i < len; ++i)
+  {
+    apx_diag_client_unconnected_port_item_t const *item =
+      (apx_diag_client_unconnected_port_item_t const *)adt_ary_value(unconn, i);
+    if (item != NULL && unconnected_port_matches_mode(item, mode))
     {
-      adt_ary_destroy(&routes);
+      if (find_node(nodes, item->node_id) == NULL)
+      {
+        fprintf(stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n",
+          item->node_id);
+        return 1;
+      }
+      int const pw = item->port_name ? (int)strlen(item->port_name) : 0;
+      if (pw > port_width)
+      {
+        port_width = pw;
+      }
     }
-    if (has_unconn)
+  }
+
+  printf("%-*s %s\n", port_width, "PORT_NAME", "NODE");
+  printf("----------------------------------------------------------------------\n");
+  for (int32_t i = 0; i < len; ++i)
+  {
+    apx_diag_client_unconnected_port_item_t const *item =
+      (apx_diag_client_unconnected_port_item_t const *)adt_ary_value(unconn, i);
+    if (item != NULL && unconnected_port_matches_mode(item, mode))
     {
-      adt_ary_destroy(&unconn);
+      apx_diag_client_node_item_t const *node = find_node(nodes, item->node_id);
+      if (strip_id)
+      {
+        printf("%-*s %s\n", port_width, item->port_name ? item->port_name : "", node->node_name);
+      }
+      else
+      {
+        printf(
+          "%-*s %u:%s\n", port_width, item->port_name ? item->port_name : "", node->connection_id, node->node_name);
+      }
     }
+  }
+  return 0;
+}
+
+static int append_routing_row(
+  adt_ary_t *rows, char const *port_name, char const *provider_node, char const *requirer_node)
+{
+  routing_row_t *row = (routing_row_t *)malloc(sizeof(routing_row_t));
+  if (row == NULL)
+  {
+    fprintf(stderr, "Error: Failed to allocate routing row\n");
     return 1;
   }
-
-  if (mode == ROUTING_MODE_NO_PROVIDER || mode == ROUTING_MODE_NO_CONSUMER)
+  row->port_name = STRDUP(port_name ? port_name : "");
+  row->provider_node = STRDUP(provider_node);
+  row->requirer_node = STRDUP(requirer_node);
+  if (row->port_name == NULL || row->provider_node == NULL || row->requirer_node == NULL)
   {
-    int port_width = 24;
-    int32_t const u_len = adt_ary_length(&unconn);
-    for (int32_t i = 0; i < u_len; ++i)
-    {
-      apx_diag_client_unconnected_port_item_t *item =
-        (apx_diag_client_unconnected_port_item_t *)adt_ary_value(&unconn, i);
-      if (item != NULL)
-      {
-        if (mode == ROUTING_MODE_NO_PROVIDER && item->direction != 0)
-        {
-          continue;
-        }
-        if (mode == ROUTING_MODE_NO_CONSUMER && (item->direction != 1 || item->reason != 1))
-        {
-          continue;
-        }
-        apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
-        if (node == NULL)
-        {
-          fprintf(stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n",
-            item->node_id);
-          adt_ary_destroy(&nodes);
-          adt_ary_destroy(&unconn);
-          return 1;
-        }
-        int const pw = item->port_name ? (int)strlen(item->port_name) : 0;
-        if (pw > port_width)
-        {
-          port_width = pw;
-        }
-      }
-    }
-
-    printf("%-*s %s\n", port_width, "PORT_NAME", "NODE");
-    printf("----------------------------------------------------------------------\n");
-    for (int32_t i = 0; i < u_len; ++i)
-    {
-      apx_diag_client_unconnected_port_item_t *item =
-        (apx_diag_client_unconnected_port_item_t *)adt_ary_value(&unconn, i);
-      if (item != NULL)
-      {
-        if (mode == ROUTING_MODE_NO_PROVIDER && item->direction != 0)
-        {
-          continue;
-        }
-        if (mode == ROUTING_MODE_NO_CONSUMER && (item->direction != 1 || item->reason != 1))
-        {
-          continue;
-        }
-        apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
-        if (strip_id)
-        {
-          printf("%-*s %s\n", port_width, item->port_name ? item->port_name : "", node->node_name);
-        }
-        else
-        {
-          printf(
-            "%-*s %u:%s\n", port_width, item->port_name ? item->port_name : "", node->connection_id, node->node_name);
-        }
-      }
-    }
-
-    adt_ary_destroy(&nodes);
-    adt_ary_destroy(&unconn);
-    return 0;
+    fprintf(stderr, "Error: Failed to allocate routing row\n");
+    routing_row_delete(row);
+    return 1;
   }
-
-  adt_ary_t rows;
-  adt_ary_create(&rows, routing_row_delete);
-
-  if (has_routes)
+  adt_error_t err = adt_ary_push(rows, row);
+  if (err != ADT_NO_ERROR)
   {
-    int32_t const r_len = adt_ary_length(&routes);
-    for (int32_t i = 0; i < r_len; ++i)
-    {
-      apx_diag_client_route_item_t *item = (apx_diag_client_route_item_t *)adt_ary_value(&routes, i);
-      if (item != NULL)
-      {
-        apx_diag_client_node_item_t const *provider = find_node(&nodes, item->provide_node_id);
-        apx_diag_client_node_item_t const *requirer = find_node(&nodes, item->require_node_id);
-        if (provider == NULL || requirer == NULL)
-        {
-          uint32_t const node_id = (provider == NULL) ? item->provide_node_id : item->require_node_id;
-          fprintf(
-            stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n", node_id);
-          adt_ary_destroy(&rows);
-          adt_ary_destroy(&nodes);
-          adt_ary_destroy(&routes);
-          if (has_unconn)
-          {
-            adt_ary_destroy(&unconn);
-          }
-          return 1;
-        }
-        char pbuf[128];
-        char rbuf[128];
-        if (strip_id)
-        {
-          snprintf(pbuf, sizeof(pbuf), "%s", provider->node_name);
-          snprintf(rbuf, sizeof(rbuf), "%s", requirer->node_name);
-        }
-        else
-        {
-          snprintf(pbuf, sizeof(pbuf), "%u:%s", provider->connection_id, provider->node_name);
-          snprintf(rbuf, sizeof(rbuf), "%u:%s", requirer->connection_id, requirer->node_name);
-        }
+    fprintf(stderr, "Error: Failed to append routing row (error=%d)\n", err);
+    routing_row_delete(row);
+    return 1;
+  }
+  return 0;
+}
 
-        routing_row_t *row = (routing_row_t *)malloc(sizeof(routing_row_t));
-        if (row != NULL)
-        {
-          row->port_name = STRDUP(item->port_name ? item->port_name : "");
-          row->provider_node = STRDUP(pbuf);
-          row->requirer_node = STRDUP(rbuf);
-          adt_ary_push(&rows, row);
-        }
+static int append_connected_rows(adt_ary_t *rows, adt_ary_t const *routes, adt_ary_t const *nodes, bool strip_id)
+{
+  int32_t const len = adt_ary_length(routes);
+  for (int32_t i = 0; i < len; ++i)
+  {
+    apx_diag_client_route_item_t const *item = (apx_diag_client_route_item_t const *)adt_ary_value(routes, i);
+    if (item != NULL)
+    {
+      apx_diag_client_node_item_t const *provider = find_node(nodes, item->provide_node_id);
+      apx_diag_client_node_item_t const *requirer = find_node(nodes, item->require_node_id);
+      if (provider == NULL || requirer == NULL)
+      {
+        uint32_t const node_id = (provider == NULL) ? item->provide_node_id : item->require_node_id;
+        fprintf(
+          stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n", node_id);
+        return 1;
+      }
+      char pbuf[128];
+      char rbuf[128];
+      format_node_label(provider, strip_id, pbuf, sizeof(pbuf));
+      format_node_label(requirer, strip_id, rbuf, sizeof(rbuf));
+      if (append_routing_row(rows, item->port_name, pbuf, rbuf) != 0)
+      {
+        return 1;
       }
     }
   }
+  return 0;
+}
 
-  if (has_unconn)
+static int append_unconnected_rows(adt_ary_t *rows, adt_ary_t const *unconn, adt_ary_t const *nodes, bool strip_id)
+{
+  int32_t const len = adt_ary_length(unconn);
+  for (int32_t i = 0; i < len; ++i)
   {
-    int32_t const u_len = adt_ary_length(&unconn);
-    for (int32_t i = 0; i < u_len; ++i)
+    apx_diag_client_unconnected_port_item_t const *item =
+      (apx_diag_client_unconnected_port_item_t const *)adt_ary_value(unconn, i);
+    if (item != NULL)
     {
-      apx_diag_client_unconnected_port_item_t *item =
-        (apx_diag_client_unconnected_port_item_t *)adt_ary_value(&unconn, i);
-      if (item != NULL)
+      apx_diag_client_node_item_t const *node = find_node(nodes, item->node_id);
+      if (node == NULL)
       {
-        apx_diag_client_node_item_t const *node = find_node(&nodes, item->node_id);
-        if (node == NULL)
-        {
-          fprintf(stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n",
-            item->node_id);
-          adt_ary_destroy(&rows);
-          adt_ary_destroy(&nodes);
-          if (has_routes)
-          {
-            adt_ary_destroy(&routes);
-          }
-          adt_ary_destroy(&unconn);
-          return 1;
-        }
-        char nbuf[128];
-        if (strip_id)
-        {
-          snprintf(nbuf, sizeof(nbuf), "%s", node->node_name);
-        }
-        else
-        {
-          snprintf(nbuf, sizeof(nbuf), "%u:%s", node->connection_id, node->node_name);
-        }
-
-        routing_row_t *row = (routing_row_t *)malloc(sizeof(routing_row_t));
-        if (row != NULL)
-        {
-          row->port_name = STRDUP(item->port_name ? item->port_name : "");
-          if (item->direction == 1) // PROVIDE -> no consumer or shadowed
-          {
-            row->provider_node = STRDUP(nbuf);
-            row->requirer_node = STRDUP(item->reason == 2 ? "(shadowed)" : "-");
-          }
-          else // REQUIRE -> no provider
-          {
-            row->provider_node = STRDUP("-");
-            row->requirer_node = STRDUP(nbuf);
-          }
-          adt_ary_push(&rows, row);
-        }
+        fprintf(stderr, "Error: Cannot resolve node ID %u; server state may have changed. Retry the command.\n",
+          item->node_id);
+        return 1;
+      }
+      char nbuf[128];
+      format_node_label(node, strip_id, nbuf, sizeof(nbuf));
+      char const *provider_node = item->direction == 1 ? nbuf : "-";
+      char const *requirer_node = item->direction == 1 ? (item->reason == 2 ? "(shadowed)" : "-") : nbuf;
+      if (append_routing_row(rows, item->port_name, provider_node, requirer_node) != 0)
+      {
+        return 1;
       }
     }
   }
+  return 0;
+}
 
-  if (mode == ROUTING_MODE_ALL)
-  {
-    sort_err = adt_ary_sort(&rows, routing_row_port_name_vlt, false);
-    if (sort_err != ADT_NO_ERROR)
-    {
-      fprintf(stderr, "Error: Failed to sort routing rows (error=%d)\n", sort_err);
-      adt_ary_destroy(&rows);
-      adt_ary_destroy(&nodes);
-      adt_ary_destroy(&routes);
-      adt_ary_destroy(&unconn);
-      return 1;
-    }
-  }
-
+static void print_routing_table(adt_ary_t const *rows)
+{
   int port_width = 24;
   int provider_width = 20;
-  int32_t const row_count = adt_ary_length(&rows);
+  int32_t const row_count = adt_ary_length(rows);
   for (int32_t i = 0; i < row_count; ++i)
   {
-    routing_row_t *row = (routing_row_t *)adt_ary_value(&rows, i);
+    routing_row_t const *row = (routing_row_t const *)adt_ary_value(rows, i);
     if (row != NULL)
     {
       int const pw = (int)strlen(row->port_name);
@@ -1112,24 +976,112 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
   printf("----------------------------------------------------------------------\n");
   for (int32_t i = 0; i < row_count; ++i)
   {
-    routing_row_t *row = (routing_row_t *)adt_ary_value(&rows, i);
+    routing_row_t const *row = (routing_row_t const *)adt_ary_value(rows, i);
     if (row != NULL)
     {
       printf("%-*s %-*s %s\n", port_width, row->port_name, provider_width, row->provider_node, row->requirer_node);
     }
   }
+}
 
+static int print_routing_text(
+  adt_ary_t const *routes, adt_ary_t const *unconn, adt_ary_t const *nodes, routing_mode_t mode, bool strip_id)
+{
+  if (mode == ROUTING_MODE_NO_PROVIDER || mode == ROUTING_MODE_NO_CONSUMER)
+  {
+    return print_unconnected_table(unconn, nodes, mode, strip_id);
+  }
+
+  adt_ary_t rows;
+  adt_ary_create(&rows, routing_row_delete);
+  int result = append_connected_rows(&rows, routes, nodes, strip_id);
+  if (result == 0)
+  {
+    result = append_unconnected_rows(&rows, unconn, nodes, strip_id);
+  }
+  if (result == 0 && mode == ROUTING_MODE_ALL)
+  {
+    adt_error_t sort_err = adt_ary_sort(&rows, routing_row_port_name_vlt, false);
+    if (sort_err != ADT_NO_ERROR)
+    {
+      fprintf(stderr, "Error: Failed to sort routing rows (error=%d)\n", sort_err);
+      result = 1;
+    }
+  }
+  if (result == 0)
+  {
+    print_routing_table(&rows);
+  }
   adt_ary_destroy(&rows);
+  return result;
+}
+
+static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool strip_id)
+{
+  if (mode == ROUTING_MODE_MULTI_PROVIDER)
+  {
+    return cmd_routing_multi_provider(client, strip_id);
+  }
+
+  adt_ary_t routes;
+  adt_ary_t unconn;
+  adt_ary_t nodes;
+  adt_ary_create(&routes, NULL);
+  adt_ary_create(&unconn, NULL);
+  adt_ary_create(&nodes, NULL);
+  int result = 1;
+  apx_error_t err;
+
+  if (mode == ROUTING_MODE_CONNECTED || mode == ROUTING_MODE_ALL)
+  {
+    err = apx_diag_client_list_routes(client, &routes, 5000u);
+    if (err != APX_NO_ERROR)
+    {
+      fprintf(stderr, "Error: Failed to list routes (error=%d)\n", err);
+      goto cleanup;
+    }
+  }
+  if (mode != ROUTING_MODE_CONNECTED)
+  {
+    err = apx_diag_client_list_unconnected_ports(client, &unconn, 5000u);
+    if (err != APX_NO_ERROR)
+    {
+      fprintf(stderr, "Error: Failed to list unconnected ports (error=%d)\n", err);
+      goto cleanup;
+    }
+  }
+
+  adt_error_t sort_err = adt_ary_sort(&routes, route_item_port_name_vlt, false);
+  if (sort_err == ADT_NO_ERROR)
+  {
+    sort_err = adt_ary_sort(&unconn, unconnected_port_item_port_name_vlt, false);
+  }
+  if (sort_err != ADT_NO_ERROR)
+  {
+    fprintf(stderr, "Error: Failed to sort routing output (error=%d)\n", sort_err);
+    goto cleanup;
+  }
+
+  if (m_json_output)
+  {
+    print_routing_json(&routes, &unconn, mode);
+    result = 0;
+    goto cleanup;
+  }
+
+  err = apx_diag_client_list_nodes(client, &nodes, 5000u);
+  if (err != APX_NO_ERROR)
+  {
+    fprintf(stderr, "Error: Failed to list nodes (error=%d)\n", err);
+    goto cleanup;
+  }
+  result = print_routing_text(&routes, &unconn, &nodes, mode, strip_id);
+
+cleanup:
   adt_ary_destroy(&nodes);
-  if (has_routes)
-  {
-    adt_ary_destroy(&routes);
-  }
-  if (has_unconn)
-  {
-    adt_ary_destroy(&unconn);
-  }
-  return 0;
+  adt_ary_destroy(&routes);
+  adt_ary_destroy(&unconn);
+  return result;
 }
 
 static char *json_escape_string(const char *input)
