@@ -166,4 +166,4 @@ Send Signal Updates via Netcat (NDJSON)
 
 .. code-block:: bash
 
-   echo '{"VehicleSpeed": 75}' | nc -U /tmp/apx_node.socket
+   echo '{"VehicleSpeed": 75}' | nc -q 0 -U /tmp/apx_node.socket
