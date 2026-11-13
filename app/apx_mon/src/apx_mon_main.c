@@ -572,6 +572,39 @@ static void routing_row_delete(void *arg)
   }
 }
 
+static int route_item_port_name_vlt(void const *a, void const *b)
+{
+  apx_diag_client_route_item_t const *left = (apx_diag_client_route_item_t const *)a;
+  apx_diag_client_route_item_t const *right = (apx_diag_client_route_item_t const *)b;
+  if (left == NULL || right == NULL)
+  {
+    return -1;
+  }
+  return strcmp(left->port_name ? left->port_name : "", right->port_name ? right->port_name : "") < 0;
+}
+
+static int unconnected_port_item_port_name_vlt(void const *a, void const *b)
+{
+  apx_diag_client_unconnected_port_item_t const *left = (apx_diag_client_unconnected_port_item_t const *)a;
+  apx_diag_client_unconnected_port_item_t const *right = (apx_diag_client_unconnected_port_item_t const *)b;
+  if (left == NULL || right == NULL)
+  {
+    return -1;
+  }
+  return strcmp(left->port_name ? left->port_name : "", right->port_name ? right->port_name : "") < 0;
+}
+
+static int routing_row_port_name_vlt(void const *a, void const *b)
+{
+  routing_row_t const *left = (routing_row_t const *)a;
+  routing_row_t const *right = (routing_row_t const *)b;
+  if (left == NULL || right == NULL || left->port_name == NULL || right->port_name == NULL)
+  {
+    return -1;
+  }
+  return strcmp(left->port_name, right->port_name) < 0;
+}
+
 static dtl_hv_t *make_unconnected_port_json(apx_diag_client_unconnected_port_item_t const *item)
 {
   dtl_hv_t *hv = dtl_hv_new();
@@ -738,6 +771,29 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
       return 1;
     }
     has_unconn = true;
+  }
+
+  adt_error_t sort_err = ADT_NO_ERROR;
+  if (has_routes)
+  {
+    sort_err = adt_ary_sort(&routes, route_item_port_name_vlt, false);
+  }
+  if (sort_err == ADT_NO_ERROR && has_unconn)
+  {
+    sort_err = adt_ary_sort(&unconn, unconnected_port_item_port_name_vlt, false);
+  }
+  if (sort_err != ADT_NO_ERROR)
+  {
+    fprintf(stderr, "Error: Failed to sort routing output (error=%d)\n", sort_err);
+    if (has_routes)
+    {
+      adt_ary_destroy(&routes);
+    }
+    if (has_unconn)
+    {
+      adt_ary_destroy(&unconn);
+    }
+    return 1;
   }
 
   if (m_json_output)
@@ -1014,6 +1070,20 @@ static int cmd_routing(apx_diag_client_t *client, routing_mode_t mode, bool stri
           adt_ary_push(&rows, row);
         }
       }
+    }
+  }
+
+  if (mode == ROUTING_MODE_ALL)
+  {
+    sort_err = adt_ary_sort(&rows, routing_row_port_name_vlt, false);
+    if (sort_err != ADT_NO_ERROR)
+    {
+      fprintf(stderr, "Error: Failed to sort routing rows (error=%d)\n", sort_err);
+      adt_ary_destroy(&rows);
+      adt_ary_destroy(&nodes);
+      adt_ary_destroy(&routes);
+      adt_ary_destroy(&unconn);
+      return 1;
     }
   }
 

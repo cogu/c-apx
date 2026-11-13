@@ -366,6 +366,72 @@ def test_apxmon_routing_empty(apx_server_with_monitor, apxmon_bin: str, flag: st
         assert data == []
 
 
+@pytest.mark.parametrize("json_output", [False, True], ids=["text", "json"])
+def test_apxmon_routing_sorted_by_port_name(
+    apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path, json_output: bool
+):
+    definitions = [
+        ("SortProvider", 'P"Zulu"C\nP"Mike"C\nP"Charlie"C\nP"Yankee"C\nP"Bravo"C\n'),
+        ("SortRequirer", 'R"Zulu"C\nR"Mike"C\nR"Charlie"C\nR"Xray"C\nR"Alpha"C\n'),
+    ]
+    connected = ["Charlie", "Mike", "Zulu"]
+    unconnected = ["Alpha", "Bravo", "Xray", "Yankee"]
+    command = [apxmon_bin, "-c", apx_server_with_monitor.monitor_socket]
+    nodes = []
+    try:
+        for node_name, ports in definitions:
+            definition = tmp_path / f"{node_name}.apx"
+            definition.write_text(f'APX/1.3\nN"{node_name}"\n{ports}', encoding="utf-8")
+            node = _spawn_node(
+                [apx_node_bin, "-c", apx_server_with_monitor.socket_path, "--no-bind", str(definition)],
+                definition,
+            )
+            nodes.append(node)
+            assert node.wait_for_output("[APX-CONNECTION] connected to APX server", timeout=3.0)
+
+        deadline = time.monotonic() + 3.0
+        while True:
+            result = subprocess.run(
+                [*command, "--json", "routing", "--all"],
+                capture_output=True, text=True, check=True, timeout=5.0,
+            )
+            data = json.loads(result.stdout)
+            if len(data["routes"]) == 3 and len(data["unconnected"]) == 4:
+                break
+            assert time.monotonic() < deadline, data
+            time.sleep(0.05)
+
+        cases = [
+            (None, connected),
+            ("--unconnected", unconnected),
+            ("--all", ["Alpha", "Bravo", "Charlie", "Mike", "Xray", "Yankee", "Zulu"]),
+            ("--no-provider", ["Alpha", "Xray"]),
+            ("--no-consumer", ["Bravo", "Yankee"]),
+            ("--no-requester", ["Bravo", "Yankee"]),
+        ]
+        for flag, expected in cases:
+            for strip_args in ([[]] if json_output else [[], ["--strip-id"]]):
+                result = subprocess.run(
+                    [
+                        *command, *(["--json"] if json_output else []), "routing",
+                        *([flag] if flag else []), *strip_args,
+                    ],
+                    capture_output=True, text=True, check=True, timeout=5.0,
+                )
+                if json_output:
+                    data = json.loads(result.stdout)
+                    if flag == "--all":
+                        assert [item["port_name"] for item in data["routes"]] == connected
+                        assert [item["port_name"] for item in data["unconnected"]] == unconnected
+                    else:
+                        assert [item["port_name"] for item in data] == expected
+                else:
+                    assert [line.split()[0] for line in result.stdout.splitlines()[2:]] == expected
+    finally:
+        for node in reversed(nodes):
+            node.stop()
+
+
 @pytest.mark.parametrize("duplicate_names", [False, True])
 def test_apxmon_routing_names_and_fanout(
     apx_server_with_monitor, apxmon_bin: str, apx_node_bin: str, tmp_path: Path, duplicate_names: bool

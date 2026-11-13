@@ -137,13 +137,17 @@ route from a provide-port to a require-port, displayed as ``connection_id:node_n
 
    PORT_NAME                PROVIDER_NODE        REQUIRER_NODE
    ----------------------------------------------------------------------
+   CoolantTemp              1:EngineController   0:Dashboard
+   EngineSpeed              1:EngineController   0:Dashboard
    VehicleSpeed             1:EngineController   0:Dashboard
    VehicleSpeed             1:EngineController   2:DataLogger
-   EngineSpeed              1:EngineController   0:Dashboard
-   CoolantTemp              1:EngineController   0:Dashboard
 
 The ``connection_id:`` prefix matches the ``CONN_ID`` reported by ``apx-mon nodes``,
 disambiguating nodes with identical names across different connections.
+
+Except for ``--multi-provider``, rows are sorted by ``PORT_NAME`` in ascending,
+case-sensitive order. With ``--all``, connected and unconnected ports are
+interleaved in a single sorted table.
 
 When invoked with ``--unconnected``, the command reveals ports that are not currently routed:
 
@@ -151,8 +155,8 @@ When invoked with ``--unconnected``, the command reveals ports that are not curr
 
    PORT_NAME                PROVIDER_NODE        REQUIRER_NODE
    ----------------------------------------------------------------------
-   BatteryVoltage           1:EngineController   -
    AmbientAirTemp           -                    0:Dashboard
+   BatteryVoltage           1:EngineController   -
    VehicleSpeed             4:BackupController   (shadowed)
 
 When multiple nodes provide the same port signature, only one provider is actively routed according to the server's ``multiple-provider-policy`` (``"first"`` or ``"last"``). Non-active standby providers are displayed with ``(shadowed)`` in the ``REQUIRER_NODE`` column of ``--unconnected`` and ``--all`` (and ``"reason": "SHADOWED"`` in ``--json`` mode).
@@ -176,6 +180,9 @@ Options:
 * ``--strip-id``: Omits the connection ID prefix from the node columns in tabular reports, displaying only the node name.
 
 In ``--json`` mode, returns a JSON representation of the routes or unconnected ports.
+Arrays use the same port-name ordering, except for ``--multi-provider``.
+With ``--all``, the JSON object retains separate ``routes`` and ``unconnected``
+arrays, each sorted independently.
 
 get-apx
 ~~~~~~~
