@@ -28,6 +28,6 @@
         "syslog-enabled": false
     },
     "monitor-extension": {
-        "enabled": true
+        "enabled": false
     }
 }

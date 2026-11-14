@@ -46,9 +46,13 @@ Global Options
    * - Option
      - Description
    * - ``-c <addr>``, ``--connect <addr>``
-     - Address or path to the diagnostic endpoint. Accepts a UNIX domain socket path (e.g. ``/tmp/apx.socket`` or ``/run/apx/apx_monitor.socket``) or TCP hostname/IP (e.g. ``127.0.0.1:5080``). Default on Linux: ``/tmp/apx.socket``. Default on Windows: ``127.0.0.1:5000``.
+     - Address or path to the diagnostic endpoint. Accepts a UNIX domain socket path (e.g. ``/tmp/apx.socket`` or
+       ``/run/apx/apx_monitor.socket``) or TCP hostname/IP with optional ``:port`` (e.g. ``127.0.0.1:5080``). Default
+       on Linux: ``/tmp/apx.socket`` (or ``127.0.0.1:5080`` with ``--tls``). Default on Windows: ``127.0.0.1:5080``.
+       Default TCP port when omitted: ``5080``.
    * - ``--tls``
-     - Enable TLS transport for encrypted communication with the monitor endpoint.
+     - Enable TLS transport for encrypted communication with the monitor endpoint. When ``-c`` is omitted, defaults to
+       ``127.0.0.1:5080``.
    * - ``--ca-cert <file>``
      - Path to the trusted CA certificate (PEM) used to authenticate the APX server.
    * - ``--client-cert <file>``
@@ -318,7 +322,7 @@ Usage Examples
 
 .. code-block:: bash
 
-   apx-mon -c 127.0.0.1:5020 --tls \
+   apx-mon -c 127.0.0.1:5080 --tls \
      --ca-cert /etc/apx/certs/ca.pem \
      --client-cert /etc/apx/certs/monitor_client.pem \
      --client-key /etc/apx/certs/monitor_client.key \

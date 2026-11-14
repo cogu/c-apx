@@ -41,15 +41,16 @@ typedef struct watch_output_tag
 } watch_output_t;
 
 #ifdef _WIN32
-static const char *m_connect_address_default = "127.0.0.1:5000";
+static const char *m_connect_address_default = "127.0.0.1:5080";
 #else
 static const char *m_connect_address_default = "/tmp/apx.socket";
 #endif
 
+static const uint16_t m_connect_port_default = 5080u;
 static bool m_json_output = false;
 static bool m_use_tls = false;
 static adt_str_t *m_connect_address = NULL;
-static uint16_t m_connect_port = 5000;
+static uint16_t m_connect_port = 5080u;
 static msocket_endpoint_type_t m_connect_resource_type = MSOCKET_ENDPOINT_UNKNOWN;
 static adt_str_t *m_ca_cert = NULL;
 static adt_str_t *m_client_cert = NULL;
@@ -1402,6 +1403,32 @@ static int cmd_top(apx_diag_client_t *client)
   return 0;
 }
 
+/**
+ * Parses the monitor connect endpoint while preserving default ports when omitted.
+ */
+static argparse_result_t parse_connect_endpoint(const char *value)
+{
+  adt_str_t *parsed_address = NULL;
+  uint16_t parsed_port = 0u;
+  msocket_endpoint_type_t const parsed_type = msocket_parse_endpoint(value, &parsed_address, &parsed_port);
+  if ((parsed_type == MSOCKET_ENDPOINT_UNKNOWN) || (parsed_type == MSOCKET_ENDPOINT_ERROR))
+  {
+    if (parsed_address != NULL)
+    {
+      adt_str_delete(parsed_address);
+    }
+    return ARGPARSE_VALUE_ERROR;
+  }
+  if (m_connect_address != NULL)
+  {
+    adt_str_delete(m_connect_address);
+  }
+  m_connect_address = parsed_address;
+  m_connect_resource_type = parsed_type;
+  m_connect_port = (parsed_port != 0u) ? parsed_port : m_connect_port_default;
+  return ARGPARSE_SUCCESS;
+}
+
 static argparse_result_t parse_arg(const char *short_name, const char *long_name, const char *value)
 {
   if (short_name != NULL)
@@ -1418,13 +1445,7 @@ static argparse_result_t parse_arg(const char *short_name, const char *long_name
     }
     else if (strcmp(short_name, "c") == 0)
     {
-      if (m_connect_address != NULL)
-        adt_str_delete(m_connect_address);
-      m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
-      if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN || m_connect_resource_type == MSOCKET_ENDPOINT_ERROR)
-      {
-        return ARGPARSE_VALUE_ERROR;
-      }
+      return parse_connect_endpoint(value);
     }
   }
   if (long_name != NULL)
@@ -1441,13 +1462,7 @@ static argparse_result_t parse_arg(const char *short_name, const char *long_name
     }
     else if (strcmp(long_name, "connect") == 0)
     {
-      if (m_connect_address != NULL)
-        adt_str_delete(m_connect_address);
-      m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
-      if (m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN || m_connect_resource_type == MSOCKET_ENDPOINT_ERROR)
-      {
-        return ARGPARSE_VALUE_ERROR;
-      }
+      return parse_connect_endpoint(value);
     }
     else if (strcmp(long_name, "tls") == 0)
     {
@@ -1515,7 +1530,12 @@ int main(int argc, char **argv)
     }
     if ((strcmp(argv[cmd_idx], "-c") == 0 || strcmp(argv[cmd_idx], "--connect") == 0) && (cmd_idx + 1 < argc))
     {
-      parse_arg(NULL, "connect", argv[cmd_idx + 1]);
+      if (parse_arg(NULL, "connect", argv[cmd_idx + 1]) != ARGPARSE_SUCCESS)
+      {
+        fprintf(stderr, "Invalid endpoint: %s\n", argv[cmd_idx + 1]);
+        print_usage(APP_NAME);
+        return 1;
+      }
       cmd_idx += 2;
       continue;
     }
@@ -1556,10 +1576,6 @@ int main(int argc, char **argv)
     uint16_t dummy_port = 0;
     const char *default_addr = m_use_tls ? "127.0.0.1" : m_connect_address_default;
     m_connect_resource_type = msocket_parse_endpoint(default_addr, &m_connect_address, &dummy_port);
-    if (m_use_tls)
-    {
-      m_connect_port = 5020;
-    }
   }
 
   m_client = apx_diag_client_new();
