@@ -46,6 +46,8 @@ static apx_error_t process_stream_abort(apx_file_manager_t *self, uint8_t const 
 static void abort_stream_with_error(apx_file_manager_t *self, apx_file_t *file, apx_error_t status);
 static apx_error_t validate_local_file_write(apx_file_manager_t *self, uint32_t address, apx_size_t size);
 static apx_error_t reject_definition_transfer(apx_file_manager_t *self, apx_file_t *file, apx_error_t error_code);
+static apx_error_t reject_compressed_publish_command(
+  apx_file_manager_t *self, apx_error_t error_code, apx_size_t header_size, uint8_t const *data, apx_size_t size);
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE VARIABLES
@@ -743,8 +745,9 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
     }
     {
       rmf_publish_compressed_file_cmd_t cmd;
+      apx_error_t decode_error = APX_NO_ERROR;
       memset(&cmd, 0, sizeof(cmd));
-      decoded_size = rmf_decode_publish_compressed_file_cmd(data, data + size, &cmd);
+      decoded_size = rmf_decode_publish_compressed_file_cmd(data, data + size, &cmd, &decode_error);
       if (decoded_size > 0u)
       {
         file_info = rmf_file_info_make_compressed(
@@ -761,7 +764,8 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
       }
       else
       {
-        retval = APX_INVALID_MSG_ERROR;
+        retval =
+          reject_compressed_publish_command(self, decode_error, RMF_PUBLISH_COMPRESSED_FILE_HEADER_SIZE, data, size);
       }
     }
     break;
@@ -773,8 +777,9 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
     }
     {
       rmf_publish_signed_compressed_file_cmd_t cmd;
+      apx_error_t decode_error = APX_NO_ERROR;
       memset(&cmd, 0, sizeof(cmd));
-      decoded_size = rmf_decode_publish_signed_compressed_file_cmd(data, data + size, &cmd);
+      decoded_size = rmf_decode_publish_signed_compressed_file_cmd(data, data + size, &cmd, &decode_error);
       if (decoded_size > 0u)
       {
         file_info = rmf_file_info_make_signed_compressed(cmd.name, cmd.compressed_size, cmd.uncompressed_size,
@@ -791,7 +796,8 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
       }
       else
       {
-        retval = APX_INVALID_MSG_ERROR;
+        retval = reject_compressed_publish_command(
+          self, decode_error, RMF_PUBLISH_SIGNED_COMPRESSED_FILE_HEADER_SIZE, data, size);
       }
     }
     break;
@@ -1269,4 +1275,34 @@ static apx_error_t validate_local_file_write(apx_file_manager_t *self, uint32_t 
     }
   }
   return APX_NO_ERROR;
+}
+
+static apx_error_t reject_compressed_publish_command(
+  apx_file_manager_t *self, apx_error_t error_code, apx_size_t header_size, uint8_t const *data, apx_size_t size)
+{
+  char name_buf[RMF_MAX_FILE_NAME_SIZE + 1u];
+  char const *nack_name = NULL;
+  if ((error_code != APX_INVALID_MSG_ERROR) && (size > (header_size + 1u)))
+  {
+    uint8_t const *name_start = data + header_size;
+    apx_size_t const max_scan = size - header_size;
+    uint8_t const *null_pos = (uint8_t const *)memchr(name_start, 0, (size_t)max_scan);
+    if ((null_pos != NULL) && (null_pos > name_start))
+    {
+      apx_size_t const name_len = (apx_size_t)(null_pos - name_start);
+      uint8_t const *dot = (uint8_t const *)memchr(name_start, '.', (size_t)name_len);
+      apx_size_t copy_len = (dot != NULL) ? (apx_size_t)(dot - name_start) : name_len;
+      if (copy_len > RMF_MAX_FILE_NAME_SIZE)
+      {
+        copy_len = RMF_MAX_FILE_NAME_SIZE;
+      }
+      if (copy_len > 0u)
+      {
+        memcpy(name_buf, name_start, copy_len);
+        name_buf[copy_len] = '\0';
+        nack_name = name_buf;
+      }
+    }
+  }
+  return apx_file_manager_worker_prepare_error_code(&self->worker, error_code, nack_name);
 }

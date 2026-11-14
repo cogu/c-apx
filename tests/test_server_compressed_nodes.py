@@ -612,3 +612,146 @@ def test_server_rejects_digest_mismatch(tmp_path: Path, apx_server_bin: str):
     finally:
         server.stop(timeout=2.0)
         assert server.process.returncode == 0
+
+
+def test_server_compressed_publish_error_categories_and_connection_reuse(tmp_path: Path, apx_server_bin: str):
+    """
+    Verify compressed publication header error categories on RMFP/1.1 without closing the connection:
+    - Unsupported CompressionType=2 -> NACK(10, APX_UNSUPPORTED_ERROR)
+    - Invalid field (nonzero Reserved) -> NACK(1, APX_INVALID_ARGUMENT_ERROR)
+    - Malformed structure (missing FileName terminator) -> NACK(44, APX_INVALID_MSG_ERROR)
+    - Unsupported SignatureType=2 -> NACK(10, APX_UNSUPPORTED_ERROR)
+    - Subsequent valid compressed publication succeeds on the same socket.
+    """
+    socket_path = str(tmp_path / "apx.socket")
+    config = {
+        "apx-server": {},
+        "socket-server-extension": {
+            "unix-file": socket_path
+        }
+    }
+    server = start_server(tmp_path, apx_server_bin, config)
+
+    apx_def = b'APX/1.2\nN"RecoveredNode"\nR"Speed"S:=0\nP"State"C(0,3):=0\n'
+    compressed_def = zlib.compress(apx_def)
+    cmd_addr = (0x80000000 | 0x3FFFFC00).to_bytes(4, "big")
+
+    def read_nack() -> tuple[int, bytes]:
+        nack_msg = read_msg(sock, timeout=2.0)
+        assert len(nack_msg) >= 13
+        assert int.from_bytes(nack_msg[4:8], "little") == 1  # RMF_CMD_NACK_MSG
+        err_code = int.from_bytes(nack_msg[8:12], "little")
+        node_name = nack_msg[12:].rstrip(b"\x00")
+        return err_code, node_name
+
+    try:
+        sock = server.connect()
+        greeting = b"RMFP/1.1\nMessage-Size: 32\n\n"
+        sock.sendall(bytes([len(greeting)]) + greeting)
+        resp = read_msg(sock, timeout=2.0)
+        assert len(resp) > 0
+
+        # 1. Unsupported CompressionType = 2
+        bad_algo_payload = (
+            cmd_addr
+            + (22).to_bytes(4, "little")
+            + (0x02000000).to_bytes(4, "little")
+            + len(apx_def).to_bytes(4, "little")
+            + len(compressed_def).to_bytes(4, "little")
+            + (0).to_bytes(2, "little")
+            + (2).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (b"\x00" * 32)
+            + b"UnsupportedAlgo.apx\x00"
+        )
+        sock.sendall(encode_numheader32(bad_algo_payload))
+        err_code, node_name = read_nack()
+        assert err_code == 10, f"Expected APX_UNSUPPORTED_ERROR (10), got {err_code}"
+        assert node_name == b"UnsupportedAlgo"
+
+        # 2. Invalid field (Reserved = 1)
+        bad_field_payload = (
+            cmd_addr
+            + (22).to_bytes(4, "little")
+            + (0x02000000).to_bytes(4, "little")
+            + len(apx_def).to_bytes(4, "little")
+            + len(compressed_def).to_bytes(4, "little")
+            + (0).to_bytes(2, "little")
+            + (1).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (1).to_bytes(2, "little")
+            + (b"\x00" * 32)
+            + b"InvalidReserved.apx\x00"
+        )
+        sock.sendall(encode_numheader32(bad_field_payload))
+        err_code, node_name = read_nack()
+        assert err_code == 1, f"Expected APX_INVALID_ARGUMENT_ERROR (1), got {err_code}"
+        assert node_name == b"InvalidReserved"
+
+        # 3. Malformed command structure (missing FileName null terminator)
+        malformed_payload = (
+            cmd_addr
+            + (22).to_bytes(4, "little")
+            + (0x02000000).to_bytes(4, "little")
+            + len(apx_def).to_bytes(4, "little")
+            + len(compressed_def).to_bytes(4, "little")
+            + (0).to_bytes(2, "little")
+            + (1).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (b"\x00" * 32)
+            + b"NoTerminator.apx"
+        )
+        sock.sendall(encode_numheader32(malformed_payload))
+        err_code, node_name = read_nack()
+        assert err_code == 44, f"Expected APX_INVALID_MSG_ERROR (44), got {err_code}"
+        assert node_name == b""
+
+        # 4. Unsupported SignatureType = 2 on PublishSignedCompressedFile
+        bad_sig_payload = (
+            cmd_addr
+            + (23).to_bytes(4, "little")
+            + (0x03000000).to_bytes(4, "little")
+            + len(apx_def).to_bytes(4, "little")
+            + len(compressed_def).to_bytes(4, "little")
+            + (0).to_bytes(2, "little")
+            + (1).to_bytes(2, "little")
+            + (2).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (b"\x00" * 64)
+            + b"BadSigAlgo.apx\x00"
+        )
+        sock.sendall(encode_numheader32(bad_sig_payload))
+        err_code, node_name = read_nack()
+        assert err_code == 10, f"Expected APX_UNSUPPORTED_ERROR (10), got {err_code}"
+        assert node_name == b"BadSigAlgo"
+
+        # 5. Connection remains usable: subsequent valid compressed publication succeeds
+        valid_payload = (
+            cmd_addr
+            + (22).to_bytes(4, "little")
+            + (0x02000000).to_bytes(4, "little")
+            + len(apx_def).to_bytes(4, "little")
+            + len(compressed_def).to_bytes(4, "little")
+            + (0).to_bytes(2, "little")
+            + (1).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (b"\x00" * 32)
+            + b"RecoveredNode.apx\x00"
+        )
+        sock.sendall(encode_numheader32(valid_payload))
+        open_req = read_msg(sock, timeout=2.0)
+        assert len(open_req) > 0, "Server did not open valid compressed node after previous rejections"
+
+        write_addr = (0x80000000 | 0x02000000).to_bytes(4, "big")
+        sock.sendall(encode_numheader32(write_addr + compressed_def))
+        send_initial_provide_data(sock, b"RecoveredNode.out\x00", b"\x00")
+        in_file_info = read_msg(sock, timeout=2.0)
+        assert b"RecoveredNode.in" in in_file_info
+
+        sock.close()
+    finally:
+        server.stop(timeout=2.0)
+        assert server.process.returncode == 0

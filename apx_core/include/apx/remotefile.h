@@ -14,6 +14,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#include "apx/error.h"
 #include "apx/remotefile_cfg.h"
 #include "apx/types.h"
 
@@ -231,15 +232,15 @@ apx_size_t rmf_decode_stream_abort_cmd(uint8_t const *begin, uint8_t const *end,
 apx_size_t rmf_encode_publish_compressed_file_cmd(
   uint8_t *buf, apx_size_t buf_size, rmf_publish_compressed_file_cmd_t const *cmd);
 apx_size_t rmf_decode_publish_compressed_file_cmd(
-  uint8_t const *begin, uint8_t const *end, rmf_publish_compressed_file_cmd_t *cmd);
-apx_size_t rmf_encode_publish_signed_compressed_file_cmd(
-  uint8_t *buf, apx_size_t buf_size, rmf_publish_signed_compressed_file_cmd_t const *cmd);
-apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
-  uint8_t const *begin, uint8_t const *end, rmf_publish_signed_compressed_file_cmd_t *cmd);
-bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t *file_type);
-bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t *digest_type);
-bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t *signature_type);
-bool rmf_value_to_compression_type(uint16_t value, rmf_compression_type_t *compression_type);
+  uint8_t const *begin, uint8_t const *end, rmf_publish_compressed_file_cmd_t *cmd, apx_error_t *error_code);
+  apx_size_t rmf_encode_publish_signed_compressed_file_cmd(
+    uint8_t *buf, apx_size_t buf_size, rmf_publish_signed_compressed_file_cmd_t const *cmd);
+  apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
+  uint8_t const *begin, uint8_t const *end, rmf_publish_signed_compressed_file_cmd_t *cmd, apx_error_t *error_code);
+  bool rmf_value_to_file_type(uint16_t value, rmf_file_type_t *file_type);
+  bool rmf_value_to_digest_type(uint16_t value, rmf_digest_type_t *digest_type);
+  bool rmf_value_to_signature_type(uint16_t value, rmf_signature_type_t *signature_type);
+  bool rmf_value_to_compression_type(uint16_t value, rmf_compression_type_t *compression_type);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES

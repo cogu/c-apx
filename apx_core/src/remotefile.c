@@ -28,6 +28,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
+static void set_decode_error(apx_error_t *error_code, apx_error_t value);
+static apx_size_t validate_compressed_cmd_header_and_name(uint8_t const *begin, uint8_t const *end,
+  uint32_t expected_cmd_type, apx_size_t header_size, apx_size_t max_name_len, char const **name_out,
+  apx_error_t *error_code);
+static bool validate_compressed_cmd_common_fields(uint32_t start_address, uint32_t uncompressed_size,
+  uint32_t compressed_size, uint16_t file_type_raw, uint16_t compression_type_raw, uint16_t reserved,
+  rmf_file_type_t *file_type, rmf_compression_type_t *compression_type, apx_error_t *error_code);
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -833,24 +840,24 @@ apx_size_t rmf_encode_publish_compressed_file_cmd(
 }
 
 apx_size_t rmf_decode_publish_compressed_file_cmd(
-  uint8_t const *begin, uint8_t const *end, rmf_publish_compressed_file_cmd_t *cmd)
+  uint8_t const *begin, uint8_t const *end, rmf_publish_compressed_file_cmd_t *cmd, apx_error_t *error_code)
 {
-  if ((begin == NULL) || (end == NULL) || (cmd == NULL) || (begin >= end))
+  set_decode_error(error_code, APX_NO_ERROR);
+  if (cmd == NULL)
+  {
+    set_decode_error(error_code, APX_INVALID_ARGUMENT_ERROR);
+    return 0u;
+  }
+  char const *name = NULL;
+  apx_size_t const total_cmd_size =
+    validate_compressed_cmd_header_and_name(begin, end, RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG,
+      RMF_PUBLISH_COMPRESSED_FILE_HEADER_SIZE, RMF_COMPRESSED_FILE_NAME_MAX_LEN, &name, error_code);
+  if (total_cmd_size == 0u)
   {
     return 0u;
   }
-  apx_size_t const buf_size = (apx_size_t)(end - begin);
-  if (buf_size < (RMF_PUBLISH_COMPRESSED_FILE_HEADER_SIZE + 2u))
-  {
-    return 0u;
-  }
-  uint8_t const *p = begin;
-  uint32_t const cmd_type = unpackLE(p, (uint8_t)UINT32_SIZE);
-  if (cmd_type != RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG)
-  {
-    return 0u;
-  }
-  p += UINT32_SIZE;
+
+  uint8_t const *p = begin + UINT32_SIZE;
   uint32_t const start_address = unpackLE(p, (uint8_t)UINT32_SIZE);
   p += UINT32_SIZE;
   uint32_t const uncompressed_size = unpackLE(p, (uint8_t)UINT32_SIZE);
@@ -866,32 +873,11 @@ apx_size_t rmf_decode_publish_compressed_file_cmd(
   uint16_t const reserved = (uint16_t)unpackLE(p, (uint8_t)UINT16_SIZE);
   p += UINT16_SIZE;
   uint8_t const *digest_data = p;
-  p += RMF_SHA256_SIZE;
 
-  if (reserved != 0u)
-  {
-    return 0u;
-  }
-  if ((uncompressed_size == 0u) || (uncompressed_size > RMF_CMD_AREA_START_ADDRESS))
-  {
-    return 0u;
-  }
-  if ((compressed_size == 0u) || (compressed_size > RMF_CMD_AREA_START_ADDRESS))
-  {
-    return 0u;
-  }
-  if ((start_address >= RMF_CMD_AREA_START_ADDRESS) || (compressed_size > (RMF_CMD_AREA_START_ADDRESS - start_address)))
-  {
-    return 0u;
-  }
   rmf_file_type_t file_type = RMF_FILE_TYPE_FIXED;
-  if (!rmf_value_to_file_type(file_type_raw, &file_type) || (file_type != RMF_FILE_TYPE_FIXED))
-  {
-    return 0u;
-  }
   rmf_compression_type_t compression_type = RMF_COMPRESSION_TYPE_NONE;
-  if (!rmf_value_to_compression_type(compression_type_raw, &compression_type) ||
-    (compression_type != RMF_COMPRESSION_TYPE_ZLIB_DEFLATE))
+  if (!validate_compressed_cmd_common_fields(start_address, uncompressed_size, compressed_size, file_type_raw,
+        compression_type_raw, reserved, &file_type, &compression_type, error_code))
   {
     return 0u;
   }
@@ -899,23 +885,7 @@ apx_size_t rmf_decode_publish_compressed_file_cmd(
   if (!rmf_value_to_digest_type(digest_type_raw, &digest_type) ||
     ((digest_type != RMF_DIGEST_TYPE_NONE) && (digest_type != RMF_DIGEST_TYPE_SHA256)))
   {
-    return 0u;
-  }
-
-  uint8_t const *name_start = p;
-  uint8_t const *null_pos = bstr_find_byte(name_start, end, 0);
-  if ((null_pos == end) || (null_pos == name_start))
-  {
-    return 0u;
-  }
-  apx_size_t const name_len = (apx_size_t)(null_pos - name_start);
-  if (name_len > RMF_COMPRESSED_FILE_NAME_MAX_LEN)
-  {
-    return 0u;
-  }
-  apx_size_t const total_cmd_size = (apx_size_t)((null_pos + 1u) - begin);
-  if (total_cmd_size > RMF_CMD_AREA_SIZE)
-  {
+    set_decode_error(error_code, APX_UNSUPPORTED_ERROR);
     return 0u;
   }
 
@@ -927,7 +897,7 @@ apx_size_t rmf_decode_publish_compressed_file_cmd(
   cmd->digest_type = digest_type;
   cmd->reserved = 0u;
   memcpy(cmd->digest_data, digest_data, RMF_SHA256_SIZE);
-  cmd->name = (char const *)name_start;
+  cmd->name = name;
 
   return total_cmd_size;
 }
@@ -1000,24 +970,24 @@ apx_size_t rmf_encode_publish_signed_compressed_file_cmd(
 }
 
 apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
-  uint8_t const *begin, uint8_t const *end, rmf_publish_signed_compressed_file_cmd_t *cmd)
+  uint8_t const *begin, uint8_t const *end, rmf_publish_signed_compressed_file_cmd_t *cmd, apx_error_t *error_code)
 {
-  if ((begin == NULL) || (end == NULL) || (cmd == NULL) || (begin >= end))
+  set_decode_error(error_code, APX_NO_ERROR);
+  if (cmd == NULL)
+  {
+    set_decode_error(error_code, APX_INVALID_ARGUMENT_ERROR);
+    return 0u;
+  }
+  char const *name = NULL;
+  apx_size_t const total_cmd_size =
+    validate_compressed_cmd_header_and_name(begin, end, RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG,
+      RMF_PUBLISH_SIGNED_COMPRESSED_FILE_HEADER_SIZE, RMF_SIGNED_COMPRESSED_FILE_NAME_MAX_LEN, &name, error_code);
+  if (total_cmd_size == 0u)
   {
     return 0u;
   }
-  apx_size_t const buf_size = (apx_size_t)(end - begin);
-  if (buf_size < (RMF_PUBLISH_SIGNED_COMPRESSED_FILE_HEADER_SIZE + 2u))
-  {
-    return 0u;
-  }
-  uint8_t const *p = begin;
-  uint32_t const cmd_type = unpackLE(p, (uint8_t)UINT32_SIZE);
-  if (cmd_type != RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG)
-  {
-    return 0u;
-  }
-  p += UINT32_SIZE;
+
+  uint8_t const *p = begin + UINT32_SIZE;
   uint32_t const start_address = unpackLE(p, (uint8_t)UINT32_SIZE);
   p += UINT32_SIZE;
   uint32_t const uncompressed_size = unpackLE(p, (uint8_t)UINT32_SIZE);
@@ -1033,32 +1003,11 @@ apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
   uint16_t const reserved = (uint16_t)unpackLE(p, (uint8_t)UINT16_SIZE);
   p += UINT16_SIZE;
   uint8_t const *signature_data = p;
-  p += RMF_SIGNATURE_SIZE_ECDSA_P256;
 
-  if (reserved != 0u)
-  {
-    return 0u;
-  }
-  if ((uncompressed_size == 0u) || (uncompressed_size > RMF_CMD_AREA_START_ADDRESS))
-  {
-    return 0u;
-  }
-  if ((compressed_size == 0u) || (compressed_size > RMF_CMD_AREA_START_ADDRESS))
-  {
-    return 0u;
-  }
-  if ((start_address >= RMF_CMD_AREA_START_ADDRESS) || (compressed_size > (RMF_CMD_AREA_START_ADDRESS - start_address)))
-  {
-    return 0u;
-  }
   rmf_file_type_t file_type = RMF_FILE_TYPE_FIXED;
-  if (!rmf_value_to_file_type(file_type_raw, &file_type) || (file_type != RMF_FILE_TYPE_FIXED))
-  {
-    return 0u;
-  }
   rmf_compression_type_t compression_type = RMF_COMPRESSION_TYPE_NONE;
-  if (!rmf_value_to_compression_type(compression_type_raw, &compression_type) ||
-    (compression_type != RMF_COMPRESSION_TYPE_ZLIB_DEFLATE))
+  if (!validate_compressed_cmd_common_fields(start_address, uncompressed_size, compressed_size, file_type_raw,
+        compression_type_raw, reserved, &file_type, &compression_type, error_code))
   {
     return 0u;
   }
@@ -1066,23 +1015,7 @@ apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
   if (!rmf_value_to_signature_type(signature_type_raw, &signature_type) ||
     (signature_type != RMF_SIGNATURE_TYPE_ECDSA_P256))
   {
-    return 0u;
-  }
-
-  uint8_t const *name_start = p;
-  uint8_t const *null_pos = bstr_find_byte(name_start, end, 0);
-  if ((null_pos == end) || (null_pos == name_start))
-  {
-    return 0u;
-  }
-  apx_size_t const name_len = (apx_size_t)(null_pos - name_start);
-  if (name_len > RMF_SIGNED_COMPRESSED_FILE_NAME_MAX_LEN)
-  {
-    return 0u;
-  }
-  apx_size_t const total_cmd_size = (apx_size_t)((null_pos + 1u) - begin);
-  if (total_cmd_size > RMF_CMD_AREA_SIZE)
-  {
+    set_decode_error(error_code, APX_UNSUPPORTED_ERROR);
     return 0u;
   }
 
@@ -1094,7 +1027,7 @@ apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
   cmd->signature_type = signature_type;
   cmd->reserved = 0u;
   memcpy(cmd->signature_data, signature_data, RMF_SIGNATURE_SIZE_ECDSA_P256);
-  cmd->name = (char const *)name_start;
+  cmd->name = name;
 
   return total_cmd_size;
 }
@@ -1103,3 +1036,94 @@ apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
 //////////////////////////////////////////////////////////////////////////////
 // LOCAL FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+
+static void set_decode_error(apx_error_t *error_code, apx_error_t value)
+{
+  if (error_code != NULL)
+  {
+    *error_code = value;
+  }
+}
+
+static apx_size_t validate_compressed_cmd_header_and_name(uint8_t const *begin, uint8_t const *end,
+  uint32_t expected_cmd_type, apx_size_t header_size, apx_size_t max_name_len, char const **name_out,
+  apx_error_t *error_code)
+{
+  if ((begin == NULL) || (end == NULL) || (name_out == NULL))
+  {
+    set_decode_error(error_code, APX_INVALID_ARGUMENT_ERROR);
+    return 0u;
+  }
+  if (begin >= end)
+  {
+    set_decode_error(error_code, APX_INVALID_MSG_ERROR);
+    return 0u;
+  }
+  apx_size_t const buf_size = (apx_size_t)(end - begin);
+  if (buf_size < (header_size + 2u))
+  {
+    set_decode_error(error_code, APX_INVALID_MSG_ERROR);
+    return 0u;
+  }
+  uint32_t const cmd_type = unpackLE(begin, (uint8_t)UINT32_SIZE);
+  if (cmd_type != expected_cmd_type)
+  {
+    set_decode_error(error_code, APX_INVALID_MSG_ERROR);
+    return 0u;
+  }
+  // Check structural framing and file-name termination before validating fields or algorithms
+  uint8_t const *name_start = begin + header_size;
+  uint8_t const *null_pos = bstr_find_byte(name_start, end, 0);
+  if ((null_pos == NULL) || (null_pos == end) || (null_pos == name_start))
+  {
+    set_decode_error(error_code, APX_INVALID_MSG_ERROR);
+    return 0u;
+  }
+  apx_size_t const name_len = (apx_size_t)(null_pos - name_start);
+  apx_size_t const total_cmd_size = (apx_size_t)((null_pos + 1u) - begin);
+  if ((name_len > max_name_len) || (total_cmd_size > RMF_CMD_AREA_SIZE))
+  {
+    set_decode_error(error_code, APX_INVALID_MSG_ERROR);
+    return 0u;
+  }
+  *name_out = (char const *)name_start;
+  return total_cmd_size;
+}
+
+static bool validate_compressed_cmd_common_fields(uint32_t start_address, uint32_t uncompressed_size,
+  uint32_t compressed_size, uint16_t file_type_raw, uint16_t compression_type_raw, uint16_t reserved,
+  rmf_file_type_t *file_type, rmf_compression_type_t *compression_type, apx_error_t *error_code)
+{
+  if (reserved != 0u)
+  {
+    set_decode_error(error_code, APX_INVALID_ARGUMENT_ERROR);
+    return false;
+  }
+  if ((uncompressed_size == 0u) || (uncompressed_size > RMF_CMD_AREA_START_ADDRESS))
+  {
+    set_decode_error(error_code, APX_INVALID_ARGUMENT_ERROR);
+    return false;
+  }
+  if ((compressed_size == 0u) || (compressed_size > RMF_CMD_AREA_START_ADDRESS))
+  {
+    set_decode_error(error_code, APX_INVALID_ARGUMENT_ERROR);
+    return false;
+  }
+  if ((start_address >= RMF_CMD_AREA_START_ADDRESS) || (compressed_size > (RMF_CMD_AREA_START_ADDRESS - start_address)))
+  {
+    set_decode_error(error_code, APX_INVALID_ARGUMENT_ERROR);
+    return false;
+  }
+  if (!rmf_value_to_file_type(file_type_raw, file_type) || (*file_type != RMF_FILE_TYPE_FIXED))
+  {
+    set_decode_error(error_code, APX_UNSUPPORTED_ERROR);
+    return false;
+  }
+  if (!rmf_value_to_compression_type(compression_type_raw, compression_type) ||
+    (*compression_type != RMF_COMPRESSION_TYPE_ZLIB_DEFLATE))
+  {
+    set_decode_error(error_code, APX_UNSUPPORTED_ERROR);
+    return false;
+  }
+  return true;
+}

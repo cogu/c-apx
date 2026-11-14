@@ -42,6 +42,7 @@ typedef struct mock_endpoint_tag
   uint32_t connection_id;
   rmf_version_id_t version_id;
   apx_error_t last_nack_error;
+  char last_nack_name[RMF_MAX_FILE_NAME_SIZE + 1u];
   uint32_t open_notify_count;
   uint32_t close_notify_count;
 } mock_endpoint_t;
@@ -79,6 +80,7 @@ static void test_stream_close_abort_revoke_and_disconnect(CuTest *tc);
 static void test_small_soa_and_large_data_pipeline(CuTest *tc);
 static void test_command_queue_cleanup_on_destroy(CuTest *tc);
 static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc);
+static void test_file_manager_compressed_publish_error_reporting(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -98,6 +100,7 @@ CuSuite *testsuite_apx_file_manager(void)
   SUITE_ADD_TEST(suite, test_small_soa_and_large_data_pipeline);
   SUITE_ADD_TEST(suite, test_command_queue_cleanup_on_destroy);
   SUITE_ADD_TEST(suite, test_file_manager_publish_and_receive_compressed_files);
+  SUITE_ADD_TEST(suite, test_file_manager_compressed_publish_error_reporting);
 
   return suite;
 }
@@ -237,8 +240,16 @@ static apx_connection_type_t on_mock_get_connection_type(void *arg)
 static apx_error_t on_mock_nack_notification(void *arg, apx_error_t error_code, char const *name)
 {
   mock_endpoint_t *self = (mock_endpoint_t *)arg;
-  (void)name;
   self->last_nack_error = error_code;
+  if (name != NULL)
+  {
+    strncpy(self->last_nack_name, name, sizeof(self->last_nack_name) - 1u);
+    self->last_nack_name[sizeof(self->last_nack_name) - 1u] = '\0';
+  }
+  else
+  {
+    self->last_nack_name[0] = '\0';
+  }
   return APX_NO_ERROR;
 }
 
@@ -1080,6 +1091,85 @@ static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc)
   CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, apx_file_get_signature_type(sub_file2));
   CuAssertIntEquals(
     tc, 0, memcmp(apx_file_get_signature_data(sub_file2), dummy_signature, RMF_SIGNATURE_SIZE_ECDSA_P256));
+
+  mock_endpoint_destroy(&sub);
+  mock_endpoint_destroy(&pub);
+}
+
+static void test_file_manager_compressed_publish_error_reporting(CuTest *tc)
+{
+  mock_endpoint_t pub;
+  mock_endpoint_t sub;
+  mock_endpoint_create(&pub, APX_CLIENT_MODE, 4096);
+  mock_endpoint_create(&sub, APX_SERVER_MODE, 4096);
+
+  uint8_t cmd_buf[RMF_CMD_AREA_SIZE];
+  rmf_publish_compressed_file_cmd_t in_cmd = {
+    .start_address = 0x02000000u,
+    .uncompressed_size = 200u,
+    .compressed_size = 80u,
+    .file_type = RMF_FILE_TYPE_FIXED,
+    .compression_type = RMF_COMPRESSION_TYPE_ZLIB_DEFLATE,
+    .digest_type = RMF_DIGEST_TYPE_NONE,
+    .reserved = 0u,
+    .name = "BadComp.apx",
+  };
+  apx_size_t const encoded_size = rmf_encode_publish_compressed_file_cmd(cmd_buf, sizeof(cmd_buf), &in_cmd);
+  CuAssertTrue(tc, encoded_size > 0u);
+
+  // 1. Unsupported CompressionType=2 on otherwise valid publication -> NACK(APX_UNSUPPORTED_ERROR, "BadComp")
+  packLE(cmd_buf + 18, 2u, UINT16_SIZE);
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, encoded_size));
+  mock_endpoint_deliver_all(&sub, &pub);
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, pub.last_nack_error);
+  CuAssertStrEquals(tc, "BadComp", pub.last_nack_name);
+  CuAssertPtrEquals(tc, NULL, apx_file_manager_find_remote_file_by_name(&sub.file_manager, "BadComp.apx"));
+  packLE(cmd_buf + 18, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, UINT16_SIZE);
+
+  // 2. Nonzero Reserved field -> NACK(APX_INVALID_ARGUMENT_ERROR, "BadComp")
+  packLE(cmd_buf + 22, 1u, UINT16_SIZE);
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, encoded_size));
+  mock_endpoint_deliver_all(&sub, &pub);
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, pub.last_nack_error);
+  CuAssertStrEquals(tc, "BadComp", pub.last_nack_name);
+  packLE(cmd_buf + 22, 0u, UINT16_SIZE);
+
+  // 3. Missing filename null terminator -> NACK(APX_INVALID_MSG_ERROR, "")
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, encoded_size - 1u));
+  mock_endpoint_deliver_all(&sub, &pub);
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, pub.last_nack_error);
+  CuAssertStrEquals(tc, "", pub.last_nack_name);
+
+  // 4. Signed compressed publication with unsupported SignatureType=2 -> NACK(APX_UNSUPPORTED_ERROR, "BadSigned")
+  rmf_publish_signed_compressed_file_cmd_t signed_cmd = {
+    .start_address = 0x03000000u,
+    .uncompressed_size = 200u,
+    .compressed_size = 80u,
+    .file_type = RMF_FILE_TYPE_FIXED,
+    .compression_type = RMF_COMPRESSION_TYPE_ZLIB_DEFLATE,
+    .signature_type = RMF_SIGNATURE_TYPE_ECDSA_P256,
+    .reserved = 0u,
+    .name = "BadSigned.apx",
+  };
+  apx_size_t const signed_size = rmf_encode_publish_signed_compressed_file_cmd(cmd_buf, sizeof(cmd_buf), &signed_cmd);
+  CuAssertTrue(tc, signed_size > 0u);
+  packLE(cmd_buf + 20, 2u, UINT16_SIZE);
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, signed_size));
+  mock_endpoint_deliver_all(&sub, &pub);
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, pub.last_nack_error);
+  CuAssertStrEquals(tc, "BadSigned", pub.last_nack_name);
+
+  // 5. Subsequent valid publication on the same connection still succeeds
+  in_cmd.name = "Recovered.apx";
+  apx_size_t const ok_size = rmf_encode_publish_compressed_file_cmd(cmd_buf, sizeof(cmd_buf), &in_cmd);
+  CuAssertTrue(tc, ok_size > 0u);
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, ok_size));
+  CuAssertPtrNotNull(tc, apx_file_manager_find_remote_file_by_name(&sub.file_manager, "Recovered.apx"));
 
   mock_endpoint_destroy(&sub);
   mock_endpoint_destroy(&pub);

@@ -505,9 +505,11 @@ static void test_publish_compressed_file_cmd_encode_decode(CuTest *tc)
 
   // Normal decode with SHA-256
   rmf_publish_compressed_file_cmd_t out_cmd;
+  apx_error_t decode_err = APX_GENERIC_ERROR;
   memset(&out_cmd, 0, sizeof(out_cmd));
-  apx_size_t decoded_size = rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd);
+  apx_size_t decoded_size = rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err);
   CuAssertUIntEquals(tc, encoded_size, decoded_size);
+  CuAssertIntEquals(tc, APX_NO_ERROR, decode_err);
   CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
   CuAssertUIntEquals(tc, in_cmd.uncompressed_size, out_cmd.uncompressed_size);
   CuAssertUIntEquals(tc, in_cmd.compressed_size, out_cmd.compressed_size);
@@ -527,8 +529,10 @@ static void test_publish_compressed_file_cmd_encode_decode(CuTest *tc)
   CuAssertIntEquals(tc, 0, memcmp(buf + 24, zero_digest, RMF_SHA256_SIZE));
 
   memset(&out_cmd, 0, sizeof(out_cmd));
-  decoded_size = rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd);
+  decode_err = APX_GENERIC_ERROR;
+  decoded_size = rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err);
   CuAssertUIntEquals(tc, encoded_size, decoded_size);
+  CuAssertIntEquals(tc, APX_NO_ERROR, decode_err);
   CuAssertUIntEquals(tc, RMF_DIGEST_TYPE_NONE, out_cmd.digest_type);
   CuAssertIntEquals(tc, 0, memcmp(out_cmd.digest_data, zero_digest, RMF_SHA256_SIZE));
 
@@ -581,51 +585,84 @@ static void test_publish_compressed_file_cmd_encode_decode(CuTest *tc)
   encoded_size = rmf_encode_publish_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
   CuAssertTrue(tc, encoded_size > 0u);
 
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(NULL, buf + encoded_size, &out_cmd));
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, NULL, &out_cmd));
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, NULL));
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size - 1u, &out_cmd));
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + 10u, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(NULL, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, NULL, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, NULL, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size - 1u, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + 10u, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
 
-  // Corrupted opcode
+  // Corrupted opcode -> APX_INVALID_MSG_ERROR
   packLE(buf, RMF_CMD_PUBLISH_SIGNED_FILE_MSG, UINT32_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
   packLE(buf, RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG, UINT32_SIZE);
 
-  // Non-zero reserved field
-  packLE(buf + 22, 1u, UINT16_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 22, 0u, UINT16_SIZE);
-
-  // Invalid uncompressed_size = 0
-  packLE(buf + 8, 0u, UINT32_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 8, in_cmd.uncompressed_size, UINT32_SIZE);
-
-  // Invalid compressed_size = 0
-  packLE(buf + 12, 0u, UINT32_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 12, in_cmd.compressed_size, UINT32_SIZE);
-
-  // Invalid file_type
-  packLE(buf + 16, RMF_U16_FILE_TYPE_DYNAMIC8, UINT16_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 16, RMF_U16_FILE_TYPE_FIXED, UINT16_SIZE);
-
-  // Invalid compression_type
-  packLE(buf + 18, 0u, UINT16_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  // Structural check precedes algorithm check (missing null terminator + CompressionType=2 -> APX_INVALID_MSG_ERROR)
+  packLE(buf + 18, 2u, UINT16_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size - 1u, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
   packLE(buf + 18, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, UINT16_SIZE);
 
-  // Invalid digest_type (SHA1 = 1)
+  // Non-zero reserved field -> APX_INVALID_ARGUMENT_ERROR
+  packLE(buf + 22, 1u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  packLE(buf + 22, 0u, UINT16_SIZE);
+
+  // Invalid uncompressed_size = 0 -> APX_INVALID_ARGUMENT_ERROR
+  packLE(buf + 8, 0u, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  packLE(buf + 8, in_cmd.uncompressed_size, UINT32_SIZE);
+
+  // Invalid compressed_size = 0 -> APX_INVALID_ARGUMENT_ERROR
+  packLE(buf + 12, 0u, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  packLE(buf + 12, in_cmd.compressed_size, UINT32_SIZE);
+
+  // Invalid start_address / range overflow -> APX_INVALID_ARGUMENT_ERROR
+  packLE(buf + 4, RMF_CMD_AREA_START_ADDRESS, UINT32_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  packLE(buf + 4, in_cmd.start_address, UINT32_SIZE);
+
+  // Unsupported file_type -> APX_UNSUPPORTED_ERROR
+  packLE(buf + 16, RMF_U16_FILE_TYPE_DYNAMIC8, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 16, RMF_U16_FILE_TYPE_FIXED, UINT16_SIZE);
+
+  // Unsupported compression_type (0 and unknown 2) -> APX_UNSUPPORTED_ERROR
+  packLE(buf + 18, 0u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 18, 2u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 18, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, UINT16_SIZE);
+
+  // Unsupported digest_type (SHA1 = 1 and unknown = 99) -> APX_UNSUPPORTED_ERROR
   packLE(buf + 20, 1u, UINT16_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 20, 99u, UINT16_SIZE);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
   packLE(buf + 20, RMF_U16_DIGEST_TYPE_SHA256, UINT16_SIZE);
 
-  // Empty name (null terminator at offset 56)
+  // Empty name (null terminator at offset 56) -> APX_INVALID_MSG_ERROR
   uint8_t save_char = buf[56];
   buf[56] = 0u;
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
   buf[56] = save_char;
 }
 
@@ -670,9 +707,12 @@ static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc)
 
   // Normal decode
   rmf_publish_signed_compressed_file_cmd_t out_cmd;
+  apx_error_t decode_err = APX_GENERIC_ERROR;
   memset(&out_cmd, 0, sizeof(out_cmd));
-  apx_size_t decoded_size = rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd);
+  apx_size_t decoded_size =
+    rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err);
   CuAssertUIntEquals(tc, encoded_size, decoded_size);
+  CuAssertIntEquals(tc, APX_NO_ERROR, decode_err);
   CuAssertUIntEquals(tc, in_cmd.start_address, out_cmd.start_address);
   CuAssertUIntEquals(tc, in_cmd.uncompressed_size, out_cmd.uncompressed_size);
   CuAssertUIntEquals(tc, in_cmd.compressed_size, out_cmd.compressed_size);
@@ -729,50 +769,88 @@ static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc)
   encoded_size = rmf_encode_publish_signed_compressed_file_cmd(buf, sizeof(buf), &in_cmd);
   CuAssertTrue(tc, encoded_size > 0u);
 
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(NULL, buf + encoded_size, &out_cmd));
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, NULL, &out_cmd));
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, NULL));
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size - 1u, &out_cmd));
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + 20u, &out_cmd));
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(NULL, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, NULL, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, NULL, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size - 1u, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + 20u, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
 
-  // Corrupted opcode
+  // Corrupted opcode -> APX_INVALID_MSG_ERROR
   packLE(buf, RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG, UINT32_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
   packLE(buf, RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG, UINT32_SIZE);
 
-  // Non-zero reserved field
-  packLE(buf + 22, 1u, UINT16_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 22, 0u, UINT16_SIZE);
-
-  // Invalid uncompressed_size = 0
-  packLE(buf + 8, 0u, UINT32_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 8, in_cmd.uncompressed_size, UINT32_SIZE);
-
-  // Invalid compressed_size = 0
-  packLE(buf + 12, 0u, UINT32_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 12, in_cmd.compressed_size, UINT32_SIZE);
-
-  // Invalid file_type
-  packLE(buf + 16, RMF_U16_FILE_TYPE_STREAM, UINT16_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 16, RMF_U16_FILE_TYPE_FIXED, UINT16_SIZE);
-
-  // Invalid compression_type
-  packLE(buf + 18, 0u, UINT16_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
-  packLE(buf + 18, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, UINT16_SIZE);
-
-  // Invalid signature_type
-  packLE(buf + 20, 0u, UINT16_SIZE);
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  // Structural check precedes algorithm check
+  packLE(buf + 20, 2u, UINT16_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size - 1u, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
   packLE(buf + 20, RMF_U16_SIGNATURE_TYPE_ECDSA_P256, UINT16_SIZE);
 
-  // Empty name (null terminator at offset 88)
+  // Non-zero reserved field -> APX_INVALID_ARGUMENT_ERROR
+  packLE(buf + 22, 1u, UINT16_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  packLE(buf + 22, 0u, UINT16_SIZE);
+
+  // Invalid uncompressed_size = 0 -> APX_INVALID_ARGUMENT_ERROR
+  packLE(buf + 8, 0u, UINT32_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  packLE(buf + 8, in_cmd.uncompressed_size, UINT32_SIZE);
+
+  // Invalid compressed_size = 0 -> APX_INVALID_ARGUMENT_ERROR
+  packLE(buf + 12, 0u, UINT32_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, decode_err);
+  packLE(buf + 12, in_cmd.compressed_size, UINT32_SIZE);
+
+  // Unsupported file_type -> APX_UNSUPPORTED_ERROR
+  packLE(buf + 16, RMF_U16_FILE_TYPE_STREAM, UINT16_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 16, RMF_U16_FILE_TYPE_FIXED, UINT16_SIZE);
+
+  // Unsupported compression_type (0 and 2) -> APX_UNSUPPORTED_ERROR
+  packLE(buf + 18, 0u, UINT16_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 18, 2u, UINT16_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 18, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, UINT16_SIZE);
+
+  // Unsupported signature_type (0 and 2) -> APX_UNSUPPORTED_ERROR
+  packLE(buf + 20, 0u, UINT16_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 20, 2u, UINT16_SIZE);
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
+  packLE(buf + 20, RMF_U16_SIGNATURE_TYPE_ECDSA_P256, UINT16_SIZE);
+
+  // Empty name (null terminator at offset 88) -> APX_INVALID_MSG_ERROR
   uint8_t save_char = buf[88];
   buf[88] = 0u;
-  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd));
+  CuAssertUIntEquals(
+    tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
   buf[88] = save_char;
 }
