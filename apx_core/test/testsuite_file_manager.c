@@ -82,6 +82,7 @@ static void test_command_queue_cleanup_on_destroy(CuTest *tc);
 static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc);
 static void test_file_manager_compressed_publish_error_reporting(CuTest *tc);
 static void test_file_manager_rejects_oversized_and_misaligned_control_writes(CuTest *tc);
+static void test_file_manager_rejects_trailing_bytes_after_publish_name(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -103,6 +104,7 @@ CuSuite *testsuite_apx_file_manager(void)
   SUITE_ADD_TEST(suite, test_file_manager_publish_and_receive_compressed_files);
   SUITE_ADD_TEST(suite, test_file_manager_compressed_publish_error_reporting);
   SUITE_ADD_TEST(suite, test_file_manager_rejects_oversized_and_misaligned_control_writes);
+  SUITE_ADD_TEST(suite, test_file_manager_rejects_trailing_bytes_after_publish_name);
 
   return suite;
 }
@@ -1220,4 +1222,67 @@ static void test_file_manager_rejects_oversized_and_misaligned_control_writes(Cu
   CuAssertStrEquals(tc, "MaxCmd", ep.last_nack_name);
 
   mock_endpoint_destroy(&ep);
+}
+
+static void test_file_manager_rejects_trailing_bytes_after_publish_name(CuTest *tc)
+{
+  mock_endpoint_t pub;
+  mock_endpoint_t sub;
+  mock_endpoint_create(&pub, APX_CLIENT_MODE, 4096);
+  mock_endpoint_create(&sub, APX_SERVER_MODE, 4096);
+
+  uint8_t cmd_buf[RMF_CMD_AREA_SIZE];
+
+  // 1. RMF_CMD_PUBLISH_FILE_MSG with stray bytes after null terminator -> APX_INVALID_MSG_ERROR, not registered
+  rmf_file_info_t *plain_info = rmf_file_info_make_fixed("PlainTrailing.apx", 64u, 0x01000000u);
+  CuAssertPtrNotNull(tc, plain_info);
+  apx_size_t plain_size = rmf_encode_publish_file_cmd(cmd_buf, sizeof(cmd_buf), plain_info);
+  CuAssertTrue(tc, plain_size > 0u);
+  cmd_buf[plain_size] = 'Z';
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR,
+    mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, plain_size + 1u));
+  CuAssertPtrEquals(tc, NULL, apx_file_manager_find_remote_file_by_name(&sub.file_manager, "PlainTrailing.apx"));
+
+  // Legacy RMF_CMD_PUBLISH_FILE_MSG without trailing null terminator still succeeds
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, plain_size - 1u));
+  CuAssertPtrNotNull(tc, apx_file_manager_find_remote_file_by_name(&sub.file_manager, "PlainTrailing.apx"));
+  rmf_file_info_delete(plain_info);
+
+  // 2. RMF_CMD_PUBLISH_SIGNED_FILE_MSG with stray bytes after null terminator -> APX_INVALID_MSG_ERROR
+  uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  memset(dummy_sig, 0xAB, sizeof(dummy_sig));
+  rmf_file_info_t *signed_info = rmf_file_info_make_fixed_with_signature(
+    "SignedTrailing.apx", 64u, 0x02000000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+  CuAssertPtrNotNull(tc, signed_info);
+  apx_size_t signed_size = rmf_encode_publish_signed_file_cmd(cmd_buf, sizeof(cmd_buf), signed_info);
+  CuAssertTrue(tc, signed_size > 0u);
+  cmd_buf[signed_size] = 'Z';
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR,
+    mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, signed_size + 1u));
+  CuAssertPtrEquals(tc, NULL, apx_file_manager_find_remote_file_by_name(&sub.file_manager, "SignedTrailing.apx"));
+  rmf_file_info_delete(signed_info);
+
+  // 3. RMF_CMD_PUBLISH_COMPRESSED_FILE_MSG with stray bytes after null terminator -> NACK(APX_INVALID_MSG_ERROR)
+  rmf_publish_compressed_file_cmd_t comp_cmd = {
+    .start_address = 0x03000000u,
+    .uncompressed_size = 128u,
+    .compressed_size = 64u,
+    .file_type = RMF_FILE_TYPE_FIXED,
+    .compression_type = RMF_COMPRESSION_TYPE_ZLIB_DEFLATE,
+    .digest_type = RMF_DIGEST_TYPE_NONE,
+    .reserved = 0u,
+    .name = "CompTrailing.apx",
+  };
+  apx_size_t comp_size = rmf_encode_publish_compressed_file_cmd(cmd_buf, sizeof(cmd_buf), &comp_cmd);
+  CuAssertTrue(tc, comp_size > 0u);
+  cmd_buf[comp_size] = 'Z';
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, mock_endpoint_inject_raw_frame(&sub, RMF_CMD_AREA_START_ADDRESS, false, cmd_buf, comp_size + 1u));
+  mock_endpoint_deliver_all(&sub, &pub);
+  CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, pub.last_nack_error);
+  CuAssertPtrEquals(tc, NULL, apx_file_manager_find_remote_file_by_name(&sub.file_manager, "CompTrailing.apx"));
+
+  mock_endpoint_destroy(&sub);
+  mock_endpoint_destroy(&pub);
 }

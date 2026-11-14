@@ -29,6 +29,7 @@
 // LOCAL FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static void set_decode_error(apx_error_t *error_code, apx_error_t value);
+static uint8_t const *decode_file_info_name(uint8_t const *name_start, uint8_t const *end, rmf_file_info_t *file_info);
 static apx_size_t validate_compressed_cmd_header_and_name(uint8_t const *begin, uint8_t const *end,
   uint32_t expected_cmd_type, apx_size_t header_size, apx_size_t max_name_len, char const **name_out,
   apx_error_t *error_code);
@@ -364,17 +365,8 @@ apx_size_t rmf_decode_publish_file_cmd(uint8_t const *buf, apx_size_t buf_size, 
       {
         return 0u;
       }
-      // The file name can either end with an optional null-terminator or the name string continues until end of
-      // message. Both variants are acceptable using the two lines below
-      uint8_t const *result = bstr_find_byte(next, end, 0);
-      if ((result > next) && (result <= end))
-      {
-        if (rmf_file_info_set_name_bstr(file_info, next, result) != APX_NO_ERROR)
-        {
-          return 0u;
-        }
-      }
-      else
+      uint8_t const *result = decode_file_info_name(next, end, file_info);
+      if (result == NULL)
       {
         return 0u;
       }
@@ -525,17 +517,8 @@ apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const *buf, apx_size_t buf
       {
         return 0u;
       }
-      // The file name can either end with an optional null-terminator or the name string continues until end of
-      // message. Both variants are acceptable using the two lines below
-      uint8_t const *result = bstr_find_byte(next, end, 0);
-      if ((result > next) && (result <= end))
-      {
-        if (rmf_file_info_set_name_bstr(file_info, next, result) != APX_NO_ERROR)
-        {
-          return 0u;
-        }
-      }
-      else
+      uint8_t const *result = decode_file_info_name(next, end, file_info);
+      if (result == NULL)
       {
         return 0u;
       }
@@ -1081,13 +1064,27 @@ static apx_size_t validate_compressed_cmd_header_and_name(uint8_t const *begin, 
   }
   apx_size_t const name_len = (apx_size_t)(null_pos - name_start);
   apx_size_t const total_cmd_size = (apx_size_t)((null_pos + 1u) - begin);
-  if ((name_len > max_name_len) || (total_cmd_size > RMF_CMD_AREA_SIZE))
+  if ((total_cmd_size != buf_size) || (name_len > max_name_len) || (total_cmd_size > RMF_CMD_AREA_SIZE))
   {
     set_decode_error(error_code, APX_INVALID_MSG_ERROR);
     return 0u;
   }
   *name_out = (char const *)name_start;
   return total_cmd_size;
+}
+
+static uint8_t const *decode_file_info_name(uint8_t const *name_start, uint8_t const *end, rmf_file_info_t *file_info)
+{
+  // Legacy peers may omit the null-terminator at end-of-message; reject stray bytes after a terminator.
+  uint8_t const *result = bstr_find_byte(name_start, end, 0);
+  if ((result > name_start) && ((result == end) || ((result + 1u) == end)))
+  {
+    if (rmf_file_info_set_name_bstr(file_info, name_start, result) == APX_NO_ERROR)
+    {
+      return result;
+    }
+  }
+  return NULL;
 }
 
 static bool validate_compressed_cmd_common_fields(uint32_t start_address, uint32_t uncompressed_size,

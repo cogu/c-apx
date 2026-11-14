@@ -245,6 +245,14 @@ static void test_encode_decode_publish_file(CuTest *tc)
    // Attempting to decode standard publish file with decode_publish_signed_file_cmd should fail
   rmf_file_info_t *invalid_info = rmf_file_info_make_empty();
   CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_file_cmd(buf, encoded_size, invalid_info));
+
+   // Legacy peer omitting null-terminator at end-of-message is still accepted
+  CuAssertUIntEquals(tc, encoded_size - 1u, rmf_decode_publish_file_cmd(buf, encoded_size - 1u, dst_info));
+  CuAssertStrEquals(tc, "MyNode.apx", rmf_file_info_name(dst_info));
+
+   // Stray bytes after the null-terminator must be rejected
+  buf[encoded_size] = 'X';
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_file_cmd(buf, encoded_size + 1u, invalid_info));
   rmf_file_info_delete(invalid_info);
 
   rmf_file_info_delete(dst_info);
@@ -286,6 +294,14 @@ static void test_encode_decode_publish_signed_file(CuTest *tc)
    // Attempting to decode signed publish file with legacy decode_publish_file_cmd should fail
   rmf_file_info_t *invalid_info = rmf_file_info_make_empty();
   CuAssertUIntEquals(tc, 0u, rmf_decode_publish_file_cmd(buf, encoded_size, invalid_info));
+
+   // Legacy peer omitting null-terminator at end-of-message is still accepted
+  CuAssertUIntEquals(tc, encoded_size - 1u, rmf_decode_publish_signed_file_cmd(buf, encoded_size - 1u, dst_info));
+  CuAssertStrEquals(tc, "SecureNode.apx", rmf_file_info_name(dst_info));
+
+   // Stray bytes after the null-terminator must be rejected
+  buf[encoded_size] = 'X';
+  CuAssertUIntEquals(tc, 0u, rmf_decode_publish_signed_file_cmd(buf, encoded_size + 1u, invalid_info));
   rmf_file_info_delete(invalid_info);
 
   rmf_file_info_delete(dst_info);
