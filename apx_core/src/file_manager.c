@@ -346,6 +346,10 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
         if ((remote_file != NULL) && apx_file_is_stream(remote_file))
         {
           active_stream_file = remote_file;
+          if ((address == RMF_CMD_AREA_START_ADDRESS) && !more_bit)
+          {
+            return process_command_message(self, msg_data + header_size, payload_len);
+          }
         }
       }
 

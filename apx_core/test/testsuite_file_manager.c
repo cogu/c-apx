@@ -83,6 +83,7 @@ static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc);
 static void test_file_manager_compressed_publish_error_reporting(CuTest *tc);
 static void test_file_manager_rejects_oversized_and_misaligned_control_writes(CuTest *tc);
 static void test_file_manager_rejects_trailing_bytes_after_publish_name(CuTest *tc);
+static void test_stream_abort_interrupts_partial_block_and_reopens(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -105,6 +106,7 @@ CuSuite *testsuite_apx_file_manager(void)
   SUITE_ADD_TEST(suite, test_file_manager_compressed_publish_error_reporting);
   SUITE_ADD_TEST(suite, test_file_manager_rejects_oversized_and_misaligned_control_writes);
   SUITE_ADD_TEST(suite, test_file_manager_rejects_trailing_bytes_after_publish_name);
+  SUITE_ADD_TEST(suite, test_stream_abort_interrupts_partial_block_and_reopens);
 
   return suite;
 }
@@ -1282,6 +1284,113 @@ static void test_file_manager_rejects_trailing_bytes_after_publish_name(CuTest *
   mock_endpoint_deliver_all(&sub, &pub);
   CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, pub.last_nack_error);
   CuAssertPtrEquals(tc, NULL, apx_file_manager_find_remote_file_by_name(&sub.file_manager, "CompTrailing.apx"));
+
+  mock_endpoint_destroy(&sub);
+  mock_endpoint_destroy(&pub);
+}
+
+static void test_stream_abort_interrupts_partial_block_and_reopens(CuTest *tc)
+{
+  mock_endpoint_t pub;
+  mock_endpoint_t sub;
+  mock_endpoint_create(&pub, APX_SERVER_MODE, 4096);
+  mock_endpoint_create(&sub, APX_CLIENT_MODE, 4096);
+
+  rmf_file_info_t *info_a = rmf_file_info_make_stream("streamA.log", 256u, 0x20000000u);
+  rmf_file_info_t *info_b = rmf_file_info_make_stream("streamB.log", 256u, 0x20010000u);
+  CuAssertPtrNotNull(tc, apx_file_manager_create_local_file(&pub.file_manager, info_a));
+  CuAssertPtrNotNull(tc, apx_file_manager_create_local_file(&pub.file_manager, info_b));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_publish_local_file(&pub.file_manager, info_a));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_publish_local_file(&pub.file_manager, info_b));
+  rmf_file_info_delete(info_a);
+  rmf_file_info_delete(info_b);
+  mock_endpoint_deliver_all(&pub, &sub);
+
+  apx_file_t *sub_a = apx_file_manager_find_remote_file_by_name(&sub.file_manager, "streamA.log");
+  apx_file_t *sub_b = apx_file_manager_find_remote_file_by_name(&sub.file_manager, "streamB.log");
+  CuAssertPtrNotNull(tc, sub_a);
+  CuAssertPtrNotNull(tc, sub_b);
+  attach_file_handlers(sub_a, &sub);
+  attach_file_handlers(sub_b, &sub);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_open_stream(&sub.file_manager, 0x20000000u, 256u, 2u));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_open_stream(&sub.file_manager, 0x20010000u, 256u, 2u));
+  mock_endpoint_deliver_all(&sub, &pub);
+  mock_endpoint_deliver_all(&pub, &sub);
+  CuAssertIntEquals(tc, APX_STREAM_STATE_OPEN, apx_file_get_stream_state(sub_a));
+  CuAssertIntEquals(tc, APX_STREAM_STATE_OPEN, apx_file_get_stream_state(sub_b));
+
+  // 1. Start a fragmented block on streamA (first fragment only, more_bit = true)
+  uint8_t partial_frag[16];
+  memset(partial_frag, 0xAA, sizeof(partial_frag));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    mock_endpoint_inject_raw_frame(&sub, 0x20000000u, true, partial_frag, (apx_size_t)sizeof(partial_frag)));
+  CuAssertUIntEquals(tc, 0x20000000u, apx_file_manager_receiver_active_address(&sub.file_manager.receiver));
+  CuAssertIntEquals(tc, 0, adt_ary_length(&sub.rx_blocks));
+
+  // 2. Unrelated control-area command (publishing a fixed file) arrives mid-reassembly -> succeeds without resetting
+  // streamA's partial block
+  rmf_file_info_t *info_fixed = rmf_file_info_make_fixed("status.out", 8u, 0x01000000u);
+  CuAssertPtrNotNull(tc, apx_file_manager_create_local_file(&pub.file_manager, info_fixed));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_publish_local_file(&pub.file_manager, info_fixed));
+  rmf_file_info_delete(info_fixed);
+  (void)apx_file_manager_run(&pub.file_manager);
+  CuAssertIntEquals(tc, 1, adt_ary_length(&pub.tx_packets));
+  adt_bytearray_t *pub_pkt = (adt_bytearray_t *)adt_ary_value(&pub.tx_packets, 0);
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_message_received(
+      &sub.file_manager, adt_bytearray_const_data(pub_pkt), (apx_size_t)adt_bytearray_length(pub_pkt)));
+  adt_ary_clear(&pub.tx_packets);
+  CuAssertPtrNotNull(tc, apx_file_manager_find_remote_file_by_name(&sub.file_manager, "status.out"));
+  CuAssertUIntEquals(tc, 0x20000000u, apx_file_manager_receiver_active_address(&sub.file_manager.receiver));
+
+  // 3. Deliver RMF_CMD_STREAM_ABORT_MSG with status 3 (APX_PARSE_ERROR) -> interrupts partial block cleanly, preserves
+  // connection
+  adt_ary_clear(&sub.tx_packets);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_abort_stream(&pub.file_manager, 0x20000000u, APX_PARSE_ERROR));
+  (void)apx_file_manager_run(&pub.file_manager);
+  CuAssertIntEquals(tc, 1, adt_ary_length(&pub.tx_packets));
+  adt_bytearray_t *abort_pkt = (adt_bytearray_t *)adt_ary_value(&pub.tx_packets, 0);
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_message_received(
+      &sub.file_manager, adt_bytearray_const_data(abort_pkt), (apx_size_t)adt_bytearray_length(abort_pkt)));
+  adt_ary_clear(&pub.tx_packets);
+  (void)apx_file_manager_run(&sub.file_manager);
+
+  CuAssertUIntEquals(tc, RMF_INVALID_ADDRESS, apx_file_manager_receiver_active_address(&sub.file_manager.receiver));
+  CuAssertIntEquals(tc, APX_STREAM_STATE_CLOSED, apx_file_get_stream_state(sub_a));
+  CuAssertUIntEquals(tc, (uint32_t)APX_PARSE_ERROR, apx_file_get_stream_last_status(sub_a));
+  CuAssertUIntEquals(tc, 1u, sub.close_notify_count);
+  CuAssertIntEquals(tc, 0, adt_ary_length(&sub.rx_blocks));
+  CuAssertIntEquals(tc, 0, adt_ary_length(&sub.tx_packets));
+
+  // 4. Unrelated connection traffic (streamB) continues uninterrupted
+  uint8_t const b_payload[6] = {0x10u, 0x20u, 0x30u, 0x40u, 0x50u, 0x60u};
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_file_manager_send_local_const_data(&pub.file_manager, 0x20010000u, b_payload, (apx_size_t)sizeof(b_payload)));
+  mock_endpoint_deliver_all(&pub, &sub);
+  CuAssertIntEquals(tc, 1, adt_ary_length(&sub.rx_blocks));
+  adt_bytearray_t *rx_b = (adt_bytearray_t *)adt_ary_value(&sub.rx_blocks, 0);
+  CuAssertUIntEquals(tc, (uint32_t)sizeof(b_payload), adt_bytearray_length(rx_b));
+  CuAssertIntEquals(tc, 0, memcmp(b_payload, adt_bytearray_const_data(rx_b), sizeof(b_payload)));
+
+  // 5. Reopen streamA and deliver a complete fragmented block -> no stale bytes from aborted block
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_file_manager_open_stream(&sub.file_manager, 0x20000000u, 256u, 2u));
+  mock_endpoint_deliver_all(&sub, &pub);
+  mock_endpoint_deliver_all(&pub, &sub);
+  CuAssertIntEquals(tc, APX_STREAM_STATE_OPEN, apx_file_get_stream_state(sub_a));
+
+  uint8_t fresh_block[32];
+  for (uint32_t i = 0u; i < (uint32_t)sizeof(fresh_block); ++i)
+  {
+    fresh_block[i] = (uint8_t)(i + 1u);
+  }
+  CuAssertIntEquals(tc, APX_NO_ERROR, mock_endpoint_inject_raw_frame(&sub, 0x20000000u, true, fresh_block, 16u));
+  CuAssertIntEquals(tc, APX_NO_ERROR, mock_endpoint_inject_raw_frame(&sub, 0x20000010u, false, fresh_block + 16u, 16u));
+  CuAssertIntEquals(tc, 2, adt_ary_length(&sub.rx_blocks));
+  adt_bytearray_t *rx_a = (adt_bytearray_t *)adt_ary_value(&sub.rx_blocks, 1);
+  CuAssertUIntEquals(tc, (uint32_t)sizeof(fresh_block), adt_bytearray_length(rx_a));
+  CuAssertIntEquals(tc, 0, memcmp(fresh_block, adt_bytearray_const_data(rx_a), sizeof(fresh_block)));
 
   mock_endpoint_destroy(&sub);
   mock_endpoint_destroy(&pub);
