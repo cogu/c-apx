@@ -32,6 +32,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static void test_empty_definition_data_is_initialized_on_new_instance(CuTest *tc);
 static void test_definition_replacement_error_rejects_node(CuTest *tc);
+static void test_definition_name_mismatch_rejects_node(CuTest *tc);
 static void test_port_data_created_after_definition_data_is_written(CuTest *tc);
 static void test_checksum_data_is_copied_from_file_info(CuTest *tc);
 static void test_port_signature_uint8(CuTest *tc);
@@ -54,6 +55,7 @@ CuSuite *testsuite_apx_node_manager_server_mode(void)
 
   SUITE_ADD_TEST(suite, test_empty_definition_data_is_initialized_on_new_instance);
   SUITE_ADD_TEST(suite, test_definition_replacement_error_rejects_node);
+  SUITE_ADD_TEST(suite, test_definition_name_mismatch_rejects_node);
   SUITE_ADD_TEST(suite, test_port_data_created_after_definition_data_is_written);
   SUITE_ADD_TEST(suite, test_checksum_data_is_copied_from_file_info);
   SUITE_ADD_TEST(suite, test_port_signature_uint8);
@@ -133,6 +135,42 @@ static void test_definition_replacement_error_rejects_node(CuTest *tc)
   CuAssertTrue(tc, !apx_file_is_open(file));
   CuAssertIntEquals(
     tc, APX_INVALID_WRITE_HANDLER_ERROR, apx_file_write_notify(file, 0u, encoded, (uint32_t)encoded_size));
+  apx_file_delete(file);
+  rmf_file_info_delete(info);
+  apx_node_manager_delete(manager);
+}
+
+static void test_definition_name_mismatch_rejects_node(CuTest *tc)
+{
+  char const *apx_text = "APX/1.3\n"
+                         "N\"DifferentName\"\n"
+                         "R\"Value\"C:=0\n";
+  apx_size_t const definition_size = (apx_size_t)strlen(apx_text);
+  rmf_file_info_t *info = rmf_file_info_make_fixed("FileName.apx", definition_size, APX_DEFINITION_ADDRESS_START);
+  CuAssertPtrNotNull(tc, info);
+  apx_node_manager_t *manager = apx_node_manager_new(APX_SERVER_MODE);
+  CuAssertPtrNotNull(tc, manager);
+  bool open = false;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_init_node_from_file_info(manager, info, &open));
+  CuAssertTrue(tc, open);
+  apx_node_instance_t *node = apx_node_manager_get_last_attached(manager);
+  CuAssertPtrNotNull(tc, node);
+  apx_file_t *file = apx_file_new(info);
+  CuAssertPtrNotNull(tc, file);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_remote_file_published_notification(node, file));
+  apx_file_open(file);
+  apx_node_data_t *data = apx_node_instance_get_node_data(node);
+  CuAssertPtrNotNull(tc, data);
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_node_data_write_definition_data(data, 0u, (uint8_t const *)apx_text, definition_size));
+  CuAssertIntEquals(tc, APX_INVALID_NAME_ERROR, apx_node_manager_build_node_from_data(manager, node));
+  CuAssertUIntEquals(tc, 0u, apx_node_manager_length(manager));
+  CuAssertPtrEquals(tc, NULL, apx_node_manager_find(manager, "FileName"));
+  CuAssertPtrEquals(tc, NULL, apx_node_manager_find(manager, "DifferentName"));
+  CuAssertPtrEquals(tc, NULL, apx_node_manager_get_last_attached(manager));
+  CuAssertTrue(tc, !apx_file_is_open(file));
+  CuAssertIntEquals(
+    tc, APX_INVALID_WRITE_HANDLER_ERROR, apx_file_write_notify(file, 0u, (uint8_t const *)apx_text, definition_size));
   apx_file_delete(file);
   rmf_file_info_delete(info);
   apx_node_manager_delete(manager);

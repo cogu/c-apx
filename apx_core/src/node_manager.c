@@ -260,7 +260,14 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
     {
       node = apx_parser_take_last_node(&self->parser);
       assert(node != NULL);
-      if ((def_file != NULL) && apx_file_is_compressed(def_file))
+      char const *expected_name = apx_node_instance_get_name(node_instance);
+      char const *declared_name = apx_node_get_name(node);
+      if ((expected_name == NULL) || (declared_name == NULL) || (strcmp(expected_name, declared_name) != 0))
+      {
+        stage = APX_DEFINITION_STAGE_PARSING;
+        result = APX_INVALID_NAME_ERROR;
+      }
+      if ((result == APX_NO_ERROR) && (def_file != NULL) && apx_file_is_compressed(def_file))
       {
         stage = APX_DEFINITION_STAGE_ALLOCATION;
         result = apx_node_data_replace_definition_data(node_data, definition_data, (apx_size_t)definition_size);

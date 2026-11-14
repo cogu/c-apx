@@ -50,6 +50,7 @@ static void test_server_require_signed_nodes_rejects_unsigned_node(CuTest *tc);
 static void test_server_require_signed_nodes_accepts_valid_signed_node(CuTest *tc);
 static void test_server_require_signed_nodes_rejects_tampered_signature(CuTest *tc);
 static void test_server_rejects_signed_file_cmd_under_rmfp_1_0(CuTest *tc);
+static void test_server_rejects_definition_with_mismatched_node_name(CuTest *tc);
 static void test_server_log_write_varargs(CuTest *tc);
 static void test_multiple_providers_policy_first_apx13(CuTest *tc);
 static void test_multiple_providers_policy_last_apx13(CuTest *tc);
@@ -116,6 +117,7 @@ CuSuite *testsuite_apx_server(void)
   SUITE_ADD_TEST(suite, test_server_require_signed_nodes_accepts_valid_signed_node);
   SUITE_ADD_TEST(suite, test_server_require_signed_nodes_rejects_tampered_signature);
   SUITE_ADD_TEST(suite, test_server_rejects_signed_file_cmd_under_rmfp_1_0);
+  SUITE_ADD_TEST(suite, test_server_rejects_definition_with_mismatched_node_name);
   SUITE_ADD_TEST(suite, test_server_log_write_varargs);
   SUITE_ADD_TEST(suite, test_multiple_providers_policy_first_apx13);
   SUITE_ADD_TEST(suite, test_multiple_providers_policy_last_apx13);
@@ -1663,5 +1665,64 @@ static void test_server_max_concurrent_connections(CuTest *tc)
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_detach_connection(server, (apx_server_connection_t *)conn1));
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_detach_connection(server, (apx_server_connection_t *)conn2));
 
+  apx_server_delete(server);
+}
+
+static void test_server_rejects_definition_with_mismatched_node_name(CuTest *tc)
+{
+  char const *apx_text = "APX/1.3\n"
+                         "N\"DifferentName\"\n"
+                         "R\"Value\"C:=0\n";
+  apx_size_t const definition_size = (apx_size_t)strlen(apx_text);
+
+  apx_server_t *server = apx_server_new();
+  CuAssertPtrNotNull(tc, server);
+
+  apx_server_test_connection_t *connection = apx_server_test_connection_new();
+  CuAssertPtrNotNull(tc, connection);
+  apx_server_test_connection_set_tester_protocol_version(connection, RMF_PROTOCOL_VERSION_ID_1_1);
+  apx_server_accept_connection(server, (apx_server_connection_t *)connection);
+
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_server_test_connection_send_greeting_header(connection));
+  apx_server_test_connection_run(connection);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_publish_remote_file(
+      connection, APX_DEFINITION_ADDRESS_START, "FileName.apx", definition_size));
+  apx_server_test_connection_run(connection);
+  apx_server_test_connection_clear_log(connection);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_server_test_connection_write_remote_data(
+      connection, APX_DEFINITION_ADDRESS_START, (uint8_t const *)apx_text, definition_size));
+  apx_server_test_connection_run(connection);
+
+  apx_node_manager_t *node_manager = apx_server_test_connection_get_node_manager(connection);
+  CuAssertPtrNotNull(tc, node_manager);
+  CuAssertPtrEquals(tc, NULL, apx_node_manager_find(node_manager, "FileName"));
+  CuAssertPtrEquals(tc, NULL, apx_node_manager_find(node_manager, "DifferentName"));
+
+  CuAssertIntEquals(tc, 1, apx_server_test_connection_log_length(connection));
+  adt_bytearray_t *nack_packet = apx_server_test_connection_get_log_packet(connection, 0);
+  CuAssertPtrNotNull(tc, nack_packet);
+  uint8_t const *p_data = (uint8_t const *)adt_bytearray_data(nack_packet);
+  uint32_t const p_len = adt_bytearray_length(nack_packet);
+  uint32_t msg_len = 0u;
+  uint8_t const *next = numheader_decode32(p_data, p_data + p_len, &msg_len);
+  CuAssertPtrNotNull(tc, next);
+  p_data = next;
+  uint32_t decoded_addr = 0u;
+  bool more_bit = false;
+  apx_size_t const addr_size = rmf_address_decode(p_data, p_data + msg_len, &decoded_addr, &more_bit);
+  uint32_t nack_error = 0u;
+  char const *nack_name = NULL;
+  apx_size_t const decoded_nack_size =
+    rmf_decode_nack_cmd(p_data + addr_size, p_data + msg_len, &nack_error, &nack_name);
+  CuAssertTrue(tc, decoded_nack_size >= RMF_CMD_NACK_SIZE);
+  CuAssertUIntEquals(tc, (uint32_t)APX_INVALID_NAME_ERROR, nack_error);
+  CuAssertPtrNotNull(tc, nack_name);
+  CuAssertStrEquals(tc, "FileName", nack_name);
+
+  apx_server_detach_connection(server, (apx_server_connection_t *)connection);
   apx_server_delete(server);
 }
