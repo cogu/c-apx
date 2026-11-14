@@ -478,6 +478,48 @@ Logical-definition capture and structured rejection events are owned by item 16.
 * **Verification & Tests**:
   * Update `test_server_files_wait_for_complete_initial_provide_data` in `apx_core/test/testsuite_server_connection.c` (which currently assumes a partial `.out` write keeps state in `APX_DATA_STATE_WAITING_FOR_FILE_DATA` without error/NACK) and add C unit and Python integration tests covering `RMF_CMD_NACK_MSG` (`APX_FILE_NOT_COMPLETE_ERROR`) for both `.apx` and `.out` incomplete initial writes.
 
+## 24. Reject Unimplemented Queued Ports and `NumHeader16` Framing with `APX_NOT_IMPLEMENTED_ERROR`
+
+* **Status:** Proposed safety guard for `v0.4.0` while full feature support is deferred to `v0.6.0` (see `Release v0.6.0`, Items 2 and 3).
+* **Reject Queued Ports (`Q[n]`) Explicitly**:
+  * Currently queued attributes are parsed in `apx_core/src/attribute_parser.c` (`queue_length > 0`) and compiled in `apx_core/src/compiler.c` (`apx_compiler_compile_port()`), causing initializer writes to corrupt queue prefix bytes and only failing later during server routing in `apx_core/src/node_instance.c`.
+  * Reject definitions declaring queued ports (`queue_length > 0`) with `APX_NOT_IMPLEMENTED_ERROR` during parsing or node compilation/building (before node construction proceeds), returning the offending line number and rejecting remote nodes cleanly with `RMF_CMD_NACK_MSG`.
+  * Add C unit tests (and `apx-node --check` test coverage) confirming `Q[n]` fails cleanly with `APX_NOT_IMPLEMENTED_ERROR`.
+* **Reject `NumHeader16` (`Message-Size: 16` / `NumHeader-Format: 16`) in Greeting Negotiation**:
+  * Currently `apx_core/src/server_connection.c` (`parse_greeting_line`) accepts `size == 16` and stores a 2-byte header width while subsequent frame decoding unconditionally calls `numheader_decode32`.
+  * Reject 16-bit header width selection in the server greeting with `APX_NOT_IMPLEMENTED_ERROR` (and ensure any client greeting parser follows the same contract if applicable) until 16-bit framing is implemented in `v0.6.0`.
+  * Add C unit tests verifying 16-bit framing negotiation is rejected with `APX_NOT_IMPLEMENTED_ERROR`.
+
+---
+
+# Release v0.6.0 (Planned Phase)
+
+These specification conformance and protocol features are deferred until after `v0.4.0`.
+
+## 1. Implement Support for Unequal Dynamic-Array Capacities in Matching and Routing
+
+* Implement IDL v1.3 capacity-aware dynamic-array matching (`B[n*]` -> `B[m*]` allowed when `m >= n`, rejected when `m < n`) rather than erasing capacities to `[*]` in normalized signatures (`apx_core/src/data_element.c`, `apx_core/src/port_signature_map.c`, `apx_core/src/port_signature_map_entry.c`).
+* Update initial and live port routing (`apx_core/src/node_instance.c`) to translate across different maximum capacities, length-prefix widths (including capacities crossing the 255/256 boundary), and maximum-slot layouts (including nested records).
+* Add unit and integration tests covering equal, oversized-receiver (valid), and undersized-receiver (rejected at matching) dynamic arrays.
+
+## 2. Implement End-to-End Support for Queued Ports (`Q[n]`)
+
+* Remove the temporary `v0.4.0` rejection (Release `v0.4.0`, Item 24) once end-to-end queued port execution is implemented and tested.
+* Implement VM serialization/deserialization queue handling (`apx_core/src/vm.c`, `apx_core/src/serializer.c`, `apx_core/src/deserializer.c`), proper queue initialization (`apx_core/src/node_manager.c`), and queued provide/require port routing (`apx_core/src/node_instance.c`) in conformance with APX IDL v1.3 and VM serialization rules.
+* Add comprehensive unit and multi-node integration tests covering queue capacity limits, wrap/full behavior, initialization, and routing.
+
+## 3. Implement `NumHeader16` (`Message-Size: 16`) Framing Support
+
+* Remove the temporary `v0.4.0` rejection (Release `v0.4.0`, Item 24) once 16-bit message framing is wired through transport paths.
+* Dispatch server message reception (and verify client transmit/receive paths) according to the negotiated `num_header_size` (`2` vs. `4` bytes) in `apx_core/src/server_connection.c` instead of unconditionally calling `numheader_decode32()`.
+* Add tests exercising multi-byte (>127 byte) NumHeader16 payloads end-to-end.
+
+## 4. Implement `FileRevoke` File Unmapping and Node Teardown Lifecycle
+
+* Implement full `FileRevoke` handling in `apx_core/src/file_manager.c` to unmap revoked remote files cleanly from the file map instead of leaving mappings behind (`APX_FILE_CREATE_ERROR` on re-publication).
+* Implement safe node instance teardown, routing disconnection, and listener lifetime cleanup when a remote `.apx` or `.out` file is revoked.
+* Add unit and integration tests covering `FileRevoke` followed by re-publication of the same file/address and active peer cleanup.
+
 ---
 
 # Release v0.8.0 (Future Phase)
