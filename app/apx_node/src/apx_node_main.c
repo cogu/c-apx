@@ -392,6 +392,40 @@ void vfree(void *arg) { free(arg); }
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////
+/**
+ * Parses an endpoint argument while preserving default ports when omitted.
+ */
+static argparse_result_t parse_endpoint_arg(
+  const char *value, msocket_endpoint_type_t *endpoint_type, adt_str_t **address, uint16_t *port, bool *port_set)
+{
+  adt_str_t *parsed_address = NULL;
+  uint16_t parsed_port = 0u;
+  msocket_endpoint_type_t const parsed_type = msocket_parse_endpoint(value, &parsed_address, &parsed_port);
+  if ((parsed_type == MSOCKET_ENDPOINT_UNKNOWN) || (parsed_type == MSOCKET_ENDPOINT_ERROR))
+  {
+    if (parsed_address != NULL)
+    {
+      adt_str_delete(parsed_address);
+    }
+    return ARGPARSE_VALUE_ERROR;
+  }
+  if (*address != NULL)
+  {
+    adt_str_delete(*address);
+  }
+  *address = parsed_address;
+  *endpoint_type = parsed_type;
+  if (parsed_port != 0u)
+  {
+    *port = parsed_port;
+    if (port_set != NULL)
+    {
+      *port_set = true;
+    }
+  }
+  return ARGPARSE_SUCCESS;
+}
+
 static argparse_result_t argparse_cbk(const char *short_name, const char *long_name, const char *value)
 {
   if (long_name != NULL && ((strcmp(long_name, "compressed") == 0) || (strcmp(long_name, "check") == 0)) &&
@@ -403,8 +437,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
   {
     if (short_name != NULL)
     {
-      if ((strcmp(short_name, "b") == 0) || (strcmp(short_name, "p") == 0) || (strcmp(short_name, "c") == 0) ||
-        (strcmp(short_name, "r") == 0))
+      if ((strcmp(short_name, "b") == 0) || (strcmp(short_name, "c") == 0))
       {
         return ARGPARSE_NEED_VALUE;
       }
@@ -420,8 +453,7 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
     }
     else if ((long_name != NULL))
     {
-      if ((strcmp(long_name, "bind") == 0) || (strcmp(long_name, "bind-port") == 0) ||
-        (strcmp(long_name, "connect") == 0) || (strcmp(long_name, "connect-port") == 0) ||
+      if ((strcmp(long_name, "bind") == 0) || (strcmp(long_name, "connect") == 0) ||
         (strcmp(long_name, "ca-cert") == 0) || (strcmp(long_name, "client-cert") == 0) ||
         (strcmp(long_name, "client-key") == 0) || (strcmp(long_name, "vsock") == 0))
       {
@@ -467,85 +499,24 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
   {
     if (short_name != NULL)
     {
-      char *end;
-      long lval;
-      if (strcmp(short_name, "p") == 0)
+      if (strcmp(short_name, "b") == 0)
       {
-        lval = strtol(value, &end, 0);
-        if ((end > value) && (lval <= UINT16_MAX))
-        {
-          m_bind_port = (uint16_t)lval;
-        }
-        else
-        {
-          return ARGPARSE_VALUE_ERROR;
-        }
-      }
-      else if (strcmp(short_name, "r") == 0)
-      {
-        lval = strtol(value, &end, 0);
-        if ((end > value) && (lval <= UINT16_MAX))
-        {
-          m_connect_port = (uint16_t)lval;
-          m_connect_port_set = true;
-        }
-        else
-        {
-          return ARGPARSE_VALUE_ERROR;
-        }
-      }
-      else if (strcmp(short_name, "b") == 0)
-      {
-        if (m_bind_address != NULL)
-          adt_str_delete(m_bind_address);
-        m_bind_resource_type = msocket_parse_endpoint(value, &m_bind_address, &m_bind_port);
-        if ((m_bind_resource_type == MSOCKET_ENDPOINT_UNKNOWN) || (m_bind_resource_type == MSOCKET_ENDPOINT_ERROR))
-        {
-          return ARGPARSE_VALUE_ERROR;
-        }
+        return parse_endpoint_arg(value, &m_bind_resource_type, &m_bind_address, &m_bind_port, NULL);
       }
       else if (strcmp(short_name, "c") == 0)
       {
-        if (m_connect_address != NULL)
-          adt_str_delete(m_connect_address);
-        m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
-        if ((m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
-          (m_connect_resource_type == MSOCKET_ENDPOINT_ERROR))
-        {
-          return ARGPARSE_VALUE_ERROR;
-        }
+        return parse_endpoint_arg(
+          value, &m_connect_resource_type, &m_connect_address, &m_connect_port, &m_connect_port_set);
+      }
+      else
+      {
+        return ARGPARSE_NAME_ERROR;
       }
     }
     else if (long_name != NULL)
     {
       char *end;
-      long lval;
-      if (strcmp(long_name, "bind-port") == 0)
-      {
-        lval = strtol(value, &end, 0);
-        if ((end > value) && (lval <= UINT16_MAX))
-        {
-          m_bind_port = (uint16_t)lval;
-        }
-        else
-        {
-          return ARGPARSE_VALUE_ERROR;
-        }
-      }
-      else if (strcmp(long_name, "connect-port") == 0)
-      {
-        lval = strtol(value, &end, 0);
-        if ((end > value) && (lval <= UINT16_MAX))
-        {
-          m_connect_port = (uint16_t)lval;
-          m_connect_port_set = true;
-        }
-        else
-        {
-          return ARGPARSE_VALUE_ERROR;
-        }
-      }
-      else if (strcmp(long_name, "ca-cert") == 0)
+      if (strcmp(long_name, "ca-cert") == 0)
       {
         if (m_ca_cert != NULL)
           adt_str_delete(m_ca_cert);
@@ -565,24 +536,12 @@ static argparse_result_t argparse_cbk(const char *short_name, const char *long_n
       }
       else if (strcmp(long_name, "bind") == 0)
       {
-        if (m_bind_address != NULL)
-          adt_str_delete(m_bind_address);
-        m_bind_resource_type = msocket_parse_endpoint(value, &m_bind_address, &m_bind_port);
-        if ((m_bind_resource_type == MSOCKET_ENDPOINT_UNKNOWN) || (m_bind_resource_type == MSOCKET_ENDPOINT_ERROR))
-        {
-          return ARGPARSE_VALUE_ERROR;
-        }
+        return parse_endpoint_arg(value, &m_bind_resource_type, &m_bind_address, &m_bind_port, NULL);
       }
       else if (strcmp(long_name, "connect") == 0)
       {
-        if (m_connect_address != NULL)
-          adt_str_delete(m_connect_address);
-        m_connect_resource_type = msocket_parse_endpoint(value, &m_connect_address, &m_connect_port);
-        if ((m_connect_resource_type == MSOCKET_ENDPOINT_UNKNOWN) ||
-          (m_connect_resource_type == MSOCKET_ENDPOINT_ERROR))
-        {
-          return ARGPARSE_VALUE_ERROR;
-        }
+        return parse_endpoint_arg(
+          value, &m_connect_resource_type, &m_connect_address, &m_connect_port, &m_connect_port_set);
       }
       else if (strcmp(long_name, "vsock") == 0)
       {
@@ -679,12 +638,12 @@ static void print_version(void) { printf("%s %s\n", APP_NAME, SW_VERSION_LITERAL
 
 static void print_usage(const char *arg0)
 {
-  printf("%s [-b --bind bind_path] [-p --bind-port port] [--no-bind] "
-         "[-c --connect connect_path] [-r --connect-port connect_port] "
+  printf("%s [-b --bind bind_path] [--no-bind] "
+         "[-c --connect connect_path] "
          "[--no-signature] [--compressed] [--check] "
          "[--tls] [--ca-cert ca_path] [--client-cert cert_path] [--client-key key_path] "
          "[--vsock <cid>:<port>] "
-         "[--version] "
+         "[--version] [-h --help] "
          "definition_file\n",
     arg0);
 }

@@ -11,12 +11,12 @@ Synopsis
 
 .. code-block:: text
 
-   apx-node [-b | --bind <bind_path>] [-p | --bind-port <port>] [--no-bind]
-            [-c | --connect <connect_path>] [-r | --connect-port <port>]
+   apx-node [-b | --bind <bind_path>] [--no-bind]
+            [-c | --connect <connect_path>]
             [--no-signature] [--compressed] [--check]
             [--tls] [--ca-cert <path>] [--client-cert <path>] [--client-key <path>]
             [--vsock <cid>:<port>]
-            [--version] [--help]
+            [--version] [-h | --help]
             <file.apx>
 
 Command-Line Options
@@ -30,30 +30,34 @@ Command-Line Options
      - Description
    * - ``<file.apx>``
      - Path to the APX definition file describing the node, port interfaces, and data types (mandatory argument).
-   * - ``-b <path>``, ``--bind <path>``
-     - Path to UNIX domain socket or TCP IP address on which ``apx-node`` starts its local JSON message server.
+   * - ``-b <endpoint>``, ``--bind <endpoint>``
+     - Endpoint on which ``apx-node`` starts its local JSON message server. Accepts a UNIX domain socket path or a
+       TCP address with optional ``:port`` (e.g. ``127.0.0.1:5100``, ``localhost:5100``, or ``[::1]:5100``).
        External utilities (such as :doc:`apx_control` or ``nc``) connect here to manipulate provide-ports.
-       Default on Linux: ``/tmp/apx_node.socket``. Default on Windows: ``127.0.0.1``.
-   * - ``-p <port>``, ``--bind-port <port>``
-     - Port number for the local JSON message server when binding over TCP. Default: ``5100``.
+       Default on Linux: ``/tmp/apx_node.socket``. Default on Windows: ``127.0.0.1:5100``. Default TCP port when
+       omitted: ``5100``.
    * - ``--no-bind``
      - Disable the local JSON message server. In this mode, ``apx-node`` runs purely as an observer and signal
        publisher.
-   * - ``-c <path>``, ``--connect <path>``
-     - Path to UNIX domain socket or hostname/IP address of the remote ``apx-server``. Default on Linux:
-       ``/tmp/apx.socket``. Default on Windows: ``127.0.0.1``.
-   * - ``-r <port>``, ``--connect-port <port>``
-     - Port number to connect to on the ``apx-server``. Defaults to ``5000`` for plain TCP, or ``5020`` when ``--tls``
-       is specified.
+   * - ``-c <endpoint>``, ``--connect <endpoint>``
+     - Endpoint of the remote ``apx-server``. Accepts a UNIX domain socket path or a TCP address with optional
+       ``:port`` (e.g. ``127.0.0.1:5000``, ``localhost:5000``, or ``[::1]:5000``). Default on Linux:
+       ``/tmp/apx.socket`` (or ``127.0.0.1:5020`` when ``--tls`` is specified). Default on Windows: ``127.0.0.1:5000``.
+       Default TCP port when omitted: ``5000`` (or ``5020`` when ``--tls`` is specified).
    * - ``--tls``
-     - Connect to ``apx-server`` over encrypted TLS. Automatically defaults port to ``5020``.
+     - Connect to ``apx-server`` over encrypted TLS (IPv4 or ``localhost``). When ``-c`` is omitted, defaults to
+       ``127.0.0.1:5020``. Also defaults port to ``5020`` if ``-c`` omits a port. Cannot be combined with ``--vsock``.
    * - ``--ca-cert <path>``
      - Path to Root CA certificate PEM file to verify server authenticity when connecting via TLS.
        Automatically discovers ``example/secure/config/certs/ca_cert.pem`` or ``tests/certs/ca_cert.pem`` if omitted.
    * - ``--client-cert <path>``
-     - Path to client certificate PEM file for Mutual TLS (mTLS) authentication.
+     - Path to client certificate PEM file for Mutual TLS (mTLS) authentication. When both ``--client-cert`` and
+       ``--client-key`` are omitted under ``--tls``, automatically discovers
+       ``example/secure/config/certs/client_cert.pem`` or ``tests/certs/client_cert.pem`` if present.
    * - ``--client-key <path>``
-     - Path to client private key PEM file for Mutual TLS (mTLS) authentication.
+     - Path to client private key PEM file for Mutual TLS (mTLS) authentication (auto-discovers
+       ``example/secure/config/certs/client_key.pem`` or ``tests/certs/client_key.pem`` together with
+       ``--client-cert`` when omitted).
    * - ``--no-signature``
      - Bypass automatic discovery of companion signature files and publish the node unsigned.
    * - ``--compressed``
@@ -153,7 +157,7 @@ Connect Over TLS with Mutual Authentication (mTLS)
      --ca-cert certs/ca_cert.pem \
      --client-cert certs/client_cert.pem \
      --client-key certs/client_key.pem \
-     -c 127.0.0.1 -r 5020 \
+     -c 127.0.0.1:5020 \
      nodes/SecureNode.apx
 
 Connect Over Linux VSOCK (Guest to Host)

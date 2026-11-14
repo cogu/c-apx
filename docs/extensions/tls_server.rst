@@ -107,11 +107,11 @@ When connecting using :doc:`../apps/apx_node`, specify the ``--tls`` flag:
 .. code-block:: bash
 
    # Connect with server authentication:
-   apx-node --tls --ca-cert certs/ca_cert.pem -c 127.0.0.1 -r 5020 node.apx
+   apx-node --tls --ca-cert certs/ca_cert.pem -c 127.0.0.1:5020 node.apx
 
    # Connect with mutual TLS (mTLS):
    apx-node --tls \
      --ca-cert certs/ca_cert.pem \
      --client-cert certs/client_cert.pem \
      --client-key certs/client_key.pem \
-     -c 127.0.0.1 -r 5020 node.apx
+     -c 127.0.0.1:5020 node.apx

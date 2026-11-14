@@ -232,8 +232,7 @@ def test_apx_node_connect_tls_server(tmp_path: Path, apx_server_bin: str, apx_no
             apx_node_bin,
             "--tls",
             "--ca-cert", ca_cert,
-            "-c", "127.0.0.1",
-            "-r", str(port),
+            "-c", f"127.0.0.1:{port}",
             "--no-bind",
             str(node_file)
         ]
@@ -284,8 +283,7 @@ def test_apx_node_connect_mtls_server(tmp_path: Path, apx_server_bin: str, apx_n
             "--ca-cert", ca_cert,
             "--client-cert", client_cert,
             "--client-key", client_key,
-            "-c", "127.0.0.1",
-            "-r", str(port),
+            "-c", f"127.0.0.1:{port}",
             "--no-bind",
             str(node_file)
         ]
