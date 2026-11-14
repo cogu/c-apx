@@ -67,6 +67,9 @@ static void test_parse_error_line_number_with_blank_lines(CuTest *tc);
 static void test_parse_comment_with_hash_in_quotes(CuTest *tc);
 static void test_parse_port_signature_too_long(CuTest *tc);
 static void test_parse_type_signature_too_long(CuTest *tc);
+static void test_parse_v12_named_type_ref_emits_warning(CuTest *tc);
+static void test_parse_v12_indexed_type_ref_no_warnings(CuTest *tc);
+static void test_parse_v12_warnings_retained_on_subsequent_error(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -115,6 +118,9 @@ CuSuite *testsuite_apx_parser(void)
   SUITE_ADD_TEST(suite, test_parse_comment_with_hash_in_quotes);
   SUITE_ADD_TEST(suite, test_parse_port_signature_too_long);
   SUITE_ADD_TEST(suite, test_parse_type_signature_too_long);
+  SUITE_ADD_TEST(suite, test_parse_v12_named_type_ref_emits_warning);
+  SUITE_ADD_TEST(suite, test_parse_v12_indexed_type_ref_no_warnings);
+  SUITE_ADD_TEST(suite, test_parse_v12_warnings_retained_on_subsequent_error);
 
   return suite;
 }
@@ -1195,4 +1201,99 @@ static void test_parse_type_signature_too_long(CuTest *tc)
   apx_parser_destroy(&parser);
   apx_istream_destroy(&stream);
   adt_str_delete(str);
+}
+
+static void test_parse_v12_named_type_ref_emits_warning(CuTest *tc)
+{
+  const char *apx_text_1_2 = "APX/1.2\n"
+                             "N\"TestNode\"\n"
+                             "T\"Speed_T\"S\n"
+                             "T\"Alias_T\"T[\"Speed_T\"]\n"
+                             "P\"Speed\"T[\"Speed_T\"]\n"
+                             "R\"Status\"{\"a\"C\"b\"T[\"Speed_T\"]}\n";
+  const char *apx_text_1_3 = "APX/1.3\n"
+                             "N\"TestNode\"\n"
+                             "T\"Speed_T\"S\n"
+                             "P\"Speed\"T[\"Speed_T\"]\n";
+  apx_parser_t parser;
+  apx_istream_t stream;
+  apx_node_t *node;
+
+  apx_istream_create(&stream);
+  apx_parser_create(&parser, &stream);
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text_1_2));
+  node = apx_parser_take_last_node(&parser);
+  CuAssertPtrNotNull(tc, node);
+  CuAssertIntEquals(tc, 3, apx_parser_num_warnings(&parser));
+
+  apx_parser_warning_t const *w0 = apx_parser_get_warning(&parser, 0);
+  apx_parser_warning_t const *w1 = apx_parser_get_warning(&parser, 1);
+  apx_parser_warning_t const *w2 = apx_parser_get_warning(&parser, 2);
+  CuAssertPtrNotNull(tc, w0);
+  CuAssertPtrNotNull(tc, w1);
+  CuAssertPtrNotNull(tc, w2);
+  CuAssertIntEquals(tc, 4, apx_parser_warning_get_line(w0));
+  CuAssertIntEquals(tc, 5, apx_parser_warning_get_line(w1));
+  CuAssertIntEquals(tc, 6, apx_parser_warning_get_line(w2));
+  CuAssertPtrNotNull(tc, strstr(apx_parser_warning_get_message(w0), "T[\"Speed_T\"]"));
+  CuAssertPtrNotNull(tc, strstr(apx_parser_warning_get_message(w1), "APX/1.2"));
+  CuAssertPtrNotNull(tc, strstr(apx_parser_warning_get_message(w2), "T[\"Speed_T\"]"));
+  CuAssertTrue(tc, apx_parser_get_warning(&parser, 3) == NULL);
+  CuAssertTrue(tc, apx_parser_get_warning(&parser, -1) == NULL);
+  apx_node_delete(node);
+
+  // Reusing the parser for APX/1.3 should clear prior warnings and emit none
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text_1_3));
+  node = apx_parser_take_last_node(&parser);
+  CuAssertPtrNotNull(tc, node);
+  CuAssertIntEquals(tc, 0, apx_parser_num_warnings(&parser));
+  apx_node_delete(node);
+
+  apx_parser_destroy(&parser);
+  apx_istream_destroy(&stream);
+}
+
+static void test_parse_v12_indexed_type_ref_no_warnings(CuTest *tc)
+{
+  const char *apx_text = "APX/1.2\n"
+                         "N\"TestNode\"\n"
+                         "T\"Speed_T\"S\n"
+                         "P\"Speed\"T[0]:=0\n";
+  apx_parser_t parser;
+  apx_istream_t stream;
+  apx_node_t *node;
+
+  apx_istream_create(&stream);
+  apx_parser_create(&parser, &stream);
+  CuAssertUIntEquals(tc, APX_NO_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+  node = apx_parser_take_last_node(&parser);
+  CuAssertPtrNotNull(tc, node);
+  CuAssertIntEquals(tc, 0, apx_parser_num_warnings(&parser));
+  apx_node_delete(node);
+
+  apx_parser_destroy(&parser);
+  apx_istream_destroy(&stream);
+}
+
+static void test_parse_v12_warnings_retained_on_subsequent_error(CuTest *tc)
+{
+  const char *apx_text = "APX/1.2\n"
+                         "N\"TestNode\"\n"
+                         "T\"Speed_T\"S\n"
+                         "P\"Speed\"T[\"Speed_T\"]\n"
+                         "P\"BadSyntax\"$$$\n";
+  apx_parser_t parser;
+  apx_istream_t stream;
+
+  apx_istream_create(&stream);
+  apx_parser_create(&parser, &stream);
+  CuAssertUIntEquals(tc, APX_PARSE_ERROR, apx_parser_parse_cstr(&parser, apx_text));
+  CuAssertIntEquals(tc, 5, apx_parser_get_error_line(&parser));
+  CuAssertIntEquals(tc, 1, apx_parser_num_warnings(&parser));
+  apx_parser_warning_t const *w0 = apx_parser_get_warning(&parser, 0);
+  CuAssertPtrNotNull(tc, w0);
+  CuAssertIntEquals(tc, 4, apx_parser_warning_get_line(w0));
+
+  apx_parser_destroy(&parser);
+  apx_istream_destroy(&stream);
 }

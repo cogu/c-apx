@@ -18,6 +18,7 @@
 #include "apx/error.h"
 #include "apx/event_listener.h"
 #include "apx/node_instance.h"
+#include "apx/parser.h"
 #include "apx/port_instance.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -109,6 +110,8 @@ apx_client_connection_t *apx_client_get_connection(apx_client_t *self);
 
 apx_error_t apx_client_build_node(apx_client_t *self, const char *definition_text);
 int32_t apx_client_get_error_line(apx_client_t *self);
+int32_t apx_client_num_warnings(apx_client_t const *self);
+apx_parser_warning_t const *apx_client_get_warning(apx_client_t const *self, int32_t index);
 apx_error_t apx_client_get_last_error(apx_client_t const *self);
 const char *apx_client_get_last_error_node(apx_client_t const *self);
 apx_node_instance_t *apx_client_get_last_attached_node(apx_client_t *self);

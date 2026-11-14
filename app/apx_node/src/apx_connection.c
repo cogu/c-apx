@@ -162,6 +162,32 @@ int32_t apx_connection_get_last_error_line(apx_connection_t *self)
   return -1;
 }
 
+int32_t apx_connection_num_warnings(apx_connection_t *self)
+{
+  if (self != NULL)
+  {
+    int32_t num_warnings;
+    MUTEX_LOCK(self->mutex);
+    num_warnings = apx_client_num_warnings(self->client);
+    MUTEX_UNLOCK(self->mutex);
+    return num_warnings;
+  }
+  return -1;
+}
+
+apx_parser_warning_t const *apx_connection_get_warning(apx_connection_t *self, int32_t index)
+{
+  if (self != NULL)
+  {
+    apx_parser_warning_t const *warning;
+    MUTEX_LOCK(self->mutex);
+    warning = apx_client_get_warning(self->client, index);
+    MUTEX_UNLOCK(self->mutex);
+    return warning;
+  }
+  return NULL;
+}
+
 apx_error_t apx_connection_get_last_error(apx_connection_t *self)
 {
   if (self != NULL)

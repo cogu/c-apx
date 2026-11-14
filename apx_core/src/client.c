@@ -491,6 +491,24 @@ int32_t apx_client_get_error_line(apx_client_t *self)
   return -1;
 }
 
+int32_t apx_client_num_warnings(apx_client_t const *self)
+{
+  if (self != NULL)
+  {
+    return apx_node_manager_num_warnings(self->node_manager);
+  }
+  return -1;
+}
+
+apx_parser_warning_t const *apx_client_get_warning(apx_client_t const *self, int32_t index)
+{
+  if (self != NULL)
+  {
+    return apx_node_manager_get_warning(self->node_manager, index);
+  }
+  return NULL;
+}
+
 apx_node_instance_t *apx_client_get_last_attached_node(apx_client_t *self)
 {
   if (self != NULL)

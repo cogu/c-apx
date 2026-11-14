@@ -531,6 +531,24 @@ int32_t apx_node_manager_get_error_line(apx_node_manager_t *self)
   return -1;
 }
 
+int32_t apx_node_manager_num_warnings(apx_node_manager_t const *self)
+{
+  if (self != NULL)
+  {
+    return apx_parser_num_warnings(&self->parser);
+  }
+  return -1;
+}
+
+apx_parser_warning_t const *apx_node_manager_get_warning(apx_node_manager_t const *self, int32_t index)
+{
+  if (self != NULL)
+  {
+    return apx_parser_get_warning(&self->parser, index);
+  }
+  return NULL;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 //////////////////////////////////////////////////////////////////////////////

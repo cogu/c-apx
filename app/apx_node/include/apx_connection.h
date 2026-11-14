@@ -56,6 +56,8 @@ apx_error_t apx_connection_attach_node(apx_connection_t *self, adt_str_t *apx_de
 apx_error_t apx_connection_attach_node_signed(
   apx_connection_t *self, adt_str_t *apx_definition, rmf_signature_type_t sig_type, uint8_t const *sig_data);
 int32_t apx_connection_get_last_error_line(apx_connection_t *self);
+int32_t apx_connection_num_warnings(apx_connection_t *self);
+apx_parser_warning_t const *apx_connection_get_warning(apx_connection_t *self, int32_t index);
 apx_error_t apx_connection_get_last_error(apx_connection_t *self);
 char const *apx_connection_get_last_error_node(apx_connection_t *self);
 apx_node_instance_t *apx_connection_get_last_attached_node(apx_connection_t *self);

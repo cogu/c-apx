@@ -86,5 +86,7 @@ void apx_node_manager_on_require_port_written(
   apx_node_manager_t *self, apx_port_instance_t *port_instance, uint8_t const *raw_data, apx_size_t data_size);
 int32_t apx_node_manager_values(apx_node_manager_t *self, adt_ary_t *array);
 int32_t apx_node_manager_get_error_line(apx_node_manager_t *self);
+int32_t apx_node_manager_num_warnings(apx_node_manager_t const *self);
+apx_parser_warning_t const *apx_node_manager_get_warning(apx_node_manager_t const *self, int32_t index);
 
 #endif // APX_NODE_INSTANCE_MANAGER_H

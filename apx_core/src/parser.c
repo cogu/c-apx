@@ -12,6 +12,7 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "apx/parser.h"
+#include "adt_str.h"
 #include "apx/cfg.h"
 #include "apx/parser_base.h"
 #include "bstr.h"
@@ -45,6 +46,9 @@ static apx_error_t state_parse_port_attributes(
 
 static void parser_clear_error(apx_parser_t *self);
 static void parser_set_error(apx_parser_t *self, apx_error_t error_code, int32_t error_line);
+static apx_error_t parser_add_warning(apx_parser_t *self, int32_t line_number, const char *message);
+static bool is_version_before_1_3(int32_t major_version, int32_t minor_version);
+static apx_error_t parser_check_data_element_warnings(apx_parser_t *self, apx_data_element_t const *element);
 static void parser_init_handler(apx_parser_t *self, apx_istream_handler_t *handler);
 static void parser_reset(apx_parser_t *self);
 static apx_error_t parser_on_open(void *arg);
@@ -69,6 +73,7 @@ void apx_parser_create(apx_parser_t *self, apx_istream_t *stream)
   if ((self != NULL) && (stream != NULL))
   {
     apx_istream_handler_t handler;
+    adt_ary_create(&self->warnings, apx_parser_warning_vdelete);
     state_init(&self->state);
     parser_clear_error(self);
     parser_init_handler(self, &handler);
@@ -84,6 +89,7 @@ void apx_parser_destroy(apx_parser_t *self)
   if (self != NULL)
   {
     state_clear(&self->state);
+    adt_ary_destroy(&self->warnings);
     apx_attribute_parser_destroy(&self->attribute_parser);
     apx_signature_parser_destroy(&self->signature_parser);
   }
@@ -135,6 +141,85 @@ int32_t apx_parser_get_error_line(apx_parser_t *self)
     return self->last_error_line;
   }
   return -1;
+}
+
+apx_parser_warning_t *apx_parser_warning_new(int32_t line_number, const char *message)
+{
+  apx_parser_warning_t *self = (apx_parser_warning_t *)malloc(sizeof(apx_parser_warning_t));
+  if (self != NULL)
+  {
+    self->line_number = line_number;
+    self->message = NULL;
+    if (message != NULL)
+    {
+      self->message = STRDUP(message);
+      if (self->message == NULL)
+      {
+        free(self);
+        return NULL;
+      }
+    }
+  }
+  return self;
+}
+
+void apx_parser_warning_delete(apx_parser_warning_t *self)
+{
+  if (self != NULL)
+  {
+    if (self->message != NULL)
+    {
+      free(self->message);
+    }
+    free(self);
+  }
+}
+
+void apx_parser_warning_vdelete(void *arg) { apx_parser_warning_delete((apx_parser_warning_t *)arg); }
+
+int32_t apx_parser_warning_get_line(apx_parser_warning_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->line_number;
+  }
+  return -1;
+}
+
+const char *apx_parser_warning_get_message(apx_parser_warning_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->message;
+  }
+  return NULL;
+}
+
+int32_t apx_parser_num_warnings(apx_parser_t const *self)
+{
+  if (self != NULL)
+  {
+    return adt_ary_length(&self->warnings);
+  }
+  return -1;
+}
+
+apx_parser_warning_t const *apx_parser_get_warning(apx_parser_t const *self, int32_t index)
+{
+  if ((self != NULL) && (index >= 0) && (index < adt_ary_length(&self->warnings)))
+  {
+    return (apx_parser_warning_t const *)adt_ary_value(&self->warnings, index);
+  }
+  return NULL;
+}
+
+adt_ary_t const *apx_parser_get_warnings(apx_parser_t const *self)
+{
+  if (self != NULL)
+  {
+    return &self->warnings;
+  }
+  return NULL;
 }
 
 apx_error_t apx_parser_parse_cstr(apx_parser_t *self, const char *apx_text)
@@ -328,12 +413,80 @@ static void parser_clear_error(apx_parser_t *self)
 {
   self->last_error = APX_NO_ERROR;
   self->last_error_line = 0;
+  adt_ary_clear(&self->warnings);
 }
 
 static void parser_set_error(apx_parser_t *self, apx_error_t error_code, int32_t error_line)
 {
   self->last_error = error_code;
   self->last_error_line = error_line;
+}
+
+static apx_error_t parser_add_warning(apx_parser_t *self, int32_t line_number, const char *message)
+{
+  apx_parser_warning_t *warning = apx_parser_warning_new(line_number, message);
+  if (warning == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
+  if (adt_ary_push(&self->warnings, warning) != ADT_NO_ERROR)
+  {
+    apx_parser_warning_delete(warning);
+    return APX_MEM_ERROR;
+  }
+  return APX_NO_ERROR;
+}
+
+static bool is_version_before_1_3(int32_t major_version, int32_t minor_version)
+{
+  return (major_version < 1) || ((major_version == 1) && (minor_version < 3));
+}
+
+static apx_error_t parser_check_data_element_warnings(apx_parser_t *self, apx_data_element_t const *element)
+{
+  if ((self == NULL) || (element == NULL))
+  {
+    return APX_NO_ERROR;
+  }
+  if (!is_version_before_1_3(self->state.major_version, self->state.minor_version))
+  {
+    return APX_NO_ERROR;
+  }
+  apx_type_code_t type_code = apx_data_element_get_type_code(element);
+  if (type_code == APX_TYPE_CODE_REF_NAME)
+  {
+    const char *type_name = apx_data_element_get_type_ref_name(element);
+    adt_str_t *msg = adt_str_new_cstr("Named type reference T[\"");
+    if (msg == NULL)
+    {
+      return APX_MEM_ERROR;
+    }
+    char suffix[128];
+    snprintf(suffix, sizeof(suffix), "\"] is not allowed in APX/%d.%d (requires APX/1.3 or later)",
+      (int)self->state.major_version, (int)self->state.minor_version);
+    if (((type_name != NULL) && (adt_str_append_cstr(msg, type_name) != ADT_NO_ERROR)) ||
+      (adt_str_append_cstr(msg, suffix) != ADT_NO_ERROR))
+    {
+      adt_str_delete(msg);
+      return APX_MEM_ERROR;
+    }
+    apx_error_t rc = parser_add_warning(self, (int32_t)self->state.lineno, adt_str_cstr(msg));
+    adt_str_delete(msg);
+    return rc;
+  }
+  if (type_code == APX_TYPE_CODE_RECORD)
+  {
+    int32_t num_children = apx_data_element_get_num_child_elements(element);
+    for (int32_t i = 0; i < num_children; i++)
+    {
+      apx_error_t rc = parser_check_data_element_warnings(self, apx_data_element_get_child_at(element, i));
+      if (rc != APX_NO_ERROR)
+      {
+        return rc;
+      }
+    }
+  }
+  return APX_NO_ERROR;
 }
 
 static void parser_init_handler(apx_parser_t *self, apx_istream_handler_t *handler)
@@ -617,6 +770,14 @@ static apx_error_t parser_accept_type_declaration(apx_parser_t *self, uint8_t co
           apx_data_signature_set_element(&self->state.data_type->data_signature, self->state.data_element);
           self->state.data_element = NULL;
         }
+        rc = parser_check_data_element_warnings(
+          self, apx_data_signature_get_data_element(&self->state.data_type->data_signature));
+        if (rc != APX_NO_ERROR)
+        {
+          apx_data_type_delete(self->state.data_type);
+          self->state.data_type = NULL;
+          return rc;
+        }
         apx_node_append_data_type(self->state.node, self->state.data_type);
         self->state.data_type = NULL;
         return APX_NO_ERROR;
@@ -708,6 +869,14 @@ static apx_error_t parser_accept_port_declaration(apx_parser_t *self, uint8_t co
           }
           apx_data_signature_set_element(&self->state.port->data_signature, self->state.data_element);
           self->state.data_element = NULL;
+        }
+        rc = parser_check_data_element_warnings(
+          self, apx_data_signature_get_data_element(&self->state.port->data_signature));
+        if (rc != APX_NO_ERROR)
+        {
+          apx_port_delete(self->state.port);
+          self->state.port = NULL;
+          return rc;
         }
         apx_node_append_port(self->state.node, self->state.port);
         self->state.port = NULL;

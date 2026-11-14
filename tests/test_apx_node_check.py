@@ -127,3 +127,64 @@ def test_apx_node_check_in_help(apx_node_bin):
     assert proc.returncode == 0
     assert "--check" in proc.stdout
 
+
+def test_apx_node_check_v12_named_type_ref_warning(apx_node_bin, tmp_path):
+    """Test --check warns on named type references in APX/1.2 nodes while still succeeding."""
+    apx_file = tmp_path / "v12_named_ref.apx"
+    apx_file.write_text(
+        "APX/1.2\n"
+        'N"TestNode"\n'
+        'T"Speed_T"S\n'
+        'P"VehicleSpeed"T["Speed_T"]:=0\n'
+    )
+
+    proc = subprocess.run(
+        [apx_node_bin, "--check", str(apx_file)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.returncode == 0
+    assert "Provide-Ports: 1, Require-Ports: 0" in proc.stdout
+    assert 'Warning on line 4: Named type reference T["Speed_T"] is not allowed in APX/1.2' in proc.stderr
+
+
+def test_apx_node_check_v13_named_type_ref_no_warning(apx_node_bin, tmp_path):
+    """Test --check emits no warning for named type references in APX/1.3 nodes."""
+    apx_file = tmp_path / "v13_named_ref.apx"
+    apx_file.write_text(
+        "APX/1.3\n"
+        'N"TestNode"\n'
+        'T"Speed_T"S\n'
+        'P"VehicleSpeed"T["Speed_T"]:=0\n'
+    )
+
+    proc = subprocess.run(
+        [apx_node_bin, "--check", str(apx_file)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.returncode == 0
+    assert "Provide-Ports: 1, Require-Ports: 0" in proc.stdout
+    assert "Warning" not in proc.stderr
+
+
+def test_apx_node_normal_mode_v12_named_type_ref_warning(apx_node_bin, tmp_path):
+    """Test normal mode also prints parser warnings on named type references in APX/1.2 nodes."""
+    apx_file = tmp_path / "v12_named_ref.apx"
+    apx_file.write_text(
+        "APX/1.2\n"
+        'N"TestNode"\n'
+        'T"Speed_T"S\n'
+        'P"VehicleSpeed"T["Speed_T"]:=0\n'
+    )
+
+    proc = subprocess.run(
+        [apx_node_bin, "--no-bind", "-c", str(tmp_path / "missing.socket"), str(apx_file)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert 'Warning on line 4: Named type reference T["Speed_T"] is not allowed in APX/1.2' in proc.stderr
+

@@ -67,6 +67,7 @@ static int init_wsa(void);
 static apx_error_t init_json_message_server(void);
 static apx_error_t connect_to_apx_server(void);
 static apx_error_t start_json_message_server(void);
+static void print_parser_warnings(apx_connection_t *connection);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -267,6 +268,7 @@ int main(int argc, char **argv)
         {
           int32_t errorLine = apx_connection_get_last_error_line(m_apx_connection);
           printf("Failed\n");
+          print_parser_warnings(m_apx_connection);
           if (errorLine > 0)
           {
             fprintf(stderr, "Error on line %d: %s (code %d)\n", (int)errorLine, apx_strerror(rc), (int)rc);
@@ -284,6 +286,7 @@ int main(int argc, char **argv)
           apx_size_t num_provide_ports;
           apx_size_t num_require_ports;
           printf("OK\n");
+          print_parser_warnings(m_apx_connection);
           node_instance = apx_connection_get_last_attached_node(m_apx_connection);
           if (node_instance != NULL)
           {
@@ -922,4 +925,26 @@ static apx_error_t start_json_message_server(void)
     }
   }
   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+static void print_parser_warnings(apx_connection_t *connection)
+{
+  int32_t num_warnings = apx_connection_num_warnings(connection);
+  for (int32_t i = 0; i < num_warnings; i++)
+  {
+    apx_parser_warning_t const *warning = apx_connection_get_warning(connection, i);
+    if (warning != NULL)
+    {
+      int32_t line = apx_parser_warning_get_line(warning);
+      const char *msg = apx_parser_warning_get_message(warning);
+      if (line > 0)
+      {
+        fprintf(stderr, "Warning on line %d: %s\n", (int)line, (msg != NULL) ? msg : "");
+      }
+      else
+      {
+        fprintf(stderr, "Warning: %s\n", (msg != NULL) ? msg : "");
+      }
+    }
+  }
 }
