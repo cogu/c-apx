@@ -328,7 +328,15 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
         }
         else
         {
-          apx_file_manager_receiver_set_max_write_size(&self->receiver, APX_MAX_FILE_SIZE);
+          if (address != RMF_CMD_AREA_START_ADDRESS)
+          {
+            return APX_INVALID_ADDRESS_ERROR;
+          }
+          if (payload_len > RMF_CMD_AREA_SIZE)
+          {
+            return APX_MSG_TOO_LARGE_ERROR;
+          }
+          apx_file_manager_receiver_set_max_write_size(&self->receiver, RMF_CMD_AREA_SIZE);
         }
       }
       else if (active_address < RMF_CMD_AREA_START_ADDRESS)
@@ -352,6 +360,10 @@ apx_error_t apx_file_manager_message_received(apx_file_manager_t *self, uint8_t 
         if (active_stream_file != NULL)
         {
           abort_stream_with_error(self, active_stream_file, error_code);
+        }
+        if ((active_address == RMF_CMD_AREA_START_ADDRESS) && (error_code == APX_FILE_TOO_LARGE_ERROR))
+        {
+          return APX_MSG_TOO_LARGE_ERROR;
         }
         return error_code;
       }
@@ -683,6 +695,10 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
   if (size < RMF_CMD_TYPE_SIZE)
   {
     return APX_INVALID_MSG_ERROR;
+  }
+  if (size > RMF_CMD_AREA_SIZE)
+  {
+    return APX_MSG_TOO_LARGE_ERROR;
   }
   apx_error_t retval = APX_NO_ERROR;
   uint32_t const cmd_type = unpackLE(data, RMF_CMD_TYPE_SIZE);

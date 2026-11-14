@@ -81,6 +81,7 @@ static void test_small_soa_and_large_data_pipeline(CuTest *tc);
 static void test_command_queue_cleanup_on_destroy(CuTest *tc);
 static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc);
 static void test_file_manager_compressed_publish_error_reporting(CuTest *tc);
+static void test_file_manager_rejects_oversized_and_misaligned_control_writes(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -101,6 +102,7 @@ CuSuite *testsuite_apx_file_manager(void)
   SUITE_ADD_TEST(suite, test_command_queue_cleanup_on_destroy);
   SUITE_ADD_TEST(suite, test_file_manager_publish_and_receive_compressed_files);
   SUITE_ADD_TEST(suite, test_file_manager_compressed_publish_error_reporting);
+  SUITE_ADD_TEST(suite, test_file_manager_rejects_oversized_and_misaligned_control_writes);
 
   return suite;
 }
@@ -1173,4 +1175,49 @@ static void test_file_manager_compressed_publish_error_reporting(CuTest *tc)
 
   mock_endpoint_destroy(&sub);
   mock_endpoint_destroy(&pub);
+}
+
+static void test_file_manager_rejects_oversized_and_misaligned_control_writes(CuTest *tc)
+{
+  mock_endpoint_t ep;
+  mock_endpoint_create(&ep, APX_CLIENT_MODE, 4096);
+
+  // 1. Single 1100-byte NACK command targeting control area -> rejected with APX_MSG_TOO_LARGE_ERROR before dispatch
+  uint8_t oversized[1100];
+  memset(oversized, 'A', sizeof(oversized));
+  packLE(oversized, RMF_CMD_NACK_MSG, UINT32_SIZE);
+  packLE(oversized + RMF_CMD_TYPE_SIZE, (uint32_t)APX_PARSE_ERROR, UINT32_SIZE);
+  oversized[sizeof(oversized) - 1u] = '\0';
+  CuAssertIntEquals(tc, APX_MSG_TOO_LARGE_ERROR,
+    mock_endpoint_inject_raw_frame(&ep, RMF_CMD_AREA_START_ADDRESS, false, oversized, (apx_size_t)sizeof(oversized)));
+  CuAssertIntEquals(tc, APX_NO_ERROR, ep.last_nack_error);
+
+  // 2. Fragmented control write exceeding 1024 bytes in aggregate -> rejected with APX_MSG_TOO_LARGE_ERROR and reset
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, mock_endpoint_inject_raw_frame(&ep, RMF_CMD_AREA_START_ADDRESS, true, oversized, 600u));
+  CuAssertIntEquals(tc, APX_MSG_TOO_LARGE_ERROR,
+    mock_endpoint_inject_raw_frame(&ep, RMF_CMD_AREA_START_ADDRESS + 600u, false, oversized + 600u, 500u));
+  CuAssertIntEquals(tc, APX_NO_ERROR, ep.last_nack_error);
+  CuAssertUIntEquals(tc, RMF_INVALID_ADDRESS, apx_file_manager_receiver_active_address(&ep.file_manager.receiver));
+
+  // 3. Control-area write not starting at RMF_CMD_AREA_START_ADDRESS -> rejected with APX_INVALID_ADDRESS_ERROR before
+  // buffering (for both more_bit=true and more_bit=false)
+  CuAssertIntEquals(tc, APX_INVALID_ADDRESS_ERROR,
+    mock_endpoint_inject_raw_frame(&ep, RMF_CMD_AREA_START_ADDRESS + 4u, true, oversized, 16u));
+  CuAssertUIntEquals(tc, RMF_INVALID_ADDRESS, apx_file_manager_receiver_active_address(&ep.file_manager.receiver));
+  CuAssertIntEquals(tc, APX_INVALID_ADDRESS_ERROR,
+    mock_endpoint_inject_raw_frame(&ep, RMF_CMD_AREA_START_ADDRESS + 4u, false, oversized, 16u));
+
+  // 4. Exact 1024-byte control write (RMF_CMD_AREA_SIZE) is accepted and dispatched
+  uint8_t max_cmd[RMF_CMD_AREA_SIZE];
+  memset(max_cmd, 'B', sizeof(max_cmd));
+  packLE(max_cmd, RMF_CMD_NACK_MSG, UINT32_SIZE);
+  packLE(max_cmd + RMF_CMD_TYPE_SIZE, (uint32_t)APX_PARSE_ERROR, UINT32_SIZE);
+  memcpy(max_cmd + RMF_CMD_NACK_SIZE, "MaxCmd", 7u);
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    mock_endpoint_inject_raw_frame(&ep, RMF_CMD_AREA_START_ADDRESS, false, max_cmd, (apx_size_t)sizeof(max_cmd)));
+  CuAssertIntEquals(tc, APX_PARSE_ERROR, ep.last_nack_error);
+  CuAssertStrEquals(tc, "MaxCmd", ep.last_nack_name);
+
+  mock_endpoint_destroy(&ep);
 }
