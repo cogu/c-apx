@@ -80,6 +80,9 @@ Usage Examples
    # Signs SensorNode.apx and outputs companion file SensorNode.apx.sig
    apx-sign -k certs/ecu_key.pem SensorNode.apx
 
+   # Explicit sign subcommand and custom output signature filename
+   apx-sign sign -k certs/ecu_key.pem SensorNode.apx -o custom.sig
+
 3. Verify a Signature Manually
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -87,6 +90,9 @@ Usage Examples
 
    # Verifies SensorNode.apx using SensorNode.apx.sig and certs/ecu_pubkey.pem
    apx-sign verify -k certs/ecu_pubkey.pem SensorNode.apx
+
+   # Verify using flag syntax and an explicit signature file
+   apx-sign -v -k certs/ecu_pubkey.pem SensorNode.apx -s custom.sig
 
 4. Enforcing Signatures in Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -105,3 +111,9 @@ Add the generated public key to your ``server.json`` to enforce verification:
        }
      }
    }
+
+Exit Codes
+----------
+
+* ``0``: Signature is valid and matches the public key.
+* ``1``: Signature verification failed, file is tampered with, or invalid arguments.

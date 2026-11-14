@@ -62,7 +62,8 @@ Step 1: Start the APX Server
 Step 2: Start the Responder (Slave)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In a separate terminal, launch the responder:
+In a separate terminal, launch the responder **before** starting the master so ``RespondNode`` ports are already
+registered with ``apx-server`` to echo the initial event:
 
 .. code-block:: bash
 

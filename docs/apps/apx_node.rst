@@ -49,6 +49,7 @@ Command-Line Options
      - Connect to ``apx-server`` over encrypted TLS. Automatically defaults port to ``5020``.
    * - ``--ca-cert <path>``
      - Path to Root CA certificate PEM file to verify server authenticity when connecting via TLS.
+       Automatically discovers ``example/secure/config/certs/ca_cert.pem`` or ``tests/certs/ca_cert.pem`` if omitted.
    * - ``--client-cert <path>``
      - Path to client certificate PEM file for Mutual TLS (mTLS) authentication.
    * - ``--client-key <path>``
@@ -65,8 +66,9 @@ Command-Line Options
        and exit without connecting to a server or starting the local JSON message server. If an
        error is detected along the way, report the line number and error details.
    * - ``--vsock <cid>:<port>``
-     - Connect to ``apx-server`` using Linux VSOCK (AF_VSOCK) transport. The ``<cid>`` parameter can be a numeric
-       Context ID or alias: ``host`` (2), ``local`` (1), ``hypervisor`` (0), or ``any`` (0xFFFFFFFF).
+     - Connect to ``apx-server`` using Linux VSOCK (AF_VSOCK) transport (Linux only; unsupported on Windows).
+       The ``<cid>`` parameter can be a numeric Context ID or alias: ``host`` (2), ``local`` (1, requires
+       ``vsock_loopback`` for local loopback), ``hypervisor`` (0), or ``any`` (0xFFFFFFFF).
    * - ``--version``
      - Display version information and exit.
    * - ``-h``, ``--help``
