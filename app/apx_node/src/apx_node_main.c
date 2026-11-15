@@ -67,7 +67,9 @@ static int init_wsa(void);
 static apx_error_t init_json_message_server(void);
 static apx_error_t connect_to_apx_server(void);
 static apx_error_t start_json_message_server(void);
-static void print_parser_warnings(apx_connection_t *connection);
+static void print_parser_error(int32_t error_line, apx_error_t error_code);
+static void print_parser_warning(apx_parser_warning_t const *warning);
+static void print_parser_warnings_and_errors(apx_connection_t *connection, int32_t error_line, apx_error_t error_code);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC VARIABLES
@@ -268,15 +270,7 @@ int main(int argc, char **argv)
         {
           int32_t errorLine = apx_connection_get_last_error_line(m_apx_connection);
           printf("Failed\n");
-          print_parser_warnings(m_apx_connection);
-          if (errorLine > 0)
-          {
-            fprintf(stderr, "Error on line %d: %s (code %d)\n", (int)errorLine, apx_strerror(rc), (int)rc);
-          }
-          else
-          {
-            fprintf(stderr, "Error: %s (code %d)\n", apx_strerror(rc), (int)rc);
-          }
+          print_parser_warnings_and_errors(m_apx_connection, errorLine, rc);
           retval = 1;
           goto SHUTDOWN;
         }
@@ -286,7 +280,7 @@ int main(int argc, char **argv)
           apx_size_t num_provide_ports;
           apx_size_t num_require_ports;
           printf("OK\n");
-          print_parser_warnings(m_apx_connection);
+          print_parser_warnings_and_errors(m_apx_connection, 0, APX_NO_ERROR);
           node_instance = apx_connection_get_last_attached_node(m_apx_connection);
           if (node_instance != NULL)
           {
@@ -886,8 +880,43 @@ static apx_error_t start_json_message_server(void)
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
-static void print_parser_warnings(apx_connection_t *connection)
+static void print_parser_error(int32_t error_line, apx_error_t error_code)
 {
+  if (error_line > 0)
+  {
+    fprintf(stderr, "Error on line %d: %s (code %d)\n", (int)error_line, apx_strerror(error_code), (int)error_code);
+  }
+  else
+  {
+    fprintf(stderr, "Error: %s (code %d)\n", apx_strerror(error_code), (int)error_code);
+  }
+}
+
+static void print_parser_warning(apx_parser_warning_t const *warning)
+{
+  if (warning != NULL)
+  {
+    int32_t line = apx_parser_warning_get_line(warning);
+    const char *msg = apx_parser_warning_get_message(warning);
+    if (line > 0)
+    {
+      fprintf(stderr, "Warning on line %d: %s\n", (int)line, (msg != NULL) ? msg : "");
+    }
+    else
+    {
+      fprintf(stderr, "Warning: %s\n", (msg != NULL) ? msg : "");
+    }
+  }
+}
+
+static void print_parser_warnings_and_errors(apx_connection_t *connection, int32_t error_line, apx_error_t error_code)
+{
+  bool error_pending = (error_code != APX_NO_ERROR);
+  if (error_pending && (error_line <= 0))
+  {
+    print_parser_error(error_line, error_code);
+    error_pending = false;
+  }
   int32_t num_warnings = apx_connection_num_warnings(connection);
   for (int32_t i = 0; i < num_warnings; i++)
   {
@@ -895,15 +924,16 @@ static void print_parser_warnings(apx_connection_t *connection)
     if (warning != NULL)
     {
       int32_t line = apx_parser_warning_get_line(warning);
-      const char *msg = apx_parser_warning_get_message(warning);
-      if (line > 0)
+      if (error_pending && (line >= error_line))
       {
-        fprintf(stderr, "Warning on line %d: %s\n", (int)line, (msg != NULL) ? msg : "");
+        print_parser_error(error_line, error_code);
+        error_pending = false;
       }
-      else
-      {
-        fprintf(stderr, "Warning: %s\n", (msg != NULL) ? msg : "");
-      }
+      print_parser_warning(warning);
     }
+  }
+  if (error_pending)
+  {
+    print_parser_error(error_line, error_code);
   }
 }

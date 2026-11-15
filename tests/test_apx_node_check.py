@@ -188,3 +188,53 @@ def test_apx_node_normal_mode_v12_named_type_ref_warning(apx_node_bin, tmp_path)
     )
     assert 'Warning on line 4: Named type reference T["Speed_T"] is not allowed in APX/1.2' in proc.stderr
 
+
+def test_apx_node_check_prints_error_before_warnings(apx_node_bin):
+    """Test --check prints errors before parser warnings on failure."""
+    repo_root = Path(__file__).resolve().parent.parent
+    apx_file = repo_root / "example" / "faulty_nodes" / "faulty_node_a.apx"
+
+    proc = subprocess.run(
+        [apx_node_bin, "--check", str(apx_file)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.returncode == 1
+    assert "Parsing" in proc.stdout and "Failed" in proc.stdout
+    err_pos = proc.stderr.find("Error on line 6: Value out of range")
+    warn_pos = proc.stderr.find("Warning on line 6:")
+    assert err_pos != -1
+    assert warn_pos != -1
+    assert err_pos < warn_pos
+
+
+def test_apx_node_check_prints_warnings_and_error_sorted_by_line(apx_node_bin, tmp_path):
+    """Test --check prints warnings and errors interleaved in line order."""
+    apx_file = tmp_path / "line_order.apx"
+    apx_file.write_text(
+        "APX/1.2\n"
+        'N"TestNode"\n'
+        'T"Speed_T"S\n'
+        'P"Sig1"T["Speed_T"]:=0\n'
+        'P"Sig2"C(0,10):=99\n'
+        'R"Sig3"T["Speed_T"]:=0\n'
+    )
+
+    proc = subprocess.run(
+        [apx_node_bin, "--check", str(apx_file)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.returncode == 1
+    assert "Parsing" in proc.stdout and "Failed" in proc.stdout
+    warn4_pos = proc.stderr.find("Warning on line 4:")
+    err5_pos = proc.stderr.find("Error on line 5: Value out of range")
+    warn6_pos = proc.stderr.find("Warning on line 6:")
+    assert warn4_pos != -1
+    assert err5_pos != -1
+    assert warn6_pos != -1
+    assert warn4_pos < err5_pos < warn6_pos
+
+
