@@ -11,7 +11,10 @@ build:
   apt_packages:
     - doxygen
     - graphviz
+    - openjdk-21-jre-headless
   jobs:
+    post_install:
+      - curl -L -o /tmp/plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
     pre_build:
       - (cd docs && mkdir -p _build/doxygen && doxygen Doxyfile)
 
