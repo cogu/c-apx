@@ -1,7 +1,9 @@
 {
     "apx-server": {
-        "apx-cache-enabled": false,
-        "apx-cache-path": "",
+        "cache": {
+            "level": 0,
+            "path": ""
+        },
         "multiple-provider-policy": "first"
     },
     "socket-server-extension": {

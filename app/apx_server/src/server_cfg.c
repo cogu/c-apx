@@ -31,7 +31,8 @@
 //////////////////////////////////////////////////////////////////////////////
 static const char *const m_apx_server_keys[] = {"security", "security.require-signed-nodes",
   "security.require_signed_nodes", "security.trusted-keys", "security.trusted_keys", "require-signed-nodes",
-  "require_signed_nodes", "trusted-keys", "trusted_keys", "apx-cache-enabled", "apx-cache-path",
+  "require_signed_nodes", "trusted-keys", "trusted_keys", "cache", "cache.level", "cache.path",
+  "cache.max-versions-per-node", "cache.max_versions_per_node", "cache.max-size-mb", "cache.max_size_mb",
   "multiple-provider-policy", "multiple_provider_policy", "max-concurrent-connections", "max_concurrent_connections",
   NULL};
 
@@ -45,6 +46,7 @@ static apx_error_t load_json_file(const char *filepath, dtl_dv_t **out_dv);
 static apx_error_t load_config_from_file(const char *filepath, dtl_hv_t **config);
 static apx_error_t add_trusted_key_from_cstr(apx_server_t *server, const char *key_str);
 static apx_error_t configure_security(apx_server_t *server, dtl_hv_t *sec_hv);
+static apx_error_t configure_cache(apx_server_t *server, dtl_hv_t *cache_hv);
 static bool is_key_in_list(const char *key, const char *const *list);
 static const apx_server_extension_entry_t *find_registered_extension_entry(const char *section_name);
 static void emit_warning(apx_config_warning_cb cb, void *arg, const char *format, ...);
@@ -177,6 +179,15 @@ apx_error_t apx_server_configure(struct apx_server_tag *server, dtl_hv_t const *
         {
           apx_server_set_max_concurrent_connections(srv, (uint32_t)val);
         }
+      }
+    }
+    dtl_dv_t *cache_dv = dtl_hv_get_cstr(server_hv, "cache");
+    if (cache_dv != NULL && dtl_dv_type(cache_dv) == DTL_DV_HASH)
+    {
+      apx_error_t rc = configure_cache(srv, (dtl_hv_t *)cache_dv);
+      if (rc != APX_NO_ERROR)
+      {
+        return rc;
       }
     }
   }
@@ -557,6 +568,235 @@ static void check_apx_server_config(dtl_hv_t *server_hv, apx_config_warning_cb c
         (unsigned int)APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS);
     }
   }
+
+  dtl_dv_t *cache_dv = dtl_hv_get_cstr(server_hv, "cache");
+  if (cache_dv != NULL)
+  {
+    if (dtl_dv_type(cache_dv) != DTL_DV_HASH)
+    {
+      emit_warning(cb, arg, "Warning: Invalid value for 'apx-server.cache' (expected JSON object); disabling cache");
+    }
+    else
+    {
+      dtl_hv_t *cache_hv = (dtl_hv_t *)cache_dv;
+      int64_t parsed_level = 0;
+      dtl_dv_t *level_dv = dtl_hv_get_cstr(cache_hv, "level");
+      if (level_dv != NULL)
+      {
+        if (dtl_dv_type(level_dv) == DTL_DV_SCALAR)
+        {
+          dtl_sv_t *sv = (dtl_sv_t *)level_dv;
+          dtl_sv_type_id sv_type = dtl_sv_type(sv);
+          bool is_int =
+            (sv_type == DTL_SV_I32 || sv_type == DTL_SV_U32 || sv_type == DTL_SV_I64 || sv_type == DTL_SV_U64);
+          bool ok = false;
+          int64_t val = dtl_sv_to_i64(sv, &ok);
+          if (!is_int || !ok || val < 0 || val > (int64_t)APX_CACHE_LEVEL_BINARY)
+          {
+            const char *val_str = dtl_sv_to_cstr(sv, &ok);
+            emit_warning(cb, arg,
+              "Warning: Invalid value '%s' for 'apx-server.cache.level' (expected integer between 0 and 2); "
+              "defaulting to 0",
+              (val_str != NULL) ? val_str : "");
+          }
+          else
+          {
+            parsed_level = val;
+            if (parsed_level == (int64_t)APX_CACHE_LEVEL_BINARY)
+            {
+              emit_warning(cb, arg, "Warning: 'apx-server.cache.level' value 2 is not yet implemented; using level 1");
+            }
+          }
+        }
+        else
+        {
+          emit_warning(cb, arg,
+            "Warning: Invalid value '<non-scalar>' for 'apx-server.cache.level' (expected integer between 0 and 2); "
+            "defaulting to 0");
+        }
+      }
+
+      const char *parsed_path = NULL;
+      dtl_dv_t *path_dv = dtl_hv_get_cstr(cache_hv, "path");
+      if (path_dv != NULL)
+      {
+        if (dtl_dv_type(path_dv) == DTL_DV_SCALAR && dtl_sv_type((dtl_sv_t *)path_dv) == DTL_SV_STR)
+        {
+          bool ok = false;
+          parsed_path = dtl_sv_to_cstr((dtl_sv_t *)path_dv, &ok);
+          if (!ok)
+          {
+            parsed_path = NULL;
+          }
+        }
+        else
+        {
+          emit_warning(cb, arg, "Warning: Invalid value for 'apx-server.cache.path' (expected string)");
+        }
+      }
+      if (parsed_level > 0 && (parsed_path == NULL || parsed_path[0] == '\0'))
+      {
+        emit_warning(cb, arg, "Warning: 'apx-server.cache.path' must be set when cache level is %d; disabling cache",
+          (int)parsed_level);
+      }
+
+      dtl_dv_t *max_ver_dv = dtl_hv_get_cstr(cache_hv, "max-versions-per-node");
+      if (max_ver_dv == NULL)
+      {
+        max_ver_dv = dtl_hv_get_cstr(cache_hv, "max_versions_per_node");
+      }
+      if (max_ver_dv != NULL)
+      {
+        bool valid = false;
+        const char *val_str = "<non-scalar>";
+        if (dtl_dv_type(max_ver_dv) == DTL_DV_SCALAR)
+        {
+          dtl_sv_t *sv = (dtl_sv_t *)max_ver_dv;
+          dtl_sv_type_id sv_type = dtl_sv_type(sv);
+          bool is_int =
+            (sv_type == DTL_SV_I32 || sv_type == DTL_SV_U32 || sv_type == DTL_SV_I64 || sv_type == DTL_SV_U64);
+          bool ok = false;
+          int64_t val = dtl_sv_to_i64(sv, &ok);
+          if (is_int && ok && val >= 0 && val <= (int64_t)UINT32_MAX)
+          {
+            valid = true;
+          }
+          else
+          {
+            const char *s = dtl_sv_to_cstr(sv, &ok);
+            val_str = (s != NULL) ? s : "";
+          }
+        }
+        if (!valid)
+        {
+          emit_warning(cb, arg,
+            "Warning: Invalid value '%s' for 'apx-server.cache.max-versions-per-node' (expected non-negative integer); "
+            "defaulting to %u",
+            val_str, (unsigned int)APX_CACHE_DEFAULT_MAX_VERSIONS_PER_NODE);
+        }
+      }
+
+      dtl_dv_t *max_size_dv = dtl_hv_get_cstr(cache_hv, "max-size-mb");
+      if (max_size_dv == NULL)
+      {
+        max_size_dv = dtl_hv_get_cstr(cache_hv, "max_size_mb");
+      }
+      if (max_size_dv != NULL)
+      {
+        bool valid = false;
+        const char *val_str = "<non-scalar>";
+        if (dtl_dv_type(max_size_dv) == DTL_DV_SCALAR)
+        {
+          dtl_sv_t *sv = (dtl_sv_t *)max_size_dv;
+          dtl_sv_type_id sv_type = dtl_sv_type(sv);
+          bool is_int =
+            (sv_type == DTL_SV_I32 || sv_type == DTL_SV_U32 || sv_type == DTL_SV_I64 || sv_type == DTL_SV_U64);
+          bool ok = false;
+          int64_t val = dtl_sv_to_i64(sv, &ok);
+          if (is_int && ok && val >= 0 && val <= (int64_t)UINT32_MAX)
+          {
+            valid = true;
+          }
+          else
+          {
+            const char *s = dtl_sv_to_cstr(sv, &ok);
+            val_str = (s != NULL) ? s : "";
+          }
+        }
+        if (!valid)
+        {
+          emit_warning(cb, arg,
+            "Warning: Invalid value '%s' for 'apx-server.cache.max-size-mb' (expected non-negative integer); "
+            "defaulting to %u",
+            val_str, (unsigned int)APX_CACHE_DEFAULT_MAX_SIZE_MB);
+        }
+      }
+    }
+  }
+}
+
+static apx_error_t configure_cache(apx_server_t *server, dtl_hv_t *cache_hv)
+{
+  apx_node_cache_config_t cfg;
+  apx_node_cache_config_init(&cfg);
+  const char *cache_path = NULL;
+
+  dtl_dv_t *level_dv = dtl_hv_get_cstr(cache_hv, "level");
+  if (level_dv != NULL && dtl_dv_type(level_dv) == DTL_DV_SCALAR)
+  {
+    dtl_sv_t *sv = (dtl_sv_t *)level_dv;
+    dtl_sv_type_id sv_type = dtl_sv_type(sv);
+    if (sv_type == DTL_SV_I32 || sv_type == DTL_SV_U32 || sv_type == DTL_SV_I64 || sv_type == DTL_SV_U64)
+    {
+      bool ok = false;
+      int64_t val = dtl_sv_to_i64(sv, &ok);
+      if (ok && val >= 0 && val <= (int64_t)APX_CACHE_LEVEL_BINARY)
+      {
+        cfg.level = (apx_cache_level_t)val;
+      }
+    }
+  }
+
+  dtl_dv_t *path_dv = dtl_hv_get_cstr(cache_hv, "path");
+  if (path_dv != NULL && dtl_dv_type(path_dv) == DTL_DV_SCALAR && dtl_sv_type((dtl_sv_t *)path_dv) == DTL_SV_STR)
+  {
+    bool ok = false;
+    const char *val = dtl_sv_to_cstr((dtl_sv_t *)path_dv, &ok);
+    if (ok && val != NULL)
+    {
+      cache_path = val;
+    }
+  }
+
+  dtl_dv_t *max_ver_dv = dtl_hv_get_cstr(cache_hv, "max-versions-per-node");
+  if (max_ver_dv == NULL)
+  {
+    max_ver_dv = dtl_hv_get_cstr(cache_hv, "max_versions_per_node");
+  }
+  if (max_ver_dv != NULL && dtl_dv_type(max_ver_dv) == DTL_DV_SCALAR)
+  {
+    dtl_sv_t *sv = (dtl_sv_t *)max_ver_dv;
+    dtl_sv_type_id sv_type = dtl_sv_type(sv);
+    if (sv_type == DTL_SV_I32 || sv_type == DTL_SV_U32 || sv_type == DTL_SV_I64 || sv_type == DTL_SV_U64)
+    {
+      bool ok = false;
+      int64_t val = dtl_sv_to_i64(sv, &ok);
+      if (ok && val >= 0 && val <= (int64_t)UINT32_MAX)
+      {
+        cfg.max_versions_per_node = (uint32_t)val;
+      }
+    }
+  }
+
+  dtl_dv_t *max_size_dv = dtl_hv_get_cstr(cache_hv, "max-size-mb");
+  if (max_size_dv == NULL)
+  {
+    max_size_dv = dtl_hv_get_cstr(cache_hv, "max_size_mb");
+  }
+  if (max_size_dv != NULL && dtl_dv_type(max_size_dv) == DTL_DV_SCALAR)
+  {
+    dtl_sv_t *sv = (dtl_sv_t *)max_size_dv;
+    dtl_sv_type_id sv_type = dtl_sv_type(sv);
+    if (sv_type == DTL_SV_I32 || sv_type == DTL_SV_U32 || sv_type == DTL_SV_I64 || sv_type == DTL_SV_U64)
+    {
+      bool ok = false;
+      int64_t val = dtl_sv_to_i64(sv, &ok);
+      if (ok && val >= 0 && val <= (int64_t)UINT32_MAX)
+      {
+        cfg.max_size_mb = (uint32_t)val;
+      }
+    }
+  }
+
+  char warn_buf[512];
+  warn_buf[0] = '\0';
+  apx_error_t rc = apx_server_configure_cache(server, &cfg, cache_path, warn_buf, sizeof(warn_buf));
+  if (warn_buf[0] != '\0' && cache_path != NULL && cache_path[0] != '\0')
+  {
+    fprintf(stderr, "Warning: %s\n", warn_buf);
+    fflush(stderr);
+  }
+  return rc;
 }
 
 static void default_warning_cb(void *arg, const char *warning)

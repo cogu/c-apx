@@ -41,6 +41,7 @@ CuSuite *testsuite_program_decoder(void);
 CuSuite *testsuite_apx_vm_pack(void);
 CuSuite *testsuite_apx_vm_unpack(void);
 CuSuite *testsuite_apx_node(void);
+CuSuite *testsuite_apx_node_cache(void);
 CuSuite *testsuite_apx_node_data(void);
 CuSuite *testsuite_apx_node_manager_client_mode(void);
 CuSuite *testsuite_apx_node_manager_server_mode(void);
@@ -106,6 +107,7 @@ void RunAllTests(void)
   CuSuiteAddSuite(suite, testsuite_apx_vm_pack());
   CuSuiteAddSuite(suite, testsuite_apx_vm_unpack());
   CuSuiteAddSuite(suite, testsuite_apx_node());
+  CuSuiteAddSuite(suite, testsuite_apx_node_cache());
   CuSuiteAddSuite(suite, testsuite_apx_node_data());
   CuSuiteAddSuite(suite, testsuite_apx_computation());
   CuSuiteAddSuite(suite, testsuite_apx_node_manager_client_mode());

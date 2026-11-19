@@ -74,6 +74,8 @@ static void test_check_config_invalid_multiple_provider_policy_warns(CuTest *tc)
 static void test_check_config_retired_max_num_events_warns(CuTest *tc);
 static void test_configure_server_max_concurrent_connections(CuTest *tc);
 static void test_check_config_invalid_max_concurrent_connections_warns(CuTest *tc);
+static void test_configure_server_cache(CuTest *tc);
+static void test_check_config_cache_warnings_and_legacy_keys(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -112,6 +114,8 @@ CuSuite *testsuite_server_cfg(void)
   SUITE_ADD_TEST(suite, test_check_config_retired_max_num_events_warns);
   SUITE_ADD_TEST(suite, test_configure_server_max_concurrent_connections);
   SUITE_ADD_TEST(suite, test_check_config_invalid_max_concurrent_connections_warns);
+  SUITE_ADD_TEST(suite, test_configure_server_cache);
+  SUITE_ADD_TEST(suite, test_check_config_cache_warnings_and_legacy_keys);
   return suite;
 }
 
@@ -658,8 +662,12 @@ static void test_check_config_recognized_keys_and_aliases(CuTest *tc)
                         "            \"trusted_keys\": [\"key1.pem\"]\n"
                         "        },\n"
                         "        \"multiple-provider-policy\": \"first\",\n"
-                        "        \"apx-cache-enabled\": false,\n"
-                        "        \"apx-cache-path\": \"/tmp\"\n"
+                        "        \"cache\": {\n"
+                        "            \"level\": 1,\n"
+                        "            \"path\": \"/tmp\",\n"
+                        "            \"max_versions_per_node\": 5,\n"
+                        "            \"max_size_mb\": 32\n"
+                        "        }\n"
                         "    },\n"
                         "    \"socket-server-extension\": {\n"
                         "        \"enabled\": true,\n"
@@ -1062,6 +1070,117 @@ static void test_check_config_invalid_max_concurrent_connections_warns(CuTest *t
       "Warning: Invalid value '<non-scalar>' for 'apx-server.max-concurrent-connections' (expected integer between 1 "
       "and 65535); "
       "defaulting to 256"));
+  dtl_dec_ref(cfg);
+
+  remove(filepath);
+}
+
+static void test_configure_server_cache(CuTest *tc)
+{
+  const char *filepath = "test_cfg_cache_valid.json";
+  const char *cache_dir = "test_cfg_cache_tmp_dir";
+
+  write_test_file(filepath,
+    "{\n"
+    "  \"apx-server\": {\n"
+    "    \"cache\": {\n"
+    "      \"level\": 1,\n"
+    "      \"path\": \"test_cfg_cache_tmp_dir\",\n"
+    "      \"max-versions-per-node\": 7,\n"
+    "      \"max-size-mb\": 16\n"
+    "    }\n"
+    "  }\n"
+    "}\n");
+
+  dtl_hv_t *cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_t server;
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+
+  apx_node_cache_t *cache = apx_server_get_node_cache(&server);
+  CuAssertPtrNotNull(tc, cache);
+  CuAssertTrue(tc, apx_node_cache_is_text_enabled(cache));
+  CuAssertIntEquals(tc, APX_CACHE_LEVEL_TEXT, (int)apx_node_cache_get_level(cache));
+  CuAssertUIntEquals(tc, 7u, apx_node_cache_get_max_versions_per_node(cache));
+  CuAssertUIntEquals(tc, 16u, apx_node_cache_get_max_size_mb(cache));
+  CuAssertStrEquals(tc, cache_dir, apx_node_cache_get_root_path(cache));
+
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+  remove(filepath);
+  RMDIR("test_cfg_cache_tmp_dir/text");
+  RMDIR(cache_dir);
+}
+
+static void test_check_config_cache_warnings_and_legacy_keys(CuTest *tc)
+{
+  const char *filepath = "test_cfg_cache_warns.json";
+  test_warning_collector_t collector;
+  dtl_hv_t *cfg = NULL;
+
+  // 1. Level 2 emits Phase 1 fallback warning
+  test_warning_collector_init(&collector);
+  write_test_file(filepath, "{\"apx-server\": {\"cache\": {\"level\": 2, \"path\": \"/tmp\"}}}");
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(
+      &collector, "Warning: 'apx-server.cache.level' value 2 is not yet implemented; using level 1"));
+  dtl_dec_ref(cfg);
+
+  // 2. Level 1 with empty path warns and disables cache
+  test_warning_collector_init(&collector);
+  write_test_file(filepath, "{\"apx-server\": {\"cache\": {\"level\": 1, \"path\": \"\"}}}");
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 1, collector.count);
+  CuAssertTrue(tc,
+    test_warning_collector_has(
+      &collector, "Warning: 'apx-server.cache.path' must be set when cache level is 1; disabling cache"));
+  apx_server_t server;
+  apx_server_create(&server);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_configure(&server, cfg));
+  CuAssertTrue(tc, !apx_node_cache_is_text_enabled(apx_server_get_node_cache(&server)));
+  apx_server_destroy(&server);
+  dtl_dec_ref(cfg);
+
+  // 3. Invalid level, invalid limits, and unknown nested cache key
+  test_warning_collector_init(&collector);
+  write_test_file(filepath,
+    "{\"apx-server\": {\"cache\": {\"level\": 5, \"max-versions-per-node\": -1, \"max-size-mb\": \"bad\", \"typo\": "
+    "1}}}");
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertTrue(
+    tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'apx-server.cache.typo'"));
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value '5' for 'apx-server.cache.level' (expected integer between 0 and 2); defaulting to 0"));
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value '-1' for 'apx-server.cache.max-versions-per-node' (expected non-negative integer); "
+      "defaulting to 10"));
+  CuAssertTrue(tc,
+    test_warning_collector_has(&collector,
+      "Warning: Invalid value 'bad' for 'apx-server.cache.max-size-mb' (expected non-negative integer); defaulting to "
+      "64"));
+  dtl_dec_ref(cfg);
+
+  // 4. Removed legacy placeholder keys emit unknown-key warnings
+  test_warning_collector_init(&collector);
+  write_test_file(filepath, "{\"apx-server\": {\"apx-cache-enabled\": false, \"apx-cache-path\": \"\"}}");
+  cfg = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
+  apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
+  CuAssertIntEquals(tc, 2, collector.count);
+  CuAssertTrue(
+    tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'apx-server.apx-cache-enabled'"));
+  CuAssertTrue(
+    tc, test_warning_collector_has(&collector, "Warning: Unknown configuration key 'apx-server.apx-cache-path'"));
   dtl_dec_ref(cfg);
 
   remove(filepath);

@@ -39,6 +39,7 @@
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t on_definition_transfer_error(void *arg, apx_file_t *file, apx_error_t error_code);
 static apx_server_connection_event_listener_t *copy_definition_listeners(apx_server_connection_t *self, size_t *count);
+static void notify_definition_validated(apx_server_connection_t *self, apx_node_instance_t *node);
 static apx_error_t remote_file_published_notification(apx_server_connection_t *self, apx_file_t *file);
 static apx_error_t local_file_published_notification(apx_server_connection_t *self, rmf_file_info_t const *file_info);
 static apx_error_t remote_file_open_request_notification(apx_server_connection_t *self, apx_file_t *file);
@@ -717,7 +718,13 @@ static apx_error_t create_new_node_instance(
     }
     else
     {
-      retval = APX_NOT_IMPLEMENTED_ERROR; // Retriving data from cache not yet implemented
+      retval = apx_node_manager_complete_cached_node(node_manager, node_instance);
+      if (retval == APX_NO_ERROR)
+      {
+        apx_file_set_notification_handler(definition_file, NULL);
+        notify_definition_validated(self, node_instance);
+      }
+      return APX_NO_ERROR;
     }
   }
   return retval;
@@ -817,16 +824,7 @@ static apx_error_t remote_file_write_notification(
         apx_node_instance_t *node = apx_node_manager_find(self->base.node_manager, name);
         if (node != NULL && apx_node_instance_get_definition_data_state(node) == APX_DATA_STATE_SYNCHRONIZED)
         {
-          size_t count;
-          apx_server_connection_event_listener_t *listeners = copy_definition_listeners(self, &count);
-          for (size_t i = 0u; i < count; ++i)
-          {
-            if (listeners[i].definition_validated != NULL)
-            {
-              listeners[i].definition_validated(listeners[i].arg, &self->base, node);
-            }
-          }
-          free(listeners);
+          notify_definition_validated(self, node);
           if (apx_file_is_compressed(file))
           {
             apx_file_close(file);
@@ -895,6 +893,20 @@ static apx_server_connection_event_listener_t *copy_definition_listeners(apx_ser
     apx_server_log(self->parent, APX_LOG_LEVEL_ERROR, "Failed to snapshot definition event listeners");
   }
   return listeners;
+}
+
+static void notify_definition_validated(apx_server_connection_t *self, apx_node_instance_t *node)
+{
+  size_t count = 0u;
+  apx_server_connection_event_listener_t *listeners = copy_definition_listeners(self, &count);
+  for (size_t i = 0u; i < count; ++i)
+  {
+    if (listeners[i].definition_validated != NULL)
+    {
+      listeners[i].definition_validated(listeners[i].arg, &self->base, node);
+    }
+  }
+  free(listeners);
 }
 
 void apx_server_connection_definition_rejected(apx_server_connection_t *self, rmf_file_info_t const *file_info,

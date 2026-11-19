@@ -70,6 +70,7 @@ apx_error_t apx_node_manager_build_node(apx_node_manager_t *self, char const *de
 apx_error_t apx_node_manager_init_node_from_file_info(
   apx_node_manager_t *self, rmf_file_info_t const *file_info, bool *file_open_request);
 apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_node_instance_t *node_instance);
+apx_error_t apx_node_manager_complete_cached_node(apx_node_manager_t *self, apx_node_instance_t *node_instance);
 apx_error_t apx_node_manager_reject_definition(apx_node_manager_t *self, apx_file_t *file,
   apx_definition_failure_stage_t stage, apx_error_t error_code, apx_error_t response_code);
 

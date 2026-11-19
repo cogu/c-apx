@@ -1,6 +1,9 @@
 {
     "apx-server": {
-        "apx-cache-enabled": false
+        "cache": {
+            "level": 0,
+            "path": "/var/cache/apx"
+        }
     },
     "socket-server-extension": {
         "enabled": true,

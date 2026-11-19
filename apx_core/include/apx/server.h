@@ -27,6 +27,7 @@
 #include "apx/connection_manager.h"
 #include "apx/event_listener.h"
 #include "apx/event_loop.h"
+#include "apx/node_cache.h"
 #include "apx/node_instance.h"
 #include "apx/port_connector_change_table.h"
 #include "apx/port_signature_map.h"
@@ -71,6 +72,7 @@ typedef struct apx_server_tag
   uint32_t max_concurrent_connections;
   bool require_signed_nodes; // If true, server rejects unsigned APX nodes
   adt_ary_t trusted_public_keys; // Array of adt_str_t* (PEM strings or raw public keys)
+  apx_node_cache_t node_cache;
 #ifdef _WIN32
   unsigned int thread_id;
 #endif
@@ -154,6 +156,11 @@ apx_error_t apx_server_add_trusted_public_key_file(apx_server_t *self, const cha
 int32_t apx_server_get_num_trusted_public_keys(apx_server_t const *self);
 apx_error_t apx_server_verify_node_signature(apx_server_t const *self, rmf_signature_type_t sig_type,
   const uint8_t *sig_data, size_t sig_len, const uint8_t *data, size_t data_len);
+
+// Node definition cache
+apx_error_t apx_server_configure_cache(apx_server_t *self, apx_node_cache_config_t const *cfg, char const *cache_path,
+  char *warning_buf, size_t warning_buf_size);
+apx_node_cache_t *apx_server_get_node_cache(apx_server_t *self);
 
 
 #ifdef UNIT_TEST

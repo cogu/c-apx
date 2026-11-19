@@ -89,6 +89,7 @@ void apx_server_create(apx_server_t *self)
     self->max_concurrent_connections = APX_SERVER_DEFAULT_MAX_CONCURRENT_CONNECTIONS;
     self->require_signed_nodes = false;
     adt_ary_create(&self->trusted_public_keys, adt_str_vdelete);
+    apx_node_cache_create(&self->node_cache);
 #ifdef _WIN32
     self->thread_id = 0u;
 #endif
@@ -112,6 +113,7 @@ void apx_server_destroy(apx_server_t *self)
     apx_port_signature_map_destroy(&self->port_signature_map);
     MUTEX_UNLOCK(self->global_lock);
     apx_event_loop_destroy(&self->event_loop, apx_server_vdestroy_event, (void *)self);
+    apx_node_cache_destroy(&self->node_cache);
     soa_destroy(&self->allocator);
     MUTEX_DESTROY(self->event_loop_lock);
     MUTEX_DESTROY(self->global_lock);
@@ -1544,4 +1546,23 @@ apx_error_t apx_server_verify_node_signature(apx_server_t const *self, rmf_signa
   }
 
   return APX_UNSUPPORTED_ERROR;
+}
+
+apx_error_t apx_server_configure_cache(apx_server_t *self, apx_node_cache_config_t const *cfg, char const *cache_path,
+  char *warning_buf, size_t warning_buf_size)
+{
+  if (self == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  return apx_node_cache_configure(&self->node_cache, cfg, cache_path, warning_buf, warning_buf_size);
+}
+
+apx_node_cache_t *apx_server_get_node_cache(apx_server_t *self)
+{
+  if (self != NULL)
+  {
+    return &self->node_cache;
+  }
+  return NULL;
 }

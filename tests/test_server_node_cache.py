@@ -1,0 +1,581 @@
+"""End-to-end integration tests for Level 1 server node definition cache."""
+
+import concurrent.futures
+import hashlib
+import os
+import socket
+import struct
+import subprocess
+import time
+import zlib
+from pathlib import Path
+
+import pytest
+
+from conftest import ApxNodeInstance, _set_pdeathsig, wait_for_unix_socket
+from test_server_compressed_nodes import (
+    encode_numheader32,
+    read_msg,
+    sign_data_with_openssl,
+    start_server,
+)
+from test_server_definition_events import (
+    assert_nack,
+    capture,
+    client,
+    events,
+    opcode,
+    publish,
+    write,
+)
+
+
+def make_req_definition(name: str, num_ports: int = 4, version: str = "1.3") -> bytes:
+    lines = [f"APX/{version}", f'N"{name}"']
+    for i in range(num_ports):
+        lines.append(f'R"Sig{i}"C:={i}')
+    return ("\n".join(lines) + "\n").encode("ascii")
+
+
+def publish_raw_digest(sock, text: bytes, *, name: str, digest_type: int, digest_bytes: bytes, address: int = 0x02000000):
+    header = struct.pack("<IIIHH", 3, address, len(text), 0, digest_type)
+    cmd = header + digest_bytes.ljust(32, b"\x00")[:32] + f"{name}.apx\0".encode("ascii")
+    sock.sendall(encode_numheader32(struct.pack(">I", 0xBFFFFC00) + cmd))
+    return read_msg(sock)
+
+
+def assert_definition_events(records, name: str, text: bytes):
+    publications = [
+        e for e in records if e.get("file_name") == f"{name}.apx" and e["event"] == "FILE_PUBLISH"
+    ]
+    assert len(publications) == 1
+    publication = publications[0]
+    assert publication["file_size"] == len(text)
+    writes = [
+        e
+        for e in records
+        if e["event"] == "FILE_WRITE"
+        and e.get("object_id") == publication["object_id"]
+        and e.get("connection_id") == publication["connection_id"]
+    ]
+    assert writes
+    reconstructed = b"".join(bytes.fromhex(e["data_hex"]) for e in writes)
+    assert reconstructed == text
+
+
+def test_cache_cold_miss_and_warm_hit_skips_file_open(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "cache"
+    log_file = tmp_path / "server.log"
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                }
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+            "textlog-extension": {
+                "enabled": True,
+                "log-level": "DEBUG",
+                "file-enabled": True,
+                "file-path": str(log_file),
+            },
+        },
+    )
+    try:
+        name = "CacheHitNode"
+        definition = make_req_definition(name, num_ports=8)
+        sha_hex = hashlib.sha256(definition).hexdigest()
+        cached_file = cache_dir / "text" / f"{name}_{sha_hex}.apx"
+
+        # 1. Cold boot: server opens .apx, receives data, populates cache
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10  # RMF_CMD_FILE_OPEN for CacheHitNode.apx
+            write(sock, payload)
+            server_pub = read_msg(sock)
+            assert opcode(server_pub) == 3
+            assert f"{name}.".encode() in server_pub
+
+        assert cached_file.is_file()
+        assert cached_file.read_bytes() == definition
+
+        # 2. Warm reconnect: server skips FILE_OPEN for .apx and immediately publishes .in
+        with client(server) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 3  # Direct PUBLISH_FILE for .in/.cin, NOT FILE_OPEN (10)
+            assert f"{name}.".encode() in resp
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+    log_text = log_file.read_text(encoding="utf-8")
+    assert "(cache hit: text)" in log_text
+
+
+@pytest.mark.parametrize("first_compressed,second_compressed", [(False, True), (True, False)])
+def test_cache_cross_representation_plain_and_compressed(
+    tmp_path: Path, apx_server_bin: str, first_compressed: bool, second_compressed: bool
+):
+    cache_dir = tmp_path / "cache"
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                }
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+        },
+    )
+    try:
+        name = "CrossRepNode"
+        definition = make_req_definition(name, num_ports=16)
+
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=first_compressed)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+
+        with client(server) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=second_compressed)
+            assert opcode(resp) == 3  # Cache hit skips transfer & decompression
+            assert f"{name}.".encode() in resp
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+
+
+def test_cache_definition_update_and_per_node_rotation(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "cache"
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                    "max-versions-per-node": 2,
+                    "max-size-mb": 0,
+                }
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+        },
+    )
+    try:
+        name = "RotNode"
+        defs = [make_req_definition(name, num_ports=n) for n in (2, 3, 4)]
+        hashes = [hashlib.sha256(d).hexdigest() for d in defs]
+
+        for idx, d in enumerate(defs):
+            with client(server) as sock:
+                payload, resp = publish(sock, d, name=name, compressed=False)
+                assert opcode(resp) == 10
+                write(sock, payload)
+                assert f"{name}.".encode() in read_msg(sock)
+            # Ensure strictly increasing mtimes across versions
+            p = cache_dir / "text" / f"{name}_{hashes[idx]}.apx"
+            assert p.is_file()
+            os.utime(p, (1700000000 + idx * 10, 1700000000 + idx * 10))
+
+        # Oldest version (v0) evicted; newest 2 versions remain
+        assert not (cache_dir / "text" / f"{name}_{hashes[0]}.apx").exists()
+        assert (cache_dir / "text" / f"{name}_{hashes[1]}.apx").is_file()
+        assert (cache_dir / "text" / f"{name}_{hashes[2]}.apx").is_file()
+
+        # Reconnecting with newest version hits cache
+        with client(server) as sock:
+            _, resp = publish(sock, defs[2], name=name, compressed=False)
+            assert opcode(resp) == 3
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+
+
+def test_cache_corruption_recovery_heals_file(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "cache"
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                }
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+        },
+    )
+    try:
+        name = "HealNode"
+        definition = make_req_definition(name, num_ports=6)
+        sha_hex = hashlib.sha256(definition).hexdigest()
+        cached_file = cache_dir / "text" / f"{name}_{sha_hex}.apx"
+
+        # Warm cache
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+        assert cached_file.read_bytes() == definition
+
+        # 1. Same-length byte corruption -> server falls back to FILE_OPEN and heals file
+        corrupted = bytearray(definition)
+        corrupted[-2] = ord("9")
+        cached_file.write_bytes(bytes(corrupted))
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+        assert cached_file.read_bytes() == definition
+
+        # 2. Truncated file -> server falls back to FILE_OPEN and heals file
+        cached_file.write_bytes(definition[:-5])
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+        assert cached_file.read_bytes() == definition
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+
+
+def test_cache_signed_nodes_never_bypass_verification(tmp_path: Path, apx_server_bin: str):
+    certs = Path(__file__).parent / "certs"
+    cache_dir = tmp_path / "cache"
+    (cache_dir / "text").mkdir(parents=True)
+
+    name = "SignedCacheNode"
+    definition = make_req_definition(name, num_ports=5)
+    sha_hex = hashlib.sha256(definition).hexdigest()
+    (cache_dir / "text" / f"{name}_{sha_hex}.apx").write_bytes(definition)
+
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "security": {
+                    "require-signed-nodes": True,
+                    "trusted-keys": [str(certs / "client_pubkey.pem")],
+                },
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                },
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+        },
+    )
+    try:
+        # 1. Unsigned publish with matching cached SHA-256 is still rejected
+        with client(server) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=False)
+            assert_nack(resp, 79)  # APX_SIGNATURE_MISSING_ERROR
+
+        # 2. Signed plain and compressed publishes ALWAYS send FILE_OPEN and verify signature
+        sig = sign_data_with_openssl(certs / "client_key.pem", definition)
+        for compressed in (False, True):
+            with client(server) as sock:
+                payload, resp = publish(sock, definition, name=name, compressed=compressed, signature=sig)
+                assert opcode(resp) == 10  # Must open and verify over wire
+                write(sock, payload)
+                assert f"{name}.".encode() in read_msg(sock)
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+
+
+def test_cache_sha1_rejected_and_no_digest_not_cached(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "cache"
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                }
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+        },
+    )
+    try:
+        # 1. SHA-1 digest rejected with APX_UNSUPPORTED_ERROR (10)
+        sha1_def = make_req_definition("Sha1Node", num_ports=2)
+        with client(server) as sock:
+            resp = publish_raw_digest(
+                sock, sha1_def, name="Sha1Node", digest_type=1, digest_bytes=hashlib.sha1(sha1_def).digest()
+            )
+            assert_nack(resp, 10)
+
+        # 2. RMF_DIGEST_TYPE_NONE succeeds via transfer and does NOT write to text cache
+        none_def = make_req_definition("NoDigestNode", num_ports=2)
+        with client(server) as sock:
+            resp = publish_raw_digest(sock, none_def, name="NoDigestNode", digest_type=0, digest_bytes=b"")
+            assert opcode(resp) == 10
+            write(sock, none_def)
+            assert b"NoDigestNode." in read_msg(sock)
+
+        assert list((cache_dir / "text").glob("*.apx")) == []
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+
+
+def test_cache_readonly_directory_fallback(tmp_path: Path, apx_server_bin: str):
+    if os.geteuid() == 0:
+        pytest.skip("Root bypasses POSIX directory write permissions")
+
+    cache_dir = tmp_path / "cache"
+    text_dir = cache_dir / "text"
+    text_dir.mkdir(parents=True)
+
+    prewarm_name = "PrewarmedNode"
+    prewarm_def = make_req_definition(prewarm_name, num_ports=4)
+    prewarm_sha = hashlib.sha256(prewarm_def).hexdigest()
+    (text_dir / f"{prewarm_name}_{prewarm_sha}.apx").write_bytes(prewarm_def)
+
+    os.chmod(text_dir, 0o555)
+    server = None
+    try:
+        server = start_server(
+            tmp_path,
+            apx_server_bin,
+            {
+                "apx-server": {
+                    "cache": {
+                        "level": 1,
+                        "path": str(cache_dir),
+                    }
+                },
+                "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+            },
+        )
+
+        # Pre-warmed entry still serves a cache hit (no FILE_OPEN)
+        with client(server) as sock:
+            _, resp = publish(sock, prewarm_def, name=prewarm_name, compressed=False)
+            assert opcode(resp) == 3
+
+        # Uncached node still connects via wire transfer without failing
+        fresh_name = "FreshNode"
+        fresh_def = make_req_definition(fresh_name, num_ports=3)
+        with client(server) as sock:
+            payload, resp = publish(sock, fresh_def, name=fresh_name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{fresh_name}.".encode() in read_msg(sock)
+    finally:
+        if server is not None:
+            server.stop()
+        os.chmod(text_dir, 0o755)
+
+    assert server.process.returncode == 0, server.stderr
+    assert "read-only" in server.stderr
+
+
+def test_cache_monitor_and_apxlog_parity_on_hit(tmp_path: Path, apx_server_bin: str, apx_log_bin: str):
+    cache_dir = tmp_path / "cache"
+    monitor_socket = str(tmp_path / "monitor.socket")
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                }
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+            "monitor-extension": {"enabled": True, "socket-file": monitor_socket},
+        },
+    )
+    server.monitor_socket = monitor_socket
+    try:
+        name = "MonitoredCachedNode"
+        definition = make_req_definition(name, num_ports=12)
+
+        # 1. Warm the cache before starting capture
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+        time.sleep(0.2)  # Allow warm-up connection disconnect to complete before capture
+
+        # 2. Capture live + snapshot for a cache-hit client (compressed publication)
+        live = tmp_path / "live.apxlog"
+        snapshot = tmp_path / "snapshot.apxlog"
+        with client(server) as sock:
+            with capture(server, apx_log_bin, live):
+                _, resp = publish(sock, definition, name=name, compressed=True)
+                assert opcode(resp) == 3  # Cache hit!
+                time.sleep(0.2)
+            with capture(server, apx_log_bin, snapshot):
+                pass
+
+        assert_definition_events(events(apx_log_bin, live), name, definition)
+        assert_definition_events(events(apx_log_bin, snapshot), name, definition)
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+
+
+def test_cache_concurrent_clients_cold_and_warm(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "cache"
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                }
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+        },
+    )
+    try:
+        name = "ConcurrentNode"
+        definition = make_req_definition(name, num_ports=10)
+
+        def run_client(expect_hit: bool) -> int:
+            with client(server) as sock:
+                payload, resp = publish(sock, definition, name=name, compressed=False)
+                op = opcode(resp)
+                if op == 10:
+                    assert not expect_hit
+                    write(sock, payload)
+                    pub_resp = read_msg(sock)
+                    assert opcode(pub_resp) == 3
+                else:
+                    assert op == 3
+                return op
+
+        # Cold burst: all 6 clients connect concurrently
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            futs = [pool.submit(run_client, False) for _ in range(6)]
+            ops = [f.result(timeout=10.0) for f in futs]
+        assert all(op in (3, 10) for op in ops)
+
+        # Warm burst: all 6 clients must get cache hits (opcode 3)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            futs = [pool.submit(run_client, True) for _ in range(6)]
+            ops = [f.result(timeout=10.0) for f in futs]
+        assert ops == [3] * 6
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+
+
+def test_cache_apx_node_signal_routing_across_hit(tmp_path: Path, apx_server_bin: str, apx_node_bin: str):
+    cache_dir = tmp_path / "cache"
+    log_file = tmp_path / "server.log"
+    sock_path = str(tmp_path / "apx.socket")
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "cache": {
+                    "level": 1,
+                    "path": str(cache_dir),
+                }
+            },
+            "socket-server-extension": {"unix-file": sock_path},
+            "textlog-extension": {
+                "enabled": True,
+                "log-level": "DEBUG",
+                "file-enabled": True,
+                "file-path": str(log_file),
+            },
+        },
+    )
+
+    sender_file = tmp_path / "Sender.apx"
+    listener_file = tmp_path / "Listener.apx"
+    sender_file.write_text('APX/1.3\nN"Sender"\nP"Speed"S:=123\n', encoding="utf-8")
+    listener_file.write_text('APX/1.3\nN"Listener"\nR"Speed"S:=0\n', encoding="utf-8")
+
+    def launch_node(apx_file: Path, bind_sock: str | None = None, compressed: bool = False) -> ApxNodeInstance:
+        cmd = [apx_node_bin, "-c", sock_path]
+        if bind_sock is not None:
+            cmd += ["-b", bind_sock]
+        else:
+            cmd.append("--no-bind")
+        if compressed:
+            cmd.append("--compressed")
+        cmd.append(str(apx_file))
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            preexec_fn=_set_pdeathsig,
+        )
+        inst = ApxNodeInstance(proc, apx_file, bind_sock)
+        if bind_sock is not None:
+            wait_for_unix_socket(bind_sock, timeout=3.0)
+        return inst
+
+    nodes: list[ApxNodeInstance] = []
+    try:
+        # 1. Cold start: listener + uncompressed sender warm the cache
+        listener1 = launch_node(listener_file)
+        nodes.append(listener1)
+        sender1 = launch_node(sender_file, str(tmp_path / "sender1.socket"), compressed=False)
+        nodes.append(sender1)
+        assert listener1.wait_for_output('"Speed": 123'), listener1.output
+        sender1.stop()
+        listener1.stop()
+        nodes.clear()
+        time.sleep(0.2)
+
+        # 2. Warm reconnect: listener + compressed sender both hit text cache and route signals
+        listener2 = launch_node(listener_file)
+        nodes.append(listener2)
+        sender2_sock = str(tmp_path / "sender2.socket")
+        sender2 = launch_node(sender_file, sender2_sock, compressed=True)
+        nodes.append(sender2)
+        assert listener2.wait_for_output('"Speed": 123'), listener2.output
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+            control.connect(sender2_sock)
+            control.sendall(b'{"Speed": 456}\n')
+        assert listener2.wait_for_output('"Speed": 456'), listener2.output
+    finally:
+        for n in nodes:
+            n.stop()
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+    log_text = log_file.read_text(encoding="utf-8")
+    assert log_text.count("Server open file: Sender.apx") == 1
+    assert log_text.count("Server open file: Listener.apx") == 1
+    assert "Server created node Sender (cache hit: text)" in log_text
+    assert "Server created node Listener (cache hit: text)" in log_text
+

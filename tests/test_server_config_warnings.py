@@ -135,7 +135,12 @@ def test_server_recognized_keys_and_aliases_no_warnings(tmp_path, apx_server_bin
             },
             "multiple-provider-policy": "first",
             "max-concurrent-connections": 128,
-            "apx-cache-enabled": False
+            "cache": {
+                "level": 0,
+                "path": "",
+                "max_versions_per_node": 10,
+                "max_size_mb": 64
+            }
         },
         "socket-server-extension": {
             "enabled": True,

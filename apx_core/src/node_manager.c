@@ -54,6 +54,9 @@ static apx_error_t create_computation_list_on_node_instance(
 static apx_error_t update_computation_list_on_port(
   adt_ary_t *list, adt_hash_t *map, apx_port_instance_t *port_instance, apx_port_t const *parsed_port);
 static apx_error_t create_port_signatures_on_node_instance(apx_node_instance_t *node_instance);
+static apx_error_t parse_and_compile_definition(apx_node_manager_t *self, apx_node_instance_t *node_instance,
+  uint8_t const *definition_data, size_t definition_size, bool replace_node_data,
+  apx_definition_failure_stage_t *out_stage);
 static apx_error_t init_node_instance_from_file_info(
   apx_node_manager_t *self, rmf_file_info_t const *file_info, bool *file_open_request);
 
@@ -212,20 +215,29 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
       uncompressed_data[uncompressed_size] = '\0';
       definition_size = (size_t)uncompressed_size;
     }
+    bool has_verified_sha256 = false;
+    uint8_t verified_hash[RMF_SHA256_SIZE];
     if (def_file != NULL)
     {
       rmf_digest_type_t const digest_type = apx_file_get_digest_type(def_file);
+      if (digest_type == RMF_DIGEST_TYPE_SHA1)
+      {
+        stage = APX_DEFINITION_STAGE_ADMISSION;
+        result = APX_UNSUPPORTED_ERROR;
+        goto rejected;
+      }
       if (digest_type == RMF_DIGEST_TYPE_SHA256)
       {
-        uint8_t hash[RMF_SHA256_SIZE];
-        apx_error_t const hash_res = apx_crypto_sha256(definition_data, definition_size, hash);
-        if ((hash_res != APX_NO_ERROR) || (memcmp(hash, apx_file_get_digest_data(def_file), RMF_SHA256_SIZE) != 0))
+        apx_error_t const hash_res = apx_crypto_sha256(definition_data, definition_size, verified_hash);
+        if ((hash_res != APX_NO_ERROR) ||
+          (memcmp(verified_hash, apx_file_get_digest_data(def_file), RMF_SHA256_SIZE) != 0))
         {
           stage = APX_DEFINITION_STAGE_DIGEST;
           result = (hash_res != APX_NO_ERROR) ? hash_res : APX_CHECKSUM_ERROR;
           response_code = APX_PARSE_ERROR;
           goto rejected;
         }
+        has_verified_sha256 = true;
       }
     }
     apx_server_t *server = apx_node_instance_get_server(node_instance);
@@ -245,43 +257,27 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
         goto rejected;
       }
     }
-    stage = APX_DEFINITION_STAGE_PARSING;
-    apx_istream_reset(&self->stream);
-    result = apx_parser_parse_bstr(&self->parser, definition_data, definition_data + definition_size);
-    if (result != APX_NO_ERROR)
-    {
-      self->last_error_line = apx_parser_get_error_line(&self->parser);
-    }
-    apx_istream_reset(&self->stream);
-    adt_bytearray_destroy(&self->stream.buf);
-    adt_bytearray_create(&self->stream.buf);
-    apx_node_t *node = NULL;
-    if (result == APX_NO_ERROR)
-    {
-      node = apx_parser_take_last_node(&self->parser);
-      assert(node != NULL);
-      char const *expected_name = apx_node_instance_get_name(node_instance);
-      char const *declared_name = apx_node_get_name(node);
-      if ((expected_name == NULL) || (declared_name == NULL) || (strcmp(expected_name, declared_name) != 0))
-      {
-        stage = APX_DEFINITION_STAGE_PARSING;
-        result = APX_INVALID_NAME_ERROR;
-      }
-      if ((result == APX_NO_ERROR) && (def_file != NULL) && apx_file_is_compressed(def_file))
-      {
-        stage = APX_DEFINITION_STAGE_ALLOCATION;
-        result = apx_node_data_replace_definition_data(node_data, definition_data, (apx_size_t)definition_size);
-      }
-      if (result == APX_NO_ERROR)
-      {
-        stage = APX_DEFINITION_STAGE_COMPILATION;
-        result = build_node_instance(self, node_instance, node);
-      }
-      apx_node_delete(node);
-    }
+    bool const replace_compressed = (def_file != NULL) && apx_file_is_compressed(def_file);
+    result =
+      parse_and_compile_definition(self, node_instance, definition_data, definition_size, replace_compressed, &stage);
     if (result != APX_NO_ERROR)
     {
       goto rejected;
+    }
+    if ((server != NULL) && (def_file != NULL) && !apx_file_is_signed(def_file) && has_verified_sha256)
+    {
+      apx_node_cache_t *cache = apx_server_get_node_cache(server);
+      if (apx_node_cache_is_text_enabled(cache) && !apx_node_cache_is_read_only(cache))
+      {
+        char const *node_name = apx_node_instance_get_name(node_instance);
+        apx_error_t cache_rc =
+          apx_node_cache_store_text(cache, node_name, verified_hash, definition_data, (uint32_t)definition_size);
+        if (cache_rc != APX_NO_ERROR)
+        {
+          apx_server_log(server, APX_LOG_LEVEL_WARNING, "Failed to write text cache for node '%s': %s",
+            (node_name != NULL) ? node_name : "<unknown>", apx_strerror(cache_rc));
+        }
+      }
     }
     if (self->parent_connection != NULL)
     {
@@ -336,6 +332,51 @@ rejected:
     return result;
   }
   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_manager_complete_cached_node(apx_node_manager_t *self, apx_node_instance_t *node_instance)
+{
+  if (self == NULL || node_instance == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  apx_file_t *def_file = apx_node_instance_get_definition_file(node_instance);
+  apx_server_t *server = apx_node_instance_get_server(node_instance);
+  if (self->parent_connection != NULL)
+  {
+    apx_error_t result = apx_node_instance_attach_to_file_manager(
+      node_instance, apx_connection_base_get_file_manager(self->parent_connection));
+    if (result != APX_NO_ERROR)
+    {
+      if (def_file != NULL)
+      {
+        return apx_node_manager_reject_definition(self, def_file, APX_DEFINITION_STAGE_COMPILATION, result, result);
+      }
+      return result;
+    }
+  }
+  if (server != NULL && node_instance->definition_memory_reservation != 0u)
+  {
+    apx_server_release_definition_memory(server, node_instance->definition_memory_reservation);
+    node_instance->definition_memory_reservation = 0u;
+  }
+  apx_node_instance_set_definition_data_state(node_instance, APX_DATA_STATE_SYNCHRONIZED);
+  if (server != NULL)
+  {
+    char const *name = apx_node_instance_get_name(node_instance);
+    uint32_t const connection_id = apx_node_instance_get_connection_id(node_instance);
+    if (connection_id != APX_INVALID_CONNECTION_ID)
+    {
+      apx_server_log(server, APX_LOG_LEVEL_INFO, "[%u] Server created node %s (cache hit: text)", connection_id,
+        (name != NULL) ? name : "<unknown>");
+    }
+    else
+    {
+      apx_server_log(
+        server, APX_LOG_LEVEL_INFO, "Server created node %s (cache hit: text)", (name != NULL) ? name : "<unknown>");
+    }
+  }
+  return APX_NO_ERROR;
 }
 
 apx_error_t apx_node_manager_reject_definition(apx_node_manager_t *self, apx_file_t *file,
@@ -1145,6 +1186,52 @@ static apx_error_t update_computation_list_on_port(
   return APX_NO_ERROR;
 }
 
+static apx_error_t parse_and_compile_definition(apx_node_manager_t *self, apx_node_instance_t *node_instance,
+  uint8_t const *definition_data, size_t definition_size, bool replace_node_data,
+  apx_definition_failure_stage_t *out_stage)
+{
+  apx_definition_failure_stage_t stage = APX_DEFINITION_STAGE_PARSING;
+  apx_istream_reset(&self->stream);
+  apx_error_t result = apx_parser_parse_bstr(&self->parser, definition_data, definition_data + definition_size);
+  if (result != APX_NO_ERROR)
+  {
+    self->last_error_line = apx_parser_get_error_line(&self->parser);
+  }
+  apx_istream_reset(&self->stream);
+  adt_bytearray_destroy(&self->stream.buf);
+  adt_bytearray_create(&self->stream.buf);
+  apx_node_t *node = NULL;
+  if (result == APX_NO_ERROR)
+  {
+    node = apx_parser_take_last_node(&self->parser);
+    assert(node != NULL);
+    char const *expected_name = apx_node_instance_get_name(node_instance);
+    char const *declared_name = apx_node_get_name(node);
+    if ((expected_name == NULL) || (declared_name == NULL) || (strcmp(expected_name, declared_name) != 0))
+    {
+      stage = APX_DEFINITION_STAGE_PARSING;
+      result = APX_INVALID_NAME_ERROR;
+    }
+    if ((result == APX_NO_ERROR) && replace_node_data)
+    {
+      stage = APX_DEFINITION_STAGE_ALLOCATION;
+      apx_node_data_t *node_data = apx_node_instance_get_node_data(node_instance);
+      result = apx_node_data_replace_definition_data(node_data, definition_data, (apx_size_t)definition_size);
+    }
+    if (result == APX_NO_ERROR)
+    {
+      stage = APX_DEFINITION_STAGE_COMPILATION;
+      result = build_node_instance(self, node_instance, node);
+    }
+    apx_node_delete(node);
+  }
+  if (out_stage != NULL)
+  {
+    *out_stage = stage;
+  }
+  return result;
+}
+
 static apx_error_t init_node_instance_from_file_info(
   apx_node_manager_t *self, rmf_file_info_t const *file_info, bool *file_open_request)
 {
@@ -1152,6 +1239,10 @@ static apx_error_t init_node_instance_from_file_info(
   assert(file_info != NULL);
   assert(file_open_request != NULL);
   apx_error_t result = APX_NO_ERROR;
+  if (rmf_file_info_digest_type(file_info) == RMF_DIGEST_TYPE_SHA1)
+  {
+    return APX_UNSUPPORTED_ERROR;
+  }
   uint32_t const encoded_size = rmf_file_info_size(file_info);
   uint32_t const logical_size =
     rmf_file_info_is_compressed(file_info) ? rmf_file_info_uncompressed_size(file_info) : encoded_size;
@@ -1194,6 +1285,73 @@ static apx_error_t init_node_instance_from_file_info(
         return result;
       }
     }
+
+    // Attempt Level 1 text cache hit for unsigned SHA-256 definitions
+    if ((server != NULL) && !rmf_file_info_is_signed(file_info) &&
+      (rmf_file_info_digest_type(file_info) == RMF_DIGEST_TYPE_SHA256))
+    {
+      apx_node_cache_t *cache = apx_server_get_node_cache(server);
+      if (apx_node_cache_is_text_enabled(cache))
+      {
+        uint8_t *cached_text = NULL;
+        uint8_t const *digest = rmf_file_info_digest_data(file_info);
+        apx_error_t cache_rc = apx_node_cache_lookup_text(cache, base_name, digest, logical_size, &cached_text);
+        if (cache_rc == APX_NO_ERROR && cached_text != NULL)
+        {
+          apx_node_instance_t *cached_node = apx_node_instance_new(self->mode, base_name);
+          if (cached_node != NULL)
+          {
+            cached_node->server = server;
+            cached_node->definition_memory_reservation = 0u;
+            apx_error_t build_rc = apx_node_instance_init_node_data(cached_node, cached_text, (apx_size_t)logical_size);
+            if (build_rc == APX_NO_ERROR)
+            {
+              apx_node_data_t *node_data = apx_node_instance_get_node_data(cached_node);
+              if (node_data == NULL)
+              {
+                build_rc = APX_NULL_PTR_ERROR;
+              }
+              else
+              {
+                apx_node_data_set_checksum_data(node_data, RMF_DIGEST_TYPE_SHA256, digest);
+              }
+            }
+            if (build_rc == APX_NO_ERROR)
+            {
+              apx_definition_failure_stage_t stage = APX_DEFINITION_STAGE_PARSING;
+              build_rc =
+                parse_and_compile_definition(self, cached_node, cached_text, (size_t)logical_size, false, &stage);
+            }
+            free(cached_text);
+            cached_text = NULL;
+            if (build_rc == APX_NO_ERROR)
+            {
+              cached_node->definition_memory_reservation = reservation;
+              *file_open_request = false;
+              attach_node(self, cached_node);
+              free(base_name);
+              return APX_NO_ERROR;
+            }
+            // Cached content failed parse/compile: evict and fall back cleanly to wire transfer
+            apx_node_cache_invalidate_text(cache, base_name, digest);
+            apx_server_log(server, APX_LOG_LEVEL_WARNING,
+              "Invalid text cache entry for node '%s' (%s); falling back to transfer", base_name,
+              apx_strerror(build_rc));
+            apx_node_instance_delete(cached_node);
+          }
+          else
+          {
+            free(cached_text);
+          }
+        }
+        else if (cache_rc == APX_CHECKSUM_ERROR || cache_rc == APX_LENGTH_ERROR)
+        {
+          apx_server_log(server, APX_LOG_LEVEL_WARNING,
+            "Invalid text cache entry for node '%s' (%s); falling back to transfer", base_name, apx_strerror(cache_rc));
+        }
+      }
+    }
+
     apx_node_instance_t *node_instance = apx_node_instance_new(self->mode, base_name);
     if (node_instance == NULL)
     {
@@ -1226,7 +1384,6 @@ static apx_error_t init_node_instance_from_file_info(
     }
     if (result == APX_NO_ERROR)
     {
-         // Planned: node cache lookup (see Backlog)
       *file_open_request = true;
     }
     if (result == APX_NO_ERROR)

@@ -71,8 +71,12 @@ Server configuration files are formatted as JSON objects. The core server option
        },
        "multiple-provider-policy": "first",
        "max-concurrent-connections": 256,
-       "apx-cache-enabled": false,
-       "apx-cache-path": ""
+       "cache": {
+         "level": 0,
+         "path": "/var/cache/apx",
+         "max-versions-per-node": 10,
+         "max-size-mb": 64
+       }
      }
    }
 
@@ -111,14 +115,28 @@ Configuration Parameters
      - Maximum number of concurrent client connections accepted by the server (valid range: 1 to 65535). If this
        limit is reached, additional incoming connections are rejected until an active connection disconnects.
        Also accepts key name ``max_concurrent_connections``.
-   * - ``apx-cache-enabled``
-     - Boolean
-     - ``false``
-     - *(Placeholder / Not yet implemented)* Reserved for enabling/disabling node parse tree caching.
-   * - ``apx-cache-path``
+   * - ``cache.level``
+     - Integer
+     - ``0``
+     - Node definition cache level: ``0`` (disabled), ``1`` (Level 1 SHA-256 text cache under ``<path>/text/`` — skips
+       definition transfer and decompression on unsigned SHA-256 hits), or ``2`` (reserved for future Level 2 binary
+       cache; currently emits a startup warning and runs at level ``1``).
+   * - ``cache.path``
      - String
      - ``""``
-     - *(Placeholder / Not yet implemented)* Reserved for filesystem directory path used for node caching.
+     - Root filesystem directory for cached node definitions (required when ``cache.level > 0``). If the directory
+       cannot be created or accessed, caching is disabled with a startup warning. If ``<path>/text`` exists and is
+       readable but not writable, the cache runs in read-only mode with a startup warning.
+   * - ``cache.max-versions-per-node``
+     - Integer
+     - ``10``
+     - Maximum number of cached SHA-256 versions retained per node name (``0`` disables the per-node limit).
+       Also accepts key name ``max_versions_per_node``.
+   * - ``cache.max-size-mb``
+     - Integer
+     - ``64``
+     - Maximum total cache disk usage in MiB across all cached definitions (``0`` disables the global size cap).
+       Also accepts key name ``max_size_mb``.
 
 Extension Configuration Sections
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -201,6 +219,8 @@ passes the pre-bound file descriptor (descriptor 3, ``SD_LISTEN_FDS_START``) upo
    Restart=on-failure
    User=apx
    Group=apx
+   # Optional: automatically creates /var/cache/apx owned by User/Group when cache.level > 0
+   CacheDirectory=apx
 
 To enable socket activation in ``server.json``:
 

@@ -1,7 +1,9 @@
 {
     "apx-server": {
-        "apx-cache-enabled": false,
-        "apx-cache-path": "",
+        "cache": {
+            "level": 0,
+            "path": ""
+        },
         "security": {
             "require-signed-nodes": true,
             "trusted-keys": [

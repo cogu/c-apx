@@ -109,6 +109,7 @@ set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_file_manager_receiver.c
     apx_core/test/testsuite_file_map.c
     apx_core/test/testsuite_file.c
+    apx_core/test/testsuite_node_cache.c
     apx_core/test/testsuite_node_data.c
     apx_core/test/testsuite_node_manager_client.c
     apx_core/test/testsuite_node_manager_server.c
