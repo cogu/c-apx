@@ -124,8 +124,9 @@ All steps must pass with zero formatting violations, zero errors, zero sanitizer
 ## 6. Coding Standards & Conventions
 
 ### Code Formatting (clang-format)
-* All C and C++ source and header files (`.c`, `.h`, `.cpp`) must strictly adhere to the repository root [`.clang-format`](.clang-format).
-* Automatically format modified files using `clang-format -i <file>` or format uncommitted changes with `git clang-format`.
+* All C and C++ source and header files (`.c`, `.h`, `.cpp`) in the **top-level `c-apx` repository** must strictly adhere to the repository root [`.clang-format`](.clang-format).
+* Git submodules (`adt/`, `bstr/`, `cutil/`, `dtl_type/`, `dtl_json/`, `msocket/`) are **not** formatted with `c-apx`'s `.clang-format` yet — match the existing local style of each submodule when editing submodule code.
+* Automatically format modified top-level files using `clang-format -i <file>` or format uncommitted changes with `git clang-format`.
 * Verify zero format violations using `clang-format --dry-run --Werror <files>`.
 
 ### C99 & Code Quality
