@@ -490,6 +490,21 @@ Logical-definition capture and structured rejection events are owned by item 16.
   * Reject 16-bit header width selection in the server greeting with `APX_NOT_IMPLEMENTED_ERROR` (and ensure any client greeting parser follows the same contract if applicable) until 16-bit framing is implemented in `v0.6.0`.
   * Add C unit tests verifying 16-bit framing negotiation is rejected with `APX_NOT_IMPLEMENTED_ERROR`.
 
+## 25. Include SHA-256 Digest in Signed Definition Publication Commands (RMFP 1.1)
+
+* **Status:** Planned protocol improvement before freezing RemoteFile v1.1 (currently unreleased).
+* **Motivation:** Currently `RMF_CMD_PUBLISH_SIGNED_FILE` (`21`) and `RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE` (`23`) carry only the 64-byte ECDSA P-256 signature without the 32-byte SHA-256 digest of the logical uncompressed definition. Because ECDSA verification checks the signature over `SHA-256(uncompressed_apx)`, omitting the digest forces signed nodes to re-transfer their full `.apx` definition on every reconnect even when the server already has the file cached.
+* **Protocol & Specification Changes (`../apx/specifications/protocols/remotefile1_1.md`):**
+  * Extend `RMF_CMD_PUBLISH_SIGNED_FILE` (`21`) and `RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE` (`23`) to carry `DigestData` (`UINT8[32]`, SHA-256 of the logical uncompressed definition) alongside `SignatureType` and `SignatureData[64]`.
+  * Update the "Definition Cache Interaction" and "Signed File Verification Flow" sections of `remotefile1_1.md` to allow pre-transfer signature verification and zero-transfer cache hits for signed nodes.
+* **Server Verification & Cache Flow (`c-apx`):**
+  * On receiving a signed publication, verify `ECDSA_Verify(trusted_pubkey, advertised_sha256, signature)` immediately against configured `trusted_keys` **before** opening the file or allocating transfer buffers (rejecting invalid/untrusted signatures immediately with `APX_SIGNATURE_VERIFICATION_ERROR`).
+  * If verified and server caching is enabled, look up the matching entry by `(node_name, advertised_sha256)`, verify `size == logical_size` and `SHA-256(cached_bytes) == advertised_sha256`, and skip `FILE_OPEN` on a hit.
+  * On a cache miss, open and transfer (and decompress if compressed), verify `SHA-256(received_bytes) == advertised_sha256` (binding the transferred payload to the already-verified signature), compile, and store in cache.
+* **Client & Tests:**
+  * Update `rmf_encode_publish_signed_file_cmd`, `rmf_decode_publish_signed_file_cmd`, `rmf_encode_publish_signed_compressed_file_cmd`, and `rmf_decode_publish_signed_compressed_file_cmd` in `apx_core/src/remotefile.c` (clients already compute SHA-256 in `create_definition_file_info()`).
+  * Update unit and integration tests (`testsuite_remotefile.c`, `test_server_signed_nodes.py`, `test_apx_node_compressed.py`, `test_server_node_cache.py`) to verify pre-transfer signature rejection, cache hits for signed plain/compressed nodes, and key-revocation rejection on cached entries.
+
 ---
 
 # Release v0.6.0 (Planned Phase)
