@@ -124,9 +124,12 @@ Configuration Parameters
    * - ``cache.path``
      - String
      - ``""``
-     - Root filesystem directory for cached node definitions (required when ``cache.level > 0``). If the directory
-       cannot be created or accessed, caching is disabled with a startup warning. If ``<path>/text`` exists and is
-       readable but not writable, the cache runs in read-only mode with a startup warning.
+     - Root filesystem directory for cached node definitions (required when ``cache.level > 0``). Each writable
+       ``apx-server`` instance acquires an exclusive OS lock on ``<path>/.lock`` so multiple servers on the same
+       machine cannot accidentally share and thrash the same cache directory; if another instance already holds the
+       lock, the second server logs a warning and disables caching. If the directory cannot be created or accessed,
+       caching is disabled with a startup warning. If ``<path>/text`` exists and is readable but not writable, the
+       cache runs in read-only mode with a startup warning (no lock required).
    * - ``cache.max-versions-per-node``
      - Integer
      - ``10``

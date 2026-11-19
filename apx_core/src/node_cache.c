@@ -75,6 +75,7 @@ static adt_str_t *build_text_cache_path(
   apx_node_cache_t const *self, char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE]);
 static bool on_dir_access_probe(void *arg, const cutil_dir_entry_t *entry);
 static bool probe_dir_writable(apx_node_cache_t *self, char const *dir_path, int *out_errno);
+static bool read_lock_holder_pid(char const *lock_path, char *out_pid, size_t out_pid_size);
 static void prune_entry_vdelete(void *arg);
 static bool on_prune_dir_entry(void *arg, const cutil_dir_entry_t *entry);
 static int compare_prune_entries(const void *a, const void *b);
@@ -103,6 +104,7 @@ void apx_node_cache_create(apx_node_cache_t *self)
     self->max_size_bytes = (uint64_t)APX_CACHE_DEFAULT_MAX_SIZE_MB * 1024ULL * 1024ULL;
     self->root_dir = NULL;
     self->text_dir = NULL;
+    cutil_file_lock_init(&self->lock_file);
     MUTEX_INIT(self->lock);
     MUTEX_INIT(self->prune_lock);
     self->tmp_seq = 0u;
@@ -116,6 +118,7 @@ void apx_node_cache_destroy(apx_node_cache_t *self)
 {
   if (self != NULL)
   {
+    cutil_file_lock_release(&self->lock_file);
     free(self->root_dir);
     self->root_dir = NULL;
     free(self->text_dir);
@@ -159,6 +162,7 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
     warning_buf[0] = '\0';
   }
 
+  cutil_file_lock_release(&self->lock_file);
   self->level = APX_CACHE_LEVEL_OFF;
   self->initialized = false;
   self->read_only = false;
@@ -225,12 +229,56 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
       "cached",
       text_dir_cstr, strerror(probe_errno));
   }
+  else
+  {
+    adt_str_t *lock_path = cutil_path_join(root_path, ".lock");
+    if (lock_path == NULL)
+    {
+      adt_str_delete(text_path);
+      return APX_MEM_ERROR;
+    }
+    char const *lock_path_cstr = adt_str_cstr(lock_path);
+    int lock_rc = cutil_file_lock_try_acquire(&self->lock_file, lock_path_cstr);
+    if (lock_rc == 1)
+    {
+      char pid_str[32];
+      if (read_lock_holder_pid(lock_path_cstr, pid_str, sizeof(pid_str)))
+      {
+        set_warning(warning_buf, warning_buf_size,
+          "Cache directory '%s' is already locked by another apx-server (PID %s); disabling cache -- configure a "
+          "unique 'apx-server.cache.path' per server",
+          root_path, pid_str);
+      }
+      else
+      {
+        set_warning(warning_buf, warning_buf_size,
+          "Cache directory '%s' is already locked by another apx-server; disabling cache -- configure a unique "
+          "'apx-server.cache.path' per server",
+          root_path);
+      }
+      adt_str_delete(lock_path);
+      adt_str_delete(text_path);
+      return APX_NO_ERROR;
+    }
+    if (lock_rc != 0)
+    {
+      int saved_errno = errno;
+      set_warning(warning_buf, warning_buf_size,
+        "Cannot lock cache directory '%s' (%s); disabling cache (check directory ownership/permissions)", root_path,
+        strerror(saved_errno));
+      adt_str_delete(lock_path);
+      adt_str_delete(text_path);
+      return APX_NO_ERROR;
+    }
+    adt_str_delete(lock_path);
+  }
 
   char *root_copy = dup_cstr(root_path);
   char *text_copy = dup_cstr(text_dir_cstr);
   adt_str_delete(text_path);
   if (root_copy == NULL || text_copy == NULL)
   {
+    cutil_file_lock_release(&self->lock_file);
     free(root_copy);
     free(text_copy);
     self->read_only = false;
@@ -728,6 +776,32 @@ static bool probe_dir_writable(apx_node_cache_t *self, char const *dir_path, int
   fclose(fh);
   (void)remove(adt_str_cstr(probe_path));
   adt_str_delete(probe_path);
+  return true;
+}
+
+static bool read_lock_holder_pid(char const *lock_path, char *out_pid, size_t out_pid_size)
+{
+  if (lock_path == NULL || out_pid == NULL || out_pid_size < 2u)
+  {
+    return false;
+  }
+  uint8_t buf[32];
+  size_t bytes_read = 0u;
+  if (cutil_read_binary_file(lock_path, buf, sizeof(buf) - 1u, &bytes_read) != 0 || bytes_read == 0u)
+  {
+    return false;
+  }
+  size_t pos = 0u;
+  while (pos < bytes_read && pos + 1u < out_pid_size && buf[pos] >= '0' && buf[pos] <= '9')
+  {
+    out_pid[pos] = (char)buf[pos];
+    pos++;
+  }
+  if (pos == 0u)
+  {
+    return false;
+  }
+  out_pid[pos] = '\0';
   return true;
 }
 

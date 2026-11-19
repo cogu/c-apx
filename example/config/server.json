@@ -1,8 +1,10 @@
 {
     "apx-server": {
-        "cache": {
-            "level": 0,
-            "path": ""
+    "cache": {
+        "level": 0,
+        "path": "",
+        "max-versions-per-node": 10,
+        "max-size-mb": 64
         },
         "multiple-provider-policy": "first"
     },

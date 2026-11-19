@@ -1109,6 +1109,7 @@ static void test_configure_server_cache(CuTest *tc)
   apx_server_destroy(&server);
   dtl_dec_ref(cfg);
   remove(filepath);
+  remove("test_cfg_cache_tmp_dir/.lock");
   RMDIR("test_cfg_cache_tmp_dir/text");
   RMDIR(cache_dir);
 }

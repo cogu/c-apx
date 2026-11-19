@@ -25,6 +25,7 @@
 #include "apx/error.h"
 #include "apx/remotefile.h"
 #include "apx/types.h"
+#include "fileutil.h"
 #include "osmacro.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -69,6 +70,7 @@ typedef struct apx_node_cache_tag
   uint64_t max_size_bytes;
   char *root_dir;
   char *text_dir;
+  cutil_file_lock_t lock_file;
   MUTEX_T lock;
   MUTEX_T prune_lock;
   uint64_t tmp_seq;

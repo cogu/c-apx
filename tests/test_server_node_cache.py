@@ -579,3 +579,84 @@ def test_cache_apx_node_signal_routing_across_hit(tmp_path: Path, apx_server_bin
     assert "Server created node Sender (cache hit: text)" in log_text
     assert "Server created node Listener (cache hit: text)" in log_text
 
+
+def test_cache_lock_prevents_two_servers_sharing_cache_dir(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "shared_cache"
+    dir1 = tmp_path / "srv1"
+    dir2 = tmp_path / "srv2"
+    dir3 = tmp_path / "srv3"
+    dir1.mkdir()
+    dir2.mkdir()
+    dir3.mkdir()
+
+    name = "LockedNode"
+    definition = make_req_definition(name, num_ports=4)
+
+    server1 = start_server(
+        dir1,
+        apx_server_bin,
+        {
+            "apx-server": {"cache": {"level": 1, "path": str(cache_dir)}},
+            "socket-server-extension": {"unix-file": str(dir1 / "apx1.socket")},
+        },
+    )
+    server2 = None
+    server3 = None
+    try:
+        # 1. Server 1 warms the cache and holds <cache_dir>/.lock
+        assert (cache_dir / ".lock").is_file()
+        with client(server1) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+
+        # 2. Server 2 starts with the SAME cache.path -> starts cleanly, warns with Server 1 PID, disables cache
+        server2 = start_server(
+            dir2,
+            apx_server_bin,
+            {
+                "apx-server": {"cache": {"level": 1, "path": str(cache_dir)}},
+                "socket-server-extension": {"unix-file": str(dir2 / "apx2.socket")},
+            },
+        )
+        # Because Server 2 disabled its cache, it must still send FILE_OPEN (10) even though file is cached
+        with client(server2) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+
+        server2.stop()
+        assert server2.process.returncode == 0, server2.stderr
+        assert "already locked" in server2.stderr
+        assert str(server1.process.pid) in server2.stderr
+        server2 = None
+
+        # 3. Stop Server 1 -> kernel releases lock -> Server 3 acquires lock and gets a cache hit
+        server1.stop()
+        assert server1.process.returncode == 0, server1.stderr
+        server1 = None
+
+        server3 = start_server(
+            dir3,
+            apx_server_bin,
+            {
+                "apx-server": {"cache": {"level": 1, "path": str(cache_dir)}},
+                "socket-server-extension": {"unix-file": str(dir3 / "apx3.socket")},
+            },
+        )
+        with client(server3) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 3  # Cache hit!
+    finally:
+        if server3 is not None:
+            server3.stop()
+        if server2 is not None:
+            server2.stop()
+        if server1 is not None:
+            server1.stop()
+
+    assert server3 is not None and server3.process.returncode == 0, server3.stderr
+
+

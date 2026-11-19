@@ -60,6 +60,7 @@ static void test_node_cache_per_node_rotation_and_prefix_isolation(CuTest *tc);
 static void test_node_cache_lru_refresh_on_hit(CuTest *tc);
 static void test_node_cache_global_size_cap(CuTest *tc);
 static void test_node_cache_readonly_and_unreadable_dirs(CuTest *tc);
+static void test_node_cache_lock_prevents_concurrent_owners(CuTest *tc);
 static void test_node_cache_server_integration_flows(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -77,6 +78,7 @@ CuSuite *testsuite_apx_node_cache(void)
   SUITE_ADD_TEST(suite, test_node_cache_lru_refresh_on_hit);
   SUITE_ADD_TEST(suite, test_node_cache_global_size_cap);
   SUITE_ADD_TEST(suite, test_node_cache_readonly_and_unreadable_dirs);
+  SUITE_ADD_TEST(suite, test_node_cache_lock_prevents_concurrent_owners);
   SUITE_ADD_TEST(suite, test_node_cache_server_integration_flows);
   return suite;
 }
@@ -563,6 +565,47 @@ static void test_node_cache_readonly_and_unreadable_dirs(CuTest *tc)
 #else
   (void)tc;
 #endif
+}
+
+static void test_node_cache_lock_prevents_concurrent_owners(CuTest *tc)
+{
+  const char *root = "test_cache_lock_dir";
+  remove_dir_recursive(root);
+
+  apx_node_cache_config_t cfg;
+  apx_node_cache_config_init(&cfg);
+  cfg.level = APX_CACHE_LEVEL_TEXT;
+
+  apx_node_cache_t cache1;
+  apx_node_cache_t cache2;
+  apx_node_cache_create(&cache1);
+  apx_node_cache_create(&cache2);
+
+  char warn1[512] = {0};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache1, &cfg, root, warn1, sizeof(warn1)));
+  CuAssertTrue(tc, apx_node_cache_is_text_enabled(&cache1));
+  CuAssertStrEquals(tc, "", warn1);
+
+  adt_str_t *lock_path = cutil_path_join(root, ".lock");
+  CuAssertPtrNotNull(tc, lock_path);
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(lock_path)));
+  adt_str_delete(lock_path);
+
+  // Second instance on the same cache directory must fail-safely disable caching with warning
+  char warn2[512] = {0};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache2, &cfg, root, warn2, sizeof(warn2)));
+  CuAssertTrue(tc, !apx_node_cache_is_text_enabled(&cache2));
+  CuAssertTrue(tc, strstr(warn2, "already locked") != NULL);
+
+  // Destroying cache1 releases the OS lock; cache2 can now acquire it cleanly
+  apx_node_cache_destroy(&cache1);
+  warn2[0] = '\0';
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache2, &cfg, root, warn2, sizeof(warn2)));
+  CuAssertTrue(tc, apx_node_cache_is_text_enabled(&cache2));
+  CuAssertStrEquals(tc, "", warn2);
+
+  apx_node_cache_destroy(&cache2);
+  remove_dir_recursive(root);
 }
 
 static void test_node_cache_server_integration_flows(CuTest *tc)

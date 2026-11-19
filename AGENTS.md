@@ -14,6 +14,13 @@ Project context, architectural knowledge, coding conventions, and developer work
 * **Specification Support**: Conforms to APX IDL v1.3 and APX VM v2.1.
 * **Primary Platform**: Linux (POSIX, Clang, Ninja, UNIX domain sockets, TCP/IP).
 
+## About versions
+
+c-apx v0.3.x is still in active development and there are currently no one else using it. It's OK to make changes and not worry about backwards
+compatibility.
+
+c-apx v0.2.8 (the maintenance branch) is used in production. That version has many different users and we should be careful when making changes to it.
+
 ---
 
 ## 2. Repository Structure
@@ -172,3 +179,4 @@ All steps must pass with zero formatting violations, zero errors, zero sanitizer
 
 * **C Unit Tests**: Built with `cutest` (from `cutil`). Test suites live in `apx_core/test/`, `extension/*/test/`, and `app/*/test/`. Registered in `CMakeLists.txt` and built into `apx_unit`.
 * **Integration Tests**: Written in Python using `pytest` under `tests/`. Uses process management fixtures in `tests/conftest.py` to test multi-process communication across `apx-server`, `apx-node`, and `apx-control`.
+
