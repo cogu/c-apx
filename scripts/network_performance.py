@@ -3,7 +3,9 @@
 
 import argparse
 import hashlib
+import json
 import os
+import random
 import select
 import socket
 import struct
@@ -17,26 +19,134 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "tests"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from legacy_performance import (  # noqa: E402
-    RMFP_1_0_GREETING,
-    RMFP_1_1_GREETING,
-    TcpServerHandle,
-    find_free_tcp_port,
-    send_chunked,
-    start_legacy_server,
-    start_modern_tcp_server,
-)
-from routing_performance import (  # noqa: E402
-    APX_FILE_ADDR,
-    OUT_FILE_ADDR,
-    drain_socket,
-    file_info_name,
-    send_file_info_no_wait,
-)
+from conftest import _set_pdeathsig  # noqa: E402
 from test_server_compressed_nodes import encode_numheader32, read_msg  # noqa: E402
 from test_server_definition_events import opcode, write  # noqa: E402
+
+RMFP_1_0_GREETING = b"RMFP/1.0\nNumHeader-Format:32\n\n"
+RMFP_1_1_GREETING = b"RMFP/1.1\nMessage-Size: 32\n\n"
+OUT_FILE_ADDR = 0x00000000
+APX_FILE_ADDR = 0x02000000
+
+
+def find_free_tcp_port() -> int:
+    # apx-server's socket-server-extension enforces TCP user ports [1024, 49151].
+    for _ in range(100):
+        port = random.randint(20000, 49000)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError("Could not find a free TCP port in [20000, 49000]")
+
+
+class TcpServerHandle:
+    def __init__(self, proc: subprocess.Popen, port: int):
+        self.process = proc
+        self.port = port
+
+    def connect(self) -> socket.socket:
+        sock = socket.create_connection(("127.0.0.1", self.port), timeout=3.0)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        return sock
+
+    def stop(self) -> None:
+        if self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=3.0)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait(timeout=3.0)
+        if self.process.stdout is not None:
+            self.process.stdout.close()
+        if self.process.stderr is not None:
+            self.process.stderr.close()
+
+
+def start_legacy_server(server_bin: str, port: int) -> TcpServerHandle:
+    proc = subprocess.Popen(
+        [server_bin, f"-p{port}"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        preexec_fn=_set_pdeathsig,
+    )
+    time.sleep(0.25)
+    if proc.poll() is not None:
+        raise RuntimeError(f"Legacy apx_server exited prematurely with code {proc.returncode}")
+    return TcpServerHandle(proc, port)
+
+
+def start_modern_tcp_server(tmp_path: Path, server_bin: str, port: int, cache_level: int) -> TcpServerHandle:
+    config_file = tmp_path / "server.json"
+    config = {
+        "apx-server": {"cache": {"level": cache_level, "path": str(tmp_path / "cache")}},
+        "socket-server-extension": {"tcp-port": port},
+    }
+    config_file.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+    r_fd, w_fd = os.pipe()
+    os.set_inheritable(w_fd, True)
+    proc = subprocess.Popen(
+        [server_bin, "--ready-fd", str(w_fd), str(config_file)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        pass_fds=(w_fd,),
+        preexec_fn=_set_pdeathsig,
+    )
+    os.close(w_fd)
+    rlist, _, _ = select.select([r_fd], [], [], 3.0)
+    if not rlist:
+        os.close(r_fd)
+        proc.kill()
+        raise TimeoutError("Modern apx-server failed to signal readiness")
+    os.read(r_fd, 1)
+    os.close(r_fd)
+    return TcpServerHandle(proc, port)
+
+
+def send_chunked(sock: socket.socket, data: bytes, chunk_size: int = 4096) -> None:
+    off = 0
+    while off < len(data):
+        chunk = data[off : off + chunk_size]
+        write(sock, chunk, offset=off, more=(off + len(chunk)) < len(data))
+        off += len(chunk)
+
+
+def send_file_info_no_wait(
+    sock: socket.socket,
+    *,
+    name: str,
+    address: int,
+    size: int,
+    digest: bytes | None = None,
+) -> None:
+    digest_type = 2 if digest is not None else 0
+    digest_bytes = digest if digest is not None else (b"\x00" * 32)
+    header = struct.pack("<IIIHH", 3, address, size, 0, digest_type)
+    command = header + digest_bytes + f"{name}\0".encode("ascii")
+    sock.sendall(encode_numheader32(struct.pack(">I", 0xBFFFFC00) + command))
+
+
+def file_info_name(msg: bytes) -> str:
+    if len(msg) <= 52:
+        return ""
+    return msg[52:].split(b"\0", 1)[0].decode("ascii", errors="replace")
+
+
+def drain_socket(sock: socket.socket) -> None:
+    """Drain any queued unsolicited server notifications without blocking."""
+    while True:
+        rlist, _, _ = select.select([sock], [], [], 0.0)
+        if not rlist:
+            break
+        data = sock.recv(65536)
+        if not data:
+            break
 
 
 @dataclass
@@ -325,12 +435,16 @@ def main() -> int:
         return 1
 
     legacy_bin = str(args.legacy_server.expanduser().resolve())
-    if not Path(legacy_bin).is_file():
+    run_legacy = Path(legacy_bin).is_file()
+    if args.legacy_only and not run_legacy:
         print(f"Error: legacy apx_server not found at {legacy_bin}", file=sys.stderr)
         return 1
 
     modern_bin = str(args.modern_server.expanduser().resolve())
     run_modern = (not args.legacy_only) and Path(modern_bin).is_file()
+    if not run_legacy and not run_modern:
+        print(f"Error: neither modern ({modern_bin}) nor legacy ({legacy_bin}) server found", file=sys.stderr)
+        return 1
 
     for net_dir in args.networks:
         net_path = net_dir.expanduser().resolve()
@@ -343,14 +457,15 @@ def main() -> int:
             f"{total_p} P-ports, {total_r} R-ports ({args.runs} fresh-server runs over TCP) ==="
         )
 
-        run_benchmark_target(
-            "v0.2.8 legacy",
-            lambda _tp: start_legacy_server(legacy_bin, find_free_tcp_port()),
-            RMFP_1_0_GREETING,
-            nodes,
-            args.runs,
-            show_per_node=args.per_node,
-        )
+        if run_legacy:
+            run_benchmark_target(
+                "v0.2.8 legacy",
+                lambda _tp: start_legacy_server(legacy_bin, find_free_tcp_port()),
+                RMFP_1_0_GREETING,
+                nodes,
+                args.runs,
+                show_per_node=args.per_node,
+            )
 
         if run_modern:
             run_benchmark_target(
