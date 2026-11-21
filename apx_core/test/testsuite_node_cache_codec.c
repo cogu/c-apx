@@ -12,8 +12,10 @@
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
 #include "CuTest.h"
+#include "apx/crypto.h"
 #include "apx/node_cache_codec.h"
 #include "apx/node_instance.h"
+#include "apx/node_manager.h"
 #include "apx/port_instance.h"
 #include "pack.h"
 #include <stdlib.h>
@@ -33,6 +35,15 @@ static void test_writer_take_buffer_and_empty_writes(CuTest *tc);
 static void test_port_descriptor_roundtrip(CuTest *tc);
 static void test_port_descriptor_rejects_malformed(CuTest *tc);
 static void test_program_roundtrip_and_validation(CuTest *tc);
+static void test_full_node_roundtrip_server_and_client_modes(CuTest *tc);
+static void test_apx_1_2_and_asymmetric_nodes(CuTest *tc);
+static void test_embedded_def_text_raw_and_zlib(CuTest *tc);
+static void test_adversarial_corruption_and_version_checks(CuTest *tc);
+static void test_forward_compat_unknown_section_and_malformed_directory(CuTest *tc);
+
+static void assert_nodes_equivalent(
+  CuTest *tc, apx_node_instance_t const *expected, apx_node_instance_t const *actual, bool expect_vm_programs);
+static void resign_apxc_trailer(CuTest *tc, uint8_t *buf, size_t size);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -49,6 +60,11 @@ CuSuite *testsuite_apx_node_cache_codec(void)
   SUITE_ADD_TEST(suite, test_port_descriptor_roundtrip);
   SUITE_ADD_TEST(suite, test_port_descriptor_rejects_malformed);
   SUITE_ADD_TEST(suite, test_program_roundtrip_and_validation);
+  SUITE_ADD_TEST(suite, test_full_node_roundtrip_server_and_client_modes);
+  SUITE_ADD_TEST(suite, test_apx_1_2_and_asymmetric_nodes);
+  SUITE_ADD_TEST(suite, test_embedded_def_text_raw_and_zlib);
+  SUITE_ADD_TEST(suite, test_adversarial_corruption_and_version_checks);
+  SUITE_ADD_TEST(suite, test_forward_compat_unknown_section_and_malformed_directory);
 
   return suite;
 }
@@ -410,4 +426,387 @@ static void test_program_roundtrip_and_validation(CuTest *tc)
   apx_port_instance_destroy(&port);
   APX_PROGRAM_DELETE(prog);
   apx_cache_writer_destroy(&writer);
+}
+
+static void assert_nodes_equivalent(
+  CuTest *tc, apx_node_instance_t const *expected, apx_node_instance_t const *actual, bool expect_vm_programs)
+{
+  CuAssertIntEquals(tc, apx_node_instance_get_major_version(expected), apx_node_instance_get_major_version(actual));
+  CuAssertIntEquals(tc, apx_node_instance_get_minor_version(expected), apx_node_instance_get_minor_version(actual));
+  CuAssertUIntEquals(
+    tc, apx_node_instance_get_num_provide_ports(expected), apx_node_instance_get_num_provide_ports(actual));
+  CuAssertUIntEquals(
+    tc, apx_node_instance_get_num_require_ports(expected), apx_node_instance_get_num_require_ports(actual));
+  CuAssertUIntEquals(tc, apx_node_instance_get_provide_port_init_data_size(expected),
+    apx_node_instance_get_provide_port_init_data_size(actual));
+  CuAssertUIntEquals(tc, apx_node_instance_get_require_port_init_data_size(expected),
+    apx_node_instance_get_require_port_init_data_size(actual));
+
+  apx_size_t prov_size = apx_node_instance_get_provide_port_init_data_size(expected);
+  if (prov_size > 0u)
+  {
+    CuAssertIntEquals(tc, 0,
+      memcmp(apx_node_instance_get_provide_port_init_data(expected),
+        apx_node_instance_get_provide_port_init_data(actual), (size_t)prov_size));
+  }
+  apx_size_t req_size = apx_node_instance_get_require_port_init_data_size(expected);
+  if (req_size > 0u)
+  {
+    CuAssertIntEquals(tc, 0,
+      memcmp(apx_node_instance_get_require_port_init_data(expected),
+        apx_node_instance_get_require_port_init_data(actual), (size_t)req_size));
+  }
+
+  for (apx_size_t i = 0u; i < apx_node_instance_get_num_provide_ports(expected); i++)
+  {
+    apx_port_instance_t *pe = apx_node_instance_get_provide_port(expected, (apx_port_id_t)i);
+    apx_port_instance_t *pa = apx_node_instance_get_provide_port(actual, (apx_port_id_t)i);
+    bool de = false;
+    bool da = false;
+    CuAssertStrEquals(tc, apx_port_instance_name(pe), apx_port_instance_name(pa));
+    CuAssertStrEquals(
+      tc, apx_port_instance_get_port_signature(pe, &de), apx_port_instance_get_port_signature(pa, &da));
+    CuAssertIntEquals(tc, (int)de, (int)da);
+    CuAssertUIntEquals(tc, apx_port_instance_data_offset(pe), apx_port_instance_data_offset(pa));
+    CuAssertUIntEquals(tc, apx_port_instance_data_size(pe), apx_port_instance_data_size(pa));
+    CuAssertUIntEquals(tc, apx_port_instance_element_size(pe), apx_port_instance_element_size(pa));
+    CuAssertUIntEquals(tc, apx_port_instance_queue_length(pe), apx_port_instance_queue_length(pa));
+    if (expect_vm_programs)
+    {
+      CuAssertPtrNotNull(tc, (void *)apx_port_instance_pack_program(pa));
+      CuAssertTrue(tc, adt_bytearray_equals(apx_port_instance_pack_program(pe), apx_port_instance_pack_program(pa)));
+    }
+    else
+    {
+      CuAssertPtrEquals(tc, NULL, (void *)apx_port_instance_pack_program(pa));
+    }
+    CuAssertPtrEquals(tc, NULL, (void *)apx_port_instance_unpack_program(pa));
+  }
+
+  for (apx_size_t i = 0u; i < apx_node_instance_get_num_require_ports(expected); i++)
+  {
+    apx_port_instance_t *re = apx_node_instance_get_require_port(expected, (apx_port_id_t)i);
+    apx_port_instance_t *ra = apx_node_instance_get_require_port(actual, (apx_port_id_t)i);
+    bool de = false;
+    bool da = false;
+    CuAssertStrEquals(tc, apx_port_instance_name(re), apx_port_instance_name(ra));
+    CuAssertStrEquals(
+      tc, apx_port_instance_get_port_signature(re, &de), apx_port_instance_get_port_signature(ra, &da));
+    CuAssertIntEquals(tc, (int)de, (int)da);
+    CuAssertUIntEquals(tc, apx_port_instance_data_offset(re), apx_port_instance_data_offset(ra));
+    CuAssertUIntEquals(tc, apx_port_instance_data_size(re), apx_port_instance_data_size(ra));
+    CuAssertUIntEquals(tc, apx_port_instance_element_size(re), apx_port_instance_element_size(ra));
+    CuAssertUIntEquals(tc, apx_port_instance_queue_length(re), apx_port_instance_queue_length(ra));
+    if (expect_vm_programs)
+    {
+      CuAssertPtrNotNull(tc, (void *)apx_port_instance_pack_program(ra));
+      CuAssertPtrNotNull(tc, (void *)apx_port_instance_unpack_program(ra));
+      CuAssertTrue(tc, adt_bytearray_equals(apx_port_instance_pack_program(re), apx_port_instance_pack_program(ra)));
+      CuAssertTrue(
+        tc, adt_bytearray_equals(apx_port_instance_unpack_program(re), apx_port_instance_unpack_program(ra)));
+    }
+    else
+    {
+      CuAssertPtrEquals(tc, NULL, (void *)apx_port_instance_pack_program(ra));
+      CuAssertPtrEquals(tc, NULL, (void *)apx_port_instance_unpack_program(ra));
+    }
+  }
+}
+
+static void resign_apxc_trailer(CuTest *tc, uint8_t *buf, size_t size)
+{
+  CuAssertTrue(tc, size >= (size_t)APXC_MIN_FILE_SIZE);
+  uint8_t hash[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256(buf, size - RMF_SHA256_SIZE, hash));
+  memcpy(buf + size - RMF_SHA256_SIZE, hash, RMF_SHA256_SIZE);
+}
+
+static void test_full_node_roundtrip_server_and_client_modes(CuTest *tc)
+{
+  char const *apx_text =
+    "APX/1.3\n"
+    "N\"RichNode\"\n"
+    "T\"Mode_T\"C(0,3):VT(\"Off\",\"Init\",\"Run\",\"Fault\")\n"
+    "T\"Vec_T\"{\"x\"s\"y\"s\"z\"l}\n"
+    "P\"VehicleSpeed\"S:=65535\n"
+    "P\"Mode\"T[\"Mode_T\"]:=2\n"
+    "P\"FixedArr\"C[4]:={1,2,3,4}\n"
+    "P\"DynBuf\"C[16*]:={}\n"
+    "P\"Position\"T[\"Vec_T\"]:={-10,20,-300}\n"
+    "R\"Command\"L:=42\n"
+    "R\"RxDyn\"S[8*]:={}\n";
+  size_t apx_len = strlen(apx_text);
+  uint8_t sha256[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_text, apx_len, sha256));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_text));
+  apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+  CuAssertPtrNotNull(tc, compiled);
+
+  uint8_t *encoded = NULL;
+  size_t encoded_size = 0u;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_encode_binary(compiled, sha256, (uint32_t)apx_len, NULL, false, true, &encoded, &encoded_size));
+  CuAssertPtrNotNull(tc, encoded);
+  CuAssertTrue(tc, encoded_size >= (size_t)APXC_MIN_FILE_SIZE);
+
+  // Validate container without decoding
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_validate_binary(encoded, encoded_size, "RichNode", sha256));
+
+  // Decode in server mode (skip VM programs)
+  apx_node_instance_t *restored_srv = apx_node_instance_new(APX_SERVER_MODE, "RichNode");
+  CuAssertPtrNotNull(tc, restored_srv);
+  uint8_t *embedded_text = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_decode_binary(
+      encoded, encoded_size, "RichNode", sha256, (uint32_t)apx_len, false, restored_srv, &embedded_text));
+  CuAssertPtrEquals(tc, NULL, embedded_text);
+  assert_nodes_equivalent(tc, compiled, restored_srv, false);
+
+  // Finalize derived structures (node_data, byte_port_map, connector_table)
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_init_empty_node_data(restored_srv));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_finalize_node_data(restored_srv));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_create_byte_port_map(restored_srv));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_instance_build_connector_table(restored_srv));
+  CuAssertTrue(tc, apx_node_instance_has_provide_port_count_data(restored_srv));
+  CuAssertTrue(tc, apx_node_instance_has_require_port_count_data(restored_srv));
+  for (apx_size_t off = 0u; off < apx_node_instance_get_provide_port_init_data_size(compiled); off++)
+  {
+    CuAssertUIntEquals(tc, apx_node_instance_lookup_provide_port_id(compiled, off),
+      apx_node_instance_lookup_provide_port_id(restored_srv, off));
+  }
+
+  // Decode with VM programs enabled (future client mode reuse)
+  apx_node_instance_t *restored_cli = apx_node_instance_new(APX_CLIENT_MODE, "RichNode");
+  CuAssertPtrNotNull(tc, restored_cli);
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_decode_binary(
+      encoded, encoded_size, "RichNode", sha256, (uint32_t)apx_len, true, restored_cli, NULL));
+  assert_nodes_equivalent(tc, compiled, restored_cli, true);
+
+  apx_node_instance_delete(restored_cli);
+  apx_node_instance_delete(restored_srv);
+  free(encoded);
+  apx_node_manager_destroy(&nm);
+}
+
+static void test_apx_1_2_and_asymmetric_nodes(CuTest *tc)
+{
+  char const *cases[4] = {
+    "APX/1.2\nN\"LegacyNode\"\nP\"A\"C:=7\nR\"B\"S:=9\n",
+    "APX/1.3\nN\"ProvideOnly\"\nP\"Out1\"L:=123456\n",
+    "APX/1.3\nN\"RequireOnly\"\nR\"In1\"S:=99\n",
+    "APX/1.3\nN\"EmptyNode\"\n",
+  };
+  char const *names[4] = {"LegacyNode", "ProvideOnly", "RequireOnly", "EmptyNode"};
+
+  for (size_t idx = 0u; idx < 4u; idx++)
+  {
+    size_t len = strlen(cases[idx]);
+    uint8_t sha256[RMF_SHA256_SIZE];
+    CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)cases[idx], len, sha256));
+
+    apx_node_manager_t nm;
+    apx_node_manager_create(&nm, APX_SERVER_MODE);
+    CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, cases[idx]));
+    apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+    CuAssertPtrNotNull(tc, compiled);
+
+    uint8_t *encoded = NULL;
+    size_t encoded_size = 0u;
+    CuAssertIntEquals(tc, APX_NO_ERROR,
+      apx_node_cache_encode_binary(compiled, sha256, (uint32_t)len, NULL, false, true, &encoded, &encoded_size));
+
+    apx_node_instance_t *restored = apx_node_instance_new(APX_SERVER_MODE, names[idx]);
+    CuAssertIntEquals(tc, APX_NO_ERROR,
+      apx_node_cache_decode_binary(
+        encoded, encoded_size, names[idx], sha256, (uint32_t)len, false, restored, NULL));
+    assert_nodes_equivalent(tc, compiled, restored, false);
+    if (idx == 0u)
+    {
+      CuAssertFalse(tc, apx_node_instance_has_provide_port_count_data(restored));
+      CuAssertFalse(tc, apx_node_instance_has_require_port_count_data(restored));
+    }
+
+    apx_node_instance_delete(restored);
+    free(encoded);
+    apx_node_manager_destroy(&nm);
+  }
+}
+
+static void test_embedded_def_text_raw_and_zlib(CuTest *tc)
+{
+  char const *apx_text =
+    "APX/1.3\n"
+    "N\"PrewarmNode\"\n"
+    "P\"Sig0\"S:=100\n"
+    "P\"Sig1\"S:=200\n"
+    "P\"Sig2\"S:=300\n";
+  size_t apx_len = strlen(apx_text);
+  uint8_t sha256[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_text, apx_len, sha256));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_text));
+  apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+  CuAssertPtrNotNull(tc, compiled);
+
+  for (int mode = 0; mode < 2; mode++)
+  {
+    bool compress = (mode == 1);
+    uint8_t *encoded = NULL;
+    size_t encoded_size = 0u;
+    CuAssertIntEquals(tc, APX_NO_ERROR,
+      apx_node_cache_encode_binary(compiled, sha256, (uint32_t)apx_len, (uint8_t const *)apx_text, compress, true,
+        &encoded, &encoded_size));
+
+    apx_node_instance_t *restored = apx_node_instance_new(APX_SERVER_MODE, "PrewarmNode");
+    uint8_t *embedded_text = NULL;
+    CuAssertIntEquals(tc, APX_NO_ERROR,
+      apx_node_cache_decode_binary(
+        encoded, encoded_size, "PrewarmNode", sha256, (uint32_t)apx_len, false, restored, &embedded_text));
+    CuAssertPtrNotNull(tc, embedded_text);
+    CuAssertStrEquals(tc, apx_text, (char const *)embedded_text);
+
+    free(embedded_text);
+    apx_node_instance_delete(restored);
+    free(encoded);
+  }
+  apx_node_manager_destroy(&nm);
+}
+
+static void test_adversarial_corruption_and_version_checks(CuTest *tc)
+{
+  char const *apx_text = "APX/1.3\nN\"GuardNode\"\nP\"Out\"S:=5\nR\"In\"C:=3\n";
+  size_t apx_len = strlen(apx_text);
+  uint8_t sha256[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_text, apx_len, sha256));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_text));
+  apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+
+  uint8_t *good = NULL;
+  size_t good_size = 0u;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_encode_binary(compiled, sha256, (uint32_t)apx_len, NULL, false, true, &good, &good_size));
+
+  uint8_t *mut = (uint8_t *)malloc(good_size);
+  CuAssertPtrNotNull(tc, mut);
+  apx_node_instance_t *dst = apx_node_instance_new(APX_SERVER_MODE, "GuardNode");
+
+  // Truncated below minimum size and by 1 byte
+  CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_node_cache_validate_binary(good, 16u, "GuardNode", sha256));
+  CuAssertIntEquals(tc, APX_LENGTH_ERROR, apx_node_cache_validate_binary(good, good_size - 1u, "GuardNode", sha256));
+
+  // Bad magic
+  memcpy(mut, good, good_size);
+  mut[0] = 'X';
+  CuAssertIntEquals(tc, APX_INVALID_HEADER_ERROR, apx_node_cache_validate_binary(mut, good_size, "GuardNode", sha256));
+
+  // Version / ABI mismatches return APX_VERSION_ERROR
+  memcpy(mut, good, good_size);
+  mut[4] = APXC_FORMAT_MAJOR + 1u;
+  CuAssertIntEquals(tc, APX_VERSION_ERROR, apx_node_cache_validate_binary(mut, good_size, "GuardNode", sha256));
+
+  memcpy(mut, good, good_size);
+  mut[6] = APXC_VM_MAJOR + 1u;
+  CuAssertIntEquals(tc, APX_VERSION_ERROR, apx_node_cache_validate_binary(mut, good_size, "GuardNode", sha256));
+
+  memcpy(mut, good, good_size);
+  cutil_pack_le(mut + 8, APXC_COMPILER_ABI_VERSION + 1u, 2u);
+  CuAssertIntEquals(tc, APX_VERSION_ERROR, apx_node_cache_validate_binary(mut, good_size, "GuardNode", sha256));
+
+  // Bit flip in payload and in trailer caught by SHA-256
+  memcpy(mut, good, good_size);
+  mut[good_size - RMF_SHA256_SIZE - 1u] ^= 0x01u;
+  CuAssertIntEquals(tc, APX_CHECKSUM_ERROR, apx_node_cache_validate_binary(mut, good_size, "GuardNode", sha256));
+
+  memcpy(mut, good, good_size);
+  mut[good_size - 1u] ^= 0x80u;
+  CuAssertIntEquals(tc, APX_CHECKSUM_ERROR, apx_node_cache_validate_binary(mut, good_size, "GuardNode", sha256));
+
+  // Identity mismatches (name, sha256, logical_def_size)
+  CuAssertIntEquals(tc, APX_INVALID_NAME_ERROR, apx_node_cache_validate_binary(good, good_size, "OtherNode", sha256));
+  uint8_t bad_sha[RMF_SHA256_SIZE];
+  memcpy(bad_sha, sha256, RMF_SHA256_SIZE);
+  bad_sha[0] ^= 0xFFu;
+  CuAssertIntEquals(tc, APX_CHECKSUM_ERROR, apx_node_cache_validate_binary(good, good_size, "GuardNode", bad_sha));
+  CuAssertIntEquals(tc, APX_LENGTH_ERROR,
+    apx_node_cache_decode_binary(good, good_size, "GuardNode", sha256, (uint32_t)apx_len + 1u, false, dst, NULL));
+
+  // Corrupt port descriptor inside re-signed file -> verify decode cleans up dst with zero leaks
+  memcpy(mut, good, good_size);
+  // First section payload starts at header(72) + name(9) + dir(6 * 12 = 72) = 153; corrupt data_size at +4 to 0
+  size_t sec0_off = (size_t)cutil_unpack_le(mut + APXC_HEADER_SIZE + 9u + 4u, 4u);
+  cutil_pack_le(mut + sec0_off + 4u, 0u, 4u);
+  resign_apxc_trailer(tc, mut, good_size);
+  CuAssertIntEquals(tc, APX_LENGTH_ERROR,
+    apx_node_cache_decode_binary(mut, good_size, "GuardNode", sha256, (uint32_t)apx_len, false, dst, NULL));
+  CuAssertUIntEquals(tc, 0u, apx_node_instance_get_num_provide_ports(dst));
+  CuAssertUIntEquals(tc, 0u, apx_node_instance_get_num_require_ports(dst));
+  CuAssertPtrEquals(tc, NULL, (void *)apx_node_instance_get_provide_port_init_data(dst));
+
+  apx_node_instance_delete(dst);
+  free(mut);
+  free(good);
+  apx_node_manager_destroy(&nm);
+}
+
+static void test_forward_compat_unknown_section_and_malformed_directory(CuTest *tc)
+{
+  // Start from an EmptyNode (0 ports, 0 sections) and append an unknown optional section 0x0009
+  char const *apx_text = "APX/1.3\nN\"ExtNode\"\n";
+  size_t apx_len = strlen(apx_text);
+  uint8_t sha256[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_text, apx_len, sha256));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_text));
+  apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+
+  uint8_t *base = NULL;
+  size_t base_size = 0u;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_encode_binary(compiled, sha256, (uint32_t)apx_len, NULL, false, false, &base, &base_size));
+
+  // Build extended buffer with 1 unknown section (type 0x0009, 4 payload bytes)
+  size_t name_end = APXC_HEADER_SIZE + strlen("ExtNode");
+  size_t ext_size = name_end + APXC_SECTION_ENTRY_SIZE + 4u + RMF_SHA256_SIZE;
+  uint8_t *ext = (uint8_t *)calloc(1u, ext_size);
+  CuAssertPtrNotNull(tc, ext);
+  memcpy(ext, base, name_end);
+  cutil_pack_le(ext + 12u, 1u, 2u); // section_count = 1
+  cutil_pack_le(ext + 16u, (uint32_t)ext_size, 4u); // total_file_size
+  uint8_t *dir = ext + name_end;
+  cutil_pack_le(dir + 0u, 0x0009u, 2u); // unknown optional section type
+  cutil_pack_le(dir + 2u, 0u, 2u);
+  cutil_pack_le(dir + 4u, (uint32_t)(name_end + APXC_SECTION_ENTRY_SIZE), 4u);
+  cutil_pack_le(dir + 8u, 4u, 4u);
+  resign_apxc_trailer(tc, ext, ext_size);
+
+  apx_node_instance_t *dst = apx_node_instance_new(APX_SERVER_MODE, "ExtNode");
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_decode_binary(ext, ext_size, "ExtNode", sha256, (uint32_t)apx_len, false, dst, NULL));
+  apx_node_instance_delete(dst);
+
+  // Out-of-bounds section size (integer overflow check)
+  cutil_pack_le(dir + 8u, UINT32_MAX, 4u);
+  resign_apxc_trailer(tc, ext, ext_size);
+  CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR, apx_node_cache_validate_binary(ext, ext_size, "ExtNode", sha256));
+
+  // Section offset pointing inside header/directory
+  cutil_pack_le(dir + 4u, 0u, 4u);
+  cutil_pack_le(dir + 8u, 4u, 4u);
+  resign_apxc_trailer(tc, ext, ext_size);
+  CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR, apx_node_cache_validate_binary(ext, ext_size, "ExtNode", sha256));
+
+  free(ext);
+  free(base);
+  apx_node_manager_destroy(&nm);
 }

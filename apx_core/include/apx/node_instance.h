@@ -47,6 +47,13 @@ struct apx_file_manager_tag;
 struct apx_server_tag;
 struct apx_connection_base_tag;
 
+typedef enum apx_cache_hit_type_tag
+{
+  APX_CACHE_HIT_NONE = 0,
+  APX_CACHE_HIT_TEXT = 1,
+  APX_CACHE_HIT_BINARY = 2
+} apx_cache_hit_type_t;
+
 typedef struct apx_node_instance_tag
 {
   char *name;
@@ -92,6 +99,7 @@ typedef struct apx_node_instance_tag
   volatile bool is_closing;
   bool server_files_published;
   bool require_ports_connected;
+  apx_cache_hit_type_t cache_hit_type;
   uint64_t definition_memory_reservation;
   uint32_t batch_depth;
   adt_u32_range_list_t dirty_in;
@@ -134,9 +142,14 @@ apx_error_t apx_node_instance_create_require_port(apx_node_instance_t *self, apx
   apx_program_t const *pack_program, apx_program_t const *unpack_program, uint32_t data_offset, uint32_t *data_size);
 apx_error_t apx_node_instance_alloc_init_data_memory(apx_node_instance_t *self, uint8_t **provide_port_data,
   apx_size_t *provide_port_data_size, uint8_t **require_port_data, apx_size_t *require_port_data_size);
+apx_error_t apx_node_instance_set_init_data_from_cache(apx_node_instance_t *self, uint8_t const *provide_data,
+  apx_size_t provide_data_size, uint8_t const *require_data, apx_size_t require_data_size);
 apx_error_t apx_node_instance_init_node_data(
   apx_node_instance_t *self, uint8_t const *definition_data, apx_size_t definition_size);
+apx_error_t apx_node_instance_init_empty_node_data(apx_node_instance_t *self);
 apx_error_t apx_node_instance_finalize_node_data(apx_node_instance_t *self);
+void apx_node_instance_set_cache_hit_type(apx_node_instance_t *self, apx_cache_hit_type_t hit_type);
+apx_cache_hit_type_t apx_node_instance_get_cache_hit_type(apx_node_instance_t const *self);
 bool apx_node_instance_has_provide_port_data(apx_node_instance_t const *self);
 bool apx_node_instance_has_require_port_data(apx_node_instance_t const *self);
 bool apx_node_instance_has_provide_port_count_data(apx_node_instance_t const *self);

@@ -544,6 +544,47 @@ apx_error_t apx_node_instance_alloc_init_data_memory(apx_node_instance_t *self, 
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_node_instance_set_init_data_from_cache(apx_node_instance_t *self, uint8_t const *provide_data,
+  apx_size_t provide_data_size, uint8_t const *require_data, apx_size_t require_data_size)
+{
+  if (self == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  if ((provide_data_size > 0u && provide_data == NULL) || (require_data_size > 0u && require_data == NULL))
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  uint8_t *prov_copy = NULL;
+  uint8_t *req_copy = NULL;
+  if (provide_data_size > 0u)
+  {
+    prov_copy = (uint8_t *)malloc(provide_data_size);
+    if (prov_copy == NULL)
+    {
+      return APX_MEM_ERROR;
+    }
+    memcpy(prov_copy, provide_data, provide_data_size);
+  }
+  if (require_data_size > 0u)
+  {
+    req_copy = (uint8_t *)malloc(require_data_size);
+    if (req_copy == NULL)
+    {
+      free(prov_copy);
+      return APX_MEM_ERROR;
+    }
+    memcpy(req_copy, require_data, require_data_size);
+  }
+  free(self->provide_port_init_data);
+  free(self->require_port_init_data);
+  self->provide_port_init_data = prov_copy;
+  self->provide_port_init_data_size = provide_data_size;
+  self->require_port_init_data = req_copy;
+  self->require_port_init_data_size = require_data_size;
+  return APX_NO_ERROR;
+}
+
 apx_error_t apx_node_instance_init_node_data(
   apx_node_instance_t *self, uint8_t const *definition_data, apx_size_t definition_size)
 {
@@ -558,6 +599,10 @@ apx_error_t apx_node_instance_init_node_data(
       {
         self->node_data = node_data;
       }
+      else
+      {
+        apx_node_data_delete(node_data);
+      }
     }
     else
     {
@@ -566,6 +611,42 @@ apx_error_t apx_node_instance_init_node_data(
     return retval;
   }
   return APX_INVALID_ARGUMENT_ERROR;
+}
+
+apx_error_t apx_node_instance_init_empty_node_data(apx_node_instance_t *self)
+{
+  if (self == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  apx_node_data_t *node_data = apx_node_data_new();
+  if (node_data == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
+  if (self->node_data != NULL)
+  {
+    apx_node_data_delete(self->node_data);
+  }
+  self->node_data = node_data;
+  return APX_NO_ERROR;
+}
+
+void apx_node_instance_set_cache_hit_type(apx_node_instance_t *self, apx_cache_hit_type_t hit_type)
+{
+  if (self != NULL)
+  {
+    self->cache_hit_type = hit_type;
+  }
+}
+
+apx_cache_hit_type_t apx_node_instance_get_cache_hit_type(apx_node_instance_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->cache_hit_type;
+  }
+  return APX_CACHE_HIT_NONE;
 }
 
 apx_error_t apx_node_instance_finalize_node_data(apx_node_instance_t *self)
