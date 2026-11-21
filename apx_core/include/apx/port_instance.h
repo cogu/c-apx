@@ -52,6 +52,12 @@ typedef struct apx_port_instance_tag
 apx_error_t apx_port_instance_create(apx_port_instance_t *self, struct apx_node_instance_tag *parent,
   apx_port_type_t port_type, apx_port_id_t port_id, char const *name, apx_program_t const *pack_program,
   apx_program_t const *unpack_program);
+apx_error_t apx_port_instance_create_from_cache(apx_port_instance_t *self, struct apx_node_instance_tag *parent,
+  apx_port_type_t port_type, apx_port_id_t port_id, char const *name, char const *port_signature, uint32_t data_offset,
+  uint32_t data_size, uint32_t element_size, uint32_t queue_length, bool has_dynamic_data,
+  apx_program_t const *pack_program, apx_program_t const *unpack_program);
+void apx_port_instance_set_programs(
+  apx_port_instance_t *self, apx_program_t const *pack_program, apx_program_t const *unpack_program);
 void apx_port_instance_destroy(apx_port_instance_t *self);
 apx_port_instance_t *apx_port_instance_new(struct apx_node_instance_tag *parent, apx_port_type_t port_type,
   apx_port_id_t port_id, char const *name, apx_program_t const *pack_program, apx_program_t const *unpack_program);

@@ -13,6 +13,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "CuTest.h"
 #include "apx/node_cache_codec.h"
+#include "apx/node_instance.h"
+#include "apx/port_instance.h"
+#include "pack.h"
 #include <stdlib.h>
 #include <string.h>
 #ifdef MEM_LEAK_CHECK
@@ -27,6 +30,9 @@ static void test_writer_patch_u32_le_and_bounds(CuTest *tc);
 static void test_reader_bounds_and_seek(CuTest *tc);
 static void test_reader_str16_rejects_empty_and_embedded_nul(CuTest *tc);
 static void test_writer_take_buffer_and_empty_writes(CuTest *tc);
+static void test_port_descriptor_roundtrip(CuTest *tc);
+static void test_port_descriptor_rejects_malformed(CuTest *tc);
+static void test_program_roundtrip_and_validation(CuTest *tc);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -40,6 +46,9 @@ CuSuite *testsuite_apx_node_cache_codec(void)
   SUITE_ADD_TEST(suite, test_reader_bounds_and_seek);
   SUITE_ADD_TEST(suite, test_reader_str16_rejects_empty_and_embedded_nul);
   SUITE_ADD_TEST(suite, test_writer_take_buffer_and_empty_writes);
+  SUITE_ADD_TEST(suite, test_port_descriptor_roundtrip);
+  SUITE_ADD_TEST(suite, test_port_descriptor_rejects_malformed);
+  SUITE_ADD_TEST(suite, test_program_roundtrip_and_validation);
 
   return suite;
 }
@@ -212,5 +221,193 @@ static void test_writer_take_buffer_and_empty_writes(CuTest *tc)
   CuAssertUIntEquals(tc, 0x11u, taken[3]);
 
   free(taken);
+  apx_cache_writer_destroy(&writer);
+}
+
+static void test_port_descriptor_roundtrip(CuTest *tc)
+{
+  apx_port_instance_t src0;
+  apx_port_instance_t src1;
+  apx_port_instance_t src2;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_port_instance_create_from_cache(
+      &src0, NULL, APX_PROVIDE_PORT, 0u, "WheelSpeed", "\"WheelSpeed\"S", 0u, 2u, 0u, 0u, false, NULL, NULL));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_port_instance_create_from_cache(
+      &src1, NULL, APX_PROVIDE_PORT, 1u, "DynData", "\"DynData\"C[*]", 2u, 17u, 0u, 0u, true, NULL, NULL));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_port_instance_create_from_cache(
+      &src2, NULL, APX_PROVIDE_PORT, 2u, "Events", "\"Events\"L", 19u, 41u, 4u, 10u, false, NULL, NULL));
+
+  apx_cache_writer_t writer;
+  apx_cache_writer_create(&writer);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_encode_port_descriptor(&writer, &src0));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_encode_port_descriptor(&writer, &src1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_encode_port_descriptor(&writer, &src2));
+
+  apx_cache_reader_t reader;
+  apx_cache_reader_create(&reader, apx_cache_writer_data(&writer), apx_cache_writer_size(&writer));
+
+  apx_port_instance_t dst0;
+  apx_port_instance_t dst1;
+  apx_port_instance_t dst2;
+  uint32_t next_off = 0u;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 0u, next_off, &dst0, &next_off));
+  CuAssertUIntEquals(tc, 2u, next_off);
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 1u, next_off, &dst1, &next_off));
+  CuAssertUIntEquals(tc, 19u, next_off);
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 2u, next_off, &dst2, &next_off));
+  CuAssertUIntEquals(tc, 60u, next_off);
+  CuAssertUIntEquals(tc, 0u, apx_cache_reader_remaining(&reader));
+
+  bool dyn = false;
+  CuAssertStrEquals(tc, "WheelSpeed", apx_port_instance_name(&dst0));
+  CuAssertStrEquals(tc, "\"WheelSpeed\"S", apx_port_instance_get_port_signature(&dst0, &dyn));
+  CuAssertFalse(tc, dyn);
+  CuAssertUIntEquals(tc, 0u, apx_port_instance_data_offset(&dst0));
+  CuAssertUIntEquals(tc, 2u, apx_port_instance_data_size(&dst0));
+
+  CuAssertStrEquals(tc, "DynData", apx_port_instance_name(&dst1));
+  CuAssertStrEquals(tc, "\"DynData\"C[*]", apx_port_instance_get_port_signature(&dst1, &dyn));
+  CuAssertTrue(tc, dyn);
+  CuAssertUIntEquals(tc, 2u, apx_port_instance_data_offset(&dst1));
+  CuAssertUIntEquals(tc, 17u, apx_port_instance_data_size(&dst1));
+
+  CuAssertStrEquals(tc, "Events", apx_port_instance_name(&dst2));
+  CuAssertUIntEquals(tc, 19u, apx_port_instance_data_offset(&dst2));
+  CuAssertUIntEquals(tc, 41u, apx_port_instance_data_size(&dst2));
+  CuAssertUIntEquals(tc, 4u, apx_port_instance_element_size(&dst2));
+  CuAssertUIntEquals(tc, 10u, apx_port_instance_queue_length(&dst2));
+
+  apx_port_instance_destroy(&src0);
+  apx_port_instance_destroy(&src1);
+  apx_port_instance_destroy(&src2);
+  apx_port_instance_destroy(&dst0);
+  apx_port_instance_destroy(&dst1);
+  apx_port_instance_destroy(&dst2);
+  apx_cache_writer_destroy(&writer);
+}
+
+static void test_port_descriptor_rejects_malformed(CuTest *tc)
+{
+  apx_port_instance_t src;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_port_instance_create_from_cache(
+      &src, NULL, APX_PROVIDE_PORT, 0u, "SigA", "\"SigA\"C", 0u, 1u, 0u, 0u, false, NULL, NULL));
+
+  apx_cache_writer_t writer;
+  apx_cache_writer_create(&writer);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_encode_port_descriptor(&writer, &src));
+  size_t len = apx_cache_writer_size(&writer);
+  uint8_t *buf = (uint8_t *)malloc(len);
+  CuAssertPtrNotNull(tc, buf);
+
+  apx_port_instance_t dst;
+  apx_cache_reader_t reader;
+  uint32_t next_off = 0u;
+
+  // Non-contiguous offset
+  memcpy(buf, apx_cache_writer_data(&writer), len);
+  cutil_pack_le(buf + 0, 5u, 4u);
+  apx_cache_reader_create(&reader, buf, len);
+  CuAssertIntEquals(
+    tc, APX_LENGTH_ERROR, apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 0u, 0u, &dst, &next_off));
+
+  // Zero data_size
+  memcpy(buf, apx_cache_writer_data(&writer), len);
+  cutil_pack_le(buf + 4, 0u, 4u);
+  apx_cache_reader_create(&reader, buf, len);
+  CuAssertIntEquals(
+    tc, APX_LENGTH_ERROR, apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 0u, 0u, &dst, &next_off));
+
+  // queue_length > 0 with element_size == 0
+  memcpy(buf, apx_cache_writer_data(&writer), len);
+  cutil_pack_le(buf + 12, 4u, 4u);
+  apx_cache_reader_create(&reader, buf, len);
+  CuAssertIntEquals(
+    tc, APX_LENGTH_ERROR, apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 0u, 0u, &dst, &next_off));
+
+  // Unknown flag bit
+  memcpy(buf, apx_cache_writer_data(&writer), len);
+  buf[16] = 0x02u;
+  apx_cache_reader_create(&reader, buf, len);
+  CuAssertIntEquals(tc, APX_INVALID_HEADER_ERROR,
+    apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 0u, 0u, &dst, &next_off));
+
+  // Non-zero reserved byte
+  memcpy(buf, apx_cache_writer_data(&writer), len);
+  buf[17] = 0xFFu;
+  apx_cache_reader_create(&reader, buf, len);
+  CuAssertIntEquals(tc, APX_INVALID_HEADER_ERROR,
+    apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 0u, 0u, &dst, &next_off));
+
+  // Embedded NUL in name
+  memcpy(buf, apx_cache_writer_data(&writer), len);
+  buf[23] = '\0';
+  apx_cache_reader_create(&reader, buf, len);
+  CuAssertIntEquals(tc, APX_INVALID_NAME_ERROR,
+    apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 0u, 0u, &dst, &next_off));
+
+  // Truncated descriptor
+  memcpy(buf, apx_cache_writer_data(&writer), len);
+  apx_cache_reader_create(&reader, buf, len - 1u);
+  CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR,
+    apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 0u, 0u, &dst, &next_off));
+
+  free(buf);
+  apx_port_instance_destroy(&src);
+  apx_cache_writer_destroy(&writer);
+}
+
+static void test_program_roundtrip_and_validation(CuTest *tc)
+{
+  apx_program_t *prog = APX_PROGRAM_NEW();
+  CuAssertPtrNotNull(tc, prog);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_program_encode_header(prog, APX_PACK_PROGRAM, 2u, 0u, false));
+  CuAssertIntEquals(tc, ADT_NO_ERROR,
+    adt_bytearray_push(prog, apx_program_encode_instruction(APX_VM_OPCODE_PACK, APX_VM_VARIANT_UINT16, false)));
+
+  apx_cache_writer_t writer;
+  apx_cache_writer_create(&writer);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_encode_program(&writer, prog));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_encode_program(&writer, NULL));
+
+  apx_cache_reader_t reader;
+  apx_cache_reader_create(&reader, apx_cache_writer_data(&writer), apx_cache_writer_size(&writer));
+
+  apx_program_t *decoded = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_decode_program(&reader, false, &decoded));
+  CuAssertPtrNotNull(tc, decoded);
+  CuAssertTrue(tc, adt_bytearray_equals(prog, decoded));
+
+  // Empty program allowed when allow_empty == true
+  apx_program_t *empty_prog = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_decode_program(&reader, true, &empty_prog));
+  CuAssertPtrEquals(tc, NULL, empty_prog);
+
+  // Empty program rejected when allow_empty == false
+  uint8_t const zero_len[4] = {0u, 0u, 0u, 0u};
+  apx_cache_reader_create(&reader, zero_len, sizeof(zero_len));
+  CuAssertIntEquals(tc, APX_INVALID_PROGRAM_ERROR, apx_cache_decode_program(&reader, false, &empty_prog));
+
+  // Corrupt VM program header rejected
+  uint8_t const bad_vm[8] = {0x04u, 0x00u, 0x00u, 0x00u, 0xFFu, 0xFFu, 0x00u, 0x00u};
+  apx_cache_reader_create(&reader, bad_vm, sizeof(bad_vm));
+  CuAssertIntEquals(tc, APX_INVALID_PROGRAM_ERROR, apx_cache_decode_program(&reader, false, &empty_prog));
+  CuAssertPtrEquals(tc, NULL, empty_prog);
+
+  // Attach decoded program to port_instance via apx_port_instance_set_programs and verify cleanup
+  apx_port_instance_t port;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_port_instance_create_from_cache(
+      &port, NULL, APX_PROVIDE_PORT, 0u, "P0", "\"P0\"S", 0u, 2u, 0u, 0u, false, NULL, NULL));
+  apx_port_instance_set_programs(&port, decoded, NULL);
+  CuAssertPtrEquals(tc, decoded, (void *)apx_port_instance_pack_program(&port));
+
+  apx_port_instance_destroy(&port);
+  APX_PROGRAM_DELETE(prog);
   apx_cache_writer_destroy(&writer);
 }

@@ -63,6 +63,65 @@ apx_error_t apx_port_instance_create(apx_port_instance_t *self, struct apx_node_
   return APX_INVALID_ARGUMENT_ERROR;
 }
 
+apx_error_t apx_port_instance_create_from_cache(apx_port_instance_t *self, apx_node_instance_t *parent,
+  apx_port_type_t port_type, apx_port_id_t port_id, char const *name, char const *port_signature, uint32_t data_offset,
+  uint32_t data_size, uint32_t element_size, uint32_t queue_length, bool has_dynamic_data,
+  apx_program_t const *pack_program, apx_program_t const *unpack_program)
+{
+  if ((self == NULL) || (name == NULL) || (port_signature == NULL))
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  memset(self, 0, sizeof(apx_port_instance_t));
+  self->parent = parent;
+  self->port_type = port_type;
+  self->port_id = port_id;
+  self->pack_program = pack_program;
+  self->unpack_program = unpack_program;
+  self->effective_data_element = NULL;
+  self->data_offset = data_offset;
+  self->data_size = data_size;
+  self->queue_length = queue_length;
+  self->element_size = element_size;
+  self->has_dynamic_data = has_dynamic_data;
+  self->computation_list = NULL;
+  self->name = STRDUP(name);
+  if (self->name == NULL)
+  {
+    self->pack_program = NULL;
+    self->unpack_program = NULL;
+    return APX_MEM_ERROR;
+  }
+  self->port_signature = STRDUP(port_signature);
+  if (self->port_signature == NULL)
+  {
+    free(self->name);
+    self->name = NULL;
+    self->pack_program = NULL;
+    self->unpack_program = NULL;
+    return APX_MEM_ERROR;
+  }
+  return APX_NO_ERROR;
+}
+
+void apx_port_instance_set_programs(
+  apx_port_instance_t *self, apx_program_t const *pack_program, apx_program_t const *unpack_program)
+{
+  if (self != NULL)
+  {
+    if (self->pack_program != NULL)
+    {
+      APX_PROGRAM_DELETE((apx_program_t *)self->pack_program);
+    }
+    if (self->unpack_program != NULL)
+    {
+      APX_PROGRAM_DELETE((apx_program_t *)self->unpack_program);
+    }
+    self->pack_program = pack_program;
+    self->unpack_program = unpack_program;
+  }
+}
+
 void apx_port_instance_destroy(apx_port_instance_t *self)
 {
   if (self != NULL)
