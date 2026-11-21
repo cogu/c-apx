@@ -45,10 +45,10 @@ def definition_server(tmp_path, apx_server_bin, request):
 
 
 @contextmanager
-def client(server):
+def client(server, greeting=b"RMFP/1.1\nMessage-Size: 32\n\n"):
     sock = server.connect()
     try:
-        sock.sendall(encode_numheader32(b"RMFP/1.1\nMessage-Size: 32\n\n"))
+        sock.sendall(encode_numheader32(greeting))
         assert read_msg(sock)
         yield sock
     finally:
