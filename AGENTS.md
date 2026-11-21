@@ -19,7 +19,7 @@ Project context, architectural knowledge, coding conventions, and developer work
 c-apx v0.3.x is still in active development and there are currently no one else using it. It's OK to make changes and not worry about backwards
 compatibility.
 
-c-apx v0.2.8 (the maintenance branch) is used in production. That version has many different users and we should be careful when making changes to it.
+c-apx v0.2.9 (the maintenance branch) is used in production. That version has many different users and we should be careful when making changes to it.
 
 ---
 

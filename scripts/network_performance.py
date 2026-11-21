@@ -421,12 +421,12 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("networks", type=Path, nargs="+", help="One or more directories containing .apx files")
-    parser.add_argument("--legacy-server", type=Path, default=default_legacy, help="Path to v0.2.8 apx_server")
+    parser.add_argument("--legacy-server", type=Path, default=default_legacy, help="Path to v0.2.9 apx_server")
     parser.add_argument("--modern-server", type=Path, default=default_modern, help="Path to v0.3.x apx-server")
     parser.add_argument("--apx-node", type=Path, default=default_apx_node, help="Path to apx-node (for probing .out sizes)")
     parser.add_argument("--runs", type=int, default=5, help="Number of full network boot runs per mode")
     parser.add_argument("--per-node", action="store_true", help="Print top 5 slowest nodes for each mode")
-    parser.add_argument("--legacy-only", action="store_true", help="Benchmark only the legacy v0.2.8 server")
+    parser.add_argument("--legacy-only", action="store_true", help="Benchmark only the legacy v0.2.9 server")
     args = parser.parse_args()
 
     apx_node_bin = str(args.apx_node.expanduser().resolve())
@@ -459,7 +459,7 @@ def main() -> int:
 
         if run_legacy:
             run_benchmark_target(
-                "v0.2.8 legacy",
+                "v0.2.9 legacy",
                 lambda _tp: start_legacy_server(legacy_bin, find_free_tcp_port()),
                 RMFP_1_0_GREETING,
                 nodes,

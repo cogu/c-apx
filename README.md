@@ -7,7 +7,7 @@ Online documentation and API reference: **[c-apx.readthedocs.io](https://c-apx.r
 ## v0.2.x (Stable)
 
 All maintenance work for v0.2 is done on the [maintenance_0.2](https://github.com/cogu/c-apx/tree/maintenance_0.2) branch.
-Latest release is [v0.2.8](https://github.com/cogu/c-apx/releases/tag/v0.2.8).
+Latest release is [v0.2.9](https://github.com/cogu/c-apx/releases/tag/v0.2.9).
 
 ## v0.3.x (Development)
 
