@@ -631,11 +631,16 @@ def test_cache_lock_prevents_two_servers_sharing_cache_dir(tmp_path: Path, apx_s
         assert server2.process.returncode == 0, server2.stderr
         assert "already locked" in server2.stderr
         assert str(server1.process.pid) in server2.stderr
+        assert "\nCache disabled\nHint: configure a unique 'apx-server.cache.path' per server" in server2.stderr
+        assert "Enabled cache at" not in server2.stdout
         server2 = None
 
         # 3. Stop Server 1 -> kernel releases lock -> Server 3 acquires lock and gets a cache hit
         server1.stop()
         assert server1.process.returncode == 0, server1.stderr
+        expected_enabled_msg = f"Enabled cache at '{cache_dir}'"
+        assert expected_enabled_msg in server1.stdout
+        assert server1.stdout.index(expected_enabled_msg) < server1.stdout.index("Loading extensions")
         server1 = None
 
         server3 = start_server(

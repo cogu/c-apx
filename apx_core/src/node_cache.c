@@ -349,15 +349,17 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
       if (read_lock_holder_pid(lock_path_cstr, pid_str, sizeof(pid_str)))
       {
         set_warning(warning_buf, warning_buf_size,
-          "Cache directory '%s' is already locked by another apx-server (PID %s); disabling cache -- configure a "
-          "unique 'apx-server.cache.path' per server",
+          "Cache directory '%s' is already locked by another apx-server (PID %s).\n"
+          "Cache disabled\n"
+          "Hint: configure a unique 'apx-server.cache.path' per server",
           root_path, pid_str);
       }
       else
       {
         set_warning(warning_buf, warning_buf_size,
-          "Cache directory '%s' is already locked by another apx-server; disabling cache -- configure a unique "
-          "'apx-server.cache.path' per server",
+          "Cache directory '%s' is already locked by another apx-server.\n"
+          "Cache disabled\n"
+          "Hint: configure a unique 'apx-server.cache.path' per server",
           root_path);
       }
       adt_str_delete(lock_path);

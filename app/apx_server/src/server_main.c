@@ -26,6 +26,7 @@
 # include <unistd.h>
 #endif
 #include "apx/event_listener.h"
+#include "apx/node_cache.h"
 #include "apx/server.h"
 #include "apx/types.h"
 #include "apx_version.h"
@@ -215,6 +216,23 @@ int main(int argc, char **argv)
       dtl_dec_ref(config);
     }
     return 1;
+  }
+  apx_node_cache_t const *cache = apx_server_get_node_cache(&m_server);
+  if (cache != NULL && apx_node_cache_get_level(cache) != APX_CACHE_LEVEL_OFF)
+  {
+    char const *cache_path = apx_node_cache_get_root_path(cache);
+    if (cache_path != NULL)
+    {
+      if (apx_node_cache_is_read_only(cache))
+      {
+        printf("Enabled cache at '%s' (read-only)\n", cache_path);
+      }
+      else
+      {
+        printf("Enabled cache at '%s'\n", cache_path);
+      }
+      fflush(stdout);
+    }
   }
   printf("Loading extensions\n");
   fflush(stdout);
