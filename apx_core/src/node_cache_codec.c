@@ -545,7 +545,7 @@ apx_error_t apx_cache_decode_port_descriptor(apx_cache_reader_t *reader, apx_nod
     return rc;
   }
 
-  if ((port_flags & (uint8_t)(~APXC_PORT_FLAG_DYNAMIC_DATA)) != 0u || reserved != 0u)
+  if ((port_flags & ~((unsigned int)APXC_PORT_FLAG_DYNAMIC_DATA)) != 0u || reserved != 0u)
   {
     return APX_INVALID_HEADER_ERROR;
   }
@@ -688,9 +688,9 @@ apx_error_t apx_cache_decode_program(apx_cache_reader_t *reader, bool allow_empt
 //////////////////////////////////////////////////////////////////////////////
 char const *apx_node_cache_format_version_string(void) { return APXC_FORMAT_VERSION_STAMP; }
 
-apx_error_t apx_node_cache_encode_binary(apx_node_instance_t const *node_instance, uint8_t const sha256[RMF_SHA256_SIZE],
-  uint32_t logical_def_size, uint8_t const *opt_def_text, bool compress_def_text, bool include_vm_programs,
-  uint8_t **out_buf, size_t *out_size)
+apx_error_t apx_node_cache_encode_binary(apx_node_instance_t const *node_instance,
+  uint8_t const sha256[RMF_SHA256_SIZE], uint32_t logical_def_size, uint8_t const *opt_def_text, bool compress_def_text,
+  bool include_vm_programs, uint8_t **out_buf, size_t *out_size)
 {
   if (node_instance == NULL || sha256 == NULL || out_buf == NULL || out_size == NULL)
   {
@@ -895,7 +895,8 @@ apx_error_t apx_node_cache_encode_binary(apx_node_instance_t const *node_instanc
       section_count++;
     }
 
-    size_t dir_end = (size_t)APXC_HEADER_SIZE + node_name_len + ((size_t)section_count * (size_t)APXC_SECTION_ENTRY_SIZE);
+    size_t dir_end =
+      (size_t)APXC_HEADER_SIZE + node_name_len + ((size_t)section_count * (size_t)APXC_SECTION_ENTRY_SIZE);
     size_t total_size = dir_end;
     for (uint16_t i = 0u; i < section_count; i++)
     {
@@ -1112,19 +1113,20 @@ apx_error_t apx_node_cache_decode_binary(uint8_t const *buf, size_t buf_size, ch
   {
     if (parsed.num_provide_ports > 0u)
     {
-      rc = decode_vm_programs_section(
-        buf, &parsed.provide_vm, node_instance, APX_PROVIDE_PORT, parsed.num_provide_ports);
+      rc =
+        decode_vm_programs_section(buf, &parsed.provide_vm, node_instance, APX_PROVIDE_PORT, parsed.num_provide_ports);
     }
     if (rc == APX_NO_ERROR && parsed.num_require_ports > 0u)
     {
-      rc = decode_vm_programs_section(
-        buf, &parsed.require_vm, node_instance, APX_REQUIRE_PORT, parsed.num_require_ports);
+      rc =
+        decode_vm_programs_section(buf, &parsed.require_vm, node_instance, APX_REQUIRE_PORT, parsed.num_require_ports);
     }
   }
 
   if (rc == APX_NO_ERROR && out_embedded_def_text != NULL && parsed.def_text.present)
   {
-    rc = decode_def_text_section(buf, &parsed.def_text, parsed.logical_def_size, expected_sha256, out_embedded_def_text);
+    rc =
+      decode_def_text_section(buf, &parsed.def_text, parsed.logical_def_size, expected_sha256, out_embedded_def_text);
   }
 
   if (rc != APX_NO_ERROR)
@@ -1253,7 +1255,7 @@ static apx_error_t parse_and_validate_container(uint8_t const *buf, size_t buf_s
     return rc;
   }
 
-  if ((flags & (uint16_t)(~APXC_KNOWN_FLAGS)) != 0u || reserved != 0u || section_count > APXC_MAX_SECTIONS)
+  if ((flags & ~((unsigned int)APXC_KNOWN_FLAGS)) != 0u || reserved != 0u || section_count > APXC_MAX_SECTIONS)
   {
     return APX_INVALID_HEADER_ERROR;
   }
