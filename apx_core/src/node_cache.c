@@ -2,7 +2,7 @@
  * \file      node_cache.c
  * \author    Conny Gustafsson
  * \date      2018-08-03
- * \brief     Server-side disk cache for APX node definitions
+ * \brief     Server-side disk cache for APX node definitions (Level 1 & 2)
  *
  * Copyright (c) 2018-2026 Conny Gustafsson
  * SPDX-License-Identifier: MIT
@@ -11,10 +11,20 @@
 //////////////////////////////////////////////////////////////////////////////
 // INCLUDES
 //////////////////////////////////////////////////////////////////////////////
+#ifndef _WIN32
+# ifndef _DEFAULT_SOURCE
+#  define _DEFAULT_SOURCE
+# endif
+#endif
 #include "apx/node_cache.h"
 #include "adt_ary.h"
+#include "adt_hash.h"
 #include "adt_str.h"
+#include "apx/cfg.h"
 #include "apx/crypto.h"
+#include "apx/node_cache_codec.h"
+#include "apx/node_instance.h"
+#include "apx/util.h"
 #include "fileutil.h"
 #include <errno.h>
 #include <stdarg.h>
@@ -23,9 +33,12 @@
 #include <string.h>
 #include <time.h>
 #ifdef _WIN32
+# include <Windows.h>
 # include <process.h>
 # define APX_GETPID() ((unsigned long)_getpid())
 #else
+# include <fcntl.h>
+# include <sys/stat.h>
 # include <unistd.h>
 # define APX_GETPID() ((unsigned long)getpid())
 #endif
@@ -39,27 +52,49 @@
 #define SHA256_HEX_LEN ((size_t)RMF_SHA256_SIZE * 2u)
 #define TEXT_EXT ".apx"
 #define TEXT_EXT_LEN 4u
-// Fixed suffix length after node_name: '_' + 64 hex chars + ".apx"
-#define CACHE_FILE_SUFFIX_LEN (1u + SHA256_HEX_LEN + TEXT_EXT_LEN)
+#define BIN_EXT ".apxc"
+#define BIN_EXT_LEN 5u
+// Fixed suffix lengths after node_name: '_' + 64 hex chars + ext
+#define TEXT_CACHE_SUFFIX_LEN (1u + SHA256_HEX_LEN + TEXT_EXT_LEN)
+#define BIN_CACHE_SUFFIX_LEN (1u + SHA256_HEX_LEN + BIN_EXT_LEN)
+#define KEY_SUFFIX_LEN (1u + SHA256_HEX_LEN)
+#define FORMAT_VERSION_FILENAME ".format_version"
 
-typedef struct prune_entry_tag
+typedef struct prune_version_tag
 {
-  char *name;
-  uint64_t size;
-  int64_t mtime_sec;
+  char *key; // "<node_name>_<64-hex>" (no extension)
+  uint64_t text_size;
+  uint64_t bin_size;
+  int64_t text_mtime;
+  int64_t bin_mtime;
+  int64_t effective_mtime;
+  bool has_text;
+  bool has_bin;
   bool matches_node;
   bool is_keep;
   bool evicted;
-} prune_entry_t;
+} prune_version_t;
 
 typedef struct prune_scan_ctx_tag
 {
   char const *node_name;
   size_t node_name_len;
-  char const *keep_filename;
-  adt_ary_t entries;
+  char const *keep_key;
+  bool scanning_bin;
+  adt_hash_t version_map; // key -> prune_version_t* (non-owning)
+  adt_ary_t versions;     // owns prune_version_t*
   uint64_t total_bytes;
 } prune_scan_ctx_t;
+
+typedef struct startup_sweep_ctx_tag
+{
+  char const *dir_path;
+  bool is_bin_dir;
+  bool clear_all_bin;
+  bool read_only;
+  int64_t max_mtime_sec;
+  uint64_t cleared_bin_count;
+} startup_sweep_ctx_t;
 
 //////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTION PROTOTYPES
@@ -67,19 +102,33 @@ typedef struct prune_scan_ctx_tag
 static void set_warning(char *buf, size_t buf_size, char const *fmt, ...);
 static bool is_safe_node_name(char const *node_name);
 static void sha256_to_hex(uint8_t const sha256[RMF_SHA256_SIZE], char out_hex[SHA256_HEX_LEN + 1u]);
+static bool hex_to_sha256(char const *hex, uint8_t out_sha256[RMF_SHA256_SIZE]);
 static bool is_lowercase_hex_str(char const *s, size_t len);
-static bool is_valid_text_cache_filename(char const *name, size_t *out_len);
-static adt_str_t *build_text_cache_filename(char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE]);
+static bool is_tmp_filename(char const *name);
+static bool parse_cache_filename(
+  char const *name, char const *ext, size_t ext_len, size_t *out_key_len, size_t *out_node_len);
+static adt_str_t *build_cache_key(char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE]);
+static adt_str_t *build_cache_filename(char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE], char const *ext);
+static adt_str_t *build_cache_path(
+  char const *dir_path, char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE], char const *ext);
 static char *dup_cstr(char const *src);
-static adt_str_t *build_text_cache_path(
-  apx_node_cache_t const *self, char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE]);
 static bool on_dir_access_probe(void *arg, const cutil_dir_entry_t *entry);
 static bool probe_dir_writable(apx_node_cache_t *self, char const *dir_path, int *out_errno);
 static bool read_lock_holder_pid(char const *lock_path, char *out_pid, size_t out_pid_size);
-static void prune_entry_vdelete(void *arg);
+static int read_binary_cache_file(
+  char const *path, size_t max_size, uint8_t **out_buf, size_t *out_size, int64_t *out_mtime_sec);
+static apx_error_t write_file_atomic(apx_node_cache_t *self, char const *final_path, uint8_t const *data, size_t size);
+static int64_t current_wall_sec(apx_node_cache_t const *self);
+static int64_t current_mono_sec(void);
+static int64_t get_effective_now_sec(apx_node_cache_t *self);
+static void maybe_apply_high_water_mtime_on_store(apx_node_cache_t *self, char const *file_path);
+static void maybe_refresh_mtime_on_hit(apx_node_cache_t *self, char const *file_path, int64_t file_mtime_sec);
+static bool check_format_version_matches(char const *bin_dir);
+static bool on_startup_scan_entry(void *arg, const cutil_dir_entry_t *entry);
+static void prune_version_vdelete(void *arg);
 static bool on_prune_dir_entry(void *arg, const cutil_dir_entry_t *entry);
-static int compare_prune_entries(const void *a, const void *b);
-static void prune_text_cache(apx_node_cache_t *self, char const *node_name, char const *keep_filename);
+static int compare_prune_versions(const void *a, const void *b);
+static void prune_cache(apx_node_cache_t *self, char const *node_name, char const *keep_key);
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -104,10 +153,16 @@ void apx_node_cache_create(apx_node_cache_t *self)
     self->max_size_bytes = (uint64_t)APX_CACHE_DEFAULT_MAX_SIZE_MB * 1024ULL * 1024ULL;
     self->root_dir = NULL;
     self->text_dir = NULL;
+    self->bin_dir = NULL;
     cutil_file_lock_init(&self->lock_file);
     MUTEX_INIT(self->lock);
     MUTEX_INIT(self->prune_lock);
     self->tmp_seq = 0u;
+    self->logical_base_sec = 0;
+    self->boot_mono_sec = 0;
+#ifdef UNIT_TEST
+    self->wall_clock_offset_sec = 0;
+#endif
     memset(&self->stats, 0, sizeof(self->stats));
     self->initialized = false;
     self->read_only = false;
@@ -123,6 +178,8 @@ void apx_node_cache_destroy(apx_node_cache_t *self)
     self->root_dir = NULL;
     free(self->text_dir);
     self->text_dir = NULL;
+    free(self->bin_dir);
+    self->bin_dir = NULL;
     MUTEX_DESTROY(self->lock);
     MUTEX_DESTROY(self->prune_lock);
     self->level = APX_CACHE_LEVEL_OFF;
@@ -170,6 +227,8 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
   self->root_dir = NULL;
   free(self->text_dir);
   self->text_dir = NULL;
+  free(self->bin_dir);
+  self->bin_dir = NULL;
 
   if (cfg == NULL || cfg->level == APX_CACHE_LEVEL_OFF)
   {
@@ -219,21 +278,66 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
     return APX_NO_ERROR;
   }
 
+  apx_cache_level_t effective_level = cfg->level;
+  adt_str_t *bin_path = NULL;
+  if (effective_level == APX_CACHE_LEVEL_BINARY)
+  {
+    bin_path = cutil_path_join(root_path, "bin");
+    if (bin_path == NULL)
+    {
+      adt_str_delete(text_path);
+      return APX_MEM_ERROR;
+    }
+    char const *bin_dir_cstr = adt_str_cstr(bin_path);
+    if (!cutil_is_dir(bin_dir_cstr))
+    {
+      if (cutil_mkdir_p(bin_dir_cstr) != 0)
+      {
+        int saved_errno = errno;
+        set_warning(warning_buf, warning_buf_size,
+          "Cannot create binary cache directory '%s': %s; falling back to level 1 text cache", bin_dir_cstr,
+          strerror(saved_errno));
+        adt_str_delete(bin_path);
+        bin_path = NULL;
+        effective_level = APX_CACHE_LEVEL_TEXT;
+      }
+    }
+    if (bin_path != NULL && cutil_dir_for_each(adt_str_cstr(bin_path), on_dir_access_probe, NULL) != 0)
+    {
+      int saved_errno = errno;
+      set_warning(warning_buf, warning_buf_size,
+        "Cannot access binary cache directory '%s': %s; falling back to level 1 text cache", adt_str_cstr(bin_path),
+        strerror(saved_errno));
+      adt_str_delete(bin_path);
+      bin_path = NULL;
+      effective_level = APX_CACHE_LEVEL_TEXT;
+    }
+  }
+
   int probe_errno = 0;
-  bool writable = probe_dir_writable(self, text_dir_cstr, &probe_errno);
-  if (!writable)
+  bool text_writable = probe_dir_writable(self, text_dir_cstr, &probe_errno);
+  bool bin_writable = true;
+  int bin_probe_errno = 0;
+  if (bin_path != NULL)
+  {
+    bin_writable = probe_dir_writable(self, adt_str_cstr(bin_path), &bin_probe_errno);
+  }
+  if (!text_writable || !bin_writable)
   {
     self->read_only = true;
+    char const *ro_dir = !text_writable ? text_dir_cstr : adt_str_cstr(bin_path);
+    int ro_errno = !text_writable ? probe_errno : bin_probe_errno;
     set_warning(warning_buf, warning_buf_size,
       "Cache directory '%s' is not writable (%s); running cache in read-only mode -- new definitions will not be "
       "cached",
-      text_dir_cstr, strerror(probe_errno));
+      ro_dir, strerror(ro_errno));
   }
   else
   {
     adt_str_t *lock_path = cutil_path_join(root_path, ".lock");
     if (lock_path == NULL)
     {
+      adt_str_delete(bin_path);
       adt_str_delete(text_path);
       return APX_MEM_ERROR;
     }
@@ -257,6 +361,7 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
           root_path);
       }
       adt_str_delete(lock_path);
+      adt_str_delete(bin_path);
       adt_str_delete(text_path);
       return APX_NO_ERROR;
     }
@@ -267,6 +372,7 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
         "Cannot lock cache directory '%s' (%s); disabling cache (check directory ownership/permissions)", root_path,
         strerror(saved_errno));
       adt_str_delete(lock_path);
+      adt_str_delete(bin_path);
       adt_str_delete(text_path);
       return APX_NO_ERROR;
     }
@@ -275,23 +381,90 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
 
   char *root_copy = dup_cstr(root_path);
   char *text_copy = dup_cstr(text_dir_cstr);
+  char *bin_copy = (bin_path != NULL) ? dup_cstr(adt_str_cstr(bin_path)) : NULL;
   adt_str_delete(text_path);
-  if (root_copy == NULL || text_copy == NULL)
+  adt_str_delete(bin_path);
+  if (root_copy == NULL || text_copy == NULL || (effective_level == APX_CACHE_LEVEL_BINARY && bin_copy == NULL))
   {
     cutil_file_lock_release(&self->lock_file);
     free(root_copy);
     free(text_copy);
+    free(bin_copy);
     self->read_only = false;
     return APX_MEM_ERROR;
   }
+
   self->root_dir = root_copy;
   self->text_dir = text_copy;
-
-  self->level = cfg->level;
+  self->bin_dir = bin_copy;
+  self->level = effective_level;
   self->max_versions_per_node = cfg->max_versions_per_node;
   self->max_size_mb = cfg->max_size_mb;
   self->max_size_bytes = (uint64_t)cfg->max_size_mb * 1024ULL * 1024ULL;
   self->initialized = true;
+
+  // Startup hygiene pass: sweep orphan *.tmp.*, handle .format_version upgrade,
+  // pre-validate bin/*.apxc (warming OS page cache), and find max_existing_mtime.
+  int64_t max_existing_mtime = 0;
+  startup_sweep_ctx_t text_sweep;
+  memset(&text_sweep, 0, sizeof(text_sweep));
+  text_sweep.dir_path = self->text_dir;
+  text_sweep.is_bin_dir = false;
+  text_sweep.clear_all_bin = false;
+  text_sweep.read_only = self->read_only;
+  (void)cutil_dir_for_each(self->text_dir, on_startup_scan_entry, &text_sweep);
+  if (text_sweep.max_mtime_sec > max_existing_mtime)
+  {
+    max_existing_mtime = text_sweep.max_mtime_sec;
+  }
+
+  if (self->bin_dir != NULL)
+  {
+    bool format_changed = false;
+    if (!self->read_only)
+    {
+      format_changed = !check_format_version_matches(self->bin_dir);
+    }
+    startup_sweep_ctx_t bin_sweep;
+    memset(&bin_sweep, 0, sizeof(bin_sweep));
+    bin_sweep.dir_path = self->bin_dir;
+    bin_sweep.is_bin_dir = true;
+    bin_sweep.clear_all_bin = format_changed;
+    bin_sweep.read_only = self->read_only;
+    (void)cutil_dir_for_each(self->bin_dir, on_startup_scan_entry, &bin_sweep);
+    if (bin_sweep.max_mtime_sec > max_existing_mtime)
+    {
+      max_existing_mtime = bin_sweep.max_mtime_sec;
+    }
+
+    if (format_changed && !self->read_only)
+    {
+      adt_str_t *ver_path = cutil_path_join(self->bin_dir, FORMAT_VERSION_FILENAME);
+      if (ver_path != NULL)
+      {
+        char const *stamp = apx_node_cache_format_version_string();
+        (void)write_file_atomic(self, adt_str_cstr(ver_path), (uint8_t const *)stamp, strlen(stamp));
+        adt_str_delete(ver_path);
+      }
+      if (bin_sweep.cleared_bin_count > 0u && warning_buf != NULL && warning_buf_size > 0u && warning_buf[0] == '\0')
+      {
+        set_warning(warning_buf, warning_buf_size,
+          "Binary cache format changed; cleared %llu incompatible .apxc file(s) (Level 1 text cache preserved)",
+          (unsigned long long)bin_sweep.cleared_bin_count);
+      }
+    }
+    else if (!format_changed && bin_sweep.cleared_bin_count > 0u && warning_buf != NULL && warning_buf_size > 0u &&
+      warning_buf[0] == '\0')
+    {
+      set_warning(warning_buf, warning_buf_size, "Startup binary cache pre-check cleared %llu invalid .apxc file(s)",
+        (unsigned long long)bin_sweep.cleared_bin_count);
+    }
+  }
+
+  // Initialize monotonic high-water mtime clock
+  int64_t wall_now = current_wall_sec(self);
+  self->logical_base_sec = (max_existing_mtime >= wall_now) ? (max_existing_mtime + 1) : wall_now;
+  self->boot_mono_sec = current_mono_sec();
   return APX_NO_ERROR;
 }
 
@@ -300,6 +473,15 @@ bool apx_node_cache_is_text_enabled(apx_node_cache_t const *self)
   if (self != NULL)
   {
     return self->initialized && (self->level >= APX_CACHE_LEVEL_TEXT);
+  }
+  return false;
+}
+
+bool apx_node_cache_is_binary_enabled(apx_node_cache_t const *self)
+{
+  if (self != NULL)
+  {
+    return self->initialized && (self->level >= APX_CACHE_LEVEL_BINARY) && (self->bin_dir != NULL);
   }
   return false;
 }
@@ -369,7 +551,7 @@ apx_error_t apx_node_cache_lookup_text(apx_node_cache_t *self, char const *node_
     return APX_FILE_NOT_FOUND_ERROR;
   }
 
-  adt_str_t *file_path = build_text_cache_path(self, node_name, sha256);
+  adt_str_t *file_path = build_cache_path(self->text_dir, node_name, sha256, TEXT_EXT);
   if (file_path == NULL)
   {
     return APX_MEM_ERROR;
@@ -434,15 +616,7 @@ apx_error_t apx_node_cache_lookup_text(apx_node_cache_t *self, char const *node_
   }
 
   buf[expected_size] = '\0';
-
-  if (!self->read_only && (self->max_versions_per_node > 0u || self->max_size_bytes > 0u))
-  {
-    int64_t now_sec = (int64_t)time(NULL);
-    if (now_sec - mtime_sec >= APX_CACHE_MTIME_REFRESH_INTERVAL_SEC)
-    {
-      (void)cutil_file_touch_mtime(path_cstr);
-    }
-  }
+  maybe_refresh_mtime_on_hit(self, path_cstr, mtime_sec);
 
   adt_str_delete(file_path);
   MUTEX_LOCK(self->lock);
@@ -464,80 +638,39 @@ apx_error_t apx_node_cache_store_text(apx_node_cache_t *self, char const *node_n
     return APX_NO_ERROR;
   }
 
-  adt_str_t *filename = build_text_cache_filename(node_name, sha256);
-  if (filename == NULL)
+  adt_str_t *key = build_cache_key(node_name, sha256);
+  adt_str_t *filename = build_cache_filename(node_name, sha256, TEXT_EXT);
+  if (key == NULL || filename == NULL)
   {
+    adt_str_delete(key);
+    adt_str_delete(filename);
     return APX_MEM_ERROR;
   }
   adt_str_t *final_path = cutil_path_join(self->text_dir, adt_str_cstr(filename));
+  adt_str_delete(filename);
   if (final_path == NULL)
   {
-    adt_str_delete(filename);
+    adt_str_delete(key);
     return APX_MEM_ERROR;
   }
 
-  if (cutil_file_exists(adt_str_cstr(final_path)))
+  char const *final_cstr = adt_str_cstr(final_path);
+  if (cutil_file_exists(final_cstr))
   {
     adt_str_delete(final_path);
-    adt_str_delete(filename);
+    adt_str_delete(key);
     return APX_NO_ERROR;
   }
 
-  MUTEX_LOCK(self->lock);
-  uint64_t seq = ++self->tmp_seq;
-  MUTEX_UNLOCK(self->lock);
-
-  char tmp_suffix[64];
-  snprintf(tmp_suffix, sizeof(tmp_suffix), ".tmp.%lu.%llu", APX_GETPID(), (unsigned long long)seq);
-  adt_str_t *tmp_path = adt_str_new_cstr(adt_str_cstr(final_path));
-  if (tmp_path == NULL || adt_str_append_cstr(tmp_path, tmp_suffix) != ADT_NO_ERROR)
+  apx_error_t rc = write_file_atomic(self, final_cstr, data, (size_t)size);
+  if (rc != APX_NO_ERROR)
   {
-    adt_str_delete(tmp_path);
     adt_str_delete(final_path);
-    adt_str_delete(filename);
-    return APX_MEM_ERROR;
+    adt_str_delete(key);
+    return rc;
   }
 
-  char const *tmp_cstr = adt_str_cstr(tmp_path);
-  char const *final_cstr = adt_str_cstr(final_path);
-  FILE *fh = fopen(tmp_cstr, "wb");
-  if (fh == NULL)
-  {
-    MUTEX_LOCK(self->lock);
-    self->stats.io_errors++;
-    MUTEX_UNLOCK(self->lock);
-    adt_str_delete(tmp_path);
-    adt_str_delete(final_path);
-    adt_str_delete(filename);
-    return APX_FILE_CREATE_ERROR;
-  }
-
-  bool write_ok = (fwrite(data, 1u, (size_t)size, fh) == (size_t)size);
-  if (write_ok)
-  {
-    if (cutil_fsync_file(fh) != 0)
-    {
-      write_ok = false;
-    }
-  }
-  if (fclose(fh) != 0)
-  {
-    write_ok = false;
-  }
-
-  if (!write_ok || cutil_file_replace_atomic(tmp_cstr, final_cstr) != 0)
-  {
-    (void)remove(tmp_cstr);
-    MUTEX_LOCK(self->lock);
-    self->stats.io_errors++;
-    MUTEX_UNLOCK(self->lock);
-    adt_str_delete(tmp_path);
-    adt_str_delete(final_path);
-    adt_str_delete(filename);
-    return APX_FILE_WRITE_ERROR;
-  }
-
-  adt_str_delete(tmp_path);
+  maybe_apply_high_water_mtime_on_store(self, final_cstr);
   adt_str_delete(final_path);
 
   MUTEX_LOCK(self->lock);
@@ -546,10 +679,10 @@ apx_error_t apx_node_cache_store_text(apx_node_cache_t *self, char const *node_n
 
   if (self->max_versions_per_node > 0u || self->max_size_bytes > 0u)
   {
-    prune_text_cache(self, node_name, adt_str_cstr(filename));
+    prune_cache(self, node_name, adt_str_cstr(key));
   }
 
-  adt_str_delete(filename);
+  adt_str_delete(key);
   return APX_NO_ERROR;
 }
 
@@ -564,7 +697,202 @@ void apx_node_cache_invalidate_text(
   {
     return;
   }
-  adt_str_t *file_path = build_text_cache_path(self, node_name, sha256);
+  adt_str_t *file_path = build_cache_path(self->text_dir, node_name, sha256, TEXT_EXT);
+  if (file_path != NULL)
+  {
+    (void)remove(adt_str_cstr(file_path));
+    adt_str_delete(file_path);
+  }
+}
+
+apx_error_t apx_node_cache_lookup_binary(apx_node_cache_t *self, char const *node_name,
+  uint8_t const sha256[RMF_SHA256_SIZE], uint32_t expected_logical_size, bool load_vm_programs,
+  apx_node_instance_t *node_instance, uint8_t **out_embedded_def_text)
+{
+  if (out_embedded_def_text != NULL)
+  {
+    *out_embedded_def_text = NULL;
+  }
+  if (self == NULL || node_name == NULL || sha256 == NULL || node_instance == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  if (!apx_node_cache_is_binary_enabled(self))
+  {
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+  if (!is_safe_node_name(node_name))
+  {
+    MUTEX_LOCK(self->lock);
+    self->stats.bin_misses++;
+    MUTEX_UNLOCK(self->lock);
+    return APX_FILE_NOT_FOUND_ERROR;
+  }
+
+  adt_str_t *file_path = build_cache_path(self->bin_dir, node_name, sha256, BIN_EXT);
+  if (file_path == NULL)
+  {
+    return APX_MEM_ERROR;
+  }
+  char const *path_cstr = adt_str_cstr(file_path);
+
+  uint8_t *buf = NULL;
+  size_t buf_size = 0u;
+  int64_t mtime_sec = 0;
+  int read_rc = read_binary_cache_file(path_cstr, (size_t)APX_MAX_FILE_SIZE, &buf, &buf_size, &mtime_sec);
+  if (read_rc == -1)
+  {
+    int saved_errno = errno;
+    adt_str_delete(file_path);
+    MUTEX_LOCK(self->lock);
+    if (saved_errno == ENOENT)
+    {
+      self->stats.bin_misses++;
+    }
+    else
+    {
+      self->stats.bin_corruptions++;
+    }
+    MUTEX_UNLOCK(self->lock);
+    return (saved_errno == ENOENT) ? APX_FILE_NOT_FOUND_ERROR : APX_CHECKSUM_ERROR;
+  }
+  if (read_rc == -2)
+  {
+    if (!self->read_only)
+    {
+      (void)remove(path_cstr);
+    }
+    adt_str_delete(file_path);
+    MUTEX_LOCK(self->lock);
+    self->stats.bin_corruptions++;
+    MUTEX_UNLOCK(self->lock);
+    return APX_LENGTH_ERROR;
+  }
+  if (read_rc == -3)
+  {
+    adt_str_delete(file_path);
+    return APX_MEM_ERROR;
+  }
+
+  apx_error_t rc = apx_node_cache_decode_binary(
+    buf, buf_size, node_name, sha256, expected_logical_size, load_vm_programs, node_instance, out_embedded_def_text);
+  free(buf);
+
+  if (rc != APX_NO_ERROR)
+  {
+    if (rc != APX_MEM_ERROR)
+    {
+      if (!self->read_only)
+      {
+        (void)remove(path_cstr);
+      }
+      MUTEX_LOCK(self->lock);
+      if (rc == APX_VERSION_ERROR)
+      {
+        self->stats.bin_version_mismatches++;
+      }
+      else
+      {
+        self->stats.bin_corruptions++;
+      }
+      MUTEX_UNLOCK(self->lock);
+    }
+    adt_str_delete(file_path);
+    return rc;
+  }
+
+  maybe_refresh_mtime_on_hit(self, path_cstr, mtime_sec);
+  adt_str_delete(file_path);
+  MUTEX_LOCK(self->lock);
+  self->stats.bin_hits++;
+  MUTEX_UNLOCK(self->lock);
+  return APX_NO_ERROR;
+}
+
+apx_error_t apx_node_cache_store_binary(apx_node_cache_t *self, char const *node_name,
+  uint8_t const sha256[RMF_SHA256_SIZE], uint32_t logical_def_size, apx_node_instance_t const *node_instance)
+{
+  if (self == NULL || node_name == NULL || sha256 == NULL || node_instance == NULL || logical_def_size == 0u)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+  if (!apx_node_cache_is_binary_enabled(self) || self->read_only || !is_safe_node_name(node_name))
+  {
+    return APX_NO_ERROR;
+  }
+
+  adt_str_t *key = build_cache_key(node_name, sha256);
+  adt_str_t *filename = build_cache_filename(node_name, sha256, BIN_EXT);
+  if (key == NULL || filename == NULL)
+  {
+    adt_str_delete(key);
+    adt_str_delete(filename);
+    return APX_MEM_ERROR;
+  }
+  adt_str_t *final_path = cutil_path_join(self->bin_dir, adt_str_cstr(filename));
+  adt_str_delete(filename);
+  if (final_path == NULL)
+  {
+    adt_str_delete(key);
+    return APX_MEM_ERROR;
+  }
+
+  char const *final_cstr = adt_str_cstr(final_path);
+  if (cutil_file_exists(final_cstr))
+  {
+    adt_str_delete(final_path);
+    adt_str_delete(key);
+    return APX_NO_ERROR;
+  }
+
+  uint8_t *encoded = NULL;
+  size_t encoded_size = 0u;
+  apx_error_t rc =
+    apx_node_cache_encode_binary(node_instance, sha256, logical_def_size, NULL, false, true, &encoded, &encoded_size);
+  if (rc != APX_NO_ERROR)
+  {
+    adt_str_delete(final_path);
+    adt_str_delete(key);
+    return rc;
+  }
+
+  rc = write_file_atomic(self, final_cstr, encoded, encoded_size);
+  free(encoded);
+  if (rc != APX_NO_ERROR)
+  {
+    adt_str_delete(final_path);
+    adt_str_delete(key);
+    return rc;
+  }
+
+  maybe_apply_high_water_mtime_on_store(self, final_cstr);
+  adt_str_delete(final_path);
+
+  MUTEX_LOCK(self->lock);
+  self->stats.bin_stores++;
+  MUTEX_UNLOCK(self->lock);
+
+  if (self->max_versions_per_node > 0u || self->max_size_bytes > 0u)
+  {
+    prune_cache(self, node_name, adt_str_cstr(key));
+  }
+
+  adt_str_delete(key);
+  return APX_NO_ERROR;
+}
+
+void apx_node_cache_invalidate_binary(
+  apx_node_cache_t *self, char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE])
+{
+  if (self == NULL || node_name == NULL || sha256 == NULL)
+  {
+    return;
+  }
+  if (!apx_node_cache_is_binary_enabled(self) || self->read_only || !is_safe_node_name(node_name))
+  {
+    return;
+  }
+  adt_str_t *file_path = build_cache_path(self->bin_dir, node_name, sha256, BIN_EXT);
   if (file_path != NULL)
   {
     (void)remove(adt_str_cstr(file_path));
@@ -588,6 +916,16 @@ void apx_node_cache_set_max_size_bytes(apx_node_cache_t *self, uint64_t max_size
   if (self != NULL)
   {
     self->max_size_bytes = max_size_bytes;
+  }
+}
+
+void apx_node_cache_set_wall_clock_offset_sec(apx_node_cache_t *self, int64_t offset_sec)
+{
+  if (self != NULL)
+  {
+    MUTEX_LOCK(self->lock);
+    self->wall_clock_offset_sec = offset_sec;
+    MUTEX_UNLOCK(self->lock);
   }
 }
 #endif
@@ -649,6 +987,36 @@ static void sha256_to_hex(uint8_t const sha256[RMF_SHA256_SIZE], char out_hex[SH
   out_hex[SHA256_HEX_LEN] = '\0';
 }
 
+static bool hex_to_sha256(char const *hex, uint8_t out_sha256[RMF_SHA256_SIZE])
+{
+  if (hex == NULL || out_sha256 == NULL)
+  {
+    return false;
+  }
+  for (size_t i = 0u; i < RMF_SHA256_SIZE; i++)
+  {
+    uint8_t nibbles[2];
+    for (size_t j = 0u; j < 2u; j++)
+    {
+      char c = hex[i * 2u + j];
+      if (c >= '0' && c <= '9')
+      {
+        nibbles[j] = (uint8_t)(c - '0');
+      }
+      else if (c >= 'a' && c <= 'f')
+      {
+        nibbles[j] = (uint8_t)(10 + (c - 'a'));
+      }
+      else
+      {
+        return false;
+      }
+    }
+    out_sha256[i] = (uint8_t)((nibbles[0] << 4u) | nibbles[1]);
+  }
+  return true;
+}
+
 static bool is_lowercase_hex_str(char const *s, size_t len)
 {
   for (size_t i = 0u; i < len; i++)
@@ -662,52 +1030,95 @@ static bool is_lowercase_hex_str(char const *s, size_t len)
   return true;
 }
 
-static bool is_valid_text_cache_filename(char const *name, size_t *out_len)
+static bool is_tmp_filename(char const *name)
 {
   if (name == NULL)
   {
     return false;
   }
+  return strstr(name, ".tmp.") != NULL;
+}
+
+static bool parse_cache_filename(
+  char const *name, char const *ext, size_t ext_len, size_t *out_key_len, size_t *out_node_len)
+{
+  if (name == NULL || ext == NULL)
+  {
+    return false;
+  }
   size_t len = strlen(name);
-  if (len <= CACHE_FILE_SUFFIX_LEN)
+  size_t suffix_len = KEY_SUFFIX_LEN + ext_len;
+  if (len <= suffix_len)
   {
     return false;
   }
-  if (memcmp(name + len - TEXT_EXT_LEN, TEXT_EXT, TEXT_EXT_LEN) != 0)
+  if (memcmp(name + len - ext_len, ext, ext_len) != 0)
   {
     return false;
   }
-  if (name[len - CACHE_FILE_SUFFIX_LEN] != '_')
+  size_t node_len = len - suffix_len;
+  if (name[node_len] != '_')
   {
     return false;
   }
-  if (!is_lowercase_hex_str(name + len - CACHE_FILE_SUFFIX_LEN + 1u, SHA256_HEX_LEN))
+  if (!is_lowercase_hex_str(name + node_len + 1u, SHA256_HEX_LEN))
   {
     return false;
   }
-  if (out_len != NULL)
+  if (out_key_len != NULL)
   {
-    *out_len = len;
+    *out_key_len = len - ext_len;
+  }
+  if (out_node_len != NULL)
+  {
+    *out_node_len = node_len;
   }
   return true;
 }
 
-static adt_str_t *build_text_cache_filename(char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE])
+static adt_str_t *build_cache_key(char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE])
 {
   char hex[SHA256_HEX_LEN + 1u];
   sha256_to_hex(sha256, hex);
-  adt_str_t *filename = adt_str_new_cstr(node_name);
+  adt_str_t *key = adt_str_new_cstr(node_name);
+  if (key == NULL)
+  {
+    return NULL;
+  }
+  if (adt_str_push(key, '_') != ADT_NO_ERROR || adt_str_append_cstr(key, hex) != ADT_NO_ERROR)
+  {
+    adt_str_delete(key);
+    return NULL;
+  }
+  return key;
+}
+
+static adt_str_t *build_cache_filename(char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE], char const *ext)
+{
+  adt_str_t *filename = build_cache_key(node_name, sha256);
   if (filename == NULL)
   {
     return NULL;
   }
-  if (adt_str_push(filename, '_') != ADT_NO_ERROR || adt_str_append_cstr(filename, hex) != ADT_NO_ERROR ||
-    adt_str_append_cstr(filename, TEXT_EXT) != ADT_NO_ERROR)
+  if (adt_str_append_cstr(filename, ext) != ADT_NO_ERROR)
   {
     adt_str_delete(filename);
     return NULL;
   }
   return filename;
+}
+
+static adt_str_t *build_cache_path(
+  char const *dir_path, char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE], char const *ext)
+{
+  adt_str_t *filename = build_cache_filename(node_name, sha256, ext);
+  if (filename == NULL)
+  {
+    return NULL;
+  }
+  adt_str_t *full_path = cutil_path_join(dir_path, adt_str_cstr(filename));
+  adt_str_delete(filename);
+  return full_path;
 }
 
 static char *dup_cstr(char const *src)
@@ -723,19 +1134,6 @@ static char *dup_cstr(char const *src)
     memcpy(copy, src, len + 1u);
   }
   return copy;
-}
-
-static adt_str_t *build_text_cache_path(
-  apx_node_cache_t const *self, char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE])
-{
-  adt_str_t *filename = build_text_cache_filename(node_name, sha256);
-  if (filename == NULL)
-  {
-    return NULL;
-  }
-  adt_str_t *full_path = cutil_path_join(self->text_dir, adt_str_cstr(filename));
-  adt_str_delete(filename);
-  return full_path;
 }
 
 static bool on_dir_access_probe(void *arg, const cutil_dir_entry_t *entry)
@@ -805,13 +1203,454 @@ static bool read_lock_holder_pid(char const *lock_path, char *out_pid, size_t ou
   return true;
 }
 
-static void prune_entry_vdelete(void *arg)
+static int read_binary_cache_file(
+  char const *path, size_t max_size, uint8_t **out_buf, size_t *out_size, int64_t *out_mtime_sec)
 {
-  prune_entry_t *entry = (prune_entry_t *)arg;
-  if (entry != NULL)
+  if (path == NULL || max_size == 0u || out_buf == NULL || out_size == NULL)
   {
-    free(entry->name);
-    free(entry);
+    errno = EINVAL;
+    return -1;
+  }
+  *out_buf = NULL;
+  *out_size = 0u;
+  if (out_mtime_sec != NULL)
+  {
+    *out_mtime_sec = 0;
+  }
+
+#ifdef _WIN32
+  DWORD attrs = GetFileAttributesA(path);
+  if (attrs == INVALID_FILE_ATTRIBUTES)
+  {
+    errno = (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND) ? ENOENT : EACCES;
+    return -1;
+  }
+  if ((attrs & FILE_ATTRIBUTE_DIRECTORY) != 0u || (attrs & FILE_ATTRIBUTE_REPARSE_POINT) != 0u)
+  {
+    errno = EINVAL;
+    return -1;
+  }
+  HANDLE h = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+  if (h == INVALID_HANDLE_VALUE)
+  {
+    errno = (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND) ? ENOENT : EACCES;
+    return -1;
+  }
+  BY_HANDLE_FILE_INFORMATION info;
+  if (!GetFileInformationByHandle(h, &info))
+  {
+    CloseHandle(h);
+    errno = EIO;
+    return -1;
+  }
+  if ((info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0u ||
+    (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0u)
+  {
+    CloseHandle(h);
+    errno = EINVAL;
+    return -1;
+  }
+  uint64_t file_size64 = (((uint64_t)info.nFileSizeHigh) << 32u) | (uint64_t)info.nFileSizeLow;
+  if (file_size64 == 0u || file_size64 > (uint64_t)max_size)
+  {
+    CloseHandle(h);
+    return -2;
+  }
+  size_t file_size = (size_t)file_size64;
+  uint8_t *buf = (uint8_t *)malloc(file_size);
+  if (buf == NULL)
+  {
+    CloseHandle(h);
+    errno = ENOMEM;
+    return -3;
+  }
+  size_t total_read = 0u;
+  while (total_read < file_size)
+  {
+    DWORD chunk = (file_size - total_read > 0x40000000u) ? 0x40000000u : (DWORD)(file_size - total_read);
+    DWORD got = 0u;
+    if (!ReadFile(h, buf + total_read, chunk, &got, NULL))
+    {
+      free(buf);
+      CloseHandle(h);
+      errno = EIO;
+      return -1;
+    }
+    if (got == 0u)
+    {
+      free(buf);
+      CloseHandle(h);
+      return -2;
+    }
+    total_read += (size_t)got;
+  }
+  uint8_t extra = 0u;
+  DWORD extra_got = 0u;
+  if (ReadFile(h, &extra, 1u, &extra_got, NULL) && extra_got != 0u)
+  {
+    free(buf);
+    CloseHandle(h);
+    return -2;
+  }
+  if (out_mtime_sec != NULL)
+  {
+    ULARGE_INTEGER ull;
+    ull.LowPart = info.ftLastWriteTime.dwLowDateTime;
+    ull.HighPart = info.ftLastWriteTime.dwHighDateTime;
+    if (ull.QuadPart >= 116444736000000000ULL)
+    {
+      *out_mtime_sec = (int64_t)((ull.QuadPart - 116444736000000000ULL) / 10000000ULL);
+    }
+  }
+  CloseHandle(h);
+  *out_buf = buf;
+  *out_size = file_size;
+  return 0;
+#else
+  int flags = O_RDONLY;
+# ifdef O_NOFOLLOW
+  flags |= O_NOFOLLOW;
+# endif
+  int fd = open(path, flags);
+  if (fd < 0)
+  {
+    return -1;
+  }
+  struct stat st;
+  if (fstat(fd, &st) != 0)
+  {
+    int saved_errno = errno;
+    close(fd);
+    errno = saved_errno;
+    return -1;
+  }
+  if (!S_ISREG(st.st_mode))
+  {
+    close(fd);
+    errno = EINVAL;
+    return -1;
+  }
+  if (st.st_size <= 0 || (uint64_t)st.st_size > (uint64_t)max_size)
+  {
+    close(fd);
+    return -2;
+  }
+  size_t file_size = (size_t)st.st_size;
+  uint8_t *buf = (uint8_t *)malloc(file_size);
+  if (buf == NULL)
+  {
+    close(fd);
+    errno = ENOMEM;
+    return -3;
+  }
+  size_t total_read = 0u;
+  while (total_read < file_size)
+  {
+    ssize_t n = read(fd, buf + total_read, file_size - total_read);
+    if (n < 0)
+    {
+      if (errno == EINTR)
+      {
+        continue;
+      }
+      int saved_errno = errno;
+      free(buf);
+      close(fd);
+      errno = saved_errno;
+      return -1;
+    }
+    if (n == 0)
+    {
+      free(buf);
+      close(fd);
+      return -2;
+    }
+    total_read += (size_t)n;
+  }
+  uint8_t extra = 0u;
+  ssize_t extra_n = read(fd, &extra, 1u);
+  if (extra_n > 0)
+  {
+    free(buf);
+    close(fd);
+    return -2;
+  }
+  close(fd);
+  if (out_mtime_sec != NULL)
+  {
+    *out_mtime_sec = (int64_t)st.st_mtime;
+  }
+  *out_buf = buf;
+  *out_size = file_size;
+  return 0;
+#endif
+}
+
+static apx_error_t write_file_atomic(apx_node_cache_t *self, char const *final_path, uint8_t const *data, size_t size)
+{
+  MUTEX_LOCK(self->lock);
+  uint64_t seq = ++self->tmp_seq;
+  MUTEX_UNLOCK(self->lock);
+
+  char tmp_suffix[64];
+  snprintf(tmp_suffix, sizeof(tmp_suffix), ".tmp.%lu.%llu", APX_GETPID(), (unsigned long long)seq);
+  adt_str_t *tmp_path = adt_str_new_cstr(final_path);
+  if (tmp_path == NULL || adt_str_append_cstr(tmp_path, tmp_suffix) != ADT_NO_ERROR)
+  {
+    adt_str_delete(tmp_path);
+    return APX_MEM_ERROR;
+  }
+
+  char const *tmp_cstr = adt_str_cstr(tmp_path);
+  FILE *fh = fopen(tmp_cstr, "wb");
+  if (fh == NULL)
+  {
+    MUTEX_LOCK(self->lock);
+    self->stats.io_errors++;
+    MUTEX_UNLOCK(self->lock);
+    adt_str_delete(tmp_path);
+    return APX_FILE_CREATE_ERROR;
+  }
+
+  bool write_ok = (size == 0u) || (fwrite(data, 1u, size, fh) == size);
+  if (write_ok)
+  {
+    if (cutil_fsync_file(fh) != 0)
+    {
+      write_ok = false;
+    }
+  }
+  if (fclose(fh) != 0)
+  {
+    write_ok = false;
+  }
+
+  if (!write_ok || cutil_file_replace_atomic(tmp_cstr, final_path) != 0)
+  {
+    (void)remove(tmp_cstr);
+    MUTEX_LOCK(self->lock);
+    self->stats.io_errors++;
+    MUTEX_UNLOCK(self->lock);
+    adt_str_delete(tmp_path);
+    return APX_FILE_WRITE_ERROR;
+  }
+
+  adt_str_delete(tmp_path);
+  return APX_NO_ERROR;
+}
+
+static int64_t current_wall_sec(apx_node_cache_t const *self)
+{
+  int64_t now = (int64_t)time(NULL);
+#ifdef UNIT_TEST
+  if (self != NULL)
+  {
+    now += self->wall_clock_offset_sec;
+  }
+#else
+  (void)self;
+#endif
+  return now;
+}
+
+static int64_t current_mono_sec(void) { return (int64_t)(apx_get_monotonic_time_ns() / 1000000000ULL); }
+
+static int64_t get_effective_now_sec(apx_node_cache_t *self)
+{
+  int64_t mono_now = current_mono_sec();
+  int64_t elapsed = (mono_now >= self->boot_mono_sec) ? (mono_now - self->boot_mono_sec) : 0;
+
+  MUTEX_LOCK(self->lock);
+  int64_t wall_now = current_wall_sec(self);
+  int64_t mono_logical = self->logical_base_sec + elapsed;
+  int64_t effective_now = (wall_now > mono_logical) ? wall_now : mono_logical;
+  if (wall_now > mono_logical)
+  {
+    self->logical_base_sec = wall_now - elapsed;
+  }
+  MUTEX_UNLOCK(self->lock);
+  return effective_now;
+}
+
+static void maybe_apply_high_water_mtime_on_store(apx_node_cache_t *self, char const *file_path)
+{
+  if (self->read_only || (self->max_versions_per_node == 0u && self->max_size_bytes == 0u))
+  {
+    return;
+  }
+  int64_t eff_now = get_effective_now_sec(self);
+  // Real OS mtime after write is approximately time(NULL); override if OS clock lags high-water mark
+  if ((int64_t)time(NULL) < eff_now)
+  {
+    (void)cutil_file_set_mtime(file_path, eff_now);
+  }
+}
+
+static void maybe_refresh_mtime_on_hit(apx_node_cache_t *self, char const *file_path, int64_t file_mtime_sec)
+{
+  if (self->read_only || (self->max_versions_per_node == 0u && self->max_size_bytes == 0u))
+  {
+    return;
+  }
+  int64_t eff_now = get_effective_now_sec(self);
+  if (eff_now - file_mtime_sec >= APX_CACHE_MTIME_REFRESH_INTERVAL_SEC)
+  {
+    (void)cutil_file_set_mtime(file_path, eff_now);
+  }
+}
+
+static bool check_format_version_matches(char const *bin_dir)
+{
+  adt_str_t *ver_path = cutil_path_join(bin_dir, FORMAT_VERSION_FILENAME);
+  if (ver_path == NULL)
+  {
+    return false;
+  }
+  char const *expected = apx_node_cache_format_version_string();
+  size_t expected_len = strlen(expected);
+  uint8_t buf[64];
+  size_t bytes_read = 0u;
+  bool matches = false;
+  if (cutil_read_binary_file(adt_str_cstr(ver_path), buf, sizeof(buf), &bytes_read) == 0)
+  {
+    if (bytes_read == expected_len && memcmp(buf, expected, expected_len) == 0)
+    {
+      matches = true;
+    }
+  }
+  adt_str_delete(ver_path);
+  return matches;
+}
+
+static bool on_startup_scan_entry(void *arg, const cutil_dir_entry_t *entry)
+{
+  startup_sweep_ctx_t *ctx = (startup_sweep_ctx_t *)arg;
+  if (entry->is_dir)
+  {
+    return true;
+  }
+
+  // Sweep leftover *.tmp.* files from prior power loss (only when writable)
+  if (is_tmp_filename(entry->name))
+  {
+    if (!ctx->read_only && entry->is_reg && !entry->is_symlink)
+    {
+      adt_str_t *full = cutil_path_join(ctx->dir_path, entry->name);
+      if (full != NULL)
+      {
+        (void)remove(adt_str_cstr(full));
+        adt_str_delete(full);
+      }
+    }
+    return true;
+  }
+
+  if (!entry->is_reg || entry->is_symlink)
+  {
+    return true;
+  }
+
+  if (!ctx->is_bin_dir)
+  {
+    if (parse_cache_filename(entry->name, TEXT_EXT, TEXT_EXT_LEN, NULL, NULL))
+    {
+      if (entry->mtime_sec > ctx->max_mtime_sec)
+      {
+        ctx->max_mtime_sec = entry->mtime_sec;
+      }
+    }
+    return true;
+  }
+
+  // Binary directory (.apxc)
+  if (strcmp(entry->name, FORMAT_VERSION_FILENAME) == 0)
+  {
+    return true;
+  }
+
+  size_t node_len = 0u;
+  bool valid_name = parse_cache_filename(entry->name, BIN_EXT, BIN_EXT_LEN, NULL, &node_len);
+  if (!valid_name)
+  {
+    return true;
+  }
+
+  adt_str_t *full = cutil_path_join(ctx->dir_path, entry->name);
+  if (full == NULL)
+  {
+    return true;
+  }
+  char const *full_cstr = adt_str_cstr(full);
+
+  if (ctx->clear_all_bin)
+  {
+    if (!ctx->read_only && remove(full_cstr) == 0)
+    {
+      ctx->cleared_bin_count++;
+    }
+    adt_str_delete(full);
+    return true;
+  }
+
+  // Pre-validate .apxc integrity, format/VM/ABI, and filename-to-header binding (also warms OS page cache)
+  if (!ctx->read_only)
+  {
+    char node_name[RMF_MAX_FILE_NAME_SIZE + 1u];
+    uint8_t expected_sha[RMF_SHA256_SIZE];
+    bool bad = false;
+    if (node_len == 0u || node_len > RMF_MAX_FILE_NAME_SIZE ||
+      !hex_to_sha256(entry->name + node_len + 1u, expected_sha))
+    {
+      bad = true;
+    }
+    else
+    {
+      memcpy(node_name, entry->name, node_len);
+      node_name[node_len] = '\0';
+      uint8_t *buf = NULL;
+      size_t buf_size = 0u;
+      int read_rc = read_binary_cache_file(full_cstr, (size_t)APX_MAX_FILE_SIZE, &buf, &buf_size, NULL);
+      if (read_rc != 0)
+      {
+        bad = (read_rc != -3); // Do not unlink on OOM
+      }
+      else
+      {
+        apx_error_t vrc = apx_node_cache_validate_binary(buf, buf_size, node_name, expected_sha);
+        free(buf);
+        if (vrc != APX_NO_ERROR)
+        {
+          bad = true;
+        }
+      }
+    }
+    if (bad)
+    {
+      if (remove(full_cstr) == 0)
+      {
+        ctx->cleared_bin_count++;
+      }
+      adt_str_delete(full);
+      return true;
+    }
+  }
+
+  if (entry->mtime_sec > ctx->max_mtime_sec)
+  {
+    ctx->max_mtime_sec = entry->mtime_sec;
+  }
+  adt_str_delete(full);
+  return true;
+}
+
+static void prune_version_vdelete(void *arg)
+{
+  prune_version_t *v = (prune_version_t *)arg;
+  if (v != NULL)
+  {
+    free(v->key);
+    free(v);
   }
 }
 
@@ -822,163 +1661,241 @@ static bool on_prune_dir_entry(void *arg, const cutil_dir_entry_t *entry)
   {
     return true;
   }
-  size_t name_len = 0u;
-  if (!is_valid_text_cache_filename(entry->name, &name_len))
+  char const *ext = ctx->scanning_bin ? BIN_EXT : TEXT_EXT;
+  size_t ext_len = ctx->scanning_bin ? BIN_EXT_LEN : TEXT_EXT_LEN;
+  size_t key_len = 0u;
+  size_t node_len = 0u;
+  if (!parse_cache_filename(entry->name, ext, ext_len, &key_len, &node_len))
   {
     return true;
   }
 
-  prune_entry_t *item = (prune_entry_t *)malloc(sizeof(prune_entry_t));
-  if (item == NULL)
+  char *key_copy = (char *)malloc(key_len + 1u);
+  if (key_copy == NULL)
   {
     return false;
   }
-  item->name = (char *)malloc(name_len + 1u);
-  if (item->name == NULL)
-  {
-    free(item);
-    return false;
-  }
-  memcpy(item->name, entry->name, name_len + 1u);
-  item->size = entry->size;
-  item->mtime_sec = entry->mtime_sec;
-  item->matches_node = (name_len == ctx->node_name_len + CACHE_FILE_SUFFIX_LEN) &&
-    (memcmp(entry->name, ctx->node_name, ctx->node_name_len) == 0);
-  item->is_keep = (ctx->keep_filename != NULL && strcmp(entry->name, ctx->keep_filename) == 0);
-  item->evicted = false;
+  memcpy(key_copy, entry->name, key_len);
+  key_copy[key_len] = '\0';
 
-  if (adt_ary_push(&ctx->entries, item) != ADT_NO_ERROR)
+  prune_version_t *ver = (prune_version_t *)adt_hash_value(&ctx->version_map, key_copy);
+  if (ver == NULL)
   {
-    prune_entry_vdelete(item);
-    return false;
+    ver = (prune_version_t *)calloc(1u, sizeof(prune_version_t));
+    if (ver == NULL)
+    {
+      free(key_copy);
+      return false;
+    }
+    ver->key = key_copy;
+    ver->matches_node = (node_len == ctx->node_name_len) && (memcmp(entry->name, ctx->node_name, node_len) == 0);
+    ver->is_keep = (ctx->keep_key != NULL && strcmp(key_copy, ctx->keep_key) == 0);
+    if (adt_ary_push(&ctx->versions, ver) != ADT_NO_ERROR)
+    {
+      prune_version_vdelete(ver);
+      return false;
+    }
+    adt_hash_set(&ctx->version_map, ver->key, ver);
   }
+  else
+  {
+    free(key_copy);
+  }
+
+  if (ctx->scanning_bin)
+  {
+    ver->has_bin = true;
+    ver->bin_size = entry->size;
+    ver->bin_mtime = entry->mtime_sec;
+  }
+  else
+  {
+    ver->has_text = true;
+    ver->text_size = entry->size;
+    ver->text_mtime = entry->mtime_sec;
+  }
+
+  if (ver->has_text && ver->has_bin)
+  {
+    ver->effective_mtime = (ver->text_mtime >= ver->bin_mtime) ? ver->text_mtime : ver->bin_mtime;
+  }
+  else if (ver->has_bin)
+  {
+    ver->effective_mtime = ver->bin_mtime;
+  }
+  else
+  {
+    ver->effective_mtime = ver->text_mtime;
+  }
+
   ctx->total_bytes += entry->size;
   return true;
 }
 
-static int compare_prune_entries(const void *a, const void *b)
+static int compare_prune_versions(const void *a, const void *b)
 {
-  prune_entry_t const *ea = *(prune_entry_t const *const *)a;
-  prune_entry_t const *eb = *(prune_entry_t const *const *)b;
-  if (ea->mtime_sec < eb->mtime_sec)
+  prune_version_t const *va = *(prune_version_t const *const *)a;
+  prune_version_t const *vb = *(prune_version_t const *const *)b;
+  if (va->effective_mtime < vb->effective_mtime)
   {
     return -1;
   }
-  if (ea->mtime_sec > eb->mtime_sec)
+  if (va->effective_mtime > vb->effective_mtime)
   {
     return 1;
   }
-  return strcmp(ea->name, eb->name);
+  return strcmp(va->key, vb->key);
 }
 
-static void prune_text_cache(apx_node_cache_t *self, char const *node_name, char const *keep_filename)
+static bool evict_version(apx_node_cache_t *self, prune_version_t *ver, uint64_t *total_bytes, uint64_t *text_evictions,
+  uint64_t *bin_evictions)
+{
+  bool removed_any = false;
+  if (ver->has_text && self->text_dir != NULL)
+  {
+    adt_str_t *fname = adt_str_new_cstr(ver->key);
+    if (fname != NULL && adt_str_append_cstr(fname, TEXT_EXT) == ADT_NO_ERROR)
+    {
+      adt_str_t *full = cutil_path_join(self->text_dir, adt_str_cstr(fname));
+      if (full != NULL)
+      {
+        if (remove(adt_str_cstr(full)) == 0)
+        {
+          removed_any = true;
+          (*text_evictions)++;
+          if (*total_bytes >= ver->text_size)
+          {
+            *total_bytes -= ver->text_size;
+          }
+          else
+          {
+            *total_bytes = 0u;
+          }
+        }
+        adt_str_delete(full);
+      }
+    }
+    adt_str_delete(fname);
+  }
+  if (ver->has_bin && self->bin_dir != NULL)
+  {
+    adt_str_t *fname = adt_str_new_cstr(ver->key);
+    if (fname != NULL && adt_str_append_cstr(fname, BIN_EXT) == ADT_NO_ERROR)
+    {
+      adt_str_t *full = cutil_path_join(self->bin_dir, adt_str_cstr(fname));
+      if (full != NULL)
+      {
+        if (remove(adt_str_cstr(full)) == 0)
+        {
+          removed_any = true;
+          (*bin_evictions)++;
+          if (*total_bytes >= ver->bin_size)
+          {
+            *total_bytes -= ver->bin_size;
+          }
+          else
+          {
+            *total_bytes = 0u;
+          }
+        }
+        adt_str_delete(full);
+      }
+    }
+    adt_str_delete(fname);
+  }
+  if (removed_any)
+  {
+    ver->evicted = true;
+  }
+  return removed_any;
+}
+
+static void prune_cache(apx_node_cache_t *self, char const *node_name, char const *keep_key)
 {
   MUTEX_LOCK(self->prune_lock);
 
   prune_scan_ctx_t ctx;
   ctx.node_name = node_name;
   ctx.node_name_len = strlen(node_name);
-  ctx.keep_filename = keep_filename;
-  adt_ary_create(&ctx.entries, prune_entry_vdelete);
+  ctx.keep_key = keep_key;
+  ctx.scanning_bin = false;
+  adt_hash_create(&ctx.version_map, NULL);
+  adt_ary_create(&ctx.versions, prune_version_vdelete);
   ctx.total_bytes = 0u;
 
-  char const *text_dir_cstr = self->text_dir;
-  if (cutil_dir_for_each(text_dir_cstr, on_prune_dir_entry, &ctx) == 0)
+  bool scan_ok = (cutil_dir_for_each(self->text_dir, on_prune_dir_entry, &ctx) == 0);
+  if (scan_ok && self->bin_dir != NULL)
   {
-    int32_t const count = adt_ary_length(&ctx.entries);
+    ctx.scanning_bin = true;
+    scan_ok = (cutil_dir_for_each(self->bin_dir, on_prune_dir_entry, &ctx) == 0);
+  }
+
+  if (scan_ok)
+  {
+    int32_t const count = adt_ary_length(&ctx.versions);
     if (count > 0)
     {
-      prune_entry_t **sorted = (prune_entry_t **)malloc((size_t)count * sizeof(prune_entry_t *));
+      prune_version_t **sorted = (prune_version_t **)malloc((size_t)count * sizeof(prune_version_t *));
       if (sorted != NULL)
       {
         uint32_t node_count = 0u;
         for (int32_t i = 0; i < count; i++)
         {
-          sorted[i] = (prune_entry_t *)adt_ary_value(&ctx.entries, i);
+          sorted[i] = (prune_version_t *)adt_ary_value(&ctx.versions, i);
           if (sorted[i]->matches_node)
           {
             node_count++;
           }
         }
-        qsort(sorted, (size_t)count, sizeof(prune_entry_t *), compare_prune_entries);
+        qsort(sorted, (size_t)count, sizeof(prune_version_t *), compare_prune_versions);
 
-        uint64_t evicted_count = 0u;
+        uint64_t text_evicted = 0u;
+        uint64_t bin_evicted = 0u;
 
-        // Step 1: Enforce per-node version limit
+        // Step 1: Enforce per-node version limit (paired versions)
         if (self->max_versions_per_node > 0u && node_count > self->max_versions_per_node)
         {
           for (int32_t i = 0; i < count && node_count > self->max_versions_per_node; i++)
           {
-            prune_entry_t *e = sorted[i];
-            if (!e->matches_node || e->is_keep || e->evicted)
+            prune_version_t *v = sorted[i];
+            if (!v->matches_node || v->is_keep || v->evicted)
             {
               continue;
             }
-            adt_str_t *full = cutil_path_join(text_dir_cstr, e->name);
-            if (full != NULL)
+            if (evict_version(self, v, &ctx.total_bytes, &text_evicted, &bin_evicted))
             {
-              if (remove(adt_str_cstr(full)) == 0)
-              {
-                e->evicted = true;
-                node_count--;
-                if (ctx.total_bytes >= e->size)
-                {
-                  ctx.total_bytes -= e->size;
-                }
-                else
-                {
-                  ctx.total_bytes = 0u;
-                }
-                evicted_count++;
-              }
-              adt_str_delete(full);
+              node_count--;
             }
           }
         }
 
-        // Step 2: Enforce global cache size cap
+        // Step 2: Enforce global combined cache size cap (text/ + bin/)
         if (self->max_size_bytes > 0u && ctx.total_bytes > self->max_size_bytes)
         {
           for (int32_t i = 0; i < count && ctx.total_bytes > self->max_size_bytes; i++)
           {
-            prune_entry_t *e = sorted[i];
-            if (e->is_keep || e->evicted)
+            prune_version_t *v = sorted[i];
+            if (v->is_keep || v->evicted)
             {
               continue;
             }
-            adt_str_t *full = cutil_path_join(text_dir_cstr, e->name);
-            if (full != NULL)
-            {
-              if (remove(adt_str_cstr(full)) == 0)
-              {
-                e->evicted = true;
-                if (ctx.total_bytes >= e->size)
-                {
-                  ctx.total_bytes -= e->size;
-                }
-                else
-                {
-                  ctx.total_bytes = 0u;
-                }
-                evicted_count++;
-              }
-              adt_str_delete(full);
-            }
+            (void)evict_version(self, v, &ctx.total_bytes, &text_evicted, &bin_evicted);
           }
         }
 
-        if (evicted_count > 0u)
+        if (text_evicted > 0u || bin_evicted > 0u)
         {
           MUTEX_LOCK(self->lock);
-          self->stats.text_evictions += evicted_count;
+          self->stats.text_evictions += text_evicted;
+          self->stats.bin_evictions += bin_evicted;
           MUTEX_UNLOCK(self->lock);
         }
-
         free(sorted);
       }
     }
   }
 
-  adt_ary_destroy(&ctx.entries);
+  adt_hash_destroy(&ctx.version_map);
+  adt_ary_destroy(&ctx.versions);
   MUTEX_UNLOCK(self->prune_lock);
 }

@@ -16,6 +16,7 @@
 #include "apx/file.h"
 #include "apx/file_info.h"
 #include "apx/node_cache.h"
+#include "apx/node_cache_codec.h"
 #include "apx/node_manager.h"
 #include "apx/server.h"
 #include "apx/server_test_connection.h"
@@ -23,10 +24,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #ifdef _WIN32
 # include <direct.h>
 # define TEST_RMDIR(d) _rmdir(d)
 #else
+# include <pthread.h>
 # include <sys/stat.h>
 # include <unistd.h>
 # define TEST_RMDIR(d) rmdir(d)
@@ -50,6 +53,8 @@ static bool on_remove_tree_entry(void *arg, const cutil_dir_entry_t *entry);
 static void remove_dir_recursive(char const *path);
 static void make_sha256_hex(uint8_t const hash[RMF_SHA256_SIZE], char out[65]);
 static adt_str_t *make_cache_file_path(char const *root, char const *node_name, uint8_t const hash[RMF_SHA256_SIZE]);
+static adt_str_t *make_bin_cache_file_path(
+  char const *root, char const *node_name, uint8_t const hash[RMF_SHA256_SIZE]);
 
 static void test_node_cache_default_and_off(CuTest *tc);
 static void test_node_cache_empty_path_disables_with_warning(CuTest *tc);
@@ -62,6 +67,14 @@ static void test_node_cache_global_size_cap(CuTest *tc);
 static void test_node_cache_readonly_and_unreadable_dirs(CuTest *tc);
 static void test_node_cache_lock_prevents_concurrent_owners(CuTest *tc);
 static void test_node_cache_server_integration_flows(CuTest *tc);
+static void test_node_cache_binary_store_lookup_and_invalidate(CuTest *tc);
+static void test_node_cache_binary_corruption_version_and_symlink(CuTest *tc);
+static void test_node_cache_startup_format_sweep_prevalidation_and_tmp_cleanup(CuTest *tc);
+static void test_node_cache_paired_eviction_and_monotonic_clock(CuTest *tc);
+static void test_node_cache_binary_readonly_mode(CuTest *tc);
+#ifndef _WIN32
+static void test_node_cache_binary_concurrent_tsan_stress(CuTest *tc);
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -80,6 +93,14 @@ CuSuite *testsuite_apx_node_cache(void)
   SUITE_ADD_TEST(suite, test_node_cache_readonly_and_unreadable_dirs);
   SUITE_ADD_TEST(suite, test_node_cache_lock_prevents_concurrent_owners);
   SUITE_ADD_TEST(suite, test_node_cache_server_integration_flows);
+  SUITE_ADD_TEST(suite, test_node_cache_binary_store_lookup_and_invalidate);
+  SUITE_ADD_TEST(suite, test_node_cache_binary_corruption_version_and_symlink);
+  SUITE_ADD_TEST(suite, test_node_cache_startup_format_sweep_prevalidation_and_tmp_cleanup);
+  SUITE_ADD_TEST(suite, test_node_cache_paired_eviction_and_monotonic_clock);
+  SUITE_ADD_TEST(suite, test_node_cache_binary_readonly_mode);
+#ifndef _WIN32
+  SUITE_ADD_TEST(suite, test_node_cache_binary_concurrent_tsan_stress);
+#endif
   return suite;
 }
 
@@ -737,3 +758,477 @@ static void test_node_cache_server_integration_flows(CuTest *tc)
   apx_server_delete(server);
   remove_dir_recursive(root);
 }
+
+static adt_str_t *make_bin_cache_file_path(char const *root, char const *node_name, uint8_t const hash[RMF_SHA256_SIZE])
+{
+  char hex[65];
+  make_sha256_hex(hash, hex);
+  adt_str_t *bin_dir = cutil_path_join(root, "bin");
+  adt_str_t *fname = adt_str_new_cstr(node_name);
+  adt_str_push(fname, '_');
+  adt_str_append_cstr(fname, hex);
+  adt_str_append_cstr(fname, ".apxc");
+  adt_str_t *full = cutil_path_join(adt_str_cstr(bin_dir), adt_str_cstr(fname));
+  adt_str_delete(fname);
+  adt_str_delete(bin_dir);
+  return full;
+}
+
+static void test_node_cache_binary_store_lookup_and_invalidate(CuTest *tc)
+{
+  char const *root = "/tmp/apx_test_node_cache_bin_rt";
+  remove_dir_recursive(root);
+
+  apx_node_cache_t cache;
+  apx_node_cache_create(&cache);
+  apx_node_cache_config_t cfg;
+  apx_node_cache_config_init(&cfg);
+  cfg.level = APX_CACHE_LEVEL_BINARY;
+  char warn[256] = {0};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, warn, sizeof(warn)));
+  CuAssertStrEquals(tc, "", warn);
+  CuAssertTrue(tc, apx_node_cache_is_text_enabled(&cache));
+  CuAssertTrue(tc, apx_node_cache_is_binary_enabled(&cache));
+
+  // Verify .format_version stamp was created
+  adt_str_t *ver_path = cutil_path_join(root, "bin/.format_version");
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(ver_path)));
+  adt_str_delete(ver_path);
+
+  char const *apx = "APX/1.3\nN\"BinNode\"\nP\"Speed\"S:=1234\nR\"Cmd\"C:=7\n";
+  uint32_t len = (uint32_t)strlen(apx);
+  uint8_t hash[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx, len, hash));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx));
+  apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+
+  // Miss before store
+  apx_node_instance_t *dst = apx_node_instance_new(APX_SERVER_MODE, "BinNode");
+  CuAssertIntEquals(
+    tc, APX_FILE_NOT_FOUND_ERROR, apx_node_cache_lookup_binary(&cache, "BinNode", hash, len, false, dst, NULL));
+
+  // Store & lookup hit
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_store_binary(&cache, "BinNode", hash, len, compiled));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_lookup_binary(&cache, "BinNode", hash, len, false, dst, NULL));
+  CuAssertIntEquals(tc, 1, apx_node_instance_get_major_version(dst));
+  CuAssertIntEquals(tc, 3, apx_node_instance_get_minor_version(dst));
+  CuAssertUIntEquals(tc, 1u, apx_node_instance_get_num_provide_ports(dst));
+  CuAssertUIntEquals(tc, 1u, apx_node_instance_get_num_require_ports(dst));
+  CuAssertPtrEquals(tc, NULL, (void *)apx_port_instance_pack_program(apx_node_instance_get_provide_port(dst, 0u)));
+
+  apx_node_cache_stats_t stats;
+  apx_node_cache_get_stats(&cache, &stats);
+  CuAssertTrue(tc, stats.bin_misses == 1u);
+  CuAssertTrue(tc, stats.bin_stores == 1u);
+  CuAssertTrue(tc, stats.bin_hits == 1u);
+
+  // Invalidate -> miss again
+  apx_node_cache_invalidate_binary(&cache, "BinNode", hash);
+  apx_node_instance_t *dst2 = apx_node_instance_new(APX_SERVER_MODE, "BinNode");
+  CuAssertIntEquals(
+    tc, APX_FILE_NOT_FOUND_ERROR, apx_node_cache_lookup_binary(&cache, "BinNode", hash, len, false, dst2, NULL));
+
+  apx_node_instance_delete(dst2);
+  apx_node_instance_delete(dst);
+  apx_node_manager_destroy(&nm);
+  apx_node_cache_destroy(&cache);
+  remove_dir_recursive(root);
+}
+
+static void test_node_cache_binary_corruption_version_and_symlink(CuTest *tc)
+{
+  char const *root = "/tmp/apx_test_node_cache_bin_corrupt";
+  remove_dir_recursive(root);
+
+  apx_node_cache_t cache;
+  apx_node_cache_create(&cache);
+  apx_node_cache_config_t cfg;
+  apx_node_cache_config_init(&cfg);
+  cfg.level = APX_CACHE_LEVEL_BINARY;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, NULL, 0u));
+
+  char const *apx = "APX/1.3\nN\"CorruptBin\"\nP\"Out\"S:=10\n";
+  uint32_t len = (uint32_t)strlen(apx);
+  uint8_t hash[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx, len, hash));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx));
+  apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_store_binary(&cache, "CorruptBin", hash, len, compiled));
+  adt_str_t *bin_path = make_bin_cache_file_path(root, "CorruptBin", hash);
+
+  uint8_t raw[4096];
+  size_t raw_len = 0u;
+  CuAssertIntEquals(tc, 0, cutil_read_binary_file(adt_str_cstr(bin_path), raw, sizeof(raw), &raw_len));
+  CuAssertTrue(tc, raw_len >= (size_t)APXC_MIN_FILE_SIZE);
+
+  // 1. Tamper payload byte -> APX_CHECKSUM_ERROR and auto-unlinked
+  raw[raw_len - 1u] ^= 0x01u;
+  CuAssertIntEquals(tc, 0, cutil_write_binary_file(adt_str_cstr(bin_path), raw, raw_len));
+  apx_node_instance_t *dst = apx_node_instance_new(APX_SERVER_MODE, "CorruptBin");
+  CuAssertIntEquals(
+    tc, APX_CHECKSUM_ERROR, apx_node_cache_lookup_binary(&cache, "CorruptBin", hash, len, false, dst, NULL));
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(bin_path)));
+
+  // 2. Version mismatch (format_major = 99) -> APX_VERSION_ERROR and auto-unlinked
+  raw[raw_len - 1u] ^= 0x01u;
+  raw[4] = 99u;
+  CuAssertIntEquals(tc, 0, cutil_write_binary_file(adt_str_cstr(bin_path), raw, raw_len));
+  CuAssertIntEquals(
+    tc, APX_VERSION_ERROR, apx_node_cache_lookup_binary(&cache, "CorruptBin", hash, len, false, dst, NULL));
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(bin_path)));
+
+  apx_node_cache_stats_t stats;
+  apx_node_cache_get_stats(&cache, &stats);
+  CuAssertTrue(tc, stats.bin_corruptions == 1u);
+  CuAssertTrue(tc, stats.bin_version_mismatches == 1u);
+
+#ifndef _WIN32
+  // 3. Symlink in bin/ must be rejected without following
+  raw[4] = APXC_FORMAT_MAJOR;
+  char const *target = "/tmp/apx_test_bin_symlink_target.apxc";
+  CuAssertIntEquals(tc, 0, cutil_write_binary_file(target, raw, raw_len));
+  CuAssertIntEquals(tc, 0, symlink(target, adt_str_cstr(bin_path)));
+  CuAssertIntEquals(
+    tc, APX_CHECKSUM_ERROR, apx_node_cache_lookup_binary(&cache, "CorruptBin", hash, len, false, dst, NULL));
+  (void)remove(adt_str_cstr(bin_path));
+  (void)remove(target);
+#endif
+
+  apx_node_instance_delete(dst);
+  adt_str_delete(bin_path);
+  apx_node_manager_destroy(&nm);
+  apx_node_cache_destroy(&cache);
+  remove_dir_recursive(root);
+}
+
+static void test_node_cache_startup_format_sweep_prevalidation_and_tmp_cleanup(CuTest *tc)
+{
+  char const *root = "/tmp/apx_test_node_cache_startup_hygiene";
+  remove_dir_recursive(root);
+
+  apx_node_cache_t cache;
+  apx_node_cache_create(&cache);
+  apx_node_cache_config_t cfg;
+  apx_node_cache_config_init(&cfg);
+  cfg.level = APX_CACHE_LEVEL_BINARY;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, NULL, 0u));
+
+  char const *apx_good = "APX/1.3\nN\"GoodStart\"\nP\"A\"C:=1\n";
+  uint32_t len_good = (uint32_t)strlen(apx_good);
+  uint8_t hash_good[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_good, len_good, hash_good));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_good));
+  apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_node_cache_store_text(&cache, "GoodStart", hash_good, (uint8_t const *)apx_good, len_good));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_store_binary(&cache, "GoodStart", hash_good, len_good, compiled));
+
+  // Drop a corrupt .apxc and orphan .tmp files into text/ and bin/
+  uint8_t hash_bad[RMF_SHA256_SIZE];
+  memset(hash_bad, 0xAA, sizeof(hash_bad));
+  adt_str_t *bad_bin = make_bin_cache_file_path(root, "BadStart", hash_bad);
+  uint8_t const garbage[16] = {1, 2, 3, 4};
+  CuAssertIntEquals(tc, 0, cutil_write_binary_file(adt_str_cstr(bad_bin), garbage, sizeof(garbage)));
+
+  adt_str_t *tmp_text = cutil_path_join(root, "text/orphan.apx.tmp.123.1");
+  adt_str_t *tmp_bin = cutil_path_join(root, "bin/orphan.apxc.tmp.123.2");
+  CuAssertIntEquals(tc, 0, cutil_write_binary_file(adt_str_cstr(tmp_text), garbage, sizeof(garbage)));
+  CuAssertIntEquals(tc, 0, cutil_write_binary_file(adt_str_cstr(tmp_bin), garbage, sizeof(garbage)));
+
+  // Restart cache -> startup pre-validation sweeps bad .apxc & orphans, keeps good .apxc and text/
+  apx_node_cache_destroy(&cache);
+  apx_node_cache_create(&cache);
+  char warn[256] = {0};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, warn, sizeof(warn)));
+  CuAssertTrue(tc, strstr(warn, "cleared 1 invalid .apxc") != NULL);
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(bad_bin)));
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(tmp_text)));
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(tmp_bin)));
+
+  adt_str_t *good_text = make_cache_file_path(root, "GoodStart", hash_good);
+  adt_str_t *good_bin = make_bin_cache_file_path(root, "GoodStart", hash_good);
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(good_text)));
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(good_bin)));
+
+  // Simulate server upgrade (.format_version mismatch) -> clears bin/*.apxc, preserves text/
+  apx_node_cache_destroy(&cache);
+  adt_str_t *ver_path = cutil_path_join(root, "bin/.format_version");
+  char const *old_stamp = "0/vm2.0/abi0\n";
+  CuAssertIntEquals(
+    tc, 0, cutil_write_binary_file(adt_str_cstr(ver_path), (uint8_t const *)old_stamp, strlen(old_stamp)));
+
+  apx_node_cache_create(&cache);
+  warn[0] = '\0';
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, warn, sizeof(warn)));
+  CuAssertTrue(tc, strstr(warn, "Binary cache format changed") != NULL);
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(good_bin)));
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(good_text)));
+
+  adt_str_delete(ver_path);
+  adt_str_delete(good_bin);
+  adt_str_delete(good_text);
+  adt_str_delete(tmp_bin);
+  adt_str_delete(tmp_text);
+  adt_str_delete(bad_bin);
+  apx_node_manager_destroy(&nm);
+  apx_node_cache_destroy(&cache);
+  remove_dir_recursive(root);
+}
+
+static void test_node_cache_paired_eviction_and_monotonic_clock(CuTest *tc)
+{
+  char const *root = "/tmp/apx_test_node_cache_paired_mono";
+  remove_dir_recursive(root);
+
+  apx_node_cache_t cache;
+  apx_node_cache_create(&cache);
+  apx_node_cache_config_t cfg;
+  apx_node_cache_config_init(&cfg);
+  cfg.level = APX_CACHE_LEVEL_BINARY;
+  cfg.max_versions_per_node = 2u;
+  cfg.max_size_mb = 0u;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, NULL, 0u));
+
+  // Build and store v1 and v2 (both text and bin)
+  char const *apx_v1 = "APX/1.3\nN\"PairNode\"\nP\"S\"C:=1\n";
+  char const *apx_v2 = "APX/1.3\nN\"PairNode\"\nP\"S\"C:=2\n";
+  char const *apx_v3 = "APX/1.3\nN\"PairNode\"\nP\"S\"C:=3\n";
+  char const *apx_v4 = "APX/1.3\nN\"PairNode\"\nP\"S\"C:=4\n";
+  uint8_t h1[RMF_SHA256_SIZE];
+  uint8_t h2[RMF_SHA256_SIZE];
+  uint8_t h3[RMF_SHA256_SIZE];
+  uint8_t h4[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_v1, strlen(apx_v1), h1));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_v2, strlen(apx_v2), h2));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_v3, strlen(apx_v3), h3));
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_v4, strlen(apx_v4), h4));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_v1));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_text(&cache, "PairNode", h1, (uint8_t const *)apx_v1, (uint32_t)strlen(apx_v1)));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_binary(
+      &cache, "PairNode", h1, (uint32_t)strlen(apx_v1), apx_node_manager_get_last_attached(&nm)));
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_v2));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_text(&cache, "PairNode", h2, (uint8_t const *)apx_v2, (uint32_t)strlen(apx_v2)));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_binary(
+      &cache, "PairNode", h2, (uint32_t)strlen(apx_v2), apx_node_manager_get_last_attached(&nm)));
+
+  // Simulate Boot 1 had a far-future NTP clock compared to Boot 2 (resetting-clock board!)
+  int64_t future_boot1_ts = (int64_t)time(NULL) + 100000;
+  adt_str_t *t1 = make_cache_file_path(root, "PairNode", h1);
+  adt_str_t *b1 = make_bin_cache_file_path(root, "PairNode", h1);
+  adt_str_t *t2 = make_cache_file_path(root, "PairNode", h2);
+  adt_str_t *b2 = make_bin_cache_file_path(root, "PairNode", h2);
+  CuAssertIntEquals(tc, 0, cutil_file_set_mtime(adt_str_cstr(t1), future_boot1_ts));
+  CuAssertIntEquals(tc, 0, cutil_file_set_mtime(adt_str_cstr(b1), future_boot1_ts));
+  CuAssertIntEquals(tc, 0, cutil_file_set_mtime(adt_str_cstr(t2), future_boot1_ts + 10));
+  CuAssertIntEquals(tc, 0, cutil_file_set_mtime(adt_str_cstr(b2), future_boot1_ts + 10));
+
+  // Reboot server (Boot 2): OS clock is 100,000s behind Boot 1's mtime!
+  apx_node_cache_destroy(&cache);
+  apx_node_cache_create(&cache);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, NULL, 0u));
+
+  // Store v3 -> must evict oldest Boot 1 pair (v1 text+bin) and stamp v3 > future_boot1_ts + 10
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_v3));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_text(&cache, "PairNode", h3, (uint8_t const *)apx_v3, (uint32_t)strlen(apx_v3)));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_binary(
+      &cache, "PairNode", h3, (uint32_t)strlen(apx_v3), apx_node_manager_get_last_attached(&nm)));
+
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(t1)));
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(b1)));
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(t2)));
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(b2)));
+
+  // Store v4 -> must evict Boot 1's v2 (NOT Boot 2's v3!)
+  adt_str_t *t3 = make_cache_file_path(root, "PairNode", h3);
+  adt_str_t *b3 = make_bin_cache_file_path(root, "PairNode", h3);
+  adt_str_t *t4 = make_cache_file_path(root, "PairNode", h4);
+  adt_str_t *b4 = make_bin_cache_file_path(root, "PairNode", h4);
+
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx_v4));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_text(&cache, "PairNode", h4, (uint8_t const *)apx_v4, (uint32_t)strlen(apx_v4)));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_binary(
+      &cache, "PairNode", h4, (uint32_t)strlen(apx_v4), apx_node_manager_get_last_attached(&nm)));
+
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(t2)));
+  CuAssertTrue(tc, !cutil_file_exists(adt_str_cstr(b2)));
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(t3)));
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(b3)));
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(t4)));
+  CuAssertTrue(tc, cutil_file_exists(adt_str_cstr(b4)));
+
+  adt_str_delete(t1);
+  adt_str_delete(b1);
+  adt_str_delete(t2);
+  adt_str_delete(b2);
+  adt_str_delete(t3);
+  adt_str_delete(b3);
+  adt_str_delete(t4);
+  adt_str_delete(b4);
+  apx_node_manager_destroy(&nm);
+  apx_node_cache_destroy(&cache);
+  remove_dir_recursive(root);
+}
+
+static void test_node_cache_binary_readonly_mode(CuTest *tc)
+{
+#ifdef _WIN32
+  (void)tc;
+#else
+  if (geteuid() == 0)
+  {
+    return;
+  }
+  char const *root = "/tmp/apx_test_node_cache_bin_ro";
+  remove_dir_recursive(root);
+
+  apx_node_cache_t cache;
+  apx_node_cache_create(&cache);
+  apx_node_cache_config_t cfg;
+  apx_node_cache_config_init(&cfg);
+  cfg.level = APX_CACHE_LEVEL_BINARY;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, NULL, 0u));
+
+  char const *apx = "APX/1.3\nN\"RoBinNode\"\nP\"S\"S:=77\n";
+  uint32_t len = (uint32_t)strlen(apx);
+  uint8_t hash[RMF_SHA256_SIZE];
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx, len, hash));
+
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_build_node(&nm, apx));
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_node_cache_store_binary(&cache, "RoBinNode", hash, len, apx_node_manager_get_last_attached(&nm)));
+  apx_node_cache_destroy(&cache);
+
+  adt_str_t *bin_dir = cutil_path_join(root, "bin");
+  CuAssertIntEquals(tc, 0, chmod(adt_str_cstr(bin_dir), 0555));
+
+  apx_node_cache_create(&cache);
+  char warn[256] = {0};
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, warn, sizeof(warn)));
+  CuAssertTrue(tc, apx_node_cache_is_binary_enabled(&cache));
+  CuAssertTrue(tc, apx_node_cache_is_read_only(&cache));
+  CuAssertTrue(tc, strstr(warn, "read-only mode") != NULL);
+
+  apx_node_instance_t *dst = apx_node_instance_new(APX_SERVER_MODE, "RoBinNode");
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_lookup_binary(&cache, "RoBinNode", hash, len, false, dst, NULL));
+  CuAssertUIntEquals(tc, 1u, apx_node_instance_get_num_provide_ports(dst));
+
+  apx_node_instance_delete(dst);
+  apx_node_cache_destroy(&cache);
+  apx_node_manager_destroy(&nm);
+  CuAssertIntEquals(tc, 0, chmod(adt_str_cstr(bin_dir), 0755));
+  adt_str_delete(bin_dir);
+  remove_dir_recursive(root);
+#endif
+}
+
+#ifndef _WIN32
+typedef struct tsan_bin_worker_arg_tag
+{
+  apx_node_cache_t *cache;
+  int worker_id;
+  bool ok;
+} tsan_bin_worker_arg_t;
+
+static void *tsan_bin_worker_fn(void *arg)
+{
+  tsan_bin_worker_arg_t *w = (tsan_bin_worker_arg_t *)arg;
+  w->ok = true;
+  apx_node_manager_t nm;
+  apx_node_manager_create(&nm, APX_SERVER_MODE);
+
+  for (int iter = 0; iter < 8; iter++)
+  {
+    char apx[128];
+    snprintf(apx, sizeof(apx), "APX/1.3\nN\"TsanNode\"\nP\"S\"S:=%d\n", (w->worker_id * 3 + iter) % 5);
+    uint32_t len = (uint32_t)strlen(apx);
+    uint8_t hash[RMF_SHA256_SIZE];
+    if (apx_crypto_sha256((uint8_t const *)apx, len, hash) != APX_NO_ERROR)
+    {
+      w->ok = false;
+      break;
+    }
+    if (apx_node_manager_build_node(&nm, apx) != APX_NO_ERROR)
+    {
+      w->ok = false;
+      break;
+    }
+    apx_node_instance_t *compiled = apx_node_manager_get_last_attached(&nm);
+    (void)apx_node_cache_store_text(w->cache, "TsanNode", hash, (uint8_t const *)apx, len);
+    (void)apx_node_cache_store_binary(w->cache, "TsanNode", hash, len, compiled);
+
+    apx_node_instance_t *dst = apx_node_instance_new(APX_SERVER_MODE, "TsanNode");
+    if (dst == NULL)
+    {
+      w->ok = false;
+      break;
+    }
+    apx_error_t rc = apx_node_cache_lookup_binary(w->cache, "TsanNode", hash, len, false, dst, NULL);
+    if (rc != APX_NO_ERROR && rc != APX_FILE_NOT_FOUND_ERROR)
+    {
+      w->ok = false;
+    }
+    apx_node_instance_delete(dst);
+  }
+  apx_node_manager_destroy(&nm);
+  return NULL;
+}
+
+static void test_node_cache_binary_concurrent_tsan_stress(CuTest *tc)
+{
+  char const *root = "/tmp/apx_test_node_cache_bin_tsan";
+  remove_dir_recursive(root);
+
+  apx_node_cache_t cache;
+  apx_node_cache_create(&cache);
+  apx_node_cache_config_t cfg;
+  apx_node_cache_config_init(&cfg);
+  cfg.level = APX_CACHE_LEVEL_BINARY;
+  cfg.max_versions_per_node = 3u;
+  cfg.max_size_mb = 1u;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_cache_configure(&cache, &cfg, root, NULL, 0u));
+
+  pthread_t threads[4];
+  tsan_bin_worker_arg_t args[4];
+  for (int i = 0; i < 4; i++)
+  {
+    args[i].cache = &cache;
+    args[i].worker_id = i;
+    args[i].ok = false;
+    CuAssertIntEquals(tc, 0, pthread_create(&threads[i], NULL, tsan_bin_worker_fn, &args[i]));
+  }
+  for (int i = 0; i < 4; i++)
+  {
+    CuAssertIntEquals(tc, 0, pthread_join(threads[i], NULL));
+    CuAssertTrue(tc, args[i].ok);
+  }
+
+  apx_node_cache_destroy(&cache);
+  remove_dir_recursive(root);
+}
+#endif

@@ -34,6 +34,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // PUBLIC CONSTANTS AND DATA TYPES
 //////////////////////////////////////////////////////////////////////////////
+// Forward declarations
+struct apx_node_instance_tag;
+
 #define APX_CACHE_DEFAULT_MAX_VERSIONS_PER_NODE 10u
 #define APX_CACHE_DEFAULT_MAX_SIZE_MB 64u
 #define APX_CACHE_MTIME_REFRESH_INTERVAL_SEC 60
@@ -59,6 +62,12 @@ typedef struct apx_node_cache_stats_tag
   uint64_t text_stores;
   uint64_t text_evictions;
   uint64_t text_corruptions;
+  uint64_t bin_hits;
+  uint64_t bin_misses;
+  uint64_t bin_stores;
+  uint64_t bin_evictions;
+  uint64_t bin_corruptions;
+  uint64_t bin_version_mismatches;
   uint64_t io_errors;
 } apx_node_cache_stats_t;
 
@@ -70,10 +79,16 @@ typedef struct apx_node_cache_tag
   uint64_t max_size_bytes;
   char *root_dir;
   char *text_dir;
+  char *bin_dir;
   cutil_file_lock_t lock_file;
   MUTEX_T lock;
   MUTEX_T prune_lock;
   uint64_t tmp_seq;
+  int64_t logical_base_sec;
+  int64_t boot_mono_sec;
+#ifdef UNIT_TEST
+  int64_t wall_clock_offset_sec;
+#endif
   apx_node_cache_stats_t stats;
   bool initialized;
   bool read_only;
@@ -100,6 +115,7 @@ apx_error_t apx_node_cache_configure(apx_node_cache_t *self, apx_node_cache_conf
   char *warning_buf, size_t warning_buf_size);
 
 bool apx_node_cache_is_text_enabled(apx_node_cache_t const *self);
+bool apx_node_cache_is_binary_enabled(apx_node_cache_t const *self);
 bool apx_node_cache_is_read_only(apx_node_cache_t const *self);
 apx_cache_level_t apx_node_cache_get_level(apx_node_cache_t const *self);
 uint32_t apx_node_cache_get_max_versions_per_node(apx_node_cache_t const *self);
@@ -132,10 +148,41 @@ apx_error_t apx_node_cache_store_text(apx_node_cache_t *self, char const *node_n
 void apx_node_cache_invalidate_text(
   apx_node_cache_t *self, char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE]);
 
+/**
+ * Looks up a cached Level 2 binary definition (.apxc) by (node_name, sha256), verifies
+ * regular-file status, whole-file SHA-256 integrity, version/ABI compatibility, and
+ * decodes compiled port descriptors, init data, and optional VM programs into node_instance.
+ *
+ * On APX_NO_ERROR, node_instance has its IDL version, ports, and init data populated.
+ * If out_embedded_def_text is non-NULL and the .apxc contains APXC_SEC_DEF_TEXT,
+ * allocates (*out_embedded_def_text) with trailing NUL; caller owns it and must free().
+ * On miss, returns APX_FILE_NOT_FOUND_ERROR.
+ * On version/ABI mismatch or corruption, unlinks the entry (unless read-only) and returns
+ * APX_VERSION_ERROR or a corruption error code.
+ */
+apx_error_t apx_node_cache_lookup_binary(apx_node_cache_t *self, char const *node_name,
+  uint8_t const sha256[RMF_SHA256_SIZE], uint32_t expected_logical_size, bool load_vm_programs,
+  struct apx_node_instance_tag *node_instance, uint8_t **out_embedded_def_text);
+
+/**
+ * Atomically encodes and stores a validated Level 2 binary definition (.apxc) in the cache
+ * and enforces coordinated per-node and global eviction limits across text/ and bin/.
+ * Best-effort no-op when binary caching is disabled or read-only.
+ */
+apx_error_t apx_node_cache_store_binary(apx_node_cache_t *self, char const *node_name,
+  uint8_t const sha256[RMF_SHA256_SIZE], uint32_t logical_def_size, struct apx_node_instance_tag const *node_instance);
+
+/**
+ * Best-effort removal of a cached Level 2 binary entry (no-op when disabled or read-only).
+ */
+void apx_node_cache_invalidate_binary(
+  apx_node_cache_t *self, char const *node_name, uint8_t const sha256[RMF_SHA256_SIZE]);
+
 void apx_node_cache_get_stats(apx_node_cache_t *self, apx_node_cache_stats_t *out_stats);
 
 #ifdef UNIT_TEST
 void apx_node_cache_set_max_size_bytes(apx_node_cache_t *self, uint64_t max_size_bytes);
+void apx_node_cache_set_wall_clock_offset_sec(apx_node_cache_t *self, int64_t offset_sec);
 #endif
 
 #endif // APX_NODE_CACHE_H
