@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "tests"))
 
 from conftest import _set_pdeathsig  # noqa: E402
-from test_server_compressed_nodes import encode_numheader32, read_msg  # noqa: E402
+from test_server_compressed_nodes import encode_numheader32, read_msg, sign_data_with_openssl  # noqa: E402
 from test_server_definition_events import opcode, write  # noqa: E402
 
 RMFP_1_0_GREETING = b"RMFP/1.0\nNumHeader-Format:32\n\n"
@@ -81,10 +81,23 @@ def start_legacy_server(server_bin: str, port: int) -> TcpServerHandle:
     return TcpServerHandle(proc, port)
 
 
-def start_modern_tcp_server(tmp_path: Path, server_bin: str, port: int, cache_level: int) -> TcpServerHandle:
+def start_modern_tcp_server(
+    tmp_path: Path,
+    server_bin: str,
+    port: int,
+    cache_level: int,
+    *,
+    trusted_pubkey: Path | None = None,
+) -> TcpServerHandle:
     config_file = tmp_path / "server.json"
+    server_cfg: dict = {"cache": {"level": cache_level, "path": str(tmp_path / "cache")}}
+    if trusted_pubkey is not None:
+        server_cfg["security"] = {
+            "require-signed-nodes": True,
+            "trusted-keys": [str(trusted_pubkey)],
+        }
     config = {
-        "apx-server": {"cache": {"level": cache_level, "path": str(tmp_path / "cache")}},
+        "apx-server": server_cfg,
         "socket-server-extension": {"tcp-port": port},
     }
     config_file.write_text(json.dumps(config, indent=2), encoding="utf-8")
@@ -124,11 +137,18 @@ def send_file_info_no_wait(
     address: int,
     size: int,
     digest: bytes | None = None,
+    signature: bytes | None = None,
 ) -> None:
-    digest_type = 2 if digest is not None else 0
-    digest_bytes = digest if digest is not None else (b"\x00" * 32)
-    header = struct.pack("<IIIHH", 3, address, size, 0, digest_type)
-    command = header + digest_bytes + f"{name}\0".encode("ascii")
+    if signature is not None:
+        assert digest is not None and len(digest) == 32
+        assert len(signature) == 64
+        header = struct.pack("<IIIHH", 21, address, size, 0, 1)
+        command = header + digest + signature + f"{name}\0".encode("ascii")
+    else:
+        digest_type = 2 if digest is not None else 0
+        digest_bytes = digest if digest is not None else (b"\x00" * 32)
+        header = struct.pack("<IIIHH", 3, address, size, 0, digest_type)
+        command = header + digest_bytes + f"{name}\0".encode("ascii")
     sock.sendall(encode_numheader32(struct.pack(">I", 0xBFFFFC00) + command))
 
 
@@ -155,6 +175,7 @@ class NodeSpec:
     name: str
     apx_bytes: bytes
     digest: bytes
+    signature: bytes | None
     out_size: int
     num_provide: int
     num_require: int
@@ -208,6 +229,7 @@ def probe_apx_file(apx_node_bin: str, lsock: socket.socket, sock_path: str, apx_
         name=node_name,
         apx_bytes=apx_bytes,
         digest=hashlib.sha256(apx_bytes).digest(),
+        signature=None,
         out_size=out_size,
         num_provide=num_provide,
         num_require=num_require,
@@ -238,6 +260,7 @@ def connect_node(
     node: NodeSpec,
     greeting: bytes,
     *,
+    signed: bool = False,
     timeout_s: float = 30.0,
 ) -> tuple[socket.socket, float]:
     """Connect one node, publish its .out/.apx, and wait until server publishes .in."""
@@ -253,7 +276,12 @@ def connect_node(
         if node.out_size > 0:
             send_file_info_no_wait(sock, name=f"{node.name}.out", address=OUT_FILE_ADDR, size=node.out_size)
         send_file_info_no_wait(
-            sock, name=f"{node.name}.apx", address=APX_FILE_ADDR, size=len(node.apx_bytes), digest=node.digest
+            sock,
+            name=f"{node.name}.apx",
+            address=APX_FILE_ADDR,
+            size=len(node.apx_bytes),
+            digest=node.digest,
+            signature=node.signature if signed else None,
         )
 
         sent_out = node.out_size == 0
@@ -294,6 +322,8 @@ def bench_sequential_boot(
     srv: TcpServerHandle,
     nodes: list[NodeSpec],
     greeting: bytes,
+    *,
+    signed: bool = False,
 ) -> tuple[float, list[tuple[str, float]]]:
     """Connect all nodes one by one (keeping all open), returning total and per-node ms."""
     sockets: list[socket.socket] = []
@@ -301,7 +331,7 @@ def bench_sequential_boot(
     try:
         t_start = time.perf_counter()
         for node in nodes:
-            sock, dt_ms = connect_node(srv, node, greeting)
+            sock, dt_ms = connect_node(srv, node, greeting, signed=signed)
             sockets.append(sock)
             per_node.append((node.name, dt_ms))
             for s in sockets:
@@ -317,6 +347,8 @@ def bench_parallel_boot(
     srv: TcpServerHandle,
     nodes: list[NodeSpec],
     greeting: bytes,
+    *,
+    signed: bool = False,
 ) -> tuple[float, list[tuple[str, float]]]:
     """Connect all nodes simultaneously using a barrier, returning wall-clock total ms."""
     barrier = threading.Barrier(len(nodes))
@@ -334,7 +366,7 @@ def bench_parallel_boot(
             t0 = time.perf_counter()
             with time_lock:
                 start_times.append(t0)
-            sock, dt_ms = connect_node(srv, node, greeting)
+            sock, dt_ms = connect_node(srv, node, greeting, signed=signed)
             t1 = time.perf_counter()
             sockets[idx] = sock
             per_node[idx] = (node.name, dt_ms)
@@ -368,6 +400,7 @@ def run_benchmark_target(
     nodes: list[NodeSpec],
     runs: int,
     *,
+    signed: bool = False,
     warmup_cache: bool = False,
     show_per_node: bool = False,
 ) -> None:
@@ -377,7 +410,7 @@ def run_benchmark_target(
             # Populate persistent disk cache once, then stop server so timed runs test fresh server boots.
             srv = make_server(tmp_path)
             try:
-                bench_sequential_boot(srv, nodes, greeting)
+                bench_sequential_boot(srv, nodes, greeting, signed=signed)
             finally:
                 srv.stop()
 
@@ -388,7 +421,7 @@ def run_benchmark_target(
         for _ in range(runs):
             srv = make_server(tmp_path)
             try:
-                seq_ms, per_node = bench_sequential_boot(srv, nodes, greeting)
+                seq_ms, per_node = bench_sequential_boot(srv, nodes, greeting, signed=signed)
                 seq_totals.append(seq_ms)
                 last_seq_nodes = per_node
             finally:
@@ -396,7 +429,7 @@ def run_benchmark_target(
 
             srv = make_server(tmp_path)
             try:
-                par_ms, _ = bench_parallel_boot(srv, nodes, greeting)
+                par_ms, _ = bench_parallel_boot(srv, nodes, greeting, signed=signed)
                 par_totals.append(par_ms)
             finally:
                 srv.stop()
@@ -404,7 +437,7 @@ def run_benchmark_target(
         avg_seq = sum(seq_totals) / len(seq_totals)
         avg_par = sum(par_totals) / len(par_totals)
         print(
-            f"  {label:<26} "
+            f"  {label:<32} "
             f"sequential: {avg_seq:6.2f} ms (min {min(seq_totals):5.2f}) | "
             f"parallel: {avg_par:6.2f} ms (min {min(par_totals):5.2f})"
         )
@@ -427,6 +460,7 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=5, help="Number of full network boot runs per mode")
     parser.add_argument("--per-node", action="store_true", help="Print top 5 slowest nodes for each mode")
     parser.add_argument("--legacy-only", action="store_true", help="Benchmark only the legacy v0.2.9 server")
+    parser.add_argument("--signed", action="store_true", help="Also benchmark ECDSA-signed node publications")
     args = parser.parse_args()
 
     apx_node_bin = str(args.apx_node.expanduser().resolve())
@@ -446,9 +480,16 @@ def main() -> int:
         print(f"Error: neither modern ({modern_bin}) nor legacy ({legacy_bin}) server found", file=sys.stderr)
         return 1
 
+    certs_dir = REPO_ROOT / "tests" / "certs"
+    privkey_path = certs_dir / "client_key.pem"
+    pubkey_path = certs_dir / "client_pubkey.pem"
+
     for net_dir in args.networks:
         net_path = net_dir.expanduser().resolve()
         nodes = load_network(apx_node_bin, net_path)
+        if args.signed:
+            for node in nodes:
+                node.signature = sign_data_with_openssl(privkey_path, node.apx_bytes)
         total_apx = sum(len(n.apx_bytes) for n in nodes)
         total_p = sum(n.num_provide for n in nodes)
         total_r = sum(n.num_require for n in nodes)
@@ -495,6 +536,45 @@ def main() -> int:
                 warmup_cache=True,
                 show_per_node=args.per_node,
             )
+            if args.signed:
+                run_benchmark_target(
+                    "v0.3.x level=0 (signed)",
+                    lambda tp: start_modern_tcp_server(
+                        tp, modern_bin, find_free_tcp_port(), 0, trusted_pubkey=pubkey_path
+                    ),
+                    RMFP_1_1_GREETING,
+                    nodes,
+                    args.runs,
+                    signed=True,
+                    show_per_node=args.per_node,
+                )
+                run_benchmark_target(
+                    "v0.3.x level=2 (signed, cold)",
+                    lambda _tp: start_modern_tcp_server(
+                        Path(tempfile.mkdtemp(dir=_tp)),
+                        modern_bin,
+                        find_free_tcp_port(),
+                        2,
+                        trusted_pubkey=pubkey_path,
+                    ),
+                    RMFP_1_1_GREETING,
+                    nodes,
+                    args.runs,
+                    signed=True,
+                    show_per_node=args.per_node,
+                )
+                run_benchmark_target(
+                    "v0.3.x level=2 (signed, warm)",
+                    lambda tp: start_modern_tcp_server(
+                        tp, modern_bin, find_free_tcp_port(), 2, trusted_pubkey=pubkey_path
+                    ),
+                    RMFP_1_1_GREETING,
+                    nodes,
+                    args.runs,
+                    signed=True,
+                    warmup_cache=True,
+                    show_per_node=args.per_node,
+                )
 
     return 0
 

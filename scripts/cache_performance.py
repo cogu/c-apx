@@ -12,7 +12,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "tests"))
 
-from test_server_compressed_nodes import read_msg, start_server  # noqa: E402
+from test_server_compressed_nodes import read_msg, sign_data_with_openssl, start_server  # noqa: E402
 from test_server_definition_events import client, opcode, publish, write  # noqa: E402
 
 
@@ -41,6 +41,7 @@ def main() -> int:
     parser.add_argument("--ports", type=int, default=1000, help="Number of require ports in benchmark node")
     parser.add_argument("--iters", type=int, default=50, help="Number of timed reconnect iterations per level")
     parser.add_argument("--compressed", action="store_true", help="Publish compressed .apx definitions")
+    parser.add_argument("--signed", action="store_true", help="Publish ECDSA-signed .apx definitions")
     args = parser.parse_args()
 
     server_bin = str(args.server.resolve())
@@ -51,15 +52,23 @@ def main() -> int:
     big_def = build_definition(args.ports)
     digest = hashlib.sha256(big_def).digest()
     compressed_payload = zlib.compress(big_def) if args.compressed else None
+    certs_dir = REPO_ROOT / "tests" / "certs"
+    signature = sign_data_with_openssl(certs_dir / "client_key.pem", big_def) if args.signed else None
 
     for level in (0, 1, 2):
         with tempfile.TemporaryDirectory() as td:
             tp = Path(td)
+            server_cfg: dict = {"cache": {"level": level, "path": str(tp / "cache")}}
+            if args.signed:
+                server_cfg["security"] = {
+                    "require-signed-nodes": True,
+                    "trusted-keys": [str(certs_dir / "client_pubkey.pem")],
+                }
             srv = start_server(
                 tp,
                 server_bin,
                 {
-                    "apx-server": {"cache": {"level": level, "path": str(tp / "cache")}},
+                    "apx-server": server_cfg,
                     "socket-server-extension": {"unix-file": str(tp / "apx.socket")},
                 },
             )
@@ -73,6 +82,7 @@ def main() -> int:
                         compressed=args.compressed,
                         payload=compressed_payload,
                         digest=digest,
+                        signature=signature,
                     )
                     if opcode(resp) == 10:
                         send_chunked(sock, payload)
@@ -89,6 +99,7 @@ def main() -> int:
                             compressed=args.compressed,
                             payload=compressed_payload,
                             digest=digest,
+                            signature=signature,
                         )
                         if opcode(resp) == 10:
                             send_chunked(sock, payload)
