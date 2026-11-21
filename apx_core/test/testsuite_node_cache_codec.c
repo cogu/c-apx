@@ -100,7 +100,7 @@ static void test_writer_and_reader_primitives_roundtrip(CuTest *tc)
 
   apx_cache_reader_t reader;
   apx_cache_reader_create(&reader, raw, raw_size);
-  CuAssertUIntEquals(tc, raw_size, apx_cache_reader_remaining(&reader));
+  CuAssertUIntEquals(tc, (unsigned int)raw_size, (unsigned int)apx_cache_reader_remaining(&reader));
 
   uint8_t v8 = 0u;
   uint16_t v16 = 0u;
@@ -121,7 +121,7 @@ static void test_writer_and_reader_primitives_roundtrip(CuTest *tc)
   CuAssertStrEquals(tc, "WheelSpeed", str1);
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_reader_read_str16(&reader, true, &str2));
   CuAssertStrEquals(tc, "", str2);
-  CuAssertUIntEquals(tc, 0u, apx_cache_reader_remaining(&reader));
+  CuAssertUIntEquals(tc, 0u, (unsigned int)apx_cache_reader_remaining(&reader));
 
   free(str1);
   free(str2);
@@ -161,13 +161,13 @@ static void test_reader_bounds_and_seek(CuTest *tc)
   apx_cache_reader_create(&reader, buf, sizeof(buf));
 
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_reader_seek(&reader, 4u));
-  CuAssertUIntEquals(tc, 4u, apx_cache_reader_pos(&reader));
-  CuAssertUIntEquals(tc, 2u, apx_cache_reader_remaining(&reader));
+  CuAssertUIntEquals(tc, 4u, (unsigned int)apx_cache_reader_pos(&reader));
+  CuAssertUIntEquals(tc, 2u, (unsigned int)apx_cache_reader_remaining(&reader));
 
   // Reading u32 with only 2 bytes remaining fails without advancing cursor
   uint32_t v32 = 0u;
   CuAssertIntEquals(tc, APX_BUFFER_BOUNDARY_ERROR, apx_cache_reader_read_u32_le(&reader, &v32));
-  CuAssertUIntEquals(tc, 4u, apx_cache_reader_pos(&reader));
+  CuAssertUIntEquals(tc, 4u, (unsigned int)apx_cache_reader_pos(&reader));
 
   // Overflow-sized slice fails cleanly
   uint8_t const *slice = NULL;
@@ -179,7 +179,7 @@ static void test_reader_bounds_and_seek(CuTest *tc)
   CuAssertPtrNotNull(tc, slice);
   CuAssertUIntEquals(tc, 0x05u, slice[0]);
   CuAssertUIntEquals(tc, 0x06u, slice[1]);
-  CuAssertUIntEquals(tc, 0u, apx_cache_reader_remaining(&reader));
+  CuAssertUIntEquals(tc, 0u, (unsigned int)apx_cache_reader_remaining(&reader));
 
   // Zero-length slice at EOF succeeds
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_reader_read_slice(&reader, 0u, &slice));
@@ -220,19 +220,19 @@ static void test_writer_take_buffer_and_empty_writes(CuTest *tc)
 
   // Zero-byte write with NULL pointer is allowed
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_writer_write_bytes(&writer, NULL, 0u));
-  CuAssertUIntEquals(tc, 0u, apx_cache_writer_size(&writer));
+  CuAssertUIntEquals(tc, 0u, (unsigned int)apx_cache_writer_size(&writer));
 
   uint8_t *taken = NULL;
   size_t taken_size = 99u;
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_writer_take_buffer(&writer, &taken, &taken_size));
   CuAssertPtrEquals(tc, NULL, taken);
-  CuAssertUIntEquals(tc, 0u, taken_size);
+  CuAssertUIntEquals(tc, 0u, (unsigned int)taken_size);
 
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_writer_write_u32_le(&writer, 0x11223344u));
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_cache_writer_take_buffer(&writer, &taken, &taken_size));
   CuAssertPtrNotNull(tc, taken);
-  CuAssertUIntEquals(tc, 4u, taken_size);
-  CuAssertUIntEquals(tc, 0u, apx_cache_writer_size(&writer));
+  CuAssertUIntEquals(tc, 4u, (unsigned int)taken_size);
+  CuAssertUIntEquals(tc, 0u, (unsigned int)apx_cache_writer_size(&writer));
   CuAssertUIntEquals(tc, 0x44u, taken[0]);
   CuAssertUIntEquals(tc, 0x11u, taken[3]);
 
@@ -277,7 +277,7 @@ static void test_port_descriptor_roundtrip(CuTest *tc)
   CuAssertIntEquals(tc, APX_NO_ERROR,
     apx_cache_decode_port_descriptor(&reader, NULL, APX_PROVIDE_PORT, 2u, next_off, &dst2, &next_off));
   CuAssertUIntEquals(tc, 60u, next_off);
-  CuAssertUIntEquals(tc, 0u, apx_cache_reader_remaining(&reader));
+  CuAssertUIntEquals(tc, 0u, (unsigned int)apx_cache_reader_remaining(&reader));
 
   bool dyn = false;
   CuAssertStrEquals(tc, "WheelSpeed", apx_port_instance_name(&dst0));
@@ -464,8 +464,7 @@ static void assert_nodes_equivalent(
     bool de = false;
     bool da = false;
     CuAssertStrEquals(tc, apx_port_instance_name(pe), apx_port_instance_name(pa));
-    CuAssertStrEquals(
-      tc, apx_port_instance_get_port_signature(pe, &de), apx_port_instance_get_port_signature(pa, &da));
+    CuAssertStrEquals(tc, apx_port_instance_get_port_signature(pe, &de), apx_port_instance_get_port_signature(pa, &da));
     CuAssertIntEquals(tc, (int)de, (int)da);
     CuAssertUIntEquals(tc, apx_port_instance_data_offset(pe), apx_port_instance_data_offset(pa));
     CuAssertUIntEquals(tc, apx_port_instance_data_size(pe), apx_port_instance_data_size(pa));
@@ -490,8 +489,7 @@ static void assert_nodes_equivalent(
     bool de = false;
     bool da = false;
     CuAssertStrEquals(tc, apx_port_instance_name(re), apx_port_instance_name(ra));
-    CuAssertStrEquals(
-      tc, apx_port_instance_get_port_signature(re, &de), apx_port_instance_get_port_signature(ra, &da));
+    CuAssertStrEquals(tc, apx_port_instance_get_port_signature(re, &de), apx_port_instance_get_port_signature(ra, &da));
     CuAssertIntEquals(tc, (int)de, (int)da);
     CuAssertUIntEquals(tc, apx_port_instance_data_offset(re), apx_port_instance_data_offset(ra));
     CuAssertUIntEquals(tc, apx_port_instance_data_size(re), apx_port_instance_data_size(ra));
@@ -523,18 +521,17 @@ static void resign_apxc_trailer(CuTest *tc, uint8_t *buf, size_t size)
 
 static void test_full_node_roundtrip_server_and_client_modes(CuTest *tc)
 {
-  char const *apx_text =
-    "APX/1.3\n"
-    "N\"RichNode\"\n"
-    "T\"Mode_T\"C(0,3):VT(\"Off\",\"Init\",\"Run\",\"Fault\")\n"
-    "T\"Vec_T\"{\"x\"s\"y\"s\"z\"l}\n"
-    "P\"VehicleSpeed\"S:=65535\n"
-    "P\"Mode\"T[\"Mode_T\"]:=2\n"
-    "P\"FixedArr\"C[4]:={1,2,3,4}\n"
-    "P\"DynBuf\"C[16*]:={}\n"
-    "P\"Position\"T[\"Vec_T\"]:={-10,20,-300}\n"
-    "R\"Command\"L:=42\n"
-    "R\"RxDyn\"S[8*]:={}\n";
+  char const *apx_text = "APX/1.3\n"
+                         "N\"RichNode\"\n"
+                         "T\"Mode_T\"C(0,3):VT(\"Off\",\"Init\",\"Run\",\"Fault\")\n"
+                         "T\"Vec_T\"{\"x\"s\"y\"s\"z\"l}\n"
+                         "P\"VehicleSpeed\"S:=65535\n"
+                         "P\"Mode\"T[\"Mode_T\"]:=2\n"
+                         "P\"FixedArr\"C[4]:={1,2,3,4}\n"
+                         "P\"DynBuf\"C[16*]:={}\n"
+                         "P\"Position\"T[\"Vec_T\"]:={-10,20,-300}\n"
+                         "R\"Command\"L:=42\n"
+                         "R\"RxDyn\"S[8*]:={}\n";
   size_t apx_len = strlen(apx_text);
   uint8_t sha256[RMF_SHA256_SIZE];
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_text, apx_len, sha256));
@@ -621,8 +618,7 @@ static void test_apx_1_2_and_asymmetric_nodes(CuTest *tc)
 
     apx_node_instance_t *restored = apx_node_instance_new(APX_SERVER_MODE, names[idx]);
     CuAssertIntEquals(tc, APX_NO_ERROR,
-      apx_node_cache_decode_binary(
-        encoded, encoded_size, names[idx], sha256, (uint32_t)len, false, restored, NULL));
+      apx_node_cache_decode_binary(encoded, encoded_size, names[idx], sha256, (uint32_t)len, false, restored, NULL));
     assert_nodes_equivalent(tc, compiled, restored, false);
     if (idx == 0u)
     {
@@ -638,12 +634,11 @@ static void test_apx_1_2_and_asymmetric_nodes(CuTest *tc)
 
 static void test_embedded_def_text_raw_and_zlib(CuTest *tc)
 {
-  char const *apx_text =
-    "APX/1.3\n"
-    "N\"PrewarmNode\"\n"
-    "P\"Sig0\"S:=100\n"
-    "P\"Sig1\"S:=200\n"
-    "P\"Sig2\"S:=300\n";
+  char const *apx_text = "APX/1.3\n"
+                         "N\"PrewarmNode\"\n"
+                         "P\"Sig0\"S:=100\n"
+                         "P\"Sig1\"S:=200\n"
+                         "P\"Sig2\"S:=300\n";
   size_t apx_len = strlen(apx_text);
   uint8_t sha256[RMF_SHA256_SIZE];
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_sha256((uint8_t const *)apx_text, apx_len, sha256));
@@ -660,8 +655,8 @@ static void test_embedded_def_text_raw_and_zlib(CuTest *tc)
     uint8_t *encoded = NULL;
     size_t encoded_size = 0u;
     CuAssertIntEquals(tc, APX_NO_ERROR,
-      apx_node_cache_encode_binary(compiled, sha256, (uint32_t)apx_len, (uint8_t const *)apx_text, compress, true,
-        &encoded, &encoded_size));
+      apx_node_cache_encode_binary(
+        compiled, sha256, (uint32_t)apx_len, (uint8_t const *)apx_text, compress, true, &encoded, &encoded_size));
 
     apx_node_instance_t *restored = apx_node_instance_new(APX_SERVER_MODE, "PrewarmNode");
     uint8_t *embedded_text = NULL;
