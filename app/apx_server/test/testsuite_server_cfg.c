@@ -1120,15 +1120,12 @@ static void test_check_config_cache_warnings_and_legacy_keys(CuTest *tc)
   test_warning_collector_t collector;
   dtl_hv_t *cfg = NULL;
 
-  // 1. Level 2 emits Phase 1 fallback warning
+  // 1. Level 2 is accepted cleanly with zero warnings
   test_warning_collector_init(&collector);
   write_test_file(filepath, "{\"apx-server\": {\"cache\": {\"level\": 2, \"path\": \"/tmp\"}}}");
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_load_config(filepath, &cfg));
   apx_server_check_config_unknown_keys_cb(cfg, test_warning_cb, &collector);
-  CuAssertIntEquals(tc, 1, collector.count);
-  CuAssertTrue(tc,
-    test_warning_collector_has(
-      &collector, "Warning: 'apx-server.cache.level' value 2 is not yet implemented; using level 1"));
+  CuAssertIntEquals(tc, 0, collector.count);
   dtl_dec_ref(cfg);
 
   // 2. Level 1 with empty path warns and disables cache

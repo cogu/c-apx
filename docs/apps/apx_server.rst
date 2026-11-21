@@ -119,17 +119,20 @@ Configuration Parameters
      - Integer
      - ``0``
      - Node definition cache level: ``0`` (disabled), ``1`` (Level 1 SHA-256 text cache under ``<path>/text/`` — skips
-       definition transfer and decompression on unsigned SHA-256 hits), or ``2`` (reserved for future Level 2 binary
-       cache; currently emits a startup warning and runs at level ``1``).
+       definition transfer and decompression on unsigned SHA-256 hits), or ``2`` (Level 2 compiled binary cache under
+       ``<path>/bin/`` + companion Level 1 text cache — skips definition transfer, parsing, and VM compilation on
+       unsigned SHA-256 hits, and skips parsing and VM compilation post-transfer for signed and ``DIGEST_NONE`` nodes).
    * - ``cache.path``
      - String
      - ``""``
      - Root filesystem directory for cached node definitions (required when ``cache.level > 0``). Each writable
        ``apx-server`` instance acquires an exclusive OS lock on ``<path>/.lock`` so multiple servers on the same
        machine cannot accidentally share and thrash the same cache directory; if another instance already holds the
-       lock, the second server logs a warning and disables caching. If the directory cannot be created or accessed,
-       caching is disabled with a startup warning. If ``<path>/text`` exists and is readable but not writable, the
-       cache runs in read-only mode with a startup warning (no lock required).
+       lock, the second server logs a warning and disables caching. At startup with ``cache.level: 2``, writable servers
+       also sweep incompatible ``.apxc`` files on format/ABI upgrades (preserving ``<path>/text/``), remove orphan
+       temporary files, and pre-validate ``<path>/bin/*.apxc`` before binding listening sockets. If the directory cannot
+       be created or accessed, caching is disabled with a startup warning. If the cache directory is readable but not
+       writable, the cache runs in read-only mode with a startup warning (no lock required).
    * - ``cache.max-versions-per-node``
      - Integer
      - ``10``

@@ -602,10 +602,6 @@ static void check_apx_server_config(dtl_hv_t *server_hv, apx_config_warning_cb c
           else
           {
             parsed_level = val;
-            if (parsed_level == (int64_t)APX_CACHE_LEVEL_BINARY)
-            {
-              emit_warning(cb, arg, "Warning: 'apx-server.cache.level' value 2 is not yet implemented; using level 1");
-            }
           }
         }
         else

@@ -251,7 +251,7 @@ To eliminate heap allocation overhead and per-connection garbage-collector threa
 * **Testing:**
   * Add unit and integration tests verifying multi-provider connect, takeover, shadowed disconnect, active disconnect transitions (e.g. `[1, 4, 5, 7]`), and `apx-mon routing --multi-provider` under both `"first"` and `"last"` policies.
 
-## 14. Node Definition Cache (Text & Binary Form)
+## 14. Node Definition Cache (Text & Binary Form) (Completed)
 
 Implement disk-based caching similar to Python's `.py` / `.pyc` model to eliminate definition transfer overhead and bytecode compilation during ECU startup and wake-from-sleep.
 

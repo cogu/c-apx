@@ -1027,6 +1027,10 @@ static void on_definition_validated(void *arg, apx_connection_base_t *connection
   logical_info.uncompressed_size = 0u;
   logical_info.compression_type = RMF_COMPRESSION_TYPE_NONE;
   uint8_t const *data = apx_node_instance_get_definition_data(node);
+  if (data == NULL || logical_info.size == 0u)
+  {
+    return;
+  }
   apx_error_t result = APX_NO_ERROR;
   MUTEX_LOCK(self->lock);
   adt_list_elem_t *iter = adt_list_iter_first(&self->sessions);

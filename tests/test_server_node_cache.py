@@ -1,4 +1,4 @@
-"""End-to-end integration tests for Level 1 server node definition cache."""
+"""End-to-end integration tests for Level 1 and Level 2 server node definition cache."""
 
 import concurrent.futures
 import hashlib
@@ -658,5 +658,421 @@ def test_cache_lock_prevents_two_servers_sharing_cache_dir(tmp_path: Path, apx_s
             server1.stop()
 
     assert server3 is not None and server3.process.returncode == 0, server3.stderr
+
+
+def test_l2_cold_miss_warm_hit_signal_routing_and_apxlog_parity(
+    tmp_path: Path, apx_server_bin: str, apx_node_bin: str, apx_log_bin: str
+):
+    cache_dir = tmp_path / "cache"
+    log_file = tmp_path / "server.log"
+    sock_path = str(tmp_path / "apx.socket")
+    monitor_socket = str(tmp_path / "monitor.socket")
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {"cache": {"level": 2, "path": str(cache_dir)}},
+            "socket-server-extension": {"unix-file": sock_path},
+            "monitor-extension": {"enabled": True, "socket-file": monitor_socket},
+            "textlog-extension": {
+                "enabled": True,
+                "log-level": "DEBUG",
+                "file-enabled": True,
+                "file-path": str(log_file),
+            },
+        },
+    )
+    server.monitor_socket = monitor_socket
+
+    sender_text = 'APX/1.3\nN"SenderL2"\nP"Speed"S:=123\n'
+    listener_text = 'APX/1.3\nN"ListenerL2"\nR"Speed"S:=0\n'
+    sender_file = tmp_path / "SenderL2.apx"
+    listener_file = tmp_path / "ListenerL2.apx"
+    sender_file.write_text(sender_text, encoding="utf-8")
+    listener_file.write_text(listener_text, encoding="utf-8")
+
+    sender_sha = hashlib.sha256(sender_text.encode("ascii")).hexdigest()
+    listener_sha = hashlib.sha256(listener_text.encode("ascii")).hexdigest()
+
+    def launch_node(apx_file: Path, bind_sock: str | None = None, compressed: bool = False) -> ApxNodeInstance:
+        cmd = [apx_node_bin, "-c", sock_path]
+        if bind_sock is not None:
+            cmd += ["-b", bind_sock]
+        else:
+            cmd.append("--no-bind")
+        if compressed:
+            cmd.append("--compressed")
+        cmd.append(str(apx_file))
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            preexec_fn=_set_pdeathsig,
+        )
+        inst = ApxNodeInstance(proc, apx_file, bind_sock)
+        if bind_sock is not None:
+            wait_for_unix_socket(bind_sock, timeout=3.0)
+        return inst
+
+    nodes: list[ApxNodeInstance] = []
+    try:
+        assert (cache_dir / "bin" / ".format_version").is_file()
+
+        # 1. Cold boot populates both text/ and bin/
+        listener1 = launch_node(listener_file)
+        nodes.append(listener1)
+        sender1 = launch_node(sender_file, str(tmp_path / "sender1.socket"), compressed=False)
+        nodes.append(sender1)
+        assert listener1.wait_for_output('"Speed": 123'), listener1.output
+        sender1.stop()
+        listener1.stop()
+        nodes.clear()
+        time.sleep(0.2)
+
+        assert (cache_dir / "text" / f"SenderL2_{sender_sha}.apx").is_file()
+        assert (cache_dir / "bin" / f"SenderL2_{sender_sha}.apxc").is_file()
+        assert (cache_dir / "text" / f"ListenerL2_{listener_sha}.apx").is_file()
+        assert (cache_dir / "bin" / f"ListenerL2_{listener_sha}.apxc").is_file()
+
+        # 2. Warm boot hits Level 2 binary cache, routes signals, and streams logical .apx to apx-log
+        live = tmp_path / "live_l2.apxlog"
+        snapshot = tmp_path / "snap_l2.apxlog"
+        with capture(server, apx_log_bin, live):
+            listener2 = launch_node(listener_file)
+            nodes.append(listener2)
+            sender2_sock = str(tmp_path / "sender2.socket")
+            sender2 = launch_node(sender_file, sender2_sock, compressed=True)
+            nodes.append(sender2)
+            assert listener2.wait_for_output('"Speed": 123'), listener2.output
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+                control.connect(sender2_sock)
+                control.sendall(b'{"Speed": 456}\n')
+            assert listener2.wait_for_output('"Speed": 456'), listener2.output
+            time.sleep(0.2)
+
+        with capture(server, apx_log_bin, snapshot):
+            pass
+
+        assert_definition_events(events(apx_log_bin, live), "SenderL2", sender_text.encode("ascii"))
+        assert_definition_events(events(apx_log_bin, snapshot), "SenderL2", sender_text.encode("ascii"))
+    finally:
+        for n in nodes:
+            n.stop()
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+    assert "not yet implemented" not in server.stderr
+    log_text = log_file.read_text(encoding="utf-8")
+    assert log_text.count("Server open file: SenderL2.apx") == 1
+    assert log_text.count("Server open file: ListenerL2.apx") == 1
+    assert "Server created node SenderL2 (cache hit: binary)" in log_text
+    assert "Server created node ListenerL2 (cache hit: binary)" in log_text
+
+
+def test_l2_corrupt_binary_falls_back_to_l1_text_without_wire_transfer(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "cache"
+    log_file = tmp_path / "server.log"
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {"cache": {"level": 2, "path": str(cache_dir)}},
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+            "textlog-extension": {
+                "enabled": True,
+                "log-level": "DEBUG",
+                "file-enabled": True,
+                "file-path": str(log_file),
+            },
+        },
+    )
+    try:
+        name = "FallbackL2Node"
+        definition = make_req_definition(name, num_ports=6)
+        sha_hex = hashlib.sha256(definition).hexdigest()
+        bin_file = cache_dir / "bin" / f"{name}_{sha_hex}.apxc"
+
+        # 1. Cold boot warms both L1 and L2
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+        assert bin_file.is_file()
+
+        # 2. Corrupt .apxc on disk -> server falls back to L1 text (zero wire transfer!) and heals .apxc
+        corrupted = bytearray(bin_file.read_bytes())
+        corrupted[-1] ^= 0xFF
+        bin_file.write_bytes(bytes(corrupted))
+
+        with client(server) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 3  # Still zero wire transfer via L1 text hit!
+            assert f"{name}.".encode() in resp
+        assert bin_file.is_file()
+
+        # 3. Third connect hits regenerated L2 binary cache
+        with client(server) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 3
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+    log_text = log_file.read_text(encoding="utf-8")
+    assert "(cache hit: text)" in log_text
+    assert "(cache hit: binary)" in log_text
+
+
+def test_l2_startup_format_version_sweep_preserves_text_cache(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "cache"
+    dir1 = tmp_path / "run1"
+    dir2 = tmp_path / "run2"
+    dir1.mkdir()
+    dir2.mkdir()
+    log2 = dir2 / "server.log"
+
+    name = "UpgradeNode"
+    definition = make_req_definition(name, num_ports=5)
+    sha_hex = hashlib.sha256(definition).hexdigest()
+    text_file = cache_dir / "text" / f"{name}_{sha_hex}.apx"
+    bin_file = cache_dir / "bin" / f"{name}_{sha_hex}.apxc"
+
+    # 1. Run 1 warms both text/ and bin/
+    server1 = start_server(
+        dir1,
+        apx_server_bin,
+        {
+            "apx-server": {"cache": {"level": 2, "path": str(cache_dir)}},
+            "socket-server-extension": {"unix-file": str(dir1 / "apx.socket")},
+        },
+    )
+    try:
+        with client(server1) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+    finally:
+        server1.stop()
+    assert text_file.is_file()
+    assert bin_file.is_file()
+
+    # 2. Simulate server upgrade by writing an old .format_version stamp
+    (cache_dir / "bin" / ".format_version").write_text("0/vm2.0/abi0\n", encoding="ascii")
+
+    server2 = start_server(
+        dir2,
+        apx_server_bin,
+        {
+            "apx-server": {"cache": {"level": 2, "path": str(cache_dir)}},
+            "socket-server-extension": {"unix-file": str(dir2 / "apx.socket")},
+            "textlog-extension": {
+                "enabled": True,
+                "log-level": "DEBUG",
+                "file-enabled": True,
+                "file-path": str(log2),
+            },
+        },
+    )
+    try:
+        # Startup sweep cleared bin/ while keeping text/
+        assert not bin_file.exists()
+        assert text_file.is_file()
+
+        # First connect after upgrade hits text/ (no wire transfer) and regenerates bin/
+        with client(server2) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 3
+        assert bin_file.is_file()
+
+        # Second connect hits regenerated bin/
+        with client(server2) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 3
+    finally:
+        server2.stop()
+
+    assert server2.process.returncode == 0, server2.stderr
+    assert "Binary cache format changed" in server2.stderr
+    log_text = log2.read_text(encoding="utf-8")
+    assert "(cache hit: text)" in log_text
+    assert "(cache hit: binary)" in log_text
+
+
+def test_l2_signed_node_post_transfer_binary_hit(tmp_path: Path, apx_server_bin: str):
+    certs = Path(__file__).parent / "certs"
+    cache_dir = tmp_path / "cache"
+    log_file = tmp_path / "server.log"
+
+    name = "SignedL2Node"
+    definition = make_req_definition(name, num_ports=6)
+    sha_hex = hashlib.sha256(definition).hexdigest()
+    sig = sign_data_with_openssl(certs / "client_key.pem", definition)
+
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "security": {
+                    "require-signed-nodes": True,
+                    "trusted-keys": [str(certs / "client_pubkey.pem")],
+                },
+                "cache": {"level": 2, "path": str(cache_dir)},
+            },
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+            "textlog-extension": {
+                "enabled": True,
+                "log-level": "INFO",
+                "file-enabled": True,
+                "file-path": str(log_file),
+            },
+        },
+    )
+    try:
+        # 1. Cold signed publish: transfers, verifies signature, compiles, stores bin/ ONLY (not text/)
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False, signature=sig)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+
+        assert (cache_dir / "bin" / f"{name}_{sha_hex}.apxc").is_file()
+        assert list((cache_dir / "text").glob("*.apx")) == []
+
+        # 2. Warm signed compressed publish: still transfers & verifies signature, hits bin/ post-transfer
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=True, signature=sig)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+
+        # 3. Bad signature MUST still be rejected even though .apxc is cached!
+        bad_sig = bytes([sig[0] ^ 0xFF]) + sig[1:]
+        with client(server) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False, signature=bad_sig)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert_nack(read_msg(sock), 80)  # APX_SIGNATURE_VERIFICATION_ERROR
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+    log_text = log_file.read_text(encoding="utf-8")
+    assert f"Server created node {name} (cache hit: binary)" in log_text
+
+
+def test_l2_no_digest_post_transfer_binary_hit(tmp_path: Path, apx_server_bin: str):
+    cache_dir = tmp_path / "cache"
+    log_file = tmp_path / "server.log"
+    server = start_server(
+        tmp_path,
+        apx_server_bin,
+        {
+            "apx-server": {"cache": {"level": 2, "path": str(cache_dir)}},
+            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+            "textlog-extension": {
+                "enabled": True,
+                "log-level": "INFO",
+                "file-enabled": True,
+                "file-path": str(log_file),
+            },
+        },
+    )
+    try:
+        name = "NoDigestL2Node"
+        definition = make_req_definition(name, num_ports=4)
+        sha_hex = hashlib.sha256(definition).hexdigest()
+
+        # 1. Cold connect without digest: stores bin/ ONLY (not text/)
+        with client(server) as sock:
+            resp = publish_raw_digest(sock, definition, name=name, digest_type=0, digest_bytes=b"")
+            assert opcode(resp) == 10
+            write(sock, definition)
+            assert f"{name}.".encode() in read_msg(sock)
+        assert (cache_dir / "bin" / f"{name}_{sha_hex}.apxc").is_file()
+        assert list((cache_dir / "text").glob("*.apx")) == []
+
+        # 2. Second connect without digest: transfers and hits bin/ post-transfer
+        with client(server) as sock:
+            resp = publish_raw_digest(sock, definition, name=name, digest_type=0, digest_bytes=b"")
+            assert opcode(resp) == 10
+            write(sock, definition)
+            assert f"{name}.".encode() in read_msg(sock)
+    finally:
+        server.stop()
+
+    assert server.process.returncode == 0, server.stderr
+    log_text = log_file.read_text(encoding="utf-8")
+    assert f"Server created node {name} (cache hit: binary)" in log_text
+
+
+def test_l2_prewarmed_readonly_bin_only_with_monitor_enabled(tmp_path: Path, apx_server_bin: str):
+    if os.geteuid() == 0:
+        pytest.skip("Root bypasses POSIX directory write permissions")
+
+    cache_dir = tmp_path / "cache"
+    dir1 = tmp_path / "warm"
+    dir2 = tmp_path / "ro"
+    dir1.mkdir()
+    dir2.mkdir()
+    log2 = dir2 / "server.log"
+
+    name = "RoBinOnlyNode"
+    definition = make_req_definition(name, num_ports=4)
+    sha_hex = hashlib.sha256(definition).hexdigest()
+
+    # 1. Warm bin/ then delete text/ to simulate bin-only pre-warmed read-only image
+    server1 = start_server(
+        dir1,
+        apx_server_bin,
+        {
+            "apx-server": {"cache": {"level": 2, "path": str(cache_dir)}},
+            "socket-server-extension": {"unix-file": str(dir1 / "apx.socket")},
+        },
+    )
+    try:
+        with client(server1) as sock:
+            payload, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 10
+            write(sock, payload)
+            assert f"{name}.".encode() in read_msg(sock)
+    finally:
+        server1.stop()
+
+    (cache_dir / "text" / f"{name}_{sha_hex}.apx").unlink()
+    os.chmod(cache_dir / "bin", 0o555)
+    server2 = None
+    try:
+        server2 = start_server(
+            dir2,
+            apx_server_bin,
+            {
+                "apx-server": {"cache": {"level": 2, "path": str(cache_dir)}},
+                "socket-server-extension": {"unix-file": str(dir2 / "apx.socket")},
+                "monitor-extension": {"enabled": True, "socket-file": str(dir2 / "monitor.socket")},
+                "textlog-extension": {
+                    "enabled": True,
+                    "log-level": "INFO",
+                    "file-enabled": True,
+                    "file-path": str(log2),
+                },
+            },
+        )
+        with client(server2) as sock:
+            _, resp = publish(sock, definition, name=name, compressed=False)
+            assert opcode(resp) == 3  # Direct L2 binary hit even without text/!
+    finally:
+        if server2 is not None:
+            server2.stop()
+        os.chmod(cache_dir / "bin", 0o755)
+
+    assert server2.process.returncode == 0, server2.stderr
+    assert "read-only" in server2.stderr
+    assert f"Server created node {name} (cache hit: binary)" in log2.read_text(encoding="utf-8")
+
 
 

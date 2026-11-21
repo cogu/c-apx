@@ -57,6 +57,7 @@ static apx_error_t create_port_signatures_on_node_instance(apx_node_instance_t *
 static apx_error_t parse_and_compile_definition(apx_node_manager_t *self, apx_node_instance_t *node_instance,
   uint8_t const *definition_data, size_t definition_size, bool replace_node_data,
   apx_definition_failure_stage_t *out_stage);
+static apx_error_t finalize_restored_node_instance(apx_node_instance_t *node_instance);
 static apx_error_t init_node_instance_from_file_info(
   apx_node_manager_t *self, rmf_file_info_t const *file_info, bool *file_open_request);
 
@@ -216,6 +217,7 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
       definition_size = (size_t)uncompressed_size;
     }
     bool has_verified_sha256 = false;
+    bool client_advertised_sha256 = false;
     uint8_t verified_hash[RMF_SHA256_SIZE];
     if (def_file != NULL)
     {
@@ -238,6 +240,7 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
           goto rejected;
         }
         has_verified_sha256 = true;
+        client_advertised_sha256 = true;
       }
     }
     apx_server_t *server = apx_node_instance_get_server(node_instance);
@@ -258,24 +261,84 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
       }
     }
     bool const replace_compressed = (def_file != NULL) && apx_file_is_compressed(def_file);
-    result =
-      parse_and_compile_definition(self, node_instance, definition_data, definition_size, replace_compressed, &stage);
-    if (result != APX_NO_ERROR)
+    apx_node_cache_t *cache = (server != NULL) ? apx_server_get_node_cache(server) : NULL;
+    bool const bin_enabled = (cache != NULL) && apx_node_cache_is_binary_enabled(cache);
+    if (bin_enabled && !has_verified_sha256)
     {
-      goto rejected;
+      if (apx_crypto_sha256(definition_data, definition_size, verified_hash) == APX_NO_ERROR)
+      {
+        has_verified_sha256 = true;
+      }
     }
-    if ((server != NULL) && (def_file != NULL) && !apx_file_is_signed(def_file) && has_verified_sha256)
+
+    bool post_transfer_bin_hit = false;
+    if (bin_enabled && has_verified_sha256 && (self->mode == APX_SERVER_MODE))
     {
-      apx_node_cache_t *cache = apx_server_get_node_cache(server);
-      if (apx_node_cache_is_text_enabled(cache) && !apx_node_cache_is_read_only(cache))
+      char const *node_name = apx_node_instance_get_name(node_instance);
+      apx_error_t bin_rc = apx_node_cache_lookup_binary(
+        cache, node_name, verified_hash, (uint32_t)definition_size, false, node_instance, NULL);
+      if (bin_rc == APX_NO_ERROR)
+      {
+        if (replace_compressed)
+        {
+          bin_rc = apx_node_data_replace_definition_data(node_data, definition_data, (apx_size_t)definition_size);
+        }
+        if (bin_rc == APX_NO_ERROR)
+        {
+          bin_rc = finalize_restored_node_instance(node_instance);
+        }
+        if (bin_rc == APX_NO_ERROR)
+        {
+          apx_node_instance_set_cache_hit_type(node_instance, APX_CACHE_HIT_BINARY);
+          post_transfer_bin_hit = true;
+        }
+        else
+        {
+          apx_node_cache_invalidate_binary(cache, node_name, verified_hash);
+          apx_server_log(server, APX_LOG_LEVEL_WARNING,
+            "Invalid binary cache entry for node '%s' (%s); falling back to compilation",
+            (node_name != NULL) ? node_name : "<unknown>", apx_strerror(bin_rc));
+        }
+      }
+      else if (bin_rc != APX_FILE_NOT_FOUND_ERROR)
+      {
+        apx_server_log(server, APX_LOG_LEVEL_WARNING,
+          "Invalid binary cache entry for node '%s' (%s); falling back to compilation",
+          (node_name != NULL) ? node_name : "<unknown>", apx_strerror(bin_rc));
+      }
+    }
+
+    if (!post_transfer_bin_hit)
+    {
+      result =
+        parse_and_compile_definition(self, node_instance, definition_data, definition_size, replace_compressed, &stage);
+      if (result != APX_NO_ERROR)
+      {
+        goto rejected;
+      }
+      if ((server != NULL) && (cache != NULL) && !apx_node_cache_is_read_only(cache) && has_verified_sha256)
       {
         char const *node_name = apx_node_instance_get_name(node_instance);
-        apx_error_t cache_rc =
-          apx_node_cache_store_text(cache, node_name, verified_hash, definition_data, (uint32_t)definition_size);
-        if (cache_rc != APX_NO_ERROR)
+        if ((def_file != NULL) && !apx_file_is_signed(def_file) && client_advertised_sha256 &&
+          apx_node_cache_is_text_enabled(cache))
         {
-          apx_server_log(server, APX_LOG_LEVEL_WARNING, "Failed to write text cache for node '%s': %s",
-            (node_name != NULL) ? node_name : "<unknown>", apx_strerror(cache_rc));
+          apx_error_t cache_rc =
+            apx_node_cache_store_text(cache, node_name, verified_hash, definition_data, (uint32_t)definition_size);
+          if (cache_rc != APX_NO_ERROR)
+          {
+            apx_server_log(server, APX_LOG_LEVEL_WARNING, "Failed to write text cache for node '%s': %s",
+              (node_name != NULL) ? node_name : "<unknown>", apx_strerror(cache_rc));
+          }
+        }
+        if (bin_enabled)
+        {
+          apx_error_t bin_store_rc =
+            apx_node_cache_store_binary(cache, node_name, verified_hash, (uint32_t)definition_size, node_instance);
+          if (bin_store_rc != APX_NO_ERROR)
+          {
+            apx_server_log(server, APX_LOG_LEVEL_WARNING, "Failed to write binary cache for node '%s': %s",
+              (node_name != NULL) ? node_name : "<unknown>", apx_strerror(bin_store_rc));
+          }
         }
       }
     }
@@ -306,14 +369,17 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
       {
         char const *name = apx_node_instance_get_name(node_instance);
         uint32_t const connection_id = apx_node_instance_get_connection_id(node_instance);
+        char const *suffix =
+          (apx_node_instance_get_cache_hit_type(node_instance) == APX_CACHE_HIT_BINARY) ? " (cache hit: binary)" : "";
         if (connection_id != APX_INVALID_CONNECTION_ID)
         {
-          apx_server_log(server, APX_LOG_LEVEL_INFO, "[%u] Server created node %s", connection_id,
-            (name != NULL) ? name : "<unknown>");
+          apx_server_log(server, APX_LOG_LEVEL_INFO, "[%u] Server created node %s%s", connection_id,
+            (name != NULL) ? name : "<unknown>", suffix);
         }
         else
         {
-          apx_server_log(server, APX_LOG_LEVEL_INFO, "Server created node %s", (name != NULL) ? name : "<unknown>");
+          apx_server_log(
+            server, APX_LOG_LEVEL_INFO, "Server created node %s%s", (name != NULL) ? name : "<unknown>", suffix);
         }
       }
     }
@@ -365,15 +431,17 @@ apx_error_t apx_node_manager_complete_cached_node(apx_node_manager_t *self, apx_
   {
     char const *name = apx_node_instance_get_name(node_instance);
     uint32_t const connection_id = apx_node_instance_get_connection_id(node_instance);
+    char const *hit_label =
+      (apx_node_instance_get_cache_hit_type(node_instance) == APX_CACHE_HIT_BINARY) ? "binary" : "text";
     if (connection_id != APX_INVALID_CONNECTION_ID)
     {
-      apx_server_log(server, APX_LOG_LEVEL_INFO, "[%u] Server created node %s (cache hit: text)", connection_id,
-        (name != NULL) ? name : "<unknown>");
+      apx_server_log(server, APX_LOG_LEVEL_INFO, "[%u] Server created node %s (cache hit: %s)", connection_id,
+        (name != NULL) ? name : "<unknown>", hit_label);
     }
     else
     {
-      apx_server_log(
-        server, APX_LOG_LEVEL_INFO, "Server created node %s (cache hit: text)", (name != NULL) ? name : "<unknown>");
+      apx_server_log(server, APX_LOG_LEVEL_INFO, "Server created node %s (cache hit: %s)",
+        (name != NULL) ? name : "<unknown>", hit_label);
     }
   }
   return APX_NO_ERROR;
@@ -1232,6 +1300,20 @@ static apx_error_t parse_and_compile_definition(apx_node_manager_t *self, apx_no
   return result;
 }
 
+static apx_error_t finalize_restored_node_instance(apx_node_instance_t *node_instance)
+{
+  apx_error_t rc = apx_node_instance_finalize_node_data(node_instance);
+  if (rc == APX_NO_ERROR)
+  {
+    rc = apx_node_instance_create_byte_port_map(node_instance);
+  }
+  if ((rc == APX_NO_ERROR) && (node_instance->mode == APX_SERVER_MODE))
+  {
+    rc = apx_node_instance_build_connector_table(node_instance);
+  }
+  return rc;
+}
+
 static apx_error_t init_node_instance_from_file_info(
   apx_node_manager_t *self, rmf_file_info_t const *file_info, bool *file_open_request)
 {
@@ -1286,15 +1368,90 @@ static apx_error_t init_node_instance_from_file_info(
       }
     }
 
-    // Attempt Level 1 text cache hit for unsigned SHA-256 definitions
+    // Attempt Level 2 binary cache hit, then Level 1 text cache hit for unsigned SHA-256 definitions
     if ((server != NULL) && !rmf_file_info_is_signed(file_info) &&
       (rmf_file_info_digest_type(file_info) == RMF_DIGEST_TYPE_SHA256))
     {
       apx_node_cache_t *cache = apx_server_get_node_cache(server);
+      uint8_t const *digest = rmf_file_info_digest_data(file_info);
+
+      // Tier 1: Level 2 binary cache (.apxc)
+      if (apx_node_cache_is_binary_enabled(cache))
+      {
+        apx_node_instance_t *bin_node = apx_node_instance_new(self->mode, base_name);
+        if (bin_node != NULL)
+        {
+          bin_node->server = server;
+          bin_node->definition_memory_reservation = 0u;
+          uint8_t *embedded_text = NULL;
+          apx_error_t bin_rc =
+            apx_node_cache_lookup_binary(cache, base_name, digest, logical_size, false, bin_node, &embedded_text);
+          if (bin_rc == APX_NO_ERROR)
+          {
+            apx_error_t build_rc = APX_NO_ERROR;
+            if (embedded_text != NULL)
+            {
+              build_rc = apx_node_instance_init_node_data(bin_node, embedded_text, (apx_size_t)logical_size);
+              free(embedded_text);
+              embedded_text = NULL;
+            }
+            else
+            {
+              uint8_t *companion_text = NULL;
+              if (apx_node_cache_lookup_text(cache, base_name, digest, logical_size, &companion_text) == APX_NO_ERROR &&
+                companion_text != NULL)
+              {
+                build_rc = apx_node_instance_init_node_data(bin_node, companion_text, (apx_size_t)logical_size);
+                free(companion_text);
+              }
+              else
+              {
+                build_rc = apx_node_instance_init_empty_node_data(bin_node);
+              }
+            }
+            if (build_rc == APX_NO_ERROR)
+            {
+              apx_node_data_t *node_data = apx_node_instance_get_node_data(bin_node);
+              if (node_data == NULL)
+              {
+                build_rc = APX_NULL_PTR_ERROR;
+              }
+              else
+              {
+                apx_node_data_set_checksum_data(node_data, RMF_DIGEST_TYPE_SHA256, digest);
+              }
+            }
+            if (build_rc == APX_NO_ERROR)
+            {
+              build_rc = finalize_restored_node_instance(bin_node);
+            }
+            if (build_rc == APX_NO_ERROR)
+            {
+              apx_node_instance_set_cache_hit_type(bin_node, APX_CACHE_HIT_BINARY);
+              bin_node->definition_memory_reservation = reservation;
+              *file_open_request = false;
+              attach_node(self, bin_node);
+              free(base_name);
+              return APX_NO_ERROR;
+            }
+            apx_node_cache_invalidate_binary(cache, base_name, digest);
+            apx_server_log(server, APX_LOG_LEVEL_WARNING, "Invalid binary cache entry for node '%s' (%s); falling back",
+              base_name, apx_strerror(build_rc));
+          }
+          else if (bin_rc != APX_FILE_NOT_FOUND_ERROR)
+          {
+            apx_server_log(server, APX_LOG_LEVEL_WARNING, "Invalid binary cache entry for node '%s' (%s); falling back",
+              base_name, apx_strerror(bin_rc));
+          }
+          free(embedded_text);
+          apx_node_instance_delete(bin_node);
+        }
+      }
+
+      // Tier 2: Level 1 text cache (.apx)
       if (apx_node_cache_is_text_enabled(cache))
       {
         uint8_t *cached_text = NULL;
-        uint8_t const *digest = rmf_file_info_digest_data(file_info);
         apx_error_t cache_rc = apx_node_cache_lookup_text(cache, base_name, digest, logical_size, &cached_text);
         if (cache_rc == APX_NO_ERROR && cached_text != NULL)
         {
@@ -1326,6 +1483,17 @@ static apx_error_t init_node_instance_from_file_info(
             cached_text = NULL;
             if (build_rc == APX_NO_ERROR)
             {
+              if (apx_node_cache_is_binary_enabled(cache) && !apx_node_cache_is_read_only(cache))
+              {
+                apx_error_t bin_store_rc =
+                  apx_node_cache_store_binary(cache, base_name, digest, logical_size, cached_node);
+                if (bin_store_rc != APX_NO_ERROR)
+                {
+                  apx_server_log(server, APX_LOG_LEVEL_WARNING, "Failed to write binary cache for node '%s': %s",
+                    base_name, apx_strerror(bin_store_rc));
+                }
+              }
+              apx_node_instance_set_cache_hit_type(cached_node, APX_CACHE_HIT_TEXT);
               cached_node->definition_memory_reservation = reservation;
               *file_open_request = false;
               attach_node(self, cached_node);
