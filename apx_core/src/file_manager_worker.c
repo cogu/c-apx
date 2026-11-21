@@ -712,6 +712,7 @@ static apx_error_t run_publish_local_file(apx_file_manager_worker_t *self, rmf_f
         .reserved = 0u,
         .name = rmf_file_info_name(file_info),
       };
+      memcpy(cmd.digest_data, rmf_file_info_digest_data(file_info), RMF_SHA256_SIZE);
       memcpy(cmd.signature_data, rmf_file_info_signature_data(file_info), RMF_SIGNATURE_SIZE_ECDSA_P256);
       encoded_size = rmf_encode_publish_signed_compressed_file_cmd(buffer, (apx_size_t)sizeof(buffer), &cmd);
     }

@@ -289,14 +289,20 @@ def test_cache_signed_nodes_never_bypass_verification(tmp_path: Path, apx_server
             _, resp = publish(sock, definition, name=name, compressed=False)
             assert_nack(resp, 79)  # APX_SIGNATURE_MISSING_ERROR
 
-        # 2. Signed plain and compressed publishes ALWAYS send FILE_OPEN and verify signature
+        # 2. Signed publishes with invalid signature are rejected pre-transfer even though entry is cached
         sig = sign_data_with_openssl(certs / "client_key.pem", definition)
+        bad_sig = bytes([sig[0] ^ 0xFF]) + sig[1:]
         for compressed in (False, True):
             with client(server) as sock:
-                payload, resp = publish(sock, definition, name=name, compressed=compressed, signature=sig)
-                assert opcode(resp) == 10  # Must open and verify over wire
-                write(sock, payload)
-                assert f"{name}.".encode() in read_msg(sock)
+                _, resp = publish(sock, definition, name=name, compressed=compressed, signature=bad_sig)
+                assert_nack(resp, 80)  # APX_SIGNATURE_VERIFICATION_ERROR
+
+        # 3. Signed plain and compressed publishes with valid signature verify pre-transfer and hit L1 cache (no FILE_OPEN)
+        for compressed in (False, True):
+            with client(server) as sock:
+                _, resp = publish(sock, definition, name=name, compressed=compressed, signature=sig)
+                assert opcode(resp) == 3  # Immediate server publish without FILE_OPEN
+                assert f"{name}.".encode() in resp
     finally:
         server.stop()
 
@@ -907,10 +913,16 @@ def test_l2_startup_format_version_sweep_preserves_text_cache(tmp_path: Path, ap
     assert "(cache hit: binary)" in log_text
 
 
-def test_l2_signed_node_post_transfer_binary_hit(tmp_path: Path, apx_server_bin: str):
+def test_l2_signed_node_pre_transfer_binary_hit_and_key_revocation(
+    tmp_path: Path, apx_server_bin: str, apx_sign_bin: str
+):
     certs = Path(__file__).parent / "certs"
     cache_dir = tmp_path / "cache"
-    log_file = tmp_path / "server.log"
+    dir1 = tmp_path / "srv1"
+    dir2 = tmp_path / "srv2"
+    dir1.mkdir()
+    dir2.mkdir()
+    log_file = dir1 / "server.log"
 
     name = "SignedL2Node"
     definition = make_req_definition(name, num_ports=6)
@@ -918,7 +930,7 @@ def test_l2_signed_node_post_transfer_binary_hit(tmp_path: Path, apx_server_bin:
     sig = sign_data_with_openssl(certs / "client_key.pem", definition)
 
     server = start_server(
-        tmp_path,
+        dir1,
         apx_server_bin,
         {
             "apx-server": {
@@ -928,7 +940,7 @@ def test_l2_signed_node_post_transfer_binary_hit(tmp_path: Path, apx_server_bin:
                 },
                 "cache": {"level": 2, "path": str(cache_dir)},
             },
-            "socket-server-extension": {"unix-file": str(tmp_path / "apx.socket")},
+            "socket-server-extension": {"unix-file": str(dir1 / "apx.socket")},
             "textlog-extension": {
                 "enabled": True,
                 "log-level": "INFO",
@@ -938,7 +950,7 @@ def test_l2_signed_node_post_transfer_binary_hit(tmp_path: Path, apx_server_bin:
         },
     )
     try:
-        # 1. Cold signed publish: transfers, verifies signature, compiles, stores bin/ ONLY (not text/)
+        # 1. Cold signed publish: transfers, verifies digest binding, compiles, stores BOTH bin/ and text/
         with client(server) as sock:
             payload, resp = publish(sock, definition, name=name, compressed=False, signature=sig)
             assert opcode(resp) == 10
@@ -946,28 +958,68 @@ def test_l2_signed_node_post_transfer_binary_hit(tmp_path: Path, apx_server_bin:
             assert f"{name}.".encode() in read_msg(sock)
 
         assert (cache_dir / "bin" / f"{name}_{sha_hex}.apxc").is_file()
-        assert list((cache_dir / "text").glob("*.apx")) == []
+        assert (cache_dir / "text" / f"{name}_{sha_hex}.apx").is_file()
 
-        # 2. Warm signed compressed publish: still transfers & verifies signature, hits bin/ post-transfer
-        with client(server) as sock:
-            payload, resp = publish(sock, definition, name=name, compressed=True, signature=sig)
-            assert opcode(resp) == 10
-            write(sock, payload)
-            assert f"{name}.".encode() in read_msg(sock)
+        # 2. Warm signed uncompressed & compressed publishes: verified pre-transfer, ZERO-TRANSFER bin/ hits!
+        for compressed in (False, True):
+            with client(server) as sock:
+                _, resp = publish(sock, definition, name=name, compressed=compressed, signature=sig)
+                assert opcode(resp) == 3  # Immediate server publish, no FILE_OPEN
+                assert f"{name}.".encode() in resp
 
-        # 3. Bad signature MUST still be rejected even though .apxc is cached!
+        # 3. Bad signature MUST be rejected pre-transfer even though .apxc is cached!
         bad_sig = bytes([sig[0] ^ 0xFF]) + sig[1:]
+        for compressed in (False, True):
+            with client(server) as sock:
+                _, resp = publish(sock, definition, name=name, compressed=compressed, signature=bad_sig)
+                assert_nack(resp, 80)  # APX_SIGNATURE_VERIFICATION_ERROR
+
+        # 4. Cache miss with valid signature + tampered payload on wire -> rejected post-transfer with NACK(80)
+        miss_name = "SignedTamperedMiss"
+        miss_def = make_req_definition(miss_name, num_ports=3)
+        miss_sig = sign_data_with_openssl(certs / "client_key.pem", miss_def)
+        tampered_miss = miss_def.replace(b":=0", b":=1", 1)
+        assert len(tampered_miss) == len(miss_def)
         with client(server) as sock:
-            payload, resp = publish(sock, definition, name=name, compressed=False, signature=bad_sig)
+            _, resp = publish(sock, miss_def, name=miss_name, compressed=False, signature=miss_sig)
             assert opcode(resp) == 10
-            write(sock, payload)
-            assert_nack(read_msg(sock), 80)  # APX_SIGNATURE_VERIFICATION_ERROR
+            write(sock, tampered_miss)
+            assert_nack(read_msg(sock), 80)
     finally:
         server.stop()
 
     assert server.process.returncode == 0, server.stderr
     log_text = log_file.read_text(encoding="utf-8")
     assert f"Server created node {name} (cache hit: binary)" in log_text
+
+    # 5. Key revocation: restart server trusting only a NEW key -> cached entry signed by old key is rejected pre-transfer
+    other_prefix = tmp_path / "other_key"
+    subprocess.run([apx_sign_bin, "keygen", str(other_prefix)], check=True, capture_output=True)
+    other_pubkey = tmp_path / "other_key_pubkey.pem"
+
+    server2 = start_server(
+        dir2,
+        apx_server_bin,
+        {
+            "apx-server": {
+                "security": {
+                    "require-signed-nodes": True,
+                    "trusted-keys": [str(other_pubkey)],
+                },
+                "cache": {"level": 2, "path": str(cache_dir)},
+            },
+            "socket-server-extension": {"unix-file": str(dir2 / "apx.socket")},
+        },
+    )
+    try:
+        for compressed in (False, True):
+            with client(server2) as sock:
+                _, resp = publish(sock, definition, name=name, compressed=compressed, signature=sig)
+                assert_nack(resp, 80)  # Revoked key must NEVER get a cache hit
+    finally:
+        server2.stop()
+
+    assert server2.process.returncode == 0, server2.stderr
 
 
 def test_l2_no_digest_post_transfer_binary_hit(tmp_path: Path, apx_server_bin: str):

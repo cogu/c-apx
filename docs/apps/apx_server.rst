@@ -119,9 +119,10 @@ Configuration Parameters
      - Integer
      - ``0``
      - Node definition cache level: ``0`` (disabled), ``1`` (Level 1 SHA-256 text cache under ``<path>/text/`` — skips
-       definition transfer and decompression on unsigned SHA-256 hits), or ``2`` (Level 2 compiled binary cache under
-       ``<path>/bin/`` + companion Level 1 text cache — skips definition transfer, parsing, and VM compilation on
-       unsigned SHA-256 hits, and skips parsing and VM compilation post-transfer for signed and ``DIGEST_NONE`` nodes).
+       definition transfer and decompression on unsigned SHA-256 hits and signature-verified signed hits), or ``2``
+       (Level 2 compiled binary cache under ``<path>/bin/`` + companion Level 1 text cache — skips definition transfer,
+       parsing, and VM compilation on unsigned SHA-256 hits and signature-verified signed hits, and skips parsing and
+       VM compilation post-transfer for ``DIGEST_NONE`` nodes).
    * - ``cache.path``
      - String
      - ``""``

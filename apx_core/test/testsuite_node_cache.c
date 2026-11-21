@@ -720,17 +720,43 @@ static void test_node_cache_server_integration_flows(CuTest *tc)
   CuAssertTrue(tc, !open_req);
   rmf_file_info_delete(comp_info);
 
-  // 6. Signed file ALWAYS requires open_req = true even when matching text is cached
+  // 6. Signed file with trusted key: valid signature hits cache (open_req = false), invalid signature rejected
+  char *priv_pem = NULL;
+  char *pub_pem = NULL;
+  CuAssertIntEquals(tc, APX_NO_ERROR, apx_crypto_generate_keypair_pem(&priv_pem, &pub_pem));
+  CuAssertIntEquals(
+    tc, APX_NO_ERROR, apx_server_add_trusted_public_key(server, (const uint8_t *)pub_pem, strlen(pub_pem) + 1));
+
+  uint8_t valid_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  size_t valid_sig_len = 0u;
+  CuAssertIntEquals(tc, APX_NO_ERROR,
+    apx_crypto_sign_data(RMF_SIGNATURE_TYPE_ECDSA_P256, (const uint8_t *)priv_pem, strlen(priv_pem) + 1,
+      (const uint8_t *)apx, len, valid_sig, sizeof(valid_sig), &valid_sig_len));
+
   apx_server_test_connection_t *conn4 = apx_server_test_connection_new();
   apx_server_connection_set_server(&conn4->base, server);
   apx_node_manager_t *mgr4 = apx_connection_base_get_node_manager(&conn4->base.base);
-  uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256] = {1};
+
+  // 6a. Tampered signature -> rejected pre-transfer even when text is cached
+  uint8_t bad_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  memcpy(bad_sig, valid_sig, sizeof(bad_sig));
+  bad_sig[0] ^= 0xFF;
+  rmf_file_info_t *bad_signed_info = rmf_file_info_make_fixed_with_signature(
+    "CacheFlowNode.apx", len, APX_DEFINITION_ADDRESS_START, hash, RMF_SIGNATURE_TYPE_ECDSA_P256, bad_sig);
+  open_req = true;
+  CuAssertIntEquals(
+    tc, APX_SIGNATURE_VERIFICATION_ERROR, apx_node_manager_init_node_from_file_info(mgr4, bad_signed_info, &open_req));
+  rmf_file_info_delete(bad_signed_info);
+
+  // 6b. Valid signature -> pre-transfer verified, hits cache (open_req = false)
   rmf_file_info_t *signed_info = rmf_file_info_make_fixed_with_signature(
-    "CacheFlowNode.apx", len, APX_DEFINITION_ADDRESS_START, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
-  open_req = false;
+    "CacheFlowNode.apx", len, APX_DEFINITION_ADDRESS_START, hash, RMF_SIGNATURE_TYPE_ECDSA_P256, valid_sig);
+  open_req = true;
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_node_manager_init_node_from_file_info(mgr4, signed_info, &open_req));
-  CuAssertTrue(tc, open_req);
+  CuAssertTrue(tc, !open_req);
   rmf_file_info_delete(signed_info);
+  free(priv_pem);
+  free(pub_pem);
 
   // 7. Pre-seeded syntactically invalid cached entry -> evicts & falls back to open_req = true
   const char *bad_apx = "APX/1.3\nN\"BadCached\"\nINVALID_SYNTAX\n";

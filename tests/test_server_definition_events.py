@@ -71,7 +71,7 @@ def publish(sock, text=DEFINITION, *, name=NAME, compressed=True, payload=None,
             "<IIIHH", 21 if signature is not None else 3, address, len(payload),
             0, 1 if signature is not None else 2,
         )
-    command = header + (signature if signature is not None else digest) + f"{name}.apx\0".encode()
+    command = header + (digest + signature if signature is not None else digest) + f"{name}.apx\0".encode()
     sock.sendall(encode_numheader32(struct.pack(">I", 0xBFFFFC00) + command))
     return payload, read_msg(sock)
 
@@ -172,6 +172,8 @@ def test_logical_definition_live_and_snapshot(
     ("parsing", True, "parsing", 3, 3),
     ("parsing", False, "parsing", 3, 3),
     ("signature", True, "signature", 80, 80),
+    ("signature", False, "signature", 80, 80),
+    ("signature-payload", True, "signature", 80, 80),
 ])
 def test_definition_rejection_event(
     definition_server, apx_log_bin, tmp_path, failure, compressed, stage, error, response_code,
@@ -189,13 +191,22 @@ def test_definition_rejection_event(
         options["digest"] = b"\x55" * 32
     elif failure == "signature":
         options["signature"] = b"\x55" * 64
+    elif failure == "signature-payload":
+        certs = Path(__file__).parent / "certs"
+        options["signature"] = sign_data_with_openssl(certs / "client_key.pem", text)
+        tampered_text = text.replace(b":=0", b":=1", 1)
+        assert len(tampered_text) == len(text)
+        payload = zlib.compress(tampered_text) if compressed else tampered_text
     path = tmp_path / "rejection.apxlog"
     with client(definition_server) as sock:
         with capture(definition_server, apx_log_bin, path):
             _, response = publish(sock, text, compressed=compressed, payload=payload, **options)
-            assert opcode(response) == 10
-            write(sock, payload)
-            assert_nack(read_msg(sock), response_code)
+            if failure == "signature":
+                assert_nack(response, response_code)
+            else:
+                assert opcode(response) == 10
+                write(sock, payload)
+                assert_nack(read_msg(sock), response_code)
             write(sock, payload)
             # A subsequent valid node proves rejection did not damage the connection.
             name = "Recovered"

@@ -439,12 +439,18 @@ apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t *buf, apx_size_t buf_size,
     apx_size_t const name_size = (apx_size_t)strlen(name);
     apx_size_t const required_size = RMF_SIGNED_FILE_INFO_HEADER_SIZE + name_size + 1u; // Add 1 for null-terminator
     uint8_t *p = buf;
+    uint8_t const *digest_data = rmf_file_info_digest_data(file);
     uint8_t const *signature_data = rmf_file_info_signature_data(file);
-    if (required_size > buf_size)
+    if ((required_size > buf_size) || (required_size > RMF_CMD_AREA_SIZE))
     {
       return 0u;
     }
-    if (signature_data == NULL)
+    if ((digest_data == NULL) || (signature_data == NULL))
+    {
+      return 0u;
+    }
+    rmf_signature_type_t const sig_type = rmf_file_info_signature_type(file);
+    if ((sig_type == RMF_SIGNATURE_TYPE_ECDSA_P256) && (rmf_file_info_digest_type(file) != RMF_DIGEST_TYPE_SHA256))
     {
       return 0u;
     }
@@ -456,20 +462,25 @@ apx_size_t rmf_encode_publish_signed_file_cmd(uint8_t *buf, apx_size_t buf_size,
     p += UINT32_SIZE;
     packLE(p, (uint32_t)rmf_file_info_rmf_file_type(file), (uint8_t)UINT16_SIZE);
     p += UINT16_SIZE;
-    packLE(p, (uint32_t)rmf_file_info_signature_type(file), (uint8_t)UINT16_SIZE);
+    packLE(p, (uint32_t)sig_type, (uint8_t)UINT16_SIZE);
     p += UINT16_SIZE;
-    switch (rmf_file_info_signature_type(file))
+    switch (sig_type)
     {
     case RMF_SIGNATURE_TYPE_NONE:
+      memset(p, 0, RMF_SHA256_SIZE);
+      p += RMF_SHA256_SIZE;
       memset(p, 0, RMF_SIGNATURE_SIZE_ECDSA_P256);
+      p += RMF_SIGNATURE_SIZE_ECDSA_P256;
       break;
     case RMF_SIGNATURE_TYPE_ECDSA_P256:
+      memcpy(p, digest_data, RMF_SHA256_SIZE);
+      p += RMF_SHA256_SIZE;
       memcpy(p, signature_data, RMF_SIGNATURE_SIZE_ECDSA_P256);
+      p += RMF_SIGNATURE_SIZE_ECDSA_P256;
       break;
     default:
       return 0u;
     }
-    p += RMF_SIGNATURE_SIZE_ECDSA_P256;
     assert((p + name_size + 1) == buf + required_size);
     memcpy(p, name, name_size);
     p += name_size;
@@ -507,6 +518,8 @@ apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const *buf, apx_size_t buf
       next += sizeof(uint16_t);
       value2 = (uint16_t)unpackLE(next, (uint8_t)UINT16_SIZE);
       next += sizeof(uint16_t);
+      memcpy(&file_info->digest_data[0], next, RMF_SHA256_SIZE);
+      next += RMF_SHA256_SIZE;
       memcpy(&file_info->signature_data[0], next, RMF_SIGNATURE_SIZE_ECDSA_P256);
       next += RMF_SIGNATURE_SIZE_ECDSA_P256;
       if (!rmf_value_to_file_type(value1, &file_info->rmf_file_type))
@@ -516,6 +529,15 @@ apx_size_t rmf_decode_publish_signed_file_cmd(uint8_t const *buf, apx_size_t buf
       if (!rmf_value_to_signature_type(value2, &file_info->signature_type))
       {
         return 0u;
+      }
+      if (file_info->signature_type == RMF_SIGNATURE_TYPE_ECDSA_P256)
+      {
+        file_info->digest_type = RMF_DIGEST_TYPE_SHA256;
+      }
+      else
+      {
+        file_info->digest_type = RMF_DIGEST_TYPE_NONE;
+        memset(&file_info->digest_data[0], 0, RMF_SHA256_SIZE);
       }
       uint8_t const *result = decode_file_info_name(next, end, file_info);
       if (result == NULL)
@@ -944,6 +966,8 @@ apx_size_t rmf_encode_publish_signed_compressed_file_cmd(
   p += UINT16_SIZE;
   packLE(p, 0u, (uint8_t)UINT16_SIZE); // reserved
   p += UINT16_SIZE;
+  memcpy(p, cmd->digest_data, RMF_SHA256_SIZE);
+  p += RMF_SHA256_SIZE;
   memcpy(p, cmd->signature_data, RMF_SIGNATURE_SIZE_ECDSA_P256);
   p += RMF_SIGNATURE_SIZE_ECDSA_P256;
   memcpy(p, cmd->name, name_len);
@@ -985,6 +1009,8 @@ apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
   p += UINT16_SIZE;
   uint16_t const reserved = (uint16_t)unpackLE(p, (uint8_t)UINT16_SIZE);
   p += UINT16_SIZE;
+  uint8_t const *digest_data = p;
+  p += RMF_SHA256_SIZE;
   uint8_t const *signature_data = p;
 
   rmf_file_type_t file_type = RMF_FILE_TYPE_FIXED;
@@ -1009,6 +1035,7 @@ apx_size_t rmf_decode_publish_signed_compressed_file_cmd(
   cmd->compression_type = compression_type;
   cmd->signature_type = signature_type;
   cmd->reserved = 0u;
+  memcpy(cmd->digest_data, digest_data, RMF_SHA256_SIZE);
   memcpy(cmd->signature_data, signature_data, RMF_SIGNATURE_SIZE_ECDSA_P256);
   cmd->name = name;
 

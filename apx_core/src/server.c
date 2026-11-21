@@ -1512,8 +1512,8 @@ int32_t apx_server_get_num_trusted_public_keys(apx_server_t const *self)
   return -1;
 }
 
-apx_error_t apx_server_verify_node_signature(apx_server_t const *self, rmf_signature_type_t sig_type,
-  const uint8_t *sig_data, size_t sig_len, const uint8_t *data, size_t data_len)
+apx_error_t apx_server_verify_node_digest_signature(apx_server_t const *self, rmf_signature_type_t sig_type,
+  const uint8_t *sig_data, size_t sig_len, const uint8_t hash[RMF_SHA256_SIZE])
 {
   if (self == NULL)
   {
@@ -1533,7 +1533,7 @@ apx_error_t apx_server_verify_node_signature(apx_server_t const *self, rmf_signa
 
   if (sig_type == RMF_SIGNATURE_TYPE_ECDSA_P256)
   {
-    if (sig_data == NULL || sig_len != RMF_SIGNATURE_SIZE_ECDSA_P256)
+    if (sig_data == NULL || sig_len != RMF_SIGNATURE_SIZE_ECDSA_P256 || hash == NULL)
     {
       return APX_INVALID_ARGUMENT_ERROR;
     }
@@ -1554,7 +1554,7 @@ apx_error_t apx_server_verify_node_signature(apx_server_t const *self, rmf_signa
         const char *key_cstr = adt_str_cstr(key_str);
         size_t key_len = (size_t)adt_str_size(key_str);
         apx_error_t rc =
-          apx_crypto_verify_signature(sig_type, (const uint8_t *)key_cstr, key_len, data, data_len, sig_data, sig_len);
+          apx_crypto_verify_digest_signature(sig_type, (const uint8_t *)key_cstr, key_len, hash, sig_data, sig_len);
         if (rc == APX_NO_ERROR)
         {
           return APX_NO_ERROR;
@@ -1562,6 +1562,41 @@ apx_error_t apx_server_verify_node_signature(apx_server_t const *self, rmf_signa
       }
     }
     return APX_SIGNATURE_VERIFICATION_ERROR;
+  }
+
+  return APX_UNSUPPORTED_ERROR;
+}
+
+apx_error_t apx_server_verify_node_signature(apx_server_t const *self, rmf_signature_type_t sig_type,
+  const uint8_t *sig_data, size_t sig_len, const uint8_t *data, size_t data_len)
+{
+  if (self == NULL)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+
+  if (sig_type == RMF_SIGNATURE_TYPE_NONE)
+  {
+    if (self->require_signed_nodes)
+    {
+      return APX_SIGNATURE_MISSING_ERROR;
+    }
+    return APX_NO_ERROR;
+  }
+
+  if (sig_type == RMF_SIGNATURE_TYPE_ECDSA_P256)
+  {
+    if (sig_data == NULL || sig_len != RMF_SIGNATURE_SIZE_ECDSA_P256 || (data == NULL && data_len > 0u))
+    {
+      return APX_INVALID_ARGUMENT_ERROR;
+    }
+    uint8_t hash[RMF_SHA256_SIZE];
+    apx_error_t hash_rc = apx_crypto_sha256(data, data_len, hash);
+    if (hash_rc != APX_NO_ERROR)
+    {
+      return hash_rc;
+    }
+    return apx_server_verify_node_digest_signature(self, sig_type, sig_data, sig_len, hash);
   }
 
   return APX_UNSUPPORTED_ERROR;

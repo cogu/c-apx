@@ -686,8 +686,16 @@ static apx_error_t create_new_node_instance(
   retval = apx_node_manager_init_node_from_file_info(node_manager, file_info, &file_open_request);
   if (retval != APX_NO_ERROR)
   {
-    apx_node_manager_reject_definition(node_manager, definition_file,
-      retval == APX_MEM_ERROR ? APX_DEFINITION_STAGE_ALLOCATION : APX_DEFINITION_STAGE_ADMISSION, retval, retval);
+    apx_definition_failure_stage_t stage = APX_DEFINITION_STAGE_ADMISSION;
+    if (retval == APX_MEM_ERROR)
+    {
+      stage = APX_DEFINITION_STAGE_ALLOCATION;
+    }
+    else if (retval == APX_SIGNATURE_VERIFICATION_ERROR)
+    {
+      stage = APX_DEFINITION_STAGE_SIGNATURE;
+    }
+    apx_node_manager_reject_definition(node_manager, definition_file, stage, retval, retval);
     return APX_NO_ERROR;
   }
   if (retval == APX_NO_ERROR)

@@ -434,7 +434,8 @@ apx_error_t apx_server_test_connection_publish_remote_file(
 }
 
 apx_error_t apx_server_test_connection_publish_remote_signed_file(apx_server_test_connection_t *self, uint32_t address,
-  char const *file_name, apx_size_t file_size, uint8_t signature_type, uint8_t const *signature_data)
+  char const *file_name, apx_size_t file_size, uint8_t const *digest_data, uint8_t signature_type,
+  uint8_t const *signature_data)
 {
   if (self != NULL && file_name != NULL)
   {
@@ -447,7 +448,8 @@ apx_error_t apx_server_test_connection_publish_remote_signed_file(apx_server_tes
     {
       return APX_INTERNAL_ERROR;
     }
-    file_info = rmf_file_info_make_fixed_with_signature(file_name, file_size, address, signature_type, signature_data);
+    file_info = rmf_file_info_make_fixed_with_signature(
+      file_name, file_size, address, digest_data, signature_type, signature_data);
     if (file_info == NULL)
     {
       return APX_MEM_ERROR;

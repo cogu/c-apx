@@ -128,20 +128,26 @@ static void test_base_name(CuTest *tc)
 
 static void test_create_signed_file(CuTest *tc)
 {
+  uint8_t dummy_digest[RMF_SHA256_SIZE];
   uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
   uint32_t i;
+  for (i = 0; i < RMF_SHA256_SIZE; i++)
+  {
+    dummy_digest[i] = (uint8_t)(0x20u + i);
+  }
   for (i = 0; i < RMF_SIGNATURE_SIZE_ECDSA_P256; i++)
   {
     dummy_sig[i] = (uint8_t)(i + 1u);
   }
-  rmf_file_info_t *info =
-    rmf_file_info_make_fixed_with_signature("TestNode.apx", 40, 0x1000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+  rmf_file_info_t *info = rmf_file_info_make_fixed_with_signature(
+    "TestNode.apx", 40, 0x1000u, dummy_digest, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
   CuAssertPtrNotNull(tc, info);
   CuAssertStrEquals(tc, "TestNode.apx", rmf_file_info_name(info));
   CuAssertUIntEquals(tc, RMF_FILE_TYPE_FIXED, rmf_file_info_rmf_file_type(info));
   CuAssertUIntEquals(tc, 40u, rmf_file_info_size(info));
   CuAssertUIntEquals(tc, 0x1000u, rmf_file_info_address(info));
-  CuAssertUIntEquals(tc, RMF_DIGEST_TYPE_NONE, rmf_file_info_digest_type(info));
+  CuAssertUIntEquals(tc, RMF_DIGEST_TYPE_SHA256, rmf_file_info_digest_type(info));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_digest, rmf_file_info_digest_data(info), RMF_SHA256_SIZE));
   CuAssertTrue(tc, rmf_file_info_is_signed(info));
   CuAssertUIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_file_info_signature_type(info));
   CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_file_info_signature_data(info), RMF_SIGNATURE_SIZE_ECDSA_P256));
@@ -149,6 +155,8 @@ static void test_create_signed_file(CuTest *tc)
   rmf_file_info_t *clone = rmf_file_info_clone(info);
   CuAssertPtrNotNull(tc, clone);
   CuAssertTrue(tc, rmf_file_info_is_signed(clone));
+  CuAssertUIntEquals(tc, RMF_DIGEST_TYPE_SHA256, rmf_file_info_digest_type(clone));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_digest, rmf_file_info_digest_data(clone), RMF_SHA256_SIZE));
   CuAssertUIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_file_info_signature_type(clone));
   CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_file_info_signature_data(clone), RMF_SIGNATURE_SIZE_ECDSA_P256));
 
@@ -191,13 +199,18 @@ static void test_create_compressed_file(CuTest *tc)
 
 static void test_create_signed_compressed_file(CuTest *tc)
 {
+  uint8_t dummy_digest[RMF_SHA256_SIZE];
   uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  for (uint32_t i = 0u; i < RMF_SHA256_SIZE; ++i)
+  {
+    dummy_digest[i] = (uint8_t)(0x30u + i);
+  }
   for (uint32_t i = 0u; i < RMF_SIGNATURE_SIZE_ECDSA_P256; ++i)
   {
     dummy_sig[i] = (uint8_t)(0x55u + (i & 0x0Fu));
   }
   rmf_file_info_t *info = rmf_file_info_make_signed_compressed(
-    "SecureComp.apx", 1200u, 9000u, 0x2000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+    "SecureComp.apx", 1200u, 9000u, 0x2000u, dummy_digest, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
   CuAssertPtrNotNull(tc, info);
   CuAssertStrEquals(tc, "SecureComp.apx", rmf_file_info_name(info));
   CuAssertUIntEquals(tc, RMF_FILE_TYPE_FIXED, rmf_file_info_rmf_file_type(info));
@@ -207,6 +220,8 @@ static void test_create_signed_compressed_file(CuTest *tc)
   CuAssertTrue(tc, rmf_file_info_is_compressed(info));
   CuAssertTrue(tc, rmf_file_info_is_signed(info));
   CuAssertUIntEquals(tc, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, rmf_file_info_compression_type(info));
+  CuAssertUIntEquals(tc, RMF_DIGEST_TYPE_SHA256, rmf_file_info_digest_type(info));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_digest, rmf_file_info_digest_data(info), RMF_SHA256_SIZE));
   CuAssertUIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_file_info_signature_type(info));
   CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_file_info_signature_data(info), RMF_SIGNATURE_SIZE_ECDSA_P256));
 
@@ -217,6 +232,8 @@ static void test_create_signed_compressed_file(CuTest *tc)
   CuAssertUIntEquals(tc, 1200u, rmf_file_info_size(clone));
   CuAssertUIntEquals(tc, 9000u, rmf_file_info_uncompressed_size(clone));
   CuAssertUIntEquals(tc, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, rmf_file_info_compression_type(clone));
+  CuAssertUIntEquals(tc, RMF_DIGEST_TYPE_SHA256, rmf_file_info_digest_type(clone));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_digest, rmf_file_info_digest_data(clone), RMF_SHA256_SIZE));
   CuAssertUIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_file_info_signature_type(clone));
   CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_file_info_signature_data(clone), RMF_SIGNATURE_SIZE_ECDSA_P256));
 
@@ -261,23 +278,31 @@ static void test_encode_decode_publish_file(CuTest *tc)
 
 static void test_encode_decode_publish_signed_file(CuTest *tc)
 {
+  uint8_t dummy_digest[RMF_SHA256_SIZE];
   uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
   uint8_t buf[256];
   uint32_t i;
+  for (i = 0; i < RMF_SHA256_SIZE; i++)
+  {
+    dummy_digest[i] = (uint8_t)(0x40u + i);
+  }
   for (i = 0; i < RMF_SIGNATURE_SIZE_ECDSA_P256; i++)
   {
     dummy_sig[i] = (uint8_t)(0xA0u + (i & 0x0Fu));
   }
-  rmf_file_info_t *src_info =
-    rmf_file_info_make_fixed_with_signature("SecureNode.apx", 512, 0x4000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+  rmf_file_info_t *src_info = rmf_file_info_make_fixed_with_signature(
+    "SecureNode.apx", 512, 0x4000u, dummy_digest, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
   CuAssertPtrNotNull(tc, src_info);
 
   apx_size_t encoded_size = rmf_encode_publish_signed_file_cmd(buf, (apx_size_t)sizeof(buf), src_info);
   CuAssertTrue(tc, encoded_size == RMF_SIGNED_FILE_INFO_HEADER_SIZE + strlen("SecureNode.apx") + 1u);
 
-   // Verify opcode in header
+   // Verify opcode and wire offsets
   uint32_t cmd_type = unpackLE(buf, UINT32_SIZE);
   CuAssertUIntEquals(tc, RMF_CMD_PUBLISH_SIGNED_FILE_MSG, cmd_type);
+  CuAssertIntEquals(tc, 0, memcmp(buf + 16, dummy_digest, RMF_SHA256_SIZE));
+  CuAssertIntEquals(tc, 0, memcmp(buf + 48, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256));
+  CuAssertStrEquals(tc, "SecureNode.apx", (char const *)(buf + 112));
 
   rmf_file_info_t *dst_info = rmf_file_info_make_empty();
   CuAssertPtrNotNull(tc, dst_info);
@@ -288,6 +313,8 @@ static void test_encode_decode_publish_signed_file(CuTest *tc)
   CuAssertUIntEquals(tc, RMF_FILE_TYPE_FIXED, rmf_file_info_rmf_file_type(dst_info));
   CuAssertStrEquals(tc, "SecureNode.apx", rmf_file_info_name(dst_info));
   CuAssertTrue(tc, rmf_file_info_is_signed(dst_info));
+  CuAssertUIntEquals(tc, RMF_DIGEST_TYPE_SHA256, rmf_file_info_digest_type(dst_info));
+  CuAssertIntEquals(tc, 0, memcmp(dummy_digest, rmf_file_info_digest_data(dst_info), RMF_SHA256_SIZE));
   CuAssertUIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, rmf_file_info_signature_type(dst_info));
   CuAssertIntEquals(tc, 0, memcmp(dummy_sig, rmf_file_info_signature_data(dst_info), RMF_SIGNATURE_SIZE_ECDSA_P256));
 

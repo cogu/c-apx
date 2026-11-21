@@ -234,9 +234,18 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
         if ((hash_res != APX_NO_ERROR) ||
           (memcmp(verified_hash, apx_file_get_digest_data(def_file), RMF_SHA256_SIZE) != 0))
         {
-          stage = APX_DEFINITION_STAGE_DIGEST;
-          result = (hash_res != APX_NO_ERROR) ? hash_res : APX_CHECKSUM_ERROR;
-          response_code = APX_PARSE_ERROR;
+          if (apx_file_is_signed(def_file))
+          {
+            stage = APX_DEFINITION_STAGE_SIGNATURE;
+            result = (hash_res != APX_NO_ERROR) ? hash_res : APX_SIGNATURE_VERIFICATION_ERROR;
+            response_code = result;
+          }
+          else
+          {
+            stage = APX_DEFINITION_STAGE_DIGEST;
+            result = (hash_res != APX_NO_ERROR) ? hash_res : APX_CHECKSUM_ERROR;
+            response_code = APX_PARSE_ERROR;
+          }
           goto rejected;
         }
         has_verified_sha256 = true;
@@ -244,7 +253,7 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
       }
     }
     apx_server_t *server = apx_node_instance_get_server(node_instance);
-    if (server != NULL)
+    if ((server != NULL) && !(node_instance->signature_preverified && has_verified_sha256))
     {
       rmf_signature_type_t sig_type =
         (def_file != NULL) ? apx_file_get_signature_type(def_file) : RMF_SIGNATURE_TYPE_NONE;
@@ -319,8 +328,7 @@ apx_error_t apx_node_manager_build_node_from_data(apx_node_manager_t *self, apx_
       if ((server != NULL) && (cache != NULL) && !apx_node_cache_is_read_only(cache) && has_verified_sha256)
       {
         char const *node_name = apx_node_instance_get_name(node_instance);
-        if ((def_file != NULL) && !apx_file_is_signed(def_file) && client_advertised_sha256 &&
-          apx_node_cache_is_text_enabled(cache))
+        if ((def_file != NULL) && client_advertised_sha256 && apx_node_cache_is_text_enabled(cache))
         {
           apx_error_t cache_rc =
             apx_node_cache_store_text(cache, node_name, verified_hash, definition_data, (uint32_t)definition_size);
@@ -1358,8 +1366,33 @@ static apx_error_t init_node_instance_from_file_info(
   }
   else
   {
+    bool signature_preverified = false;
     if (server != NULL)
     {
+      if (rmf_file_info_is_signed(file_info))
+      {
+        rmf_signature_type_t const sig_type = rmf_file_info_signature_type(file_info);
+        uint8_t const *sig_data = rmf_file_info_signature_data(file_info);
+        size_t const sig_len = (sig_type == RMF_SIGNATURE_TYPE_ECDSA_P256) ? RMF_SIGNATURE_SIZE_ECDSA_P256 : 0u;
+        if (rmf_file_info_digest_type(file_info) != RMF_DIGEST_TYPE_SHA256)
+        {
+          free(base_name);
+          return APX_SIGNATURE_VERIFICATION_ERROR;
+        }
+        apx_error_t const verify_rc = apx_server_verify_node_digest_signature(
+          server, sig_type, sig_data, sig_len, rmf_file_info_digest_data(file_info));
+        if (verify_rc != APX_NO_ERROR)
+        {
+          free(base_name);
+          return verify_rc;
+        }
+        signature_preverified = true;
+      }
+      else if (apx_server_get_require_signed_nodes(server))
+      {
+        free(base_name);
+        return APX_SIGNATURE_MISSING_ERROR;
+      }
       result = apx_server_reserve_definition_memory(server, reservation);
       if (result != APX_NO_ERROR)
       {
@@ -1368,8 +1401,9 @@ static apx_error_t init_node_instance_from_file_info(
       }
     }
 
-    // Attempt Level 2 binary cache hit, then Level 1 text cache hit for unsigned SHA-256 definitions
-    if ((server != NULL) && !rmf_file_info_is_signed(file_info) &&
+    // Attempt Level 2 binary cache hit, then Level 1 text cache hit for unsigned or pre-verified signed SHA-256
+    // definitions
+    if ((server != NULL) && (!rmf_file_info_is_signed(file_info) || signature_preverified) &&
       (rmf_file_info_digest_type(file_info) == RMF_DIGEST_TYPE_SHA256))
     {
       apx_node_cache_t *cache = apx_server_get_node_cache(server);
@@ -1531,6 +1565,7 @@ static apx_error_t init_node_instance_from_file_info(
       return APX_MEM_ERROR;
     }
     node_instance->server = server;
+    node_instance->signature_preverified = signature_preverified;
     node_instance->definition_memory_reservation = (server != NULL) ? reservation : 0u;
     if (result == APX_NO_ERROR)
     {

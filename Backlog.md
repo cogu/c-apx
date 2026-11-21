@@ -490,9 +490,9 @@ Logical-definition capture and structured rejection events are owned by item 16.
   * Reject 16-bit header width selection in the server greeting with `APX_NOT_IMPLEMENTED_ERROR` (and ensure any client greeting parser follows the same contract if applicable) until 16-bit framing is implemented in `v0.6.0`.
   * Add C unit tests verifying 16-bit framing negotiation is rejected with `APX_NOT_IMPLEMENTED_ERROR`.
 
-## 25. Include SHA-256 Digest in Signed Definition Publication Commands (RMFP 1.1)
+## 25. Include SHA-256 Digest in Signed Definition Publication Commands (RMFP 1.1) (Completed)
 
-* **Status:** Planned protocol improvement before freezing RemoteFile v1.1 (currently unreleased).
+* **Status:** Completed. `RMF_CMD_PUBLISH_SIGNED_FILE` (`21`) and `RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE` (`23`) now carry `DigestData[32]` before `SignatureData[64]` in both `../apx/specifications/protocols/remotefile1_1.md` and `c-apx`, enabling pre-transfer ECDSA verification, immediate rejection of invalid/revoked signatures, zero-transfer L1/L2 cache hits for signed nodes, and post-transfer SHA-256 payload binding on cache misses.
 * **Motivation:** Currently `RMF_CMD_PUBLISH_SIGNED_FILE` (`21`) and `RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE` (`23`) carry only the 64-byte ECDSA P-256 signature without the 32-byte SHA-256 digest of the logical uncompressed definition. Because ECDSA verification checks the signature over `SHA-256(uncompressed_apx)`, omitting the digest forces signed nodes to re-transfer their full `.apx` definition on every reconnect even when the server already has the file cached.
 * **Protocol & Specification Changes (`../apx/specifications/protocols/remotefile1_1.md`):**
   * Extend `RMF_CMD_PUBLISH_SIGNED_FILE` (`21`) and `RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE` (`23`) to carry `DigestData` (`UINT8[32]`, SHA-256 of the logical uncompressed definition) alongside `SignatureType` and `SignatureData[64]`.

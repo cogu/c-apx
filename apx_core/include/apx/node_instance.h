@@ -99,6 +99,7 @@ typedef struct apx_node_instance_tag
   volatile bool is_closing;
   bool server_files_published;
   bool require_ports_connected;
+  bool signature_preverified;
   apx_cache_hit_type_t cache_hit_type;
   uint64_t definition_memory_reservation;
   uint32_t batch_depth;

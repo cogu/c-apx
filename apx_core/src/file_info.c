@@ -63,10 +63,12 @@ rmf_file_info_t *rmf_file_info_make_fixed_with_digest(
   return rmf_file_info_new(address, size, name, RMF_FILE_TYPE_FIXED, digest_type, digest_data);
 }
 
-rmf_file_info_t *rmf_file_info_make_fixed_with_signature(
-  char const *name, uint32_t size, uint32_t address, rmf_signature_type_t signature_type, uint8_t const *signature_data)
+rmf_file_info_t *rmf_file_info_make_fixed_with_signature(char const *name, uint32_t size, uint32_t address,
+  uint8_t const *digest_data, rmf_signature_type_t signature_type, uint8_t const *signature_data)
 {
-  rmf_file_info_t *self = rmf_file_info_new(address, size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+  rmf_digest_type_t const digest_type =
+    (signature_type == RMF_SIGNATURE_TYPE_ECDSA_P256) ? RMF_DIGEST_TYPE_SHA256 : RMF_DIGEST_TYPE_NONE;
+  rmf_file_info_t *self = rmf_file_info_new(address, size, name, RMF_FILE_TYPE_FIXED, digest_type, digest_data);
   if (self != NULL)
   {
     apx_error_t rc = rmf_file_info_set_signature(self, signature_type, signature_data);
@@ -92,10 +94,13 @@ rmf_file_info_t *rmf_file_info_make_compressed(char const *name, uint32_t compre
 }
 
 rmf_file_info_t *rmf_file_info_make_signed_compressed(char const *name, uint32_t compressed_size,
-  uint32_t uncompressed_size, uint32_t address, rmf_signature_type_t signature_type, uint8_t const *signature_data)
+  uint32_t uncompressed_size, uint32_t address, uint8_t const *digest_data, rmf_signature_type_t signature_type,
+  uint8_t const *signature_data)
 {
+  rmf_digest_type_t const digest_type =
+    (signature_type == RMF_SIGNATURE_TYPE_ECDSA_P256) ? RMF_DIGEST_TYPE_SHA256 : RMF_DIGEST_TYPE_NONE;
   rmf_file_info_t *self =
-    rmf_file_info_new(address, compressed_size, name, RMF_FILE_TYPE_FIXED, RMF_DIGEST_TYPE_NONE, NULL);
+    rmf_file_info_new(address, compressed_size, name, RMF_FILE_TYPE_FIXED, digest_type, digest_data);
   if (self != NULL)
   {
     apx_error_t rc = rmf_file_info_set_signature(self, signature_type, signature_data);

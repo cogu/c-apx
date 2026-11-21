@@ -45,11 +45,12 @@ rmf_file_info_t *rmf_file_info_make_stream(char const *name, uint32_t max_block_
 rmf_file_info_t *rmf_file_info_make_fixed_with_digest(
   char const *name, uint32_t size, uint32_t address, rmf_digest_type_t digest_type, uint8_t const *digest_data);
 rmf_file_info_t *rmf_file_info_make_fixed_with_signature(char const *name, uint32_t size, uint32_t address,
-  rmf_signature_type_t signature_type, uint8_t const *signature_data);
+  uint8_t const *digest_data, rmf_signature_type_t signature_type, uint8_t const *signature_data);
 rmf_file_info_t *rmf_file_info_make_compressed(char const *name, uint32_t compressed_size, uint32_t uncompressed_size,
   uint32_t address, rmf_digest_type_t digest_type, uint8_t const *digest_data);
 rmf_file_info_t *rmf_file_info_make_signed_compressed(char const *name, uint32_t compressed_size,
-  uint32_t uncompressed_size, uint32_t address, rmf_signature_type_t signature_type, uint8_t const *signature_data);
+  uint32_t uncompressed_size, uint32_t address, uint8_t const *digest_data, rmf_signature_type_t signature_type,
+  uint8_t const *signature_data);
 
 apx_error_t rmf_file_info_create(rmf_file_info_t *self, uint32_t address, uint32_t size, const char *name,
   rmf_file_type_t file_type, rmf_digest_type_t digest_type, const uint8_t *digest_data);

@@ -1066,7 +1066,7 @@ static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc)
 
   // 2. Publish and receive signed compressed file
   rmf_file_info_t *info2 = rmf_file_info_make_signed_compressed(
-    "SignedCompressedNode.apx", 200u, 800u, 0x00001000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_signature);
+    "SignedCompressedNode.apx", 200u, 800u, 0x00001000u, dummy_digest, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_signature);
   CuAssertPtrNotNull(tc, info2);
   apx_file_t *pub_file2 = apx_file_manager_create_local_file(&pub.file_manager, info2);
   CuAssertPtrNotNull(tc, pub_file2);
@@ -1094,6 +1094,8 @@ static void test_file_manager_publish_and_receive_compressed_files(CuTest *tc)
   CuAssertUIntEquals(tc, 200u, apx_file_get_size(sub_file2));
   CuAssertUIntEquals(tc, 800u, apx_file_get_uncompressed_size(sub_file2));
   CuAssertIntEquals(tc, RMF_COMPRESSION_TYPE_ZLIB_DEFLATE, apx_file_get_compression_type(sub_file2));
+  CuAssertIntEquals(tc, RMF_DIGEST_TYPE_SHA256, apx_file_get_digest_type(sub_file2));
+  CuAssertIntEquals(tc, 0, memcmp(apx_file_get_digest_data(sub_file2), dummy_digest, RMF_SHA256_SIZE));
   CuAssertIntEquals(tc, RMF_SIGNATURE_TYPE_ECDSA_P256, apx_file_get_signature_type(sub_file2));
   CuAssertIntEquals(
     tc, 0, memcmp(apx_file_get_signature_data(sub_file2), dummy_signature, RMF_SIGNATURE_SIZE_ECDSA_P256));
@@ -1252,10 +1254,12 @@ static void test_file_manager_rejects_trailing_bytes_after_publish_name(CuTest *
   rmf_file_info_delete(plain_info);
 
   // 2. RMF_CMD_PUBLISH_SIGNED_FILE_MSG with stray bytes after null terminator -> APX_INVALID_MSG_ERROR
+  uint8_t dummy_digest[RMF_SHA256_SIZE];
   uint8_t dummy_sig[RMF_SIGNATURE_SIZE_ECDSA_P256];
+  memset(dummy_digest, 0x33, sizeof(dummy_digest));
   memset(dummy_sig, 0xAB, sizeof(dummy_sig));
   rmf_file_info_t *signed_info = rmf_file_info_make_fixed_with_signature(
-    "SignedTrailing.apx", 64u, 0x02000000u, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
+    "SignedTrailing.apx", 64u, 0x02000000u, dummy_digest, RMF_SIGNATURE_TYPE_ECDSA_P256, dummy_sig);
   CuAssertPtrNotNull(tc, signed_info);
   apx_size_t signed_size = rmf_encode_publish_signed_file_cmd(cmd_buf, sizeof(cmd_buf), signed_info);
   CuAssertTrue(tc, signed_size > 0u);

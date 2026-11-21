@@ -156,6 +156,8 @@ apx_error_t apx_server_add_trusted_public_key_file(apx_server_t *self, const cha
 int32_t apx_server_get_num_trusted_public_keys(apx_server_t const *self);
 apx_error_t apx_server_verify_node_signature(apx_server_t const *self, rmf_signature_type_t sig_type,
   const uint8_t *sig_data, size_t sig_len, const uint8_t *data, size_t data_len);
+apx_error_t apx_server_verify_node_digest_signature(apx_server_t const *self, rmf_signature_type_t sig_type,
+  const uint8_t *sig_data, size_t sig_len, const uint8_t hash[RMF_SHA256_SIZE]);
 
 // Node definition cache
 apx_error_t apx_server_configure_cache(apx_server_t *self, apx_node_cache_config_t const *cfg, char const *cache_path,

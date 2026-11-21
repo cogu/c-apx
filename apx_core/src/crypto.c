@@ -57,6 +57,23 @@ apx_error_t apx_crypto_sha256(const uint8_t *data, size_t data_len, uint8_t hash
   return APX_NO_ERROR;
 }
 
+apx_error_t apx_crypto_verify_digest_signature(rmf_signature_type_t sig_type, const uint8_t *pub_key,
+  size_t pub_key_len, const uint8_t hash[32], const uint8_t *sig_data, size_t sig_len)
+{
+  if (pub_key == NULL || pub_key_len == 0 || hash == NULL || sig_data == NULL || sig_len == 0)
+  {
+    return APX_INVALID_ARGUMENT_ERROR;
+  }
+
+  switch (sig_type)
+  {
+  case RMF_SIGNATURE_TYPE_ECDSA_P256:
+    return verify_ecdsa_p256(pub_key, pub_key_len, hash, sig_data, sig_len);
+  default:
+    return APX_UNSUPPORTED_ERROR;
+  }
+}
+
 apx_error_t apx_crypto_verify_signature(rmf_signature_type_t sig_type, const uint8_t *pub_key, size_t pub_key_len,
   const uint8_t *data, size_t data_len, const uint8_t *sig_data, size_t sig_len)
 {
@@ -72,13 +89,7 @@ apx_error_t apx_crypto_verify_signature(rmf_signature_type_t sig_type, const uin
     return err;
   }
 
-  switch (sig_type)
-  {
-  case RMF_SIGNATURE_TYPE_ECDSA_P256:
-    return verify_ecdsa_p256(pub_key, pub_key_len, hash, sig_data, sig_len);
-  default:
-    return APX_UNSUPPORTED_ERROR;
-  }
+  return apx_crypto_verify_digest_signature(sig_type, pub_key, pub_key_len, hash, sig_data, sig_len);
 }
 
 apx_error_t apx_crypto_sign_data(rmf_signature_type_t sig_type, const uint8_t *priv_key, size_t priv_key_len,

@@ -2,6 +2,7 @@
 End-to-end integration tests for cryptographic APX file signing & verification.
 """
 
+import hashlib
 import json
 import os
 import select
@@ -198,6 +199,7 @@ def test_server_signed_node_full_handshake(tmp_path: Path, apx_server_bin: str):
     server = ApxServerInstance(server_proc, socket_path, tmp_path)
 
     apx_def = b"APX/1.2\nN\"SignedNode1\"\nR\"Speed\"S:=0\n"
+    apx_digest = hashlib.sha256(apx_def).digest()
     valid_sig = sign_data_with_openssl(privkey_path, apx_def)
     assert len(valid_sig) == 64
 
@@ -226,6 +228,7 @@ def test_server_signed_node_full_handshake(tmp_path: Path, apx_server_bin: str):
             + file_size
             + file_type
             + sig_type
+            + apx_digest
             + valid_sig
             + name
         )
@@ -247,7 +250,7 @@ def test_server_signed_node_full_handshake(tmp_path: Path, apx_server_bin: str):
 
         sock.close()
 
-        # TEST B: Connect and publish node with TAMPERED signature
+        # TEST B: Connect and publish node with TAMPERED signature -> immediate pre-transfer NACK(80)
         sock_tampered = server.connect()
         sock_tampered.sendall(bytes([len(greeting)]) + greeting)
         resp = read_msg(sock_tampered, timeout=2.0)
@@ -263,26 +266,48 @@ def test_server_signed_node_full_handshake(tmp_path: Path, apx_server_bin: str):
             + file_size
             + file_type
             + sig_type
+            + apx_digest
             + bytes(tampered_sig)
             + b"TamperedNode.apx\x00"
         )
         sock_tampered.sendall(encode_numheader32(publish_tampered))
 
-        open_req2 = read_msg(sock_tampered, timeout=2.0)
-        assert len(open_req2) > 0
-
-        # Send definition data
-        sock_tampered.sendall(encode_numheader32(def_addr + apx_def))
-
-        # Verification must fail on server: server will NOT send .out file info for tampered node
-        sock_tampered.settimeout(0.5)
-        try:
-            extra_msg = read_msg(sock_tampered, timeout=0.5)
-            assert b"TamperedNode.out" not in extra_msg
-        except (socket.timeout, TimeoutError):
-            pass  # Expected: server ignored/rejected tampered node
-
+        nack_msg = read_msg(sock_tampered, timeout=2.0)
+        assert len(nack_msg) >= 12
+        assert int.from_bytes(nack_msg[4:8], "little") == 1, f"Expected NACK (1), got {nack_msg[4:8]!r}"
+        assert int.from_bytes(nack_msg[8:12], "little") == 80, "Expected APX_SIGNATURE_VERIFICATION_ERROR (80)"
         sock_tampered.close()
+
+        # TEST C: Valid signature + tampered payload bytes on wire -> rejected post-transfer with NACK(80)
+        sock_bad_body = server.connect()
+        sock_bad_body.sendall(bytes([len(greeting)]) + greeting)
+        resp = read_msg(sock_bad_body, timeout=2.0)
+        assert len(resp) > 0
+
+        publish_valid_hdr = (
+            cmd_addr
+            + cmd_opcode
+            + file_addr
+            + file_size
+            + file_type
+            + sig_type
+            + apx_digest
+            + valid_sig
+            + b"SignedNode1.apx\x00"
+        )
+        sock_bad_body.sendall(encode_numheader32(publish_valid_hdr))
+        open_req3 = read_msg(sock_bad_body, timeout=2.0)
+        assert len(open_req3) >= 8 and int.from_bytes(open_req3[4:8], "little") == 10
+
+        tampered_body = apx_def.replace(b":=0", b":=1")
+        assert len(tampered_body) == len(apx_def)
+        sock_bad_body.sendall(encode_numheader32(def_addr + tampered_body))
+
+        nack_msg2 = read_msg(sock_bad_body, timeout=2.0)
+        assert len(nack_msg2) >= 12
+        assert int.from_bytes(nack_msg2[4:8], "little") == 1
+        assert int.from_bytes(nack_msg2[8:12], "little") == 80
+        sock_bad_body.close()
 
     finally:
         server.stop(timeout=2.0)

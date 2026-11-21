@@ -242,6 +242,7 @@ def test_server_compressed_node_signed_transfer(tmp_path: Path, apx_server_bin: 
     server = start_server(tmp_path, apx_server_bin, config)
 
     apx_def = b'APX/1.2\nN"SignedCompressedNode"\nR"Odometer"L:=0\nP"Status"C(0,1):=0\n'
+    apx_digest = hashlib.sha256(apx_def).digest()
     valid_sig = sign_data_with_openssl(privkey_path, apx_def)
     compressed_def = zlib.compress(apx_def)
 
@@ -253,7 +254,7 @@ def test_server_compressed_node_signed_transfer(tmp_path: Path, apx_server_bin: 
         assert len(resp) > 0
 
         # Encode RMF_CMD_PUBLISH_SIGNED_COMPRESSED_FILE_MSG (23)
-        # Header layout (88 bytes + name + \0):
+        # Header layout (120 bytes + name + \0):
         # 0..3: CmdType = 23
         # 4..7: StartAddress = 0x03000000
         # 8..11: UncompressedSize
@@ -262,8 +263,9 @@ def test_server_compressed_node_signed_transfer(tmp_path: Path, apx_server_bin: 
         # 18..19: CompressionType = 1 (ZlibDeflate)
         # 20..21: SignatureType = 1 (ECDSA_P256)
         # 22..23: Reserved = 0
-        # 24..87: SignatureData (64 bytes)
-        # 88..N: Name + \0
+        # 24..55: DigestData (32 bytes, SHA-256 of uncompressed definition)
+        # 56..119: SignatureData (64 bytes)
+        # 120..N: Name + \0
         cmd_addr = (0x80000000 | 0x3FFFFC00).to_bytes(4, "big")
         cmd_opcode = (23).to_bytes(4, "little")
         file_addr = (0x03000000).to_bytes(4, "little")
@@ -285,6 +287,7 @@ def test_server_compressed_node_signed_transfer(tmp_path: Path, apx_server_bin: 
             + compression_type
             + signature_type
             + reserved
+            + apx_digest
             + valid_sig
             + name
         )
@@ -407,6 +410,7 @@ def test_server_rejects_compressed_signed_tampered_signature(tmp_path: Path, apx
     server = start_server(tmp_path, apx_server_bin, config)
 
     apx_def = b'APX/1.2\nN"TamperedSignedCompressed"\nR"Speed"S:=0\n'
+    apx_digest = hashlib.sha256(apx_def).digest()
     valid_sig = sign_data_with_openssl(privkey_path, apx_def)
     tampered_sig = bytearray(valid_sig)
     tampered_sig[0] ^= 0xFF
@@ -440,19 +444,13 @@ def test_server_rejects_compressed_signed_tampered_signature(tmp_path: Path, apx
             + compression_type
             + signature_type
             + reserved
+            + apx_digest
             + bytes(tampered_sig)
             + name
         )
         sock.sendall(encode_numheader32(publish_payload))
 
-        open_req = read_msg(sock, timeout=2.0)
-        assert len(open_req) > 0
-
-        write_addr = (0x80000000 | 0x03000000).to_bytes(4, "big")
-        write_payload = write_addr + compressed_def
-        sock.sendall(encode_numheader32(write_payload))
-
-        # Server should reply with NACK (ErrorCode = 80, APX_SIGNATURE_VERIFICATION_ERROR)
+        # Server must immediately reply with NACK (ErrorCode = 80, APX_SIGNATURE_VERIFICATION_ERROR) before FILE_OPEN
         nack_msg = read_msg(sock, timeout=2.0)
         assert len(nack_msg) >= 12
         cmd_type = int.from_bytes(nack_msg[4:8], "little")
@@ -719,6 +717,7 @@ def test_server_compressed_publish_error_categories_and_connection_reuse(tmp_pat
             + (1).to_bytes(2, "little")
             + (2).to_bytes(2, "little")
             + (0).to_bytes(2, "little")
+            + (b"\x00" * 32)
             + (b"\x00" * 64)
             + b"BadSigAlgo.apx\x00"
         )

@@ -38,13 +38,13 @@ def read_definition(peer, compressed, signed):
         encoded_size = struct.unpack_from("<I", command, 12)[0]
         assert struct.unpack_from("<H", command, 18)[0] == 1
         integrity_type = struct.unpack_from("<H", command, 20)[0]
-        integrity = command[24:88 if signed else 56]
-        name = command[88 if signed else 56:]
+        integrity = command[24:120 if signed else 56]
+        name = command[120 if signed else 56:]
     else:
         logical_size = encoded_size = first_size
         integrity_type = struct.unpack_from("<H", command, 14)[0]
-        integrity = command[16:80 if signed else 48]
-        name = command[80 if signed else 48:]
+        integrity = command[16:112 if signed else 48]
+        name = command[112 if signed else 48:]
     assert integrity_type == (1 if signed else 2)
     assert name == b"Sender.apx\x00"
     opened = struct.pack(">I", 0xBFFFFC00) + struct.pack("<II", 10, start)
@@ -97,7 +97,8 @@ def test_apx_node_definition_representation(tmp_path, apx_node_bin, compressed, 
                 payload, logical_size, integrity, fragments = read_definition(peer, compressed, signed)
                 assert logical_size == len(text)
                 assert (zlib.decompress(payload) if compressed else payload) == text
-                assert integrity == (signature if signed else hashlib.sha256(text).digest())
+                expected_digest = hashlib.sha256(text).digest()
+                assert integrity == (expected_digest + signature if signed else expected_digest)
                 if small and compressed:
                     assert len(payload) > len(text), "Explicit compression must not use a size heuristic"
                 if not small:

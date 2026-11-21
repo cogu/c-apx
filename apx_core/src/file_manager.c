@@ -803,7 +803,7 @@ static apx_error_t process_command_message(apx_file_manager_t *self, uint8_t con
       if (decoded_size > 0u)
       {
         file_info = rmf_file_info_make_signed_compressed(cmd.name, cmd.compressed_size, cmd.uncompressed_size,
-          cmd.start_address, cmd.signature_type, cmd.signature_data);
+          cmd.start_address, cmd.digest_data, cmd.signature_type, cmd.signature_data);
         if (file_info == NULL)
         {
           retval = APX_MEM_ERROR;

@@ -116,6 +116,18 @@ static void test_sign_and_verify_roundtrip(CuTest *tc)
     (const uint8_t *)apx_def, apx_def_len, sig, sig_len);
   CuAssertIntEquals(tc, APX_NO_ERROR, rc);
 
+  uint8_t digest[RMF_SHA256_SIZE];
+  rc = apx_crypto_sha256((const uint8_t *)apx_def, apx_def_len, digest);
+  CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+  rc = apx_crypto_verify_digest_signature(
+    RMF_SIGNATURE_TYPE_ECDSA_P256, (const uint8_t *)pub_pem, strlen(pub_pem) + 1, digest, sig, sig_len);
+  CuAssertIntEquals(tc, APX_NO_ERROR, rc);
+
+  digest[0] ^= 0xFF;
+  rc = apx_crypto_verify_digest_signature(
+    RMF_SIGNATURE_TYPE_ECDSA_P256, (const uint8_t *)pub_pem, strlen(pub_pem) + 1, digest, sig, sig_len);
+  CuAssertIntEquals(tc, APX_SIGNATURE_VERIFICATION_ERROR, rc);
+
   free(priv_pem);
   free(pub_pem);
 }

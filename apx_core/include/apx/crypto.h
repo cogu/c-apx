@@ -63,6 +63,16 @@ apx_error_t apx_crypto_verify_signature(rmf_signature_type_t sig_type, const uin
   const uint8_t *data, size_t data_len, const uint8_t *sig_data, size_t sig_len);
 
 /**
+ * Verifies an APX signature over a precomputed 32-byte SHA-256 digest using a public key.
+ *
+ * \return APX_NO_ERROR if signature is valid.
+ * \return APX_SIGNATURE_VERIFICATION_ERROR if signature does not match.
+ * \return APX_INVALID_ARGUMENT_ERROR if arguments or key are invalid.
+ */
+apx_error_t apx_crypto_verify_digest_signature(rmf_signature_type_t sig_type, const uint8_t *pub_key,
+  size_t pub_key_len, const uint8_t hash[32], const uint8_t *sig_data, size_t sig_len);
+
+/**
  * Signs data using a private key and outputs a raw APX signature.
  *
  * Supported signature types:

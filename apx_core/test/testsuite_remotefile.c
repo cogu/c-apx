@@ -685,6 +685,12 @@ static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc)
     .reserved = 0u,
     .name = "SecureNode.apx",
   };
+  uint8_t dummy_digest[RMF_SHA256_SIZE];
+  for (uint32_t i = 0u; i < RMF_SHA256_SIZE; ++i)
+  {
+    dummy_digest[i] = (uint8_t)(0x40u + i);
+  }
+  memcpy(in_cmd.digest_data, dummy_digest, RMF_SHA256_SIZE);
   memcpy(in_cmd.signature_data, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256);
 
   // Normal encode
@@ -702,8 +708,9 @@ static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc)
   CuAssertUIntEquals(tc, RMF_U16_COMPRESSION_TYPE_ZLIB_DEFLATE, unpackLE(buf + 18, UINT16_SIZE));
   CuAssertUIntEquals(tc, RMF_U16_SIGNATURE_TYPE_ECDSA_P256, unpackLE(buf + 20, UINT16_SIZE));
   CuAssertUIntEquals(tc, 0u, unpackLE(buf + 22, UINT16_SIZE));
-  CuAssertIntEquals(tc, 0, memcmp(buf + 24, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256));
-  CuAssertStrEquals(tc, "SecureNode.apx", (char const *)(buf + 88));
+  CuAssertIntEquals(tc, 0, memcmp(buf + 24, dummy_digest, RMF_SHA256_SIZE));
+  CuAssertIntEquals(tc, 0, memcmp(buf + 56, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256));
+  CuAssertStrEquals(tc, "SecureNode.apx", (char const *)(buf + 120));
 
   // Normal decode
   rmf_publish_signed_compressed_file_cmd_t out_cmd;
@@ -720,6 +727,7 @@ static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc)
   CuAssertUIntEquals(tc, in_cmd.compression_type, out_cmd.compression_type);
   CuAssertUIntEquals(tc, in_cmd.signature_type, out_cmd.signature_type);
   CuAssertUIntEquals(tc, 0u, out_cmd.reserved);
+  CuAssertIntEquals(tc, 0, memcmp(out_cmd.digest_data, dummy_digest, RMF_SHA256_SIZE));
   CuAssertIntEquals(tc, 0, memcmp(out_cmd.signature_data, dummy_sig, RMF_SIGNATURE_SIZE_ECDSA_P256));
   CuAssertStrEquals(tc, "SecureNode.apx", out_cmd.name);
 
@@ -846,11 +854,11 @@ static void test_publish_signed_compressed_file_cmd_encode_decode(CuTest *tc)
   CuAssertIntEquals(tc, APX_UNSUPPORTED_ERROR, decode_err);
   packLE(buf + 20, RMF_U16_SIGNATURE_TYPE_ECDSA_P256, UINT16_SIZE);
 
-  // Empty name (null terminator at offset 88) -> APX_INVALID_MSG_ERROR
-  uint8_t save_char = buf[88];
-  buf[88] = 0u;
+  // Empty name (null terminator at offset 120) -> APX_INVALID_MSG_ERROR
+  uint8_t save_char = buf[120];
+  buf[120] = 0u;
   CuAssertUIntEquals(
     tc, 0u, rmf_decode_publish_signed_compressed_file_cmd(buf, buf + encoded_size, &out_cmd, &decode_err));
   CuAssertIntEquals(tc, APX_INVALID_MSG_ERROR, decode_err);
-  buf[88] = save_char;
+  buf[120] = save_char;
 }
