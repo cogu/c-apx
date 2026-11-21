@@ -1,0 +1,389 @@
+#!/usr/bin/env python3
+"""Benchmark full APX network startup and routing using real .apx node files."""
+
+import argparse
+import hashlib
+import os
+import select
+import socket
+import struct
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "tests"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from legacy_performance import (  # noqa: E402
+    RMFP_1_0_GREETING,
+    RMFP_1_1_GREETING,
+    TcpServerHandle,
+    find_free_tcp_port,
+    send_chunked,
+    start_legacy_server,
+    start_modern_tcp_server,
+)
+from routing_performance import (  # noqa: E402
+    APX_FILE_ADDR,
+    OUT_FILE_ADDR,
+    drain_socket,
+    file_info_name,
+    send_file_info_no_wait,
+)
+from test_server_compressed_nodes import encode_numheader32, read_msg  # noqa: E402
+from test_server_definition_events import opcode, write  # noqa: E402
+
+
+@dataclass
+class NodeSpec:
+    path: Path
+    name: str
+    apx_bytes: bytes
+    digest: bytes
+    out_size: int
+    num_provide: int
+    num_require: int
+
+
+def probe_apx_file(apx_node_bin: str, lsock: socket.socket, sock_path: str, apx_path: Path) -> NodeSpec:
+    """Use apx-node against a local mock socket to obtain exact node name and .out size."""
+    apx_bytes = apx_path.read_bytes()
+    raw_text = apx_bytes.decode("utf-8", errors="replace")
+    num_provide = sum(1 for ln in raw_text.splitlines() if ln.startswith('P"'))
+    num_require = sum(1 for ln in raw_text.splitlines() if ln.startswith('R"'))
+
+    proc = subprocess.Popen(
+        [apx_node_bin, "--no-bind", "--no-signature", "-c", sock_path, str(apx_path)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    out_size = 0
+    node_name = None
+    try:
+        conn, _ = lsock.accept()
+        with conn:
+            _ = read_msg(conn, timeout=3.0)
+            ack = struct.pack(">I", 0xBFFFFC00) + struct.pack("<I", 0)
+            conn.sendall(encode_numheader32(ack))
+            while True:
+                msg = read_msg(conn, timeout=1.0)
+                if not msg:
+                    break
+                if opcode(msg) == 3:
+                    size = int.from_bytes(msg[12:16], "little")
+                    fname = file_info_name(msg)
+                    if fname.endswith(".out"):
+                        out_size = size
+                    elif fname.endswith(".apx"):
+                        node_name = fname[:-4]
+                        break
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=2.0)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=2.0)
+
+    if node_name is None:
+        raise RuntimeError(f"Failed to probe node metadata from {apx_path}")
+
+    return NodeSpec(
+        path=apx_path,
+        name=node_name,
+        apx_bytes=apx_bytes,
+        digest=hashlib.sha256(apx_bytes).digest(),
+        out_size=out_size,
+        num_provide=num_provide,
+        num_require=num_require,
+    )
+
+
+def load_network(apx_node_bin: str, network_dir: Path) -> list[NodeSpec]:
+    files = sorted(network_dir.glob("*.apx"))
+    if not files:
+        raise RuntimeError(f"No .apx files found in {network_dir}")
+    nodes: list[NodeSpec] = []
+    with tempfile.TemporaryDirectory() as td:
+        sock_path = os.path.join(td, "probe.sock")
+        lsock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        lsock.bind(sock_path)
+        lsock.listen(4)
+        lsock.settimeout(5.0)
+        try:
+            for p in files:
+                nodes.append(probe_apx_file(apx_node_bin, lsock, sock_path, p))
+        finally:
+            lsock.close()
+    return nodes
+
+
+def connect_node(
+    srv: TcpServerHandle,
+    node: NodeSpec,
+    greeting: bytes,
+    *,
+    timeout_s: float = 30.0,
+) -> tuple[socket.socket, float]:
+    """Connect one node, publish its .out/.apx, and wait until server publishes .in."""
+    out_data = b"\x00" * node.out_size
+    t0 = time.perf_counter()
+    sock = srv.connect()
+    try:
+        sock.sendall(encode_numheader32(greeting))
+        ack = read_msg(sock, timeout=timeout_s)
+        if not ack or opcode(ack) not in (0, 20):
+            raise RuntimeError(f"{node.name}: greeting failed (opcode={opcode(ack) if ack else None})")
+
+        if node.out_size > 0:
+            send_file_info_no_wait(sock, name=f"{node.name}.out", address=OUT_FILE_ADDR, size=node.out_size)
+        send_file_info_no_wait(
+            sock, name=f"{node.name}.apx", address=APX_FILE_ADDR, size=len(node.apx_bytes), digest=node.digest
+        )
+
+        sent_out = node.out_size == 0
+        got_in = node.num_require == 0
+        deadline = time.monotonic() + timeout_s
+        while not (sent_out and got_in):
+            remaining = max(0.1, deadline - time.monotonic())
+            msg = read_msg(sock, timeout=remaining)
+            if not msg:
+                raise RuntimeError(f"{node.name}: connection closed unexpectedly")
+            code = opcode(msg)
+            if code == 10:  # RMF_CMD_OPEN_FILE
+                addr = int.from_bytes(msg[8:12], "little")
+                if addr == APX_FILE_ADDR:
+                    send_chunked(sock, node.apx_bytes)
+                elif addr == OUT_FILE_ADDR:
+                    off = 0
+                    while off < len(out_data):
+                        chunk = out_data[off : off + 4096]
+                        write(sock, chunk, address=OUT_FILE_ADDR, offset=off, more=(off + len(chunk)) < len(out_data))
+                        off += len(chunk)
+                    sent_out = True
+            elif code == 3:  # RMF_CMD_FILE_INFO
+                if file_info_name(msg) == f"{node.name}.in":
+                    got_in = True
+            elif code == 1:  # RMF_CMD_NACK
+                err = int.from_bytes(msg[8:12], "little") if len(msg) >= 12 else -1
+                raise RuntimeError(f"{node.name}: server returned NACK error={err}")
+
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+        return sock, elapsed_ms
+    except Exception:
+        sock.close()
+        raise
+
+
+def bench_sequential_boot(
+    srv: TcpServerHandle,
+    nodes: list[NodeSpec],
+    greeting: bytes,
+) -> tuple[float, list[tuple[str, float]]]:
+    """Connect all nodes one by one (keeping all open), returning total and per-node ms."""
+    sockets: list[socket.socket] = []
+    per_node: list[tuple[str, float]] = []
+    try:
+        t_start = time.perf_counter()
+        for node in nodes:
+            sock, dt_ms = connect_node(srv, node, greeting)
+            sockets.append(sock)
+            per_node.append((node.name, dt_ms))
+            for s in sockets:
+                drain_socket(s)
+        total_ms = (time.perf_counter() - t_start) * 1000.0
+        return total_ms, per_node
+    finally:
+        for s in sockets:
+            s.close()
+
+
+def bench_parallel_boot(
+    srv: TcpServerHandle,
+    nodes: list[NodeSpec],
+    greeting: bytes,
+) -> tuple[float, list[tuple[str, float]]]:
+    """Connect all nodes simultaneously using a barrier, returning wall-clock total ms."""
+    barrier = threading.Barrier(len(nodes))
+    sockets: list[socket.socket | None] = [None] * len(nodes)
+    per_node: list[tuple[str, float]] = [("", 0.0)] * len(nodes)
+    errors: list[Exception] = []
+    err_lock = threading.Lock()
+    start_times: list[float] = []
+    end_times: list[float] = []
+    time_lock = threading.Lock()
+
+    def worker(idx: int, node: NodeSpec) -> None:
+        try:
+            barrier.wait()
+            t0 = time.perf_counter()
+            with time_lock:
+                start_times.append(t0)
+            sock, dt_ms = connect_node(srv, node, greeting)
+            t1 = time.perf_counter()
+            sockets[idx] = sock
+            per_node[idx] = (node.name, dt_ms)
+            with time_lock:
+                end_times.append(t1)
+        except Exception as exc:
+            with err_lock:
+                errors.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(i, n)) for i, n in enumerate(nodes)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    try:
+        if errors:
+            raise errors[0]
+        wall_ms = (max(end_times) - min(start_times)) * 1000.0
+        return wall_ms, per_node
+    finally:
+        for s in sockets:
+            if s is not None:
+                s.close()
+
+
+def run_benchmark_target(
+    label: str,
+    make_server,
+    greeting: bytes,
+    nodes: list[NodeSpec],
+    runs: int,
+    *,
+    warmup_cache: bool = False,
+    show_per_node: bool = False,
+) -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp_path = Path(td)
+        if warmup_cache:
+            # Populate persistent disk cache once, then stop server so timed runs test fresh server boots.
+            srv = make_server(tmp_path)
+            try:
+                bench_sequential_boot(srv, nodes, greeting)
+            finally:
+                srv.stop()
+
+        seq_totals: list[float] = []
+        par_totals: list[float] = []
+        last_seq_nodes: list[tuple[str, float]] = []
+
+        for _ in range(runs):
+            srv = make_server(tmp_path)
+            try:
+                seq_ms, per_node = bench_sequential_boot(srv, nodes, greeting)
+                seq_totals.append(seq_ms)
+                last_seq_nodes = per_node
+            finally:
+                srv.stop()
+
+            srv = make_server(tmp_path)
+            try:
+                par_ms, _ = bench_parallel_boot(srv, nodes, greeting)
+                par_totals.append(par_ms)
+            finally:
+                srv.stop()
+
+        avg_seq = sum(seq_totals) / len(seq_totals)
+        avg_par = sum(par_totals) / len(par_totals)
+        print(
+            f"  {label:<26} "
+            f"sequential: {avg_seq:6.2f} ms (min {min(seq_totals):5.2f}) | "
+            f"parallel: {avg_par:6.2f} ms (min {min(par_totals):5.2f})"
+        )
+        if show_per_node:
+            top = sorted(last_seq_nodes, key=lambda kv: kv[1], reverse=True)[:5]
+            top_str = ", ".join(f"{name}={ms:.2f}ms" for name, ms in top)
+            print(f"    slowest nodes (seq): {top_str}")
+
+
+def main() -> int:
+    default_legacy = Path.home() / "bin" / "apx_server"
+    default_modern = REPO_ROOT / "build" / "clang-release" / "app" / "apx_server" / "apx-server"
+    default_apx_node = REPO_ROOT / "build" / "clang-release" / "app" / "apx_node" / "apx-node"
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("networks", type=Path, nargs="+", help="One or more directories containing .apx files")
+    parser.add_argument("--legacy-server", type=Path, default=default_legacy, help="Path to v0.2.8 apx_server")
+    parser.add_argument("--modern-server", type=Path, default=default_modern, help="Path to v0.3.x apx-server")
+    parser.add_argument("--apx-node", type=Path, default=default_apx_node, help="Path to apx-node (for probing .out sizes)")
+    parser.add_argument("--runs", type=int, default=5, help="Number of full network boot runs per mode")
+    parser.add_argument("--per-node", action="store_true", help="Print top 5 slowest nodes for each mode")
+    parser.add_argument("--legacy-only", action="store_true", help="Benchmark only the legacy v0.2.8 server")
+    args = parser.parse_args()
+
+    apx_node_bin = str(args.apx_node.expanduser().resolve())
+    if not Path(apx_node_bin).is_file():
+        print(f"Error: apx-node not found at {apx_node_bin}", file=sys.stderr)
+        return 1
+
+    legacy_bin = str(args.legacy_server.expanduser().resolve())
+    if not Path(legacy_bin).is_file():
+        print(f"Error: legacy apx_server not found at {legacy_bin}", file=sys.stderr)
+        return 1
+
+    modern_bin = str(args.modern_server.expanduser().resolve())
+    run_modern = (not args.legacy_only) and Path(modern_bin).is_file()
+
+    for net_dir in args.networks:
+        net_path = net_dir.expanduser().resolve()
+        nodes = load_network(apx_node_bin, net_path)
+        total_apx = sum(len(n.apx_bytes) for n in nodes)
+        total_p = sum(n.num_provide for n in nodes)
+        total_r = sum(n.num_require for n in nodes)
+        print(
+            f"\n=== {net_path.name}: {len(nodes)} nodes, {total_apx} B APX, "
+            f"{total_p} P-ports, {total_r} R-ports ({args.runs} fresh-server runs over TCP) ==="
+        )
+
+        run_benchmark_target(
+            "v0.2.8 legacy",
+            lambda _tp: start_legacy_server(legacy_bin, find_free_tcp_port()),
+            RMFP_1_0_GREETING,
+            nodes,
+            args.runs,
+            show_per_node=args.per_node,
+        )
+
+        if run_modern:
+            run_benchmark_target(
+                "v0.3.x level=0",
+                lambda tp: start_modern_tcp_server(tp, modern_bin, find_free_tcp_port(), 0),
+                RMFP_1_1_GREETING,
+                nodes,
+                args.runs,
+                show_per_node=args.per_node,
+            )
+            run_benchmark_target(
+                "v0.3.x level=2 (cold)",
+                lambda _tp: start_modern_tcp_server(
+                    Path(tempfile.mkdtemp(dir=_tp)), modern_bin, find_free_tcp_port(), 2
+                ),
+                RMFP_1_1_GREETING,
+                nodes,
+                args.runs,
+                show_per_node=args.per_node,
+            )
+            run_benchmark_target(
+                "v0.3.x level=2 (warm)",
+                lambda tp: start_modern_tcp_server(tp, modern_bin, find_free_tcp_port(), 2),
+                RMFP_1_1_GREETING,
+                nodes,
+                args.runs,
+                warmup_cache=True,
+                show_per_node=args.per_node,
+            )
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
