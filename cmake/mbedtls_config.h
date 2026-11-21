@@ -1,13 +1,13 @@
 /*****************************************************************************
-* \file      mbedtls_config.h
-* \author    Conny Gustafsson
-* \date      2026-09-27
-* \brief     Tailored minimal Mbed TLS configuration for c-apx
-*
-* Copyright (c) 2026 Conny Gustafsson
-* SPDX-License-Identifier: MIT
-* See LICENSE in project root for full license terms.
-******************************************************************************/
+ * \file      mbedtls_config.h
+ * \author    Conny Gustafsson
+ * \date      2026-09-27
+ * \brief     Tailored minimal Mbed TLS configuration for c-apx
+ *
+ * Copyright (c) 2026 Conny Gustafsson
+ * SPDX-License-Identifier: MIT
+ * See LICENSE in project root for full license terms.
+ ******************************************************************************/
 #ifndef APX_MBEDTLS_CONFIG_H
 #define APX_MBEDTLS_CONFIG_H
 
@@ -59,10 +59,10 @@
 #define MBEDTLS_X509_CRT_PARSE_C
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
 
-/* RAM / ROM optimization */
-#define MBEDTLS_MPI_MAX_SIZE          1024
-#define MBEDTLS_ECP_WINDOW_SIZE       2
-#define MBEDTLS_ECP_FIXED_POINT_OPTIM 0
-#define MBEDTLS_ENTROPY_MAX_SOURCES   2
+/* RAM / ROM & performance tuning */
+#define MBEDTLS_MPI_MAX_SIZE 1024
+#define MBEDTLS_ECP_WINDOW_SIZE 6
+#define MBEDTLS_ECP_FIXED_POINT_OPTIM 1
+#define MBEDTLS_ENTROPY_MAX_SOURCES 2
 
 #endif /* APX_MBEDTLS_CONFIG_H */
