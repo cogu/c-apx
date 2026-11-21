@@ -110,6 +110,7 @@ set (APX_COMMON_TEST_SUITE
     apx_core/test/testsuite_file_map.c
     apx_core/test/testsuite_file.c
     apx_core/test/testsuite_node_cache.c
+    apx_core/test/testsuite_node_cache_codec.c
     apx_core/test/testsuite_node_data.c
     apx_core/test/testsuite_node_manager_client.c
     apx_core/test/testsuite_node_manager_server.c
@@ -167,6 +168,7 @@ set (APX_COMMON_HEADERS
     apx_core/include/apx/file_map.h
     apx_core/include/apx/file.h
     apx_core/include/apx/node_cache.h
+    apx_core/include/apx/node_cache_codec.h
     apx_core/include/apx/node_data.h
     apx_core/include/apx/node_instance.h
     apx_core/include/apx/node_manager.h
@@ -235,6 +237,7 @@ set (APX_COMMON_SOURCES
     apx_core/src/file_map.c
     apx_core/src/event.c
     apx_core/src/node_cache.c
+    apx_core/src/node_cache_codec.c
     apx_core/src/node_data.c
     apx_core/src/node_instance.c
     apx_core/src/node_manager.c
