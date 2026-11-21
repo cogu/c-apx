@@ -163,7 +163,7 @@ static void test_server_start_time(CuTest *tc)
   CuAssertIntEquals(tc, APX_INVALID_ARGUMENT_ERROR, apx_server_get_time_info(server, &start_unix_ns, NULL));
   CuAssertIntEquals(tc, APX_INVALID_STATE_ERROR, apx_server_get_time_info(server, &start_unix_ns, &uptime_ns));
 
-  apx_server_extension_handler_t handler = {on_server_extension_init, NULL};
+  apx_server_extension_handler_t handler = {on_server_extension_init, NULL, NULL};
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_add_extension(server, "startup-time-test", &handler, NULL));
   uint64_t const before_unix_ns = apx_get_unix_time_ns();
   uint64_t const before_monotonic_ns = apx_get_monotonic_time_ns();
@@ -195,7 +195,7 @@ static void test_server_failed_start_has_no_time(CuTest *tc)
 {
   apx_server_t *server = apx_server_new();
   CuAssertPtrNotNull(tc, server);
-  apx_server_extension_handler_t handler = {on_server_extension_init_failed, NULL};
+  apx_server_extension_handler_t handler = {on_server_extension_init_failed, NULL, NULL};
   CuAssertIntEquals(tc, APX_NO_ERROR, apx_server_add_extension(server, "failed-startup-test", &handler, NULL));
   CuAssertIntEquals(tc, APX_GENERIC_ERROR, apx_server_start(server));
   uint64_t start_unix_ns;

@@ -33,13 +33,15 @@
 typedef struct apx_connection_manager_tag
 {
   SPINLOCK_T lock; // thread lock
+  MUTEX_T cleanup_lock; // protects cleanup_thread_running and cleanup_cond
+  COND_T cleanup_cond; // wakes cleanup_thread immediately on shutdown
   adt_u32Set_t connection_id_set; // used to keep track of which connection IDs are in use
   adt_list_t active_connections; // Strong references to apx_server_connection_t
   adt_list_t inactive_connections; // Strong references to apx_server_connection_t
   uint32_t next_connection_id;
   uint32_t num_connections;
   THREAD_T cleanup_thread; // garbage collector thread
-  bool cleanup_thread_running; // when false it's time do shut down
+  bool cleanup_thread_running; // when false it's time to shut down
   bool cleanup_thread_valid; // true if cleanup_thread is a valid variable
 #ifdef _MSC_VER
   unsigned int cleanup_thread_id;

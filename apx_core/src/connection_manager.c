@@ -46,6 +46,8 @@ void apx_connection_manager_create(apx_connection_manager_t *self)
   if (self != NULL)
   {
     SPINLOCK_INIT(self->lock);
+    MUTEX_INIT(self->cleanup_lock);
+    COND_INIT(self->cleanup_cond);
     adt_list_create(
       &self->active_connections, apx_connection_base_vdelete); // the base class has the actual destructor using vtable
     adt_list_create(&self->inactive_connections, apx_connection_base_vdelete);
@@ -65,6 +67,8 @@ void apx_connection_manager_destroy(apx_connection_manager_t *self)
     adt_list_destroy(&self->active_connections);
     adt_list_destroy(&self->inactive_connections);
     adt_u32Set_destroy(&self->connection_id_set);
+    COND_DESTROY(self->cleanup_cond);
+    MUTEX_DESTROY(self->cleanup_lock);
     SPINLOCK_DESTROY(self->lock);
   }
 }
@@ -73,7 +77,9 @@ void apx_connection_manager_start(apx_connection_manager_t *self)
 {
   if (self != NULL)
   {
+    MUTEX_LOCK(self->cleanup_lock);
     self->cleanup_thread_running = true;
+    MUTEX_UNLOCK(self->cleanup_lock);
     self->cleanup_thread_valid = true;
 #ifdef _WIN32
     THREAD_CREATE(self->cleanup_thread, cleanup_task, (void *)self, self->cleanup_thread_id);
@@ -92,9 +98,10 @@ void apx_connection_manager_stop(apx_connection_manager_t *self)
 #ifndef _WIN32
       void *result;
 #endif
-      SPINLOCK_ENTER(self->lock);
+      MUTEX_LOCK(self->cleanup_lock);
       self->cleanup_thread_running = false;
-      SPINLOCK_LEAVE(self->lock);
+      COND_SIGNAL(self->cleanup_cond);
+      MUTEX_UNLOCK(self->cleanup_lock);
 #ifdef _WIN32
       WaitForSingleObject(self->cleanup_thread, INFINITE);
       CloseHandle(self->cleanup_thread);
@@ -128,8 +135,8 @@ void apx_connection_manager_stop(apx_connection_manager_t *self)
       apx_server_connection_t *conn = (apx_server_connection_t *)adt_ary_value(&connections, i);
       if (conn != NULL)
       {
-        apx_connection_base_stop(&conn->base);
         apx_connection_base_close(&conn->base);
+        apx_connection_base_stop(&conn->base);
       }
     }
     adt_ary_destroy(&connections);
@@ -273,21 +280,24 @@ THREAD_PROTO(cleanup_task, arg)
   apx_connection_manager_t *self = (apx_connection_manager_t *)arg;
   if (self != NULL)
   {
-    while (1)
+    MUTEX_LOCK(self->cleanup_lock);
+    while (self->cleanup_thread_running)
     {
-      bool is_running;
-      int32_t num_inactive_connections;
-      SLEEP(CLEANUP_WAIT_TIME);
-      SPINLOCK_ENTER(self->lock);
-      is_running = self->cleanup_thread_running;
-      num_inactive_connections = adt_list_length(&self->inactive_connections);
-      SPINLOCK_LEAVE(self->lock);
-      if (is_running == false)
+      bool timed_out = false;
+      COND_TIMEDWAIT_MS(self->cleanup_cond, self->cleanup_lock, CLEANUP_WAIT_TIME, timed_out);
+      (void)timed_out;
+      if (!self->cleanup_thread_running)
       {
         break;
       }
+      MUTEX_UNLOCK(self->cleanup_lock);
+      SPINLOCK_ENTER(self->lock);
+      int32_t const num_inactive_connections = adt_list_length(&self->inactive_connections);
+      SPINLOCK_LEAVE(self->lock);
       apx_connection_manager_cleanup_task_main(self, num_inactive_connections);
+      MUTEX_LOCK(self->cleanup_lock);
     }
+    MUTEX_UNLOCK(self->cleanup_lock);
   }
   THREAD_RETURN(0);
 }

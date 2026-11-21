@@ -45,6 +45,7 @@ static const char *const m_config_keys[] = {"enabled", "unix-file", "unix-tag", 
 // PRIVATE FUNCTION PROTOTYPES
 //////////////////////////////////////////////////////////////////////////////
 static apx_error_t apx_socket_server_extension_init(struct apx_server_tag *apx_server, dtl_dv_t *config);
+static void apx_socket_server_extension_stop_accepting(void);
 static void apx_socket_server_extension_shutdown(void);
 static apx_error_t apx_socket_server_extension_configure(apx_socket_server_t *server, dtl_hv_t *cfg);
 static apx_error_t configure_tcp(apx_socket_server_t *server, dtl_hv_t *cfg);
@@ -65,7 +66,8 @@ static apx_socket_server_t *m_instance = NULL; // singleton
 
 apx_error_t apx_socket_server_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-  apx_server_extension_handler_t handler = {apx_socket_server_extension_init, apx_socket_server_extension_shutdown};
+  apx_server_extension_handler_t handler = {
+    apx_socket_server_extension_init, apx_socket_server_extension_shutdown, apx_socket_server_extension_stop_accepting};
   return apx_server_add_extension(apx_server, "SOCKET", &handler, config);
 }
 
@@ -165,6 +167,14 @@ static apx_error_t apx_socket_server_extension_init(struct apx_server_tag *apx_s
     }
   }
   return APX_NO_ERROR;
+}
+
+static void apx_socket_server_extension_stop_accepting(void)
+{
+  if (m_instance != NULL)
+  {
+    apx_socket_server_stop_all(m_instance);
+  }
 }
 
 static void apx_socket_server_extension_shutdown(void)

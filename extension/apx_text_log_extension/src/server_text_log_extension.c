@@ -45,7 +45,8 @@ apx_server_text_log_t *m_instance = NULL;
 //////////////////////////////////////////////////////////////////////////////
 apx_error_t apx_server_text_log_extension_register(struct apx_server_tag *apx_server, dtl_dv_t *config)
 {
-  apx_server_extension_handler_t handler = {apx_server_text_log_extension_init, apx_server_text_log_extension_shutdown};
+  apx_server_extension_handler_t handler = {
+    apx_server_text_log_extension_init, apx_server_text_log_extension_shutdown, NULL};
   return apx_server_add_extension(apx_server, "TEXTLOG", &handler, config);
 }
 

@@ -28,6 +28,7 @@ typedef struct apx_server_extension_handler_tag
 {
   apx_error_t (*init)(struct apx_server_tag *apx_server, dtl_dv_t *config);
   void (*shutdown)(void);
+  void (*stop_accepting)(void);
 } apx_server_extension_handler_t;
 
 typedef struct apx_server_extension_tag

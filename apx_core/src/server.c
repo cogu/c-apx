@@ -42,6 +42,7 @@ static void apx_server_trigger_disconnected_event(apx_server_t *self, apx_server
 static void apx_server_trigger_log_write_event(
   apx_server_t *self, apx_log_level_t level, const char *label, const char *msg);
 static apx_error_t apx_server_init_extensions(apx_server_t *self);
+static void apx_server_stop_accepting_extensions(apx_server_t *self);
 static void apx_server_shutdown_extensions(apx_server_t *self);
 static void apx_server_handle_event(void *arg, apx_event_t *event);
 static void apx_server_destroy_event(apx_server_t *self, apx_event_t *event);
@@ -210,6 +211,7 @@ void apx_server_stop(apx_server_t *self)
 {
   if (self != NULL)
   {
+    apx_server_stop_accepting_extensions(self);
 #ifndef UNIT_TEST
     apx_connection_manager_stop(&self->connection_manager);
     apx_event_loop_exit(&self->event_loop);
@@ -1194,6 +1196,23 @@ static apx_error_t apx_server_init_extensions(apx_server_t *self)
     apx_server_flush_events(self);
   }
   return APX_NO_ERROR;
+}
+
+static void apx_server_stop_accepting_extensions(apx_server_t *self)
+{
+  if (self != NULL)
+  {
+    adt_list_elem_t *iter = adt_list_iter_last(&self->extension_manager);
+    while (iter != NULL)
+    {
+      apx_server_extension_t *extension = (apx_server_extension_t *)iter->pItem;
+      if (extension->handler.stop_accepting != NULL)
+      {
+        extension->handler.stop_accepting();
+      }
+      iter = adt_list_iter_prev(iter);
+    }
+  }
 }
 
 static void apx_server_shutdown_extensions(apx_server_t *self)

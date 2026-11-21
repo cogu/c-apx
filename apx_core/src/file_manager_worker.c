@@ -1174,46 +1174,49 @@ static apx_error_t start_worker_thread(apx_file_manager_worker_t *self)
 
 static apx_error_t stop_worker_thread(apx_file_manager_worker_t *self)
 {
-  if (self->worker_thread_valid == true)
+  THREAD_T thread_to_join;
+  SPINLOCK_ENTER(self->queue_lock);
+  if (!self->worker_thread_valid)
   {
-# ifdef _WIN32
-    DWORD result;
-# endif
-    apx_command_t cmd = {APX_CMD_EXIT, 0, 0, {0}, NULL};
-    SPINLOCK_ENTER(self->queue_lock);
-    adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
     SPINLOCK_LEAVE(self->queue_lock);
-    SEMAPHORE_POST(self->semaphore);
-# ifdef _WIN32
-    result = WaitForSingleObject(self->worker_thread, 5000);
-    if (result == WAIT_TIMEOUT)
-    {
-      return APX_THREAD_JOIN_TIMEOUT_ERROR;
-    }
-    else if (result == WAIT_FAILED)
-    {
-      return APX_THREAD_JOIN_ERROR;
-    }
-    CloseHandle(self->worker_thread);
-    self->worker_thread = INVALID_HANDLE_VALUE;
-# else
-    if (pthread_equal(pthread_self(), self->worker_thread) == 0)
-    {
-      void *status;
-      int s = pthread_join(self->worker_thread, &status);
-      if (s != 0)
-      {
-        return APX_THREAD_JOIN_ERROR;
-      }
-    }
-    else
-    {
-         // pthread_join attempted from pthread_self. This is not allowed
-      return APX_INTERNAL_ERROR;
-    }
-# endif
-    self->worker_thread_valid = false;
+    return APX_NO_ERROR;
   }
+# ifndef _WIN32
+  if (pthread_equal(pthread_self(), self->worker_thread) != 0)
+  {
+    SPINLOCK_LEAVE(self->queue_lock);
+    // pthread_join attempted from pthread_self. This is not allowed
+    return APX_INTERNAL_ERROR;
+  }
+# endif
+  self->worker_thread_valid = false;
+  thread_to_join = self->worker_thread;
+# ifdef _WIN32
+  self->worker_thread = INVALID_HANDLE_VALUE;
+# endif
+  apx_command_t cmd = {APX_CMD_EXIT, 0, 0, {0}, NULL};
+  adt_rbfh_insert(&self->queue, (const uint8_t *)&cmd);
+  SPINLOCK_LEAVE(self->queue_lock);
+  SEMAPHORE_POST(self->semaphore);
+# ifdef _WIN32
+  DWORD result = WaitForSingleObject(thread_to_join, 5000);
+  if (result == WAIT_TIMEOUT)
+  {
+    return APX_THREAD_JOIN_TIMEOUT_ERROR;
+  }
+  else if (result == WAIT_FAILED)
+  {
+    return APX_THREAD_JOIN_ERROR;
+  }
+  CloseHandle(thread_to_join);
+# else
+  void *status;
+  int s = pthread_join(thread_to_join, &status);
+  if (s != 0)
+  {
+    return APX_THREAD_JOIN_ERROR;
+  }
+# endif
   return APX_NO_ERROR;
 }
 
