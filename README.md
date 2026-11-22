@@ -13,82 +13,29 @@ Latest release is [v0.2.9](https://github.com/cogu/c-apx/releases/tag/v0.2.9).
 
 A brand new implementation is being developed on branch `master`. It will remain in alpha stage until release v0.4.0.
 
-### Current implementation status
+### APX Core Features
 
-#### APX Core Features
+Reference implementation of APX IDL v1.3 and APX VM v2.1.
 
-- Reference implementation of APX IDL v1.3 and APX VM v2.1.
-  - Parser
-  - Compiler
-  - Virtual Machine
-- Port connection count support (server and client).
-- Dynamic client support
-  - Use `apx-node` together with `apx-control` to dynamically create APX nodes.
+- Parser
+- Bytecode compiler
+- Virtual Machine
+- Client
 
-#### APX Server Base Features
+### APX Server Base Features
 
-Reference implementation of the APX server. It is highly configurable using a single JSON file.
+Reference implementation of the [APX server](https://c-apx.readthedocs.io/en/latest/apps/apx_server.html). It is highly configurable using a single JSON file.
 
-**Security features (optional):**
+**Optional features:**
 
-- Cryptographically signed APX node verification (NIST P-256 with SHA-256)
-  - Use the tool `apx-sign` to create keys and sign your APX nodes.
+- **Node definition caching**: Disk-backed Level 1 (`.apx` text) and Level 2 (`.apxc` precompiled binary) caching keyed by SHA-256 to eliminate definition transfer and compilation on reconnect.
+- **Cryptographically signed APX node verification** (NIST P-256 with SHA-256):
+  - Use the tool [`apx-sign`](https://c-apx.readthedocs.io/en/latest/apps/apx_sign.html) to create keys and sign your APX nodes.
 
-#### APX Server Extensions
+### APX Server Extensions
 
 Socket support, logging, and more are enabled in the APX server by adding compile-time extensions.
-Each extension can be individually configured using JSON (including enable/disable options).
-
-##### Socket Extension
-
-Basic socket server support.
-
-- TCP sockets.
-- UNIX Domain sockets.
-- Virtual Machine Sockets (VSOCK).
-
-Default settings:
-
-- Listening port: `5000`
-- Listening file path: `/tmp/apx.socket`
-
-Extension Type: `Source`
-
-##### TLS Extension
-
-TLS socket server.
-
-Default settings:
-
-- Listening port: `5020`
-
-Extension Type: `Source`
-
-##### TextLog Extension
-
-Demonstrates the built-in event listener mechanism in `apx_core` and logs server events to stdout or a log file.
-
-Default settings:
-
-- Logs to stdout.
-
-Extension Type: `Sink`
-
-##### Monitor Extension
-
-Exposes real-time event streaming and interactive diagnostic endpoints for `apx-mon` and `apx-log` over TCP, UNIX domain sockets, or TLS.
-
-Default settings:
-
-- Listening port: `5080`
-
-Extension Type: `Source`
-
-#### Features not yet started
-
-- APX-ES clients not yet supported (needs a rewrite from v0.2).
-- Static clients not yet supported (needs a rewrite from v0.2).
-
+See the [Server Extensions documentation](https://c-apx.readthedocs.io/en/latest/extensions/index.html) for the full extension catalog, default settings, and configuration details.
 
 ## Dynamic vs. Static Clients
 
@@ -101,7 +48,7 @@ Statically generated clients are supposed to be used together with APX-ES in ord
 ### Dynamic Clients (supported)
 
 Dynamic clients parse an APX definition file at runtime and build small bytecode programs (in-memory) which then execute through a virtual machine (VM). This method has more flexibility since it doesn't require C code to be generated or compiled as an intermediate step.
-Caching mechanisms are currently being developed for C and C++ (more information later).
+Client-side caching mechanisms are currently being developed for C and C++ (more information later).
 Dynamic clients are best used on Windows and Linux systems.
 
 ## Building with CMake
@@ -125,8 +72,6 @@ Dynamic clients are best used on Windows and Linux systems.
   - Enabled by setting `-DUNIT_TEST=ON` at CMake configure time.
   - Built specifically via `--target apx_unit` and executed with `ctest`.
 
-For Windows, use a "Native tools command prompt" from your Visual Studio installation.
-
 ### Linux CMake Presets (Clang 21 + Ninja)
 
 ```bash
@@ -137,7 +82,7 @@ cmake --preset clang-test && cmake --build --preset clang-test && ctest --preset
 # Note: This preset requires a preconfigured pytest virtual environment
 cmake --preset clang-asan && cmake --build --preset clang-asan && ctest -V --preset clang-asan
 
-# Thread Sanitizers (TSan)
+# Thread Sanitizer (TSan)
 # Note: This preset requires a preconfigured pytest virtual environment
 cmake --preset clang-tsan && cmake --build --preset clang-tsan && ctest -V --preset clang-tsan
 
@@ -151,7 +96,22 @@ cmake --preset clang-debug && cmake --build --preset clang-debug
 cmake --preset clang-release && cmake --build --preset clang-release
 ```
 
+### Installing on Linux
+
+Build with static libraries for a standalone installation:
+
+```bash
+cmake --preset clang-release -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_SHARED_LIBS=OFF
+cmake --build --preset clang-release
+sudo cmake --install build/clang-release
+
+# Check installed version
+apx-server --version
+```
+
 ### Windows CMake Presets (Visual Studio 2026)
+
+Run these commands from an **x64 Native Tools Command Prompt** for Visual Studio.
 
 ```powershell
 # Unit test build
@@ -174,13 +134,13 @@ cmake --build --preset msvc-analyze
 
 ### Manual CMake Workflow with Linux and GCC
 
-```sh
+```bash
 cmake -S . -B build-test -GNinja -DUNIT_TEST=ON
 cmake --build build-test
 ctest --test-dir build-test --output-on-failure
 ```
 
-#### Running pytests (Linux Only)
+### Running pytests (Linux Only)
 
 See [tests/README.md](tests/README.md) for virtual environment setup.
 

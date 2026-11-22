@@ -11,6 +11,61 @@ The APX server features a modular extension architecture that decouples network 
    text_log
    monitor
 
+Built-in Extensions
+-------------------
+
+Socket support, logging, and more are enabled in the APX server by adding compile-time extensions.
+Each extension can be individually configured using JSON (including enable/disable options).
+
+Socket Extension
+~~~~~~~~~~~~~~~~
+
+Basic socket server support (see :doc:`socket_server`).
+
+* TCP sockets.
+* UNIX Domain sockets.
+* Virtual Machine Sockets (VSOCK).
+
+Default settings:
+
+* Listening port: ``5000``
+* Listening file path: ``/tmp/apx.socket``
+
+Extension Type: ``Source``
+
+TLS Extension
+~~~~~~~~~~~~~
+
+TLS socket server (see :doc:`tls_server`).
+
+Default settings:
+
+* Listening port: ``5020``
+
+Extension Type: ``Source``
+
+TextLog Extension
+~~~~~~~~~~~~~~~~~
+
+Demonstrates the built-in event listener mechanism in ``apx_core`` and logs server events to stdout or a log file (see :doc:`text_log`).
+
+Default settings:
+
+* Logs to stdout.
+
+Extension Type: ``Sink``
+
+Monitor Extension
+~~~~~~~~~~~~~~~~~
+
+Exposes real-time event streaming and interactive diagnostic endpoints for ``apx-mon`` and ``apx-log`` over TCP, UNIX domain sockets, or TLS (see :doc:`monitor`).
+
+Default settings:
+
+* Listening port: ``5080``
+
+Extension Type: ``Source``
+
 Extension Architecture
 ----------------------
 
@@ -84,7 +139,7 @@ Yocto / BitBake Integration
 
 These options map directly to BitBake `PACKAGECONFIG` variables in custom meta layers.
 
-For complete integration details, out-of-tree extension guides, and BitBake recipe examples, see the [APX CMake Integration Guide](https://github.com/cogu/c-apx/blob/master/cmake/README.md) (`cmake/README.md`).
+For complete integration details, out-of-tree extension guides, and BitBake recipe examples, see the `APX CMake Integration Guide <https://github.com/cogu/c-apx/blob/master/cmake/README.md>`_ (``cmake/README.md``).
 
 Extension Catalog
 -----------------
