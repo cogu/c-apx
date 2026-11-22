@@ -52,8 +52,8 @@ Clone the repository, initialize its Git submodules, and build the project:
          git clone https://github.com/cogu/c-apx.git
          cd c-apx
          git submodule update --init --recursive
-         cmake -S . -B build
-         cmake --build build
+         cmake --preset msvc-debug
+         cmake --build --preset msvc-debug
 
 Start the APX Server
 --------------------
@@ -74,7 +74,7 @@ From the ``c-apx`` directory, start the server with the example configuration:
 
       .. code-block:: bat
 
-         build\app\apx_server\Debug\apx-server.exe example\config\server.json
+         build\msvc-debug\app\apx_server\apx-server.exe example\config\server.json
 
 Leave the server running. Notice that with the example configuration, the
 server text log extension outputs real-time server events (such as extension
@@ -99,7 +99,7 @@ Open a second terminal in the ``c-apx`` directory and start the listener node:
 
       .. code-block:: bat
 
-         build\app\apx_node\Debug\apx-node.exe --no-bind example\nodes\unsigned_listener.apx
+         build\msvc-debug\app\apx_node\apx-node.exe --no-bind example\nodes\unsigned_listener.apx
 
 Open a third terminal in the ``c-apx`` directory and start the sender node:
 
@@ -117,7 +117,7 @@ Open a third terminal in the ``c-apx`` directory and start the sender node:
 
       .. code-block:: bat
 
-         build\app\apx_node\Debug\apx-node.exe example\nodes\unsigned_sender.apx
+         build\msvc-debug\app\apx_node\apx-node.exe example\nodes\unsigned_sender.apx
 
 Send a Value
 ------------
@@ -139,7 +139,7 @@ Open a fourth terminal in the ``c-apx`` directory and set ``VehicleSpeed`` to
 
       .. code-block:: bat
 
-         build\app\apx_control\Debug\apx-control.exe VehicleSpeed 100
+         build\msvc-debug\app\apx_control\apx-control.exe VehicleSpeed 100
 
 The value travels from ``apx-control`` to ``unsigned_sender``, then through the
 APX server to ``unsigned_listener``. The terminal running the listener prints:
